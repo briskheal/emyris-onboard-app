@@ -16,7 +16,31 @@ window.addEventListener('DOMContentLoaded', async () => {
     await fetchCompanyData();
     updateView('landingPage');
     initBackgroundAnimations();
+    initFileListeners();
 });
+
+// Show live file name on label when user picks a file
+function initFileListeners() {
+    const fileMap = {
+        compLogoInput: 'logoStatus',
+        compStampInput: 'stampStatus',
+        compSigInput: 'sigStatus',
+        offerTemplateInput: 'offerStatus',
+        apptTemplateInput: 'apptStatus',
+        mobileTemplateInput: 'mobileStatus',
+        tadaTemplateInput: 'tadaStatus'
+    };
+    for (const [inputId, labelId] of Object.entries(fileMap)) {
+        const el = document.getElementById(inputId);
+        if (el) el.addEventListener('change', () => {
+            const label = document.getElementById(labelId);
+            if (label && el.files[0]) {
+                label.innerText = `✅ ${el.files[0].name.substring(0, 18)}${el.files[0].name.length > 18 ? '...' : ''}`;
+                label.style.color = 'var(--success)';
+            }
+        });
+    }
+}
 
 async function fetchCompanyData() {
     try {
@@ -47,6 +71,21 @@ function applyCompanyData() {
     `;
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) headerTitle.innerText = companyData.name;
+
+    // Dynamic header logo icon
+    const headerImg = document.getElementById('headerLogoImg');
+    const headerLetter = document.getElementById('headerLogoLetter');
+    if (companyData.logo && headerImg) {
+        headerImg.src = companyData.logo;
+        headerImg.classList.remove('hidden');
+        if (headerLetter) headerLetter.style.display = 'none';
+    } else if (headerLetter) {
+        // Use first letter of each word (max 2)
+        const initials = (companyData.name || 'E').split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('');
+        headerLetter.innerText = initials;
+        headerLetter.style.display = 'inline';
+        if (headerImg) headerImg.classList.add('hidden');
+    }
 }
 
 function updateView(viewId) {
@@ -283,12 +322,16 @@ async function saveCompanyProfile(e) {
     };
 
     const logo = await readFile('compLogoInput');
+    const stamp = await readFile('compStampInput');
+    const sig = await readFile('compSigInput');
     const offer = await readFile('offerTemplateInput');
     const appt = await readFile('apptTemplateInput');
     const mobile = await readFile('mobileTemplateInput');
     const tada = await readFile('tadaTemplateInput');
 
     if (logo) data.logo = logo;
+    if (stamp) data.stamp = stamp;
+    if (sig) data.digitalSignature = sig;
     if (offer) data.offerTemplate = offer;
     if (appt) data.apptTemplate = appt;
     if (mobile) data.mobileAppTemplate = mobile;
@@ -304,11 +347,24 @@ async function submitProfileUpdate(data) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        if ((await res.json()).success) {
-            alert("Company Profile Updated!");
+        const result = await res.json();
+        if (result.success) {
+            showToast('✅ Company Profile Saved Successfully!', 'success');
             await fetchCompanyData();
+            // Re-populate this tab to show status
+            switchAdminTab('profile');
+        } else {
+            showToast('❌ Save failed. Please try again.', 'error');
         }
-    } catch (err) { alert("Update failed."); }
+    } catch (err) { showToast('❌ Connection error. Save failed.', 'error'); }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toastNotif');
+    toast.textContent = message;
+    toast.className = `show ${type}`;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.className = ''; }, 3500);
 }
 
 function switchAdminTab(tab) {
@@ -325,21 +381,32 @@ function switchAdminTab(tab) {
         f.compTollFree.value = companyData.tollFree || '';
         f.compAddress.value = companyData.address || '';
 
-        // Update template statuses
-        const updateStatus = (id, val) => {
+        // Update ALL asset statuses
+        const updateStatus = (id, val, label) => {
             const el = document.getElementById(id);
+            if (!el) return;
             if (val) {
-                el.innerText = "Template Uploaded ✅";
-                el.style.color = "var(--success)";
+                el.innerText = `✅ ${label || 'Uploaded'}`;
+                el.style.color = 'var(--success)';
             } else {
-                el.innerText = "Upload Template";
-                el.style.color = "var(--text-muted)";
+                el.innerText = label ? `Upload ${label}` : 'Upload';
+                el.style.color = 'var(--text-muted)';
             }
         };
-        updateStatus('offerStatus', companyData.offerTemplate);
-        updateStatus('apptStatus', companyData.apptTemplate);
-        updateStatus('mobileStatus', companyData.mobileAppTemplate);
-        updateStatus('tadaStatus', companyData.tadaTemplate);
+        updateStatus('logoStatus',   companyData.logo,               'Logo');
+        updateStatus('stampStatus',  companyData.stamp,              'Stamp');
+        updateStatus('sigStatus',    companyData.digitalSignature,   'Signature');
+        updateStatus('offerStatus',  companyData.offerTemplate,      'PDF');
+        updateStatus('apptStatus',   companyData.apptTemplate,       'PDF');
+        updateStatus('mobileStatus', companyData.mobileAppTemplate,  'PDF');
+        updateStatus('tadaStatus',   companyData.tadaTemplate,       'PDF');
+
+        // Also show logo preview
+        const lp = document.getElementById('logoPreview');
+        if (lp && companyData.logo) {
+            lp.src = companyData.logo;
+            lp.classList.remove('hidden');
+        }
     } else {
         document.getElementById('adminApplicantsTab').classList.remove('hidden');
         fetchApplicants();

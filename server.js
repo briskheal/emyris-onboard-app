@@ -31,6 +31,8 @@ const companySchema = new mongoose.Schema({
     apptTemplate: String,  // Global master appointment letter
     mobileAppTemplate: String, // Global master mobile app details
     tadaTemplate: String,      // Global master TA/DA letter
+    stamp: String,             // Company stamp image Base64
+    digitalSignature: String,  // Digital signature image Base64
     updatedAt: { type: Date, default: Date.now }
 });
 

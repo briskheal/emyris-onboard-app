@@ -8,6 +8,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Toast Notification -->
+    <style>
+        #toastNotif { position:fixed; bottom:2rem; right:2rem; background:#0f172a; color:#fff; padding:1rem 1.8rem; border-radius:14px; font-weight:600; font-size:0.95rem; box-shadow:0 10px 30px rgba(0,0,0,0.25); z-index:9999; transform:translateY(100px); opacity:0; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); }
+        #toastNotif.show { transform:translateY(0); opacity:1; }
+        #toastNotif.success { background: linear-gradient(135deg,#064e3b,#10b981); }
+        #toastNotif.error { background: linear-gradient(135deg,#7f1d1d,#ef4444); }
+    </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
@@ -20,7 +27,10 @@
         
         <header class="main-header">
             <div class="logo-container">
-                <div class="logo-icon">E</div>
+                <div class="logo-icon" id="headerLogoIcon">
+                    <img id="headerLogoImg" src="" alt="Logo" class="hidden" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">
+                    <span id="headerLogoLetter">E</span>
+                </div>
                 <a id="headerLogoLink" href="#" target="_blank" class="logo-link">
                     <div class="logo-text">
                         <h1 id="headerCompName">EMYRIS BIOLIFESCIENCES</h1>
@@ -159,45 +169,61 @@
                                 <textarea name="compAddress"></textarea>
                             </div>
 
-                            <div class="input-grid">
-                                <div class="upload-box">
+                            <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:1rem;">
+                                <div class="upload-box-sm">
                                     <label>Company Logo</label>
-                                    <div class="drop-zone" onclick="document.getElementById('compLogoInput').click()">
-                                        <img id="logoPreview" src="" class="hidden logo-preview-img">
-                                        <span class="drop-icon">🖼️</span>
-                                        <span class="drop-text">Upload Logo</span>
+                                    <div class="drop-zone-sm" onclick="document.getElementById('compLogoInput').click()">
+                                        <img id="logoPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
+                                        <span class="drop-icon-sm">🖼️</span>
+                                        <span id="logoStatus" class="drop-label-sm">Upload Logo</span>
                                         <input type="file" id="compLogoInput" class="hidden" accept="image/*">
                                     </div>
                                 </div>
-                                <div class="upload-box">
-                                    <label>Master Offer Letter (PDF Template)</label>
-                                    <div class="drop-zone" onclick="document.getElementById('offerTemplateInput').click()">
-                                        <span class="drop-icon">📄</span>
-                                        <span id="offerStatus" class="drop-text">Upload Template</span>
+                                <div class="upload-box-sm">
+                                    <label>Company Stamp</label>
+                                    <div class="drop-zone-sm" onclick="document.getElementById('compStampInput').click()">
+                                        <span class="drop-icon-sm">🔴</span>
+                                        <span id="stampStatus" class="drop-label-sm">Upload Stamp</span>
+                                        <input type="file" id="compStampInput" class="hidden" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="upload-box-sm">
+                                    <label>Digital Signature</label>
+                                    <div class="drop-zone-sm" onclick="document.getElementById('compSigInput').click()">
+                                        <span class="drop-icon-sm">✍️</span>
+                                        <span id="sigStatus" class="drop-label-sm">Upload Signature</span>
+                                        <input type="file" id="compSigInput" class="hidden" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="upload-box-sm">
+                                    <label>Offer Letter Template</label>
+                                    <div class="drop-zone-sm" onclick="document.getElementById('offerTemplateInput').click()">
+                                        <span class="drop-icon-sm">📄</span>
+                                        <span id="offerStatus" class="drop-label-sm">Upload PDF</span>
                                         <input type="file" id="offerTemplateInput" class="hidden" accept=".pdf">
                                     </div>
                                 </div>
-                                <div class="upload-box">
-                                    <label>Master Appointment Letter (PDF)</label>
-                                    <div class="drop-zone" onclick="document.getElementById('apptTemplateInput').click()">
-                                        <span class="drop-icon">📜</span>
-                                        <span id="apptStatus" class="drop-text">Upload Template</span>
+                                <div class="upload-box-sm">
+                                    <label>Appointment Letter</label>
+                                    <div class="drop-zone-sm" onclick="document.getElementById('apptTemplateInput').click()">
+                                        <span class="drop-icon-sm">📜</span>
+                                        <span id="apptStatus" class="drop-label-sm">Upload PDF</span>
                                         <input type="file" id="apptTemplateInput" class="hidden" accept=".pdf">
                                     </div>
                                 </div>
-                                <div class="upload-box">
-                                    <label>Mobile App Details (PDF)</label>
-                                    <div class="drop-zone" onclick="document.getElementById('mobileTemplateInput').click()">
-                                        <span class="drop-icon">📱</span>
-                                        <span id="mobileStatus" class="drop-text">Upload PDF</span>
+                                <div class="upload-box-sm">
+                                    <label>Mobile App Details</label>
+                                    <div class="drop-zone-sm" onclick="document.getElementById('mobileTemplateInput').click()">
+                                        <span class="drop-icon-sm">📱</span>
+                                        <span id="mobileStatus" class="drop-label-sm">Upload PDF</span>
                                         <input type="file" id="mobileTemplateInput" class="hidden" accept=".pdf">
                                     </div>
                                 </div>
-                                <div class="upload-box">
-                                    <label>TA / DA Letter (PDF)</label>
-                                    <div class="drop-zone" onclick="document.getElementById('tadaTemplateInput').click()">
-                                        <span class="drop-icon">✈️</span>
-                                        <span id="tadaStatus" class="drop-text">Upload PDF</span>
+                                <div class="upload-box-sm">
+                                    <label>TA / DA Letter</label>
+                                    <div class="drop-zone-sm" onclick="document.getElementById('tadaTemplateInput').click()">
+                                        <span class="drop-icon-sm">✈️</span>
+                                        <span id="tadaStatus" class="drop-label-sm">Upload PDF</span>
                                         <input type="file" id="tadaTemplateInput" class="hidden" accept=".pdf">
                                     </div>
                                 </div>
@@ -636,6 +662,9 @@
             &copy; 2026 Emyris Biolifesciences Pvt. Ltd. | Secure Onboarding Portal
         </footer>
     </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotif"></div>
 
     <!-- Post-Approval Workflow Modal -->
     <div id="workflowModal" class="modal hidden">

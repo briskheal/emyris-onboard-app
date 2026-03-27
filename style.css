@@ -882,6 +882,66 @@ input:checked + .slider:before {
     color: white;
 }
 
+/* Compact Upload Boxes for Company Profile */
+.upload-box-sm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.upload-box-sm label {
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.drop-zone-sm {
+    border: 2px dashed #cbd5e1;
+    border-radius: 10px;
+    padding: 0.8rem 0.6rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    background: rgba(255,255,255,0.5);
+}
+
+.drop-zone-sm:hover {
+    border-color: var(--primary);
+    background: rgba(15, 23, 42, 0.05);
+    transform: translateY(-2px);
+}
+
+.drop-icon-sm {
+    font-size: 1.3rem;
+    line-height: 1;
+}
+
+.drop-label-sm {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    word-break: break-word;
+}
+
+.modal-actions-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #065f46, #10b981);
+    color: white;
+}
+
+
 /* Applicant Portal & Admin Enhancements */
 
 .btn-hero {
