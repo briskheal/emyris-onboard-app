@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Onboarding | Emyris Biolifesciences</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Background Decorations -->
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        
+        <header class="main-header">
+            <div class="logo-container">
+                <div class="logo-icon">E</div>
+                <div class="logo-text">
+                    <h1>EMYRIS BIOLIFESCIENCES</h1>
+                    <p>PVT LTD.</p>
+                </div>
+            </div>
+            <div class="step-indicator">
+                <div class="step active" data-step="1">1</div>
+                <div class="step-line"></div>
+                <div class="step" data-step="2">2</div>
+                <div class="step-line"></div>
+                <div class="step" data-step="3">3</div>
+                <div class="step-line"></div>
+                <div class="step" data-step="4">4</div>
+                <div class="step-line"></div>
+                <div class="step" data-step="5">5</div>
+                <div class="step-line"></div>
+                <div class="step" data-step="6">6</div>
+            </div>
+        </header>
+
+        <main class="form-wrapper">
+            <!-- New: Landing Page -->
+            <div class="view-section active" id="landingPage">
+                <div class="hero-content">
+                    <div class="company-display">
+                        <img id="displayLogo" src="" alt="Company Logo" class="hidden">
+                        <h2 id="displayCompanyName">EMYRIS BIOLIFESCIENCES PVT LTD.</h2>
+                    </div>
+                    <h1>Digital Onboarding Gateway</h1>
+                    <p>Welcome to our professional joining portal. Please choose your path to proceed.</p>
+                    
+                    <div class="landing-actions">
+                        <button class="btn btn-primary btn-lg" onclick="startNewApplication()">
+                            <span class="btn-icon">📝</span>
+                            New Application
+                        </button>
+                        <button class="btn btn-secondary btn-lg" onclick="showAdminLogin()">
+                            <span class="btn-icon">🔐</span>
+                            Admin Portal
+                        </button>
+                    </div>
+
+                    <div class="company-quick-contact" id="quickContact">
+                        <!-- Dynamic Info -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- New: Admin Login -->
+            <div class="view-section hidden" id="adminLogin">
+                <div class="login-card">
+                    <h3>Admin Authentication</h3>
+                    <p>Enter your credentials to manage company profile.</p>
+                    <div class="form-group">
+                        <label>Login ID</label>
+                        <input type="text" id="adminId" placeholder="Admin username">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="adminPass" placeholder="••••••••">
+                    </div>
+                    <div class="login-actions">
+                        <button class="btn btn-secondary" onclick="backToLanding()">Cancel</button>
+                        <button class="btn btn-primary" onclick="handleAdminLogin()">Login</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New: Admin Dashboard -->
+            <div class="view-section hidden" id="adminDashboard">
+                <div class="admin-panel">
+                    <div class="panel-header">
+                        <div class="header-titles">
+                            <h3>Company Profile Management</h3>
+                            <p>Global branding settings for the onboarding portal</p>
+                        </div>
+                        <button class="btn btn-outline btn-sm logout-btn" onclick="logoutAdmin()">Logout</button>
+                    </div>
+                    <form id="companyProfileForm" onsubmit="saveCompanyProfile(event)">
+                        <div class="input-grid">
+                            <div class="form-group">
+                                <label>Company Name</label>
+                                <input type="text" name="compName" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Website URL</label>
+                                <input type="url" name="compWeb">
+                            </div>
+                            <div class="form-group">
+                                <label>Contact No</label>
+                                <input type="text" name="compPhone">
+                            </div>
+                            <div class="form-group">
+                                <label>Toll Free No</label>
+                                <input type="text" name="compTollFree">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Company Address</label>
+                            <textarea name="compAddress"></textarea>
+                        </div>
+                        <div class="upload-box">
+                            <label>Company Logo</label>
+                            <div class="drop-zone" onclick="document.getElementById('compLogoInput').click()">
+                                <img id="logoPreview" src="" class="hidden logo-preview-img">
+                                <span class="drop-icon">🖼️</span>
+                                <span class="drop-text">Upload Company Logo</span>
+                                <input type="file" id="compLogoInput" class="hidden" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="nav-buttons">
+                            <button type="submit" class="btn btn-primary">Save Profile & Update UI</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Existing: Welcome Section (Hidden by default now) -->
+            <div class="view-section hidden" id="welcome">
+                <h2>WELCOME TO EMYRIS BIOLIFESCIENCES PVT LTD.</h2>
+                <p>You are here to submit your credentials after a thorough interview process.</p>
+                <div class="instruction-card">
+                    <p>This process will ask you to upload all testimonials. Please be ready with your documents in digital format.</p>
+                </div>
+                <button class="btn btn-primary btn-start" onclick="nextStep(1)">Get Started</button>
+            </div>
+
+            <form id="onboardingForm" class="hidden">
+                <!-- Step 1: Personal Information -->
+                <section class="form-step active" data-step="1">
+                    <div class="section-header">
+                        <h3>Personal Information</h3>
+                        <p>Let's start with your basic details.</p>
+                    </div>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label for="firstName">First Name</label>
+                            <input type="text" id="firstName" name="firstName" required placeholder="John">
+                        </div>
+                        <div class="form-group">
+                            <label for="middleName">Middle Name</label>
+                            <input type="text" id="middleName" name="middleName" placeholder="Quincy">
+                        </div>
+                        <div class="form-group">
+                            <label for="lastName">Last Name</label>
+                            <input type="text" id="lastName" name="lastName" required placeholder="Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="dob">Date of Birth</label>
+                            <input type="date" id="dob" name="dob" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="gender">Gender</label>
+                            <select id="gender" name="gender" required>
+                                <option value="" disabled selected>Select Gender</option>
+                                <option value="M">Male</option>
+                                <option value="F">Female</option>
+                                <option value="T">Transgender</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bloodGroup">Blood Group</label>
+                            <select id="bloodGroup" name="bloodGroup" required>
+                                <option value="" disabled selected>Select Group</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fatherName">Father's Name</label>
+                            <input type="text" id="fatherName" name="fatherName" required placeholder="Father's Full Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="anniversary">Date of Anniversary</label>
+                            <input type="date" id="anniversary" name="anniversary">
+                        </div>
+                    </div>
+                    <div class="nav-buttons">
+                        <button type="button" class="btn btn-primary" onclick="nextStep(2)">Next Step</button>
+                    </div>
+                </section>
+
+                <!-- Step 2: Contact & Location -->
+                <section class="form-step" data-step="2">
+                    <div class="section-header">
+                        <h3>Contact & Location</h3>
+                        <p>How can we reach you and where are you based?</p>
+                    </div>
+                    <div class="input-grid full-width">
+                        <div class="form-group">
+                            <label for="address">Permanent Address</label>
+                            <textarea id="address" name="address" required placeholder="Your full address..."></textarea>
+                        </div>
+                    </div>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city" required placeholder="City">
+                        </div>
+                        <div class="form-group">
+                            <label for="pin">Pin Code</label>
+                            <input type="text" id="pin" name="pin" required placeholder="6-digit PIN">
+                        </div>
+                        <div class="form-group">
+                            <label for="state">State</label>
+                            <input type="text" id="state" name="state" required placeholder="State">
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <input type="tel" id="phone" name="phone" required placeholder="+91 XXXXX XXXXX">
+                        </div>
+                        <div class="form-group">
+                            <label for="personalId">Personal ID (Aadhar/PAN)</label>
+                            <input type="text" id="personalId" name="personalId" required placeholder="ID Number">
+                        </div>
+                        <div class="form-group">
+                            <label for="hq">HQ (Headquarters)</label>
+                            <input type="text" id="hq" name="hq" required placeholder="Work HQ">
+                        </div>
+                    </div>
+                    <div class="nav-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(1)">Previous</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(3)">Next Step</button>
+                    </div>
+                </section>
+
+                <!-- Step 3: Professional & ID Details -->
+                <section class="form-step" data-step="3">
+                    <div class="section-header">
+                        <h3>Professional Details</h3>
+                        <p>Your role and identity numbers within the organization.</p>
+                    </div>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label for="designation">Designation Applied For</label>
+                            <select id="designation" name="designation" required>
+                                <option value="" disabled selected>Select Designation</option>
+                                <optgroup label="Sales">
+                                    <option value="Territory Business Manager">Territory Business Manager</option>
+                                    <option value="Area Sales Manager">Area Sales Manager</option>
+                                    <option value="Regional Sales Manager">Regional Sales Manager</option>
+                                    <option value="Sr. Regional Sales Manager">Sr. Regional Sales Manager</option>
+                                    <option value="Zonal Sales Manager">Zonal Sales Manager</option>
+                                    <option value="Sr. Zonal Sales Manager">Sr. Zonal Sales Manager</option>
+                                    <option value="Sales Manager">Sales Manager</option>
+                                    <option value="National Sales Manager">National Sales Manager</option>
+                                    <option value="General Manager (Sales & Mktng)">General Manager (Sales & Mktng)</option>
+                                </optgroup>
+                                <optgroup label="HR">
+                                    <option value="Jr HR MANAGER">Jr HR MANAGER</option>
+                                    <option value="Sr. HR MANAGER">Sr. HR MANAGER</option>
+                                    <option value="HR HEAD">HR HEAD</option>
+                                </optgroup>
+                                <optgroup label="Admin">
+                                    <option value="Jr Office Assistant">Jr Office Assistant</option>
+                                    <option value="Sr. Office Assistant">Sr. Office Assistant</option>
+                                    <option value="Admin Head">Admin Head</option>
+                                </optgroup>
+                                <optgroup label="PMT">
+                                    <option value="Jr. Product Manager">Jr. Product Manager</option>
+                                    <option value="Sr. Product Manager">Sr. Product Manager</option>
+                                    <option value="Marketing Manager">Marketing Manager</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="joiningDate">Expected Date of Joining</label>
+                            <input type="date" id="joiningDate" name="joiningDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="employeeType">Employee Type</label>
+                            <input type="text" id="employeeType" name="employeeType" value="PROBATION" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="salary">Finalized Salary / Annum</label>
+                            <input type="number" id="salary" name="salary" required placeholder="Annual Amount (e.g. 600000)">
+                        </div>
+                        <div class="form-group">
+                            <label for="epf">EPF No</label>
+                            <input type="text" id="epf" name="epf" placeholder="Enter EPF No">
+                        </div>
+                        <div class="form-group">
+                            <label for="uan">UAN No</label>
+                            <input type="text" id="uan" name="uan" placeholder="Enter UAN No">
+                        </div>
+                        <div class="form-group">
+                            <label for="esi">ESI No</label>
+                            <input type="text" id="esi" name="esi" placeholder="Enter ESI No">
+                        </div>
+                    </div>
+                    <div class="nav-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(2)">Previous</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(4)">Next Step</button>
+                    </div>
+                </section>
+
+                <!-- Step 4: Bank Details -->
+                <section class="form-step" data-step="4">
+                    <div class="section-header">
+                        <h3>Bank Account Details</h3>
+                        <p>Where should we process your payments?</p>
+                    </div>
+                    <div class="input-grid">
+                        <div class="form-group">
+                            <label for="accType">Account Type</label>
+                            <select id="accType" name="accType" required>
+                                <option value="S">Savings (S)</option>
+                                <option value="C">Current (C)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="bankName">Bank Name</label>
+                            <input type="text" id="bankName" name="bankName" required placeholder="e.g. HDFC Bank">
+                        </div>
+                        <div class="form-group">
+                            <label for="accFirstName">Account Holder First Name</label>
+                            <input type="text" id="accFirstName" name="accFirstName" required placeholder="First Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="accLastName">Account Holder Last Name</label>
+                            <input type="text" id="accLastName" name="accLastName" required placeholder="Last Name">
+                        </div>
+                        <div class="form-group">
+                            <label for="accNo">Bank Account No</label>
+                            <input type="text" id="accNo" name="accNo" required placeholder="Account Number">
+                        </div>
+                        <div class="form-group">
+                            <label for="ifsc">IFSC Code</label>
+                            <input type="text" id="ifsc" name="ifsc" required placeholder="IFSC Code">
+                        </div>
+                    </div>
+                    <div class="nav-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(3)">Previous</button>
+                        <button type="button" class="btn btn-primary" onclick="nextStep(5)">Next Step</button>
+                    </div>
+                </section>
+
+                <!-- Step 5: Testimonials -->
+                <section class="form-step" data-step="5">
+                    <div class="section-header">
+                        <h3>Testimonials Section</h3>
+                        <p>Please upload the required documents for verification.</p>
+                    </div>
+
+                    <div class="experience-toggle-wrapper">
+                        <span class="toggle-label">Select Category:</span>
+                        <div class="toggle-group">
+                            <input type="radio" id="fresh" name="category" value="fresh" checked>
+                            <label for="fresh">FRESHER</label>
+                            <input type="radio" id="exp" name="category" value="experienced">
+                            <label for="exp">EXPERIENCED</label>
+                        </div>
+                    </div>
+
+                    <div class="upload-grid">
+                        <!-- Common -->
+                        <div class="upload-box" id="certUpload">
+                            <label>Educational Certificates (Higher-Lower)*</label>
+                            <div class="drop-zone" onclick="document.getElementById('fileCert').click()">
+                                <span class="drop-icon">📄</span>
+                                <span class="drop-text">Click or Drag to Upload</span>
+                                <input type="file" id="fileCert" class="hidden" multiple required>
+                            </div>
+                        </div>
+                        <div class="upload-box" id="photoUpload">
+                            <label>Passport Size Photograph*</label>
+                            <div class="drop-zone" onclick="document.getElementById('filePhoto').click()">
+                                <span class="drop-icon">👤</span>
+                                <span class="drop-text">Click or Drag to Upload</span>
+                                <input type="file" id="filePhoto" class="hidden" required accept="image/*">
+                            </div>
+                        </div>
+                        <div class="upload-box" id="medUpload">
+                            <label>Medically Fit Certificate</label>
+                            <div class="drop-zone" onclick="document.getElementById('fileMed').click()">
+                                <span class="drop-icon">🏥</span>
+                                <span class="drop-text">Click or Drag to Upload</span>
+                                <input type="file" id="fileMed" class="hidden">
+                            </div>
+                        </div>
+
+                        <!-- Experienced Only -->
+                        <div class="upload-box exp-only hidden" id="appointmentUpload">
+                            <label>Last Company Appointment Letter*</label>
+                            <div class="drop-zone" onclick="document.getElementById('fileAppt').click()">
+                                <span class="drop-icon">✉️</span>
+                                <span class="drop-text">Click or Drag to Upload</span>
+                                <input type="file" id="fileAppt" class="hidden">
+                            </div>
+                        </div>
+                        <div class="upload-box exp-only hidden" id="salarySlipUpload">
+                            <label>Last 3 Months Salary Slips*</label>
+                            <div class="drop-zone" onclick="document.getElementById('fileSlips').click()">
+                                <span class="drop-icon">💰</span>
+                                <span class="drop-text">Click or Drag to Upload</span>
+                                <input type="file" id="fileSlips" class="hidden" multiple>
+                            </div>
+                        </div>
+                        
+                        <!-- Signature -->
+                        <div class="upload-box" id="sigUpload">
+                            <label>Signature (Upload Image)*</label>
+                            <small>Sign on a paper and upload here</small>
+                            <div class="drop-zone" onclick="document.getElementById('fileSig').click()">
+                                <span class="drop-icon">✍️</span>
+                                <span class="drop-text">Click or Drag to Upload</span>
+                                <input type="file" id="fileSig" class="hidden" required accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="declaration-block">
+                        <p><strong>Declaration by Employee:</strong> I hereby declare that I am medically fit to perform my duties and that I do not have any criminal or police cases pending against me. I agree to abide by all existing organizational policies and any amendments or changes introduced in the future. I understand that if any information provided by me is found to be false, or if I am involved in any police complaint, misconduct, indiscipline, or failure to follow company instructions, my employment with Emyris Biolifesciences Pvt. Ltd. is liable to be terminated without any prior notice.</p>
+                        <div class="declaration-check">
+                            <input type="checkbox" id="agree" required>
+                            <label for="agree">I agree to the above declaration</label>
+                        </div>
+                    </div>
+
+                    <div class="nav-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(4)">Previous</button>
+                        <button type="button" class="btn btn-primary" onclick="showReview()">Review Application</button>
+                    </div>
+                </section>
+
+                <!-- Step 6: Review -->
+                <section class="form-step" data-step="6">
+                    <div class="section-header">
+                        <h3>Verify Before Submit</h3>
+                        <p>Please review all information carefully. Once submitted, it cannot be changed.</p>
+                    </div>
+
+                    <div id="reviewContent" class="review-container">
+                        <!-- Content injected via JS: Grouped by Category -->
+                    </div>
+
+                    <div class="nav-buttons">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(5)">Previous</button>
+                        <button type="submit" class="btn btn-primary btn-submit">Finalize & Submit</button>
+                    </div>
+                </section>
+            </form>
+
+                <div id="successView" class="hidden success-view">
+                <div class="success-icon">✓</div>
+                <h2>Application Submitted Successfully!</h2>
+                <div class="submission-details">
+                    <p>Submission ID: <span id="subId">EM-2026-X8</span></p>
+                    <p>Captured Time: <span id="capturedTime"></span></p>
+                </div>
+                <p>Your credentials have been recorded. Our HR team will review your testimonials shortly.</p>
+                <div class="info-note">
+                    Once approved by admin, you can check offer letter with same login credentials to download your offer letter.
+                </div>
+                <button class="btn btn-primary" onclick="backToLanding()">Return Home</button>
+            </div>
+        </main>
+        
+        <footer class="app-footer">
+            &copy; 2026 Emyris Biolifesciences Pvt. Ltd. | Secure Onboarding Portal
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
