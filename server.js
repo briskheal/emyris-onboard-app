@@ -40,7 +40,13 @@ const applicantSchema = new mongoose.Schema({
     formData: { type: Object, default: {} },
     registeredAt: { type: Date, default: Date.now },
     submittedAt: Date,
-    documents: [Object] // Track uploaded file metadata
+    documents: [Object], // Track uploaded file metadata
+    tasks: {
+        offerLetter: { type: String, default: null },
+        appointmentLetter: { type: String, default: null },
+        appLinkSent: { type: Boolean, default: false },
+        loginDetailsSent: { type: Boolean, default: false }
+    }
 });
 
 const Company = mongoose.model('Company', companySchema);
@@ -241,6 +247,38 @@ app.post('/api/admin/update-status', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: 'Failed' });
     }
+});
+
+app.post('/api/admin/reset-applicant', async (req, res) => {
+    try {
+        const { email } = req.body;
+        await Applicant.findOneAndUpdate(
+            { email },
+            { 
+                formData: {}, 
+                status: 'draft', 
+                canLogin: true, 
+                tasks: {
+                    offerLetter: null,
+                    appointmentLetter: null,
+                    appLinkSent: false,
+                    loginDetailsSent: false
+                },
+                submittedAt: null 
+            }
+        );
+        res.status(200).json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Reset failed' }); }
+});
+
+app.post('/api/admin/update-task', async (req, res) => {
+    try {
+        const { email, taskKey, value } = req.body;
+        const update = {};
+        update[`tasks.${taskKey}`] = value;
+        await Applicant.findOneAndUpdate({ email }, { $set: update });
+        res.status(200).json({ success: true });
+    } catch (error) { res.status(500).json({ error: 'Update failed' }); }
 });
 
 // Company Profile

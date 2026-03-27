@@ -326,21 +326,35 @@ async function fetchApplicants() {
 
 function renderApplicantsTable(data) {
     const body = document.getElementById('applicantsTableBody');
-    body.innerHTML = data.map(app => `
-        <tr>
-            <td>${new Date(app.registeredAt).toLocaleDateString()}</td>
-            <td><strong>${app.fullName}</strong></td>
-            <td>${app.email}</td>
-            <td><span class="badge ${app.status}">${app.status}</span></td>
-            <td>${app.canLogin ? '✅ Active' : '🔒 Locked'}</td>
-            <td class="action-flex">
-                <button class="btn-action primary" onclick="downloadApplicantPDF('${app.email}')" title="Download PDF">📄</button>
-                <button class="btn-action" onclick="toggleAccess('${app.email}', ${!app.canLogin})" title="Toggle Login Access">🔑</button>
-                <button class="btn-action success" onclick="updateStatus('${app.email}', 'approved')" title="Approve">✓</button>
-                <button class="btn-action error" onclick="updateStatus('${app.email}', 'rejected')" title="Reject">✕</button>
-            </td>
-        </tr>
-    `).join('');
+    body.innerHTML = data.map(app => {
+        const t = app.tasks || {};
+        const pipelineIcons = `
+            <div class="pipeline-row">
+                <span class="p-icon ${t.offerLetter ? 'done' : ''}" title="Offer Letter">📄</span>
+                <span class="p-icon ${t.appointmentLetter ? 'done' : ''}" title="Appt Letter">📜</span>
+                <span class="p-icon ${t.appLinkSent ? 'done' : ''}" title="App Link">📱</span>
+                <span class="p-icon ${t.loginDetailsSent ? 'done' : ''}" title="Login ID">🔑</span>
+            </div>
+        `;
+
+        return `
+            <tr>
+                <td>${new Date(app.registeredAt).toLocaleDateString()}</td>
+                <td><strong>${app.fullName}</strong></td>
+                <td>${app.email}</td>
+                <td><span class="badge ${app.status}">${app.status}</span></td>
+                <td>${app.canLogin ? '✅ Active' : '🔒 Locked'}</td>
+                <td>${pipelineIcons}</td>
+                <td class="action-flex">
+                    <button class="btn-action primary" onclick="downloadApplicantPDF('${app.email}')" title="Download PDF">📄</button>
+                    <button class="btn-action warning" onclick="openWorkflow('${app.email}')" title="Process Workflow">⚙️</button>
+                    <button class="btn-action" onclick="toggleAccess('${app.email}', ${!app.canLogin})" title="Toggle Login Access">🔑</button>
+                    <button class="btn-action success" onclick="updateStatus('${app.email}', 'approved')" title="Approve">✓</button>
+                    <button class="btn-action error" onclick="updateStatus('${app.email}', 'rejected')" title="Reject">✕</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 async function toggleAccess(email, canLogin) {
@@ -366,6 +380,94 @@ function filterApplicants() {
     const term = document.getElementById('applicantSearch').value.toLowerCase();
     const filtered = allApplicants.filter(a => a.email.toLowerCase().includes(term) || a.fullName.toLowerCase().includes(term));
     renderApplicantsTable(filtered);
+}
+
+// --- WORKFLOW LOGIC ---
+
+let activeWfEmail = null;
+
+function openWorkflow(email) {
+    activeWfEmail = email;
+    const app = allApplicants.find(a => a.email === email);
+    if (!app) return;
+
+    document.getElementById('wfName').innerText = app.fullName;
+    document.getElementById('wfEmail').innerText = app.email;
+    
+    // Sync Task Status
+    updateWfModalUI(app.tasks || {});
+    
+    document.getElementById('workflowModal').classList.remove('hidden');
+    document.getElementById('workflowModal').style.display = 'flex';
+}
+
+function closeWorkflow() {
+    document.getElementById('workflowModal').classList.add('hidden');
+    document.getElementById('workflowModal').style.display = 'none';
+}
+
+function updateWfModalUI(tasks) {
+    const setStatus = (id, done) => {
+        const el = document.getElementById(id);
+        el.innerText = done ? 'Completed ✅' : 'Pending ⏳';
+        el.className = done ? 'completed' : 'pending';
+    };
+
+    setStatus('status_offer', !!tasks.offerLetter);
+    setStatus('status_appt', !!tasks.appointmentLetter);
+    setStatus('status_appLink', !!tasks.appLinkSent);
+    setStatus('status_loginSent', !!tasks.loginDetailsSent);
+}
+
+async function handleTaskUpload(taskKey) {
+    const fileInput = event.target;
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const base64 = e.target.result;
+        await sendTaskUpdate(taskKey, base64);
+    };
+    reader.readAsDataURL(file);
+}
+
+async function toggleWfTask(taskKey) {
+    const app = allApplicants.find(a => a.email === activeWfEmail);
+    const currentValue = app.tasks ? !!app.tasks[taskKey] : false;
+    await sendTaskUpdate(taskKey, !currentValue);
+}
+
+async function sendTaskUpdate(taskKey, value) {
+    try {
+        const res = await fetch('/api/admin/update-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: activeWfEmail, taskKey, value })
+        });
+        if ((await res.json()).success) {
+            await fetchApplicants(); // Refresh list
+            const app = allApplicants.find(a => a.email === activeWfEmail);
+            updateWfModalUI(app.tasks || {});
+        }
+    } catch (err) { alert("Task update failed."); }
+}
+
+async function resetApplicantData() {
+    if (!confirm("CRITICAL: Reset all submitted data for this applicant? This will allow them to re-fill the application.")) return;
+    
+    try {
+        const res = await fetch('/api/admin/reset-applicant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: activeWfEmail })
+        });
+        if ((await res.json()).success) {
+            alert("Applicant record reset successfully.");
+            closeWorkflow();
+            await fetchApplicants();
+        }
+    } catch (err) { alert("Reset failed."); }
 }
 
 // --- PDF GENERATION ---

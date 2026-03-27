@@ -695,6 +695,94 @@ select option {
     .welcome-section, .form-step { padding: 1.5rem; }
     .step-line { width: 20px; }
 }
+/* Recruitment Pipeline Icons */
+.pipeline-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+.p-icon {
+    font-size: 1.1em;
+    filter: grayscale(1);
+    opacity: 0.3;
+    transition: all 0.3s ease;
+}
+.p-icon.done {
+    filter: grayscale(0);
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Workflow Modal Style */
+.modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.workflow-card {
+    background: var(--card-bg);
+    width: 90%;
+    max-width: 500px;
+    border-radius: 20px;
+    box-shadow: var(--shadow-xl);
+    border: 1px solid var(--border-color);
+    padding: 24px;
+}
+.applicant-info-bar {
+    background: var(--bg-soft);
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+    font-size: 0.9em;
+    color: var(--text-soft);
+}
+.task-matrix {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: var(--bg-soft);
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+}
+.task-meta {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+.task-icon { font-size: 1.5em; }
+.task-meta strong { display: block; font-size: 0.95em; }
+.task-meta small { font-size: 0.8em; }
+.task-meta small.pending { color: var(--error); }
+.task-meta small.completed { color: var(--success); }
+
+.btn-icon-only {
+    padding: 8px 12px;
+    font-size: 0.8em;
+}
+
+.modal-footer {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: center;
+}
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #991b1b);
+    color: white;
+}
 
 /* Applicant Portal & Admin Enhancements */
 

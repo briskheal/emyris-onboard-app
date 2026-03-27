@@ -164,12 +164,13 @@
                             <table class="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Registered</th>
-                                        <th>Name</th>
-                                        <th>Email (User Key)</th>
-                                        <th>Status</th>
-                                        <th>Access</th>
-                                        <th>Actions</th>
+                                        <th>Date</th>
+                                    <th>Applicant</th>
+                                    <th>Email ID</th>
+                                    <th>Status</th>
+                                    <th>Login</th>
+                                    <th>Pipeline</th>
+                                    <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="applicantsTableBody">
@@ -584,6 +585,78 @@
         </footer>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Post-Approval Workflow Modal -->
+    <div id="workflowModal" class="modal hidden">
+        <div class="modal-content workflow-card">
+            <div class="modal-header">
+                <h3 class="premium-title">Recruitment Workflow</h3>
+                <button class="close-btn" onclick="closeWorkflow()">&times;</button>
+            </div>
+            <div class="applicant-info-bar">
+                <span id="wfName">Applicant Name</span> | <span id="wfEmail">email@test.com</span>
+            </div>
+            <div class="task-matrix">
+                <div class="task-item" id="task_offer">
+                    <div class="task-meta">
+                        <span class="task-icon">📄</span>
+                        <div>
+                            <strong>Offer Letter</strong>
+                            <small id="status_offer" class="pending">Pending ⏳</small>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <input type="file" id="offerFileInput" class="hidden" onchange="handleTaskUpload('offerLetter')">
+                        <button class="btn btn-sm btn-outline" onclick="document.getElementById('offerFileInput').click()">Upload</button>
+                    </div>
+                </div>
+
+                <div class="task-item" id="task_appt">
+                    <div class="task-meta">
+                        <span class="task-icon">📜</span>
+                        <div>
+                            <strong>Appointment Letter</strong>
+                            <small id="status_appt" class="pending">Pending ⏳</small>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <input type="file" id="apptFileInput" class="hidden" onchange="handleTaskUpload('appointmentLetter')">
+                        <button class="btn btn-sm btn-outline" onclick="document.getElementById('apptFileInput').click()">Upload</button>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <div class="task-meta">
+                        <span class="task-icon">📱</span>
+                        <div>
+                            <strong>Mobile App Link</strong>
+                            <small id="status_appLink" class="pending">Pending ⏳</small>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-sm btn-icon-only" onclick="toggleWfTask('appLinkSent')">Toggle</button>
+                    </div>
+                </div>
+
+                <div class="task-item">
+                    <div class="task-meta">
+                        <span class="task-icon">🔑</span>
+                        <div>
+                            <strong>Login ID Details</strong>
+                            <small id="status_loginSent" class="pending">Pending ⏳</small>
+                        </div>
+                    </div>
+                    <div class="task-actions">
+                        <button class="btn btn-sm btn-icon-only" onclick="toggleWfTask('loginDetailsSent')">Toggle</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="resetApplicantData()">Reset Entire File</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script_v2.js"></script>
 </body>
 </html>
