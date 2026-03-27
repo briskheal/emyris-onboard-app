@@ -603,6 +603,27 @@ select option {
     font-size: 0.85rem;
 }
 
+/* Hyperlink Styles */
+.logo-link, .company-name-link, .contact-link {
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.logo-link:hover, .company-name-link:hover {
+    opacity: 0.8;
+}
+
+.contact-link {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.contact-link:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+
 /* Review Container Grouping */
 .review-container {
     display: flex;

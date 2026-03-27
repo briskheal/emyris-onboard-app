@@ -48,14 +48,31 @@ function applyCompanyData() {
     // Update Quick Contact
     const quickContact = document.getElementById('quickContact');
     quickContact.innerHTML = `
-        ${companyData.phone ? `<div>📞 ${companyData.phone}</div>` : ''}
-        ${companyData.tollFree ? `<div>☎️ Toll Free: ${companyData.tollFree}</div>` : ''}
-        ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></div>` : ''}
+        ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
+        ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
+        ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
     `;
 
-    // Update Form Headings if any
-    const headerLogo = document.querySelector('.logo-text h1');
-    if (headerLogo) headerLogo.innerText = companyData.name.split(' ')[0];
+    // Handle Logo Links
+    const logoLinks = [document.getElementById('headerLogoLink'), document.getElementById('heroLogoLink')];
+    logoLinks.forEach(link => {
+        if (link) {
+            if (companyData.logo) {
+                link.href = companyData.logo;
+                link.onclick = null;
+            } else {
+                link.href = "#";
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    updateView('landingPage');
+                };
+            }
+        }
+    });
+
+    // Update Form Headings
+    const headerTitle = document.getElementById('headerCompName');
+    if (headerTitle) headerTitle.innerText = companyData.name;
 }
 
 function updateView(viewId) {
