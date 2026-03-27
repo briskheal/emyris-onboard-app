@@ -76,6 +76,21 @@ app.post('/api/submit-onboarding', async (req, res) => {
     }
 });
 
+// Admin Login Endpoint
+app.post('/api/admin-login', (req, res) => {
+    const { username, password } = req.body;
+    
+    // Check against Environment Variables
+    const expectedUser = process.env.ADMIN_USER || 'admin';
+    const expectedPass = process.env.ADMIN_PASS || 'admin123';
+
+    if (username === expectedUser && password === expectedPass) {
+        res.status(200).json({ success: true });
+    } else {
+        res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

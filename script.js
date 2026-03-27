@@ -95,14 +95,27 @@ function backToLanding() {
 }
 
 // Admin Logic
-function handleAdminLogin() {
+async function handleAdminLogin() {
     const id = document.getElementById('adminId').value;
     const pass = document.getElementById('adminPass').value;
 
-    if (id === 'admin' && pass === 'admin123') { // Simple mock
-        showAdminDashboard();
-    } else {
-        alert("Invalid ID or Password");
+    try {
+        const response = await fetch('/api/admin-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: id, password: pass })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showAdminDashboard();
+        } else {
+            alert("Invalid ID or Password");
+        }
+    } catch (error) {
+        console.error('Login Error:', error);
+        alert("Server error. Please try again later.");
     }
 }
 
