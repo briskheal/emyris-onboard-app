@@ -1,3 +1,11 @@
+// Diagnostic Check
+try {
+    require('mongoose');
+    console.log('Mongoose module found at start');
+} catch (e) {
+    console.error('Mongoose module NOT FOUND at start:', e.message);
+}
+
 const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
