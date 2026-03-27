@@ -8,6 +8,9 @@ let companyData = {
     logo: ""
 };
 
+let currentApplicant = null; // Stores logged-in applicant data
+let allApplicants = []; // For Admin View
+
 // Initial Setup
 window.addEventListener('DOMContentLoaded', async () => {
     await fetchCompanyData();
@@ -19,71 +22,29 @@ async function fetchCompanyData() {
     try {
         const response = await fetch('/api/company-profile');
         const data = await response.json();
-        if (data && data.name) {
-            companyData = data;
-        }
-    } catch (error) {
-        console.error('Error fetching company data:', error);
-    }
+        if (data && data.name) companyData = data;
+    } catch (error) { console.error('Error fetching company data:', error); }
     applyCompanyData();
 }
 
 function initBackgroundAnimations() {
-    gsap.to(".blob-1", {
-        x: '+=50',
-        y: '+=30',
-        duration: 8,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut"
-    });
-    gsap.to(".blob-2", {
-        x: '-=40',
-        y: '+=60',
-        duration: 10,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut"
-    });
+    gsap.to(".blob-1", { x: '+=50', y: '+=30', duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    gsap.to(".blob-2", { x: '-=40', y: '+=60', duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
 }
 
 function applyCompanyData() {
-    // Update Landing Page
     document.getElementById('displayCompanyName').innerText = companyData.name;
     const logoImg = document.getElementById('displayLogo');
     if (companyData.logo) {
         logoImg.src = companyData.logo;
         logoImg.classList.remove('hidden');
-    } else {
-        logoImg.classList.add('hidden');
     }
-
-    // Update Quick Contact
     const quickContact = document.getElementById('quickContact');
     quickContact.innerHTML = `
         ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
         ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
         ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
     `;
-
-    // Handle Logo Links
-    const logoLinks = [document.getElementById('headerLogoLink'), document.getElementById('heroLogoLink')];
-    logoLinks.forEach(link => {
-        if (link) {
-            if (companyData.logo) {
-                link.href = companyData.logo;
-                link.onclick = null;
-            } else {
-                link.href = "#";
-                link.onclick = (e) => {
-                    e.preventDefault();
-                    updateView('landingPage');
-                };
-            }
-        }
-    });
-
-    // Update Form Headings
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) headerTitle.innerText = companyData.name;
 }
@@ -93,138 +54,116 @@ function updateView(viewId) {
     sections.forEach(s => {
         s.classList.add('hidden');
         s.style.display = 'none';
+        s.classList.remove('active');
     });
-
     const activeSection = document.getElementById(viewId);
     activeSection.classList.remove('hidden');
     activeSection.style.display = 'block';
+    activeSection.classList.add('active');
     
-    // Add/Remove header indicators
-    if (viewId === 'landingPage' || viewId === 'adminLogin' || viewId === 'adminDashboard') {
+    if (['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin'].includes(viewId)) {
         document.body.classList.add('onboarding-inactive');
-        document.body.classList.remove('onboarding-active');
     } else {
-        document.body.classList.add('onboarding-active');
         document.body.classList.remove('onboarding-inactive');
     }
-
     gsap.fromTo(activeSection, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 });
 }
 
-// Landing Actions
-function startNewApplication() {
-    updateView('welcome');
-}
+function backToLanding() { updateView('landingPage'); }
+function showAdminLogin() { updateView('adminLogin'); }
 
-function showAdminLogin() {
-    updateView('adminLogin');
-}
+// --- APPLICANT AUTH ---
 
-function backToLanding() {
-    window.location.reload(); // Quick reset
-}
+function showApplicantRegister() { updateView('applicantRegister'); }
+function showApplicantLogin() { updateView('applicantLogin'); }
 
-// Admin Logic
-async function handleAdminLogin() {
-    const id = document.getElementById('adminId').value;
-    const pass = document.getElementById('adminPass').value;
-
-    try {
-        const response = await fetch('/api/admin-login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: id, password: pass })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            showAdminDashboard();
-        } else {
-            alert("Invalid ID or Password");
-        }
-    } catch (error) {
-        console.error('Login Error:', error);
-        alert("Server error. Please try again later.");
-    }
-}
-
-function showAdminDashboard() {
-    updateView('adminDashboard');
-    // Pre-fill form
-    const form = document.getElementById('companyProfileForm');
-    form.compName.value = companyData.name;
-    form.compWeb.value = companyData.website;
-    form.compPhone.value = companyData.phone;
-    form.compTollFree.value = companyData.tollFree;
-    form.compAddress.value = companyData.address;
-    
-    if (companyData.logo) {
-        document.getElementById('logoPreview').src = companyData.logo;
-        document.getElementById('logoPreview').classList.remove('hidden');
-    }
-}
-
-async function saveCompanyProfile(e) {
+async function handleApplicantRegister(e) {
     e.preventDefault();
-    const form = e.target;
-    
-    const updateData = {
-        name: form.compName.value,
-        website: form.compWeb.value,
-        phone: form.compPhone.value,
-        tollFree: form.compTollFree.value,
-        address: form.compAddress.value,
-        logo: companyData.logo
+    const data = {
+        fullName: document.getElementById('regName').value,
+        email: document.getElementById('regEmail').value,
+        phone: document.getElementById('regPhone').value
     };
 
     try {
-        const response = await fetch('/api/company-profile', {
+        const res = await fetch('/api/register-applicant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updateData)
+            body: JSON.stringify(data)
         });
-
-        const result = await response.json();
-
+        const result = await res.json();
         if (result.success) {
-            companyData = result.profile;
-            applyCompanyData();
-            alert("Company Profile Saved to MongoDB!");
-            updateView('landingPage');
+            alert("Registration Successful! Please check your email for your 6-digit Login PIN.");
+            updateView('applicantLogin');
         } else {
-            alert("Failed to save profile.");
+            alert(result.message);
         }
-    } catch (error) {
-        console.error('Save Error:', error);
-        alert("Error connecting to server.");
+    } catch (err) { alert("Server error during registration."); }
+}
+
+async function handleApplicantLogin(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPin').value;
+
+    try {
+        const res = await fetch('/api/applicant-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const result = await res.json();
+        if (result.success) {
+            currentApplicant = result.applicant;
+            resumeApplication();
+        } else {
+            alert(result.message);
+        }
+    } catch (err) { alert("Login failed. Check connection."); }
+}
+
+function resumeApplication() {
+    updateView('welcome');
+    if (currentApplicant.formData) {
+        const form = document.getElementById('onboardingForm');
+        for (const [key, value] of Object.entries(currentApplicant.formData)) {
+            const field = form.elements[key];
+            if (field) {
+                if (field.type === 'radio') {
+                    if (field.value === value) field.checked = true;
+                } else {
+                    field.value = value;
+                }
+            }
+        }
+        // Trigger category change logic if exist
+        const cat = currentApplicant.formData.category;
+        if (cat) {
+            const expFields = document.querySelectorAll('.exp-only');
+            if (cat === 'experienced') expFields.forEach(f => f.classList.remove('hidden'));
+        }
     }
 }
 
-// Logo Upload Processing
-document.getElementById('compLogoInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            companyData.logo = event.target.result;
-            const preview = document.getElementById('logoPreview');
-            preview.src = companyData.logo;
-            preview.classList.remove('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-function logoutAdmin() {
-    updateView('landingPage');
+async function saveDraft() {
+    if (!currentApplicant) return;
+    const form = document.getElementById('onboardingForm');
+    const formData = Object.fromEntries(new FormData(form).entries());
+    
+    try {
+        await fetch('/api/save-draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentApplicant.email, formData })
+        });
+    } catch (err) { console.warn("Auto-save failed."); }
 }
+
+// --- ONBOARDING FLOW ---
 
 function nextStep(step) {
-    if (step === 1 && document.getElementById('welcome').classList.contains('active') || document.getElementById('welcome').style.display !== 'none') {
-        document.getElementById('welcome').classList.add('hidden');
-        document.getElementById('welcome').style.display = 'none';
-        
+    if (step === 1 && document.getElementById('welcome').classList.contains('active')) {
+        updateView('onboardingForm');
         document.getElementById('onboardingForm').classList.remove('hidden');
         document.getElementById('onboardingForm').style.display = 'block';
         updateProgress(1);
@@ -232,8 +171,6 @@ function nextStep(step) {
     }
 
     const currentSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
-    
-    // Simple Validation
     const inputs = currentSection.querySelectorAll('input[required], select[required], textarea[required]');
     let isValid = true;
     inputs.forEach(input => {
@@ -244,74 +181,46 @@ function nextStep(step) {
         }
     });
 
-    if (!isValid) {
-        alert("Please fill all required fields before proceeding.");
-        return;
-    }
+    if (!isValid) return alert("Please fill all required fields.");
 
-    // Advance with GSAP
+    saveDraft(); // Sync to DB
+
     gsap.to(currentSection, { opacity: 0, x: -50, filter: 'blur(10px)', duration: 0.4, onComplete: () => {
         currentSection.classList.add('hidden');
         currentSection.classList.remove('active');
         currentStep = step;
         const nextSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
         nextSection.classList.remove('hidden');
-        
-        gsap.fromTo(nextSection, { opacity: 0, x: 50, filter: 'blur(10px)' }, { opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.5, onComplete: () => {
+        gsap.fromTo(nextSection, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.5, onComplete: () => {
             nextSection.classList.add('active');
-            // Staggered reveal of form groups
-            gsap.from(nextSection.querySelectorAll('.form-group, .upload-box, .experience-toggle-wrapper'), {
-                opacity: 0,
-                y: 20,
-                stagger: 0.05,
-                duration: 0.4,
-                ease: "power2.out"
-            });
+            updateProgress(currentStep);
         }});
-        updateProgress(currentStep);
     }});
 }
 
 function prevStep(step) {
     const currentSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
-    
-    gsap.to(currentSection, { opacity: 0, x: 50, filter: 'blur(10px)', duration: 0.4, onComplete: () => {
+    saveDraft();
+    gsap.to(currentSection, { opacity: 0, x: 50, duration: 0.4, onComplete: () => {
         currentSection.classList.add('hidden');
         currentSection.classList.remove('active');
         currentStep = step;
         const prevSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
         prevSection.classList.remove('hidden');
-        gsap.fromTo(prevSection, { opacity: 0, x: -50, filter: 'blur(10px)' }, { opacity: 1, x: 0, filter: 'blur(0px)', duration: 0.5, onComplete: () => {
+        gsap.fromTo(prevSection, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.5, onComplete: () => {
             prevSection.classList.add('active');
+            updateProgress(currentStep);
         }});
-        updateProgress(currentStep);
     }});
 }
 
 function updateProgress(step) {
-    const steps = document.querySelectorAll('.step');
-    const lines = document.querySelectorAll('.step-line');
-    
-    steps.forEach((s, idx) => {
-        const stepNum = parseInt(s.dataset.step);
-        if (stepNum < step) {
-            s.classList.add('completed');
-            s.classList.remove('active');
-        } else if (stepNum === step) {
-            s.classList.add('active');
-            s.classList.remove('completed');
-        } else {
-            s.classList.remove('active', 'completed');
-        }
+    document.querySelectorAll('.step').forEach((s, i) => {
+        const n = parseInt(s.dataset.step);
+        s.classList.toggle('active', n === step);
+        s.classList.toggle('completed', n < step);
     });
-
-    lines.forEach((l, idx) => {
-        if (idx < step - 1) {
-            l.classList.add('active');
-        } else {
-            l.classList.remove('active');
-        }
-    });
+    document.querySelectorAll('.step-line').forEach((l, i) => l.classList.toggle('active', i < step - 1));
 }
 
 function showReview() {
@@ -321,163 +230,211 @@ function showReview() {
     reviewContent.innerHTML = '';
 
     const groups = {
-        "Personal Information": {
-            firstName: "First Name",
-            middleName: "Middle Name",
-            lastName: "Last Name",
-            dob: "Date of Birth",
-            gender: "Gender",
-            bloodGroup: "Blood Group",
-            fatherName: "Father's Name",
-            anniversary: "Anniversary"
-        },
-        "Contact & Location": {
-            address: "Address",
-            city: "City",
-            pin: "Pin Code",
-            state: "State",
-            phone: "Phone",
-            personalId: "Personal ID",
-            hq: "HQ"
-        },
-        "Professional Details": {
-            designation: "Designation",
-            joiningDate: "Joining Date",
-            employeeType: "Type",
-            salary: "Salary (Annual)",
-            epf: "EPF No",
-            uan: "UAN No",
-            esi: "ESI No"
-        },
-        "Bank Details": {
-            accType: "Account Type",
-            bankName: "Bank Name",
-            accFirstName: "Acc Holder First",
-            accLastName: "Acc Holder Last",
-            accNo: "Acc Number",
-            ifsc: "IFSC Code"
-        }
+        "Personal": ["firstName", "lastName", "dob", "gender", "bloodGroup", "fatherName"],
+        "Employment": ["designation", "joiningDate", "salary", "hq"],
+        "Contact": ["phone", "address", "city", "state", "pin"],
+        "Bank": ["bankName", "accNo", "ifsc"]
     };
 
-    for (const [groupName, fields] of Object.entries(groups)) {
-        const groupEl = document.createElement('div');
-        groupEl.className = 'review-section-group';
-        groupEl.innerHTML = `<h4>${groupName}</h4><div class="review-grid"></div>`;
-        const grid = groupEl.querySelector('.review-grid');
-
-        for (const [key, label] of Object.entries(fields)) {
-            const value = formData.get(key) || "N/A";
-            const item = document.createElement('div');
-            item.className = 'review-item';
-            item.innerHTML = `
-                <span class="review-label">${label}</span>
-                <span class="review-value">${value}</span>
-            `;
-            grid.appendChild(item);
-        }
-        reviewContent.appendChild(groupEl);
+    for (const [name, fields] of Object.entries(groups)) {
+        let items = fields.map(f => {
+            const val = formData.get(f) || "N/A";
+            return `<div class="review-item"><span class="review-label">${f}</span><span class="review-value">${val}</span></div>`;
+        }).join('');
+        reviewContent.innerHTML += `<div class="review-section-group"><h4>${name}</h4><div class="review-grid">${items}</div></div>`;
     }
-
     nextStep(6);
-    
-    // Animate review items
-    gsap.from(".review-section-group", {
-        opacity: 0,
-        y: 30,
-        stagger: 0.1,
-        duration: 0.6,
-        ease: "back.out(1.2)"
-    });
 }
 
-// Experience toggle logic
-document.querySelectorAll('input[name="category"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-        const expFields = document.querySelectorAll('.exp-only');
-        const appointmentInput = document.getElementById('fileAppt');
-        const salaryInput = document.getElementById('fileSlips');
+// --- ADMIN PANEL ---
 
-        if (e.target.value === 'experienced') {
-            expFields.forEach(field => field.classList.remove('hidden'));
-            appointmentInput.required = true;
-            salaryInput.required = true;
-        } else {
-            expFields.forEach(field => field.classList.add('hidden'));
-            appointmentInput.required = false;
-            salaryInput.required = false;
-        }
+async function handleAdminLogin() {
+    const username = document.getElementById('adminId').value;
+    const password = document.getElementById('adminPass').value;
+    const res = await fetch('/api/admin-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
     });
-});
+    if ((await res.json()).success) {
+        updateView('adminDashboard');
+        switchAdminTab('profile');
+    } else alert("Invalid Admin Credentials");
+}
 
-// File input feedback
-document.querySelectorAll('input[type="file"]').forEach(input => {
-    input.addEventListener('change', (e) => {
-        const dropZone = e.target.closest('.drop-zone');
-        const fileName = e.target.files.length > 1 
-            ? `${e.target.files.length} files selected` 
-            : e.target.files[0].name;
-            
-        dropZone.querySelector('.drop-text').innerText = fileName;
-        dropZone.style.borderColor = 'var(--success)';
-        dropZone.style.background = 'rgba(46, 204, 113, 0.05)';
-    });
-});
+function logoutAdmin() {
+    updateView('landingPage');
+}
 
-// Form Submission
-document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
+async function saveCompanyProfile(e) {
     e.preventDefault();
-    
-    const agree = document.getElementById('agree').checked;
-    if (!agree) {
-        alert("You must agree to the declaration before submitting.");
-        return;
-    }
-
-    const submitBtn = e.target.querySelector('.btn-submit');
-    const originalBtnText = submitBtn.innerText;
-    submitBtn.innerText = "Submitting...";
-    submitBtn.disabled = true;
-
-    // Collect all data
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
+    
+    // Handle logo if changed
+    const logoFile = document.getElementById('compLogoInput').files[0];
+    if (logoFile) {
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            data.logo = event.target.result;
+            await submitProfileUpdate(data);
+        };
+        reader.readAsDataURL(logoFile);
+    } else {
+        await submitProfileUpdate(data);
+    }
+}
+
+async function submitProfileUpdate(data) {
+    try {
+        const res = await fetch('/api/company-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if ((await res.json()).success) {
+            alert("Company Profile Updated!");
+            await fetchCompanyData();
+        }
+    } catch (err) { alert("Update failed."); }
+}
+
+function switchAdminTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active');
+    document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
+    
+    if (tab === 'profile') {
+        document.getElementById('adminProfileTab').classList.remove('hidden');
+        const f = document.getElementById('companyProfileForm');
+        f.compName.value = companyData.name;
+        f.compWeb.value = companyData.website;
+        f.compPhone.value = companyData.phone;
+        f.compTollFree.value = companyData.tollFree;
+        f.compAddress.value = companyData.address;
+    } else {
+        document.getElementById('adminApplicantsTab').classList.remove('hidden');
+        fetchApplicants();
+    }
+}
+
+async function fetchApplicants() {
+    const res = await fetch('/api/admin/applicants');
+    allApplicants = await res.json();
+    renderApplicantsTable(allApplicants);
+}
+
+function renderApplicantsTable(data) {
+    const body = document.getElementById('applicantsTableBody');
+    body.innerHTML = data.map(app => `
+        <tr>
+            <td>${new Date(app.registeredAt).toLocaleDateString()}</td>
+            <td><strong>${app.fullName}</strong></td>
+            <td>${app.email}</td>
+            <td><span class="badge ${app.status}">${app.status}</span></td>
+            <td>${app.canLogin ? '✅ Active' : '🔒 Locked'}</td>
+            <td class="action-flex">
+                <button class="btn-action primary" onclick="downloadApplicantPDF('${app.email}')" title="Download PDF">📄</button>
+                <button class="btn-action" onclick="toggleAccess('${app.email}', ${!app.canLogin})" title="Toggle Login Access">🔑</button>
+                <button class="btn-action success" onclick="updateStatus('${app.email}', 'approved')" title="Approve">✓</button>
+                <button class="btn-action error" onclick="updateStatus('${app.email}', 'rejected')" title="Reject">✕</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function toggleAccess(email, canLogin) {
+    await fetch('/api/admin/toggle-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, canLogin })
+    });
+    fetchApplicants();
+}
+
+async function updateStatus(email, status) {
+    if (!confirm(`Mark application as ${status.toUpperCase()}? This will lock the applicant's account.`)) return;
+    await fetch('/api/admin/update-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, status })
+    });
+    fetchApplicants();
+}
+
+function filterApplicants() {
+    const term = document.getElementById('applicantSearch').value.toLowerCase();
+    const filtered = allApplicants.filter(a => a.email.toLowerCase().includes(term) || a.fullName.toLowerCase().includes(term));
+    renderApplicantsTable(filtered);
+}
+
+// --- PDF GENERATION ---
+
+function downloadApplicantPDF(email) {
+    const app = allApplicants.find(a => a.email === email);
+    if (!app || !app.formData) return alert("No data found for this applicant.");
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(15, 23, 42);
+    doc.text("Applicant Onboarding Record", 105, 20, { align: "center" });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`User Key: ${app.email}`, 105, 28, { align: "center" });
+    doc.text(`Status: ${app.status.toUpperCase()} | Generated: ${new Date().toLocaleString()}`, 105, 33, { align: "center" });
+
+    let y = 45;
+    const sections = {
+        "Personal Information": ["firstName", "lastName", "dob", "gender", "bloodGroup", "fatherName"],
+        "Employment Details": ["designation", "joiningDate", "salary", "hq"],
+        "Contact Information": ["phone", "address", "city", "state", "pin"],
+        "Bank Details": ["bankName", "accNo", "ifsc"]
+    };
+
+    for (const [title, fields] of Object.entries(sections)) {
+        const body = fields.map(f => [f.replace(/([A-Z])/g, ' $1').toUpperCase(), app.formData[f] || "N/A"]);
+        
+        doc.autoTable({
+            startY: y,
+            head: [[title, "Value"]],
+            body: body,
+            theme: 'striped',
+            headStyles: { fillColor: [15, 23, 42] },
+            margin: { left: 14, right: 14 }
+        });
+        y = doc.lastAutoTable.finalY + 10;
+        
+        if (y > 270) { doc.addPage(); y = 20; }
+    }
+
+    doc.save(`${app.fullName.replace(/ /g, '_')}_Onboarding.pdf`);
+}
+
+// --- FORM SUBMISSION ---
+
+document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!document.getElementById('agree').checked) return alert("Agree to declaration.");
+
+    const submitBtn = e.target.querySelector('.btn-submit');
+    submitBtn.innerText = "Finalizing...";
+    submitBtn.disabled = true;
+
+    const formData = Object.fromEntries(new FormData(e.target).entries());
 
     try {
         const response = await fetch('/api/submit-onboarding', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ email: currentApplicant.email, formData })
         });
-
-        const result = await response.json();
-
-        if (result.success) {
-            // Capture "Backend" UI data
-            const now = new Date();
-            const timestamp = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
-            document.getElementById('capturedTime').innerText = timestamp;
-            document.getElementById('subId').innerText = 'EB-' + now.getTime().toString().slice(-6);
-
-            // Hide form, show success
-            gsap.to('#onboardingForm', { opacity: 0, y: -20, duration: 0.4, onComplete: () => {
-                document.getElementById('onboardingForm').style.display = 'none';
-                const successView = document.getElementById('successView');
-                successView.classList.remove('hidden');
-                gsap.fromTo(successView, { scale: 0.9, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" });
-                
-                // Finalize steps
-                document.querySelectorAll('.step').forEach(s => s.classList.add('completed'));
-                document.querySelectorAll('.step-line').forEach(l => l.classList.add('active'));
-            }});
-        } else {
-            alert("Submission failed: " + result.message);
-            submitBtn.innerText = originalBtnText;
-            submitBtn.disabled = false;
-        }
-    } catch (error) {
-        console.error('Submission Error:', error);
-        alert("Server error. Please try again later.");
-        submitBtn.innerText = originalBtnText;
-        submitBtn.disabled = false;
-    }
+        if ((await response.json()).success) {
+            document.getElementById('appEmail').innerText = currentApplicant.email;
+            updateView('successView');
+        } else alert("Submission failed.");
+    } catch (err) { alert("Server error."); }
 });

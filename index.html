@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -55,14 +57,23 @@
                     <p>Welcome to our professional joining portal. Please choose your path to proceed.</p>
                     
                     <div class="landing-actions">
-                        <button class="btn btn-primary btn-lg" onclick="startNewApplication()">
-                            <span class="btn-icon">📝</span>
-                            New Application
+                         <button class="btn btn-primary btn-lg btn-hero" onclick="showApplicantRegister()">
+                            <span class="btn-icon">✨</span>
+                            <div class="hero-btn-text">
+                                <strong>Start New Journey</strong>
+                                <small>Register to get your PIN</small>
+                            </div>
                         </button>
-                        <button class="btn btn-secondary btn-lg" onclick="showAdminLogin()">
-                            <span class="btn-icon">🔐</span>
-                            Admin Portal
+                        <button class="btn btn-secondary btn-lg btn-hero" onclick="showApplicantLogin()">
+                            <span class="btn-icon">🔑</span>
+                            <div class="hero-btn-text">
+                                <strong>Resume Application</strong>
+                                <small>Login with Email & PIN</small>
+                            </div>
                         </button>
+                        <div class="admin-portal-link">
+                            <button class="btn btn-link" onclick="showAdminLogin()">Admin Portal</button>
+                        </div>
                     </div>
 
                     <div class="company-quick-contact" id="quickContact">
@@ -101,42 +112,72 @@
                         </div>
                         <button class="btn btn-outline btn-sm logout-btn" onclick="logoutAdmin()">Logout</button>
                     </div>
-                    <form id="companyProfileForm" onsubmit="saveCompanyProfile(event)">
-                        <div class="input-grid">
-                            <div class="form-group">
-                                <label>Company Name</label>
-                                <input type="text" name="compName" required>
+                    <div class="panel-tabs">
+                        <button class="tab-btn active" onclick="switchAdminTab('profile')">Company Profile</button>
+                        <button class="tab-btn" onclick="switchAdminTab('applicants')">Applicant Management</button>
+                    </div>
+
+                    <div id="adminProfileTab" class="admin-tab-content">
+                        <form id="companyProfileForm" onsubmit="saveCompanyProfile(event)">
+                            <div class="input-grid">
+                                <div class="form-group">
+                                    <label>Company Name</label>
+                                    <input type="text" name="compName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Website URL</label>
+                                    <input type="url" name="compWeb">
+                                </div>
+                                <div class="form-group">
+                                    <label>Contact No</label>
+                                    <input type="text" name="compPhone">
+                                </div>
+                                <div class="form-group">
+                                    <label>Toll Free No</label>
+                                    <input type="text" name="compTollFree">
+                                </div>
                             </div>
                             <div class="form-group">
-                                <label>Website URL</label>
-                                <input type="url" name="compWeb">
+                                <label>Company Address</label>
+                                <textarea name="compAddress"></textarea>
                             </div>
-                            <div class="form-group">
-                                <label>Contact No</label>
-                                <input type="text" name="compPhone">
+                            <div class="upload-box">
+                                <label>Company Logo</label>
+                                <div class="drop-zone" onclick="document.getElementById('compLogoInput').click()">
+                                    <img id="logoPreview" src="" class="hidden logo-preview-img">
+                                    <span class="drop-icon">🖼️</span>
+                                    <span class="drop-text">Upload Company Logo</span>
+                                    <input type="file" id="compLogoInput" class="hidden" accept="image/*">
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label>Toll Free No</label>
-                                <input type="text" name="compTollFree">
+                            <div class="nav-buttons">
+                                <button type="submit" class="btn btn-primary">Save Profile & Update UI</button>
                             </div>
+                        </form>
+                    </div>
+
+                    <div id="adminApplicantsTab" class="admin-tab-content hidden">
+                        <div class="search-bar">
+                            <input type="text" id="applicantSearch" placeholder="Search by Email (User Key) or Name..." oninput="filterApplicants()">
                         </div>
-                        <div class="form-group">
-                            <label>Company Address</label>
-                            <textarea name="compAddress"></textarea>
+                        <div class="table-container">
+                            <table class="admin-table">
+                                <thead>
+                                    <tr>
+                                        <th>Registered</th>
+                                        <th>Name</th>
+                                        <th>Email (User Key)</th>
+                                        <th>Status</th>
+                                        <th>Access</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="applicantsTableBody">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="upload-box">
-                            <label>Company Logo</label>
-                            <div class="drop-zone" onclick="document.getElementById('compLogoInput').click()">
-                                <img id="logoPreview" src="" class="hidden logo-preview-img">
-                                <span class="drop-icon">🖼️</span>
-                                <span class="drop-text">Upload Company Logo</span>
-                                <input type="file" id="compLogoInput" class="hidden" accept="image/*">
-                            </div>
-                        </div>
-                        <div class="nav-buttons">
-                            <button type="submit" class="btn btn-primary">Save Profile & Update UI</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
             </div>
 
@@ -472,17 +513,68 @@
                 </section>
             </form>
 
-                <div id="successView" class="hidden success-view">
+            <!-- Applicant Registration Modal -->
+            <div id="applicantRegister" class="view-section hidden">
+                <div class="login-card">
+                    <div class="login-header">
+                        <div class="login-icon">✨</div>
+                        <h2 class="premium-title">New Application</h2>
+                        <p>Fill these details to receive your 6-digit Login PIN.</p>
+                    </div>
+                    <form onsubmit="handleApplicantRegister(event)">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="regName" required placeholder="Enter full name">
+                        </div>
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="regEmail" required placeholder="Enter email address">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" id="regPhone" required placeholder="Enter mobile number">
+                        </div>
+                        <div class="login-actions">
+                            <button type="button" class="btn btn-secondary" onclick="backToLanding()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Register & Send PIN</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Applicant Login Modal -->
+            <div id="applicantLogin" class="view-section hidden">
+                <div class="login-card">
+                    <div class="login-header">
+                        <div class="login-icon">🔑</div>
+                        <h2 class="premium-title">Resume Application</h2>
+                        <p>Welcome back! Please enter your Email and Login PIN.</p>
+                    </div>
+                    <form onsubmit="handleApplicantLogin(event)">
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="loginEmail" required placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label>6-Digit PIN</label>
+                            <input type="password" id="loginPin" required placeholder="Enter PIN" maxlength="6">
+                        </div>
+                        <div class="login-actions">
+                            <button type="button" class="btn btn-secondary" onclick="backToLanding()">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Login to Resume</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div id="successView" class="hidden success-view">
                 <div class="success-icon">✓</div>
                 <h2>Application Submitted Successfully!</h2>
                 <div class="submission-details">
-                    <p>Submission ID: <span id="subId">EM-2026-X8</span></p>
-                    <p>Captured Time: <span id="capturedTime"></span></p>
+                    <p>User Key (Email): <span id="appEmail"></span></p>
+                    <p>Status: <span class="badge success">Submitted</span></p>
                 </div>
-                <p>Your credentials have been recorded. Our HR team will review your testimonials shortly.</p>
-                <div class="info-note">
-                    Once approved by admin, you can check offer letter with same login credentials to download your offer letter.
-                </div>
+                <p>Your documents have been archived for review. You will be notified of the decision via email.</p>
                 <button class="btn btn-primary" onclick="backToLanding()">Return Home</button>
             </div>
         </main>

@@ -695,3 +695,197 @@ select option {
     .welcome-section, .form-step { padding: 1.5rem; }
     .step-line { width: 20px; }
 }
+
+/* Applicant Portal & Admin Enhancements */
+
+.btn-hero {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    text-align: left;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: white;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.hero-btn-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.hero-btn-text strong {
+    font-size: 1.1rem;
+    display: block;
+    color: var(--primary);
+}
+
+.hero-btn-text small {
+    font-size: 0.8rem;
+    opacity: 0.8;
+    color: var(--text-muted);
+    font-weight: 400;
+}
+
+.btn-hero:hover {
+    transform: translateY(-5px) scale(1.02);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-lg);
+}
+
+.admin-portal-link {
+    margin-top: 1.5rem;
+    width: 100%;
+    text-align: center;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    opacity: 0.7;
+    transition: all 0.3s;
+}
+
+.btn-link:hover {
+    color: var(--primary);
+    opacity: 1;
+}
+
+/* Admin Tabs */
+.panel-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--glass-border);
+    padding-bottom: 10px;
+}
+
+.tab-btn {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    background: none;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: white;
+}
+
+.admin-tab-content.hidden {
+    display: none;
+}
+
+/* Applicant Management Table */
+.search-bar {
+    margin-bottom: 1.5rem;
+}
+
+.search-bar input {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: white;
+    font-size: 1rem;
+}
+
+.table-container {
+    overflow-x: auto;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.admin-table th, .admin-table td {
+    padding: 1.2rem;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-table th {
+    background: #f8fafc;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+}
+
+.admin-table tr:hover {
+    background: #fcfdfe;
+}
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge.draft { background: #fee2e2; color: #991b1b; } /* Needs attention */
+.badge.submitted { background: #dcfce7; color: #166534; }
+.badge.approved { background: #d1fae5; color: #065f46; }
+.badge.rejected { background: #f1f5f9; color: #475569; }
+
+.btn-action {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid #e2e8f0;
+    background: white;
+    transition: all 0.2s;
+}
+
+.btn-action.primary { color: var(--primary); border-color: var(--primary); }
+.btn-action.success { color: var(--success); border-color: var(--success); }
+.btn-action.error { color: var(--error); border-color: var(--error); }
+
+.btn-action:hover {
+    background: #f8fafc;
+    transform: scale(1.05);
+}
+
+.action-flex {
+    display: flex;
+    gap: 5px;
+}
+
+/* Login Card Enhancements */
+.login-header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.premium-title {
+    font-size: 1.8rem;
+    background: linear-gradient(45deg, var(--primary), var(--primary-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+.login-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}

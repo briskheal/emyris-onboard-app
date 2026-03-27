@@ -30,20 +30,25 @@ const companySchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 });
 
-const submissionSchema = new mongoose.Schema({
-    submissionId: String,
-    firstName: String,
-    lastName: String,
-    capturedTime: { type: Date, default: Date.now },
-    status: { type: String, default: 'pending' }
+const applicantSchema = new mongoose.Schema({
+    email: { type: String, unique: true, required: true },
+    fullName: { type: String, required: true },
+    phone: { type: String, required: true },
+    password: { type: String, required: true }, // 6-digit PIN
+    status: { type: String, default: 'draft' }, // draft, submitted, approved, rejected
+    canLogin: { type: Boolean, default: true },
+    formData: { type: Object, default: {} },
+    registeredAt: { type: Date, default: Date.now },
+    submittedAt: Date,
+    documents: [Object] // Track uploaded file metadata
 });
 
 const Company = mongoose.model('Company', companySchema);
-const Submission = mongoose.model('Submission', submissionSchema);
+const Applicant = mongoose.model('Applicant', applicantSchema);
 
 app.use(cors());
-app.use(express.json());
-app.use(express.static(__dirname)); // Serve static files (index.html, script.js, style.css)
+app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
+app.use(express.static(__dirname)); 
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -53,112 +58,204 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-app.post('/api/submit-onboarding', async (req, res) => {
-    try {
-        const formData = req.body;
-        console.log('Received onboarding submission:', formData.firstName, formData.lastName);
-        const subId = `EM-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+// --- APPLICANT APIs ---
 
-        // --- Save to MongoDB if connected ---
-        if (mongoose.connection.readyState === 1) {
-            try {
-                await Submission.create({
-                    submissionId: subId,
-                    firstName: formData.firstName,
-                    lastName: formData.lastName,
-                    status: 'pending'
-                });
-                console.log('Saved submission to MongoDB');
-            } catch (dbErr) {
-                console.error('MongoDB Save Error:', dbErr);
-            }
+// Register Applicant
+app.post('/api/register-applicant', async (req, res) => {
+    try {
+        const { fullName, email, phone } = req.body;
+        
+        // Check if already exists
+        let applicant = await Applicant.findOne({ email });
+        if (applicant) {
+            return res.status(400).json({ success: false, message: 'Email already registered.' });
         }
 
-        // Prepare email content
+        // Generate 6-digit PIN
+        const pin = Math.floor(100000 + Math.random() * 900000).toString();
+
+        applicant = await Applicant.create({
+            fullName,
+            email,
+            phone,
+            password: pin
+        });
+
+        // Send Welcome Email with PIN
+        const mailOptions = {
+            from: `"Emyris Onboarding" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Welcome to Emyris Onboarding - Your Login Credentials',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
+                    <h2 style="color: #2c3e50;">Welcome, ${fullName}!</h2>
+                    <p>Your registration for the Emyris Onboarding Portal was successful.</p>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
+                        <p style="margin: 0;"><strong>Your Login ID (User Key):</strong> ${email}</p>
+                        <p style="margin: 10px 0 0 0;"><strong>Your Security PIN:</strong> <span style="font-size: 1.2em; color: #3498db; letter-spacing: 2px;">${pin}</span></p>
+                    </div>
+                    <p>You can use these credentials to log in and complete your onboarding application at any time.</p>
+                    <p style="font-size: 0.9em; color: #7f8c8d;">Please keep this PIN secure.</p>
+                </div>
+            `
+        };
+
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ success: true, message: 'Registration successful. Check your email for PIN.' });
+    } catch (error) {
+        console.error('Registration Error:', error);
+        res.status(500).json({ success: false, message: 'Registration failed.' });
+    }
+});
+
+// Applicant Login
+app.post('/api/applicant-login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const applicant = await Applicant.findOne({ email, password });
+
+        if (!applicant) {
+            return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });
+        }
+
+        if (!applicant.canLogin) {
+            let reason = "Your application reached a non-editable state.";
+            if (applicant.status === 'approved') reason = "Your application has been approved.";
+            if (applicant.status === 'rejected') reason = "Your application was not accepted at this time.";
+            return res.status(403).json({ success: false, message: `Access Locked: ${reason}` });
+        }
+
+        res.status(200).json({ 
+            success: true, 
+            applicant: {
+                fullName: applicant.fullName,
+                email: applicant.email,
+                phone: applicant.phone,
+                status: applicant.status,
+                formData: applicant.formData
+            } 
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Login error.' });
+    }
+});
+
+// Save Draft
+app.post('/api/save-draft', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+        await Applicant.findOneAndUpdate({ email }, { formData, updatedAt: new Date() });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false });
+    }
+});
+
+// Submit Onboarding
+app.post('/api/submit-onboarding', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+        
+        const applicant = await Applicant.findOneAndUpdate(
+            { email }, 
+            { 
+                formData, 
+                status: 'submitted', 
+                canLogin: false, 
+                submittedAt: new Date() 
+            },
+            { new: true }
+        );
+
         const emailHtml = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Employee Onboarding Submission</h2>
-                <p>A new application has been submitted through the Emyris Onboarding Portal.</p>
-                
-                <h3 style="background: #f8f9fa; padding: 10px;">Personal Details</h3>
-                <ul>
-                    <li><strong>Name:</strong> ${formData.firstName} ${formData.middleName || ''} ${formData.lastName}</li>
-                    <li><strong>DOB:</strong> ${formData.dob}</li>
-                    <li><strong>Gender:</strong> ${formData.gender}</li>
-                    <li><strong>Blood Group:</strong> ${formData.bloodGroup}</li>
-                    <li><strong>Father's Name:</strong> ${formData.fatherName}</li>
-                </ul>
-
-                <h3 style="background: #f8f9fa; padding: 10px;">Professional Details</h3>
-                <ul>
-                    <li><strong>Designation:</strong> ${formData.designation}</li>
-                    <li><strong>Expected Joining Date:</strong> ${formData.joiningDate}</li>
-                    <li><strong>Annual Salary:</strong> ₹${formData.salary}</li>
-                    <li><strong>HQ:</strong> ${formData.hq}</li>
-                </ul>
-
-                <h3 style="background: #f8f9fa; padding: 10px;">Contact Info</h3>
-                <ul>
-                    <li><strong>Email/User:</strong> ${formData.email || 'N/A'}</li>
-                    <li><strong>Phone:</strong> ${formData.phone}</li>
-                    <li><strong>Address:</strong> ${formData.address}, ${formData.city}, ${formData.state} - ${formData.pin}</li>
-                </ul>
-
-                <p style="margin-top: 20px; font-size: 0.9em; color: #7f8c8d;">
-                    This is an automated notification from the Emyris Onboarding System.
-                </p>
+                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Onboarding Submission</h2>
+                <p><strong>Applicant:</strong> ${applicant.fullName}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <hr>
+                <p>Detailed profile is now available in the Admin Portal for review and PDF download.</p>
             </div>
         `;
 
-        // Send Email to Admin
+        // Notify Admin
         await transporter.sendMail({
-            from: `"Emyris Onboarding" <${process.env.EMAIL_USER}>`,
+            from: `"Emyris Hub" <${process.env.EMAIL_USER}>`,
             to: process.env.EMAIL_USER,
-            subject: `New Application: ${formData.firstName} ${formData.lastName} - ${formData.designation}`,
+            subject: `Form Submitted: ${applicant.fullName}`,
             html: emailHtml
         });
 
-        res.status(200).json({ success: true, submissionId: subId, message: 'Application submitted successfully!' });
+        // Notify Applicant
+        await transporter.sendMail({
+            from: `"Emyris Onboarding" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: 'Application Received - Emyris Biolifesciences',
+            html: `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`
+        });
+
+        res.status(200).json({ success: true, message: 'Application submitted!' });
     } catch (error) {
-        console.error('Error processing submission:', error);
-        res.status(500).json({ success: false, message: 'Failed to process submission.' });
+        res.status(500).json({ success: false, message: 'Submission failed.' });
     }
 });
 
-// Admin Login Endpoint
+// --- ADMIN APIs ---
+
 app.post('/api/admin-login', (req, res) => {
     const { username, password } = req.body;
-    
-    // Check against Environment Variables
-    const expectedUser = process.env.ADMIN_USER || 'admin';
-    const expectedPass = process.env.ADMIN_PASS || 'admin123';
-
-    if (username === expectedUser && password === expectedPass) {
+    if (username === (process.env.ADMIN_USER || 'admin') && password === (process.env.ADMIN_PASS || 'admin123')) {
         res.status(200).json({ success: true });
     } else {
-        res.status(401).json({ success: false, message: 'Invalid credentials' });
+        res.status(401).json({ success: false });
     }
 });
 
-// --- NEW MongoDB Endpoints for Company Profile ---
+app.get('/api/admin/applicants', async (req, res) => {
+    try {
+        const applicants = await Applicant.find().sort({ registeredAt: -1 });
+        res.status(200).json(applicants);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
 
+app.post('/api/admin/toggle-access', async (req, res) => {
+    try {
+        const { email, canLogin } = req.body;
+        await Applicant.findOneAndUpdate({ email }, { canLogin });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/admin/update-status', async (req, res) => {
+    try {
+        const { email, status } = req.body;
+        const update = { status };
+        if (status === 'approved' || status === 'rejected') {
+            update.canLogin = false;
+        }
+        await Applicant.findOneAndUpdate({ email }, update);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// Company Profile
 app.get('/api/company-profile', async (req, res) => {
     try {
         let profile = await Company.findOne();
-        if (!profile) {
-            profile = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD." });
-        }
+        if (!profile) profile = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD." });
         res.status(200).json(profile);
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch profile' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.post('/api/company-profile', async (req, res) => {
     try {
         const updateData = req.body;
         let profile = await Company.findOne();
-        
         if (profile) {
             Object.assign(profile, updateData);
             profile.updatedAt = new Date();
@@ -166,11 +263,8 @@ app.post('/api/company-profile', async (req, res) => {
         } else {
             profile = await Company.create(updateData);
         }
-        
         res.status(200).json({ success: true, profile });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to update profile' });
-    }
+    } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
 app.listen(PORT, () => {
