@@ -27,6 +27,10 @@ const companySchema = new mongoose.Schema({
     tollFree: String,
     website: String,
     logo: String, // Base64
+    offerTemplate: String, // Global master offer letter
+    apptTemplate: String,  // Global master appointment letter
+    mobileAppTemplate: String, // Global master mobile app details
+    tadaTemplate: String,      // Global master TA/DA letter
     updatedAt: { type: Date, default: Date.now }
 });
 
@@ -40,10 +44,11 @@ const applicantSchema = new mongoose.Schema({
     formData: { type: Object, default: {} },
     registeredAt: { type: Date, default: Date.now },
     submittedAt: Date,
+    approvedAt: Date, // Track approval for 7-day auto-lock
     documents: [Object], // Track uploaded file metadata
     tasks: {
-        offerLetter: { type: String, default: null },
-        appointmentLetter: { type: String, default: null },
+        offerLetter: { type: Boolean, default: false },
+        appointmentLetter: { type: Boolean, default: false },
         appLinkSent: { type: Boolean, default: false },
         loginDetailsSent: { type: Boolean, default: false }
     }
@@ -129,6 +134,14 @@ app.post('/api/applicant-login', async (req, res) => {
             if (applicant.status === 'approved') reason = "Your application has been approved.";
             if (applicant.status === 'rejected') reason = "Your application was not accepted at this time.";
             return res.status(403).json({ success: false, message: `Access Locked: ${reason}` });
+        }
+
+        // 7-Day Auto-Lock Logic for Approved Applicants
+        if (applicant.status === 'approved' && applicant.approvedAt) {
+            const daysSinceApproval = (Date.now() - new Date(applicant.approvedAt)) / (1000 * 60 * 60 * 24);
+            if (daysSinceApproval > 7) {
+                return res.status(403).json({ success: false, message: 'Access Locked: Your approval period (7 days) has expired.' });
+            }
         }
 
         res.status(200).json({ 
@@ -239,7 +252,10 @@ app.post('/api/admin/update-status', async (req, res) => {
     try {
         const { email, status } = req.body;
         const update = { status };
-        if (status === 'approved' || status === 'rejected') {
+        if (status === 'approved') {
+            update.canLogin = true; // Kept open after approval
+            update.approvedAt = new Date(); // Start 7-day timer
+        } else if (status === 'rejected') {
             update.canLogin = false;
         }
         await Applicant.findOneAndUpdate({ email }, update);
@@ -258,9 +274,10 @@ app.post('/api/admin/reset-applicant', async (req, res) => {
                 formData: {}, 
                 status: 'draft', 
                 canLogin: true, 
+                approvedAt: null, // Reset approval timer
                 tasks: {
-                    offerLetter: null,
-                    appointmentLetter: null,
+                    offerLetter: false,
+                    appointmentLetter: false,
                     appLinkSent: false,
                     loginDetailsSent: false
                 },

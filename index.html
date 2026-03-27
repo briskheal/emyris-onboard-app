@@ -112,6 +112,23 @@
                         </div>
                         <button class="btn btn-outline btn-sm logout-btn" onclick="logoutAdmin()">Logout</button>
                     </div>
+
+                    <!-- Stats Header -->
+                    <div class="stats-header">
+                        <div class="stat-card">
+                            <span class="stat-label">Total Applicants</span>
+                            <span class="stat-value" id="stat_total">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Pending Review</span>
+                            <span class="stat-value" id="stat_pending">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Approved Period</span>
+                            <span class="stat-value" id="stat_approved">0</span>
+                        </div>
+                    </div>
+
                     <div class="panel-tabs">
                         <button class="tab-btn active" onclick="switchAdminTab('profile')">Company Profile</button>
                         <button class="tab-btn" onclick="switchAdminTab('applicants')">Applicant Management</button>
@@ -141,13 +158,48 @@
                                 <label>Company Address</label>
                                 <textarea name="compAddress"></textarea>
                             </div>
-                            <div class="upload-box">
-                                <label>Company Logo</label>
-                                <div class="drop-zone" onclick="document.getElementById('compLogoInput').click()">
-                                    <img id="logoPreview" src="" class="hidden logo-preview-img">
-                                    <span class="drop-icon">🖼️</span>
-                                    <span class="drop-text">Upload Company Logo</span>
-                                    <input type="file" id="compLogoInput" class="hidden" accept="image/*">
+
+                            <div class="input-grid">
+                                <div class="upload-box">
+                                    <label>Company Logo</label>
+                                    <div class="drop-zone" onclick="document.getElementById('compLogoInput').click()">
+                                        <img id="logoPreview" src="" class="hidden logo-preview-img">
+                                        <span class="drop-icon">🖼️</span>
+                                        <span class="drop-text">Upload Logo</span>
+                                        <input type="file" id="compLogoInput" class="hidden" accept="image/*">
+                                    </div>
+                                </div>
+                                <div class="upload-box">
+                                    <label>Master Offer Letter (PDF Template)</label>
+                                    <div class="drop-zone" onclick="document.getElementById('offerTemplateInput').click()">
+                                        <span class="drop-icon">📄</span>
+                                        <span id="offerStatus" class="drop-text">Upload Template</span>
+                                        <input type="file" id="offerTemplateInput" class="hidden" accept=".pdf">
+                                    </div>
+                                </div>
+                                <div class="upload-box">
+                                    <label>Master Appointment Letter (PDF)</label>
+                                    <div class="drop-zone" onclick="document.getElementById('apptTemplateInput').click()">
+                                        <span class="drop-icon">📜</span>
+                                        <span id="apptStatus" class="drop-text">Upload Template</span>
+                                        <input type="file" id="apptTemplateInput" class="hidden" accept=".pdf">
+                                    </div>
+                                </div>
+                                <div class="upload-box">
+                                    <label>Mobile App Details (PDF)</label>
+                                    <div class="drop-zone" onclick="document.getElementById('mobileTemplateInput').click()">
+                                        <span class="drop-icon">📱</span>
+                                        <span id="mobileStatus" class="drop-text">Upload PDF</span>
+                                        <input type="file" id="mobileTemplateInput" class="hidden" accept=".pdf">
+                                    </div>
+                                </div>
+                                <div class="upload-box">
+                                    <label>TA / DA Letter (PDF)</label>
+                                    <div class="drop-zone" onclick="document.getElementById('tadaTemplateInput').click()">
+                                        <span class="drop-icon">✈️</span>
+                                        <span id="tadaStatus" class="drop-text">Upload PDF</span>
+                                        <input type="file" id="tadaTemplateInput" class="hidden" accept=".pdf">
+                                    </div>
                                 </div>
                             </div>
                             <div class="nav-buttons">
@@ -652,7 +704,17 @@
             </div>
 
             <div class="modal-footer">
-                <button class="btn btn-danger btn-sm" onclick="resetApplicantData()">Reset Entire File</button>
+                <div class="modal-actions-grid">
+                    <button class="btn btn-primary btn-sm" onclick="downloadApplicantPDF(activeWfEmail)">
+                        <span>📄</span> Download Application PDF
+                    </button>
+                    <button id="modalToggleAccess" class="btn btn-secondary btn-sm" onclick="toggleAccessFromModal()">
+                        <span>🔑</span> Toggle Login Access
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="resetApplicantData()">
+                        <span>⚠️</span> Reset Entire File
+                    </button>
+                </div>
             </div>
         </div>
     </div>

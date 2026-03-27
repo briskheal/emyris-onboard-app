@@ -271,18 +271,30 @@ async function saveCompanyProfile(e) {
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
     
-    // Handle logo if changed
-    const logoFile = document.getElementById('compLogoInput').files[0];
-    if (logoFile) {
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            data.logo = event.target.result;
-            await submitProfileUpdate(data);
-        };
-        reader.readAsDataURL(logoFile);
-    } else {
-        await submitProfileUpdate(data);
-    }
+    // Helper to read file as Base64
+    const readFile = (id) => {
+        return new Promise((resolve) => {
+            const file = document.getElementById(id).files[0];
+            if (!file) return resolve(null);
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target.result);
+            reader.readAsDataURL(file);
+        });
+    };
+
+    const logo = await readFile('compLogoInput');
+    const offer = await readFile('offerTemplateInput');
+    const appt = await readFile('apptTemplateInput');
+    const mobile = await readFile('mobileTemplateInput');
+    const tada = await readFile('tadaTemplateInput');
+
+    if (logo) data.logo = logo;
+    if (offer) data.offerTemplate = offer;
+    if (appt) data.apptTemplate = appt;
+    if (mobile) data.mobileAppTemplate = mobile;
+    if (tada) data.tadaTemplate = tada;
+
+    await submitProfileUpdate(data);
 }
 
 async function submitProfileUpdate(data) {
@@ -308,10 +320,26 @@ function switchAdminTab(tab) {
         document.getElementById('adminProfileTab').classList.remove('hidden');
         const f = document.getElementById('companyProfileForm');
         f.compName.value = companyData.name;
-        f.compWeb.value = companyData.website;
-        f.compPhone.value = companyData.phone;
-        f.compTollFree.value = companyData.tollFree;
-        f.compAddress.value = companyData.address;
+        f.compWeb.value = companyData.website || '';
+        f.compPhone.value = companyData.phone || '';
+        f.compTollFree.value = companyData.tollFree || '';
+        f.compAddress.value = companyData.address || '';
+
+        // Update template statuses
+        const updateStatus = (id, val) => {
+            const el = document.getElementById(id);
+            if (val) {
+                el.innerText = "Template Uploaded ✅";
+                el.style.color = "var(--success)";
+            } else {
+                el.innerText = "Upload Template";
+                el.style.color = "var(--text-muted)";
+            }
+        };
+        updateStatus('offerStatus', companyData.offerTemplate);
+        updateStatus('apptStatus', companyData.apptTemplate);
+        updateStatus('mobileStatus', companyData.mobileAppTemplate);
+        updateStatus('tadaStatus', companyData.tadaTemplate);
     } else {
         document.getElementById('adminApplicantsTab').classList.remove('hidden');
         fetchApplicants();
@@ -321,7 +349,36 @@ function switchAdminTab(tab) {
 async function fetchApplicants() {
     const res = await fetch('/api/admin/applicants');
     allApplicants = await res.json();
+    calculateStats(allApplicants);
     renderApplicantsTable(allApplicants);
+}
+
+function calculateStats(applicants) {
+    const total = applicants.length;
+    const pending = applicants.filter(a => a.status === 'submitted').length;
+    const recentlyApproved = applicants.filter(a => {
+        if (a.status !== 'approved' || !a.approvedAt) return false;
+        const days = (Date.now() - new Date(a.approvedAt)) / (1000 * 60 * 60 * 24);
+        return days <= 7;
+    }).length;
+
+    animateCounter('stat_total', total);
+    animateCounter('stat_pending', pending);
+    animateCounter('stat_approved', recentlyApproved);
+}
+
+function animateCounter(id, value) {
+    const el = document.getElementById(id);
+    const curr = parseInt(el.innerText) || 0;
+    const obj = { val: curr };
+    gsap.to(obj, {
+        val: value,
+        duration: 1.5,
+        ease: "power2.out",
+        onUpdate: () => {
+            el.innerText = Math.floor(obj.val);
+        }
+    });
 }
 
 function renderApplicantsTable(data) {
@@ -337,6 +394,20 @@ function renderApplicantsTable(data) {
             </div>
         `;
 
+        let actionButtons = '';
+        if (app.status === 'submitted') {
+            actionButtons = `
+                <button class="btn-action success" onclick="updateStatus('${app.email}', 'approved')" title="Approve">✓</button>
+                <button class="btn-action error" onclick="updateStatus('${app.email}', 'rejected')" title="Reject">✕</button>
+            `;
+        } else if (app.status === 'approved') {
+            actionButtons = `
+                <button class="btn-action warning" onclick="openWorkflow('${app.email}')" title="Workflow Settings">⚙️</button>
+            `;
+        } else {
+            actionButtons = `<button class="btn-action primary" onclick="openWorkflow('${app.email}')" title="View Record">👁️</button>`;
+        }
+
         return `
             <tr>
                 <td>${new Date(app.registeredAt).toLocaleDateString()}</td>
@@ -346,11 +417,7 @@ function renderApplicantsTable(data) {
                 <td>${app.canLogin ? '✅ Active' : '🔒 Locked'}</td>
                 <td>${pipelineIcons}</td>
                 <td class="action-flex">
-                    <button class="btn-action primary" onclick="downloadApplicantPDF('${app.email}')" title="Download PDF">📄</button>
-                    <button class="btn-action warning" onclick="openWorkflow('${app.email}')" title="Process Workflow">⚙️</button>
-                    <button class="btn-action" onclick="toggleAccess('${app.email}', ${!app.canLogin})" title="Toggle Login Access">🔑</button>
-                    <button class="btn-action success" onclick="updateStatus('${app.email}', 'approved')" title="Approve">✓</button>
-                    <button class="btn-action error" onclick="updateStatus('${app.email}', 'rejected')" title="Reject">✕</button>
+                    ${actionButtons}
                 </td>
             </tr>
         `;
@@ -394,11 +461,23 @@ function openWorkflow(email) {
     document.getElementById('wfName').innerText = app.fullName;
     document.getElementById('wfEmail').innerText = app.email;
     
+    // Sync Access Toggle Text
+    const toggleBtn = document.getElementById('modalToggleAccess');
+    toggleBtn.innerHTML = app.canLogin ? '<span>🔒</span> Lock Access' : '<span>🔓</span> Grant Access';
+    toggleBtn.className = app.canLogin ? 'btn btn-danger btn-sm' : 'btn btn-success btn-sm';
+
     // Sync Task Status
     updateWfModalUI(app.tasks || {});
     
     document.getElementById('workflowModal').classList.remove('hidden');
     document.getElementById('workflowModal').style.display = 'flex';
+}
+
+async function toggleAccessFromModal() {
+    const app = allApplicants.find(a => a.email === activeWfEmail);
+    if (!app) return;
+    await toggleAccess(activeWfEmail, !app.canLogin);
+    openWorkflow(activeWfEmail); // Re-sync UI
 }
 
 function closeWorkflow() {
@@ -480,14 +559,20 @@ function downloadApplicantPDF(email) {
     const doc = new jsPDF();
     
     // Header
-    doc.setFontSize(20);
+    if (companyData.logo) {
+        try {
+            doc.addImage(companyData.logo, 'PNG', 15, 12, 40, 40);
+        } catch(e) { console.warn("PDF Logo failed", e); }
+    }
+
+    doc.setFontSize(22);
     doc.setTextColor(15, 23, 42);
-    doc.text("Applicant Onboarding Record", 105, 20, { align: "center" });
+    doc.text(companyData.name || "Onboarding Record", 60, 25);
     
     doc.setFontSize(10);
     doc.setTextColor(100);
-    doc.text(`User Key: ${app.email}`, 105, 28, { align: "center" });
-    doc.text(`Status: ${app.status.toUpperCase()} | Generated: ${new Date().toLocaleString()}`, 105, 33, { align: "center" });
+    doc.text(`User Key: ${app.email}`, 60, 32);
+    doc.text(`Status: ${app.status.toUpperCase()} | Generated: ${new Date().toLocaleString()}`, 60, 37);
 
     let y = 45;
     const sections = {
