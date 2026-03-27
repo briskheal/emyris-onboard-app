@@ -1,5 +1,5 @@
 let currentStep = 1;
-let companyData = JSON.parse(localStorage.getItem('emyris_company_data')) || {
+let companyData = {
     name: "EMYRIS BIOLIFESCIENCES PVT LTD.",
     address: "",
     phone: "",
@@ -9,11 +9,24 @@ let companyData = JSON.parse(localStorage.getItem('emyris_company_data')) || {
 };
 
 // Initial Setup
-window.addEventListener('DOMContentLoaded', () => {
-    applyCompanyData();
+window.addEventListener('DOMContentLoaded', async () => {
+    await fetchCompanyData();
     updateView('landingPage');
     initBackgroundAnimations();
 });
+
+async function fetchCompanyData() {
+    try {
+        const response = await fetch('/api/company-profile');
+        const data = await response.json();
+        if (data && data.name) {
+            companyData = data;
+        }
+    } catch (error) {
+        console.error('Error fetching company data:', error);
+    }
+    applyCompanyData();
+}
 
 function initBackgroundAnimations() {
     gsap.to(".blob-1", {
@@ -152,20 +165,40 @@ function showAdminDashboard() {
     }
 }
 
-function saveCompanyProfile(e) {
+async function saveCompanyProfile(e) {
     e.preventDefault();
     const form = e.target;
     
-    companyData.name = form.compName.value;
-    companyData.website = form.compWeb.value;
-    companyData.phone = form.compPhone.value;
-    companyData.tollFree = form.compTollFree.value;
-    companyData.address = form.compAddress.value;
+    const updateData = {
+        name: form.compName.value,
+        website: form.compWeb.value,
+        phone: form.compPhone.value,
+        tollFree: form.compTollFree.value,
+        address: form.compAddress.value,
+        logo: companyData.logo
+    };
 
-    localStorage.setItem('emyris_company_data', JSON.stringify(companyData));
-    applyCompanyData();
-    alert("Company Profile Updated!");
-    updateView('landingPage');
+    try {
+        const response = await fetch('/api/company-profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updateData)
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            companyData = result.profile;
+            applyCompanyData();
+            alert("Company Profile Saved to MongoDB!");
+            updateView('landingPage');
+        } else {
+            alert("Failed to save profile.");
+        }
+    } catch (error) {
+        console.error('Save Error:', error);
+        alert("Error connecting to server.");
+    }
 }
 
 // Logo Upload Processing
