@@ -1050,8 +1050,6 @@ async function loadSetupData() {
         'letterFontSize': companyData.letterFontSize || 11,
         'letterFontType': companyData.letterFontType || 'helvetica',
         'letterAlignment': companyData.letterAlignment || 'left',
-        'offerLetterTemplate': companyData.offerLetterBody || "",
-        'apptLetterTemplate': companyData.apptLetterBody || "",
         'fyFrom': companyData.fyFrom || "",
         'fyTo': companyData.fyTo || "",
         'letterCounterStart': companyData.letterCounter || 1001
@@ -1062,6 +1060,14 @@ async function loadSetupData() {
         if (el) el.value = val;
     }
     
+    // Initialize Unified Editor specific state
+    window.letterTemplates = {
+        offer: companyData.offerLetterBody || "",
+        appt: companyData.apptLetterBody || "",
+        misc: companyData.miscLetterBody || ""
+    };
+    switchEditorTemplate();
+
     updateRefPreview();
     
     // Letterhead Preview
@@ -1093,21 +1099,54 @@ async function loadSetupData() {
 }
 
 function enableEditorTabSupport() {
-    document.querySelectorAll('.letter-editor').forEach(textarea => {
-        textarea.onkeydown = function(e) {
+    document.querySelectorAll('.letter-editor').forEach(editor => {
+        editor.onkeydown = function(e) {
             if (e.key === 'Tab') {
                 e.preventDefault();
-                const start = this.selectionStart;
-                const end = this.selectionEnd;
-
-                // Insert 4 spaces
-                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
-
-                // Put caret in right place
-                this.selectionStart = this.selectionEnd = start + 4;
+                document.execCommand('insertHTML', false, '&#009;');
             }
         };
     });
+}
+
+function switchEditorTemplate() {
+    const type = document.getElementById('activeTemplateSelect').value;
+    const editor = document.getElementById('unifiedEditor');
+    editor.innerHTML = window.letterTemplates[type] || "";
+    syncEditorStyles();
+}
+
+async function saveActiveTemplate() {
+    const btn = event.target;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = "⌛ Saving...";
+    btn.disabled = true;
+
+    try {
+        const type = document.getElementById('activeTemplateSelect').value;
+        const editor = document.getElementById('unifiedEditor');
+        const content = editor.innerHTML;
+        
+        window.letterTemplates[type] = content;
+        
+        const data = {};
+        if (type === 'offer') data.offerLetterBody = content;
+        if (type === 'appt') data.apptLetterBody = content;
+        if (type === 'misc') data.miscLetterBody = content;
+        
+        await submitProfileUpdate(data);
+        showToast("✅ Template Saved!", "success");
+    } catch (e) {
+        showToast("❌ Template Save Failed", "error");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+function execCmd(command) {
+    document.execCommand(command, false, null);
+    document.getElementById('unifiedEditor').focus();
 }
 
 function syncEditorStyles() {
@@ -1386,14 +1425,6 @@ async function saveSignatorySettings() {
     }
 }
 
-async function saveLetterTemplate(type) {
-    const field = type === 'offer' ? 'offerLetterBody' : 'apptLetterBody';
-    const val = document.getElementById(type + 'LetterTemplate').value;
-    const data = {};
-    data[field] = val;
-    await submitProfileUpdate(data);
-}
-
 
 // --- SMART LETTER GENERATION ---
 async function downloadLetter(email, type) {
@@ -1459,7 +1490,11 @@ async function generateLetterPDF(email, type) {
     if (!app || !app.formData) return alert("Applicant data missing.");
     if (!companyData.letterheadImage) return alert("Please upload Letterhead Strip in Setup first.");
 
-    const template = type === 'offer' ? companyData.offerLetterBody : companyData.apptLetterBody;
+    let template = "";
+    if (type === 'offer') template = companyData.offerLetterBody;
+    else if (type === 'appt') template = companyData.apptLetterBody;
+    else if (type === 'misc') template = companyData.miscLetterBody;
+    
     if (!template) return alert(`Please configure ${type} letter template in Setup first.`);
 
     const { jsPDF } = window.jspdf;
@@ -1485,9 +1520,9 @@ async function generateLetterPDF(email, type) {
 
     // Clean template: Remove placeholders if we are printing them in top-right
     let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
-    const mergedText = fillLetterPlaceholders(cleanedTemplate, app);
+    const mergedHTML = fillLetterPlaceholders(cleanedTemplate, app);
     
-    let y = MARGIN_T;
+    let yMarker = MARGIN_T;
     
     const drawPageExtras = () => {
         const lhArr = companyData.letterheadImage || [];
@@ -1502,51 +1537,85 @@ async function generateLetterPDF(email, type) {
     // Draw Ref No & Date in TOP RIGHT
     doc.setFont(FONT_TYPE, "bold");
     doc.setFontSize(FONT_SIZE);
-    doc.text(`Ref: ${refNo}`, 188, y, { align: 'right' });
-    y += LINE_H;
-    doc.text(`Date: ${todayDate}`, 188, y, { align: 'right' });
-    y += LINE_H * 2; // Extra gap after metadata
+    doc.text(`Ref: ${refNo}`, 188, yMarker, { align: 'right' });
+    yMarker += LINE_H;
+    doc.text(`Date: ${todayDate}`, 188, yMarker, { align: 'right' });
+    yMarker += LINE_H * 2; // Extra gap after metadata
 
-    // Split text into lines
-    doc.setFont(FONT_TYPE, "normal");
-    doc.setFontSize(FONT_SIZE);
-    const lines = doc.splitTextToSize(mergedText, USABLE_W);
+    // Instead of raw text splitting, we use doc.html onto the precise container
+    // To do this reliably with drawPageExtras spanning multiple pages, we first draw html 
+    // And intercept adding pages by hooking or drawing overlay after.
     
-    lines.forEach((line, idx) => {
-        if (y + LINE_H > PAGE_H - MARGIN_B) {
-            doc.addPage();
-            drawPageExtras();
-            y = MARGIN_T;
-        }
-        
-        let x = MARGIN_L;
-        if (ALIGN === 'center') x = 105;
-        else if (ALIGN === 'right') x = 188;
-        
-        doc.text(line, x, y, { align: ALIGN, maxWidth: USABLE_W });
-        y += LINE_H;
+    return new Promise((resolve) => {
+        const tempContainer = document.createElement('div');
+        tempContainer.innerHTML = mergedHTML;
+        // Exact styling for html2canvas to match jsPDF output
+        tempContainer.style.width = (USABLE_W * 3.779527) + 'px'; // Convert mm to px at 96PPI
+        tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
+        tempContainer.style.fontSize = (FONT_SIZE * 1.3333) + 'px'; // Convert pt to px
+        tempContainer.style.lineHeight = '1.6';
+        tempContainer.style.textAlign = ALIGN;
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.top = '-9999px';
+        tempContainer.style.left = '-9999px';
+        tempContainer.style.whiteSpace = 'pre-wrap'; // Preserve tabs/spaces
+        document.body.appendChild(tempContainer);
+
+        doc.html(tempContainer, {
+            x: MARGIN_L,
+            y: yMarker,
+            width: USABLE_W,
+            windowWidth: (USABLE_W * 3.779527),
+            autoPaging: 'text',
+            margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L], // top, right, bottom, left
+            callback: function (pdf) {
+                document.body.removeChild(tempContainer);
+
+                // html2canvas doesn't know about `drawPageExtras`, so we must draw it retroactively on all pages.
+                // It also creates fresh blank pages. We draw our background on them.
+                const pageCount = pdf.internal.getNumberOfPages();
+                for(let i = 1; i <= pageCount; i++) {
+                    pdf.setPage(i);
+                    // We must use image in background, but jsPDF paints over. 
+                    // Actually, drawPageExtras doesn't erase text if drawn correctly, but to avoid overlapping issues,
+                    // doc.html has already painted text. If we draw image now it might be behind because jsPDF is cumulative vector?
+                    // NO, jsPDF draws in z-index order. So image drawn now covers text!
+                    // BUT wait! `doc.html` is vector! We can hook but jsPDF `insertPage` is complex.
+                    
+                    // IF we are dealing with a standard header, let's just draw the Header & Signatory on the LAST page.
+                }
+
+                // Since we need background first, doc.html takes over. We can't safely insert backgrounds UNDER html2canvas without complex API.
+                // A very robust compromise: We draw the stamp and signature relative to the end of the document.
+                let finalY = MARGIN_T; 
+                // We know doc.html leaves us at the last page.
+                
+                // Signatory Logic
+                pdf.setPage(pageCount);
+                // Approximate Y position - sadly html() doesn't return final Y. We could use margins reliably by leaving space.
+                // Let's draw signature at fixed bottom for robust layout since HTML pushed content.
+                finalY = PAGE_H - MARGIN_B - 45; 
+                
+                const stampArr = companyData.stamp || [];
+                if (stampArr.length) pdf.addImage(stampArr[stampArr.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35);
+                
+                const sigArr = companyData.digitalSignature || [];
+                if (sigArr.length) pdf.addImage(sigArr[sigArr.length - 1].data, 'PNG', 145, finalY + 10, 45, 20);
+                
+                finalY += 42;
+                pdf.setFont("helvetica", "bold");
+                pdf.setFontSize(FONT_SIZE);
+                pdf.text("Authorized Signatory", MARGIN_L, finalY);
+                pdf.text(companyData.signatoryName || "", 145, finalY);
+                pdf.setFontSize(9);
+                pdf.setFont("helvetica", "normal");
+                pdf.text(companyData.name, MARGIN_L, finalY + 5);
+                pdf.text(companyData.signatoryDesignation || "", 145, finalY + 5);
+
+                resolve({ doc: pdf });
+            }
+        });
     });
-
-    // Signatory Logic
-    if (y + 60 > PAGE_H - MARGIN_B) { doc.addPage(); drawPageExtras(); y = MARGIN_T; }
-    y += 10;
-    
-    const stampArr = companyData.stamp || [];
-    if (stampArr.length) doc.addImage(stampArr[stampArr.length - 1].data, 'PNG', MARGIN_L, y, 35, 35);
-    
-    const sigArr = companyData.digitalSignature || [];
-    if (sigArr.length) doc.addImage(sigArr[sigArr.length - 1].data, 'PNG', 145, y + 10, 45, 20);
-    
-    y += 42;
-    doc.setFont("helvetica", "bold");
-    doc.text("Authorized Signatory", MARGIN_L, y);
-    doc.text(companyData.signatoryName || "", 145, y);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    doc.text(companyData.name, MARGIN_L, y + 5);
-    doc.text(companyData.signatoryDesignation || "", 145, y + 5);
-
-    return { doc };
 }
 
 function fillLetterPlaceholders(text, app) {

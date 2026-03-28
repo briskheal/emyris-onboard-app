@@ -30,6 +30,7 @@
         .drop-zone-sm { height: auto !important; min-height: 70px; padding: 0.75rem !important; transition: all 0.3s ease; }
         .drop-zone-sm img:not(.hidden) { max-height: 100px !important; max-width: 100% !important; object-fit: contain !important; margin-bottom: 0.25rem; }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -404,21 +405,29 @@
                                         <input type="text" id="newDivisionInput" class="form-input-sm" placeholder="NEW DIVISION" style="text-transform:uppercase">
                                         <button class="btn btn-primary btn-sm" onclick="addDivision()">+ Add</button>
                                     </div>
-                                <div class="setup-section">
-                                    <div class="setup-section-head">
-                                        <h4>📄 Offer Letter Template</h4>
-                                    </div>
-                                    <div class="placeholder-guide" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; border: 1px dashed var(--glass-border); padding: 1.5rem; border-radius: 12px; font-size: 0.82rem;">
+                                <div class="setup-section unified-editor-section">
+                                    <div class="setup-section-head" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1rem;">
                                         <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">👤 Personal</strong>
-                                            <code>{{FULL_NAME}}</code> <code>{{FIRST_NAME}}</code> <code>{{TITLE}}</code> <code>{{DOB}}</code> <code>{{FATHER_NAME}}</code> <code>{{PAN_NO}}</code>
+                                            <h4>📝 Unified Document Editor</h4>
+                                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Select a template to edit below.</p>
                                         </div>
+                                        <div class="editor-template-selector">
+                                            <select id="activeTemplateSelect" class="form-input-sm" onchange="switchEditorTemplate()" style="font-weight: 600; background: var(--glass-bg); color: white;">
+                                                <option value="offer">📄 Offer Letter</option>
+                                                <option value="appt">📋 Appointment Letter</option>
+                                                <option value="misc">🛡️ Miscellaneous Letter</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="placeholder-guide unified-placeholder" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; border: 1px dashed var(--glass-border); padding: 1.5rem; border-radius: 12px; font-size: 0.82rem;">
                                         <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💼 Employment</strong>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">👤 Personal & Job</strong>
+                                            <code>{{FULL_NAME}}</code> <code>{{FIRST_NAME}}</code> <code>{{TITLE}}</code> <code>{{DOB}}</code> <code>{{FATHER_NAME}}</code> <code>{{PAN_NO}}</code>
                                             <code>{{DESIGNATION}}</code> <code>{{DIVISION}}</code> <code>{{HQ}}</code> <code>{{REPORTING_TO}}</code> <code>{{JOINING_DATE}}</code>
                                         </div>
                                         <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💰 Financial</strong>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💰 Salary & Bank</strong>
                                             <code>{{SALARY_MONTHLY}}</code> <code>{{SALARY_ANNUAL}}</code> <code>{{SALARY_WORDS}}</code> <code>{{BANK_NAME}}</code> <code>{{BANK_ACC}}</code> <code>{{IFSC}}</code>
                                         </div>
                                         <div>
@@ -426,33 +435,31 @@
                                             <code>{{ADDRESS}}</code> <code>{{CITY_STATE}}</code> <code>{{PIN}}</code> <code>{{PHONE}}</code>
                                         </div>
                                         <div style="grid-column: 1 / -1; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.2rem; opacity: 0.7;">
-                                             <small><b>System Handles Automatically:</b> <code>{{REF_NO}}</code> and <code>{{TODAY_DATE}}</code> are placed in top-right corner automatically.</small>
+                                             <small><b>System Built-in:</b> <code>{{REF_NO}}</code> & <code>{{TODAY_DATE}}</code> are auto-placed top-right.</small>
                                         </div>
                                     </div>
-                                    <textarea id="offerLetterTemplate" class="letter-editor" placeholder="Paste offer letter..."></textarea>
-                                    <button class="btn btn-primary" onclick="saveLetterTemplate('offer')">💾 Save Offer Template</button>
-                                </div>
-
-                                <div class="setup-section">
-                                    <div class="setup-section-head">
-                                        <h4>📋 Appointment Letter Template</h4>
+                                    
+                                    <div class="modern-editor-container">
+                                        <div class="editor-toolbar">
+                                            <button type="button" class="btn-tool" onclick="execCmd('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
+                                            <button type="button" class="btn-tool" onclick="execCmd('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
+                                            <button type="button" class="btn-tool" onclick="execCmd('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+                                            <div class="toolbar-divider"></div>
+                                            <button type="button" class="btn-tool" onclick="execCmd('justifyLeft')" title="Align Left">⬅️</button>
+                                            <button type="button" class="btn-tool" onclick="execCmd('justifyCenter')" title="Align Center">🀄</button>
+                                            <button type="button" class="btn-tool" onclick="execCmd('justifyRight')" title="Align Right">➡️</button>
+                                            <button type="button" class="btn-tool" onclick="execCmd('justifyFull')" title="Justify">↔️</button>
+                                            <div class="toolbar-divider"></div>
+                                            <button type="button" class="btn-tool" onclick="execCmd('insertOrderedList')" title="Numbered List">🔢</button>
+                                            <button type="button" class="btn-tool" onclick="execCmd('insertUnorderedList')" title="Bulleted List">⏺️</button>
+                                        </div>
+                                        <!-- contenteditable div replacing textareas -->
+                                        <div id="unifiedEditor" class="letter-editor content-editable-area" contenteditable="true" spellcheck="false" placeholder="Draft your letter here..."></div>
                                     </div>
-                                    <!-- Same placeholder guide for appointment -->
-                                    <div class="placeholder-guide" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; border: 1px dashed var(--glass-border); padding: 1.5rem; border-radius: 12px; font-size: 0.82rem;">
-                                        <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">👤 Personal & Job</strong>
-                                            <code>{{FULL_NAME}}</code> <code>{{TITLE}}</code> <code>{{DESIGNATION}}</code> <code>{{DIVISION}}</code> <code>{{JOINING_DATE}}</code>
-                                        </div>
-                                        <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💰 Salary & Bank</strong>
-                                            <code>{{SALARY_ANNUAL}}</code> <code>{{BANK_NAME}}</code> <code>{{BANK_ACC}}</code> <code>{{IFSC}}</code>
-                                        </div>
-                                        <div style="grid-column: 1 / -1; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.2rem; opacity: 0.7;">
-                                             <small>Use coordinates/tab inside editor for precise placement. <code>{{REF_NO}}</code> & <code>{{TODAY_DATE}}</code> are printed in top-right corner.</small>
-                                        </div>
+                                    
+                                    <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
+                                        <button class="btn btn-primary" onclick="saveActiveTemplate()">💾 Save Document Template</button>
                                     </div>
-                                    <textarea id="apptLetterTemplate" class="letter-editor" style="height:320px" placeholder="Paste appointment letter..."></textarea>
-                                    <button class="btn btn-primary" onclick="saveLetterTemplate('appt')">💾 Save Appointment Template</button>
                                 </div>
 
                                 <!-- Insta Document Lab (Separator) -->
