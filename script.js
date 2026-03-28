@@ -92,15 +92,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateView('landingPage');
     initBackgroundAnimations();
     initFileListeners();
-    initSetupListeners(); // New: FY Ref Preview
 });
-
-function initSetupListeners() {
-    ['fyFrom', 'fyTo', 'letterCounterStart'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.addEventListener('input', updateRefPreview);
-    });
-}
 
 // Show live image & file name on label when user picks a file
 function initFileListeners() {
@@ -411,7 +403,12 @@ async function saveCompanyProfile(e) {
         website: rawData.compWeb,
         phone: rawData.compPhone,
         tollFree: rawData.compTollFree,
-        address: rawData.compAddress
+        address: rawData.compAddress,
+        fyFrom: rawData.fyFrom,
+        fyTo: rawData.fyTo,
+        offerCounter: parseInt(rawData.offerCounter) || 1001,
+        apptCounter: parseInt(rawData.apptCounter) || 1001,
+        miscCounter: parseInt(rawData.miscCounter) || 1001
     };
     
     // Simple helper: Only capture NEWLY selected files
@@ -516,6 +513,12 @@ function switchAdminTab(tab) {
         f.compPhone.value = companyData.phone || '';
         f.compTollFree.value = companyData.tollFree || '';
         f.compAddress.value = companyData.address || '';
+        
+        f.fyFrom.value = companyData.fyFrom || '';
+        f.fyTo.value = companyData.fyTo || '';
+        f.offerCounter.value = companyData.offerCounter || 1001;
+        f.apptCounter.value = companyData.apptCounter || 1001;
+        f.miscCounter.value = companyData.miscCounter || 1001;
 
         // Standard stats
         renderAssetLists(); 
@@ -872,7 +875,11 @@ async function saveWorkflowAssignment() {
     // Auto-generate Ref if not present
     const app = allApplicants.find(a => a.email === activeWfEmail);
     if (!app.refNo) {
-        const refRes = await fetch('/api/admin/next-ref', { method: 'POST' });
+        const refRes = await fetch('/api/admin/next-ref', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'offer' })
+        });
         const refData = await refRes.json();
         if (refData.success) {
             data.refNo = refData.refNo;
@@ -1049,10 +1056,7 @@ async function loadSetupData() {
         'footerHeight': companyData.footerHeight || 25,
         'letterFontSize': companyData.letterFontSize || 11,
         'letterFontType': companyData.letterFontType || 'helvetica',
-        'letterAlignment': companyData.letterAlignment || 'left',
-        'fyFrom': companyData.fyFrom || "",
-        'fyTo': companyData.fyTo || "",
-        'letterCounterStart': companyData.letterCounter || 1001
+        'letterAlignment': companyData.letterAlignment || 'left'
     };
 
     for (const [id, val] of Object.entries(fields)) {
@@ -1074,8 +1078,6 @@ async function loadSetupData() {
     populateTemplateSelect();
     switchEditorTemplate();
 
-    updateRefPreview();
-    
     // Letterhead Preview
     const lhStatus = document.getElementById('letterheadStatus');
     if (companyData.letterheadImage && companyData.letterheadImage.length > 0 && lhStatus) {
@@ -1264,41 +1266,13 @@ async function deleteDivision(id) {
     populateDivisions();
 }
 
-function updateRefPreview() {
-    const counterEl = document.getElementById('letterCounterStart');
-    const fromEl = document.getElementById('fyFrom');
-    const toEl = document.getElementById('toFrom'); // Wait, should be 'fyTo'
-    
-    const counter = counterEl ? counterEl.value : 1001;
-    const from = fromEl ? fromEl.value : "";
-    const to = document.getElementById('fyTo') ? document.getElementById('fyTo').value : "";
-    
-    let fyCode = "25-26";
-    if (from && to) {
-        fyCode = `${from.split('-')[0].slice(2)}-${to.split('-')[0].slice(2)}`;
-    }
-    const previewEl = document.getElementById('refPreview');
-    if (previewEl) previewEl.innerText = `REF/${counter}/${fyCode}`;
-}
 
-async function saveFYSettings() {
-    const data = {
-        fyFrom: document.getElementById('fyFrom').value,
-        fyTo: document.getElementById('fyTo').value,
-        letterCounterStart: parseInt(document.getElementById('letterCounterStart').value) || 1001
-    };
-    // If resetting FY, also reset current counter to start
-    data.letterCounter = data.letterCounterStart;
-    
-    await submitProfileUpdate(data);
-    loadSetupData();
-}
 
 function injectDummyApplicant() {
     const dummy = {
         fullName: "SMRUTI RANJAN DASH",
         email: "test@dummy.com",
-        refNo: `REF/${companyData.letterCounter || 1001}/${new Date().getFullYear().toString().slice(-2)}-${(new Date().getFullYear()+1).toString().slice(-2)}`,
+        refNo: `REF/OFR/${companyData.offerCounter || 1001}/${new Date().getFullYear().toString().slice(-2)}-${(new Date().getFullYear()+1).toString().slice(-2)}`,
         division: "CRITIZA",
         reportingTo: "MR. ASHOK KUMAR (VP SALES)",
         formData: {

@@ -51,7 +51,9 @@ const companySchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now },
     headerHeight: { type: Number, default: 65 },
     footerHeight: { type: Number, default: 25 },
-    letterCounter: { type: Number, default: 1001 },
+    offerCounter: { type: Number, default: 1001 },
+    apptCounter: { type: Number, default: 1001 },
+    miscCounter: { type: Number, default: 1001 },
     customAssetCategories: { type: [String], default: [] }
 });
 
@@ -389,12 +391,31 @@ app.post('/api/admin/next-ref', async (req, res) => {
     try {
         const company = await Company.findOne();
         if (!company) return res.status(404).json({ error: 'No company profile' });
-        const counter = company.letterCounter || 1001;
+        
+        const { type } = req.body; // 'offer', 'appt', or 'misc'
+        
+        let counterKey = 'offerCounter'; // Default
+        let prefix = "OFR";
+        
+        if (type === 'appt') {
+            counterKey = 'apptCounter';
+            prefix = "APT";
+        } else if (type === 'misc' || (type && type.startsWith('misc_'))) {
+            counterKey = 'miscCounter';
+            prefix = "MSC";
+        }
+
+        const counter = company[counterKey] || 1001;
         const fyFrom = company.fyFrom ? new Date(company.fyFrom) : new Date();
         const fyTo   = company.fyTo   ? new Date(company.fyTo)   : new Date();
         const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
-        const refNo = `REF/${counter}/${fyShort}`;
-        await Company.findOneAndUpdate({}, { letterCounter: counter + 1 });
+        
+        const refNo = `REF/${prefix}/${counter}/${fyShort}`;
+        
+        const updateObj = {};
+        updateObj[counterKey] = counter + 1;
+        await Company.findOneAndUpdate({}, updateObj);
+        
         res.json({ success: true, refNo, counter });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });

@@ -190,6 +190,34 @@
                                 <textarea name="compAddress"></textarea>
                             </div>
 
+                            <div class="setup-section-head" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem; margin-bottom: 1rem;">
+                                <h4>📅 Financial Year & Letter Counters</h4>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Set one-time configurations for automatic reference number generation.</p>
+                            </div>
+                            
+                            <div class="input-grid" style="grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 2rem;">
+                                <div class="form-group">
+                                    <label>FY Start Date</label>
+                                    <input type="date" name="fyFrom" id="profile_fyFrom">
+                                </div>
+                                <div class="form-group">
+                                    <label>FY End Date</label>
+                                    <input type="date" name="fyTo" id="profile_fyTo">
+                                </div>
+                                <div class="form-group">
+                                    <label>Offer Counter</label>
+                                    <input type="number" name="offerCounter" id="profile_offerCounter" placeholder="1001">
+                                </div>
+                                <div class="form-group">
+                                    <label>Appt Counter</label>
+                                    <input type="number" name="apptCounter" id="profile_apptCounter" placeholder="1001">
+                                </div>
+                                <div class="form-group">
+                                    <label>Misc Counter</label>
+                                    <input type="number" name="miscCounter" id="profile_miscCounter" placeholder="1001">
+                                </div>
+                            </div>
+
                             <div class="input-grid branding-upload-grid">
                                 <div class="upload-box-sm logo-box">
                                     <label>Company Logos</label>
@@ -333,19 +361,7 @@
                                     </div>
                                 </div>
 
-                                <div class="toolbar-card">
-                                    <h5>📅 Counters & FY</h5>
-                                    <div class="sidebar-grid">
-                                        <div style="display: flex; gap: 5px;">
-                                            <input type="date" id="fyFrom" class="form-input-sm" style="font-size: 0.7rem; padding: 4px;">
-                                            <input type="date" id="fyTo" class="form-input-sm" style="font-size: 0.7rem; padding: 4px;">
-                                        </div>
-                                        <div class="sidebar-input-group">
-                                            <label>Start No.</label>
-                                            <input type="number" id="letterCounterStart" value="1001" class="form-input-sm">
-                                        </div>
-                                    </div>
-                                </div>
+
 
                                 <div class="toolbar-card" style="justify-content: center; background: rgba(99, 102, 241, 0.1); border-color: var(--primary);">
                                     <button class="btn btn-primary" style="width:100%" id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save All Settings</button>
