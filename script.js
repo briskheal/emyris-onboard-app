@@ -628,7 +628,10 @@ async function renderAssetLists() {
                     const box = document.createElement('div');
                     box.className = 'upload-box-sm';
                     box.innerHTML = `
-                        <label>${cat}</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                            <label style="margin:0">${cat}</label>
+                            <button type="button" onclick="deleteAssetCategory('${cat}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.75rem; opacity: 0.6;" title="Remove Category">🗑️ Delete</button>
+                        </div>
                         <div class="drop-zone-sm" onclick="document.getElementById('input_${safeKey}').click()">
                             <span class="drop-icon-sm">📎</span>
                             <span id="status_${safeKey}" class="drop-label-sm">Upload Files</span>
@@ -729,6 +732,25 @@ async function addAssetCategory() {
             renderAssetLists();
         }
     } catch (e) { showToast("❌ Creation failed", "error"); }
+    finally { unlockUI(); }
+}
+
+async function deleteAssetCategory(categoryName) {
+    if (!confirm(`Are you sure you want to permanently delete the category "${categoryName}" and all assets inside it?`)) return;
+    
+    try {
+        lockUI("🗑️ Removing Category...");
+        const res = await fetch('/api/admin/delete-category', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ categoryName })
+        });
+        if ((await res.json()).success) {
+            showToast(`✅ Category ${categoryName} removed!`);
+            await fetchCompanyData();
+            renderAssetLists();
+        }
+    } catch (e) { showToast("❌ Delete failed", "error"); }
     finally { unlockUI(); }
 }
 

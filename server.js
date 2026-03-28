@@ -633,6 +633,21 @@ app.post('/api/admin/add-category', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to add category' }); }
 });
 
+app.post('/api/admin/delete-category', async (req, res) => {
+    try {
+        const { categoryName } = req.body;
+        const company = await Company.findOne();
+        if (company) {
+            company.customAssetCategories = company.customAssetCategories.filter(c => c !== categoryName);
+            await company.save();
+            
+            // OPTIONAL: Delete assets belonging to this category too?
+            await Asset.deleteMany({ category: categoryName });
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed to delete category' }); }
+});
+
 // --- SYSTEM MAINTENANCE ---
 app.get('/api/admin/system/export', async (req, res) => {
     try {
