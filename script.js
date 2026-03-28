@@ -41,8 +41,8 @@ async function nukeDatabase() {
         if (json.success) {
             showToast("✅ Database cleared successfully", "success");
             await fetchCompanyData();
-            await fetchApplicants(); // Refresh list to empty
-            switchAdminTab('profile'); // Refresh view
+            await fetchApplicants(); 
+            switchAdminTab('profile'); 
         }
     } catch (e) {
         showToast("❌ System wipe failed", "error");
@@ -959,33 +959,32 @@ async function saveFYSettings() {
 
 function injectDummyApplicant() {
     const dummy = {
-        fullName: "DUMMY TEST EMPLOYEE",
+        fullName: "SMRUTI RANJAN DASH",
         email: "test@dummy.com",
-        refNo: companyData.letterheadImage ? `REF/${companyData.letterCounterStart+99}/${(companyData.fyFrom||'2025').slice(0,4)}` : "REF/1001/25-26",
-        division: "TEST DIVISION",
-        reportingTo: "Ms. HR Manager",
+        refNo: `REF/${companyData.letterCounter || 1001}/${new Date().getFullYear().toString().slice(-2)}-${(new Date().getFullYear()+1).toString().slice(-2)}`,
+        division: "CRITIZA",
+        reportingTo: "MR. ASHOK KUMAR (VP SALES)",
         formData: {
-            firstName: "DUMMY",
-            lastName: "EMPLOYEE",
+            firstName: "SMRUTI",
+            lastName: "DASH",
             gender: "male",
-            address: "123, Test Street, Dummy Nagar",
-            city: "Bhubaneswar",
-            state: "Odisha",
-            pin: "751001",
-            designation: "Product Manager",
-            hq: "Bhubaneswar",
-            salary: "50000",
+            address: "PLOT NO-42, CHANDRASEKHARPUR",
+            city: "BHUBANESWAR",
+            state: "ODISHA",
+            pin: "751024",
+            designation: "PRODUCT MANAGER",
+            hq: "BHUBANESWAR",
+            salary: "70833", // Approx 8.5L CTC
             joiningDate: new Date().toISOString().split('T')[0]
         }
     };
     
-    // Temporarily add to allApplicants for generation
     const original = [...allApplicants];
     allApplicants.push(dummy);
     
-    showToast("🧪 Generating Test Offer Letter...", "success");
+    showToast("🧪 Generating High-Fidelity Test Offer Letter...", "success");
     downloadLetter("test@dummy.com", "offer").then(() => {
-        allApplicants = original; // Restore
+        allApplicants = original;
     });
 }
 
