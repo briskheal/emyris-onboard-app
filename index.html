@@ -15,20 +15,13 @@
         #toastNotif.success { background: linear-gradient(135deg,#064e3b,#10b981); }
         #toastNotif.error { background: linear-gradient(135deg,#7f1d1d,#ef4444); }
 
-        /* Toolbar Layout (Updated) */
-        .setup-grid-layout { display: flex; flex-direction: column; gap: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
-        .setup-toolbar { display: flex; flex-wrap: wrap; gap: 1rem; width: 100%; margin-bottom: 2rem; align-items: stretch; }
-        .toolbar-card { flex: 1; min-width: 250px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
-        .toolbar-card h5 { margin: 0 0 0.75rem 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
-        .toolbar-grid { display: flex; flex-direction: column; gap: 0.5rem; }
+        /* Full Component Width Overrides for Admin Tools */
+        .admin-wide-container { width: 100% !important; max-width: 100% !important; margin: 0; }
         .setup-main-content { width: 100%; display: flex; flex-direction: column; gap: 2.5rem; align-items: stretch; }
-        
-        /* Full Block Width Editors */
-        .letter-editor-container { width: 100%; position: relative; }
-        .letter-editor { min-height: 450px !important; }
-        
-        .drop-zone-sm { height: auto !important; min-height: 70px; padding: 0.75rem !important; transition: all 0.3s ease; }
-        .drop-zone-sm img:not(.hidden) { max-height: 100px !important; max-width: 100% !important; object-fit: contain !important; margin-bottom: 0.25rem; }
+        .placeholder-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; }
+        .placeholder-cat { background: rgba(255,255,255,0.03); padding: 1.25rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .placeholder-cat strong { color: var(--accent); display: block; margin-bottom: 0.75rem; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .placeholder-cat code { background: rgba(99, 102, 241, 0.1); color: #818cf8; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem; margin-right: 4px; margin-bottom: 4px; display: inline-block; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -183,8 +176,8 @@
                         <form id="companyProfileForm" onsubmit="saveCompanyProfile(event)">
                             
                             <!-- Card 1: Core Identity -->
-                            <div class="setup-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
-                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none;">
+                            <div class="setup-section">
+                                <div class="setup-section-head">
                                     <h4>🏢 Core Business Identity</h4>
                                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Primary business details used globally across all emails and documents.</p>
                                 </div>
@@ -213,8 +206,8 @@
                             </div>
 
                             <!-- Card 2: Financial Year & Counters -->
-                            <div class="setup-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
-                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none;">
+                            <div class="setup-section">
+                                <div class="setup-section-head">
                                     <h4>📅 Financial Year & Letter Counters</h4>
                                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Set one-time configurations for automatic reference number generation.</p>
                                 </div>
@@ -244,8 +237,8 @@
                             </div>
 
                             <!-- Card 3: Brand Assets -->
-                            <div class="setup-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
-                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none; display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
+                            <div class="setup-section">
+                                <div class="setup-section-head">
                                     <div>
                                         <h4>🎨 Brand Assets & Global Artwork</h4>
                                         <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Upload company logos, digital stamps, and digital signatures.</p>
@@ -380,142 +373,132 @@
                         </div>
                     </div>
 
-                    <!-- ===== SETUP & LETTERS TAB ===== -->
                     <div id="adminSetupTab" class="admin-tab-content hidden">
-                        <div>
+                        <div class="editor-workspace">
                             
-                            <!-- Main Content Area -->
-                            <div class="setup-main-content" style="width: 100%;">
-
-                                <div class="setup-section">
-                                    <div class="setup-section-head">
-                                        <h4>🏢 Division Management</h4>
-                                    </div>
-                                    <div id="divisionList" class="division-list"></div>
-                                    <div class="add-division-row">
-                                        <input type="text" id="newDivisionInput" class="form-input-sm" placeholder="NEW DIVISION" style="text-transform:uppercase">
-                                        <button class="btn btn-primary btn-sm" onclick="addDivision()">+ Add</button>
-                                    </div>
-                                </div>
-
-                                <div class="setup-section unified-editor-section">
-
-
-                                    <div class="setup-section-head" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1rem;">
-                                        <div>
-                                            <h4>📝 Unified Document Editor</h4>
-                                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Select a template to edit below.</p>
-                                        </div>
-                                        <div class="editor-template-selector" style="display: flex; gap: 0.5rem; align-items: center;">
-                                            <select id="activeTemplateSelect" class="form-input-sm" onchange="switchEditorTemplate()" style="font-weight: 600; background: var(--glass-bg); color: white;">
-                                                <option value="offer">📄 Offer Letter</option>
-                                                <option value="appt">📋 Appointment Letter</option>
-                                            </select>
-                                            <button id="deleteTemplateBtn" class="btn btn-primary" onclick="deleteMiscellaneousLetter()" style="display: none; padding: 0.4rem 0.8rem; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;" title="Delete Custom Template">✖</button>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="placeholder-guide unified-placeholder" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; border: 1px dashed var(--glass-border); padding: 1.5rem; border-radius: 12px; font-size: 0.82rem;">
-                                        <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">👤 Personal & Job</strong>
-                                            <code>{{FULL_NAME}}</code> <code>{{FIRST_NAME}}</code> <code>{{TITLE}}</code> <code>{{DOB}}</code> <code>{{FATHER_NAME}}</code> <code>{{PAN_NO}}</code>
-                                            <code>{{DESIGNATION}}</code> <code>{{DIVISION}}</code> <code>{{HQ}}</code> <code>{{REPORTING_TO}}</code> <code>{{JOINING_DATE}}</code>
-                                        </div>
-                                        <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💰 Salary & Bank</strong>
-                                            <code>{{SALARY_MONTHLY}}</code> <code>{{SALARY_ANNUAL}}</code> <code>{{SALARY_WORDS}}</code> <code>{{BANK_NAME}}</code> <code>{{BANK_ACC}}</code> <code>{{IFSC}}</code>
-                                        </div>
-                                        <div>
-                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">📍 Location</strong>
-                                            <code>{{ADDRESS}}</code> <code>{{CITY_STATE}}</code> <code>{{PIN}}</code> <code>{{PHONE}}</code>
-                                        </div>
-                                        <div style="grid-column: 1 / -1; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.2rem; opacity: 0.7;">
-                                             <small><b>System Built-in:</b> <code>{{REF_NO}}</code> & <code>{{TODAY_DATE}}</code> are auto-placed top-right.</small>
-                                        </div>
-                                    <div class="modern-editor-container">
-                                        <div class="editor-toolbar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-                                            <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
-                                                <button type="button" class="btn-tool" onclick="execCmd('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
-                                                <button type="button" class="btn-tool" onclick="execCmd('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
-                                                <button type="button" class="btn-tool" onclick="execCmd('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
-                                                <div class="toolbar-divider"></div>
-                                                <div style="display: flex; gap: 0.3rem; align-items: center;">
-                                                    <button type="button" class="btn-tool" onclick="document.getElementById('fontColorPicker').click()" title="Text Color" style="position: relative;">
-                                                        <span style="color: var(--primary-light); font-weight: 900; font-size: 1.1rem; border-bottom: 3px solid #6366f1;">A</span>
-                                                        <input type="color" id="fontColorPicker" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer;" onchange="execCmd('foreColor', this.value)">
-                                                    </button>
-                                                    <button type="button" class="btn-tool" onclick="document.getElementById('hiliteColorPicker').click()" title="Highlight Color" style="position: relative;">
-                                                        <span style="background: #fde047; color: black; padding: 0 4px; border-radius: 2px; font-weight: 900; font-size: 0.9rem;">H</span>
-                                                        <input type="color" id="hiliteColorPicker" value="#ffff00" style="position: absolute; opacity: 0; width: 100%; height: 100%; cursor: pointer;" onchange="execCmd('hiliteColor', this.value)">
-                                                    </button>
-                                                </div>
-                                                <div class="toolbar-divider"></div>
-                                                <button type="button" class="btn-tool" onclick="execCmd('justifyLeft')" title="Align Left">⬅️</button>
-                                                <button type="button" class="btn-tool" onclick="execCmd('justifyCenter')" title="Align Center">🀄</button>
-                                                <button type="button" class="btn-tool" onclick="execCmd('justifyRight')" title="Align Right">➡️</button>
-                                                <button type="button" class="btn-tool" onclick="execCmd('justifyFull')" title="Justify">↔️</button>
-                                                <div class="toolbar-divider"></div>
-                                                <button type="button" class="btn-tool" onclick="execCmd('insertOrderedList')" title="Numbered List">🔢</button>
-                                                <button type="button" class="btn-tool" onclick="execCmd('insertUnorderedList')" title="Bulleted List">⏺️</button>
-                                                <button type="button" class="btn-tool" onclick="execCmd('removeFormat')" title="Clear Formatting">🧹</button>
-                                            </div>
-
-                                            <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin-top: 4px; margin-bottom: 4px;">
-                                                <div class="toolbar-setting-pill" title="Typography">
-                                                    <span class="label">🔤 Font</span>
-                                                    <select id="letterFontType" onchange="syncEditorStyles()" style="max-width: 130px;" title="Font Family">
-                                                        <option value="helvetica">Helvetica / Arial</option>
-                                                        <option value="times">Times New Roman</option>
-                                                        <option value="courier">Courier New</option>
-                                                        <option value="verdana">Verdana</option>
-                                                        <option value="georgia">Georgia</option>
-                                                        <option value="tahoma">Tahoma</option>
-                                                        <option value="garamond">Garamond</option>
-                                                        <option value="serif">System Serif</option>
-                                                    </select>
-                                                    <div class="pill-divider"></div>
-                                                    <input type="number" id="letterFontSize" value="11" step="0.5" onchange="syncEditorStyles()" style="width: 48px; text-align: center;" title="Font Size (pt)">
-                                                </div>
-                                                
-                                                <div class="toolbar-setting-pill" title="Page Header & Footer Margins (mm)">
-                                                    <span class="label">📏 Margins</span>
-                                                    <input type="number" id="headerHeight" value="65" style="width: 44px; text-align: center;" title="Top Margin (mm)">
-                                                    <div class="pill-divider"></div>
-                                                    <input type="number" id="footerHeight" value="25" style="width: 44px; text-align: center;" title="Bottom Margin (mm)">
-                                                </div>
-                                                <input type="hidden" id="letterAlignment" value="left">
-                                            </div>
-                                        </div>
-                                        <div id="unifiedEditor" class="letter-editor content-editable-area" contenteditable="true" spellcheck="false" placeholder="Draft your letter here..."></div>
-                                    </div>
-                                    
-                                    <!-- Live Preview Scope -->
-                                    <div id="livePreviewContainer" class="hidden" style="margin-top: 1.5rem; border-top: 2px dashed var(--glass-border); padding-top: 1.5rem;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                            <h5 style="margin: 0; color: var(--accent);">📄 Real-time Document Preview (A4 Scale)</h5>
-                                            <button type="button" class="btn btn-sm" onclick="toggleLivePreviewUI(false)" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2);">Close Preview</button>
-                                        </div>
-                                        <div id="livePreviewFrame" style="background: white; color: black; width: 100%; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-radius: 4px; overflow: hidden; padding: 40px; min-height: 500px; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">
-                                            <!-- Content will be injected here -->
-                                        </div>
-                                    </div>
-
-                                    </div>
+                            <!-- Division Management -->
+                            <div class="guide-box" style="margin-bottom: 2rem;">
+                                <h4 style="margin-bottom: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                    🏢 Division & Recruitment Management
+                                </h4>
+                                <div id="divisionList" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;"></div>
+                                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                    <input type="text" id="newDivisionInput" class="form-input-sm" placeholder="NEW DIVISION NAME" style="text-transform:uppercase; background: rgba(15, 23, 42, 0.4); border-color: rgba(255,255,255,0.1); width: 250px;">
+                                    <button class="btn btn-primary btn-sm" onclick="addDivision()">+ Add Division</button>
                                 </div>
                             </div>
-                            <!-- Sticky Action Footer for Setup & Letters -->
-                            <div class="editor-action-footer-sticky">
-                                <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
-                                    <span style="font-size: 0.85rem; color: var(--accent); font-weight: 700; text-transform: uppercase;">🖊️ Authorized Signatory</span>
-                                    <div style="display: flex; gap: 0.75rem; align-items: center;">
-                                        <input type="text" id="signatoryName" class="form-input-sm" placeholder="Signatory Name" style="width: 220px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
-                                        <div style="height: 18px; width: 1px; background: rgba(255,255,255,0.2);"></div>
-                                        <input type="text" id="signatoryDesg" class="form-input-sm" placeholder="Designation / Role" style="width: 220px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+
+                            <!-- 1. Guide & Placeholders -->
+                            <div class="guide-box">
+                                <h4 style="margin-bottom: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                                    💡 Template Variable Guide
+                                </h4>
+                                <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                    <span class="placeholder-tag" onclick="copyTag('{{FULL_NAME}}')">{{FULL_NAME}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{FIRST_NAME}}')">{{FIRST_NAME}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{TITLE}}')">{{TITLE}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{DESIGNATION}}')">{{DESIGNATION}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{DIVISION}}')">{{DIVISION}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{HQ}}')">{{HQ}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{SALARY_MONTHLY}}')">{{SALARY_MONTHLY}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{SALARY_ANNUAL}}')">{{SALARY_ANNUAL}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{JOINING_DATE}}')">{{JOINING_DATE}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{ADDRESS}}')">{{ADDRESS}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{CITY_STATE}}')">{{CITY_STATE}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{PIN}}')">{{PIN}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{PHONE}}')">{{PHONE}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{BANK_NAME}}')">{{BANK_NAME}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{BANK_ACC}}')">{{BANK_ACC}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{IFSC}}')">{{IFSC}}</span>
+                                </div>
+                                <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
+                                    Click variables to copy. <code>{{REF_NO}}</code> and <code>{{TODAY_DATE}}</code> are auto-injected by the system.
+                                </p>
+                            </div>
+
+                            <!-- 2. The Master Editor Card -->
+                            <div class="editor-card">
+                                <div class="editor-header-main">
+                                    <div>
+                                        <h3 style="color: white; margin: 0;">Master Document Engine</h3>
+                                        <p style="font-size: 0.85rem; color: var(--text-muted); margin: 4px 0 0 0;">Synchronous live-editing & PDF generation</p>
+                                    </div>
+                                    <div class="pill-container" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3);">
+                                        <label>ACTIVE TEMPLATE:</label>
+                                        <select id="activeTemplateSelect" onchange="switchEditorTemplate()">
+                                            <option value="offer">📄 Offer Letter</option>
+                                            <option value="appt">📋 Appointment Letter</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <div style="display: flex; gap: 1.25rem; align-items: center;">
-                                    <button class="btn btn-outline" onclick="previewActiveTemplate()" style="padding: 0.75rem 2rem; background: rgba(99, 102, 241, 0.15);">👁️ Live Preview</button>
-                                    <button class="btn btn-primary" onclick="saveActiveTemplate()" style="padding: 0.75rem 2.5rem; font-size: 1.05rem; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);">💾 Save Document & Settings</button>
+
+                                <div class="editor-toolbar">
+                                    <div class="setting-group">
+                                        <button class="btn-tool" onclick="execCmd('bold')"><b>B</b></button>
+                                        <button class="btn-tool" onclick="execCmd('italic')"><i>I</i></button>
+                                        <button class="btn-tool" onclick="execCmd('underline')"><u>U</u></button>
+                                        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
+                                        <button class="btn-tool" onclick="execCmd('justifyLeft')">⬅️</button>
+                                        <button class="btn-tool" onclick="execCmd('justifyCenter')">🀄</button>
+                                        <button class="btn-tool" onclick="execCmd('justifyRight')">➡️</button>
+                                        <button class="btn-tool" onclick="execCmd('justifyFull')">↔️</button>
+                                        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
+                                        <button class="btn-tool" onclick="execCmd('insertOrderedList')">🔢</button>
+                                        <button class="btn-tool" onclick="execCmd('insertUnorderedList')">⏺️</button>
+                                    </div>
+
+                                    <div class="setting-group">
+                                        <div class="pill-container">
+                                            <label>🔤 Font</label>
+                                            <select id="letterFontType" onchange="syncEditorStyles()">
+                                                <option value="helvetica">Helvetica</option>
+                                                <option value="times">Times New Roman</option>
+                                                <option value="courier">Courier New</option>
+                                                <option value="verdana">Verdana</option>
+                                            </select>
+                                        </div>
+                                        <div class="pill-container">
+                                            <label>📏 Size</label>
+                                            <input type="number" id="letterFontSize" value="11" step="0.5" onchange="syncEditorStyles()" style="width: 45px;">
+                                        </div>
+                                        <div class="pill-container" title="Top Offset (mm)">
+                                            <label>🔝 Head</label>
+                                            <input type="number" id="headerHeight" value="65" style="width: 45px;">
+                                        </div>
+                                        <div class="pill-container" title="Bottom Offset (mm)">
+                                            <label>🔚 Foot</label>
+                                            <input type="number" id="footerHeight" value="25" style="width: 45px;">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="unifiedEditor" class="letter-editor" contenteditable="true" spellcheck="false"></div>
+                            </div>
+
+                            <!-- 3. Preview Section -->
+                            <div id="livePreviewContainer" class="hidden">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                                    <h4 style="color: var(--accent); margin: 0;">A4 Layout Fidelity Preview</h4>
+                                    <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)" style="color: #ef4444; border-color: #ef4444;">Close Preview</button>
+                                </div>
+                                <div id="livePreviewFrame" style="background: white; color: black; box-shadow: 0 40px 100px rgba(0,0,0,0.6); margin: 0 auto; width: 100%; max-width: 850px; min-height: 800px; padding: 60px; border-radius: 4px;"></div>
+                            </div>
+
+                            <!-- 4. Floating Action Footer -->
+                            <div class="editor-footer-fixed">
+                                <div style="display: flex; gap: 2rem;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label style="font-size: 0.65rem; color: var(--accent); font-weight: 800; text-transform: uppercase;">Official Signatory</label>
+                                        <input type="text" id="signatoryName" class="form-input-sm" placeholder="Name" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); width: 200px;">
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <label style="font-size: 0.65rem; color: var(--accent); font-weight: 800; text-transform: uppercase;">Role / Designation</label>
+                                        <input type="text" id="signatoryDesg" class="form-input-sm" placeholder="Designation" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); width: 200px;">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <button class="btn btn-outline" onclick="previewActiveTemplate()" style="padding: 0.8rem 2rem;">👁️ Test PDF</button>
+                                    <button class="btn btn-primary" onclick="saveActiveTemplate()" style="padding: 0.8rem 3rem;">💾 Commit Template Changes</button>
                                 </div>
                             </div>
                         </div>
