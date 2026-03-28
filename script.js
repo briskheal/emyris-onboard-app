@@ -881,6 +881,8 @@ async function loadSetupData() {
     
     document.getElementById('signatoryName').value = companyData.signatoryName || "";
     document.getElementById('signatoryDesg').value = companyData.signatoryDesignation || "";
+    document.getElementById('headerHeight').value = companyData.headerHeight || 65;
+    document.getElementById('footerHeight').value = companyData.footerHeight || 25;
     
     document.getElementById('offerLetterTemplate').value = companyData.offerLetterBody || "";
     document.getElementById('apptLetterTemplate').value = companyData.apptLetterBody || "";
@@ -1012,7 +1014,9 @@ async function saveSignatorySettings() {
 
     const data = {
         signatoryName: document.getElementById('signatoryName').value,
-        signatoryDesignation: document.getElementById('signatoryDesg').value
+        signatoryDesignation: document.getElementById('signatoryDesg').value,
+        headerHeight: parseInt(document.getElementById('headerHeight').value) || 65,
+        footerHeight: parseInt(document.getElementById('footerHeight').value) || 25
     };
     
     const file = document.getElementById('letterheadInput').files[0];
@@ -1103,9 +1107,10 @@ async function generateLetterPDF(email, type) {
     
     // PDF Config
     const PAGE_H = 297;
-    const HEADER_H = 65; // Height of letterhead strip in mm
-    const MARGIN_T = HEADER_H + 10;
-    const MARGIN_B = 25;
+    const HEADER_H = companyData.headerHeight || 65; 
+    const FOOTER_H = companyData.footerHeight || 25; 
+    const MARGIN_T = HEADER_H + 5; // Slight buffer from header
+    const MARGIN_B = FOOTER_H + 5; // Slight buffer from footer
     const MARGIN_L = 22;
     const USABLE_W = 166; // 210 - 22*2
     const LINE_H = 6.5;
