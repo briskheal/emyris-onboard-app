@@ -1,4 +1,29 @@
 let currentStep = 1;
+let isSaving = false; // NAV GUARD
+
+// Toggle UI Lock while saving/uploading
+function lockUI(msg = "⚙️ Processing... Please Wait") {
+    isSaving = true;
+    const overlay = document.getElementById('processingOverlay');
+    if (overlay) {
+        document.getElementById('processingText').innerText = msg;
+        overlay.classList.remove('hidden');
+    }
+    document.querySelectorAll('.admin-nav button').forEach(b => b.classList.add('nav-locked'));
+}
+
+function unlockUI() {
+    isSaving = false;
+    const overlay = document.getElementById('processingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+    document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('nav-locked'));
+}
+
+// Navigation Guard
+window.onbeforeunload = function() {
+    if (isSaving) return "Changes you made may not be saved.";
+};
+
 let companyData = {
     name: "EMYRIS BIOLIFESCIENCES PVT LTD.",
     address: "",
@@ -325,6 +350,7 @@ function logoutAdmin() {
 
 async function saveCompanyProfile(e) {
     e.preventDefault();
+    lockUI("Saving Profile...");
     const formData = new FormData(e.target);
     const rawData = Object.fromEntries(formData.entries());
     
@@ -399,6 +425,7 @@ async function submitProfileUpdate(data) {
             showToast('❌ Save failed. Please try again.', 'error');
         }
     } catch (err) { showToast('❌ Connection error. Save failed.', 'error'); }
+    finally { unlockUI(); }
 }
 
 function showToast(message, type = 'success') {
@@ -410,6 +437,11 @@ function showToast(message, type = 'success') {
 }
 
 function switchAdminTab(tab) {
+    if (isSaving) {
+        showToast("⚠️ Please wait until the current save is completed.", "error");
+        return;
+    }
+    
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     // Find the button with the correct click handler
     const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`'${tab}'`));
@@ -762,6 +794,7 @@ function renderGallery() {
 
 async function deleteAsset(category, assetId) {
     if (!confirm("Are you sure you want to PERMANENTLY delete this asset from the library?")) return;
+    lockUI("🗑️ Deleting Asset...");
     try {
         const res = await fetch('/api/admin/delete-asset', {
             method: 'POST',
@@ -778,6 +811,7 @@ async function deleteAsset(category, assetId) {
             }
         }
     } catch (e) { showToast("❌ Delete failed", "error"); }
+    finally { unlockUI(); }
 }
 
 function viewAssetRaw(val) {
@@ -921,6 +955,7 @@ async function convertPdfToPng(dataUri) {
 }
 
 async function saveSignatorySettings() {
+    lockUI("Saving Signatory & Letterhead...");
     const btn = document.getElementById('saveSignatoryBtn');
     const originalText = btn.innerText;
     btn.innerText = "⌛ Processing...";
@@ -936,31 +971,18 @@ async function saveSignatorySettings() {
         const reader = new FileReader();
         reader.onload = async (e) => {
             let finalData = e.target.result;
-            
-            // AUTO-CONVERTER LOGIC (PDF to Image)
-            if (file.type === 'application/pdf') {
-                try {
-                    showToast("⚙️ Converting PDF to Image...", "success");
-                    finalData = await convertPdfToPng(finalData);
-                } catch (pdfErr) {
-                    showToast("❌ PDF conversion failed. Use Image instead.", "error");
-                    btn.innerText = originalText; btn.disabled = false;
-                    return;
-                }
-            } else if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
-                showToast("⚠️ DOCX conversion limited. Please use PDF/Image for perfect results.", "error");
-            }
-
-            data.letterheadImage = [finalData]; 
+            data.letterheadImage = [{ name: file.name.split('.')[0], data: finalData }]; 
             await submitProfileUpdate(data);
             loadSetupData();
             btn.innerText = originalText; btn.disabled = false;
+            unlockUI();
         };
         reader.readAsDataURL(file);
     } else {
         await submitProfileUpdate(data);
         loadSetupData();
         btn.innerText = originalText; btn.disabled = false;
+        unlockUI();
     }
 }
 

@@ -19,7 +19,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
-<body>
+    <div id="processingOverlay" class="hidden">
+        <div class="processing-content">
+            <div class="spinner-ring"></div>
+            <p id="processingText">⚙️ Processing... Please Wait</p>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Background Decorations -->
         <div class="blob blob-1"></div>

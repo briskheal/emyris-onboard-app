@@ -78,18 +78,24 @@ const Company = mongoose.model('Company', companySchema);
 const Applicant = mongoose.model('Applicant', applicantSchema);
 const Division = mongoose.model('Division', divisionSchema);
 
-// Seed default divisions if none exist
-async function seedDivisions() {
-    const count = await Division.countDocuments();
-    if (count === 0) {
-        await Division.insertMany([
-            { name: 'CRITIZA' },
-            { name: 'NUTRIZA' }
-        ]);
-        console.log('Default divisions seeded.');
+async function initializeApp() {
+    try {
+        await seedDivisions();
+        await migrateAssets();
+        console.log('🚀 Server initialization successful.');
+    } catch (err) {
+        console.error('❌ Critical startup error:', err);
     }
 }
-mongoose.connection.once('open', seedDivisions);
+mongoose.connection.once('open', initializeApp);
+
+// Global Error Handlers (Fix for 502/Crashes)
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+});
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
@@ -468,26 +474,28 @@ app.post('/api/admin/delete-asset', async (req, res) => {
     }
 });
 
-// Helper for existing data migration
 async function migrateAssets() {
-    const profile = await Company.findOne();
-    if (!profile) return;
-    const categories = ['logo','stamp','digitalSignature','letterheadImage','mobileAppTemplate','tadaTemplate'];
-    let changed = false;
-    categories.forEach(cat => {
-        if (profile[cat] && profile[cat].length > 0) {
-            if (typeof profile[cat][0] === 'string') {
-                profile[cat] = profile[cat].map((s, i) => ({ name: `Legacy_${i+1}`, data: s }));
-                changed = true;
+    try {
+        const profile = await Company.findOne();
+        if (!profile) return;
+        const categories = ['logo','stamp','digitalSignature','letterheadImage','mobileAppTemplate','tadaTemplate'];
+        let changed = false;
+        categories.forEach(cat => {
+            if (profile[cat] && profile[cat].length > 0) {
+                if (typeof profile[cat][0] === 'string') {
+                    profile[cat] = profile[cat].map((s, i) => ({ name: `Legacy_${i+1}`, data: s }));
+                    changed = true;
+                }
             }
+        });
+        if (changed) {
+            await profile.save();
+            console.log('✅ Asset migration completed.');
         }
-    });
-    if (changed) {
-        await profile.save();
-        console.log('✅ Asset migration completed.');
+    } catch (e) {
+        console.error('Migration error:', e);
     }
 }
-migrateAssets();
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
