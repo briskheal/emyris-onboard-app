@@ -171,64 +171,48 @@
                                 <textarea name="compAddress"></textarea>
                             </div>
 
-                            <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap:1rem;">
-                                <div class="upload-box-sm">
-                                    <label>Company Logo</label>
+                            <div class="input-grid branding-upload-grid">
+                                <div class="upload-box-sm logo-box">
+                                    <label>Company Logos (Max 10)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('compLogoInput').click()">
                                         <img id="logoPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
                                         <span class="drop-icon-sm">🖼️</span>
-                                        <span id="logoStatus" class="drop-label-sm">Upload Logo</span>
-                                        <input type="file" id="compLogoInput" class="hidden" accept="image/*">
+                                        <span id="logoStatus" class="drop-label-sm">Upload Logos</span>
+                                        <input type="file" id="compLogoInput" class="hidden" accept="image/*" multiple>
                                     </div>
                                 </div>
-                                <div class="upload-box-sm">
-                                    <label>Company Stamp</label>
+                                <div class="upload-box-sm stamp-box">
+                                    <label>Company Stamps (Max 10)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('compStampInput').click()">
                                         <img id="stampPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
                                         <span class="drop-icon-sm">🔴</span>
-                                        <span id="stampStatus" class="drop-label-sm">Upload Stamp</span>
-                                        <input type="file" id="compStampInput" class="hidden" accept="image/*">
+                                        <span id="stampStatus" class="drop-label-sm">Upload Stamps</span>
+                                        <input type="file" id="compStampInput" class="hidden" accept="image/*" multiple>
                                     </div>
                                 </div>
-                                <div class="upload-box-sm">
-                                    <label>Digital Signature</label>
+                                <div class="upload-box-sm sig-box">
+                                    <label>Digital Signatures (Max 10)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('compSigInput').click()">
                                         <img id="sigPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
                                         <span class="drop-icon-sm">✍️</span>
-                                        <span id="sigStatus" class="drop-label-sm">Upload Signature</span>
-                                        <input type="file" id="compSigInput" class="hidden" accept="image/*">
+                                        <span id="sigStatus" class="drop-label-sm">Upload Signatures</span>
+                                        <input type="file" id="compSigInput" class="hidden" accept="image/*" multiple>
                                     </div>
                                 </div>
-                                <div class="upload-box-sm">
-                                    <label>Offer Letter Template</label>
-                                    <div class="drop-zone-sm" onclick="document.getElementById('offerTemplateInput').click()">
-                                        <span class="drop-icon-sm">📄</span>
-                                        <span id="offerStatus" class="drop-label-sm">Upload PDF</span>
-                                        <input type="file" id="offerTemplateInput" class="hidden" accept=".pdf">
-                                    </div>
-                                </div>
-                                <div class="upload-box-sm">
-                                    <label>Appointment Letter</label>
-                                    <div class="drop-zone-sm" onclick="document.getElementById('apptTemplateInput').click()">
-                                        <span class="drop-icon-sm">📜</span>
-                                        <span id="apptStatus" class="drop-label-sm">Upload PDF</span>
-                                        <input type="file" id="apptTemplateInput" class="hidden" accept=".pdf">
-                                    </div>
-                                </div>
-                                <div class="upload-box-sm">
-                                    <label>Mobile App Details</label>
+                                <div class="upload-box-sm mobile-box">
+                                    <label>Mobile App Details (Max 10)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('mobileTemplateInput').click()">
                                         <span class="drop-icon-sm">📱</span>
-                                        <span id="mobileStatus" class="drop-label-sm">Upload PDF</span>
-                                        <input type="file" id="mobileTemplateInput" class="hidden" accept=".pdf">
+                                        <span id="mobileStatus" class="drop-label-sm">Upload PDFs</span>
+                                        <input type="file" id="mobileTemplateInput" class="hidden" accept=".pdf" multiple>
                                     </div>
                                 </div>
-                                <div class="upload-box-sm">
-                                    <label>TA / DA Letter</label>
+                                <div class="upload-box-sm tada-box">
+                                    <label>TA / DA Letters (Max 10)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('tadaTemplateInput').click()">
                                         <span class="drop-icon-sm">✈️</span>
-                                        <span id="tadaStatus" class="drop-label-sm">Upload PDF</span>
-                                        <input type="file" id="tadaTemplateInput" class="hidden" accept=".pdf">
+                                        <span id="tadaStatus" class="drop-label-sm">Upload PDFs</span>
+                                        <input type="file" id="tadaTemplateInput" class="hidden" accept=".pdf" multiple>
                                     </div>
                                 </div>
                             </div>
@@ -332,7 +316,7 @@
                                         <img id="letterheadPreview" src="" class="hidden" style="max-height:80px;margin-bottom:8px;">
                                         <span class="drop-icon-sm">🖼️</span>
                                         <span id="letterheadStatus" class="drop-label-sm">Upload Blank Letterhead</span>
-                                        <input type="file" id="letterheadInput" class="hidden" accept=".pdf,.doc,.docx,image/*">
+                                        <input type="file" id="letterheadInput" class="hidden" accept=".pdf,.doc,.docx,image/*" multiple>
                                     </div>
                                     <p class="setup-hint" style="font-size: 0.75rem;">* Note: High-res PNG/JPG of your blank A4 letterhead is recommended for best text overlay results.</p>
                                 </div>

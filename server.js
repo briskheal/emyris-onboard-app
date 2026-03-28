@@ -26,14 +26,14 @@ const companySchema = new mongoose.Schema({
     phone: String,
     tollFree: String,
     website: String,
-    logo: String,
-    offerTemplate: String,
-    apptTemplate: String,
-    mobileAppTemplate: String,
-    tadaTemplate: String,
-    stamp: String,
-    digitalSignature: String,
-    letterheadImage: String,       // Header strip image for letters
+    logo: [String],
+    offerTemplate: [String],
+    apptTemplate: [String],
+    mobileAppTemplate: [String],
+    tadaTemplate: [String],
+    stamp: [String],
+    digitalSignature: [String],
+    letterheadImage: [String],       // Array of backgrounds
     signatoryName: String,         // e.g. "Ms. Rishita Dash"
     signatoryDesignation: String,  // e.g. "HR Business Partner..."
     offerLetterBody: String,       // Template with {{PLACEHOLDERS}}

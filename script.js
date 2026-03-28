@@ -30,6 +30,8 @@ function initSetupListeners() {
 // Show live image & file name on label when user picks a file
 function initFileListeners() {
     const fileMap = {
+        compLogoInput: { status: 'logoStatus', preview: 'logoPreview' },
+        compStampInput: { status: 'stampStatus', preview: 'stampPreview' },
         compSigInput: { status: 'sigStatus', preview: 'sigPreview' },
         letterheadInput: { status: 'letterheadStatus', preview: 'letterheadPreview' },
         mobileTemplateInput: { status: 'mobileStatus' },
@@ -39,22 +41,19 @@ function initFileListeners() {
         const el = document.getElementById(inputId);
         if (el) el.addEventListener('change', () => {
             const label = document.getElementById(config.status);
-            const file = el.files[0];
-            if (label && file) {
-                label.innerText = `✅ ${file.name.substring(0, 18)}${file.name.length > 18 ? '...' : ''}`;
+            const files = el.files;
+            if (label && files.length > 0) {
+                label.innerText = files.length === 1 ? `✅ ${files[0].name.substring(0, 15)}` : `✅ ${files.length} Files Selected`;
                 label.style.color = 'var(--success)';
                 
-                // Show preview if image
-                if (config.preview && file.type.startsWith('image/')) {
+                // Show preview if image (first one)
+                if (config.preview && files[0].type.startsWith('image/')) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const img = document.getElementById(config.preview);
-                        if (img) {
-                            img.src = e.target.result;
-                            img.classList.remove('hidden');
-                        }
+                        if (img) { img.src = e.target.result; img.classList.remove('hidden'); }
                     };
-                    reader.readAsDataURL(file);
+                    reader.readAsDataURL(files[0]);
                 }
             }
         });
@@ -78,8 +77,8 @@ function initBackgroundAnimations() {
 function applyCompanyData() {
     document.getElementById('displayCompanyName').innerText = companyData.name;
     const logoImg = document.getElementById('displayLogo');
-    if (companyData.logo) {
-        logoImg.src = companyData.logo;
+    if (companyData.logo && companyData.logo.length > 0) {
+        logoImg.src = companyData.logo[companyData.logo.length - 1]; // Show latest logo
         logoImg.classList.remove('hidden');
     }
     const quickContact = document.getElementById('quickContact');
@@ -94,8 +93,8 @@ function applyCompanyData() {
     // Dynamic header logo icon
     const headerImg = document.getElementById('headerLogoImg');
     const headerLetter = document.getElementById('headerLogoLetter');
-    if (companyData.logo && headerImg) {
-        headerImg.src = companyData.logo;
+    if (companyData.logo && companyData.logo.length > 0 && headerImg) {
+        headerImg.src = companyData.logo[companyData.logo.length - 1];
         headerImg.classList.remove('hidden');
         if (headerLetter) headerLetter.style.display = 'none';
     } else if (headerLetter) {
@@ -329,7 +328,7 @@ async function saveCompanyProfile(e) {
     const formData = new FormData(e.target);
     const rawData = Object.fromEntries(formData.entries());
     
-    // Correct Data Mapping for Backend
+    // Base data
     const data = {
         name: rawData.compName,
         website: rawData.compWeb,
@@ -338,29 +337,46 @@ async function saveCompanyProfile(e) {
         address: rawData.compAddress
     };
     
-    // Helper to read file as Base64
-    const readFile = (id) => {
-        return new Promise((resolve) => {
+    // Helper to read multiple files as Base64
+    const readFiles = (id) => {
+        return new Promise(async (resolve) => {
             const el = document.getElementById(id);
-            const file = el ? el.files[0] : null;
-            if (!file) return resolve(null);
-            const reader = new FileReader();
-            reader.onload = (event) => resolve(event.target.result);
-            reader.readAsDataURL(file);
+            if (!el || !el.files.length) return resolve([]);
+            
+            const results = [];
+            for (let i = 0; i < el.files.length; i++) {
+                const f = el.files[i];
+                const res = await new Promise((resFile) => {
+                    const reader = new FileReader();
+                    reader.onload = (event) => resFile(event.target.result);
+                    reader.readAsDataURL(f);
+                });
+                results.push(res);
+            }
+            resolve(results);
         });
     };
 
-    const logo = await readFile('compLogoInput');
-    const stamp = await readFile('compStampInput');
-    const sig = await readFile('compSigInput');
-    const mobile = await readFile('mobileTemplateInput');
-    const tada = await readFile('tadaTemplateInput');
+    const logos = await readFiles('compLogoInput');
+    const stamps = await readFiles('compStampInput');
+    const sigs = await readFiles('compSigInput');
+    const lh = await readFiles('letterheadInput');
+    const mobile = await readFiles('mobileTemplateInput');
+    const tada = await readFiles('tadaTemplateInput');
 
-    if (logo) data.logo = logo;
-    if (stamp) data.stamp = stamp;
-    if (sig) data.digitalSignature = sig;
-    if (mobile) data.mobileAppTemplate = mobile;
-    if (tada) data.tadaTemplate = tada;
+    // Merge logic: Add to existing gallery, limit to 10
+    const merge = (key, newFiles) => {
+        const existing = companyData[key] || [];
+        const merged = [...existing, ...newFiles];
+        return merged.slice(-10); // Keep latest 10
+    };
+
+    if (logos.length) data.logo = merge('logo', logos);
+    if (stamps.length) data.stamp = merge('stamp', stamps);
+    if (sigs.length) data.digitalSignature = merge('digitalSignature', sigs);
+    if (lh.length) data.letterheadImage = merge('letterheadImage', lh);
+    if (mobile.length) data.mobileAppTemplate = merge('mobileAppTemplate', mobile);
+    if (tada.length) data.tadaTemplate = merge('tadaTemplate', tada);
 
     await submitProfileUpdate(data);
 }
@@ -421,23 +437,28 @@ function switchAdminTab(tab) {
                 el.style.color = 'var(--text-muted)';
             }
         };
-        updateStatus('logoStatus',   companyData.logo,               'Logo');
-        updateStatus('stampStatus',  companyData.stamp,              'Stamp');
-        updateStatus('sigStatus',    companyData.digitalSignature,   'Signature');
-        updateStatus('mobileStatus', companyData.mobileAppTemplate,  'PDF');
-        updateStatus('tadaStatus',   companyData.tadaTemplate,       'PDF');
+        updateStatus('logoStatus',   companyData.logo?.length,               'Logo');
+        updateStatus('stampStatus',  companyData.stamp?.length,              'Stamp');
+        updateStatus('sigStatus',    companyData.digitalSignature?.length,   'Signature');
+        updateStatus('letterheadStatus', companyData.letterheadImage?.length, 'Letterhead');
+        updateStatus('mobileStatus', companyData.mobileAppTemplate?.length,  'Files');
+        updateStatus('tadaStatus',   companyData.tadaTemplate?.length,       'Files');
 
-        // Logo Previews
-        const setPreview = (id, val) => {
+        // Logo Previews (Show the latest one)
+        const setPreview = (id, arr) => {
             const img = document.getElementById(id);
-            if (img && val) {
-                img.src = val;
+            if (img && arr && arr.length) {
+                img.src = arr[arr.length - 1]; // Show last uploaded
                 img.classList.remove('hidden');
+            } else if (img) {
+                img.classList.add('hidden');
+                img.src = '';
             }
         };
         setPreview('logoPreview', companyData.logo);
         setPreview('stampPreview', companyData.stamp);
         setPreview('sigPreview', companyData.digitalSignature);
+        setPreview('letterheadPreview', companyData.letterheadImage);
     } else if (tab === 'setup') {
         document.getElementById('adminSetupTab').classList.remove('hidden');
         loadSetupData();
@@ -701,42 +722,42 @@ async function resetApplicantData() {
 // --- ASSET GALLERY ---
 function renderGallery() {
     const grid = document.getElementById('assetGalleryGrid');
-    const assets = [
-        { name: 'Company Logo', key: 'logo' },
-        { name: 'Company Stamp', key: 'stamp' },
-        { name: 'Digital Signature', key: 'digitalSignature' },
-        { name: 'Letterhead Strip', key: 'letterheadImage' },
-        { name: 'Offer Master PDF', key: 'offerTemplate' },
-        { name: 'Appt Master PDF', key: 'apptTemplate' },
-        { name: 'Mobile App Setup', key: 'mobileAppTemplate' },
-        { name: 'TA/DA Policy', key: 'tadaTemplate' }
+    const assetCategories = [
+        { name: 'Logos', key: 'logo' },
+        { name: 'Stamps', key: 'stamp' },
+        { name: 'Signatures', key: 'digitalSignature' },
+        { name: 'Letterheads', key: 'letterheadImage' },
+        { name: 'Mobile App', key: 'mobileAppTemplate' },
+        { name: 'TA/DA', key: 'tadaTemplate' }
     ];
 
-    grid.innerHTML = assets.map(a => {
-        const val = companyData[a.key];
-        const isPdf = val && val.startsWith('data:application/pdf');
-        const isImg = val && val.startsWith('data:image');
-        
-        return `
-            <div class="asset-card">
-                <div class="asset-card-preview">
-                    ${val ? (isImg ? `<img src="${val}">` : (isPdf ? `<span class="pdf-icon">📄</span>` : '?')) : '<span class="empty-icon">📁</span>'}
-                </div>
-                <div class="asset-card-body">
-                    <span class="asset-card-name">${a.name}</span>
-                    <span class="asset-card-status ${val ? 'uploaded' : 'missing'}">${val ? 'Uploaded ✅' : 'Missing ⚠️'}</span>
-                    <div class="asset-card-action">
-                        <button class="btn-asset-view ${!val ? 'disabled' : ''}" ${val ? `onclick="viewAsset('${a.key}')"` : ''}>${isImg ? '👁️ View' : '⬇️ Download'}</button>
+    let html = '';
+    assetCategories.forEach(cat => {
+        const fileArr = companyData[cat.key] || [];
+        fileArr.forEach((val, idx) => {
+            const isPdf = val && val.startsWith('data:application/pdf');
+            const isImg = val && val.startsWith('data:image');
+            
+            html += `
+                <div class="asset-card">
+                    <div class="asset-card-preview">
+                        ${isImg ? `<img src="${val}">` : (isPdf ? `<span class="pdf-icon">📄</span>` : '?')}
+                    </div>
+                    <div class="asset-card-body">
+                        <span class="asset-card-name">${cat.name} #${idx + 1}</span>
+                        <div class="asset-card-action">
+                            <button class="btn-asset-view" onclick="viewAssetRaw('${val}')">${isImg ? '👁️ View' : '⬇️ Download'}</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
-    }).join('');
+            `;
+        });
+    });
+
+    grid.innerHTML = html || '<div class="setup-hint" style="grid-column: 1/-1; text-align: center;">No assets uploaded yet. Go to Company Profile to add files.</div>';
 }
 
-function viewAsset(key) {
-    const val = companyData[key];
-    if (!val) return;
+function viewAssetRaw(val) {
     const win = window.open();
     win.document.write(`<iframe src="${val}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
 }
@@ -929,15 +950,13 @@ async function generateLetterPDF(email, type) {
     
     // Helper to draw background
     const drawPageExtras = () => {
-        // If image exists, draw it. Default to A4 full page if it looks like one.
-        if (companyData.letterheadImage) {
-            // Check if it's a PDF (Unsupported for direct overlay in jsPDF)
-            if (companyData.letterheadImage.includes("application/pdf")) {
+        const lhArr = companyData.letterheadImage || [];
+        if (lhArr.length) {
+            const val = lhArr[lhArr.length - 1]; // Use latest
+            if (val.includes("application/pdf")) {
                 console.warn("PDF Letterhead cannot be used as a background image yet.");
             } else {
-                // If it's an A4 page (high H), draw full; else draw header strip
-                // We'll assume full-page for simplicity since that's the "New Requirement"
-                doc.addImage(companyData.letterheadImage, 'PNG', 0, 0, 210, 297);
+                doc.addImage(val, 'PNG', 0, 0, 210, 297);
             }
         }
     };
@@ -968,11 +987,13 @@ async function generateLetterPDF(email, type) {
 
     // Place Stamp & Signature on LAST PAGE ONLY
     y += 5;
-    if (companyData.stamp) {
-        doc.addImage(companyData.stamp, 'PNG', MARGIN_L, y, 35, 35);
+    const stampArr = companyData.stamp || [];
+    if (stampArr.length) {
+        doc.addImage(stampArr[stampArr.length - 1], 'PNG', MARGIN_L, y, 35, 35);
     }
-    if (companyData.digitalSignature) {
-        doc.addImage(companyData.digitalSignature, 'PNG', 145, y + 10, 45, 20);
+    const sigArr = companyData.digitalSignature || [];
+    if (sigArr.length) {
+        doc.addImage(sigArr[sigArr.length - 1], 'PNG', 145, y + 10, 45, 20);
     }
     
     y += 42;
