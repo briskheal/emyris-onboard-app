@@ -1532,3 +1532,50 @@ input:checked + .slider:before {
 }
 .wf-select:focus, .wf-input:focus { border-color: var(--primary); }
 .letter-actions { display: flex; flex-direction: column; gap: 0.4rem; }
+/* Add Category UI Enhancements */
+.add-category-box {
+    background: rgba(99, 102, 241, 0.03);
+    border: 1px dashed rgba(99, 102, 241, 0.3);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    height: 100%;
+}
+
+.add-category-box:hover {
+    background: rgba(99, 102, 241, 0.06);
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.add-category-box .add-category-controls {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+
+.add-category-box input {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.add-category-box input:focus {
+    border-color: var(--primary);
+    background: white;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.add-category-box button {
+    white-space: nowrap;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+}

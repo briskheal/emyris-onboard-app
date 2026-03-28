@@ -238,16 +238,13 @@
                                     </div>
                                     <div id="tadaList" class="asset-list-vertical"></div>
                                 </div>
-                            </div>
-
-                            <div class="setup-section" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
-                                <div class="setup-section-head">
-                                    <h4>➕ Add Custom Branding Heading</h4>
-                                    <p>Create new areas for specialized uploads like "Tax Documents" or "ID Proofs".</p>
-                                </div>
-                                <div class="add-division-row">
-                                    <input type="text" id="newCategoryInput" class="form-input-sm" style="width: 250px;" placeholder="CATEGORY NAME (e.g. TAX DOCS)">
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="addAssetCategory()">+ Add Heading</button>
+                                <div class="upload-box-sm add-category-box">
+                                    <label>➕ Add Category Header</label>
+                                    <div class="add-category-controls">
+                                        <input type="text" id="newCategoryInput" class="form-input" placeholder="e.g. TAX DOCS">
+                                        <button type="button" class="btn btn-primary" onclick="addAssetCategory()">+ Add</button>
+                                    </div>
+                                    <p class="setup-hint" style="margin-top: 4px; font-size: 0.65rem;">Create specialized upload areas.</p>
                                 </div>
                             </div>
 
