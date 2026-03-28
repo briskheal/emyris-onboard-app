@@ -33,6 +33,7 @@ function initFileListeners() {
         compLogoInput: { status: 'logoStatus', preview: 'logoPreview' },
         compStampInput: { status: 'stampStatus', preview: 'stampPreview' },
         compSigInput: { status: 'sigStatus', preview: 'sigPreview' },
+        letterheadInput: { status: 'letterheadStatus', preview: 'letterheadPreview' },
         offerTemplateInput: { status: 'offerStatus' },
         apptTemplateInput: { status: 'apptStatus' },
         mobileTemplateInput: { status: 'mobileStatus' },
@@ -772,6 +773,14 @@ async function loadSetupData() {
     if (companyData.letterheadImage) {
         lhStatus.innerText = "Letterhead Uploaded ✅";
         lhStatus.style.color = "var(--success)";
+        // Show preview if image
+        if (companyData.letterheadImage.includes("data:image")) {
+            const img = document.getElementById('letterheadPreview');
+            if (img) {
+                img.src = companyData.letterheadImage;
+                img.classList.remove('hidden');
+            }
+        }
     }
 }
 
@@ -930,7 +939,17 @@ async function generateLetterPDF(email, type) {
     
     // Helper to draw background
     const drawPageExtras = () => {
-        doc.addImage(companyData.letterheadImage, 'PNG', 0, 0, 210, HEADER_H);
+        // If image exists, draw it. Default to A4 full page if it looks like one.
+        if (companyData.letterheadImage) {
+            // Check if it's a PDF (Unsupported for direct overlay in jsPDF)
+            if (companyData.letterheadImage.includes("application/pdf")) {
+                console.warn("PDF Letterhead cannot be used as a background image yet.");
+            } else {
+                // If it's an A4 page (high H), draw full; else draw header strip
+                // We'll assume full-page for simplicity since that's the "New Requirement"
+                doc.addImage(companyData.letterheadImage, 'PNG', 0, 0, 210, 297);
+            }
+        }
     };
 
     drawPageExtras();
