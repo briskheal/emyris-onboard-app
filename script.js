@@ -1134,6 +1134,13 @@ async function saveActiveTemplate() {
         if (type === 'appt') data.apptLetterBody = content;
         if (type === 'misc') data.miscLetterBody = content;
         
+        // Also save the typography and margins that are now part of the editor UI
+        data.headerHeight = document.getElementById('headerHeight').value;
+        data.footerHeight = document.getElementById('footerHeight').value;
+        data.letterFontSize = document.getElementById('letterFontSize').value;
+        data.letterFontType = document.getElementById('letterFontType').value;
+        data.letterAlignment = document.getElementById('letterAlignment').value;
+        
         await submitProfileUpdate(data);
         showToast("✅ Template Saved!", "success");
     } catch (e) {
