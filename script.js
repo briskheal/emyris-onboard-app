@@ -135,6 +135,14 @@ function attachFileListener(inputId, config) {
     if (el) el.addEventListener('change', () => {
         const label = document.getElementById(config.status);
         const files = el.files;
+        
+        // Activate ribbon
+        const ribbon = document.getElementById(`ribbon_${inputId}`);
+        if (ribbon) {
+            ribbon.classList.remove('active', 'waiting');
+            ribbon.style.width = '0%';
+        }
+
         if (label && files.length > 0) {
             label.innerText = files.length === 1 ? `✅ ${files[0].name.substring(0, 15)}` : `✅ ${files.length} Files Selected`;
             label.style.color = 'var(--success)';
@@ -441,6 +449,9 @@ async function saveCompanyProfile(e) {
             const el = document.getElementById(id);
             if (!el || !el.files.length) return resolve([]);
             
+            const total = el.files.length;
+            const ribbon = document.getElementById(`ribbon_${id}`);
+
             const results = [];
             for (let i = 0; i < el.files.length; i++) {
                 const f = el.files[i];
@@ -450,6 +461,13 @@ async function saveCompanyProfile(e) {
                     reader.readAsDataURL(f);
                 });
                 results.push({ name: f.name, data: res }); // Use original filename
+                
+                // Update ribbon progress
+                if (ribbon) {
+                    const percent = Math.round(((i + 1) / total) * 100);
+                    ribbon.classList.add('active');
+                    ribbon.style.width = `${percent}%`;
+                }
             }
             resolve(results);
         });
@@ -493,6 +511,11 @@ async function submitProfileUpdate(data, silent = false) {
         const result = await res.json();
         if (result.success) {
             showToast('✅ Configuration Updated Successfully!', 'success');
+            // Reset ribbons
+            document.querySelectorAll('.progress-ribbon').forEach(r => {
+                r.classList.remove('active', 'waiting');
+                r.style.width = '0%';
+            });
             await fetchCompanyData();
             // Re-populate this tab to show status
             await loadSetupData(); 
@@ -647,6 +670,7 @@ async function renderAssetLists() {
                     const box = document.createElement('div');
                     box.className = 'upload-box-sm';
                     box.innerHTML = `
+                        <div class="progress-ribbon" id="ribbon_input_${safeKey}"></div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
                             <label style="margin:0">${cat}</label>
                             <button type="button" onclick="deleteAssetCategory('${cat}')" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.75rem; opacity: 0.6;" title="Remove Category">🗑️ Delete</button>
@@ -663,7 +687,7 @@ async function renderAssetLists() {
                     categories[cat] = `list_${safeKey}`;
 
                     // IMPORTANT: Attach listener for NEWLY created dynamic input
-                    attachFileListener(`input_${safeKey}`, { status: `status_${safeKey}` });
+                    attachFileListener(`input_${safeKey}`, { status: `status_${safeKey}`, ribbon: `ribbon_input_${safeKey}` });
                 });
             }
         }
