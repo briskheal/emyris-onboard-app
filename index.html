@@ -47,6 +47,11 @@
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
         
+        <!-- Top Scrolling Marquee Bar -->
+        <div class="top-scroll-marquee">
+            <div class="marquee-content">Enhancing Life and Excelling in Care</div>
+        </div>
+        
         <header class="main-header">
             <div class="logo-container">
                 <div class="logo-icon" id="headerLogoIcon">
@@ -85,23 +90,21 @@
                     <h1>Digital Onboarding Gateway</h1>
                     <p>Welcome to our professional joining portal. Please choose your path to proceed.</p>
                     
-                    <div class="landing-actions">
-                         <button class="btn btn-primary btn-lg btn-hero" onclick="showApplicantRegister()">
-                            <span class="btn-icon">✨</span>
-                            <div class="hero-btn-text">
-                                <strong>Start New Journey</strong>
-                                <small>Register to get your PIN</small>
-                            </div>
-                        </button>
-                        <button class="btn btn-secondary btn-lg btn-hero" onclick="showApplicantLogin()">
-                            <span class="btn-icon">🔑</span>
-                            <div class="hero-btn-text">
-                                <strong>Resume Application</strong>
-                                <small>Login with Email & PIN</small>
-                            </div>
-                        </button>
-                        <div class="admin-portal-link">
-                            <button class="btn btn-link" onclick="showAdminLogin()">Admin Portal</button>
+                    <div class="landing-cards-grid">
+                        <div class="landing-card" onclick="showApplicantRegister()">
+                            <div class="landing-card-icon">✨</div>
+                            <h3>Start New Journey</h3>
+                            <p>Register to generate your unique PIN and begin.</p>
+                        </div>
+                        <div class="landing-card" onclick="showApplicantLogin()">
+                            <div class="landing-card-icon">🔑</div>
+                            <h3>Resume Journey</h3>
+                            <p>Login with your Email & PIN to complete steps.</p>
+                        </div>
+                        <div class="landing-card" onclick="showAdminLogin()">
+                            <div class="landing-card-icon">🛡️</div>
+                            <h3>Admin Gateway</h3>
+                            <p>Authorized personnel only. Manage profiles.</p>
                         </div>
                     </div>
 
@@ -381,11 +384,12 @@
                                             <h4>📝 Unified Document Editor</h4>
                                             <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Select a template to edit below.</p>
                                         </div>
-                                        <div class="editor-template-selector">
+                                        <div class="editor-template-selector" style="display: flex; gap: 0.5rem; align-items: center;">
                                             <select id="activeTemplateSelect" class="form-input-sm" onchange="switchEditorTemplate()" style="font-weight: 600; background: var(--glass-bg); color: white;">
                                                 <option value="offer">📄 Offer Letter</option>
                                                 <option value="appt">📋 Appointment Letter</option>
                                             </select>
+                                            <button id="deleteTemplateBtn" class="btn btn-primary" onclick="deleteMiscellaneousLetter()" style="display: none; padding: 0.4rem 0.8rem; background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #fca5a5;" title="Delete Custom Template">✖</button>
                                         </div>
                                     </div>
                                     

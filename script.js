@@ -1169,8 +1169,33 @@ async function switchEditorTemplate() {
     } else {
         editor.innerHTML = window.letterTemplates[type] || "";
     }
+    
+    const delBtn = document.getElementById('deleteTemplateBtn');
+    if (delBtn) delBtn.style.display = type.startsWith('misc_') ? 'inline-block' : 'none';
+
     syncEditorStyles();
 }
+
+async function deleteMiscellaneousLetter() {
+    const type = document.getElementById('activeTemplateSelect').value;
+    if (!type.startsWith('misc_')) return;
+    
+    if (!confirm("Are you sure you want to permanently delete this custom template?")) return;
+    
+    const idToDelete = type.split('_')[1];
+    
+    if (companyData.miscLetters) {
+        companyData.miscLetters = companyData.miscLetters.filter(m => m.id !== idToDelete);
+    }
+    delete window.letterTemplates[type];
+    
+    await submitProfileUpdate({ miscLetters: companyData.miscLetters }, true);
+    
+    populateTemplateSelect("offer");
+    switchEditorTemplate();
+    showToast("Template deleted successfully", "success");
+}
+
 
 async function saveActiveTemplate() {
     const btn = event.target;
