@@ -500,23 +500,23 @@
                                         </div>
                                     </div>
 
-                                    <div class="editor-footer" style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; background: rgba(99, 102, 241, 0.05); padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.2); flex-wrap: wrap; gap: 1rem;">
-                                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                                            <span style="font-size: 0.8rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Authorized Signatory</span>
-                                            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                                <input type="text" id="signatoryName" class="form-input-sm" placeholder="Signatory Name" style="width: 180px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1);">
-                                                <div class="pill-divider" style="height: 16px; background: rgba(255,255,255,0.2); width: 1px;"></div>
-                                                <input type="text" id="signatoryDesg" class="form-input-sm" placeholder="Designation / Role" style="width: 180px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1);">
-                                            </div>
-                                        </div>
-                                        <div style="display: flex; gap: 1rem; align-items: center;">
-                                            <button class="btn btn-outline" onclick="previewActiveTemplate()" style="padding: 0.6rem 1.5rem; background: rgba(99, 102, 241, 0.1);">👁️ Live Preview</button>
-                                            <button class="btn btn-primary" onclick="saveActiveTemplate()" style="padding: 0.6rem 1.5rem;">💾 Save Document & Settings</button>
-                                        </div>
                                     </div>
                                 </div>
-
-
+                            </div>
+                            <!-- Sticky Action Footer for Setup & Letters -->
+                            <div class="editor-action-footer-sticky">
+                                <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+                                    <span style="font-size: 0.85rem; color: var(--accent); font-weight: 700; text-transform: uppercase;">🖊️ Authorized Signatory</span>
+                                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                        <input type="text" id="signatoryName" class="form-input-sm" placeholder="Signatory Name" style="width: 220px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+                                        <div style="height: 18px; width: 1px; background: rgba(255,255,255,0.2);"></div>
+                                        <input type="text" id="signatoryDesg" class="form-input-sm" placeholder="Designation / Role" style="width: 220px; background: rgba(0,0,0,0.3); color: #fff; border: 1px solid rgba(255,255,255,0.15);">
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 1.25rem; align-items: center;">
+                                    <button class="btn btn-outline" onclick="previewActiveTemplate()" style="padding: 0.75rem 2rem; background: rgba(99, 102, 241, 0.15);">👁️ Live Preview</button>
+                                    <button class="btn btn-primary" onclick="saveActiveTemplate()" style="padding: 0.75rem 2.5rem; font-size: 1.05rem; box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);">💾 Save Document & Settings</button>
+                                </div>
                             </div>
                         </div>
                     </div>

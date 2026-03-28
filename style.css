@@ -34,7 +34,8 @@ body {
 
 .app-container {
     position: relative;
-    max-width: 1200px;
+    max-width: 1500px;
+    width: 100%;
     margin: 0 auto;
     padding: 2rem;
     min-height: 100vh;
@@ -1706,6 +1707,30 @@ input:checked + .slider:before {
     align-items: center;
     border-bottom: 1px solid var(--glass-border);
     flex-wrap: wrap;
+}
+
+.letter-editor {
+    min-height: 500px !important;
+    padding: 2.5rem !important;
+    line-height: 1.6 !important;
+}
+
+.editor-action-footer-sticky {
+    position: sticky;
+    bottom: -2rem; /* Inside the padded app-container */
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 16px;
+    padding: 1.25rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 3rem;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
 }
 
 .btn-tool {
