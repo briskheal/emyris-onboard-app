@@ -106,26 +106,31 @@ function initFileListeners() {
         tadaTemplateInput: { status: 'tadaStatus' }
     };
     for (const [inputId, config] of Object.entries(fileMap)) {
-        const el = document.getElementById(inputId);
-        if (el) el.addEventListener('change', () => {
-            const label = document.getElementById(config.status);
-            const files = el.files;
-            if (label && files.length > 0) {
-                label.innerText = files.length === 1 ? `✅ ${files[0].name.substring(0, 15)}` : `✅ ${files.length} Files Selected`;
-                label.style.color = 'var(--success)';
-                
-                // Show preview if image (first one)
-                if (config.preview && files[0].type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const img = document.getElementById(config.preview);
-                        if (img) { img.src = e.target.result; img.classList.remove('hidden'); }
-                    };
-                    reader.readAsDataURL(files[0]);
-                }
-            }
-        });
+        attachFileListener(inputId, config);
     }
+}
+
+// Reusable function to attach listeners to both static and dynamic inputs
+function attachFileListener(inputId, config) {
+    const el = document.getElementById(inputId);
+    if (el) el.addEventListener('change', () => {
+        const label = document.getElementById(config.status);
+        const files = el.files;
+        if (label && files.length > 0) {
+            label.innerText = files.length === 1 ? `✅ ${files[0].name.substring(0, 15)}` : `✅ ${files.length} Files Selected`;
+            label.style.color = 'var(--success)';
+            
+            // Show preview if image (first one)
+            if (config.preview && files[0].type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById(config.preview);
+                    if (img) { img.src = e.target.result; img.classList.remove('hidden'); }
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        }
+    });
 }
 
 async function fetchCompanyData() {
@@ -634,6 +639,9 @@ async function renderAssetLists() {
                     dynGrid.appendChild(box);
                     // Add this to categories for standard mapping
                     categories[cat] = `list_${safeKey}`;
+
+                    // IMPORTANT: Attach listener for NEWLY created dynamic input
+                    attachFileListener(`input_${safeKey}`, { status: `status_${safeKey}` });
                 });
             }
         }

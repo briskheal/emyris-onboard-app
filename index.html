@@ -245,9 +245,15 @@
 
                             <!-- Card 3: Brand Assets -->
                             <div class="setup-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
-                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none;">
-                                    <h4>🎨 Brand Assets & Global Artwork</h4>
-                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Upload company logos, digital stamps, and digital signatures.</p>
+                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none; display: flex; justify-content: space-between; align-items: flex-start; position: relative;">
+                                    <div>
+                                        <h4>🎨 Brand Assets & Global Artwork</h4>
+                                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Upload company logos, digital stamps, and digital signatures.</p>
+                                    </div>
+                                    <div class="header-add-category" style="display: flex; gap: 0.5rem; align-items: center; background: rgba(255,255,255,0.05); padding: 0.5rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+                                        <input type="text" id="newCategoryInput" class="form-input-sm" style="width: 140px; border: none; background: transparent; color: white;" placeholder="NEW CATEGORY...">
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="addAssetCategory()" style="padding: 0.4rem 0.8rem; white-space: nowrap;">+ Add Header</button>
+                                    </div>
                                 </div>
                                 <div class="input-grid branding-upload-grid" style="padding: 0;">
                                     <div class="upload-box-sm logo-box">
@@ -280,6 +286,16 @@
                                         </div>
                                         <div id="sigList" class="asset-list-vertical"></div>
                                     </div>
+                                    <div class="upload-box-sm lh-box">
+                                        <label>Letterhead / Stationery Strips</label>
+                                        <div class="drop-zone-sm" onclick="document.getElementById('letterheadInput').click()">
+                                            <img id="letterheadPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
+                                            <span class="drop-icon-sm">📄</span>
+                                            <span id="letterheadStatus" class="drop-label-sm">Upload Stationery</span>
+                                            <input type="file" id="letterheadInput" class="hidden" accept="image/png,image/jpeg" multiple>
+                                        </div>
+                                        <div id="lhList" class="asset-list-vertical"></div>
+                                    </div>
                                     <div class="upload-box-sm mobile-box">
                                         <label>Mobile App Details</label>
                                         <div class="drop-zone-sm" onclick="document.getElementById('mobileTemplateInput').click()">
@@ -297,14 +313,6 @@
                                             <input type="file" id="tadaTemplateInput" class="hidden" accept="image/png,image/jpeg" multiple>
                                         </div>
                                         <div id="tadaList" class="asset-list-vertical"></div>
-                                    </div>
-                                    <div class="upload-box-sm add-category-box">
-                                        <label>➕ Add Category Header</label>
-                                        <div class="add-category-controls">
-                                            <input type="text" id="newCategoryInput" class="form-input" placeholder="e.g. TAX DOCS">
-                                            <button type="button" class="btn btn-primary" onclick="addAssetCategory()">+ Add</button>
-                                        </div>
-                                        <p class="setup-hint" style="margin-top: 4px; font-size: 0.65rem;">Create specialized upload areas.</p>
                                     </div>
                                 </div>
 
