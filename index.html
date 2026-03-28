@@ -425,7 +425,7 @@
                                              <small><b>System Built-in:</b> <code>{{REF_NO}}</code> & <code>{{TODAY_DATE}}</code> are auto-placed top-right.</small>
                                         </div>
                                     <div class="modern-editor-container">
-                                        <div class="editor-toolbar" style="display: flex; gap: 0.8rem; align-items: center; justify-content: flex-start; flex-wrap: wrap; background: rgba(255,255,255,0.02); padding: 0.75rem; border-radius: 12px 12px 0 0; border-bottom: 1px solid var(--glass-border);">
+                                        <div class="editor-toolbar" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
                                             <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
                                                 <button type="button" class="btn-tool" onclick="execCmd('bold')" title="Bold (Ctrl+B)"><b>B</b></button>
                                                 <button type="button" class="btn-tool" onclick="execCmd('italic')" title="Italic (Ctrl+I)"><i>I</i></button>
@@ -452,12 +452,10 @@
                                                 <button type="button" class="btn-tool" onclick="execCmd('removeFormat')" title="Clear Formatting">🧹</button>
                                             </div>
 
-                                            <div class="toolbar-divider"></div>
-
-                                            <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap;">
+                                            <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin-top: 4px; margin-bottom: 4px;">
                                                 <div class="toolbar-setting-pill" title="Typography">
                                                     <span class="label">🔤 Font</span>
-                                                    <select id="letterFontType" onchange="syncEditorStyles()" style="max-width: 130px; border: none; background: transparent; color: white;" title="Font Family">
+                                                    <select id="letterFontType" onchange="syncEditorStyles()" style="max-width: 130px;" title="Font Family">
                                                         <option value="helvetica">Helvetica / Arial</option>
                                                         <option value="times">Times New Roman</option>
                                                         <option value="courier">Courier New</option>
@@ -468,21 +466,31 @@
                                                         <option value="serif">System Serif</option>
                                                     </select>
                                                     <div class="pill-divider"></div>
-                                                    <input type="number" id="letterFontSize" value="11" step="0.5" onchange="syncEditorStyles()" style="width: 48px; text-align: center; border: none; background: transparent; color: white;" title="Font Size (pt)">
+                                                    <input type="number" id="letterFontSize" value="11" step="0.5" onchange="syncEditorStyles()" style="width: 48px; text-align: center;" title="Font Size (pt)">
                                                 </div>
                                                 
                                                 <div class="toolbar-setting-pill" title="Page Header & Footer Margins (mm)">
                                                     <span class="label">📏 Margins</span>
-                                                    <input type="number" id="headerHeight" value="65" style="width: 44px; text-align: center; border: none; background: transparent; color: white;" title="Top Margin (mm)">
+                                                    <input type="number" id="headerHeight" value="65" style="width: 44px; text-align: center;" title="Top Margin (mm)">
                                                     <div class="pill-divider"></div>
-                                                    <input type="number" id="footerHeight" value="25" style="width: 44px; text-align: center; border: none; background: transparent; color: white;" title="Bottom Margin (mm)">
+                                                    <input type="number" id="footerHeight" value="25" style="width: 44px; text-align: center;" title="Bottom Margin (mm)">
                                                 </div>
                                             </div>
                                         </div>
-                                        <!-- contenteditable div replacing textareas -->
                                         <div id="unifiedEditor" class="letter-editor content-editable-area" contenteditable="true" spellcheck="false" placeholder="Draft your letter here..."></div>
                                     </div>
                                     
+                                    <!-- Live Preview Scope -->
+                                    <div id="livePreviewContainer" class="hidden" style="margin-top: 1.5rem; border-top: 2px dashed var(--glass-border); padding-top: 1.5rem;">
+                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                            <h5 style="margin: 0; color: var(--accent);">📄 Real-time Document Preview (A4 Scale)</h5>
+                                            <button type="button" class="btn btn-sm" onclick="toggleLivePreviewUI(false)" style="background: rgba(239, 68, 68, 0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2);">Close Preview</button>
+                                        </div>
+                                        <div id="livePreviewFrame" style="background: white; color: black; width: 100%; max-width: 800px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border-radius: 4px; overflow: hidden; padding: 40px; min-height: 500px; font-family: 'Plus Jakarta Sans', Arial, sans-serif;">
+                                            <!-- Content will be injected here -->
+                                        </div>
+                                    </div>
+
                                     <div class="editor-footer" style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; background: rgba(99, 102, 241, 0.05); padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.2); flex-wrap: wrap; gap: 1rem;">
                                         <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                                             <span style="font-size: 0.8rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Authorized Signatory</span>

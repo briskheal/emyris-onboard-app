@@ -105,6 +105,25 @@ function initFileListeners() {
         mobileTemplateInput: { status: 'mobileStatus' },
         tadaTemplateInput: { status: 'tadaStatus' }
     };
+
+    const editor = document.getElementById('unifiedEditor');
+    if (editor) {
+        editor.addEventListener('input', () => {
+            const container = document.getElementById('livePreviewContainer');
+            if (container && !container.classList.contains('hidden')) {
+                updateLivePreviewFrame();
+            }
+        });
+        
+        ['letterFontType', 'letterFontSize', 'letterAlignment'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', () => {
+                const container = document.getElementById('livePreviewContainer');
+                if (container && !container.classList.contains('hidden')) {
+                    updateLivePreviewFrame();
+                }
+            });
+        });
+    }
     for (const [inputId, config] of Object.entries(fileMap)) {
         attachFileListener(inputId, config);
     }
@@ -1472,7 +1491,10 @@ async function previewActiveTemplate() {
         
         if (pdfData && pdfData.doc) {
             savePDF(pdfData.doc, `PREVIEW_${type.toUpperCase()}.pdf`);
-            showToast("✅ Live Preview Generated", "success");
+            showToast("✅ PDF Preview Generated", "success");
+            
+            // Also show it visually in the UI if container exists
+            updateLivePreviewFrame(editorHtml, dummyRef);
         } else {
             showToast("❌ Generation failed", "error");
         }
@@ -1487,6 +1509,66 @@ async function previewActiveTemplate() {
         window.letterTemplates[type] = originalTemplate;
         unlockUI();
     }
+}
+
+// --- VISUAL PREVIEW UI LOGIC ---
+function toggleLivePreviewUI(show) {
+    const container = document.getElementById('livePreviewContainer');
+    if (!container) return;
+    show ? container.classList.remove('hidden') : container.classList.add('hidden');
+    if (show) {
+        updateLivePreviewFrame();
+        // Scroll to preview
+        container.scrollIntoView({ behavior: 'smooth' });
+    }
+}
+
+function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE") {
+    const frame = document.getElementById('livePreviewFrame');
+    if (!frame) return;
+    
+    toggleLivePreviewUI(true);
+    
+    const html = specificHtml || document.getElementById('unifiedEditor').innerHTML;
+    let rendered = html;
+    
+    // Simple placeholder replacement for visual preview
+    const map = {
+        '{{REF_NO}}': specificRef,
+        '{{TODAY_DATE}}': new Date().toLocaleDateString('en-GB'),
+        '{{FULL_NAME}}': 'SMRUTI RANJAN DASH',
+        '{{FIRST_NAME}}': 'SMRUTI',
+        '{{DESIGNATION}}': 'PRODUCT MANAGER',
+        '{{HQ}}': 'BHUBANESWAR',
+        '{{SALARY_MONTHLY}}': '75,000',
+        '{{SALARY_ANNUAL}}': '9,00,000',
+        '{{SIGNATORY_NAME}}': document.getElementById('signatoryName').value || 'AUTHORIZED SIGNATORY',
+        '{{SIGNATORY_DESG}}': document.getElementById('signatoryDesg').value || 'COMPANY OFFICIAL',
+        '{{COMPANY_NAME}}': companyData.name || 'EMYRIS ONBOARDING'
+    };
+
+    Object.entries(map).forEach(([key, val]) => {
+        const regex = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        rendered = rendered.replace(regex, `<span style="color:var(--primary); font-weight:600;">${val}</span>`);
+    });
+
+    frame.innerHTML = rendered;
+    
+    // Apply real-time styles
+    const size = document.getElementById('letterFontSize').value || 11;
+    const type = document.getElementById('letterFontType').value || 'helvetica';
+    
+    let fontStack = "'Courier New', monospace";
+    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
+    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+    else if (type === 'georgia') fontStack = "Georgia, serif";
+    else if (type === 'tahoma') fontStack = "Tahoma, Geneva, sans-serif";
+    else if (type === 'garamond') fontStack = "Garamond, Baskerville, serif";
+    
+    frame.style.fontSize = `${size}pt`;
+    frame.style.fontFamily = fontStack;
+    frame.style.textAlign = document.getElementById('letterAlignment')?.value || 'left';
 }
 
 // --- SMART LETTER GENERATION ---
