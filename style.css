@@ -34,10 +34,10 @@ body {
 
 .app-container {
     position: relative;
-    max-width: 1512px; /* Slight increase for 1500 usable */
+    max-width: 1280px; /* Reduced width for a more compact, aesthetically pleasing layout */
     width: 100%;
     margin: 0 auto;
-    padding: 2.5rem; /* More professional breathing room */
+    padding: 2.5rem; /* Professional breathing room */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
