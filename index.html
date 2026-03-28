@@ -17,7 +17,6 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
@@ -204,16 +203,16 @@
                                     <label>Mobile App Details (Max 10)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('mobileTemplateInput').click()">
                                         <span class="drop-icon-sm">📱</span>
-                                        <span id="mobileStatus" class="drop-label-sm">Upload PDFs</span>
-                                        <input type="file" id="mobileTemplateInput" class="hidden" accept=".pdf" multiple>
+                                        <span id="mobileStatus" class="drop-label-sm">Upload Images</span>
+                                        <input type="file" id="mobileTemplateInput" class="hidden" accept="image/png,image/jpeg" multiple>
                                     </div>
                                 </div>
                                 <div class="upload-box-sm tada-box">
                                     <label>TA / DA Letters (Max 10)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('tadaTemplateInput').click()">
                                         <span class="drop-icon-sm">✈️</span>
-                                        <span id="tadaStatus" class="drop-label-sm">Upload PDFs</span>
-                                        <input type="file" id="tadaTemplateInput" class="hidden" accept=".pdf" multiple>
+                                        <span id="tadaStatus" class="drop-label-sm">Upload Images</span>
+                                        <input type="file" id="tadaTemplateInput" class="hidden" accept="image/png,image/jpeg" multiple>
                                     </div>
                                 </div>
                             </div>
@@ -312,14 +311,14 @@
                                 </div>
                             </div>
                             <div class="upload-box-sm" style="flex:1;">
-                                    <label>Company Letterhead (Full Page Image / PDF / Word)</label>
+                                    <label>Company Letterhead (Full Page PNG/JPG)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('letterheadInput').click()">
                                         <img id="letterheadPreview" src="" class="hidden" style="max-height:80px;margin-bottom:8px;">
                                         <span class="drop-icon-sm">🖼️</span>
-                                        <span id="letterheadStatus" class="drop-label-sm">Upload Blank Letterhead</span>
-                                        <input type="file" id="letterheadInput" class="hidden" accept=".pdf,.doc,.docx,image/*" multiple>
+                                        <span id="letterheadStatus" class="drop-label-sm">Upload Letterhead Image</span>
+                                        <input type="file" id="letterheadInput" class="hidden" accept="image/png,image/jpeg" multiple>
                                     </div>
-                                    <p class="setup-hint" style="font-size: 0.75rem;">* Note: High-res PNG/JPG of your blank A4 letterhead is recommended for best text overlay results.</p>
+                                    <p class="setup-hint" style="font-size: 0.75rem;">* Note: High-res PNG/JPG of your blank A4 letterhead is required. PDF/Word conversion is disabled.</p>
                                 </div>
                                 <button class="btn btn-primary" style="margin-top:1rem" id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save Signatory & Letterhead</button>
                                 <button class="btn btn-secondary" style="margin-top:1rem; border-color:var(--secondary);color:var(--secondary); background:transparent;" onclick="injectDummyApplicant()">🧪 Test Offer Letter (Dummy Data)</button>

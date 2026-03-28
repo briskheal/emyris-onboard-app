@@ -1207,29 +1207,63 @@ input:checked + .slider:before {
     pointer-events: none;
     border-radius: 22px;
     border: 1px solid transparent;
-    transition: all 0.4s;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), transparent) border-box;
-    -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    position: relative; /* For delete btn */
+    overflow: hidden;
 }
 
 .asset-card:hover {
-    transform: translateY(-8px) scale(1.02);
-    border-color: rgba(99, 102, 241, 0.4);
-    background: rgba(99, 102, 241, 0.05);
-    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5), 0 0 20px -5px rgba(99, 102, 241, 0.3);
+    transform: translateY(-5px);
+    border-color: var(--primary);
+    box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.3);
+}
+
+.asset-delete-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+    background: #ef4444;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
+    opacity: 0.8;
+}
+
+.asset-delete-btn:hover {
+    transform: scale(1.1);
+    opacity: 1;
+    background: #dc2626;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.6);
 }
 
 .asset-card-preview {
-    background: rgba(0, 0, 0, 0.2);
-    height: 140px;
+    width: 100%;
+    aspect-ratio: 1/1; /* Force square */
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    border-bottom: 1px solid var(--glass-border);
+    padding: 10px;
 }
 
 .asset-card-preview img {

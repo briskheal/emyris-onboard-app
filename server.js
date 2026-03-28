@@ -26,14 +26,14 @@ const companySchema = new mongoose.Schema({
     phone: String,
     tollFree: String,
     website: String,
-    logo: [String],
-    offerTemplate: [String],
-    apptTemplate: [String],
-    mobileAppTemplate: [String],
-    tadaTemplate: [String],
-    stamp: [String],
-    digitalSignature: [String],
-    letterheadImage: [String],       // Array of backgrounds
+    logo: [{ name: String, data: String }],
+    offerTemplate: [{ name: String, data: String }],
+    apptTemplate: [{ name: String, data: String }],
+    mobileAppTemplate: [{ name: String, data: String }],
+    tadaTemplate: [{ name: String, data: String }],
+    stamp: [{ name: String, data: String }],
+    digitalSignature: [{ name: String, data: String }],
+    letterheadImage: [{ name: String, data: String }], 
     signatoryName: String,         // e.g. "Ms. Rishita Dash"
     signatoryDesignation: String,  // e.g. "HR Business Partner..."
     offerLetterBody: String,       // Template with {{PLACEHOLDERS}}
@@ -448,6 +448,46 @@ app.post('/api/company-profile', async (req, res) => {
         res.status(200).json({ success: true, profile });
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
+
+// --- DELETE ASSET ---
+app.post('/api/admin/delete-asset', async (req, res) => {
+    try {
+        const { category, assetId } = req.body;
+        const profile = await Company.findOne();
+        if (!profile) return res.status(404).json({ error: 'Profile not found' });
+
+        // Atomic $pull by ID (assuming Mongoose adds _id to sub-docs)
+        const update = {};
+        update[category] = { _id: assetId };
+        await Company.updateOne({}, { $pull: update });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Delete asset error:', e);
+        res.status(500).json({ error: 'Delete failed' });
+    }
+});
+
+// Helper for existing data migration
+async function migrateAssets() {
+    const profile = await Company.findOne();
+    if (!profile) return;
+    const categories = ['logo','stamp','digitalSignature','letterheadImage','mobileAppTemplate','tadaTemplate'];
+    let changed = false;
+    categories.forEach(cat => {
+        if (profile[cat] && profile[cat].length > 0) {
+            if (typeof profile[cat][0] === 'string') {
+                profile[cat] = profile[cat].map((s, i) => ({ name: `Legacy_${i+1}`, data: s }));
+                changed = true;
+            }
+        }
+    });
+    if (changed) {
+        await profile.save();
+        console.log('✅ Asset migration completed.');
+    }
+}
+migrateAssets();
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

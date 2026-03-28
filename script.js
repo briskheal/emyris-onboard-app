@@ -78,7 +78,7 @@ function applyCompanyData() {
     document.getElementById('displayCompanyName').innerText = companyData.name;
     const logoImg = document.getElementById('displayLogo');
     if (companyData.logo && companyData.logo.length > 0) {
-        logoImg.src = companyData.logo[companyData.logo.length - 1]; // Show latest logo
+        logoImg.src = companyData.logo[companyData.logo.length - 1].data; // Use .data
         logoImg.classList.remove('hidden');
     }
     const quickContact = document.getElementById('quickContact');
@@ -337,7 +337,7 @@ async function saveCompanyProfile(e) {
         address: rawData.compAddress
     };
     
-    // Helper to read multiple files as Base64
+    // Helper to read multiple files as Base64 with NAMING PROMPT
     const readFiles = (id) => {
         return new Promise(async (resolve) => {
             const el = document.getElementById(id);
@@ -346,12 +346,13 @@ async function saveCompanyProfile(e) {
             const results = [];
             for (let i = 0; i < el.files.length; i++) {
                 const f = el.files[i];
+                const assetName = prompt(`Enter a display name for this file:`, f.name.split('.')[0]) || f.name;
                 const res = await new Promise((resFile) => {
                     const reader = new FileReader();
                     reader.onload = (event) => resFile(event.target.result);
                     reader.readAsDataURL(f);
                 });
-                results.push(res);
+                results.push({ name: assetName, data: res });
             }
             resolve(results);
         });
@@ -444,11 +445,11 @@ function switchAdminTab(tab) {
         updateStatus('mobileStatus', companyData.mobileAppTemplate?.length,  'Files');
         updateStatus('tadaStatus',   companyData.tadaTemplate?.length,       'Files');
 
-        // Logo Previews (Show the latest one)
+        // Logo Previews (Show the latest one's data)
         const setPreview = (id, arr) => {
             const img = document.getElementById(id);
             if (img && arr && arr.length) {
-                img.src = arr[arr.length - 1]; // Show last uploaded
+                img.src = arr[arr.length - 1].data; // Use .data
                 img.classList.remove('hidden');
             } else if (img) {
                 img.classList.add('hidden');
@@ -734,17 +735,19 @@ function renderGallery() {
     let html = '';
     assetCategories.forEach(cat => {
         const fileArr = companyData[cat.key] || [];
-        fileArr.forEach((val, idx) => {
+        fileArr.forEach((obj, idx) => {
+            const val = obj.data;
             const isPdf = val && val.startsWith('data:application/pdf');
             const isImg = val && val.startsWith('data:image');
             
             html += `
                 <div class="asset-card">
+                    <button class="asset-delete-btn" onclick="deleteAsset('${cat.key}', '${obj._id}')" title="Delete Asset">×</button>
                     <div class="asset-card-preview">
                         ${isImg ? `<img src="${val}">` : (isPdf ? `<span class="pdf-icon">📄</span>` : '?')}
                     </div>
                     <div class="asset-card-body">
-                        <span class="asset-card-name">${cat.name} #${idx + 1}</span>
+                        <span class="asset-card-name">${obj.name || cat.name + ' #' + (idx + 1)}</span>
                         <div class="asset-card-action">
                             <button class="btn-asset-view" onclick="viewAssetRaw('${val}')">${isImg ? '👁️ View' : '⬇️ Download'}</button>
                         </div>
@@ -755,6 +758,26 @@ function renderGallery() {
     });
 
     grid.innerHTML = html || '<div class="setup-hint" style="grid-column: 1/-1; text-align: center;">No assets uploaded yet. Go to Company Profile to add files.</div>';
+}
+
+async function deleteAsset(category, assetId) {
+    if (!confirm("Are you sure you want to PERMANENTLY delete this asset from the library?")) return;
+    try {
+        const res = await fetch('/api/admin/delete-asset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category, assetId })
+        });
+        if ((await res.json()).success) {
+            showToast("🗑️ Asset deleted successfully", "success");
+            await fetchCompanyData(); // Sync local state
+            renderGallery(); // Re-render
+            // Also refresh profile previews if on that tab
+            if (!document.getElementById('adminProfileTab').classList.contains('hidden')) {
+                switchAdminTab('profile');
+            }
+        }
+    } catch (e) { showToast("❌ Delete failed", "error"); }
 }
 
 function viewAssetRaw(val) {
@@ -1022,7 +1045,8 @@ async function generateLetterPDF(email, type) {
     const drawPageExtras = () => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
-            const val = lhArr[lhArr.length - 1]; // Use latest
+            const valObj = lhArr[lhArr.length - 1]; // Use latest object
+            const val = valObj.data;
             if (val.includes("application/pdf")) {
                 console.warn("PDF Letterhead cannot be used as a background image yet.");
             } else {
@@ -1059,11 +1083,11 @@ async function generateLetterPDF(email, type) {
     y += 5;
     const stampArr = companyData.stamp || [];
     if (stampArr.length) {
-        doc.addImage(stampArr[stampArr.length - 1], 'PNG', MARGIN_L, y, 35, 35);
+        doc.addImage(stampArr[stampArr.length - 1].data, 'PNG', MARGIN_L, y, 35, 35);
     }
     const sigArr = companyData.digitalSignature || [];
     if (sigArr.length) {
-        doc.addImage(sigArr[sigArr.length - 1], 'PNG', 145, y + 10, 45, 20);
+        doc.addImage(sigArr[sigArr.length - 1].data, 'PNG', 145, y + 10, 45, 20);
     }
     
     y += 42;
