@@ -449,6 +449,15 @@ async function saveCompanyProfile(e) {
     if (mobile.length) data.mobileAppTemplate = mobile;
     if (tada.length) data.tadaTemplate = tada;
 
+    // --- READ CUSTOM CATEGORIES ---
+    if (companyData.customAssetCategories && companyData.customAssetCategories.length > 0) {
+        for (const cat of companyData.customAssetCategories) {
+            const safeKey = cat.replace(/\s+/g, '_');
+            const files = await readFiles(`input_${safeKey}`);
+            if (files.length) data[safeKey] = files;
+        }
+    }
+
     await submitProfileUpdate(data);
 }
 
@@ -600,6 +609,32 @@ async function renderAssetLists() {
             if (el) el.innerHTML = '';
         });
 
+        // Clear Dynamic Grid
+        const dynGrid = document.getElementById('dynamicBrandingGrid');
+        if (dynGrid) {
+            dynGrid.innerHTML = '';
+            // Generate Dynamic Boxes
+            if (companyData.customAssetCategories && companyData.customAssetCategories.length > 0) {
+                companyData.customAssetCategories.forEach(cat => {
+                    const safeKey = cat.replace(/\s+/g, '_');
+                    const box = document.createElement('div');
+                    box.className = 'upload-box-sm';
+                    box.innerHTML = `
+                        <label>${cat}</label>
+                        <div class="drop-zone-sm" onclick="document.getElementById('input_${safeKey}').click()">
+                            <span class="drop-icon-sm">📎</span>
+                            <span id="status_${safeKey}" class="drop-label-sm">Upload Files</span>
+                            <input type="file" id="input_${safeKey}" class="hidden" multiple>
+                        </div>
+                        <div id="list_${safeKey}" class="asset-list-vertical"></div>
+                    `;
+                    dynGrid.appendChild(box);
+                    // Add this to categories for standard mapping
+                    categories[cat] = `list_${safeKey}`;
+                });
+            }
+        }
+
         allAssets.forEach(asset => {
             const listId = categories[asset.category];
             const listEl = document.getElementById(listId);
@@ -646,9 +681,44 @@ async function renderAssetLists() {
         updateStatus('stampStatus', counts['stamp'], 'Stamp');
         updateStatus('sigStatus', counts['signature'], 'Signature');
         updateStatus('mobileStatus', counts['mobile'], 'Images');
-        updateStatus('tadaStatus', counts['tada'], 'Images');
+        updateStatus('tadaStatus',   counts['tada'],   'Images');
+
+        // Dynamic Statuses
+        if (companyData.customAssetCategories) {
+            companyData.customAssetCategories.forEach(cat => {
+                const safeKey = cat.replace(/\s+/g, '_');
+                const el = document.getElementById(`status_${safeKey}`);
+                if (el) {
+                    const count = counts[cat] || 0;
+                    el.innerText = count ? `✅ ${count} File(s) Uploaded` : `Upload Files`;
+                    el.style.color = count ? 'var(--success)' : 'var(--text-muted)';
+                }
+            });
+        }
 
     } catch (e) { console.error("Error rendering asset list:", e); }
+}
+
+async function addAssetCategory() {
+    const input = document.getElementById('newCategoryInput');
+    const categoryName = input.value.trim().toUpperCase();
+    if (!categoryName) return;
+    
+    try {
+        lockUI("🏗️ Creating Category...");
+        const res = await fetch('/api/admin/add-category', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ categoryName })
+        });
+        if ((await res.json()).success) {
+            showToast(`✅ Category ${categoryName} created!`);
+            input.value = '';
+            await fetchCompanyData();
+            renderAssetLists();
+        }
+    } catch (e) { showToast("❌ Creation failed", "error"); }
+    finally { unlockUI(); }
 }
 
 async function setActiveAsset(assetId, category) {

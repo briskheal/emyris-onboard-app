@@ -50,7 +50,8 @@ const companySchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now },
     headerHeight: { type: Number, default: 65 },
     footerHeight: { type: Number, default: 25 },
-    letterCounter: { type: Number, default: 1001 }
+    letterCounter: { type: Number, default: 1001 },
+    customAssetCategories: { type: [String], default: [] }
 });
 
 const assetSchema = new mongoose.Schema({
@@ -518,6 +519,23 @@ app.post('/api/company-profile', async (req, res) => {
             }
         }
 
+        // --- HANDLE CUSTOM CATEGORIES ---
+        if (profile.customAssetCategories && profile.customAssetCategories.length > 0) {
+            for (const categoryName of profile.customAssetCategories) {
+                const categoryKey = categoryName.replace(/\s+/g, '_');
+                if (updateData[categoryKey] && Array.isArray(updateData[categoryKey]) && updateData[categoryKey].length > 0) {
+                    for (const file of updateData[categoryKey]) {
+                        await Asset.create({
+                            category: categoryName,
+                            name: file.name,
+                            data: file.data
+                        });
+                    }
+                    delete updateData[categoryKey];
+                }
+            }
+        }
+
         Object.assign(profile, updateData);
         profile.updatedAt = new Date();
         await profile.save();
@@ -574,6 +592,23 @@ app.post('/api/admin/set-active-asset', async (req, res) => {
         await company.save();
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed to set active asset' }); }
+});
+
+// --- ADD CUSTOM CATEGORY ---
+app.post('/api/admin/add-category', async (req, res) => {
+    try {
+        const { categoryName } = req.body;
+        if (!categoryName) return res.status(400).json({ error: 'Name required' });
+        
+        const company = await Company.findOne();
+        if (!company) return res.status(404).json({ error: 'Company not found' });
+        
+        if (!company.customAssetCategories.includes(categoryName)) {
+            company.customAssetCategories.push(categoryName);
+            await company.save();
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed to add category' }); }
 });
 
 // --- SYSTEM MAINTENANCE ---

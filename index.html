@@ -239,6 +239,20 @@
                                     <div id="tadaList" class="asset-list-vertical"></div>
                                 </div>
                             </div>
+
+                            <div class="setup-section" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+                                <div class="setup-section-head">
+                                    <h4>➕ Add Custom Branding Heading</h4>
+                                    <p>Create new areas for specialized uploads like "Tax Documents" or "ID Proofs".</p>
+                                </div>
+                                <div class="add-division-row">
+                                    <input type="text" id="newCategoryInput" class="form-input-sm" style="width: 250px;" placeholder="CATEGORY NAME (e.g. TAX DOCS)">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="addAssetCategory()">+ Add Heading</button>
+                                </div>
+                            </div>
+
+                            <div id="dynamicBrandingGrid" class="input-grid branding-upload-grid" style="margin-top: 1.5rem;"></div>
+
                             <div class="nav-buttons">
                                 <button type="submit" class="btn btn-primary">Save Profile & Update UI</button>
                             </div>
@@ -377,21 +391,7 @@
                                     <button class="btn btn-primary" style="width:100%" id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save All Settings</button>
                                 </div>
 
-                                <div class="toolbar-card">
-                                    <h5>🖼️ Assets</h5>
-                                    <div style="display: flex; gap: 0.5rem;">
-                                        <div class="drop-zone-sm" onclick="document.getElementById('sidebarStampInput').click()" style="flex:1">
-                                            <img id="sidebarStampPreview" src="" class="hidden">
-                                            <span class="drop-label-sm">Stamp</span>
-                                            <input type="file" id="sidebarStampInput" class="hidden" accept="image/*">
-                                        </div>
-                                        <div class="drop-zone-sm" onclick="document.getElementById('letterheadInput').click()" style="flex:1">
-                                            <img id="letterheadPreview" src="" class="hidden">
-                                            <span class="drop-label-sm">Strip</span>
-                                            <input type="file" id="letterheadInput" class="hidden" accept="image/*">
-                                        </div>
-                                    </div>
-                                </div>
+
                             </div>
 
                             <!-- Main Content Area -->
