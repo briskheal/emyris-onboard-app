@@ -1063,9 +1063,15 @@ async function loadSetupData() {
     // Initialize Unified Editor specific state
     window.letterTemplates = {
         offer: companyData.offerLetterBody || "",
-        appt: companyData.apptLetterBody || "",
-        misc: companyData.miscLetterBody || ""
+        appt: companyData.apptLetterBody || ""
     };
+    if (companyData.miscLetters) {
+        companyData.miscLetters.forEach(m => {
+            window.letterTemplates["misc_" + m.id] = m.body || "";
+        });
+    }
+    
+    populateTemplateSelect();
     switchEditorTemplate();
 
     updateRefPreview();
@@ -1109,10 +1115,58 @@ function enableEditorTabSupport() {
     });
 }
 
-function switchEditorTemplate() {
+function populateTemplateSelect(forceSelectVal) {
+    const sel = document.getElementById('activeTemplateSelect');
+    const currentVal = forceSelectVal || sel.value;
+    
+    let html = `
+        <option value="offer">📄 Offer Letter</option>
+        <option value="appt">📋 Appointment Letter</option>
+    `;
+    
+    if (companyData.miscLetters && companyData.miscLetters.length > 0) {
+        html += `<optgroup label="Miscellaneous Letters">`;
+        companyData.miscLetters.forEach(m => {
+            html += `<option value="misc_${m.id}">🛡️ ${m.title}</option>`;
+        });
+        html += `</optgroup>`;
+    }
+    
+    html += `<option value="create_new" style="font-weight:bold; color:var(--primary);">➕ Create New Misc Letter...</option>`;
+    sel.innerHTML = html;
+    
+    if (currentVal && Array.from(sel.options).find(o => o.value === currentVal)) {
+        sel.value = currentVal;
+    } else {
+        sel.value = "offer";
+    }
+}
+
+async function switchEditorTemplate() {
     const type = document.getElementById('activeTemplateSelect').value;
     const editor = document.getElementById('unifiedEditor');
-    editor.innerHTML = window.letterTemplates[type] || "";
+    
+    if (type === 'create_new') {
+        const name = prompt("Enter a title for this new Miscellaneous Letter (e.g., 'Warning Letter'):");
+        if (!name || name.trim() === '') {
+            populateTemplateSelect("offer");
+            switchEditorTemplate();
+            return;
+        }
+        const newId = Date.now().toString(36);
+        if (!companyData.miscLetters) companyData.miscLetters = [];
+        companyData.miscLetters.push({ id: newId, title: name.trim(), body: "" });
+        
+        window.letterTemplates["misc_" + newId] = "";
+        
+        // Save immediately so it persists
+        await submitProfileUpdate({ miscLetters: companyData.miscLetters }, true);
+        
+        populateTemplateSelect("misc_" + newId);
+        editor.innerHTML = "";
+    } else {
+        editor.innerHTML = window.letterTemplates[type] || "";
+    }
     syncEditorStyles();
 }
 
@@ -1131,8 +1185,16 @@ async function saveActiveTemplate() {
         
         const data = {};
         if (type === 'offer') data.offerLetterBody = content;
-        if (type === 'appt') data.apptLetterBody = content;
-        if (type === 'misc') data.miscLetterBody = content;
+        else if (type === 'appt') data.apptLetterBody = content;
+        else if (type.startsWith('misc_')) {
+            const id = type.split('_')[1];
+            if (!companyData.miscLetters) companyData.miscLetters = [];
+            const index = companyData.miscLetters.findIndex(m => m.id === id);
+            if (index > -1) {
+                companyData.miscLetters[index].body = content;
+            }
+            data.miscLetters = companyData.miscLetters; 
+        }
         
         // Also save the typography and margins that are now part of the editor UI
         data.headerHeight = document.getElementById('headerHeight').value;
@@ -1500,9 +1562,13 @@ async function generateLetterPDF(email, type) {
     let template = "";
     if (type === 'offer') template = companyData.offerLetterBody;
     else if (type === 'appt') template = companyData.apptLetterBody;
-    else if (type === 'misc') template = companyData.miscLetterBody;
+    else if (type.startsWith('misc_')) {
+        const id = type.split('_')[1];
+        const miscObj = (companyData.miscLetters || []).find(m => m.id === id);
+        if (miscObj) template = miscObj.body;
+    }
     
-    if (!template) return alert(`Please configure ${type} letter template in Setup first.`);
+    if (!template) return alert(`Please configure the letter template in Setup first.`);
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
