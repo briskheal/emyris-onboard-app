@@ -164,13 +164,13 @@ function applyCompanyData() {
         ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
     `;
     const headerTitle = document.getElementById('headerCompName');
-    if (headerTitle) headerTitle.innerText = companyData.name;
+    if (headerTitle) headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
 
     // Dynamic header logo icon
     const headerImg = document.getElementById('headerLogoImg');
     const headerLetter = document.getElementById('headerLogoLetter');
     if (companyData.logo && companyData.logo.length > 0 && headerImg) {
-        headerImg.src = companyData.logo[companyData.logo.length - 1];
+        headerImg.src = companyData.logo[companyData.logo.length - 1].data;
         headerImg.classList.remove('hidden');
         if (headerLetter) headerLetter.style.display = 'none';
     } else if (headerLetter) {

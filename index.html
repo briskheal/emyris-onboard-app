@@ -28,7 +28,7 @@
         .letter-editor { min-height: 450px !important; }
         
         .drop-zone-sm { height: auto !important; min-height: 70px; padding: 0.75rem !important; transition: all 0.3s ease; }
-        .drop-zone-sm img:not(.hidden) { max-height: 100px !important; margin-bottom: 0.25rem; }
+        .drop-zone-sm img:not(.hidden) { max-height: 100px !important; max-width: 100% !important; object-fit: contain !important; margin-bottom: 0.25rem; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -486,7 +486,7 @@
 
             <!-- Existing: Welcome Section (Hidden by default now) -->
             <div class="view-section hidden" id="welcome">
-                <h2>WELCOME TO EMYRIS BIOLIFESCIENCES PVT LTD.</h2>
+                <h2>WELCOME TO EMYRIS BIOLIFESCIENCES</h2>
                 <p>You are here to submit your credentials after a thorough interview process.</p>
                 <div class="instruction-card">
                     <p>This process will ask you to upload all testimonials. Please be ready with your documents in digital format.</p>
