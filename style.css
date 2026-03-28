@@ -1163,6 +1163,13 @@ input:checked + .slider:before {
     box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4);
 }
 
+.admin-tab-content {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+}
+
 .admin-tab-content.hidden {
     display: none;
 }
@@ -1689,12 +1696,14 @@ input:checked + .slider:before {
 }
 
 /* Unified Editor UI */
-#adminDashboard.view-section {
-    max-width: 1500px;
-    padding: 2.5rem;
+.setup-section {
+    width: 100%;
+    margin-left: 0;
+    margin-right: 0;
 }
 
 .modern-editor-container {
+    width: 100%;
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
