@@ -1373,80 +1373,80 @@ function compressAndResize(file, maxWidth = 1800) {
     });
 }
 
-// --- INSTANT DOCUMENT LAB: DB-FREE PREVIEW ---
-async function previewTemporaryLetter(type) {
-    const name = document.getElementById('labName').value || "SMRUTI DASH";
-    const desg = document.getElementById('labDesg').value || "Product Manager";
-    const salary = document.getElementById('labSalary').value || "75000";
+// --- LIVE DOCUMENT PREVIEW ---
+async function previewActiveTemplate() {
+    const type = document.getElementById('activeTemplateSelect').value;
+    const editorHtml = document.getElementById('unifiedEditor').innerHTML.trim();
+    
+    if (!editorHtml || editorHtml === '<br>') {
+        showToast("Editor is empty", "error");
+        return;
+    }
 
+    const dummyEmail = "preview_" + Date.now() + "@emyris.test";
+    const dummyRef = `REF/PRV/TEST_01`;
+    
+    // Inject realistic mockup data directly into memory
     const mockApplicant = {
-        fullName: name,
-        firstName: name.split(' ')[0],
-        email: "test@emyris.com",
-        phone: "91XX XXX XXXX",
+        fullName: "SMRUTI RANJAN DASH",
+        firstName: "SMRUTI",
+        email: dummyEmail,
+        phone: "+91 98765 43210",
         division: "CRITIZA",
         reportingTo: "SR. ZONAL MANAGER",
-        refNo: "REF/LAB/25-26",
+        refNo: dummyRef,
         formData: {
-            firstName: name.split(' ')[0],
-            lastName: name.split(' ').slice(1).join(' '),
-            designation: desg,
-            hq: "Bhubaneswar",
-            salary: salary,
-            address: "Test Sector, Emyris Campus",
-            city: "Bhubaneswar",
-            state: "Odisha",
-            pin: "751001"
+            firstName: "SMRUTI",
+            lastName: "DASH",
+            designation: "PRODUCT MANAGER",
+            hq: "BHUBANESWAR",
+            salary: "75000",
+            address: "PLOT NO-42, CHANDRASEKHARPUR",
+            city: "BHUBANESWAR",
+            state: "ODISHA",
+            pin: "751024",
+            joiningDate: new Date().toISOString().split('T')[0]
         }
     };
 
-    lockUI("⚖️ Generating Lab Preview...");
+    lockUI("⏳ Generating Live Preview...");
+    
+    // Create shallow copies to prevent contaminating real data
+    const originalConfig = { ...companyData };
+    const originalApplicants = [...allApplicants];
+    const originalTemplate = window.letterTemplates[type];
+    
     try {
-        const liveConfig = {
-            headerHeight: parseInt(document.getElementById('headerHeight').value) || 65,
-            footerHeight: parseInt(document.getElementById('footerHeight').value) || 25,
-            letterFontSize: parseFloat(document.getElementById('letterFontSize').value) || 11,
-            letterAlignment: document.getElementById('letterAlignment').value || 'left',
-            letterFontType: document.getElementById('letterFontType').value || 'helvetica',
-            signatoryName: document.getElementById('signatoryName').value,
-            signatoryDesignation: document.getElementById('signatoryDesg').value
-        };
-
-        // Pickup UNSAVED images from UI for instant testing
-        const lhFile = document.getElementById('letterheadInput').files[0];
-        const stFile = document.getElementById('sidebarStampInput').files[0];
+        // Feed live unsaved editor states into the generator's memory
+        window.letterTemplates[type] = editorHtml;
         
-        if (lhFile) {
-            const optLH = await compressAndResize(lhFile, 1800);
-            liveConfig.letterheadImage = [{ name: 'temp_lh', data: optLH }];
-        }
-        if (stFile) {
-            const optST = await compressAndResize(stFile, 800);
-            liveConfig.stamp = [{ name: 'temp_st', data: optST }];
-        }
+        companyData.headerHeight = parseInt(document.getElementById('headerHeight').value) || 65;
+        companyData.footerHeight = parseInt(document.getElementById('footerHeight').value) || 25;
+        companyData.letterFontSize = parseFloat(document.getElementById('letterFontSize').value) || 11;
+        companyData.letterAlignment = document.getElementById('letterAlignment').value || 'left';
+        companyData.letterFontType = document.getElementById('letterFontType').value || 'helvetica';
+        companyData.signatoryName = document.getElementById('signatoryName').value;
+        companyData.signatoryDesignation = document.getElementById('signatoryDesg').value;
 
-        const originalConfig = { ...companyData };
-        Object.assign(companyData, liveConfig);
-
-        const originalApplicants = [...allApplicants];
         allApplicants.push(mockApplicant);
         
-        const pdfData = await generateLetterPDF(mockApplicant.email, type);
+        const pdfData = await generateLetterPDF(dummyEmail, type);
         
         if (pdfData && pdfData.doc) {
-            const safeName = name.replace(/[^a-z0-9]/gi, '_');
-            savePDF(pdfData.doc, `${type.toUpperCase()}_SAMPLE_${safeName}.pdf`);
-            showToast("✅ Lab Preview Downloaded", "success");
+            savePDF(pdfData.doc, `PREVIEW_${type.toUpperCase()}.pdf`);
+            showToast("✅ Live Preview Generated", "success");
         } else {
             showToast("❌ Generation failed", "error");
         }
         
+    } catch (e) {
+        console.error("Live Preview Error:", e);
+        showToast("❌ Preview Generation Failed", "error");
+    } finally {
+        // Absolute guarantee: restore the global state exactly to how it was
         companyData = originalConfig;
         allApplicants = originalApplicants;
-    } catch (e) {
-        console.error("Lab Generation Error:", e);
-        showToast("❌ Lab Generation Failed", "error");
-    } finally {
+        window.letterTemplates[type] = originalTemplate;
         unlockUI();
     }
 }
