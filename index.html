@@ -335,8 +335,8 @@
                                     <input type="text" id="signatoryDesg" placeholder="HR Business Partner, Emyris Biolifesciences Pvt Ltd">
                                 </div>
                             </div>
-                            <div class="input-grid" style="margin-top: 1.5rem;">
-                                <div class="form-group" style="flex:1;">
+                            <div style="display: flex; gap: 1.5rem; margin-top: 1.5rem;">
+                                <div class="form-group" style="flex: 1;">
                                     <label>Company Letterhead (Full Page PNG/JPG)</label>
                                     <div class="drop-zone-sm" onclick="document.getElementById('letterheadInput').click()">
                                         <img id="letterheadPreview" src="" class="hidden" style="max-height:80px;margin-bottom:8px;">
@@ -344,20 +344,46 @@
                                         <span id="letterheadStatus" class="drop-label-sm">Upload Full Blank Letterhead</span>
                                         <input type="file" id="letterheadInput" class="hidden" accept="image/png,image/jpeg" multiple>
                                     </div>
-                                    <p class="setup-hint" style="font-size: 0.75rem;">* Upload your entire blank A4 letterhead as a high-res image.</p>
+                                    <p class="setup-hint" style="font-size: 0.75rem;">* High-fidelity A4 stationery backdrop.</p>
                                 </div>
-                                <div class="form-group" style="width: 120px;">
-                                    <label title="Space from TOP of page where text begins (mm)">Header H (mm)</label>
-                                    <input type="number" id="headerHeight" value="65" class="form-input-sm">
-                                </div>
-                                <div class="form-group" style="width: 120px;">
-                                    <label title="Space from BOTTOM of page where text ends (mm)">Footer H (mm)</label>
-                                    <input type="number" id="footerHeight" value="25" class="form-input-sm">
+                                <div style="display: flex; flex-direction: column; gap: 0.75rem; width: 140px;">
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label title="Space from TOP of page where text begins (mm)">Header H (mm)</label>
+                                        <input type="number" id="headerHeight" value="65" class="form-input-sm" style="background: rgba(255,255,255,0.05);">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label title="Space from BOTTOM of page where text ends (mm)">Footer H (mm)</label>
+                                        <input type="number" id="footerHeight" value="25" class="form-input-sm" style="background: rgba(255,255,255,0.05);">
+                                    </div>
                                 </div>
                             </div>
                                 <button class="btn btn-primary" style="margin-top:1rem" id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save Signatory & Letterhead</button>
-                                <button class="btn btn-secondary" style="margin-top:1rem; border-color:var(--secondary);color:var(--secondary); background:transparent;" onclick="injectDummyApplicant()">🧪 Test Offer Letter (Dummy Data)</button>
                             </div>
+
+                        <div class="setup-section doc-lab-section">
+                            <div class="setup-section-head">
+                                <h4>🧪 Instant Document Lab (Direct Check)</h4>
+                                <p>Check your stationery margins instantly with temporary data. <strong>Does not touch database.</strong></p>
+                            </div>
+                            <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                <div class="form-group">
+                                    <label>Test Full Name</label>
+                                    <input type="text" id="labName" placeholder="SMRUTI DASH" class="form-input-sm">
+                                </div>
+                                <div class="form-group">
+                                    <label>Test Designation</label>
+                                    <input type="text" id="labDesg" placeholder="Product Manager" class="form-input-sm">
+                                </div>
+                                <div class="form-group">
+                                    <label>Monthly Gross (CTC)</label>
+                                    <input type="text" id="labSalary" placeholder="75000" class="form-input-sm">
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.75rem;">
+                                <button class="btn btn-secondary" onclick="previewTemporaryLetter('offer')" style="flex:1;">📄 Download Sample Offer</button>
+                                <button class="btn btn-secondary" onclick="previewTemporaryLetter('appt')" style="flex:1; border-color:var(--accent); color:var(--accent);">📜 Download Sample Appointment</button>
+                            </div>
+                        </div>
 
                         <div class="setup-section">
                             <div class="setup-section-head">

@@ -9,41 +9,53 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// MongoDB Connection
+// MongoDB Connection Strings
 const MONGODB_URI = process.env.MONGODB_URI;
+// Fallback to same cluster but different DB if ASSET_URI isn't provided
+const MONGODB_ASSETS_URI = process.env.MONGODB_ASSETS_URI || (MONGODB_URI ? MONGODB_URI.split('?')[0] + '_assets?' + (MONGODB_URI.split('?')[1] || '') : null);
+
+let connMain, connAssets;
+
 if (MONGODB_URI) {
-    mongoose.connect(MONGODB_URI)
-        .then(() => console.log('Connected to MongoDB Atlas'))
-        .catch(err => console.error('MongoDB connection error:', err));
+    connMain = mongoose.createConnection(MONGODB_URI);
+    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI);
+    
+    connMain.on('connected', () => console.log('✅ Main DB Connected'));
+    connAssets.on('connected', () => console.log('💎 Asset DB Connected'));
 } else {
-    console.warn('MONGODB_URI not found. Data will not be persisted to database.');
+    console.warn('MONGODB_URI not found. Running in ephemeral mode.');
 }
 
-// Schemas
+// Schemas & Models
 const companySchema = new mongoose.Schema({
     name: { type: String, default: "EMYRIS BIOLIFESCIENCES PVT LTD." },
     address: String,
     phone: String,
     tollFree: String,
     website: String,
-    logo: [{ name: String, data: String }],
-    offerTemplate: [{ name: String, data: String }],
-    apptTemplate: [{ name: String, data: String }],
-    mobileAppTemplate: [{ name: String, data: String }],
-    tadaTemplate: [{ name: String, data: String }],
-    stamp: [{ name: String, data: String }],
-    digitalSignature: [{ name: String, data: String }],
-    letterheadImage: [{ name: String, data: String }], 
-    signatoryName: String,         // e.g. "Ms. Rishita Dash"
-    signatoryDesignation: String,  // e.g. "HR Business Partner..."
-    offerLetterBody: String,       // Template with {{PLACEHOLDERS}}
-    apptLetterBody: String,        // Multi-page appointment template
-    fyFrom: String,                // "2025-04-01"
-    fyTo: String,                  // "2026-03-31"
+    // Latest active IDs (pointers)
+    activeLogoId: String,
+    activeStampId: String,
+    activeSignatureId: String,
+    activeLetterheadId: String,
+    signatoryName: String,
+    signatoryDesignation: String,
+    offerLetterBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
+    apptLetterBody: String,
+    fyFrom: String,
+    fyTo: String,
     updatedAt: { type: Date, default: Date.now },
-    headerHeight: { type: Number, default: 65 },  // Top margin in mm
-    footerHeight: { type: Number, default: 25 },  // Bottom margin in mm
-    offerLetterBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` }
+    headerHeight: { type: Number, default: 65 },
+    footerHeight: { type: Number, default: 25 },
+    letterCounter: { type: Number, default: 1001 }
+});
+
+const assetSchema = new mongoose.Schema({
+    category: String, // 'logo', 'stamp', 'signature', 'letterhead'
+    name: String,
+    data: String,    // Base64 logic
+    active: { type: Boolean, default: true },
+    uploadedAt: { type: Date, default: Date.now }
 });
 
 const applicantSchema = new mongoose.Schema({
@@ -58,9 +70,9 @@ const applicantSchema = new mongoose.Schema({
     submittedAt: Date,
     approvedAt: Date,
     documents: [Object],
-    division: String,              // Assigned by admin: CRITIZA / NUTRIZA
-    reportingTo: String,           // Assigned by admin: SR. ZONAL SALES MANAGER
-    refNo: String,                 // Auto-generated: REF/1038/25-26
+    division: String,
+    reportingTo: String,
+    refNo: String,
     tasks: {
         offerLetter: { type: Boolean, default: false },
         appointmentLetter: { type: Boolean, default: false },
@@ -75,20 +87,18 @@ const divisionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-const Company = mongoose.model('Company', companySchema);
-const Applicant = mongoose.model('Applicant', applicantSchema);
-const Division = mongoose.model('Division', divisionSchema);
+// Bind models to connections
+const Company = connMain ? connMain.model('Company', companySchema) : mongoose.model('Company', companySchema);
+const Applicant = connMain ? connMain.model('Applicant', applicantSchema) : mongoose.model('Applicant', applicantSchema);
+const Division = connMain ? connMain.model('Division', divisionSchema) : mongoose.model('Division', divisionSchema);
+const Asset = connAssets ? connAssets.model('Asset', assetSchema) : mongoose.model('Asset', assetSchema);
 
+// Startup logic
 async function initializeApp() {
-    try {
-        await seedDivisions();
-        await migrateAssets();
-        console.log('🚀 Server initialization successful.');
-    } catch (err) {
-        console.error('❌ Critical startup error:', err);
-    }
+    console.log('🚀 Server starting - Clean Slate protocol active.');
 }
-mongoose.connection.once('open', initializeApp);
+if (connMain) connMain.once('open', initializeApp);
+else initializeApp();
 
 // Global Error Handlers (Fix for 502/Crashes)
 process.on('unhandledRejection', (reason, promise) => {
@@ -432,39 +442,93 @@ app.post('/api/admin/send-letter', async (req, res) => {
     }
 });
 
-// Company Profile
+// Company Profile Fetching (With latest Assets)
 app.get('/api/company-profile', async (req, res) => {
     try {
-        let profile = await Company.findOne();
-        if (!profile) profile = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD." });
+        let profile = await Company.findOne().lean();
+        if (!profile) {
+            profile = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD." });
+        }
+
+        // Hydrate with latest active assets from Asset DB
+        const assetMap = {
+            activeLogoId: 'logo',
+            activeStampId: 'stamp',
+            activeSignatureId: 'digitalSignature',
+            activeLetterheadId: 'letterheadImage'
+        };
+
+        for (const [key, field] of Object.entries(assetMap)) {
+            if (profile[key]) {
+                const asset = await Asset.findById(profile[key]).lean();
+                profile[field] = asset ? [asset] : [];
+            } else {
+                profile[field] = [];
+            }
+        }
+
         res.status(200).json(profile);
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// Full Asset Library (Lazy-loaded)
+app.get('/api/admin/asset-library', async (req, res) => {
+    try {
+        const assets = await Asset.find({ active: true }).sort({ uploadedAt: -1 }).lean();
+        res.status(200).json(assets);
+    } catch (error) { res.status(500).json({ error: 'Failed to fetch library' }); }
+});
+
+// Advanced Asset Upload (Stores in Asset DB)
 app.post('/api/company-profile', async (req, res) => {
     try {
         const updateData = req.body;
         let profile = await Company.findOne();
-        if (profile) {
-            Object.assign(profile, updateData);
-            profile.updatedAt = new Date();
-            await profile.save();
-        } else {
-            profile = await Company.create(updateData);
+        if (!profile) profile = await Company.create({});
+
+        // Handle File Assets (logo, stamp, signature, letterheadImage)
+        const assetTypeMap = {
+            logo: 'logo',
+            stamp: 'stamp',
+            digitalSignature: 'signature',
+            letterheadImage: 'letterhead'
+        };
+
+        for (const [field, type] of Object.entries(assetTypeMap)) {
+            if (updateData[field] && updateData[field].length > 0) {
+                const file = updateData[field][0];
+                const newAsset = await Asset.create({
+                    category: type,
+                    name: file.name,
+                    data: file.data
+                });
+                
+                // Link to profile
+                const profileKey = field === 'digitalSignature' ? 'activeSignatureId' : 
+                                  (field === 'letterheadImage' ? 'activeLetterheadId' : 
+                                  `active${field.charAt(0).toUpperCase() + field.slice(1)}Id`);
+                
+                profile[profileKey] = newAsset._id;
+                delete updateData[field]; // Don't save blob in Main DB
+            }
         }
+
+        Object.assign(profile, updateData);
+        profile.updatedAt = new Date();
+        await profile.save();
+        
         res.status(200).json({ success: true, profile });
-    } catch (error) { res.status(500).json({ error: 'Failed' }); }
+    } catch (error) { 
+        console.error('Upload error:', error);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 // --- DELETE ASSET ---
 app.post('/api/admin/delete-asset', async (req, res) => {
     try {
-        const { category, assetId } = req.body;
-        const profile = await Company.findOne();
-        if (!profile) return res.status(404).json({ error: 'Profile not found' });
-        const update = {};
-        update[category] = { _id: assetId };
-        await Company.updateOne({}, { $pull: update });
+        const { assetId } = req.body;
+        await Asset.findByIdAndUpdate(assetId, { active: false });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
@@ -490,8 +554,25 @@ app.post('/api/admin/system/clear', async (req, res) => {
             company.letterCounter = company.letterCounterStart || 1001;
             await company.save();
         }
-        res.json({ success: true, message: 'Database cleared' });
+        res.json({ success: true, message: 'Applicant database cleared' });
     } catch (e) { res.status(500).json({ error: 'Clear failed' }); }
+});
+
+app.post('/api/admin/system/vacuum', async (req, res) => {
+    try {
+        const profile = await Company.findOne();
+        if (!profile) return res.status(404).json({ error: 'Not found' });
+        
+        const categories = ['logo', 'stamp', 'digitalSignature', 'letterheadImage', 'mobileAppTemplate', 'tadaTemplate'];
+        categories.forEach(cat => {
+            if (profile[cat] && profile[cat].length > 1) {
+                profile[cat] = [profile[cat][profile[cat].length - 1]]; // Prune everything except latest
+            }
+        });
+        
+        await profile.save();
+        res.json({ success: true, message: 'Asset history vacuumed successfully' });
+    } catch (e) { res.status(500).json({ error: 'Vacuum failed' }); }
 });
 
 // Helper for existing data migration

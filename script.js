@@ -1005,6 +1005,80 @@ async function convertPdfToPng(dataUri) {
     return canvas.toDataURL('image/png');
 }
 
+// --- PERFORMANCE ENGINE: IMAGE OPTIMIZATION ---
+function compressAndResize(file, maxWidth = 1800) {
+    return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) return resolve(null);
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL(file.type, 0.85); 
+                resolve(dataUrl);
+            };
+            img.onerror = (err) => reject(err);
+        };
+        reader.onerror = (err) => reject(err);
+    });
+}
+
+// --- INSTANT DOCUMENT LAB: DB-FREE PREVIEW ---
+async function previewTemporaryLetter(type) {
+    const name = document.getElementById('labName').value || "SMRUTI DASH";
+    const desg = document.getElementById('labDesg').value || "Product Manager";
+    const salary = document.getElementById('labSalary').value || "75000";
+
+    const mockApplicant = {
+        fullName: name,
+        firstName: name.split(' ')[0],
+        email: "test@emyris.com",
+        phone: "91XX XXX XXXX",
+        division: "CRITIZA",
+        reportingTo: "SR. ZONAL MANAGER",
+        refNo: "REF/LAB/25-26",
+        formData: {
+            basics: { fullName: name },
+            professional: { designation: desg, hq: "Bhubaneswar" },
+            salary: { 
+                monthlyGross: parseInt(salary),
+                annualGross: parseInt(salary) * 12 
+            },
+            address: { 
+                present: "Test Sector, Emyris Campus",
+                cityState: "Bhubaneswar, Odisha",
+                pincode: "751001"
+            }
+        }
+    };
+
+    lockUI("⚖️ Generating Lab Preview...");
+    try {
+        if (type === 'offer') {
+            await generateLetterPDF(mockApplicant, 'offer');
+        } else {
+            await generateLetterPDF(mockApplicant, 'appointment');
+        }
+        showToast("✅ Lab Preview Downloaded", "success");
+    } catch (e) {
+        showToast("❌ Lab Generation Failed", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
 async function saveSignatorySettings() {
     lockUI("Saving Signatory & Letterhead...");
     const btn = document.getElementById('saveSignatoryBtn');
@@ -1021,22 +1095,21 @@ async function saveSignatorySettings() {
     
     const file = document.getElementById('letterheadInput').files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            let finalData = e.target.result;
-            data.letterheadImage = [{ name: file.name.split('.')[0], data: finalData }]; 
+        try {
+            const optimizedBase64 = await compressAndResize(file, 1800);
+            data.letterheadImage = [{ name: file.name.split('.')[0], data: optimizedBase64 }]; 
             await submitProfileUpdate(data);
-            loadSetupData();
-            btn.innerText = originalText; btn.disabled = false;
-            unlockUI();
-        };
-        reader.readAsDataURL(file);
+            showToast("✅ High-Res Stationery Optimized!", "success");
+        } catch (err) {
+            showToast("❌ Image processing failed", "error");
+        }
     } else {
         await submitProfileUpdate(data);
-        loadSetupData();
-        btn.innerText = originalText; btn.disabled = false;
-        unlockUI();
     }
+    
+    loadSetupData();
+    btn.innerText = originalText; btn.disabled = false;
+    unlockUI();
 }
 
 async function saveLetterTemplate(type) {
