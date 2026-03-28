@@ -532,8 +532,46 @@ app.post('/api/admin/delete-asset', async (req, res) => {
     try {
         const { assetId } = req.body;
         await Asset.findByIdAndUpdate(assetId, { active: false });
+        
+        // Remove from active pointers if it was the active one
+        const company = await Company.findOne();
+        if (company) {
+            const keys = ['activeLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'];
+            let changed = false;
+            keys.forEach(k => {
+                if (company[k] === assetId) {
+                    company[k] = null;
+                    changed = true;
+                }
+            });
+            if (changed) await company.save();
+        }
+        
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
+});
+
+// --- SET ACTIVE ASSET ---
+app.post('/api/admin/set-active-asset', async (req, res) => {
+    try {
+        const { assetId, category } = req.body;
+        const company = await Company.findOne();
+        if (!company) return res.status(404).json({ error: 'Company not found' });
+
+        const map = {
+            'logo': 'activeLogoId',
+            'stamp': 'activeStampId',
+            'signature': 'activeSignatureId',
+            'letterhead': 'activeLetterheadId'
+        };
+
+        const field = map[category];
+        if (!field) return res.status(400).json({ error: 'Invalid category' });
+
+        company[field] = assetId;
+        await company.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed to set active asset' }); }
 });
 
 // --- SYSTEM MAINTENANCE ---

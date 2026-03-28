@@ -1334,12 +1334,87 @@ input:checked + .slider:before {
     gap: 1.2rem;
     padding: 0.5rem;
 }
-.upload-box-sm { position: relative; }
+.upload-box-sm { position: relative; min-height: 180px; display: flex; flex-direction: column; }
 .upload-box-sm .drop-zone-sm {
+    height: 100px;
+    flex-shrink: 0;
     background: rgba(255,255,255,0.02);
     border: 1px solid var(--glass-border);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+.asset-list-vertical {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.asset-list-vertical::-webkit-scrollbar { width: 4px; }
+.asset-list-vertical::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+.asset-list-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.asset-list-item:hover { background: rgba(255,255,255,0.06); }
+.asset-list-item.active { border-color: var(--primary); background: rgba(99, 102, 241, 0.1); }
+
+.asset-mini-preview {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.asset-mini-preview img {
+    max-width: 90%;
+    max-height: 90%;
+    object-fit: contain;
+}
+
+.asset-item-info { flex: 1; min-width: 0; }
+.asset-item-name { 
+    font-size: 0.75rem; 
+    font-weight: 600; 
+    color: white; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+
+.asset-item-actions { display: flex; gap: 0.4rem; }
+
+.btn-asset-mini {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.05);
+    color: white;
+    transition: all 0.2s;
+}
+
+.btn-asset-mini:hover { background: var(--primary); border-color: var(--primary); }
+.btn-asset-mini.active-tag { background: var(--success); border-color: var(--success); cursor: default; }
+.btn-asset-mini.delete-btn:hover { background: #ef4444; border-color: #ef4444; }
 
 .logo-box .drop-zone-sm   { background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), transparent); border-color: rgba(99, 102, 241, 0.3); }
 .stamp-box .drop-zone-sm  { background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), transparent); border-color: rgba(239, 68, 68, 0.3); }

@@ -515,30 +515,14 @@ function switchAdminTab(tab) {
         f.compTollFree.value = companyData.tollFree || '';
         f.compAddress.value = companyData.address || '';
 
-        // Update ALL asset statuses
-        const updateStatus = (id, val, label) => {
-            const el = document.getElementById(id);
-            if (!el) return;
-            if (val) {
-                el.innerText = `✅ ${label || 'Uploaded'}`;
-                el.style.color = 'var(--success)';
-            } else {
-                el.innerText = label ? `Upload ${label}` : 'Upload';
-                el.style.color = 'var(--text-muted)';
-            }
-        };
-        updateStatus('logoStatus',   companyData.logo?.length,               'Logo');
-        updateStatus('stampStatus',  companyData.stamp?.length,              'Stamp');
-        updateStatus('sigStatus',    companyData.digitalSignature?.length,   'Signature');
-        updateStatus('letterheadStatus', companyData.letterheadImage?.length, 'Letterhead');
-        updateStatus('mobileStatus', companyData.mobileAppTemplate?.length,  'Files');
-        updateStatus('tadaStatus',   companyData.tadaTemplate?.length,       'Files');
+        // Standard stats
+        renderAssetLists(); 
 
         // Logo Previews (Show the latest one's data)
         const setPreview = (id, arr) => {
             const img = document.getElementById(id);
             if (img && arr && arr.length) {
-                img.src = arr[arr.length - 1].data; // Use .data
+                img.src = arr[arr.length - 1].data; 
                 img.classList.remove('hidden');
             } else if (img) {
                 img.classList.add('hidden');
@@ -594,6 +578,119 @@ function animateCounter(id, value) {
             el.innerText = Math.floor(obj.val);
         }
     });
+}
+
+async function renderAssetLists() {
+    try {
+        const res = await fetch('/api/admin/asset-library');
+        const allAssets = await res.json();
+        
+        const categories = {
+            'logo': 'logoList',
+            'stamp': 'stampList',
+            'signature': 'sigList',
+            'mobile': 'mobileList',
+            'tada': 'tadaList',
+            'letterhead': 'lhList' // For Setup Tab if needed
+        };
+
+        const activeMap = {
+            'logo': companyData.activeLogoId,
+            'stamp': companyData.activeStampId,
+            'signature': companyData.activeSignatureId,
+            'letterhead': companyData.activeLetterheadId
+        };
+
+        // Clear all lists first
+        Object.values(categories).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.innerHTML = '';
+        });
+
+        allAssets.forEach(asset => {
+            const listId = categories[asset.category];
+            const listEl = document.getElementById(listId);
+            if (!listEl) return;
+
+            const isActive = activeMap[asset.category] === asset._id;
+            
+            const item = document.createElement('div');
+            item.className = `asset-list-item ${isActive ? 'active' : ''}`;
+            item.innerHTML = `
+                <div class="asset-mini-preview">
+                    ${asset.data.startsWith('data:image') 
+                        ? `<img src="${asset.data}" alt="${asset.name}">` 
+                        : `<span style="font-size:12px">📄</span>`}
+                </div>
+                <div class="asset-item-info">
+                    <div class="asset-item-name" title="${asset.name}">${asset.name}</div>
+                </div>
+                <div class="asset-item-actions">
+                    ${isActive 
+                        ? `<button class="btn-asset-mini active-tag">Active</button>` 
+                        : `<button class="btn-asset-mini" onclick="setActiveAsset('${asset._id}', '${asset.category}')">Set Active</button>`
+                    }
+                    <button class="btn-asset-mini delete-btn" onclick="deleteAssetRecord('${asset._id}')">🗑️</button>
+                </div>
+            `;
+            listEl.appendChild(item);
+        });
+
+        // Update "Upload" labels to show counts
+        const counts = allAssets.reduce((acc, a) => {
+            acc[a.category] = (acc[a.category] || 0) + 1;
+            return acc;
+        }, {});
+
+        const updateStatus = (id, count, label) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.innerText = count ? `✅ ${count} ${label}(s) Uploaded` : `Upload ${label}`;
+            el.style.color = count ? 'var(--success)' : 'var(--text-muted)';
+        };
+
+        updateStatus('logoStatus', counts['logo'], 'Logo');
+        updateStatus('stampStatus', counts['stamp'], 'Stamp');
+        updateStatus('sigStatus', counts['signature'], 'Signature');
+        updateStatus('mobileStatus', counts['mobile'], 'Images');
+        updateStatus('tadaStatus', counts['tada'], 'Images');
+
+    } catch (e) { console.error("Error rendering asset list:", e); }
+}
+
+async function setActiveAsset(assetId, category) {
+    try {
+        lockUI("⚙️ Updating Active Asset...");
+        const res = await fetch('/api/admin/set-active-asset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assetId, category })
+        });
+        if ((await res.json()).success) {
+            showToast("✅ Active asset updated!", "success");
+            await fetchCompanyData(); // Refresh global pointers
+            renderAssetLists(); // Refresh lists
+        }
+    } catch (e) { showToast("❌ Update failed", "error"); }
+    finally { unlockUI(); }
+}
+
+async function deleteAssetRecord(assetId) {
+    if (!confirm("Delete this asset permanently from the profile?")) return;
+    try {
+        lockUI("🗑️ Deleting Asset...");
+        const res = await fetch('/api/admin/delete-asset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assetId })
+        });
+        if ((await res.json()).success) {
+            showToast("✅ Asset deleted!", "success");
+            await fetchCompanyData();
+            renderAssetLists();
+        }
+    } catch (e) { showToast("❌ Delete failed", "error"); }
+    finally { unlockUI(); }
 }
 
 function renderApplicantsTable(data) {
