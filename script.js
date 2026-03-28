@@ -1959,82 +1959,85 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
 // --- MASTER EDITOR v2.0 CORE LOGIC ---
 function copyTag(text) {
     navigator.clipboard.writeText(text).then(() => {
-        showToast(Copied: , success);
+        showToast(`Copied: ${text}`, 'success');
     });
 }
 
 function execCmd(command, value = null) {
     document.execCommand(command, false, value);
-    document.getElementById(unifiedEditor).focus();
+    document.getElementById('unifiedEditor').focus();
 }
 
 function switchEditorTemplate() {
-    const type = document.getElementById(ctiveTemplateSelect).value;
-    const editor = document.getElementById(unifiedEditor);
+    const type = document.getElementById('activeTemplateSelect').value;
+    const editor = document.getElementById('unifiedEditor');
     
-    if (type === offer) editor.innerHTML = companyData.offerLetterBody || `;
-    else if (type === ppt) editor.innerHTML = companyData.apptLetterBody || `;
+    if (type === 'offer') editor.innerHTML = companyData.offerLetterBody || '';
+    else if (type === 'appt') editor.innerHTML = companyData.apptLetterBody || '';
     
     syncEditorStyles();
 }
 
 function syncEditorStyles() {
-    const editor = document.getElementById(unifiedEditor);
-    const size = document.getElementById(letterFontSize).value || 11;
-    const type = document.getElementById(letterFontType).value || helvetica;
+    const editor = document.getElementById('unifiedEditor');
+    const size = document.getElementById('letterFontSize').value || 11;
+    const type = document.getElementById('letterFontType').value || 'helvetica';
     
-    editor.style.fontSize = ${size}pt;
+    editor.style.fontSize = `${size}pt`;
     
-    let fontStack = " Courier New\, monospace;
- if (type === imes) fontStack = \Times New Roman\, Times, serif;
- else if (type === helvetica) fontStack = \Plus Jakarta Sans\, Arial, sans-serif;
- else if (type === erdana) fontStack = Verdana, Geneva, sans-serif;
- 
- editor.style.fontFamily = fontStack;
- 
- // Update live preview if open
- if (!document.getElementById(livePreviewContainer).classList.contains(hidden)) {
- updateLivePreviewFrame();
- }
+    let fontStack = "'Courier New', monospace";
+    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
+    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+    
+    editor.style.fontFamily = fontStack;
+    
+    // Update live preview if open
+    const preview = document.getElementById('livePreviewContainer');
+    if (preview && !preview.classList.contains('hidden')) {
+        updateLivePreviewFrame();
+    }
 }
 
 async function saveActiveTemplate() {
- const type = document.getElementById(ctiveTemplateSelect).value;
- const html = document.getElementById(unifiedEditor).innerHTML;
- 
- const payload = {
- type: type,
- body: html,
- fontSize: document.getElementById(letterFontSize).value,
- fontType: document.getElementById(letterFontType).value,
- headerHeight: document.getElementById(headerHeight).value,
- footerHeight: document.getElementById(ooterHeight).value,
- signatoryName: document.getElementById(signatoryName).value,
- signatoryDesg: document.getElementById(signatoryDesg).value
- };
- 
- lockUI(?? Saving Template...);
- try {
- const res = await fetch(/api/admin/save-template, {
- method: POST,
- headers: { Content-Type: pplication/json },
- body: JSON.stringify(payload)
- });
- if ((await res.json()).success) {
- showToast(? Template saved successfully!, success);
- // Update local memory
- if (type === offer) companyData.offerLetterBody = html;
- else if (type === ppt) companyData.apptLetterBody = html;
- 
- companyData.letterFontSize = payload.fontSize;
- companyData.letterFontType = payload.fontType;
- companyData.headerHeight = payload.headerHeight;
- companyData.footerHeight = payload.footerHeight;
- companyData.signatoryName = payload.signatoryName;
- companyData.signatoryDesignation = payload.signatoryDesg;
- } else {
- showToast(? Save failed, error);
- }
- } catch (e) { showToast(? Server connection error, error); }
- finally { unlockUI(); }
+    const type = document.getElementById('activeTemplateSelect').value;
+    const html = document.getElementById('unifiedEditor').innerHTML;
+    
+    const payload = {
+        type: type,
+        body: html,
+        fontSize: document.getElementById('letterFontSize').value,
+        fontType: document.getElementById('letterFontType').value,
+        headerHeight: document.getElementById('headerHeight').value,
+        footerHeight: document.getElementById('footerHeight').value,
+        signatoryName: document.getElementById('signatoryName').value,
+        signatoryDesg: document.getElementById('signatoryDesg').value
+    };
+    
+    lockUI('💾 Saving Template...');
+    try {
+        const res = await fetch('/api/admin/save-template', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('✅ Template saved successfully!', 'success');
+            // Update local memory
+            if (type === 'offer') companyData.offerLetterBody = html;
+            else if (type === 'appt') companyData.apptLetterBody = html;
+            
+            companyData.letterFontSize = payload.fontSize;
+            companyData.letterFontType = payload.fontType;
+            companyData.headerHeight = payload.headerHeight;
+            companyData.footerHeight = payload.footerHeight;
+            companyData.signatoryName = payload.signatoryName;
+            companyData.signatoryDesignation = payload.signatoryDesg;
+        } else {
+            showToast('❌ Save failed', 'error');
+        }
+    } catch (e) { showToast('❌ Server connection error', 'error'); }
+    finally { unlockUI(); }
 }
+
