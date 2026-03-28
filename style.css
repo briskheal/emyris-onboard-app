@@ -1330,25 +1330,58 @@ input:checked + .slider:before {
 
 /* --- Colorful Branding Cards --- */
 .branding-upload-grid {
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    gap: 1.2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
     padding: 0.5rem;
 }
-.upload-box-sm { position: relative; min-height: 180px; display: flex; flex-direction: column; }
-.upload-box-sm .drop-zone-sm {
-    height: 100px;
-    flex-shrink: 0;
-    background: rgba(255,255,255,0.02);
+
+.upload-box-sm { 
+    position: relative; 
+    width: 100%;
+    min-width: 220px;
+    height: 380px; /* Fixed height for all boxes */
+    display: flex; 
+    flex-direction: column; 
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 18px;
+    padding: 1.2rem;
     border: 1px solid var(--glass-border);
+    transition: all 0.3s ease;
+}
+
+.upload-box-sm label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 1rem;
+    display: block;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.upload-box-sm .drop-zone-sm {
+    height: 120px; /* Uniform drop zone height */
+    width: 100%;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.03);
+    border: 1.5px dashed var(--glass-border);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .asset-list-vertical {
-    margin-top: 1rem;
+    margin-top: 1.2rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    max-height: 200px;
+    gap: 0.6rem;
+    flex-grow: 1; /* Take up remaining space in the fixed-height box */
     overflow-y: auto;
     padding-right: 5px;
 }

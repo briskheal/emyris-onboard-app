@@ -414,7 +414,7 @@ async function saveCompanyProfile(e) {
         address: rawData.compAddress
     };
     
-    // Helper to read multiple files as Base64 with NAMING PROMPT
+    // Simple helper: Only capture NEWLY selected files
     const readFiles = (id) => {
         return new Promise(async (resolve) => {
             const el = document.getElementById(id);
@@ -423,13 +423,12 @@ async function saveCompanyProfile(e) {
             const results = [];
             for (let i = 0; i < el.files.length; i++) {
                 const f = el.files[i];
-                const assetName = prompt(`Enter a display name for this file:`, f.name.split('.')[0]) || f.name;
                 const res = await new Promise((resFile) => {
                     const reader = new FileReader();
                     reader.onload = (event) => resFile(event.target.result);
                     reader.readAsDataURL(f);
                 });
-                results.push({ name: assetName, data: res });
+                results.push({ name: f.name, data: res }); // Use original filename
             }
             resolve(results);
         });
@@ -442,19 +441,13 @@ async function saveCompanyProfile(e) {
     const mobile = await readFiles('mobileTemplateInput');
     const tada = await readFiles('tadaTemplateInput');
 
-    // Merge logic: Add to existing gallery, limit to 10
-    const merge = (key, newFiles) => {
-        const existing = companyData[key] || [];
-        const merged = [...existing, ...newFiles];
-        return merged.slice(-10); // Keep latest 10
-    };
-
-    if (logos.length) data.logo = merge('logo', logos);
-    if (stamps.length) data.stamp = merge('stamp', stamps);
-    if (sigs.length) data.digitalSignature = merge('digitalSignature', sigs);
-    if (lh.length) data.letterheadImage = merge('letterheadImage', lh);
-    if (mobile.length) data.mobileAppTemplate = merge('mobileAppTemplate', mobile);
-    if (tada.length) data.tadaTemplate = merge('tadaTemplate', tada);
+    // Send ONLY the new files to the server
+    if (logos.length) data.logo = logos;
+    if (stamps.length) data.stamp = stamps;
+    if (sigs.length) data.digitalSignature = sigs;
+    if (lh.length) data.letterheadImage = lh;
+    if (mobile.length) data.mobileAppTemplate = mobile;
+    if (tada.length) data.tadaTemplate = tada;
 
     await submitProfileUpdate(data);
 }

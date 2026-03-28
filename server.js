@@ -498,20 +498,22 @@ app.post('/api/company-profile', async (req, res) => {
         };
 
         for (const [field, type] of Object.entries(assetTypeMap)) {
-            if (updateData[field] && updateData[field].length > 0) {
-                const file = updateData[field][0];
-                const newAsset = await Asset.create({
-                    category: type,
-                    name: file.name,
-                    data: file.data
-                });
-                
-                // Link to profile
-                const profileKey = field === 'digitalSignature' ? 'activeSignatureId' : 
-                                  (field === 'letterheadImage' ? 'activeLetterheadId' : 
-                                  `active${field.charAt(0).toUpperCase() + field.slice(1)}Id`);
-                
-                profile[profileKey] = newAsset._id;
+            if (updateData[field] && Array.isArray(updateData[field]) && updateData[field].length > 0) {
+                // Process EVERY file in the array
+                for (const file of updateData[field]) {
+                    const newAsset = await Asset.create({
+                        category: type,
+                        name: file.name,
+                        data: file.data
+                    });
+                    
+                    // Link the LAST one as the active pointer
+                    const profileKey = field === 'digitalSignature' ? 'activeSignatureId' : 
+                                      (field === 'letterheadImage' ? 'activeLetterheadId' : 
+                                      `active${field.charAt(0).toUpperCase() + field.slice(1)}Id`);
+                    
+                    profile[profileKey] = newAsset._id;
+                }
                 delete updateData[field]; // Don't save blob in Main DB
             }
         }
