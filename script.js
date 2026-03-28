@@ -30,12 +30,8 @@ function initSetupListeners() {
 // Show live image & file name on label when user picks a file
 function initFileListeners() {
     const fileMap = {
-        compLogoInput: { status: 'logoStatus', preview: 'logoPreview' },
-        compStampInput: { status: 'stampStatus', preview: 'stampPreview' },
         compSigInput: { status: 'sigStatus', preview: 'sigPreview' },
         letterheadInput: { status: 'letterheadStatus', preview: 'letterheadPreview' },
-        offerTemplateInput: { status: 'offerStatus' },
-        apptTemplateInput: { status: 'apptStatus' },
         mobileTemplateInput: { status: 'mobileStatus' },
         tadaTemplateInput: { status: 'tadaStatus' }
     };
@@ -357,16 +353,12 @@ async function saveCompanyProfile(e) {
     const logo = await readFile('compLogoInput');
     const stamp = await readFile('compStampInput');
     const sig = await readFile('compSigInput');
-    const offer = await readFile('offerTemplateInput');
-    const appt = await readFile('apptTemplateInput');
     const mobile = await readFile('mobileTemplateInput');
     const tada = await readFile('tadaTemplateInput');
 
     if (logo) data.logo = logo;
     if (stamp) data.stamp = stamp;
     if (sig) data.digitalSignature = sig;
-    if (offer) data.offerTemplate = offer;
-    if (appt) data.apptTemplate = appt;
     if (mobile) data.mobileAppTemplate = mobile;
     if (tada) data.tadaTemplate = tada;
 
@@ -432,8 +424,6 @@ function switchAdminTab(tab) {
         updateStatus('logoStatus',   companyData.logo,               'Logo');
         updateStatus('stampStatus',  companyData.stamp,              'Stamp');
         updateStatus('sigStatus',    companyData.digitalSignature,   'Signature');
-        updateStatus('offerStatus',  companyData.offerTemplate,      'PDF');
-        updateStatus('apptStatus',   companyData.apptTemplate,       'PDF');
         updateStatus('mobileStatus', companyData.mobileAppTemplate,  'PDF');
         updateStatus('tadaStatus',   companyData.tadaTemplate,       'PDF');
 
