@@ -461,19 +461,39 @@ app.post('/api/admin/delete-asset', async (req, res) => {
         const { category, assetId } = req.body;
         const profile = await Company.findOne();
         if (!profile) return res.status(404).json({ error: 'Profile not found' });
-
-        // Atomic $pull by ID (assuming Mongoose adds _id to sub-docs)
         const update = {};
         update[category] = { _id: assetId };
         await Company.updateOne({}, { $pull: update });
-
         res.json({ success: true });
-    } catch (e) {
-        console.error('Delete asset error:', e);
-        res.status(500).json({ error: 'Delete failed' });
-    }
+    } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
 
+// --- SYSTEM MAINTENANCE ---
+app.get('/api/admin/system/export', async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        const applicants = await Applicant.find();
+        const divisions = await Division.find();
+        const backup = { exportDate: new Date(), company, applicants, divisions };
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', 'attachment; filename=emyris_backup.json');
+        res.send(JSON.stringify(backup, null, 2));
+    } catch (e) { res.status(500).json({ error: 'Export failed' }); }
+});
+
+app.post('/api/admin/system/clear', async (req, res) => {
+    try {
+        await Applicant.deleteMany({});
+        const company = await Company.findOne();
+        if (company) {
+            company.letterCounter = company.letterCounterStart || 1001;
+            await company.save();
+        }
+        res.json({ success: true, message: 'Database cleared' });
+    } catch (e) { res.status(500).json({ error: 'Clear failed' }); }
+});
+
+// Helper for existing data migration
 async function migrateAssets() {
     try {
         const profile = await Company.findOne();

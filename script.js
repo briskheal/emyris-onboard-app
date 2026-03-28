@@ -1,6 +1,56 @@
 let currentStep = 1;
 let isSaving = false; // NAV GUARD
 
+// --- SYSTEM MAINTENANCE ---
+async function downloadDatabase() {
+    try {
+        lockUI("📥 Exporting Library...");
+        const res = await fetch('/api/admin/system/export');
+        const data = await res.blob();
+        const url = window.URL.createObjectURL(data);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `Emyris_Portal_Backup_${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        showToast("✅ Database export successful", "success");
+    } catch (e) {
+        showToast("❌ Export failed", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+async function nukeDatabase() {
+    const confirm1 = confirm("☢️ WARNING: This will PERMANENTLY delete all Applicant data and reset letter counters. Proceed?");
+    if (!confirm1) return;
+    
+    const confirm2 = prompt("⚠️ NUCLEAR SAFETY CHECK: Type 'DELETE ALL' to confirm the total wipe.");
+    if (confirm2 !== "DELETE ALL") {
+        showToast("❌ Clear cancelled. Safety check failed.", "error");
+        return;
+    }
+
+    try {
+        lockUI("☢️ Nuking Database... Please Wait");
+        const res = await fetch('/api/admin/system/clear', { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+            showToast("✅ Database cleared successfully", "success");
+            await fetchCompanyData();
+            await fetchApplicants(); // Refresh list to empty
+            switchAdminTab('profile'); // Refresh view
+        }
+    } catch (e) {
+        showToast("❌ System wipe failed", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
 // Toggle UI Lock while saving/uploading
 function lockUI(msg = "⚙️ Processing... Please Wait") {
     isSaving = true;

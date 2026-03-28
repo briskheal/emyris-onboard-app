@@ -226,6 +226,25 @@
                                 <button type="submit" class="btn btn-primary">Save Profile & Update UI</button>
                             </div>
                         </form>
+
+                        <div class="setup-section maintenance-section" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem;">
+                            <div class="setup-section-head">
+                                <h3>🛠️ System Maintenance</h3>
+                                <p>Manage your database backups and recruitment cycles.</p>
+                            </div>
+                            <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                                <div class="upload-box-sm">
+                                    <label>Export Portal Data</label>
+                                    <p class="setup-hint" style="margin-bottom:1rem;">Download a full JSON backup of all applicants and company settings.</p>
+                                    <button class="btn btn-secondary" style="width:100%" onclick="downloadDatabase()">📥 Download Backup (.json)</button>
+                                </div>
+                                <div class="upload-box-sm" style="border-color: rgba(239, 68, 68, 0.2);">
+                                    <label style="color: #ef4444;">Clear All Applicants</label>
+                                    <p class="setup-hint" style="margin-bottom:1rem;">PERMANENTLY delete all candidate data and reset counters. (Branding will be kept)</p>
+                                    <button class="btn btn-danger" style="width:100%; background: #7f1d1d; border-color: #ef4444;" onclick="nukeDatabase()">☢️ Nuclear Clear (Reset)</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="adminApplicantsTab" class="admin-tab-content hidden">

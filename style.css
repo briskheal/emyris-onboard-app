@@ -1184,8 +1184,8 @@ input:checked + .slider:before {
 
 .asset-gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.2rem;
     margin-top: 1.5rem;
 }
 
@@ -1193,10 +1193,10 @@ input:checked + .slider:before {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--glass-border);
     border-radius: 12px;
-    padding: 0.6rem;
+    padding: 0.8rem;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.6rem;
     transition: all 0.3s ease;
     backdrop-filter: blur(8px);
     position: relative;
@@ -1241,13 +1241,13 @@ input:checked + .slider:before {
 .asset-card-preview {
     width: 100%;
     aspect-ratio: 1/1; 
-    background: rgba(0,0,0,0.15);
-    border-radius: 8px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    padding: 6px;
+    padding: 4px; /* Minimal padding for maximum image visibility */
 }
 
 .asset-card-preview img {
