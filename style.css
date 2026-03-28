@@ -1689,6 +1689,11 @@ input:checked + .slider:before {
 }
 
 /* Unified Editor UI */
+#adminDashboard.view-section {
+    max-width: 1500px;
+    padding: 2.5rem;
+}
+
 .modern-editor-container {
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid var(--glass-border);
