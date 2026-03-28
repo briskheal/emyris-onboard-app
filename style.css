@@ -1751,3 +1751,56 @@ input:checked + .slider:before {
     cursor: pointer;
     outline: none;
 }
+
+/* Landing Page Split Layout */
+.landing-split-layout {
+    max-width: 1400px;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2rem;
+    align-items: stretch;
+}
+
+.landing-left-panel {
+    background: var(--card-bg);
+    padding: 3rem;
+    border-radius: 24px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.landing-right-panel {
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.02);
+    display: flex;
+    flex-direction: column;
+    min-height: 600px;
+}
+
+.landing-right-panel iframe {
+    flex: 1;
+    width: 100%;
+    border: none;
+    background: rgba(0,0,0,0.1);
+}
+
+@media (max-width: 1024px) {
+    .landing-split-layout {
+        grid-template-columns: 1fr;
+    }
+    .landing-right-panel {
+        min-height: 800px;
+    }
+}

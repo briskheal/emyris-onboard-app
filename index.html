@@ -81,36 +81,47 @@
 
         <main class="form-wrapper">
             <!-- New: Landing Page -->
-            <div class="view-section active" id="landingPage">
-                <div class="hero-content">
-                    <div class="company-display">
-                        <img id="displayLogo" src="" alt="Company Logo" class="hidden">
-                        <h2 id="displayCompanyName"></h2>
-                    </div>
-                    <h1>Digital Onboarding Gateway</h1>
-                    <p>Welcome to our professional joining portal. Please choose your path to proceed.</p>
-                    
-                    <div class="landing-cards-grid">
-                        <div class="landing-card" onclick="showApplicantRegister()">
-                            <div class="landing-card-icon">✨</div>
-                            <h3>Start New Journey</h3>
-                            <p>Register to generate your unique PIN and begin.</p>
+            <div class="view-section landing-split-layout active" id="landingPage">
+                <div class="landing-left-panel">
+                    <div class="hero-content">
+                        <div class="company-display">
+                            <img id="displayLogo" src="" alt="Company Logo" class="hidden">
+                            <h2 id="displayCompanyName"></h2>
                         </div>
-                        <div class="landing-card" onclick="showApplicantLogin()">
-                            <div class="landing-card-icon">🔑</div>
-                            <h3>Resume Journey</h3>
-                            <p>Login with your Email & PIN to complete steps.</p>
+                        <h1 style="font-size: 2.5rem;">Digital Onboarding Gateway</h1>
+                        <p>Welcome to our professional joining portal. Please choose your path to proceed.</p>
+                        
+                        <div class="landing-cards-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                            <div class="landing-card" onclick="showApplicantRegister()">
+                                <div class="landing-card-icon">✨</div>
+                                <h3>Start New Journey</h3>
+                                <p>Register to generate your unique PIN and begin.</p>
+                            </div>
+                            <div class="landing-card" onclick="showApplicantLogin()">
+                                <div class="landing-card-icon">🔑</div>
+                                <h3>Resume Journey</h3>
+                                <p>Login with your Email & PIN to complete steps.</p>
+                            </div>
+                            <div class="landing-card" onclick="showAdminLogin()">
+                                <div class="landing-card-icon">🛡️</div>
+                                <h3>Admin Gateway</h3>
+                                <p>Authorized personnel only. Manage profiles.</p>
+                            </div>
                         </div>
-                        <div class="landing-card" onclick="showAdminLogin()">
-                            <div class="landing-card-icon">🛡️</div>
-                            <h3>Admin Gateway</h3>
-                            <p>Authorized personnel only. Manage profiles.</p>
-                        </div>
-                    </div>
 
-                    <div class="company-quick-contact" id="quickContact">
-                        <!-- Dynamic Info -->
+                        <div class="company-quick-contact" id="quickContact">
+                            <!-- Dynamic Info -->
+                        </div>
                     </div>
+                </div>
+
+                <!-- Right Side Embedded App -->
+                <div class="landing-right-panel">
+                    <div class="right-panel-header" style="background: rgba(99, 102, 241, 0.1); padding: 1rem; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                        <h4 style="margin: 0; color: var(--primary-light); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px;">🌍 Stay Updated</h4>
+                        <p style="margin: 4px 0 0 0; font-size: 0.75rem; color: var(--text-muted);">Celebrate Daily Indian & International Events</p>
+                    </div>
+                    <iframe src="https://important-days-app.onrender.com" title="Important Days Activity App" allowfullscreen></iframe>
                 </div>
             </div>
 
