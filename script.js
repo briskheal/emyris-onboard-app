@@ -1252,8 +1252,8 @@ async function saveActiveTemplate() {
     }
 }
 
-function execCmd(command) {
-    document.execCommand(command, false, null);
+function execCmd(command, value = null) {
+    document.execCommand(command, false, value);
     document.getElementById('unifiedEditor').focus();
 }
 
@@ -1265,6 +1265,11 @@ function syncEditorStyles() {
     let fontStack = "'Courier New', monospace";
     if (type === 'times') fontStack = "'Times New Roman', Times, serif";
     else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+    else if (type === 'georgia') fontStack = "Georgia, serif";
+    else if (type === 'tahoma') fontStack = "Tahoma, Geneva, sans-serif";
+    else if (type === 'garamond') fontStack = "Garamond, Baskerville, serif";
+    else if (type === 'serif') fontStack = "serif";
     
     document.querySelectorAll('.letter-editor').forEach(el => {
         el.style.fontSize = `${size}pt`;
