@@ -14,6 +14,26 @@
         #toastNotif.show { transform:translateY(0); opacity:1; }
         #toastNotif.success { background: linear-gradient(135deg,#064e3b,#10b981); }
         #toastNotif.error { background: linear-gradient(135deg,#7f1d1d,#ef4444); }
+
+        /* Sidebar Layout */
+        .setup-grid-layout { display: flex; gap: 2rem; align-items: flex-start; }
+        .setup-main-content { flex: 1; min-width: 0; }
+        .setup-sidebar { width: 300px; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+        
+        .sidebar-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.25rem; }
+        .sidebar-card h5 { margin: 0 0 1rem 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+        .sidebar-grid { display: flex; flex-direction: column; gap: 0.75rem; }
+        
+        /* Squeezed Upload Zones */
+        .drop-zone-sm { height: auto !important; min-height: 80px; padding: 1rem !important; transition: all 0.3s ease; }
+        .drop-zone-sm img:not(.hidden) { max-height: 120px !important; margin-bottom: 0.5rem; object-fit: contain; width: 100%; }
+        .drop-zone-sm img.hidden + .drop-icon-sm { display: block; }
+        .drop-zone-sm img:not(.hidden) + .drop-icon-sm { display: none; }
+        
+        .sidebar-input-group { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+        .sidebar-input-group label { font-size: 0.8rem; margin: 0; color: var(--text-muted); flex: 1; }
+        .sidebar-input-group .form-input-sm { width: 80px; text-align: right; }
+        .sidebar-input-group select.form-input-sm { width: 120px; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
@@ -284,145 +304,169 @@
 
                     <!-- ===== SETUP & LETTERS TAB ===== -->
                     <div id="adminSetupTab" class="admin-tab-content hidden">
+                        <div class="setup-grid-layout">
+                            
+                            <!-- Main Content Area (Templates) -->
+                            <div class="setup-main-content">
+                                
+                                <div class="setup-section doc-lab-section">
+                                    <div class="setup-section-head">
+                                        <h4>🧪 Instant Document Lab</h4>
+                                        <p>Check your stationery margins instantly. <strong>No need to save settings to preview changes.</strong></p>
+                                    </div>
+                                    <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                        <div class="form-group">
+                                            <label>Test Full Name</label>
+                                            <input type="text" id="labName" placeholder="SMRUTI DASH" class="form-input-sm">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Test Designation</label>
+                                            <input type="text" id="labDesg" placeholder="Product Manager" class="form-input-sm">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Monthly Gross</label>
+                                            <input type="text" id="labSalary" placeholder="75000" class="form-input-sm">
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 0.75rem;">
+                                        <button class="btn btn-secondary" onclick="previewTemporaryLetter('offer')" style="flex:1;">📄 Download Sample Offer</button>
+                                        <button class="btn btn-secondary" onclick="previewTemporaryLetter('appt')" style="flex:1; border-color:var(--accent); color:var(--accent);">📜 Download Sample Appointment</button>
+                                    </div>
+                                </div>
 
-                        <div class="setup-section">
-                            <div class="setup-section-head">
-                                <h4>🏢 Division Management</h4>
-                                <p>Manage company divisions. These appear in the Workflow assignment dropdown.</p>
-                            </div>
-                            <div id="divisionList" class="division-list"></div>
-                            <div class="add-division-row">
-                                <input type="text" id="newDivisionInput" class="form-input-sm" placeholder="e.g., MEDIZA" style="text-transform:uppercase">
-                                <button class="btn btn-primary btn-sm" onclick="addDivision()">+ Add Division</button>
-                            </div>
-                        </div>
+                                <div class="setup-section">
+                                    <div class="setup-section-head">
+                                        <h4>🏢 Division Management</h4>
+                                    </div>
+                                    <div id="divisionList" class="division-list"></div>
+                                    <div class="add-division-row">
+                                        <input type="text" id="newDivisionInput" class="form-input-sm" placeholder="NEW DIVISION" style="text-transform:uppercase">
+                                        <button class="btn btn-primary btn-sm" onclick="addDivision()">+ Add</button>
+                                    </div>
+                                </div>
 
-                        <div class="setup-section">
-                            <div class="setup-section-head">
-                                <h4>📅 Financial Year & Letter Numbering</h4>
-                                <p>Set current FY. Refs auto-generate as REF/{counter}/{FY}.</p>
-                            </div>
-                            <div class="input-grid">
-                                <div class="form-group">
-                                    <label>FY Start Date</label>
-                                    <input type="date" id="fyFrom">
+                                <div class="setup-section">
+                                    <div class="setup-section-head">
+                                        <h4>📄 Offer Letter Template</h4>
+                                    </div>
+                                    <div class="placeholder-guide">
+                                        <code>{{TODAY_DATE}}</code> <code>{{REF_NO}}</code> <code>{{FULL_NAME}}</code> <code>{{DESIGNATION}}</code> <code>{{SALARY_ANNUAL}}</code>
+                                    </div>
+                                    <textarea id="offerLetterTemplate" class="letter-editor" placeholder="Paste offer letter..."></textarea>
+                                    <button class="btn btn-primary" onclick="saveLetterTemplate('offer')">💾 Save Offer Template</button>
                                 </div>
-                                <div class="form-group">
-                                    <label>FY End Date</label>
-                                    <input type="date" id="fyTo">
-                                </div>
-                                <div class="form-group">
-                                    <label>Starting Letter No.</label>
-                                    <input type="number" id="letterCounterStart" placeholder="e.g., 1001">
-                                </div>
-                            </div>
-                            <p class="setup-hint">Ref Preview: <strong id="refPreview">REF/1001/25-26</strong> &nbsp;|&nbsp; Counter: <span id="currentCounter">-</span></p>
-                            <button class="btn btn-primary" onclick="saveFYSettings()">💾 Save FY Settings</button>
-                        </div>
 
-                        <div class="setup-section">
-                            <div class="setup-section-head">
-                                <h4>✍️ Signatory & Letterhead</h4>
-                                <p>Shown at the bottom of every generated letter. Upload your letterhead header strip image (PNG/JPG).</p>
-                            </div>
-                            <div class="input-grid">
-                                <div class="form-group">
-                                    <label>Signatory Full Name</label>
-                                    <input type="text" id="signatoryName" placeholder="Ms. Rishita Dash">
+                                <div class="setup-section">
+                                    <div class="setup-section-head">
+                                        <h4>📋 Appointment Letter Template</h4>
+                                    </div>
+                                    <textarea id="apptLetterTemplate" class="letter-editor" style="height:320px" placeholder="Paste appointment letter..."></textarea>
+                                    <button class="btn btn-primary" onclick="saveLetterTemplate('appt')">💾 Save Appointment Template</button>
                                 </div>
-                                <div class="form-group">
-                                    <label>Signatory Designation</label>
-                                    <input type="text" id="signatoryDesg" placeholder="HR Business Partner, Emyris Biolifesciences Pvt Ltd">
-                                </div>
+
                             </div>
-                            <div style="display: flex; gap: 1.5rem; margin-top: 1.5rem;">
-                                <div class="form-group" style="flex: 1;">
-                                    <label>Company Letterhead (Full Page PNG/JPG)</label>
+
+                            <!-- Right Sidebar (Formatting & Document Settings) -->
+                            <div class="setup-sidebar">
+                                
+                                <div class="sidebar-card">
+                                    <h5>📏 Page Formatting</h5>
+                                    <div class="sidebar-grid">
+                                        <div class="sidebar-input-group">
+                                            <label>Header (mm)</label>
+                                            <input type="number" id="headerHeight" value="65" class="form-input-sm">
+                                        </div>
+                                        <div class="sidebar-input-group">
+                                            <label>Footer (mm)</label>
+                                            <input type="number" id="footerHeight" value="25" class="form-input-sm">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="sidebar-card">
+                                    <h5>🔤 Typography</h5>
+                                    <div class="sidebar-grid">
+                                        <div class="sidebar-input-group">
+                                            <label>Font Size</label>
+                                            <input type="number" id="letterFontSize" value="11" step="0.5" class="form-input-sm">
+                                        </div>
+                                        <div class="sidebar-input-group">
+                                            <label>Font Type</label>
+                                            <select id="letterFontType" class="form-input-sm">
+                                                <option value="helvetica">Helvetica</option>
+                                                <option value="times">Times</option>
+                                                <option value="courier">Courier</option>
+                                            </select>
+                                        </div>
+                                        <div class="sidebar-input-group">
+                                            <label>Alignment</label>
+                                            <select id="letterAlignment" class="form-input-sm">
+                                                <option value="left">Left</option>
+                                                <option value="center">Center</option>
+                                                <option value="justify">Justify</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="sidebar-card">
+                                    <h5>✍️ Signatory Details</h5>
+                                    <div class="sidebar-grid">
+                                        <div class="form-group">
+                                            <label style="font-size: 0.75rem;">Full Name</label>
+                                            <input type="text" id="signatoryName" class="form-input-sm" style="width:100%; text-align:left;">
+                                        </div>
+                                        <div class="form-group">
+                                            <label style="font-size: 0.75rem;">Designation</label>
+                                            <input type="text" id="signatoryDesg" class="form-input-sm" style="width:100%; text-align:left;">
+                                        </div>
+                                    </div>
+                                    <!-- Sidebar Stamp Upload -->
+                                    <div class="sidebar-upload-mini" style="margin-top: 0.75rem;">
+                                        <label style="font-size: 0.75rem; display: block; margin-bottom: 0.25rem;">Signatory Stamp</label>
+                                        <div class="drop-zone-sm" onclick="document.getElementById('sidebarStampInput').click()" style="padding: 8px;">
+                                            <img id="sidebarStampPreview" src="" class="hidden" style="max-height: 40px; margin-bottom: 2px;">
+                                            <span class="drop-icon-sm" style="font-size: 14px;">🔴</span>
+                                            <span id="sidebarStampStatus" class="drop-label-sm" style="font-size: 10px;">Upload Stamp</span>
+                                            <input type="file" id="sidebarStampInput" class="hidden" accept="image/*">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="sidebar-card">
+                                    <h5>📅 Letter Counters</h5>
+                                    <div class="sidebar-grid">
+                                        <div class="sidebar-input-group">
+                                            <label>FY From</label>
+                                            <input type="date" id="fyFrom" class="form-input-sm">
+                                        </div>
+                                        <div class="sidebar-input-group">
+                                            <label>FY To</label>
+                                            <input type="date" id="fyTo" class="form-input-sm">
+                                        </div>
+                                        <div class="sidebar-input-group">
+                                            <label>Start No.</label>
+                                            <input type="number" id="letterCounterStart" value="1001" class="form-input-sm">
+                                        </div>
+                                    </div>
+                                    <p class="setup-hint" style="margin-top:0.5rem">Preview: <strong id="refPreview" style="color:var(--accent)">REF/1001/25-26</strong></p>
+                                </div>
+
+                                <button class="btn btn-primary" style="width:100% " id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save All Settings</button>
+                                
+                                <div class="sidebar-card" style="margin-top: 1rem;">
+                                    <h5>🖼️ Letterhead Strip</h5>
                                     <div class="drop-zone-sm" onclick="document.getElementById('letterheadInput').click()">
-                                        <img id="letterheadPreview" src="" class="hidden" style="max-height:80px;margin-bottom:8px;">
+                                        <img id="letterheadPreview" src="" class="hidden">
                                         <span class="drop-icon-sm">🖼️</span>
-                                        <span id="letterheadStatus" class="drop-label-sm">Upload Full Blank Letterhead</span>
-                                        <input type="file" id="letterheadInput" class="hidden" accept="image/png,image/jpeg" multiple>
-                                    </div>
-                                    <p class="setup-hint" style="font-size: 0.75rem;">* High-fidelity A4 stationery backdrop.</p>
-                                </div>
-                                <div style="display: flex; flex-direction: column; gap: 0.75rem; width: 140px;">
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label title="Space from TOP of page where text begins (mm)">Header H (mm)</label>
-                                        <input type="number" id="headerHeight" value="65" class="form-input-sm" style="background: rgba(255,255,255,0.05);">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label title="Space from BOTTOM of page where text ends (mm)">Footer H (mm)</label>
-                                        <input type="number" id="footerHeight" value="25" class="form-input-sm" style="background: rgba(255,255,255,0.05);">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label title="Base font size for documents">Font Size</label>
-                                        <input type="number" id="letterFontSize" value="11" step="0.5" class="form-input-sm" style="background: rgba(255,255,255,0.05);">
-                                    </div>
-                                    <div class="form-group" style="margin-bottom: 0;">
-                                        <label title="Text alignment">Alignment</label>
-                                        <select id="letterAlignment" class="form-input-sm" style="background: rgba(255,255,255,0.05); color:white; border:none; height:32px; width:100%;">
-                                            <option value="left">Left</option>
-                                            <option value="center">Center</option>
-                                            <option value="justify">Justify</option>
-                                        </select>
+                                        <span id="letterheadStatus" class="drop-label-sm" style="font-size: 10px;">Click to Upload</span>
+                                        <input type="file" id="letterheadInput" class="hidden" accept="image/*">
                                     </div>
                                 </div>
-                            </div>
-                                <button class="btn btn-primary" style="margin-top:1rem" id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save Signatory & Letterhead</button>
+
                             </div>
 
-                        <div class="setup-section doc-lab-section">
-                            <div class="setup-section-head">
-                                <h4>🧪 Instant Document Lab (Direct Check)</h4>
-                                <p>Check your stationery margins instantly with temporary data. <strong>Does not touch database.</strong></p>
-                            </div>
-                            <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                                <div class="form-group">
-                                    <label>Test Full Name</label>
-                                    <input type="text" id="labName" placeholder="SMRUTI DASH" class="form-input-sm">
-                                </div>
-                                <div class="form-group">
-                                    <label>Test Designation</label>
-                                    <input type="text" id="labDesg" placeholder="Product Manager" class="form-input-sm">
-                                </div>
-                                <div class="form-group">
-                                    <label>Monthly Gross (CTC)</label>
-                                    <input type="text" id="labSalary" placeholder="75000" class="form-input-sm">
-                                </div>
-                            </div>
-                            <div style="display: flex; gap: 0.75rem;">
-                                <button class="btn btn-secondary" onclick="previewTemporaryLetter('offer')" style="flex:1;">📄 Download Sample Offer</button>
-                                <button class="btn btn-secondary" onclick="previewTemporaryLetter('appt')" style="flex:1; border-color:var(--accent); color:var(--accent);">📜 Download Sample Appointment</button>
-                            </div>
                         </div>
-
-                        <div class="setup-section">
-                            <div class="setup-section-head">
-                                <h4>📄 Offer Letter Template</h4>
-                                <p>Paste your offer letter text. Placeholders auto-fill with candidate data when generating.</p>
-                            </div>
-                            <div class="placeholder-guide">
-                                <strong>Placeholders:</strong>
-                                <code>{{TODAY_DATE}}</code> <code>{{REF_NO}}</code> <code>{{TITLE}}</code> <code>{{FULL_NAME}}</code>
-                                <code>{{FIRST_NAME}}</code> <code>{{ADDRESS}}</code> <code>{{CITY_STATE}}</code> <code>{{PIN}}</code>
-                                <code>{{DESIGNATION}}</code> <code>{{DIVISION}}</code> <code>{{HQ}}</code> <code>{{REPORTING_TO}}</code>
-                                <code>{{SALARY_MONTHLY}}</code> <code>{{SALARY_WORDS}}</code> <code>{{JOINING_DATE}}</code>
-                                <code>{{COMPANY_NAME}}</code> <code>{{SIGNATORY_NAME}}</code> <code>{{SIGNATORY_DESG}}</code>
-                            </div>
-                            <textarea id="offerLetterTemplate" class="letter-editor" placeholder="Paste offer letter with {{PLACEHOLDERS}}..."></textarea>
-                            <button class="btn btn-primary" onclick="saveLetterTemplate('offer')">💾 Save Offer Letter Template</button>
-                        </div>
-
-                        <div class="setup-section">
-                            <div class="setup-section-head">
-                                <h4>📋 Appointment Letter Template</h4>
-                                <p>Paste full appointment letter (all 6 pages). System auto-paginates with letterhead on each page.</p>
-                            </div>
-                            <textarea id="apptLetterTemplate" class="letter-editor" style="height:320px" placeholder="Paste full appointment letter text here..."></textarea>
-                            <button class="btn btn-primary" onclick="saveLetterTemplate('appt')">💾 Save Appointment Letter Template</button>
-                        </div>
-
                     </div>
 
                 </div>

@@ -109,6 +109,7 @@ function initFileListeners() {
         compStampInput: { status: 'stampStatus', preview: 'stampPreview' },
         compSigInput: { status: 'sigStatus', preview: 'sigPreview' },
         letterheadInput: { status: 'letterheadStatus', preview: 'letterheadPreview' },
+        sidebarStampInput: { status: 'sidebarStampStatus', preview: 'sidebarStampPreview' },
         mobileTemplateInput: { status: 'mobileStatus' },
         tadaTemplateInput: { status: 'tadaStatus' }
     };
@@ -458,7 +459,8 @@ async function saveCompanyProfile(e) {
     await submitProfileUpdate(data);
 }
 
-async function submitProfileUpdate(data) {
+async function submitProfileUpdate(data, silent = false) {
+    if (!silent) lockUI("💾 Saving Changes...");
     try {
         const res = await fetch('/api/company-profile', {
             method: 'POST',
@@ -467,15 +469,20 @@ async function submitProfileUpdate(data) {
         });
         const result = await res.json();
         if (result.success) {
-            showToast('✅ Company Profile Saved Successfully!', 'success');
+            showToast('✅ Configuration Updated Successfully!', 'success');
             await fetchCompanyData();
             // Re-populate this tab to show status
-            switchAdminTab('profile');
+            await loadSetupData(); 
         } else {
             showToast('❌ Save failed. Please try again.', 'error');
         }
-    } catch (err) { showToast('❌ Connection error. Save failed.', 'error'); }
-    finally { unlockUI(); }
+    } catch (err) { 
+        console.error("Save error:", err);
+        showToast('❌ Connection error. Save failed.', 'error'); 
+    } finally { 
+        if (typeof isSaving !== 'undefined') isSaving = false;
+        if (!silent) unlockUI(); 
+    }
 }
 
 function showToast(message, type = 'success') {
@@ -871,35 +878,53 @@ function viewAssetRaw(val) {
 
 // --- SETUP TAB LOGIC ---
 async function loadSetupData() {
-    await fetchCompanyData();
+    if (!companyData || !companyData.name) await fetchCompanyData();
     populateDivisions();
     
-    document.getElementById('fyFrom').value = companyData.fyFrom || "";
-    document.getElementById('fyTo').value = companyData.fyTo || "";
-    document.getElementById('letterCounterStart').value = companyData.letterCounterStart || 1001;
-    document.getElementById('currentCounter').innerText = companyData.letterCounter || 1001;
-    
-    document.getElementById('signatoryName').value = companyData.signatoryName || "";
-    document.getElementById('signatoryDesg').value = companyData.signatoryDesignation || "";
-    document.getElementById('headerHeight').value = companyData.headerHeight || 65;
-    document.getElementById('footerHeight').value = companyData.footerHeight || 25;
-    
-    document.getElementById('offerLetterTemplate').value = companyData.offerLetterBody || "";
-    document.getElementById('apptLetterTemplate').value = companyData.apptLetterBody || "";
+    // Formatting & Typography
+    const fields = {
+        'signatoryName': companyData.signatoryName || "",
+        'signatoryDesg': companyData.signatoryDesignation || "",
+        'headerHeight': companyData.headerHeight || 65,
+        'footerHeight': companyData.footerHeight || 25,
+        'letterFontSize': companyData.letterFontSize || 11,
+        'letterFontType': companyData.letterFontType || 'helvetica',
+        'letterAlignment': companyData.letterAlignment || 'left',
+        'offerLetterTemplate': companyData.offerLetterBody || "",
+        'apptLetterTemplate': companyData.apptLetterBody || "",
+        'fyFrom': companyData.fyFrom || "",
+        'fyTo': companyData.fyTo || "",
+        'letterCounterStart': companyData.letterCounter || 1001
+    };
+
+    for (const [id, val] of Object.entries(fields)) {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    }
     
     updateRefPreview();
     
+    // Letterhead Preview
     const lhStatus = document.getElementById('letterheadStatus');
-    if (companyData.letterheadImage) {
+    if (companyData.letterheadImage && companyData.letterheadImage.length > 0 && lhStatus) {
         lhStatus.innerText = "Letterhead Uploaded ✅";
         lhStatus.style.color = "var(--success)";
-        // Show preview if image
-        if (companyData.letterheadImage.includes("data:image")) {
+        const val = Array.isArray(companyData.letterheadImage) ? companyData.letterheadImage[companyData.letterheadImage.length - 1].data : companyData.letterheadImage;
+        if (val && val.includes("data:image")) {
             const img = document.getElementById('letterheadPreview');
-            if (img) {
-                img.src = companyData.letterheadImage;
-                img.classList.remove('hidden');
-            }
+            if (img) { img.src = val; img.classList.remove('hidden'); }
+        }
+    }
+
+    // Sidebar Stamp Preview
+    const stStatus = document.getElementById('sidebarStampStatus');
+    if (companyData.stamp && companyData.stamp.length > 0 && stStatus) {
+        stStatus.innerText = "Stamp Uploaded ✅";
+        stStatus.style.color = "var(--success)";
+        const img = document.getElementById('sidebarStampPreview');
+        if (img) { 
+            img.src = companyData.stamp[companyData.stamp.length - 1].data; 
+            img.classList.remove('hidden'); 
         }
     }
 }
@@ -935,15 +960,20 @@ async function deleteDivision(id) {
 }
 
 function updateRefPreview() {
-    const counter = document.getElementById('letterCounterStart').value || 1001;
-    const from = document.getElementById('fyFrom').value;
-    const to = document.getElementById('fyTo').value;
+    const counterEl = document.getElementById('letterCounterStart');
+    const fromEl = document.getElementById('fyFrom');
+    const toEl = document.getElementById('toFrom'); // Wait, should be 'fyTo'
+    
+    const counter = counterEl ? counterEl.value : 1001;
+    const from = fromEl ? fromEl.value : "";
+    const to = document.getElementById('fyTo') ? document.getElementById('fyTo').value : "";
     
     let fyCode = "25-26";
     if (from && to) {
         fyCode = `${from.split('-')[0].slice(2)}-${to.split('-')[0].slice(2)}`;
     }
-    document.getElementById('refPreview').innerText = `REF/${counter}/${fyCode}`;
+    const previewEl = document.getElementById('refPreview');
+    if (previewEl) previewEl.innerText = `REF/${counter}/${fyCode}`;
 }
 
 async function saveFYSettings() {
@@ -1041,7 +1071,6 @@ async function previewTemporaryLetter(type) {
     const desg = document.getElementById('labDesg').value || "Product Manager";
     const salary = document.getElementById('labSalary').value || "75000";
 
-    // Flatten mock applicant to match production structure
     const mockApplicant = {
         fullName: name,
         firstName: name.split(' ')[0],
@@ -1065,11 +1094,37 @@ async function previewTemporaryLetter(type) {
 
     lockUI("⚖️ Generating Lab Preview...");
     try {
-        // Use injection pattern to reuse existing PDF logic
+        const liveConfig = {
+            headerHeight: parseInt(document.getElementById('headerHeight').value) || 65,
+            footerHeight: parseInt(document.getElementById('footerHeight').value) || 25,
+            letterFontSize: parseFloat(document.getElementById('letterFontSize').value) || 11,
+            letterAlignment: document.getElementById('letterAlignment').value || 'left',
+            letterFontType: document.getElementById('letterFontType').value || 'helvetica',
+            signatoryName: document.getElementById('signatoryName').value,
+            signatoryDesignation: document.getElementById('signatoryDesg').value
+        };
+
+        // Pickup UNSAVED images from UI for instant testing
+        const lhFile = document.getElementById('letterheadInput').files[0];
+        const stFile = document.getElementById('sidebarStampInput').files[0];
+        
+        if (lhFile) {
+            const optLH = await compressAndResize(lhFile, 1800);
+            liveConfig.letterheadImage = [{ name: 'temp_lh', data: optLH }];
+        }
+        if (stFile) {
+            const optST = await compressAndResize(stFile, 800);
+            liveConfig.stamp = [{ name: 'temp_st', data: optST }];
+        }
+
+        const originalConfig = { ...companyData };
+        Object.assign(companyData, liveConfig);
+
         const originalApplicants = [...allApplicants];
         allApplicants.push(mockApplicant);
         
         const pdfData = await generateLetterPDF(mockApplicant.email, type);
+        
         if (pdfData && pdfData.doc) {
             const safeName = name.replace(/[^a-z0-9]/gi, '_');
             savePDF(pdfData.doc, `${type.toUpperCase()}_SAMPLE_${safeName}.pdf`);
@@ -1078,7 +1133,7 @@ async function previewTemporaryLetter(type) {
             showToast("❌ Generation failed", "error");
         }
         
-        // Restore original applicants list
+        companyData = originalConfig;
         allApplicants = originalApplicants;
     } catch (e) {
         console.error("Lab Generation Error:", e);
@@ -1089,37 +1144,49 @@ async function previewTemporaryLetter(type) {
 }
 
 async function saveSignatorySettings() {
-    lockUI("Saving Signatory & Letterhead...");
     const btn = document.getElementById('saveSignatoryBtn');
-    const originalText = btn.innerText;
-    btn.innerText = "⌛ Processing...";
+    const originalText = btn.innerHTML;
+    
+    // Background Saving Feedback
+    btn.innerHTML = "⌛ Saving...";
     btn.disabled = true;
+    btn.style.opacity = "0.7";
 
     const data = {
+        signatoryName: document.getElementById('signatoryName').value,
         signatoryDesignation: document.getElementById('signatoryDesg').value,
         headerHeight: parseInt(document.getElementById('headerHeight').value) || 65,
         footerHeight: parseInt(document.getElementById('footerHeight').value) || 25,
         letterFontSize: parseFloat(document.getElementById('letterFontSize').value) || 11,
+        letterFontType: document.getElementById('letterFontType').value || 'helvetica',
         letterAlignment: document.getElementById('letterAlignment').value || 'left'
     };
     
-    const file = document.getElementById('letterheadInput').files[0];
-    if (file) {
-        try {
-            const optimizedBase64 = await compressAndResize(file, 1800);
-            data.letterheadImage = [{ name: file.name.split('.')[0], data: optimizedBase64 }]; 
-            await submitProfileUpdate(data);
-            showToast("✅ High-Res Stationery Optimized!", "success");
-        } catch (err) {
-            showToast("❌ Image processing failed", "error");
-        }
-    } else {
-        await submitProfileUpdate(data);
-    }
+    // Handle Sidebar File Uploads (Letterhead & Stamp)
+    const lhFile = document.getElementById('letterheadInput').files[0];
+    const stFile = document.getElementById('sidebarStampInput').files[0];
     
-    loadSetupData();
-    btn.innerText = originalText; btn.disabled = false;
-    unlockUI();
+    try {
+        if (lhFile) {
+            const optLH = await compressAndResize(lhFile, 1800);
+            data.letterheadImage = [{ name: lhFile.name.split('.')[0], data: optLH }]; 
+        }
+        if (stFile) {
+            const optST = await compressAndResize(stFile, 800);
+            data.stamp = [{ name: stFile.name.split('.')[0], data: optST }];
+        }
+
+        // Use Silent saving (No full-page lock)
+        await submitProfileUpdate(data, true);
+        
+    } catch (err) {
+        console.error("Sidebar save error:", err);
+        showToast("❌ Save failed", "error");
+    } finally {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        btn.style.opacity = "1";
+    }
 }
 
 async function saveLetterTemplate(type) {
@@ -1130,23 +1197,6 @@ async function saveLetterTemplate(type) {
     await submitProfileUpdate(data);
 }
 
-function loadSetupData() {
-    if (!companyData) return;
-    document.getElementById('signatoryName').value = companyData.signatoryName || "";
-    document.getElementById('signatoryDesg').value = companyData.signatoryDesignation || "";
-    document.getElementById('headerHeight').value = companyData.headerHeight || 65;
-    document.getElementById('footerHeight').value = companyData.footerHeight || 25;
-    document.getElementById('letterFontSize').value = companyData.letterFontSize || 11;
-    document.getElementById('letterAlignment').value = companyData.letterAlignment || 'left';
-    
-    document.getElementById('offerLetterTemplate').value = companyData.offerLetterBody || "";
-    document.getElementById('apptLetterTemplate').value = companyData.apptLetterBody || "";
-    
-    document.getElementById('fyFrom').value = companyData.fyFrom || "";
-    document.getElementById('fyTo').value = companyData.fyTo || "";
-    document.getElementById('letterCounterStart').value = companyData.letterCounter || 1001;
-    if (typeof updateRefPreview === 'function') updateRefPreview();
-}
 
 // --- SMART LETTER GENERATION ---
 async function downloadLetter(email, type) {
@@ -1225,13 +1275,14 @@ async function generateLetterPDF(email, type) {
     const HEADER_H = companyData.headerHeight || 65; 
     const FOOTER_H = companyData.footerHeight || 25; 
     const FONT_SIZE = companyData.letterFontSize || 11;
+    const FONT_TYPE = companyData.letterFontType || 'helvetica';
     const ALIGN = companyData.letterAlignment || 'left';
 
     const MARGIN_T = HEADER_H + 5; 
     const MARGIN_B = FOOTER_H + 5; 
     const MARGIN_L = 22;
     const USABLE_W = 166; 
-    const LINE_H = (FONT_SIZE * 0.6); // Dynamic line height
+    const LINE_H = (FONT_SIZE * 0.58); // Slightly tighter dynamic line height
 
     let y = MARGIN_T;
     
@@ -1251,7 +1302,7 @@ async function generateLetterPDF(email, type) {
     drawPageExtras();
     
     // Split text into lines
-    doc.setFont("helvetica", "normal");
+    doc.setFont(FONT_TYPE, "normal");
     doc.setFontSize(FONT_SIZE);
     const lines = doc.splitTextToSize(mergedText, USABLE_W);
     
