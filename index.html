@@ -316,21 +316,16 @@
                             </div>
                         </form>
 
-                        <div class="setup-section maintenance-section" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem;">
-                            <div class="setup-section-head">
-                                <h3>🛠️ System Maintenance</h3>
-                                <p>Manage your database backups and recruitment cycles.</p>
-                            </div>
-                            <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                                <div class="upload-box-sm">
-                                    <label>Export Portal Data</label>
-                                    <p class="setup-hint" style="margin-bottom:1rem;">Download a full JSON backup of all applicants and company settings.</p>
-                                    <button class="btn btn-secondary" style="width:100%" onclick="downloadDatabase()">📥 Download Backup (.json)</button>
+                        <!-- Compact System Maintenance Banner -->
+                        <div class="setup-section maintenance-section" style="margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(99, 102, 241, 0.05); padding: 1.25rem 1.5rem; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.15); flex-wrap: wrap; gap: 1rem;">
+                                <div style="flex: 1; min-width: 250px;">
+                                    <h4 style="margin: 0; color: var(--primary-light); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">🛠️ System Maintenance & Data Pipeline</h4>
+                                    <p style="margin: 6px 0 0; font-size: 0.8rem; color: var(--text-muted); max-width: 450px; line-height: 1.4;">Download a full JSON snapshot of your environment, or permanently clear all applicants and reset sequences for a new recruitment cycle.</p>
                                 </div>
-                                <div class="upload-box-sm" style="border-color: rgba(239, 68, 68, 0.2);">
-                                    <label style="color: #ef4444;">Clear All Applicants</label>
-                                    <p class="setup-hint" style="margin-bottom:1rem;">PERMANENTLY delete all candidate data and reset counters. (Branding will be kept)</p>
-                                    <button class="btn btn-danger" style="width:100%; background: #7f1d1d; border-color: #ef4444;" onclick="nukeDatabase()">☢️ Nuclear Clear (Reset)</button>
+                                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                                    <button type="button" class="btn btn-outline" onclick="downloadDatabase()" style="padding: 0.6rem 1rem; font-size: 0.85rem;">📥 Backup Data</button>
+                                    <button type="button" class="btn" onclick="nukeDatabase()" style="padding: 0.6rem 1rem; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; border-radius: 10px;">☢️ Nuclear Reset</button>
                                 </div>
                             </div>
                         </div>
