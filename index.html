@@ -434,17 +434,22 @@
 
                                 <div class="editor-toolbar">
                                     <div class="setting-group">
-                                        <button class="btn-tool" onclick="execCmd('bold')"><b>B</b></button>
-                                        <button class="btn-tool" onclick="execCmd('italic')"><i>I</i></button>
-                                        <button class="btn-tool" onclick="execCmd('underline')"><u>U</u></button>
-                                        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-                                        <button class="btn-tool" onclick="execCmd('justifyLeft')">⬅️</button>
-                                        <button class="btn-tool" onclick="execCmd('justifyCenter')">🀄</button>
-                                        <button class="btn-tool" onclick="execCmd('justifyRight')">➡️</button>
-                                        <button class="btn-tool" onclick="execCmd('justifyFull')">↔️</button>
-                                        <div style="width: 1px; height: 24px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
-                                        <button class="btn-tool" onclick="execCmd('insertOrderedList')">🔢</button>
-                                        <button class="btn-tool" onclick="execCmd('insertUnorderedList')">⏺️</button>
+                                        <button class="btn-tool" title="Bold" onclick="execCmd('bold')"><b>B</b></button>
+                                        <button class="btn-tool" title="Italic" onclick="execCmd('italic')"><i>I</i></button>
+                                        <button class="btn-tool" title="Underline" onclick="execCmd('underline')"><u>U</u></button>
+                                        <div class="v-divider"></div>
+                                        <button class="btn-tool" title="Align Left" onclick="execCmd('justifyLeft')">⬅️</button>
+                                        <button class="btn-tool" title="Align Center" onclick="execCmd('justifyCenter')">🀄</button>
+                                        <button class="btn-tool" title="Align Right" onclick="execCmd('justifyRight')">➡️</button>
+                                        <button class="btn-tool" title="Justify" onclick="execCmd('justifyFull')">↔️</button>
+                                        <div class="v-divider"></div>
+                                        <button class="btn-tool" title="Numbered List" onclick="execCmd('insertOrderedList')">🔢</button>
+                                        <button class="btn-tool" title="Bullet List" onclick="execCmd('insertUnorderedList')">⏺️</button>
+                                        <div class="v-divider"></div>
+                                        <div class="btn-tool color-picker-wrapper" title="Text Color">
+                                            <span style="font-size: 0.85rem; font-weight: bold; border-bottom: 2px solid #fff;">A</span>
+                                            <input type="color" onchange="execCmd('foreColor', this.value)" style="opacity: 0; position: absolute; inset: 0; cursor: pointer;">
+                                        </div>
                                     </div>
 
                                     <div class="setting-group">
