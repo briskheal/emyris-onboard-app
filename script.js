@@ -929,6 +929,25 @@ async function loadSetupData() {
     }
     
     syncEditorStyles();
+    enableEditorTabSupport();
+}
+
+function enableEditorTabSupport() {
+    document.querySelectorAll('.letter-editor').forEach(textarea => {
+        textarea.onkeydown = function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+
+                // Insert 4 spaces
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+
+                // Put caret in right place
+                this.selectionStart = this.selectionEnd = start + 4;
+            }
+        };
+    });
 }
 
 function syncEditorStyles() {
