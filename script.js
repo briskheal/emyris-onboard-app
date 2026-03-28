@@ -27,24 +27,38 @@ function initSetupListeners() {
     });
 }
 
-// Show live file name on label when user picks a file
+// Show live image & file name on label when user picks a file
 function initFileListeners() {
     const fileMap = {
-        compLogoInput: 'logoStatus',
-        compStampInput: 'stampStatus',
-        compSigInput: 'sigStatus',
-        offerTemplateInput: 'offerStatus',
-        apptTemplateInput: 'apptStatus',
-        mobileTemplateInput: 'mobileStatus',
-        tadaTemplateInput: 'tadaStatus'
+        compLogoInput: { status: 'logoStatus', preview: 'logoPreview' },
+        compStampInput: { status: 'stampStatus', preview: 'stampPreview' },
+        compSigInput: { status: 'sigStatus', preview: 'sigPreview' },
+        offerTemplateInput: { status: 'offerStatus' },
+        apptTemplateInput: { status: 'apptStatus' },
+        mobileTemplateInput: { status: 'mobileStatus' },
+        tadaTemplateInput: { status: 'tadaStatus' }
     };
-    for (const [inputId, labelId] of Object.entries(fileMap)) {
+    for (const [inputId, config] of Object.entries(fileMap)) {
         const el = document.getElementById(inputId);
         if (el) el.addEventListener('change', () => {
-            const label = document.getElementById(labelId);
-            if (label && el.files[0]) {
-                label.innerText = `✅ ${el.files[0].name.substring(0, 18)}${el.files[0].name.length > 18 ? '...' : ''}`;
+            const label = document.getElementById(config.status);
+            const file = el.files[0];
+            if (label && file) {
+                label.innerText = `✅ ${file.name.substring(0, 18)}${file.name.length > 18 ? '...' : ''}`;
                 label.style.color = 'var(--success)';
+                
+                // Show preview if image
+                if (config.preview && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = document.getElementById(config.preview);
+                        if (img) {
+                            img.src = e.target.result;
+                            img.classList.remove('hidden');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
             }
         });
     }
@@ -316,12 +330,22 @@ function logoutAdmin() {
 async function saveCompanyProfile(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
+    const rawData = Object.fromEntries(formData.entries());
+    
+    // Correct Data Mapping for Backend
+    const data = {
+        name: rawData.compName,
+        website: rawData.compWeb,
+        phone: rawData.compPhone,
+        tollFree: rawData.compTollFree,
+        address: rawData.compAddress
+    };
     
     // Helper to read file as Base64
     const readFile = (id) => {
         return new Promise((resolve) => {
-            const file = document.getElementById(id).files[0];
+            const el = document.getElementById(id);
+            const file = el ? el.files[0] : null;
             if (!file) return resolve(null);
             const reader = new FileReader();
             reader.onload = (event) => resolve(event.target.result);
@@ -412,12 +436,17 @@ function switchAdminTab(tab) {
         updateStatus('mobileStatus', companyData.mobileAppTemplate,  'PDF');
         updateStatus('tadaStatus',   companyData.tadaTemplate,       'PDF');
 
-        // Also show logo preview
-        const lp = document.getElementById('logoPreview');
-        if (lp && companyData.logo) {
-            lp.src = companyData.logo;
-            lp.classList.remove('hidden');
-        }
+        // Logo Previews
+        const setPreview = (id, val) => {
+            const img = document.getElementById(id);
+            if (img && val) {
+                img.src = val;
+                img.classList.remove('hidden');
+            }
+        };
+        setPreview('logoPreview', companyData.logo);
+        setPreview('stampPreview', companyData.stamp);
+        setPreview('sigPreview', companyData.digitalSignature);
     } else if (tab === 'setup') {
         document.getElementById('adminSetupTab').classList.remove('hidden');
         loadSetupData();
