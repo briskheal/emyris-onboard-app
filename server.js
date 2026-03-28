@@ -44,6 +44,8 @@ const companySchema = new mongoose.Schema({
     apptLetterBody: String,
     fyFrom: String,
     fyTo: String,
+    letterFontSize: { type: Number, default: 11 },
+    letterAlignment: { type: String, default: 'left' },
     updatedAt: { type: Date, default: Date.now },
     headerHeight: { type: Number, default: 65 },
     footerHeight: { type: Number, default: 25 },

@@ -1041,6 +1041,7 @@ async function previewTemporaryLetter(type) {
     const desg = document.getElementById('labDesg').value || "Product Manager";
     const salary = document.getElementById('labSalary').value || "75000";
 
+    // Flatten mock applicant to match production structure
     const mockApplicant = {
         fullName: name,
         firstName: name.split(' ')[0],
@@ -1050,29 +1051,37 @@ async function previewTemporaryLetter(type) {
         reportingTo: "SR. ZONAL MANAGER",
         refNo: "REF/LAB/25-26",
         formData: {
-            basics: { fullName: name },
-            professional: { designation: desg, hq: "Bhubaneswar" },
-            salary: { 
-                monthlyGross: parseInt(salary),
-                annualGross: parseInt(salary) * 12 
-            },
-            address: { 
-                present: "Test Sector, Emyris Campus",
-                cityState: "Bhubaneswar, Odisha",
-                pincode: "751001"
-            }
+            firstName: name.split(' ')[0],
+            lastName: name.split(' ').slice(1).join(' '),
+            designation: desg,
+            hq: "Bhubaneswar",
+            salary: salary,
+            address: "Test Sector, Emyris Campus",
+            city: "Bhubaneswar",
+            state: "Odisha",
+            pin: "751001"
         }
     };
 
     lockUI("⚖️ Generating Lab Preview...");
     try {
-        if (type === 'offer') {
-            await generateLetterPDF(mockApplicant, 'offer');
+        // Use injection pattern to reuse existing PDF logic
+        const originalApplicants = [...allApplicants];
+        allApplicants.push(mockApplicant);
+        
+        const pdfData = await generateLetterPDF(mockApplicant.email, type);
+        if (pdfData && pdfData.doc) {
+            const safeName = name.replace(/[^a-z0-9]/gi, '_');
+            savePDF(pdfData.doc, `${type.toUpperCase()}_SAMPLE_${safeName}.pdf`);
+            showToast("✅ Lab Preview Downloaded", "success");
         } else {
-            await generateLetterPDF(mockApplicant, 'appointment');
+            showToast("❌ Generation failed", "error");
         }
-        showToast("✅ Lab Preview Downloaded", "success");
+        
+        // Restore original applicants list
+        allApplicants = originalApplicants;
     } catch (e) {
+        console.error("Lab Generation Error:", e);
         showToast("❌ Lab Generation Failed", "error");
     } finally {
         unlockUI();
@@ -1087,10 +1096,11 @@ async function saveSignatorySettings() {
     btn.disabled = true;
 
     const data = {
-        signatoryName: document.getElementById('signatoryName').value,
         signatoryDesignation: document.getElementById('signatoryDesg').value,
         headerHeight: parseInt(document.getElementById('headerHeight').value) || 65,
-        footerHeight: parseInt(document.getElementById('footerHeight').value) || 25
+        footerHeight: parseInt(document.getElementById('footerHeight').value) || 25,
+        letterFontSize: parseFloat(document.getElementById('letterFontSize').value) || 11,
+        letterAlignment: document.getElementById('letterAlignment').value || 'left'
     };
     
     const file = document.getElementById('letterheadInput').files[0];
@@ -1120,11 +1130,30 @@ async function saveLetterTemplate(type) {
     await submitProfileUpdate(data);
 }
 
+function loadSetupData() {
+    if (!companyData) return;
+    document.getElementById('signatoryName').value = companyData.signatoryName || "";
+    document.getElementById('signatoryDesg').value = companyData.signatoryDesignation || "";
+    document.getElementById('headerHeight').value = companyData.headerHeight || 65;
+    document.getElementById('footerHeight').value = companyData.footerHeight || 25;
+    document.getElementById('letterFontSize').value = companyData.letterFontSize || 11;
+    document.getElementById('letterAlignment').value = companyData.letterAlignment || 'left';
+    
+    document.getElementById('offerLetterTemplate').value = companyData.offerLetterBody || "";
+    document.getElementById('apptLetterTemplate').value = companyData.apptLetterBody || "";
+    
+    document.getElementById('fyFrom').value = companyData.fyFrom || "";
+    document.getElementById('fyTo').value = companyData.fyTo || "";
+    document.getElementById('letterCounterStart').value = companyData.letterCounter || 1001;
+    if (typeof updateRefPreview === 'function') updateRefPreview();
+}
+
 // --- SMART LETTER GENERATION ---
 async function downloadLetter(email, type) {
     const pdfData = await generateLetterPDF(email, type);
     if (!pdfData) return;
-    pdfData.doc.save(`${type.toUpperCase()}_LETTER_${email}.pdf`);
+    const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
+    savePDF(pdfData.doc, `${type.toUpperCase()}_LETTER_${safeEmail}.pdf`);
     
     // Mark task as done
     const taskKey = type === 'offer' ? 'offerLetter' : 'appointmentLetter';
@@ -1165,6 +1194,19 @@ async function emailLetter(email, type) {
     btn.disabled = false;
 }
 
+// Robust PDF Saving Trigger
+function savePDF(doc, filename) {
+    const blob = doc.output('blob');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+}
+
 async function generateLetterPDF(email, type) {
     const app = allApplicants.find(a => a.email === email);
     if (!app || !app.formData) return alert("Applicant data missing.");
@@ -1182,11 +1224,14 @@ async function generateLetterPDF(email, type) {
     const PAGE_H = 297;
     const HEADER_H = companyData.headerHeight || 65; 
     const FOOTER_H = companyData.footerHeight || 25; 
-    const MARGIN_T = HEADER_H + 5; // Slight buffer from header
-    const MARGIN_B = FOOTER_H + 5; // Slight buffer from footer
+    const FONT_SIZE = companyData.letterFontSize || 11;
+    const ALIGN = companyData.letterAlignment || 'left';
+
+    const MARGIN_T = HEADER_H + 5; 
+    const MARGIN_B = FOOTER_H + 5; 
     const MARGIN_L = 22;
-    const USABLE_W = 166; // 210 - 22*2
-    const LINE_H = 6.5;
+    const USABLE_W = 166; 
+    const LINE_H = (FONT_SIZE * 0.6); // Dynamic line height
 
     let y = MARGIN_T;
     
@@ -1194,11 +1239,10 @@ async function generateLetterPDF(email, type) {
     const drawPageExtras = () => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
-            const valObj = lhArr[lhArr.length - 1]; // Use latest object
-            const val = valObj.data;
-            if (val.includes("application/pdf")) {
-                console.warn("PDF Letterhead cannot be used as a background image yet.");
-            } else {
+            const val = lhArr[lhArr.length - 1].data;
+            if (!val.includes("application/pdf")) {
+                // If it's a very thin image, assume it's a Top Strip
+                // Otherwise draw as full page backdrop
                 doc.addImage(val, 'PNG', 0, 0, 210, 297);
             }
         }
@@ -1208,7 +1252,7 @@ async function generateLetterPDF(email, type) {
     
     // Split text into lines
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(11);
+    doc.setFontSize(FONT_SIZE);
     const lines = doc.splitTextToSize(mergedText, USABLE_W);
     
     lines.forEach((line, idx) => {
@@ -1217,7 +1261,11 @@ async function generateLetterPDF(email, type) {
             drawPageExtras();
             y = MARGIN_T;
         }
-        doc.text(line, MARGIN_L, y);
+        
+        let x = MARGIN_L;
+        if (ALIGN === 'center') x = 105; // Center of A4
+        
+        doc.text(line, x, y, { align: ALIGN, maxWidth: USABLE_W });
         y += LINE_H;
     });
 
@@ -1360,7 +1408,8 @@ function downloadApplicantPDF(email) {
         if (y > 270) { doc.addPage(); y = 20; }
     }
 
-    doc.save(`${app.fullName.replace(/ /g, '_')}_Onboarding.pdf`);
+    const safeFileName = app.fullName.replace(/[^a-z0-9]/gi, '_');
+    savePDF(doc, `${safeFileName}_Onboarding.pdf`);
 }
 
 // --- FORM SUBMISSION ---
