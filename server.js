@@ -420,6 +420,43 @@ app.post('/api/admin/next-ref', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// --- TEMPLATE MANAGEMENT ---
+app.post('/api/admin/save-template', async (req, res) => {
+    try {
+        const { type, body, fontSize, fontType, headerHeight, footerHeight, signatoryName, signatoryDesg } = req.body;
+        
+        const update = {
+            letterFontSize: fontSize,
+            letterFontType: fontType,
+            headerHeight: headerHeight,
+            footerHeight: footerHeight,
+            signatoryName: signatoryName,
+            signatoryDesignation: signatoryDesg,
+            updatedAt: new Date()
+        };
+
+        if (type === 'offer') update.offerLetterBody = body;
+        else if (type === 'appt') update.apptLetterBody = body;
+        else if (type.startsWith('misc_')) {
+            const id = type.split('_')[1];
+            // We'll need specialized logic for misc if it's an array
+            // For now let's handle offer/appt which are primary
+        }
+
+        let company = await Company.findOne();
+        if (!company) company = await Company.create(update);
+        else {
+            Object.assign(company, update);
+            await company.save();
+        }
+
+        res.json({ success: true, message: 'Template saved successfully' });
+    } catch (e) {
+        console.error('Save template error:', e);
+        res.status(500).json({ success: false, error: 'Database save failed' });
+    }
+});
+
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
