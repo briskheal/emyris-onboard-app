@@ -745,10 +745,13 @@ async function deleteAssetCategory(categoryName) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ categoryName })
         });
-        if ((await res.json()).success) {
+        const result = await res.json();
+        if (result.success) {
             showToast(`✅ Category ${categoryName} removed!`);
             await fetchCompanyData();
             renderAssetLists();
+        } else {
+            showToast(result.message || "❌ Deletion failed", "error");
         }
     } catch (e) { showToast("❌ Delete failed", "error"); }
     finally { unlockUI(); }

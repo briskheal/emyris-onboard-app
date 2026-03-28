@@ -636,13 +636,20 @@ app.post('/api/admin/add-category', async (req, res) => {
 app.post('/api/admin/delete-category', async (req, res) => {
     try {
         const { categoryName } = req.body;
+        
+        // Safety: Ensure category is absolutely blank before deletion
+        const existingAssets = await Asset.countDocuments({ category: categoryName, active: true });
+        if (existingAssets > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: `Cannot delete category "${categoryName}". It still contains ${existingAssets} asset(s). Please delete all files inside first.` 
+            });
+        }
+
         const company = await Company.findOne();
         if (company) {
             company.customAssetCategories = company.customAssetCategories.filter(c => c !== categoryName);
             await company.save();
-            
-            // OPTIONAL: Delete assets belonging to this category too?
-            await Asset.deleteMany({ category: categoryName });
         }
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed to delete category' }); }
