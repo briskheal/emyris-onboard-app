@@ -26,13 +26,22 @@ const companySchema = new mongoose.Schema({
     phone: String,
     tollFree: String,
     website: String,
-    logo: String, // Base64
-    offerTemplate: String, // Global master offer letter
-    apptTemplate: String,  // Global master appointment letter
-    mobileAppTemplate: String, // Global master mobile app details
-    tadaTemplate: String,      // Global master TA/DA letter
-    stamp: String,             // Company stamp image Base64
-    digitalSignature: String,  // Digital signature image Base64
+    logo: String,
+    offerTemplate: String,
+    apptTemplate: String,
+    mobileAppTemplate: String,
+    tadaTemplate: String,
+    stamp: String,
+    digitalSignature: String,
+    letterheadImage: String,       // Header strip image for letters
+    signatoryName: String,         // e.g. "Ms. Rishita Dash"
+    signatoryDesignation: String,  // e.g. "HR Business Partner..."
+    offerLetterBody: String,       // Template with {{PLACEHOLDERS}}
+    apptLetterBody: String,        // Multi-page appointment template
+    fyFrom: String,                // "2025-04-01"
+    fyTo: String,                  // "2026-03-31"
+    letterCounter: { type: Number, default: 1001 },
+    letterCounterStart: { type: Number, default: 1001 },
     updatedAt: { type: Date, default: Date.now }
 });
 
@@ -40,14 +49,17 @@ const applicantSchema = new mongoose.Schema({
     email: { type: String, unique: true, required: true },
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
-    password: { type: String, required: true }, // 6-digit PIN
-    status: { type: String, default: 'draft' }, // draft, submitted, approved, rejected
+    password: { type: String, required: true },
+    status: { type: String, default: 'draft' },
     canLogin: { type: Boolean, default: true },
     formData: { type: Object, default: {} },
     registeredAt: { type: Date, default: Date.now },
     submittedAt: Date,
-    approvedAt: Date, // Track approval for 7-day auto-lock
-    documents: [Object], // Track uploaded file metadata
+    approvedAt: Date,
+    documents: [Object],
+    division: String,              // Assigned by admin: CRITIZA / NUTRIZA
+    reportingTo: String,           // Assigned by admin: SR. ZONAL SALES MANAGER
+    refNo: String,                 // Auto-generated: REF/1038/25-26
     tasks: {
         offerLetter: { type: Boolean, default: false },
         appointmentLetter: { type: Boolean, default: false },
@@ -56,8 +68,28 @@ const applicantSchema = new mongoose.Schema({
     }
 });
 
+const divisionSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    active: { type: Boolean, default: true },
+    createdAt: { type: Date, default: Date.now }
+});
+
 const Company = mongoose.model('Company', companySchema);
 const Applicant = mongoose.model('Applicant', applicantSchema);
+const Division = mongoose.model('Division', divisionSchema);
+
+// Seed default divisions if none exist
+async function seedDivisions() {
+    const count = await Division.countDocuments();
+    if (count === 0) {
+        await Division.insertMany([
+            { name: 'CRITIZA' },
+            { name: 'NUTRIZA' }
+        ]);
+        console.log('Default divisions seeded.');
+    }
+}
+mongoose.connection.once('open', seedDivisions);
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
@@ -298,6 +330,99 @@ app.post('/api/admin/update-task', async (req, res) => {
         await Applicant.findOneAndUpdate({ email }, { $set: update });
         res.status(200).json({ success: true });
     } catch (error) { res.status(500).json({ error: 'Update failed' }); }
+});
+
+// --- DIVISION APIs ---
+app.get('/api/admin/divisions', async (req, res) => {
+    try {
+        const divisions = await Division.find({ active: true }).sort({ name: 1 });
+        res.json(divisions);
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.post('/api/admin/divisions', async (req, res) => {
+    try {
+        const { name } = req.body;
+        const existing = await Division.findOne({ name: name.toUpperCase().trim() });
+        if (existing) {
+            // Reactivate if was deleted
+            existing.active = true;
+            await existing.save();
+        } else {
+            await Division.create({ name: name.toUpperCase().trim() });
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.delete('/api/admin/divisions/:id', async (req, res) => {
+    try {
+        await Division.findByIdAndUpdate(req.params.id, { active: false });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// --- AUTO REF NUMBER ---
+app.post('/api/admin/next-ref', async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        if (!company) return res.status(404).json({ error: 'No company profile' });
+        const counter = company.letterCounter || 1001;
+        const fyFrom = company.fyFrom ? new Date(company.fyFrom) : new Date();
+        const fyTo   = company.fyTo   ? new Date(company.fyTo)   : new Date();
+        const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
+        const refNo = `REF/${counter}/${fyShort}`;
+        await Company.findOneAndUpdate({}, { letterCounter: counter + 1 });
+        res.json({ success: true, refNo, counter });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// --- UPDATE APPLICANT WORKFLOW DATA ---
+app.post('/api/admin/update-workflow-data', async (req, res) => {
+    try {
+        const { email, division, reportingTo, refNo } = req.body;
+        const update = {};
+        if (division !== undefined) update.division = division;
+        if (reportingTo !== undefined) update.reportingTo = reportingTo;
+        if (refNo !== undefined) update.refNo = refNo;
+        await Applicant.findOneAndUpdate({ email }, { $set: update });
+        // Refresh local allApplicants on client is handled via fetch
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// --- SEND LETTER VIA EMAIL ---
+app.post('/api/admin/send-letter', async (req, res) => {
+    try {
+        const { email, letterType, pdfBase64 } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        const company   = await Company.findOne();
+        if (!applicant || !company) return res.status(404).json({ error: 'Not found' });
+
+        const letterLabel = letterType === 'offer' ? 'Offer Letter' : 'Appointment Letter';
+        const fileName    = `${letterLabel.replace(/ /g,'_')}_${applicant.fullName.replace(/ /g,'_')}.pdf`;
+        const pdfBuffer   = Buffer.from(pdfBase64.split(',')[1], 'base64');
+
+        await transporter.sendMail({
+            from: `"${company.name}" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: `${letterLabel} – ${company.name}`,
+            html: `
+                <div style="font-family:Arial,sans-serif;padding:24px;">
+                    <h2 style="color:#0f172a">Dear ${applicant.fullName},</h2>
+                    <p>Please find your <strong>${letterLabel}</strong> attached to this email.</p>
+                    <p>For any queries, please contact HR.</p>
+                    <br>
+                    <p><strong>${company.signatoryName || 'HR Team'}</strong><br>
+                    ${company.signatoryDesignation || ''}</p>
+                </div>`,
+            attachments: [{ filename: fileName, content: pdfBuffer, contentType: 'application/pdf' }]
+        });
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Send letter error:', e);
+        res.status(500).json({ error: 'Email failed', detail: e.message });
+    }
 });
 
 // Company Profile

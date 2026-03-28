@@ -17,7 +17,15 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateView('landingPage');
     initBackgroundAnimations();
     initFileListeners();
+    initSetupListeners(); // New: FY Ref Preview
 });
+
+function initSetupListeners() {
+    ['fyFrom', 'fyTo', 'letterCounterStart'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', updateRefPreview);
+    });
+}
 
 // Show live file name on label when user picks a file
 function initFileListeners() {
@@ -369,7 +377,10 @@ function showToast(message, type = 'success') {
 
 function switchAdminTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.querySelector(`.tab-btn[onclick*="${tab}"]`).classList.add('active');
+    // Find the button with the correct click handler
+    const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(`'${tab}'`));
+    if (btn) btn.classList.add('active');
+    
     document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.add('hidden'));
     
     if (tab === 'profile') {
@@ -407,6 +418,12 @@ function switchAdminTab(tab) {
             lp.src = companyData.logo;
             lp.classList.remove('hidden');
         }
+    } else if (tab === 'setup') {
+        document.getElementById('adminSetupTab').classList.remove('hidden');
+        loadSetupData();
+    } else if (tab === 'gallery') {
+        document.getElementById('adminGalleryTab').classList.remove('hidden');
+        renderGallery();
     } else {
         document.getElementById('adminApplicantsTab').classList.remove('hidden');
         fetchApplicants();
@@ -520,7 +537,7 @@ function filterApplicants() {
 
 let activeWfEmail = null;
 
-function openWorkflow(email) {
+async function openWorkflow(email) {
     activeWfEmail = email;
     const app = allApplicants.find(a => a.email === email);
     if (!app) return;
@@ -528,6 +545,13 @@ function openWorkflow(email) {
     document.getElementById('wfName').innerText = app.fullName;
     document.getElementById('wfEmail').innerText = app.email;
     
+    // Assign Panel sync
+    const divSelect = document.getElementById('wfDivisionSelect');
+    await fetchDivisionsToDropdown(divSelect);
+    divSelect.value = app.division || "";
+    document.getElementById('wfReportingTo').value = app.reportingTo || "";
+    document.getElementById('wfRefDisplay').innerText = app.refNo ? `Last Ref: ${app.refNo}` : "No Ref Generated Yet";
+
     // Sync Access Toggle Text
     const toggleBtn = document.getElementById('modalToggleAccess');
     toggleBtn.innerHTML = app.canLogin ? '<span>🔒</span> Lock Access' : '<span>🔓</span> Grant Access';
@@ -538,6 +562,42 @@ function openWorkflow(email) {
     
     document.getElementById('workflowModal').classList.remove('hidden');
     document.getElementById('workflowModal').style.display = 'flex';
+}
+
+async function fetchDivisionsToDropdown(selectEl) {
+    const res = await fetch('/api/admin/divisions');
+    const divisions = await res.json();
+    selectEl.innerHTML = '<option value="">-- Select Division --</option>' + 
+        divisions.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+}
+
+async function saveWorkflowAssignment() {
+    const data = {
+        email: activeWfEmail,
+        division: document.getElementById('wfDivisionSelect').value,
+        reportingTo: document.getElementById('wfReportingTo').value
+    };
+    
+    // Auto-generate Ref if not present
+    const app = allApplicants.find(a => a.email === activeWfEmail);
+    if (!app.refNo) {
+        const refRes = await fetch('/api/admin/next-ref', { method: 'POST' });
+        const refData = await refRes.json();
+        if (refData.success) {
+            data.refNo = refData.refNo;
+            document.getElementById('wfRefDisplay').innerText = `Generated Ref: ${data.refNo}`;
+        }
+    }
+
+    const res = await fetch('/api/admin/update-workflow-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    if ((await res.json()).success) {
+        showToast("Workflow assignment saved!", "success");
+        await fetchApplicants();
+    }
 }
 
 async function toggleAccessFromModal() {
@@ -618,6 +678,339 @@ async function resetApplicantData() {
 
 // --- PDF GENERATION ---
 
+// --- ASSET GALLERY ---
+function renderGallery() {
+    const grid = document.getElementById('assetGalleryGrid');
+    const assets = [
+        { name: 'Company Logo', key: 'logo' },
+        { name: 'Company Stamp', key: 'stamp' },
+        { name: 'Digital Signature', key: 'digitalSignature' },
+        { name: 'Letterhead Strip', key: 'letterheadImage' },
+        { name: 'Offer Master PDF', key: 'offerTemplate' },
+        { name: 'Appt Master PDF', key: 'apptTemplate' },
+        { name: 'Mobile App Setup', key: 'mobileAppTemplate' },
+        { name: 'TA/DA Policy', key: 'tadaTemplate' }
+    ];
+
+    grid.innerHTML = assets.map(a => {
+        const val = companyData[a.key];
+        const isPdf = val && val.startsWith('data:application/pdf');
+        const isImg = val && val.startsWith('data:image');
+        
+        return `
+            <div class="asset-card">
+                <div class="asset-card-preview">
+                    ${val ? (isImg ? `<img src="${val}">` : (isPdf ? `<span class="pdf-icon">📄</span>` : '?')) : '<span class="empty-icon">📁</span>'}
+                </div>
+                <div class="asset-card-body">
+                    <span class="asset-card-name">${a.name}</span>
+                    <span class="asset-card-status ${val ? 'uploaded' : 'missing'}">${val ? 'Uploaded ✅' : 'Missing ⚠️'}</span>
+                    <div class="asset-card-action">
+                        <button class="btn-asset-view ${!val ? 'disabled' : ''}" ${val ? `onclick="viewAsset('${a.key}')"` : ''}>${isImg ? '👁️ View' : '⬇️ Download'}</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function viewAsset(key) {
+    const val = companyData[key];
+    if (!val) return;
+    const win = window.open();
+    win.document.write(`<iframe src="${val}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+}
+
+// --- SETUP TAB LOGIC ---
+async function loadSetupData() {
+    await fetchCompanyData();
+    populateDivisions();
+    
+    document.getElementById('fyFrom').value = companyData.fyFrom || "";
+    document.getElementById('fyTo').value = companyData.fyTo || "";
+    document.getElementById('letterCounterStart').value = companyData.letterCounterStart || 1001;
+    document.getElementById('currentCounter').innerText = companyData.letterCounter || 1001;
+    
+    document.getElementById('signatoryName').value = companyData.signatoryName || "";
+    document.getElementById('signatoryDesg').value = companyData.signatoryDesignation || "";
+    
+    document.getElementById('offerLetterTemplate').value = companyData.offerLetterBody || "";
+    document.getElementById('apptLetterTemplate').value = companyData.apptLetterBody || "";
+    
+    updateRefPreview();
+    
+    const lhStatus = document.getElementById('letterheadStatus');
+    if (companyData.letterheadImage) {
+        lhStatus.innerText = "Letterhead Uploaded ✅";
+        lhStatus.style.color = "var(--success)";
+    }
+}
+
+async function populateDivisions() {
+    const res = await fetch('/api/admin/divisions');
+    const divisions = await res.json();
+    const list = document.getElementById('divisionList');
+    list.innerHTML = divisions.map(d => `
+        <div class="division-chip">
+            ${d.name}
+            <button onclick="deleteDivision('${d._id}')">&times;</button>
+        </div>
+    `).join('');
+}
+
+async function addDivision() {
+    const name = document.getElementById('newDivisionInput').value;
+    if (!name) return;
+    await fetch('/api/admin/divisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+    });
+    document.getElementById('newDivisionInput').value = "";
+    populateDivisions();
+}
+
+async function deleteDivision(id) {
+    if (!confirm("Remove this division?")) return;
+    await fetch(`/api/admin/divisions/${id}`, { method: 'DELETE' });
+    populateDivisions();
+}
+
+function updateRefPreview() {
+    const counter = document.getElementById('letterCounterStart').value || 1001;
+    const from = document.getElementById('fyFrom').value;
+    const to = document.getElementById('fyTo').value;
+    
+    let fyCode = "25-26";
+    if (from && to) {
+        fyCode = `${from.split('-')[0].slice(2)}-${to.split('-')[0].slice(2)}`;
+    }
+    document.getElementById('refPreview').innerText = `REF/${counter}/${fyCode}`;
+}
+
+async function saveFYSettings() {
+    const data = {
+        fyFrom: document.getElementById('fyFrom').value,
+        fyTo: document.getElementById('fyTo').value,
+        letterCounterStart: parseInt(document.getElementById('letterCounterStart').value) || 1001
+    };
+    // If resetting FY, also reset current counter to start
+    data.letterCounter = data.letterCounterStart;
+    
+    await submitProfileUpdate(data);
+    loadSetupData();
+}
+
+async function saveSignatorySettings() {
+    const data = {
+        signatoryName: document.getElementById('signatoryName').value,
+        signatoryDesignation: document.getElementById('signatoryDesg').value
+    };
+    
+    const file = document.getElementById('letterheadInput').files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            data.letterheadImage = e.target.result;
+            await submitProfileUpdate(data);
+            loadSetupData();
+        };
+        reader.readAsDataURL(file);
+    } else {
+        await submitProfileUpdate(data);
+        loadSetupData();
+    }
+}
+
+async function saveLetterTemplate(type) {
+    const field = type === 'offer' ? 'offerLetterBody' : 'apptLetterBody';
+    const val = document.getElementById(type + 'LetterTemplate').value;
+    const data = {};
+    data[field] = val;
+    await submitProfileUpdate(data);
+}
+
+// --- SMART LETTER GENERATION ---
+async function downloadLetter(email, type) {
+    const pdfData = await generateLetterPDF(email, type);
+    if (!pdfData) return;
+    pdfData.doc.save(`${type.toUpperCase()}_LETTER_${email}.pdf`);
+    
+    // Mark task as done
+    const taskKey = type === 'offer' ? 'offerLetter' : 'appointmentLetter';
+    await sendTaskUpdate(taskKey, true);
+}
+
+async function emailLetter(email, type) {
+    const btn = event.target;
+    const originalText = btn.innerText;
+    btn.innerText = "⌛ Sending...";
+    btn.disabled = true;
+
+    const pdfData = await generateLetterPDF(email, type);
+    if (!pdfData) {
+        btn.innerText = originalText;
+        btn.disabled = false;
+        return;
+    }
+
+    const pdfBase64 = pdfData.doc.output('datauristring');
+    
+    try {
+        const res = await fetch('/api/admin/send-letter', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, letterType: type, pdfBase64 })
+        });
+        if ((await res.json()).success) {
+            showToast("📧 Letter emailed to candidate!", "success");
+            const taskKey = type === 'offer' ? 'offerLetter' : 'appointmentLetter';
+            await sendTaskUpdate(taskKey, true);
+        } else {
+            showToast("❌ Email failed.", "error");
+        }
+    } catch (e) { showToast("❌ Server error.", "error"); }
+    
+    btn.innerText = originalText;
+    btn.disabled = false;
+}
+
+async function generateLetterPDF(email, type) {
+    const app = allApplicants.find(a => a.email === email);
+    if (!app || !app.formData) return alert("Applicant data missing.");
+    if (!companyData.letterheadImage) return alert("Please upload Letterhead Strip in Setup first.");
+
+    const template = type === 'offer' ? companyData.offerLetterBody : companyData.apptLetterBody;
+    if (!template) return alert(`Please configure ${type} letter template in Setup first.`);
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    
+    const mergedText = fillLetterPlaceholders(template, app);
+    
+    // PDF Config
+    const PAGE_H = 297;
+    const HEADER_H = 65; // Height of letterhead strip in mm
+    const MARGIN_T = HEADER_H + 10;
+    const MARGIN_B = 25;
+    const MARGIN_L = 22;
+    const USABLE_W = 166; // 210 - 22*2
+    const LINE_H = 6.5;
+
+    let y = MARGIN_T;
+    
+    // Helper to draw background
+    const drawPageExtras = () => {
+        doc.addImage(companyData.letterheadImage, 'PNG', 0, 0, 210, HEADER_H);
+    };
+
+    drawPageExtras();
+    
+    // Split text into lines
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    const lines = doc.splitTextToSize(mergedText, USABLE_W);
+    
+    lines.forEach((line, idx) => {
+        if (y + LINE_H > PAGE_H - MARGIN_B) {
+            doc.addPage();
+            drawPageExtras();
+            y = MARGIN_T;
+        }
+        doc.text(line, MARGIN_L, y);
+        y += LINE_H;
+    });
+
+    // Check if room for stamp/sig at the end (approx 60mm height)
+    if (y + 60 > PAGE_H - MARGIN_B) {
+        doc.addPage();
+        drawPageExtras();
+        y = MARGIN_T;
+    }
+
+    // Place Stamp & Signature on LAST PAGE ONLY
+    y += 5;
+    if (companyData.stamp) {
+        doc.addImage(companyData.stamp, 'PNG', MARGIN_L, y, 35, 35);
+    }
+    if (companyData.digitalSignature) {
+        doc.addImage(companyData.digitalSignature, 'PNG', 145, y + 10, 45, 20);
+    }
+    
+    y += 42;
+    doc.setFont("helvetica", "bold");
+    doc.text("Authorized Signatory", MARGIN_L, y);
+    doc.text(companyData.signatoryName || "", 145, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.text(companyData.name, MARGIN_L, y + 5);
+    doc.text(companyData.signatoryDesignation || "", 145, y + 5);
+
+    return { doc };
+}
+
+function fillLetterPlaceholders(text, app) {
+    const fd = app.formData || {};
+    const placeholders = {
+        "{{TODAY_DATE}}": new Date().toLocaleDateString('en-GB'),
+        "{{REF_NO}}": app.refNo || "REF/PENDING",
+        "{{TITLE}}": fd.gender === 'male' ? 'MR.' : 'MS.',
+        "{{TITLE_SHORT}}": fd.gender === 'male' ? 'Mr.' : 'Ms.',
+        "{{FULL_NAME}}": (app.fullName || "").toUpperCase(),
+        "{{FIRST_NAME}}": (fd.firstName || "").toUpperCase(),
+        "{{ADDRESS}}": (fd.address || ""),
+        "{{CITY_STATE}}": `${fd.city || ""}, ${fd.state || ""}`.toUpperCase(),
+        "{{PIN}}": fd.pin || "",
+        "{{DESIGNATION}}": (fd.designation || "").toUpperCase(),
+        "{{DIVISION}}": (app.division || "").toUpperCase(),
+        "{{HQ}}": (fd.hq || "").toUpperCase(),
+        "{{REPORTING_TO}}": (app.reportingTo || "").toUpperCase(),
+        "{{SALARY_MONTHLY}}": Number(fd.salary || 0).toLocaleString('en-IN'),
+        "{{SALARY_ANNUAL}}": (Number(fd.salary || 0) * 12).toLocaleString('en-IN'),
+        "{{SALARY_WORDS}}": numberToWords(Number(fd.salary || 0)),
+        "{{JOINING_DATE}}": formatDatePretty(fd.joiningDate),
+        "{{COMPANY_NAME}}": companyData.name,
+        "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
+        "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || ""
+    };
+
+    let result = text;
+    for (const [key, val] of Object.entries(placeholders)) {
+        result = result.split(key).join(val);
+    }
+    return result;
+}
+
+function formatDatePretty(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    const day = d.getDate();
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    
+    let suffix = 'th';
+    if (day === 1 || day === 21 || day === 31) suffix = 'st';
+    else if (day === 2 || day === 22) suffix = 'nd';
+    else if (day === 3 || day === 23) suffix = 'rd';
+    
+    return `${day}${suffix} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function numberToWords(num) {
+    const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
+    const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+    if ((num = num.toString()).length > 9) return 'overflow';
+    let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
+    if (!n) return ''; 
+    let str = '';
+    str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+    return str.trim() + " Only";
+}
+
 function downloadApplicantPDF(email) {
     const app = allApplicants.find(a => a.email === email);
     if (!app || !app.formData) return alert("No data found for this applicant.");
@@ -660,7 +1053,7 @@ function downloadApplicantPDF(email) {
             headStyles: { fillColor: [15, 23, 42] },
             margin: { left: 14, right: 14 }
         });
-        y = doc.lastAutoTable.finalY + 10;
+        y = (doc.lastAutoTable ? doc.lastAutoTable.finalY : y) + 10;
         
         if (y > 270) { doc.addPage(); y = 20; }
     }

@@ -28,7 +28,7 @@
         <header class="main-header">
             <div class="logo-container">
                 <div class="logo-icon" id="headerLogoIcon">
-                    <img id="headerLogoImg" src="" alt="Logo" class="hidden" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">
+                    <img id="headerLogoImg" src="" alt="Logo" class="hidden">
                     <span id="headerLogoLetter">E</span>
                 </div>
                 <a id="headerLogoLink" href="#" target="_blank" class="logo-link">
@@ -140,8 +140,10 @@
                     </div>
 
                     <div class="panel-tabs">
-                        <button class="tab-btn active" onclick="switchAdminTab('profile')">Company Profile</button>
-                        <button class="tab-btn" onclick="switchAdminTab('applicants')">Applicant Management</button>
+                        <button class="tab-btn active" onclick="switchAdminTab('profile')">📋 Company Profile</button>
+                        <button class="tab-btn" onclick="switchAdminTab('applicants')">👥 Applicants</button>
+                        <button class="tab-btn" onclick="switchAdminTab('setup')">⚙️ Setup & Letters</button>
+                        <button class="tab-btn" onclick="switchAdminTab('gallery')">🗂️ Asset Library</button>
                     </div>
 
                     <div id="adminProfileTab" class="admin-tab-content">
@@ -257,6 +259,110 @@
                             </table>
                         </div>
                     </div>
+
+                    <!-- Asset Gallery Tab -->
+                    <div id="adminGalleryTab" class="admin-tab-content hidden">
+                        <div class="gallery-header-info">
+                            <h4>🗂️ Company Asset Library</h4>
+                            <p>All uploaded images and documents stored in your company profile. Click any PDF card to view or download.</p>
+                        </div>
+                        <div id="assetGalleryGrid" class="asset-gallery-grid">
+                            <!-- Rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- ===== SETUP & LETTERS TAB ===== -->
+                    <div id="adminSetupTab" class="admin-tab-content hidden">
+
+                        <div class="setup-section">
+                            <div class="setup-section-head">
+                                <h4>🏢 Division Management</h4>
+                                <p>Manage company divisions. These appear in the Workflow assignment dropdown.</p>
+                            </div>
+                            <div id="divisionList" class="division-list"></div>
+                            <div class="add-division-row">
+                                <input type="text" id="newDivisionInput" class="form-input-sm" placeholder="e.g., MEDIZA" style="text-transform:uppercase">
+                                <button class="btn btn-primary btn-sm" onclick="addDivision()">+ Add Division</button>
+                            </div>
+                        </div>
+
+                        <div class="setup-section">
+                            <div class="setup-section-head">
+                                <h4>📅 Financial Year & Letter Numbering</h4>
+                                <p>Set current FY. Refs auto-generate as REF/{counter}/{FY}.</p>
+                            </div>
+                            <div class="input-grid">
+                                <div class="form-group">
+                                    <label>FY Start Date</label>
+                                    <input type="date" id="fyFrom">
+                                </div>
+                                <div class="form-group">
+                                    <label>FY End Date</label>
+                                    <input type="date" id="fyTo">
+                                </div>
+                                <div class="form-group">
+                                    <label>Starting Letter No.</label>
+                                    <input type="number" id="letterCounterStart" placeholder="e.g., 1001">
+                                </div>
+                            </div>
+                            <p class="setup-hint">Ref Preview: <strong id="refPreview">REF/1001/25-26</strong> &nbsp;|&nbsp; Counter: <span id="currentCounter">-</span></p>
+                            <button class="btn btn-primary" onclick="saveFYSettings()">💾 Save FY Settings</button>
+                        </div>
+
+                        <div class="setup-section">
+                            <div class="setup-section-head">
+                                <h4>✍️ Signatory & Letterhead</h4>
+                                <p>Shown at the bottom of every generated letter. Upload your letterhead header strip image (PNG/JPG).</p>
+                            </div>
+                            <div class="input-grid">
+                                <div class="form-group">
+                                    <label>Signatory Full Name</label>
+                                    <input type="text" id="signatoryName" placeholder="Ms. Rishita Dash">
+                                </div>
+                                <div class="form-group">
+                                    <label>Signatory Designation</label>
+                                    <input type="text" id="signatoryDesg" placeholder="HR Business Partner, Emyris Biolifesciences Pvt Ltd">
+                                </div>
+                            </div>
+                            <div class="upload-box-sm" style="max-width:260px;margin-top:1rem">
+                                <label>Letterhead Image (PNG/JPG header strip)</label>
+                                <div class="drop-zone-sm" onclick="document.getElementById('letterheadInput').click()">
+                                    <span class="drop-icon-sm">🖼️</span>
+                                    <span id="letterheadStatus" class="drop-label-sm">Upload PNG/JPG</span>
+                                    <input type="file" id="letterheadInput" class="hidden" accept="image/png,image/jpeg">
+                                </div>
+                            </div>
+                            <button class="btn btn-primary" style="margin-top:1rem" onclick="saveSignatorySettings()">💾 Save Signatory & Letterhead</button>
+                        </div>
+
+                        <div class="setup-section">
+                            <div class="setup-section-head">
+                                <h4>📄 Offer Letter Template</h4>
+                                <p>Paste your offer letter text. Placeholders auto-fill with candidate data when generating.</p>
+                            </div>
+                            <div class="placeholder-guide">
+                                <strong>Placeholders:</strong>
+                                <code>{{TODAY_DATE}}</code> <code>{{REF_NO}}</code> <code>{{TITLE}}</code> <code>{{FULL_NAME}}</code>
+                                <code>{{FIRST_NAME}}</code> <code>{{ADDRESS}}</code> <code>{{CITY_STATE}}</code> <code>{{PIN}}</code>
+                                <code>{{DESIGNATION}}</code> <code>{{DIVISION}}</code> <code>{{HQ}}</code> <code>{{REPORTING_TO}}</code>
+                                <code>{{SALARY_MONTHLY}}</code> <code>{{SALARY_WORDS}}</code> <code>{{JOINING_DATE}}</code>
+                                <code>{{COMPANY_NAME}}</code> <code>{{SIGNATORY_NAME}}</code> <code>{{SIGNATORY_DESG}}</code>
+                            </div>
+                            <textarea id="offerLetterTemplate" class="letter-editor" placeholder="Paste offer letter with {{PLACEHOLDERS}}..."></textarea>
+                            <button class="btn btn-primary" onclick="saveLetterTemplate('offer')">💾 Save Offer Letter Template</button>
+                        </div>
+
+                        <div class="setup-section">
+                            <div class="setup-section-head">
+                                <h4>📋 Appointment Letter Template</h4>
+                                <p>Paste full appointment letter (all 6 pages). System auto-paginates with letterhead on each page.</p>
+                            </div>
+                            <textarea id="apptLetterTemplate" class="letter-editor" style="height:320px" placeholder="Paste full appointment letter text here..."></textarea>
+                            <button class="btn btn-primary" onclick="saveLetterTemplate('appt')">💾 Save Appointment Letter Template</button>
+                        </div>
+
+                    </div>
+
                 </div>
             </div>
 
@@ -676,6 +782,25 @@
             <div class="applicant-info-bar">
                 <span id="wfName">Applicant Name</span> | <span id="wfEmail">email@test.com</span>
             </div>
+
+            <!-- Assignment Panel -->
+            <div class="wf-assign-panel" id="wfAssignPanel">
+                <div class="wf-assign-grid">
+                    <div class="form-group">
+                        <label>Division</label>
+                        <select id="wfDivisionSelect" class="wf-select">
+                            <option value="">-- Select Division --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Reporting To</label>
+                        <input type="text" id="wfReportingTo" class="wf-input" placeholder="e.g., SR. ZONAL SALES MANAGER">
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-outline" onclick="saveWorkflowAssignment()">💾 Save Assignment</button>
+                <p class="setup-hint" id="wfRefDisplay"></p>
+            </div>
+
             <div class="task-matrix">
                 <div class="task-item" id="task_offer">
                     <div class="task-meta">
@@ -685,9 +810,9 @@
                             <small id="status_offer" class="pending">Pending ⏳</small>
                         </div>
                     </div>
-                    <div class="task-actions">
-                        <input type="file" id="offerFileInput" class="hidden" onchange="handleTaskUpload('offerLetter')">
-                        <button class="btn btn-sm btn-outline" onclick="document.getElementById('offerFileInput').click()">Upload</button>
+                    <div class="task-actions letter-actions">
+                        <button class="btn btn-sm btn-outline" onclick="downloadLetter(activeWfEmail, 'offer')">⬇ Download</button>
+                        <button class="btn btn-sm btn-primary" onclick="emailLetter(activeWfEmail, 'offer')">📧 Email</button>
                     </div>
                 </div>
 
@@ -699,9 +824,9 @@
                             <small id="status_appt" class="pending">Pending ⏳</small>
                         </div>
                     </div>
-                    <div class="task-actions">
-                        <input type="file" id="apptFileInput" class="hidden" onchange="handleTaskUpload('appointmentLetter')">
-                        <button class="btn btn-sm btn-outline" onclick="document.getElementById('apptFileInput').click()">Upload</button>
+                    <div class="task-actions letter-actions">
+                        <button class="btn btn-sm btn-outline" onclick="downloadLetter(activeWfEmail, 'appt')">⬇ Download</button>
+                        <button class="btn btn-sm btn-primary" onclick="emailLetter(activeWfEmail, 'appt')">📧 Email</button>
                     </div>
                 </div>
 
