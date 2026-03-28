@@ -54,8 +54,7 @@
                 </div>
                 <a id="headerLogoLink" href="#" target="_blank" class="logo-link">
                     <div class="logo-text">
-                        <h1 id="headerCompName">EMYRIS BIOLIFESCIENCES</h1>
-                        <p>PVT LTD.</p>
+                        <h1 id="headerCompName"></h1>
                     </div>
                 </a>
             </div>
@@ -80,9 +79,7 @@
                 <div class="hero-content">
                     <div class="company-display">
                         <img id="displayLogo" src="" alt="Company Logo" class="hidden">
-                        <a id="heroLogoLink" href="#" target="_blank" class="company-name-link">
-                            <h2 id="displayCompanyName">EMYRIS BIOLIFESCIENCES PVT LTD.</h2>
-                        </a>
+                        <h2 id="displayCompanyName"></h2>
                     </div>
                     <h1>Digital Onboarding Gateway</h1>
                     <p>Welcome to our professional joining portal. Please choose your path to proceed.</p>
@@ -409,8 +406,26 @@
                                     <div class="setup-section-head">
                                         <h4>📄 Offer Letter Template</h4>
                                     </div>
-                                    <div class="placeholder-guide" style="margin-bottom: 1rem;">
-                                        <code>{{TODAY_DATE}}</code> <code>{{REF_NO}}</code> <code>{{FULL_NAME}}</code> <code>{{DESIGNATION}}</code> <code>{{SALARY_ANNUAL}}</code>
+                                    <div class="placeholder-guide" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; border: 1px dashed var(--glass-border); padding: 1.5rem; border-radius: 12px; font-size: 0.82rem;">
+                                        <div>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">👤 Personal</strong>
+                                            <code>{{FULL_NAME}}</code> <code>{{FIRST_NAME}}</code> <code>{{TITLE}}</code> <code>{{DOB}}</code> <code>{{FATHER_NAME}}</code> <code>{{PAN_NO}}</code>
+                                        </div>
+                                        <div>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💼 Employment</strong>
+                                            <code>{{DESIGNATION}}</code> <code>{{DIVISION}}</code> <code>{{HQ}}</code> <code>{{REPORTING_TO}}</code> <code>{{JOINING_DATE}}</code>
+                                        </div>
+                                        <div>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💰 Financial</strong>
+                                            <code>{{SALARY_MONTHLY}}</code> <code>{{SALARY_ANNUAL}}</code> <code>{{SALARY_WORDS}}</code> <code>{{BANK_NAME}}</code> <code>{{BANK_ACC}}</code> <code>{{IFSC}}</code>
+                                        </div>
+                                        <div>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">📍 Location</strong>
+                                            <code>{{ADDRESS}}</code> <code>{{CITY_STATE}}</code> <code>{{PIN}}</code> <code>{{PHONE}}</code>
+                                        </div>
+                                        <div style="grid-column: 1 / -1; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.2rem; opacity: 0.7;">
+                                             <small><b>System Handles Automatically:</b> <code>{{REF_NO}}</code> and <code>{{TODAY_DATE}}</code> are placed in top-right corner automatically.</small>
+                                        </div>
                                     </div>
                                     <textarea id="offerLetterTemplate" class="letter-editor" placeholder="Paste offer letter..."></textarea>
                                     <button class="btn btn-primary" onclick="saveLetterTemplate('offer')">💾 Save Offer Template</button>
@@ -419,6 +434,20 @@
                                 <div class="setup-section">
                                     <div class="setup-section-head">
                                         <h4>📋 Appointment Letter Template</h4>
+                                    </div>
+                                    <!-- Same placeholder guide for appointment -->
+                                    <div class="placeholder-guide" style="margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; border: 1px dashed var(--glass-border); padding: 1.5rem; border-radius: 12px; font-size: 0.82rem;">
+                                        <div>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">👤 Personal & Job</strong>
+                                            <code>{{FULL_NAME}}</code> <code>{{TITLE}}</code> <code>{{DESIGNATION}}</code> <code>{{DIVISION}}</code> <code>{{JOINING_DATE}}</code>
+                                        </div>
+                                        <div>
+                                            <strong style="color: var(--accent); display: block; margin-bottom: 0.5rem;">💰 Salary & Bank</strong>
+                                            <code>{{SALARY_ANNUAL}}</code> <code>{{BANK_NAME}}</code> <code>{{BANK_ACC}}</code> <code>{{IFSC}}</code>
+                                        </div>
+                                        <div style="grid-column: 1 / -1; border-top: 1px solid var(--glass-border); padding-top: 0.5rem; margin-top: 0.2rem; opacity: 0.7;">
+                                             <small>Use coordinates/tab inside editor for precise placement. <code>{{REF_NO}}</code> & <code>{{TODAY_DATE}}</code> are printed in top-right corner.</small>
+                                        </div>
                                     </div>
                                     <textarea id="apptLetterTemplate" class="letter-editor" style="height:320px" placeholder="Paste appointment letter..."></textarea>
                                     <button class="btn btn-primary" onclick="saveLetterTemplate('appt')">💾 Save Appointment Template</button>

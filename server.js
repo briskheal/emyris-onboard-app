@@ -28,7 +28,7 @@ if (MONGODB_URI) {
 
 // Schemas & Models
 const companySchema = new mongoose.Schema({
-    name: { type: String, default: "EMYRIS BIOLIFESCIENCES PVT LTD." },
+    name: { type: String, default: "" },
     address: String,
     phone: String,
     tollFree: String,

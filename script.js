@@ -75,7 +75,7 @@ window.onbeforeunload = function() {
 };
 
 let companyData = {
-    name: "EMYRIS BIOLIFESCIENCES PVT LTD.",
+    name: "",
     address: "",
     phone: "",
     tollFree: "",
@@ -175,7 +175,7 @@ function applyCompanyData() {
         if (headerLetter) headerLetter.style.display = 'none';
     } else if (headerLetter) {
         // Use first letter of each word (max 2)
-        const initials = (companyData.name || 'E').split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('');
+        const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('') : '';
         headerLetter.innerText = initials;
         headerLetter.style.display = 'inline';
         if (headerImg) headerImg.classList.add('hidden');
@@ -1398,6 +1398,11 @@ function fillLetterPlaceholders(text, app) {
         "{{TITLE_SHORT}}": fd.gender === 'male' ? 'Mr.' : 'Ms.',
         "{{FULL_NAME}}": (app.fullName || "").toUpperCase(),
         "{{FIRST_NAME}}": (fd.firstName || "").toUpperCase(),
+        "{{FATHER_NAME}}": (fd.fatherName || "").toUpperCase(),
+        "{{DOB}}": fd.dob || "",
+        "{{BLOOD_GROUP}}": (fd.bloodGroup || "").toUpperCase(),
+        "{{PAN_NO}}": (fd.panNo || "").toUpperCase(),
+        "{{PHONE}}": fd.phone || "",
         "{{ADDRESS}}": (fd.address || ""),
         "{{CITY_STATE}}": `${fd.city || ""}, ${fd.state || ""}`.toUpperCase(),
         "{{PIN}}": fd.pin || "",
@@ -1408,6 +1413,9 @@ function fillLetterPlaceholders(text, app) {
         "{{SALARY_MONTHLY}}": Number(fd.salary || 0).toLocaleString('en-IN'),
         "{{SALARY_ANNUAL}}": (Number(fd.salary || 0) * 12).toLocaleString('en-IN'),
         "{{SALARY_WORDS}}": numberToWords(Number(fd.salary || 0)),
+        "{{BANK_NAME}}": (fd.bankName || "").toUpperCase(),
+        "{{BANK_ACC}}": fd.accNo || "",
+        "{{IFSC}}": (fd.ifsc || "").toUpperCase(),
         "{{JOINING_DATE}}": formatDatePretty(fd.joiningDate),
         "{{COMPANY_NAME}}": companyData.name,
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
