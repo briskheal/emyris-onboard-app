@@ -16,9 +16,9 @@
         #toastNotif.error { background: linear-gradient(135deg,#7f1d1d,#ef4444); }
 
         /* Sidebar Layout */
-        .setup-grid-layout { display: flex; gap: 2rem; align-items: flex-start; }
+        .setup-grid-layout { display: flex; gap: 2.5rem; align-items: flex-start; max-width: 1400px; margin: 0 auto; }
         .setup-main-content { flex: 1; min-width: 0; }
-        .setup-sidebar { width: 300px; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.5rem; }
+        .setup-sidebar { width: 260px; position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1.25rem; flex-shrink: 0; }
         
         .sidebar-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.25rem; }
         .sidebar-card h5 { margin: 0 0 1rem 0; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
@@ -309,30 +309,6 @@
                             <!-- Main Content Area (Templates) -->
                             <div class="setup-main-content">
                                 
-                                <div class="setup-section doc-lab-section">
-                                    <div class="setup-section-head">
-                                        <h4>🧪 Instant Document Lab</h4>
-                                        <p>Check your stationery margins instantly. <strong>No need to save settings to preview changes.</strong></p>
-                                    </div>
-                                    <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                                        <div class="form-group">
-                                            <label>Test Full Name</label>
-                                            <input type="text" id="labName" placeholder="SMRUTI DASH" class="form-input-sm">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Test Designation</label>
-                                            <input type="text" id="labDesg" placeholder="Product Manager" class="form-input-sm">
-                                        </div>
-                                        <div class="form-group">
-                                            <label>Monthly Gross</label>
-                                            <input type="text" id="labSalary" placeholder="75000" class="form-input-sm">
-                                        </div>
-                                    </div>
-                                    <div style="display: flex; gap: 0.75rem;">
-                                        <button class="btn btn-secondary" onclick="previewTemporaryLetter('offer')" style="flex:1;">📄 Download Sample Offer</button>
-                                        <button class="btn btn-secondary" onclick="previewTemporaryLetter('appt')" style="flex:1; border-color:var(--accent); color:var(--accent);">📜 Download Sample Appointment</button>
-                                    </div>
-                                </div>
 
                                 <div class="setup-section">
                                     <div class="setup-section-head">
@@ -356,14 +332,31 @@
                                     <button class="btn btn-primary" onclick="saveLetterTemplate('offer')">💾 Save Offer Template</button>
                                 </div>
 
-                                <div class="setup-section">
+                                <!-- Insta Document Lab (Separator) -->
+                                <div class="setup-section doc-lab-section" style="border-top: 2px dashed var(--glass-border); padding-top: 2rem; margin-top: 3rem; background: rgba(99, 102, 241, 0.05);">
                                     <div class="setup-section-head">
-                                        <h4>📋 Appointment Letter Template</h4>
+                                        <h4>🧪 Instant Document Lab</h4>
+                                        <p>Check your stationery margins instantly. <strong>No need to save settings to preview changes.</strong></p>
                                     </div>
-                                    <textarea id="apptLetterTemplate" class="letter-editor" style="height:320px" placeholder="Paste appointment letter..."></textarea>
-                                    <button class="btn btn-primary" onclick="saveLetterTemplate('appt')">💾 Save Appointment Template</button>
+                                    <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                        <div class="form-group">
+                                            <label>Test Full Name</label>
+                                            <input type="text" id="labName" placeholder="SMRUTI DASH" class="form-input-sm">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Test Designation</label>
+                                            <input type="text" id="labDesg" placeholder="Product Manager" class="form-input-sm">
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Monthly Gross</label>
+                                            <input type="text" id="labSalary" placeholder="75000" class="form-input-sm">
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 0.75rem;">
+                                        <button class="btn btn-secondary" onclick="previewTemporaryLetter('offer')" style="flex:1;">📄 Download Sample Offer</button>
+                                        <button class="btn btn-secondary" onclick="previewTemporaryLetter('appt')" style="flex:1; border-color:var(--accent); color:var(--accent);">📜 Download Sample Appointment</button>
+                                    </div>
                                 </div>
-
                             </div>
 
                             <!-- Right Sidebar (Formatting & Document Settings) -->
@@ -388,11 +381,11 @@
                                     <div class="sidebar-grid">
                                         <div class="sidebar-input-group">
                                             <label>Font Size</label>
-                                            <input type="number" id="letterFontSize" value="11" step="0.5" class="form-input-sm">
+                                            <input type="number" id="letterFontSize" value="11" step="0.5" class="form-input-sm" onchange="syncEditorStyles()">
                                         </div>
                                         <div class="sidebar-input-group">
                                             <label>Font Type</label>
-                                            <select id="letterFontType" class="form-input-sm">
+                                            <select id="letterFontType" class="form-input-sm" onchange="syncEditorStyles()">
                                                 <option value="helvetica">Helvetica</option>
                                                 <option value="times">Times</option>
                                                 <option value="courier">Courier</option>
@@ -400,7 +393,7 @@
                                         </div>
                                         <div class="sidebar-input-group">
                                             <label>Alignment</label>
-                                            <select id="letterAlignment" class="form-input-sm">
+                                            <select id="letterAlignment" class="form-input-sm" onchange="syncEditorStyles()">
                                                 <option value="left">Left</option>
                                                 <option value="center">Center</option>
                                                 <option value="justify">Justify</option>

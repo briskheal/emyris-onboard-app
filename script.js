@@ -927,6 +927,24 @@ async function loadSetupData() {
             img.classList.remove('hidden'); 
         }
     }
+    
+    syncEditorStyles();
+}
+
+function syncEditorStyles() {
+    const size = document.getElementById('letterFontSize').value || 11;
+    const type = document.getElementById('letterFontType').value || 'helvetica';
+    const align = document.getElementById('letterAlignment').value || 'left';
+    
+    let fontStack = "'Courier New', monospace";
+    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
+    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+    
+    document.querySelectorAll('.letter-editor').forEach(el => {
+        el.style.fontSize = `${size}pt`;
+        el.style.fontFamily = fontStack;
+        el.style.textAlign = align;
+    });
 }
 
 async function populateDivisions() {
@@ -1268,8 +1286,6 @@ async function generateLetterPDF(email, type) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
-    const mergedText = fillLetterPlaceholders(template, app);
-    
     // PDF Config
     const PAGE_H = 297;
     const HEADER_H = companyData.headerHeight || 65; 
@@ -1281,26 +1297,37 @@ async function generateLetterPDF(email, type) {
     const MARGIN_T = HEADER_H + 5; 
     const MARGIN_B = FOOTER_H + 5; 
     const MARGIN_L = 22;
-    const USABLE_W = 166; 
-    const LINE_H = (FONT_SIZE * 0.58); // Slightly tighter dynamic line height
+    const MARGIN_R = 22;
+    const USABLE_W = 210 - MARGIN_L - MARGIN_R; 
+    const LINE_H = (FONT_SIZE * 0.58); 
 
+    const refNo = app.refNo || "REF/PENDING";
+    const todayDate = new Date().toLocaleDateString('en-GB');
+
+    // Clean template: Remove placeholders if we are printing them in top-right
+    let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
+    const mergedText = fillLetterPlaceholders(cleanedTemplate, app);
+    
     let y = MARGIN_T;
     
-    // Helper to draw background
     const drawPageExtras = () => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
             const val = lhArr[lhArr.length - 1].data;
-            if (!val.includes("application/pdf")) {
-                // If it's a very thin image, assume it's a Top Strip
-                // Otherwise draw as full page backdrop
-                doc.addImage(val, 'PNG', 0, 0, 210, 297);
-            }
+            doc.addImage(val, 'PNG', 0, 0, 210, 297);
         }
     };
 
     drawPageExtras();
     
+    // Draw Ref No & Date in TOP RIGHT
+    doc.setFont(FONT_TYPE, "bold");
+    doc.setFontSize(FONT_SIZE);
+    doc.text(`Ref: ${refNo}`, 188, y, { align: 'right' });
+    y += LINE_H;
+    doc.text(`Date: ${todayDate}`, 188, y, { align: 'right' });
+    y += LINE_H * 2; // Extra gap after metadata
+
     // Split text into lines
     doc.setFont(FONT_TYPE, "normal");
     doc.setFontSize(FONT_SIZE);
@@ -1314,36 +1341,29 @@ async function generateLetterPDF(email, type) {
         }
         
         let x = MARGIN_L;
-        if (ALIGN === 'center') x = 105; // Center of A4
+        if (ALIGN === 'center') x = 105;
+        else if (ALIGN === 'right') x = 188;
         
         doc.text(line, x, y, { align: ALIGN, maxWidth: USABLE_W });
         y += LINE_H;
     });
 
-    // Check if room for stamp/sig at the end (approx 60mm height)
-    if (y + 60 > PAGE_H - MARGIN_B) {
-        doc.addPage();
-        drawPageExtras();
-        y = MARGIN_T;
-    }
-
-    // Place Stamp & Signature on LAST PAGE ONLY
-    y += 5;
+    // Signatory Logic
+    if (y + 60 > PAGE_H - MARGIN_B) { doc.addPage(); drawPageExtras(); y = MARGIN_T; }
+    y += 10;
+    
     const stampArr = companyData.stamp || [];
-    if (stampArr.length) {
-        doc.addImage(stampArr[stampArr.length - 1].data, 'PNG', MARGIN_L, y, 35, 35);
-    }
+    if (stampArr.length) doc.addImage(stampArr[stampArr.length - 1].data, 'PNG', MARGIN_L, y, 35, 35);
+    
     const sigArr = companyData.digitalSignature || [];
-    if (sigArr.length) {
-        doc.addImage(sigArr[sigArr.length - 1].data, 'PNG', 145, y + 10, 45, 20);
-    }
+    if (sigArr.length) doc.addImage(sigArr[sigArr.length - 1].data, 'PNG', 145, y + 10, 45, 20);
     
     y += 42;
     doc.setFont("helvetica", "bold");
     doc.text("Authorized Signatory", MARGIN_L, y);
     doc.text(companyData.signatoryName || "", 145, y);
-    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
     doc.text(companyData.name, MARGIN_L, y + 5);
     doc.text(companyData.signatoryDesignation || "", 145, y + 5);
 
