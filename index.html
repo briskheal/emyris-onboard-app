@@ -418,21 +418,24 @@
                                                 <button type="button" class="btn-tool" onclick="execCmd('insertUnorderedList')" title="Bulleted List">⏺️</button>
                                             </div>
                                             <div style="display: flex; gap: 0.8rem; align-items: center; flex-wrap: wrap; margin-top: 4px; margin-bottom: 4px;">
-                                                <div style="display: flex; align-items: center; gap: 0.3rem;">
-                                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Margins:</span>
-                                                    <input type="number" id="headerHeight" value="65" class="form-input-sm" style="width: 50px; height: 28px; padding: 2px 4px; text-align: center; border-radius: 4px; background: rgba(0,0,0,0.2);" title="Top Margin (mm)">
-                                                    <input type="number" id="footerHeight" value="25" class="form-input-sm" style="width: 50px; height: 28px; padding: 2px 4px; text-align: center; border-radius: 4px; background: rgba(0,0,0,0.2);" title="Bottom Margin (mm)">
+                                                <div class="toolbar-setting-pill" title="Page Header & Footer Margins (mm)">
+                                                    <span class="label">📏 Margins</span>
+                                                    <input type="number" id="headerHeight" value="65" style="width: 44px; text-align: center;" title="Top Margin (mm)">
+                                                    <div class="pill-divider"></div>
+                                                    <input type="number" id="footerHeight" value="25" style="width: 44px; text-align: center;" title="Bottom Margin (mm)">
                                                 </div>
-                                                <div class="toolbar-divider"></div>
-                                                <div style="display: flex; align-items: center; gap: 0.3rem;">
-                                                    <span style="font-size: 0.75rem; color: var(--text-muted);">Font:</span>
-                                                    <select id="letterFontType" class="form-input-sm" onchange="syncEditorStyles()" style="height: 28px; padding: 2px 4px; border-radius: 4px; background: rgba(0,0,0,0.2);">
-                                                        <option value="helvetica">Helvetica</option>
-                                                        <option value="times">Times</option>
-                                                        <option value="courier">Courier</option>
+                                                
+                                                <div class="toolbar-setting-pill" title="Typography">
+                                                    <span class="label">🔤 Font</span>
+                                                    <select id="letterFontType" onchange="syncEditorStyles()" style="max-width: 95px;" title="Font Family">
+                                                        <option value="helvetica" title="Arial / Helvetica">Helvetica</option>
+                                                        <option value="times" title="Times New Roman">Times</option>
+                                                        <option value="courier" title="Courier New">Courier</option>
                                                     </select>
-                                                    <input type="number" id="letterFontSize" value="11" step="0.5" class="form-input-sm" onchange="syncEditorStyles()" style="width: 45px; height: 28px; padding: 2px 4px; text-align: center; border-radius: 4px; background: rgba(0,0,0,0.2);" title="Font Size (pt)">
-                                                    <select id="letterAlignment" class="form-input-sm" onchange="syncEditorStyles()" style="height: 28px; padding: 2px 4px; border-radius: 4px; background: rgba(0,0,0,0.2);" title="Document Text Align">
+                                                    <div class="pill-divider"></div>
+                                                    <input type="number" id="letterFontSize" value="11" step="0.5" onchange="syncEditorStyles()" style="width: 48px; text-align: center;" title="Font Size (pt)">
+                                                    <div class="pill-divider"></div>
+                                                    <select id="letterAlignment" onchange="syncEditorStyles()" title="Default Paragraph Alignment">
                                                         <option value="left">Left</option>
                                                         <option value="center">Center</option>
                                                         <option value="justify">Justify</option>

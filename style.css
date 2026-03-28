@@ -1630,6 +1630,50 @@ input:checked + .slider:before {
     margin: 0 0.5rem;
 }
 
+.toolbar-setting-pill {
+    display: flex;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    padding: 0 0.6rem;
+    height: 36px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.toolbar-setting-pill span.label {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-right: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.toolbar-setting-pill input,
+.toolbar-setting-pill select {
+    background: transparent !important;
+    border: none !important;
+    color: white !important;
+    font-size: 0.85rem;
+    outline: none;
+    padding: 0 4px;
+    font-family: inherit;
+    font-weight: 500;
+}
+
+.toolbar-setting-pill select option {
+    background: #1e293b;
+    color: white;
+}
+
+.pill-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 0.4rem;
+}
+
 .content-editable-area {
     min-height: 400px;
     padding: 1.5rem;
