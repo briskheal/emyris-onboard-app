@@ -1322,7 +1322,26 @@ async function saveActiveTemplate() {
 
 function execCmd(command, value = null) {
     document.execCommand(command, false, value);
-    document.getElementById('unifiedEditor').focus();
+    
+    // Explicitly track alignment to sync with the PDF generator and Live Preview
+    if (command && command.startsWith('justify')) {
+        let align = 'left';
+        if (command === 'justifyCenter') align = 'center';
+        if (command === 'justifyRight') align = 'right';
+        if (command === 'justifyFull') align = 'justify';
+        
+        const alignInput = document.getElementById('letterAlignment');
+        if (alignInput) {
+            alignInput.value = align;
+            // Immediate visual feedback if preview is open
+            if (!document.getElementById('livePreviewContainer').classList.contains('hidden')) {
+                updateLivePreviewFrame();
+            }
+        }
+    }
+    
+    const editor = document.getElementById('unifiedEditor');
+    if (editor) editor.focus();
 }
 
 function syncEditorStyles() {
