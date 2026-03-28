@@ -167,120 +167,138 @@
 
                     <div id="adminProfileTab" class="admin-tab-content">
                         <form id="companyProfileForm" onsubmit="saveCompanyProfile(event)">
-                            <div class="input-grid">
-                                <div class="form-group">
-                                    <label>Company Name</label>
-                                    <input type="text" name="compName" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Website URL</label>
-                                    <input type="url" name="compWeb">
-                                </div>
-                                <div class="form-group">
-                                    <label>Contact No</label>
-                                    <input type="text" name="compPhone">
-                                </div>
-                                <div class="form-group">
-                                    <label>Toll Free No</label>
-                                    <input type="text" name="compTollFree">
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Company Address</label>
-                                <textarea name="compAddress"></textarea>
-                            </div>
-
-                            <div class="setup-section-head" style="margin-top: 2rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem; margin-bottom: 1rem;">
-                                <h4>📅 Financial Year & Letter Counters</h4>
-                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Set one-time configurations for automatic reference number generation.</p>
-                            </div>
                             
-                            <div class="input-grid" style="grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 2rem;">
-                                <div class="form-group">
-                                    <label>FY Start Date</label>
-                                    <input type="date" name="fyFrom" id="profile_fyFrom">
+                            <!-- Card 1: Core Identity -->
+                            <div class="setup-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none;">
+                                    <h4>🏢 Core Business Identity</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Primary business details used globally across all emails and documents.</p>
                                 </div>
-                                <div class="form-group">
-                                    <label>FY End Date</label>
-                                    <input type="date" name="fyTo" id="profile_fyTo">
+                                <div class="input-grid">
+                                    <div class="form-group">
+                                        <label>Company Name</label>
+                                        <input type="text" name="compName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Website URL</label>
+                                        <input type="url" name="compWeb">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Contact No</label>
+                                        <input type="text" name="compPhone">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Toll Free No</label>
+                                        <input type="text" name="compTollFree">
+                                    </div>
                                 </div>
-                                <div class="form-group">
-                                    <label>Offer Counter</label>
-                                    <input type="number" name="offerCounter" id="profile_offerCounter" placeholder="1001">
-                                </div>
-                                <div class="form-group">
-                                    <label>Appt Counter</label>
-                                    <input type="number" name="apptCounter" id="profile_apptCounter" placeholder="1001">
-                                </div>
-                                <div class="form-group">
-                                    <label>Misc Counter</label>
-                                    <input type="number" name="miscCounter" id="profile_miscCounter" placeholder="1001">
+                                <div class="form-group" style="margin-top: 1rem;">
+                                    <label>Company Address</label>
+                                    <textarea name="compAddress"></textarea>
                                 </div>
                             </div>
 
-                            <div class="input-grid branding-upload-grid">
-                                <div class="upload-box-sm logo-box">
-                                    <label>Company Logos</label>
-                                    <div class="drop-zone-sm" onclick="document.getElementById('compLogoInput').click()">
-                                        <img id="logoPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
-                                        <span class="drop-icon-sm">🖼️</span>
-                                        <span id="logoStatus" class="drop-label-sm">Upload Logos</span>
-                                        <input type="file" id="compLogoInput" class="hidden" accept="image/*" multiple>
-                                    </div>
-                                    <div id="logoList" class="asset-list-vertical"></div>
+                            <!-- Card 2: Financial Year & Counters -->
+                            <div class="setup-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none;">
+                                    <h4>📅 Financial Year & Letter Counters</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Set one-time configurations for automatic reference number generation.</p>
                                 </div>
-                                <div class="upload-box-sm stamp-box">
-                                    <label>Company Stamps</label>
-                                    <div class="drop-zone-sm" onclick="document.getElementById('compStampInput').click()">
-                                        <img id="stampPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
-                                        <span class="drop-icon-sm">🔴</span>
-                                        <span id="stampStatus" class="drop-label-sm">Upload Stamps</span>
-                                        <input type="file" id="compStampInput" class="hidden" accept="image/*" multiple>
+                                
+                                <div class="input-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.2rem;">
+                                    <div class="form-group">
+                                        <label>FY Start Date</label>
+                                        <input type="date" name="fyFrom" id="profile_fyFrom">
                                     </div>
-                                    <div id="stampList" class="asset-list-vertical"></div>
-                                </div>
-                                <div class="upload-box-sm sig-box">
-                                    <label>Digital Signatures</label>
-                                    <div class="drop-zone-sm" onclick="document.getElementById('compSigInput').click()">
-                                        <img id="sigPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
-                                        <span class="drop-icon-sm">✍️</span>
-                                        <span id="sigStatus" class="drop-label-sm">Upload Signatures</span>
-                                        <input type="file" id="compSigInput" class="hidden" accept="image/*" multiple>
+                                    <div class="form-group">
+                                        <label>FY End Date</label>
+                                        <input type="date" name="fyTo" id="profile_fyTo">
                                     </div>
-                                    <div id="sigList" class="asset-list-vertical"></div>
-                                </div>
-                                <div class="upload-box-sm mobile-box">
-                                    <label>Mobile App Details</label>
-                                    <div class="drop-zone-sm" onclick="document.getElementById('mobileTemplateInput').click()">
-                                        <span class="drop-icon-sm">📱</span>
-                                        <span id="mobileStatus" class="drop-label-sm">Upload Images</span>
-                                        <input type="file" id="mobileTemplateInput" class="hidden" accept="image/png,image/jpeg" multiple>
+                                    <div class="form-group" style="border-left: 1px dashed rgba(255,255,255,0.1); padding-left: 1rem;">
+                                        <label>Offer Counter</label>
+                                        <input type="number" name="offerCounter" id="profile_offerCounter" placeholder="1001">
                                     </div>
-                                    <div id="mobileList" class="asset-list-vertical"></div>
-                                </div>
-                                <div class="upload-box-sm tada-box">
-                                    <label>TA / DA Letters</label>
-                                    <div class="drop-zone-sm" onclick="document.getElementById('tadaTemplateInput').click()">
-                                        <span class="drop-icon-sm">✈️</span>
-                                        <span id="tadaStatus" class="drop-label-sm">Upload Images</span>
-                                        <input type="file" id="tadaTemplateInput" class="hidden" accept="image/png,image/jpeg" multiple>
+                                    <div class="form-group">
+                                        <label>Appt Counter</label>
+                                        <input type="number" name="apptCounter" id="profile_apptCounter" placeholder="1001">
                                     </div>
-                                    <div id="tadaList" class="asset-list-vertical"></div>
-                                </div>
-                                <div class="upload-box-sm add-category-box">
-                                    <label>➕ Add Category Header</label>
-                                    <div class="add-category-controls">
-                                        <input type="text" id="newCategoryInput" class="form-input" placeholder="e.g. TAX DOCS">
-                                        <button type="button" class="btn btn-primary" onclick="addAssetCategory()">+ Add</button>
+                                    <div class="form-group">
+                                        <label>Misc Counter</label>
+                                        <input type="number" name="miscCounter" id="profile_miscCounter" placeholder="1001">
                                     </div>
-                                    <p class="setup-hint" style="margin-top: 4px; font-size: 0.65rem;">Create specialized upload areas.</p>
                                 </div>
                             </div>
 
-                            <div id="dynamicBrandingGrid" class="input-grid branding-upload-grid" style="margin-top: 1.5rem;"></div>
+                            <!-- Card 3: Brand Assets -->
+                            <div class="setup-section" style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm);">
+                                <div class="setup-section-head" style="margin-top: 0; padding-top: 0; border-top: none;">
+                                    <h4>🎨 Brand Assets & Global Artwork</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Upload company logos, digital stamps, and digital signatures.</p>
+                                </div>
+                                <div class="input-grid branding-upload-grid" style="padding: 0;">
+                                    <div class="upload-box-sm logo-box">
+                                        <label>Company Logos</label>
+                                        <div class="drop-zone-sm" onclick="document.getElementById('compLogoInput').click()">
+                                            <img id="logoPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
+                                            <span class="drop-icon-sm">🖼️</span>
+                                            <span id="logoStatus" class="drop-label-sm">Upload Logos</span>
+                                            <input type="file" id="compLogoInput" class="hidden" accept="image/*" multiple>
+                                        </div>
+                                        <div id="logoList" class="asset-list-vertical"></div>
+                                    </div>
+                                    <div class="upload-box-sm stamp-box">
+                                        <label>Company Stamps</label>
+                                        <div class="drop-zone-sm" onclick="document.getElementById('compStampInput').click()">
+                                            <img id="stampPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
+                                            <span class="drop-icon-sm">🔴</span>
+                                            <span id="stampStatus" class="drop-label-sm">Upload Stamps</span>
+                                            <input type="file" id="compStampInput" class="hidden" accept="image/*" multiple>
+                                        </div>
+                                        <div id="stampList" class="asset-list-vertical"></div>
+                                    </div>
+                                    <div class="upload-box-sm sig-box">
+                                        <label>Digital Signatures</label>
+                                        <div class="drop-zone-sm" onclick="document.getElementById('compSigInput').click()">
+                                            <img id="sigPreview" src="" class="hidden" style="max-height:50px;margin-bottom:4px;">
+                                            <span class="drop-icon-sm">✍️</span>
+                                            <span id="sigStatus" class="drop-label-sm">Upload Signatures</span>
+                                            <input type="file" id="compSigInput" class="hidden" accept="image/*" multiple>
+                                        </div>
+                                        <div id="sigList" class="asset-list-vertical"></div>
+                                    </div>
+                                    <div class="upload-box-sm mobile-box">
+                                        <label>Mobile App Details</label>
+                                        <div class="drop-zone-sm" onclick="document.getElementById('mobileTemplateInput').click()">
+                                            <span class="drop-icon-sm">📱</span>
+                                            <span id="mobileStatus" class="drop-label-sm">Upload Images</span>
+                                            <input type="file" id="mobileTemplateInput" class="hidden" accept="image/png,image/jpeg" multiple>
+                                        </div>
+                                        <div id="mobileList" class="asset-list-vertical"></div>
+                                    </div>
+                                    <div class="upload-box-sm tada-box">
+                                        <label>TA / DA Letters</label>
+                                        <div class="drop-zone-sm" onclick="document.getElementById('tadaTemplateInput').click()">
+                                            <span class="drop-icon-sm">✈️</span>
+                                            <span id="tadaStatus" class="drop-label-sm">Upload Images</span>
+                                            <input type="file" id="tadaTemplateInput" class="hidden" accept="image/png,image/jpeg" multiple>
+                                        </div>
+                                        <div id="tadaList" class="asset-list-vertical"></div>
+                                    </div>
+                                    <div class="upload-box-sm add-category-box">
+                                        <label>➕ Add Category Header</label>
+                                        <div class="add-category-controls">
+                                            <input type="text" id="newCategoryInput" class="form-input" placeholder="e.g. TAX DOCS">
+                                            <button type="button" class="btn btn-primary" onclick="addAssetCategory()">+ Add</button>
+                                        </div>
+                                        <p class="setup-hint" style="margin-top: 4px; font-size: 0.65rem;">Create specialized upload areas.</p>
+                                    </div>
+                                </div>
 
-                            <div class="nav-buttons">
-                                <button type="submit" class="btn btn-primary">Save Profile & Update UI</button>
+                                <div id="dynamicBrandingGrid" class="input-grid branding-upload-grid" style="margin-top: 1.5rem; padding: 0;"></div>
+
+                                <div style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1.5rem; display: flex; justify-content: flex-end;">
+                                    <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem;">💾 Save Complete Profile</button>
+                                </div>
                             </div>
                         </form>
 
