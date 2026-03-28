@@ -15,9 +15,10 @@
         #toastNotif.success { background: linear-gradient(135deg,#064e3b,#10b981); }
         #toastNotif.error { background: linear-gradient(135deg,#7f1d1d,#ef4444); }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -320,8 +321,9 @@
                                     </div>
                                     <p class="setup-hint" style="font-size: 0.75rem;">* Note: High-res PNG/JPG of your blank A4 letterhead is recommended for best text overlay results.</p>
                                 </div>
-                            <button class="btn btn-primary" style="margin-top:1rem" onclick="saveSignatorySettings()">💾 Save Signatory & Letterhead</button>
-                        </div>
+                                <button class="btn btn-primary" style="margin-top:1rem" id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save Signatory & Letterhead</button>
+                                <button class="btn btn-secondary" style="margin-top:1rem; border-color:var(--secondary);color:var(--secondary); background:transparent;" onclick="injectDummyApplicant()">🧪 Test Offer Letter (Dummy Data)</button>
+                            </div>
 
                         <div class="setup-section">
                             <div class="setup-section-head">

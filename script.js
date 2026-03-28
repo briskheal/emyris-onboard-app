@@ -850,7 +850,59 @@ async function saveFYSettings() {
     loadSetupData();
 }
 
+function injectDummyApplicant() {
+    const dummy = {
+        fullName: "DUMMY TEST EMPLOYEE",
+        email: "test@dummy.com",
+        refNo: companyData.letterheadImage ? `REF/${companyData.letterCounterStart+99}/${(companyData.fyFrom||'2025').slice(0,4)}` : "REF/1001/25-26",
+        division: "TEST DIVISION",
+        reportingTo: "Ms. HR Manager",
+        formData: {
+            firstName: "DUMMY",
+            lastName: "EMPLOYEE",
+            gender: "male",
+            address: "123, Test Street, Dummy Nagar",
+            city: "Bhubaneswar",
+            state: "Odisha",
+            pin: "751001",
+            designation: "Product Manager",
+            hq: "Bhubaneswar",
+            salary: "50000",
+            joiningDate: new Date().toISOString().split('T')[0]
+        }
+    };
+    
+    // Temporarily add to allApplicants for generation
+    const original = [...allApplicants];
+    allApplicants.push(dummy);
+    
+    showToast("🧪 Generating Test Offer Letter...", "success");
+    downloadLetter("test@dummy.com", "offer").then(() => {
+        allApplicants = original; // Restore
+    });
+}
+
+async function convertPdfToPng(dataUri) {
+    const loadingTask = pdfjsLib.getDocument(dataUri);
+    const pdf = await loadingTask.promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.0 }); // High-res scaling
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.height = viewport.height;
+    canvas.width = viewport.width;
+
+    await page.render({ canvasContext: context, viewport: viewport }).promise;
+    return canvas.toDataURL('image/png');
+}
+
 async function saveSignatorySettings() {
+    const btn = document.getElementById('saveSignatoryBtn');
+    const originalText = btn.innerText;
+    btn.innerText = "⌛ Processing...";
+    btn.disabled = true;
+
     const data = {
         signatoryName: document.getElementById('signatoryName').value,
         signatoryDesignation: document.getElementById('signatoryDesg').value
@@ -860,14 +912,32 @@ async function saveSignatorySettings() {
     if (file) {
         const reader = new FileReader();
         reader.onload = async (e) => {
-            data.letterheadImage = e.target.result;
+            let finalData = e.target.result;
+            
+            // AUTO-CONVERTER LOGIC (PDF to Image)
+            if (file.type === 'application/pdf') {
+                try {
+                    showToast("⚙️ Converting PDF to Image...", "success");
+                    finalData = await convertPdfToPng(finalData);
+                } catch (pdfErr) {
+                    showToast("❌ PDF conversion failed. Use Image instead.", "error");
+                    btn.innerText = originalText; btn.disabled = false;
+                    return;
+                }
+            } else if (file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+                showToast("⚠️ DOCX conversion limited. Please use PDF/Image for perfect results.", "error");
+            }
+
+            data.letterheadImage = [finalData]; 
             await submitProfileUpdate(data);
             loadSetupData();
+            btn.innerText = originalText; btn.disabled = false;
         };
         reader.readAsDataURL(file);
     } else {
         await submitProfileUpdate(data);
         loadSetupData();
+        btn.innerText = originalText; btn.disabled = false;
     }
 }
 
