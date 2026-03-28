@@ -359,38 +359,10 @@
 
                     <!-- ===== SETUP & LETTERS TAB ===== -->
                     <div id="adminSetupTab" class="admin-tab-content hidden">
-                        <div class="setup-grid-layout">
+                        <div>
                             
-                            <!-- Header Toolbar: Settings & Formatting -->
-                            <div class="setup-toolbar">
-
-
-                                <div class="toolbar-card">
-                                    <h5>✍️ Signatory</h5>
-                                    <div class="sidebar-grid">
-                                        <div class="sidebar-input-group">
-                                            <label>Name</label>
-                                            <input type="text" id="signatoryName" class="form-input-sm" style="width:120px">
-                                        </div>
-                                        <div class="sidebar-input-group">
-                                            <label>Role</label>
-                                            <input type="text" id="signatoryDesg" class="form-input-sm" style="width:120px">
-                                        </div>
-                                    </div>
-                                </div>
-
-
-
-                                <div class="toolbar-card" style="justify-content: center; background: rgba(99, 102, 241, 0.1); border-color: var(--primary);">
-                                    <button class="btn btn-primary" style="width:100%" id="saveSignatoryBtn" onclick="saveSignatorySettings()">💾 Save All Settings</button>
-                                </div>
-
-
-                            </div>
-
                             <!-- Main Content Area -->
-                            <div class="setup-main-content">
-                                
+                            <div class="setup-main-content" style="width: 100%;">
 
                                 <div class="setup-section">
                                     <div class="setup-section-head">
@@ -481,8 +453,18 @@
                                         <div id="unifiedEditor" class="letter-editor content-editable-area" contenteditable="true" spellcheck="false" placeholder="Draft your letter here..."></div>
                                     </div>
                                     
-                                    <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end;">
-                                        <button class="btn btn-primary" onclick="saveActiveTemplate()">💾 Save Document Template</button>
+                                    <div class="editor-footer" style="margin-top: 2rem; display: flex; justify-content: space-between; align-items: center; background: rgba(99, 102, 241, 0.05); padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.2); flex-wrap: wrap; gap: 1rem;">
+                                        <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                                            <span style="font-size: 0.8rem; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Authorized Signatory</span>
+                                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                                <input type="text" id="signatoryName" class="form-input-sm" placeholder="Signatory Name" style="width: 180px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1);">
+                                                <div class="pill-divider" style="height: 16px; background: rgba(255,255,255,0.2); width: 1px;"></div>
+                                                <input type="text" id="signatoryDesg" class="form-input-sm" placeholder="Designation / Role" style="width: 180px; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.1);">
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; gap: 1rem; align-items: center;">
+                                            <button class="btn btn-primary" onclick="saveActiveTemplate()" style="padding: 0.6rem 1.5rem;">💾 Save Document & Settings</button>
+                                        </div>
                                     </div>
                                 </div>
 

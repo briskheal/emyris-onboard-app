@@ -1205,6 +1205,10 @@ async function saveActiveTemplate() {
         data.letterFontType = document.getElementById('letterFontType').value;
         data.letterAlignment = document.getElementById('letterAlignment').value;
         
+        // Also save the authorized signatory inputs perfectly synced now
+        data.signatoryName = document.getElementById('signatoryName').value;
+        data.signatoryDesignation = document.getElementById('signatoryDesg').value;
+        
         await submitProfileUpdate(data);
         showToast("✅ Template Saved!", "success");
     } catch (e) {
@@ -1421,53 +1425,6 @@ async function previewTemporaryLetter(type) {
         unlockUI();
     }
 }
-
-async function saveSignatorySettings() {
-    const btn = document.getElementById('saveSignatoryBtn');
-    const originalText = btn.innerHTML;
-    
-    // Background Saving Feedback
-    btn.innerHTML = "⌛ Saving...";
-    btn.disabled = true;
-    btn.style.opacity = "0.7";
-
-    const data = {
-        signatoryName: document.getElementById('signatoryName').value,
-        signatoryDesignation: document.getElementById('signatoryDesg').value,
-        headerHeight: parseInt(document.getElementById('headerHeight').value) || 65,
-        footerHeight: parseInt(document.getElementById('footerHeight').value) || 25,
-        letterFontSize: parseFloat(document.getElementById('letterFontSize').value) || 11,
-        letterFontType: document.getElementById('letterFontType').value || 'helvetica',
-        letterAlignment: document.getElementById('letterAlignment').value || 'left'
-    };
-    
-    // Handle Sidebar File Uploads (Letterhead & Stamp)
-    const lhFile = document.getElementById('letterheadInput').files[0];
-    const stFile = document.getElementById('sidebarStampInput').files[0];
-    
-    try {
-        if (lhFile) {
-            const optLH = await compressAndResize(lhFile, 1800);
-            data.letterheadImage = [{ name: lhFile.name.split('.')[0], data: optLH }]; 
-        }
-        if (stFile) {
-            const optST = await compressAndResize(stFile, 800);
-            data.stamp = [{ name: stFile.name.split('.')[0], data: optST }];
-        }
-
-        // Use Silent saving (No full-page lock)
-        await submitProfileUpdate(data, true);
-        
-    } catch (err) {
-        console.error("Sidebar save error:", err);
-        showToast("❌ Save failed", "error");
-    } finally {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        btn.style.opacity = "1";
-    }
-}
-
 
 // --- SMART LETTER GENERATION ---
 async function downloadLetter(email, type) {
