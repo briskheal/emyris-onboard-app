@@ -432,6 +432,27 @@
                                     </div>
                                 </div>
 
+                                <div class="editor-admin-bar">
+                                    <div style="display: flex; gap: 1.5rem; align-items: center;">
+                                        <div class="pill-container" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05); height: auto; padding: 6px 15px;">
+                                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                                <label style="font-size: 0.6rem; color: var(--accent); margin: 0;">OFFICIAL SIGNATORY</label>
+                                                <input type="text" id="signatoryName" placeholder="Name" style="font-size: 0.85rem; padding: 0; height: 1.2rem; width: 180px;">
+                                            </div>
+                                        </div>
+                                        <div class="pill-container" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05); height: auto; padding: 6px 15px;">
+                                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                                <label style="font-size: 0.6rem; color: var(--accent); margin: 0;">ROLE / DESIGNATION</label>
+                                                <input type="text" id="signatoryDesg" placeholder="Designation" style="font-size: 0.85rem; padding: 0; height: 1.2rem; width: 180px;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; gap: 0.75rem;">
+                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1.5rem;">👁️ Preview Fidelity</button>
+                                        <button class="btn btn-sm btn-primary" onclick="saveActiveTemplate()" style="padding: 0.5rem 2rem;">💾 Commit Template</button>
+                                    </div>
+                                </div>
+
                                 <div class="editor-toolbar">
                                     <div class="setting-group">
                                         <button class="btn-tool" title="Bold" onclick="execCmd('bold')"><b>B</b></button>
@@ -475,36 +496,26 @@
                                             <input type="number" id="footerHeight" value="25" style="width: 45px;">
                                         </div>
                                     </div>
+                                    <input type="hidden" id="letterAlignment" value="left">
                                 </div>
 
                                 <div id="unifiedEditor" class="letter-editor" contenteditable="true" spellcheck="false"></div>
+
+                                <div id="livePreviewContainer" class="hidden" style="margin-top: 0;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
+                                        <div style="display: flex; align-items: center; gap: 1rem;">
+                                            <h4 style="color: var(--accent); margin: 0; font-size: 1rem;">📄 Document Fidelity Preview</h4>
+                                            <div style="display: flex; gap: 0.5rem;">
+                                                <button class="btn btn-sm btn-primary" onclick="previewActiveTemplate()" style="padding: 0.5rem 1.2rem; font-size: 0.8rem;">📥 Download PDF</button>
+                                                <button class="btn btn-sm" onclick="saveActiveTemplate()" style="padding: 0.5rem 1.2rem; font-size: 0.8rem; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success);">💾 Save Template</button>
+                                            </div>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)" style="color: #ef4444; border-color: #ef4444; padding: 0.5rem 1.2rem; font-size: 0.8rem;">❌ Return to Editor</button>
+                                    </div>
+                                    <div id="livePreviewFrame"></div>
+                                </div>
                             </div>
 
-                            <!-- 3. Preview Section -->
-                            <div id="livePreviewContainer" class="hidden">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
-                                    <h4 style="color: var(--accent); margin: 0;">A4 Layout Fidelity Preview</h4>
-                                    <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)" style="color: #ef4444; border-color: #ef4444;">Close Preview</button>
-                                </div>
-                                <div id="livePreviewFrame" style="background: white; color: black; box-shadow: 0 40px 100px rgba(0,0,0,0.6); margin: 0 auto; width: 100%; max-width: 850px; min-height: 800px; padding: 60px; border-radius: 4px;"></div>
-                            </div>
-
-                            <!-- 4. Floating Action Footer -->
-                            <div class="editor-footer-fixed">
-                                <div style="display: flex; gap: 2rem;">
-                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <label style="font-size: 0.65rem; color: var(--accent); font-weight: 800; text-transform: uppercase;">Official Signatory</label>
-                                        <input type="text" id="signatoryName" class="form-input-sm" placeholder="Name" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); width: 200px;">
-                                    </div>
-                                    <div style="display: flex; flex-direction: column; gap: 4px;">
-                                        <label style="font-size: 0.65rem; color: var(--accent); font-weight: 800; text-transform: uppercase;">Role / Designation</label>
-                                        <input type="text" id="signatoryDesg" class="form-input-sm" placeholder="Designation" style="background: rgba(0,0,0,0.4); border-color: rgba(255,255,255,0.1); width: 200px;">
-                                    </div>
-                                </div>
-                                <div style="display: flex; gap: 1rem;">
-                                    <button class="btn btn-outline" onclick="previewActiveTemplate()" style="padding: 0.8rem 2rem;">👁️ Test PDF</button>
-                                    <button class="btn btn-primary" onclick="saveActiveTemplate()" style="padding: 0.8rem 3rem;">💾 Commit Template Changes</button>
-                                </div>
                             </div>
                         </div>
                     </div>

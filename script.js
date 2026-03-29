@@ -1326,18 +1326,19 @@ function execCmd(command, value = null) {
     // Explicitly track alignment to sync with the PDF generator and Live Preview
     if (command && command.startsWith('justify')) {
         let align = 'left';
+        if (command === 'justifyLeft') align = 'left';
         if (command === 'justifyCenter') align = 'center';
         if (command === 'justifyRight') align = 'right';
         if (command === 'justifyFull') align = 'justify';
         
         const alignInput = document.getElementById('letterAlignment');
-        if (alignInput) {
-            alignInput.value = align;
-            // Immediate visual feedback if preview is open
-            if (!document.getElementById('livePreviewContainer').classList.contains('hidden')) {
-                updateLivePreviewFrame();
-            }
-        }
+        if (alignInput) alignInput.value = align;
+    }
+    
+    // Immediate visual feedback if preview is open
+    const preview = document.getElementById('livePreviewContainer');
+    if (preview && !preview.classList.contains('hidden')) {
+        updateLivePreviewFrame();
     }
     
     const editor = document.getElementById('unifiedEditor');
@@ -1345,24 +1346,27 @@ function execCmd(command, value = null) {
 }
 
 function syncEditorStyles() {
-    const size = document.getElementById('letterFontSize').value || 11;
-    const type = document.getElementById('letterFontType').value || 'helvetica';
-    const align = document.getElementById('letterAlignment').value || 'left';
+    const size = document.getElementById('letterFontSize')?.value || 11;
+    const type = document.getElementById('letterFontType')?.value || 'helvetica';
+    const align = document.getElementById('letterAlignment')?.value || 'left';
     
     let fontStack = "'Courier New', monospace";
     if (type === 'times') fontStack = "'Times New Roman', Times, serif";
     else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
     else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-    else if (type === 'georgia') fontStack = "Georgia, serif";
-    else if (type === 'tahoma') fontStack = "Tahoma, Geneva, sans-serif";
-    else if (type === 'garamond') fontStack = "Garamond, Baskerville, serif";
-    else if (type === 'serif') fontStack = "serif";
     
-    document.querySelectorAll('.letter-editor').forEach(el => {
-        el.style.fontSize = `${size}pt`;
-        el.style.fontFamily = fontStack;
-        el.style.textAlign = align;
-    });
+    const editor = document.getElementById('unifiedEditor');
+    if (editor) {
+        editor.style.fontSize = `${size}pt`;
+        editor.style.fontFamily = fontStack;
+        editor.style.textAlign = align;
+    }
+
+    // Update live preview if open
+    const preview = document.getElementById('livePreviewContainer');
+    if (preview && !preview.classList.contains('hidden')) {
+        updateLivePreviewFrame();
+    }
 }
 
 async function populateDivisions() {
@@ -1520,13 +1524,13 @@ async function previewActiveTemplate() {
         // Feed live unsaved editor states into the generator's memory
         window.letterTemplates[type] = editorHtml;
         
-        companyData.headerHeight = parseInt(document.getElementById('headerHeight').value) || 65;
-        companyData.footerHeight = parseInt(document.getElementById('footerHeight').value) || 25;
-        companyData.letterFontSize = parseFloat(document.getElementById('letterFontSize').value) || 11;
-        companyData.letterAlignment = document.getElementById('letterAlignment').value || 'left';
-        companyData.letterFontType = document.getElementById('letterFontType').value || 'helvetica';
-        companyData.signatoryName = document.getElementById('signatoryName').value;
-        companyData.signatoryDesignation = document.getElementById('signatoryDesg').value;
+        companyData.headerHeight = parseInt(document.getElementById('headerHeight')?.value || 65);
+        companyData.footerHeight = parseInt(document.getElementById('footerHeight')?.value || 25);
+        companyData.letterFontSize = parseFloat(document.getElementById('letterFontSize')?.value || 11);
+        companyData.letterAlignment = document.getElementById('letterAlignment')?.value || 'left';
+        companyData.letterFontType = document.getElementById('letterFontType')?.value || 'helvetica';
+        companyData.signatoryName = document.getElementById('signatoryName')?.value || "";
+        companyData.signatoryDesignation = document.getElementById('signatoryDesg')?.value || "";
 
         allApplicants.push(mockApplicant);
         
@@ -1557,12 +1561,25 @@ async function previewActiveTemplate() {
 // --- VISUAL PREVIEW UI LOGIC ---
 function toggleLivePreviewUI(show) {
     const container = document.getElementById('livePreviewContainer');
-    if (!container) return;
-    show ? container.classList.remove('hidden') : container.classList.add('hidden');
+    const editor = document.getElementById('unifiedEditor');
+    const toolbar = document.querySelector('.editor-toolbar');
+    const adminBar = document.querySelector('.editor-admin-bar');
+    
+    if (!container || !editor) return;
+    
     if (show) {
+        container.classList.remove('hidden');
+        editor.classList.add('hidden');
+        if (toolbar) toolbar.style.display = 'none';
+        if (adminBar) adminBar.style.display = 'none';
         updateLivePreviewFrame();
-        // Scroll to preview
-        container.scrollIntoView({ behavior: 'smooth' });
+        // Scroll to the start of the preview frame
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+        container.classList.add('hidden');
+        editor.classList.remove('hidden');
+        if (toolbar) toolbar.style.display = 'flex';
+        if (adminBar) adminBar.style.display = 'flex';
     }
 }
 
@@ -1570,48 +1587,62 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     const frame = document.getElementById('livePreviewFrame');
     if (!frame) return;
     
-    toggleLivePreviewUI(true);
-    
     const html = specificHtml || document.getElementById('unifiedEditor').innerHTML;
     let rendered = html;
     
-    // Simple placeholder replacement for visual preview
-    const map = {
+    // 1. Apply Background Letterhead to simulate the PDF
+    const lhArr = companyData.letterheadImage || [];
+    if (lhArr.length) {
+        const val = lhArr[lhArr.length - 1].data;
+        frame.style.backgroundImage = `url(${val})`;
+        frame.style.backgroundSize = 'contain';
+        frame.style.backgroundRepeat = 'no-repeat';
+        frame.style.backgroundPosition = 'center';
+    } else {
+        frame.style.backgroundImage = 'none';
+    }
+
+    // 2. High-Fidelity Placeholder replacement
+    const todayStr = new Date().toLocaleDateString('en-GB');
+    const placeholders = {
         '{{REF_NO}}': specificRef,
-        '{{TODAY_DATE}}': new Date().toLocaleDateString('en-GB'),
+        '{{TODAY_DATE}}': todayStr,
         '{{FULL_NAME}}': 'SMRUTI RANJAN DASH',
         '{{FIRST_NAME}}': 'SMRUTI',
         '{{DESIGNATION}}': 'PRODUCT MANAGER',
         '{{HQ}}': 'BHUBANESWAR',
         '{{SALARY_MONTHLY}}': '75,000',
         '{{SALARY_ANNUAL}}': '9,00,000',
-        '{{SIGNATORY_NAME}}': document.getElementById('signatoryName').value || 'AUTHORIZED SIGNATORY',
-        '{{SIGNATORY_DESG}}': document.getElementById('signatoryDesg').value || 'COMPANY OFFICIAL',
-        '{{COMPANY_NAME}}': companyData.name || 'EMYRIS ONBOARDING'
+        '{{SIGNATORY_NAME}}': document.getElementById('signatoryName')?.value || 'AUTHORIZED SIGNATORY',
+        '{{SIGNATORY_DESG}}': document.getElementById('signatoryDesg')?.value || 'COMPANY OFFICIAL',
+        '{{COMPANY_NAME}}': companyData.name || 'EMYRIS BIOLIFESCIENCES',
+        '{{JOINING_DATE}}': formatDatePretty(new Date().toISOString())
     };
 
-    Object.entries(map).forEach(([key, val]) => {
+    Object.entries(placeholders).forEach(([key, val]) => {
         const regex = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-        rendered = rendered.replace(regex, `<span style="color:var(--primary); font-weight:600;">${val}</span>`);
+        rendered = rendered.replace(regex, `<span class="preview-highlight">${val}</span>`);
     });
 
     frame.innerHTML = rendered;
     
-    // Apply real-time styles
-    const size = document.getElementById('letterFontSize').value || 11;
-    const type = document.getElementById('letterFontType').value || 'helvetica';
-    
+    // 3. Apply Real-time Styles accurately
+    const size = document.getElementById('letterFontSize')?.value || 11;
+    const type = document.getElementById('letterFontType')?.value || 'helvetica';
+    const align = document.getElementById('letterAlignment')?.value || 'left';
+    const marginT = document.getElementById('headerHeight')?.value || 65;
+    const marginB = document.getElementById('footerHeight')?.value || 25;
+
     let fontStack = "'Courier New', monospace";
     if (type === 'times') fontStack = "'Times New Roman', Times, serif";
     else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
     else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-    else if (type === 'georgia') fontStack = "Georgia, serif";
-    else if (type === 'tahoma') fontStack = "Tahoma, Geneva, sans-serif";
-    else if (type === 'garamond') fontStack = "Garamond, Baskerville, serif";
     
     frame.style.fontSize = `${size}pt`;
     frame.style.fontFamily = fontStack;
-    frame.style.textAlign = document.getElementById('letterAlignment')?.value || 'left';
+    frame.style.textAlign = align;
+    frame.style.paddingTop = `${marginT}mm`;
+    frame.style.paddingBottom = `${marginB}mm`;
 }
 
 // --- SMART LETTER GENERATION ---
@@ -1963,81 +1994,8 @@ function copyTag(text) {
     });
 }
 
-function execCmd(command, value = null) {
-    document.execCommand(command, false, value);
-    document.getElementById('unifiedEditor').focus();
-}
-
-function switchEditorTemplate() {
-    const type = document.getElementById('activeTemplateSelect').value;
-    const editor = document.getElementById('unifiedEditor');
-    
-    if (type === 'offer') editor.innerHTML = companyData.offerLetterBody || '';
-    else if (type === 'appt') editor.innerHTML = companyData.apptLetterBody || '';
-    
-    syncEditorStyles();
-}
-
-function syncEditorStyles() {
-    const editor = document.getElementById('unifiedEditor');
-    const size = document.getElementById('letterFontSize').value || 11;
-    const type = document.getElementById('letterFontType').value || 'helvetica';
-    
-    editor.style.fontSize = `${size}pt`;
-    
-    let fontStack = "'Courier New', monospace";
-    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
-    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
-    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-    
-    editor.style.fontFamily = fontStack;
-    
-    // Update live preview if open
-    const preview = document.getElementById('livePreviewContainer');
-    if (preview && !preview.classList.contains('hidden')) {
-        updateLivePreviewFrame();
-    }
-}
-
-async function saveActiveTemplate() {
-    const type = document.getElementById('activeTemplateSelect').value;
-    const html = document.getElementById('unifiedEditor').innerHTML;
-    
-    const payload = {
-        type: type,
-        body: html,
-        fontSize: document.getElementById('letterFontSize').value,
-        fontType: document.getElementById('letterFontType').value,
-        headerHeight: document.getElementById('headerHeight').value,
-        footerHeight: document.getElementById('footerHeight').value,
-        signatoryName: document.getElementById('signatoryName').value,
-        signatoryDesg: document.getElementById('signatoryDesg').value
-    };
-    
-    lockUI('💾 Saving Template...');
-    try {
-        const res = await fetch('/api/admin/save-template', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast('✅ Template saved successfully!', 'success');
-            // Update local memory
-            if (type === 'offer') companyData.offerLetterBody = html;
-            else if (type === 'appt') companyData.apptLetterBody = html;
-            
-            companyData.letterFontSize = payload.fontSize;
-            companyData.letterFontType = payload.fontType;
-            companyData.headerHeight = payload.headerHeight;
-            companyData.footerHeight = payload.footerHeight;
-            companyData.signatoryName = payload.signatoryName;
-            companyData.signatoryDesignation = payload.signatoryDesg;
-        } else {
-            showToast('❌ Save failed', 'error');
-        }
-    } catch (e) { showToast('❌ Server connection error', 'error'); }
-    finally { unlockUI(); }
+// Ensure the last few lines are clean
+async function initializeApp() {
+    console.log('🚀 App initialized');
 }
 

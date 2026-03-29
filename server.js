@@ -280,7 +280,10 @@ app.post('/api/submit-onboarding', async (req, res) => {
 
 app.post('/api/admin-login', (req, res) => {
     const { username, password } = req.body;
-    if (username === (process.env.ADMIN_USER || 'admin') && password === (process.env.ADMIN_PASS || 'admin123')) {
+    const adminUser = process.env.ADMIN_USER || 'EMYRIS@BIOLIFE';
+    const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
+    
+    if (username === adminUser && password === adminPass) {
         res.status(200).json({ success: true });
     } else {
         res.status(401).json({ success: false });
@@ -710,10 +713,12 @@ app.post('/api/admin/system/clear', async (req, res) => {
         await Applicant.deleteMany({});
         const company = await Company.findOne();
         if (company) {
-            company.letterCounter = company.letterCounterStart || 1001;
+            company.offerCounter = 1001;
+            company.apptCounter = 1001;
+            company.miscCounter = 1001;
             await company.save();
         }
-        res.json({ success: true, message: 'Applicant database cleared' });
+        res.json({ success: true, message: 'Applicant database cleared and counters reset.' });
     } catch (e) { res.status(500).json({ error: 'Clear failed' }); }
 });
 
