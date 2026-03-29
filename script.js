@@ -208,28 +208,51 @@ function applyCompanyData() {
 
 function updateView(viewId) {
     const sections = document.querySelectorAll('.view-section');
+    
+    // 1. Hide everything first
     sections.forEach(s => {
         s.classList.add('hidden');
         s.style.display = 'none';
         s.classList.remove('active');
     });
     
-    // Always reset scroll to top on view change
-    window.scrollTo({ top: 0, behavior: 'auto' });
+    // 2. Immediate scroll to top BEFORE showing the next screen
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
     
     const activeSection = document.getElementById(viewId);
     if (!activeSection) return;
     
+    // 3. Show the new section
     activeSection.classList.remove('hidden');
-    activeSection.style.display = 'block';
+    // Ensure display property matches its intended layout (grid for landingPage, block otherwise)
+    if (viewId === 'landingPage') {
+        activeSection.style.display = 'grid';
+    } else {
+        activeSection.style.display = 'block';
+    }
     activeSection.classList.add('active');
     
-    if (['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin'].includes(viewId)) {
+    // 4. Update body classes
+    const majorViews = ['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin'];
+    if (majorViews.includes(viewId)) {
         document.body.classList.add('onboarding-inactive');
     } else {
         document.body.classList.remove('onboarding-inactive');
     }
-    gsap.fromTo(activeSection, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5 });
+    
+    // 5. Minimal GSAP entry
+    gsap.fromTo(activeSection, 
+        { opacity: 0, y: 15 }, 
+        { 
+            opacity: 1, 
+            y: 0, 
+            duration: 0.4, 
+            ease: "power2.out", 
+            clearProps: "all" 
+        }
+    );
 }
 
 function backToLanding() { updateView('landingPage'); }

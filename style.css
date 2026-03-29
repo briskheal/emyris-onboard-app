@@ -216,6 +216,18 @@ body {
     margin: 0 auto;
 }
 
+/* Forceful collapse for hidden views to prevent layout gaps */
+.view-section.hidden {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    opacity: 0 !important;
+}
+
 #adminDashboard.view-section {
     max-width: 100%;
 }
