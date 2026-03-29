@@ -213,7 +213,13 @@ function updateView(viewId) {
         s.style.display = 'none';
         s.classList.remove('active');
     });
+    
+    // Always reset scroll to top on view change
+    window.scrollTo({ top: 0, behavior: 'auto' });
+    
     const activeSection = document.getElementById(viewId);
+    if (!activeSection) return;
+    
     activeSection.classList.remove('hidden');
     activeSection.style.display = 'block';
     activeSection.classList.add('active');
