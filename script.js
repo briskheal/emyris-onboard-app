@@ -230,7 +230,7 @@ function updateView(viewId) {
     activeSection.classList.remove('hidden');
     // Ensure display property matches its intended layout
     if (viewId === 'landingPage') {
-        activeSection.style.display = 'grid';
+        activeSection.style.display = 'flex';
     } else {
         activeSection.style.display = 'block';
     }
