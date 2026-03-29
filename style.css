@@ -92,7 +92,7 @@ body {
     align-items: center;
     margin-bottom: 3rem;
     background: var(--glass-bg);
-    padding: 1.5rem 2rem;
+    padding: 1rem 1.5rem;
     border-radius: var(--radius);
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
@@ -106,8 +106,8 @@ body {
 }
 
 .logo-icon {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
     background: var(--primary);
     color: white;
     display: flex;
@@ -138,7 +138,7 @@ body {
 }
 
 .logo-text h1 {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     letter-spacing: 1px;
     color: var(--primary-dark);
 }
@@ -216,16 +216,27 @@ body {
     margin: 0 auto;
 }
 
-/* Forceful collapse for hidden views to prevent layout gaps */
+/* Forceful collapse for hidden views to prevent layout gaps or displacement */
 .view-section.hidden {
     display: none !important;
     height: 0 !important;
     min-height: 0 !important;
+    max-height: 0 !important;
     overflow: hidden !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
     opacity: 0 !important;
+    visibility: hidden !important;
+    position: absolute !important; /* Removes from normal flow to ensure 0 height impact */
+    pointer-events: none !important;
+}
+
+.view-section.active {
+    position: relative !important;
+    height: auto !important;
+    min-height: auto !important;
+    visibility: visible !important;
 }
 
 #adminDashboard.view-section {

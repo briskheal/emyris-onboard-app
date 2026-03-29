@@ -216,17 +216,19 @@ function updateView(viewId) {
         s.classList.remove('active');
     });
     
-    // 2. Immediate scroll to top BEFORE showing the next screen
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
+    // 2. Perform scroll reset in the next frame to ensure DOM layout is updated
+    requestAnimationFrame(() => {
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+    });
     
     const activeSection = document.getElementById(viewId);
     if (!activeSection) return;
     
     // 3. Show the new section
     activeSection.classList.remove('hidden');
-    // Ensure display property matches its intended layout (grid for landingPage, block otherwise)
+    // Ensure display property matches its intended layout
     if (viewId === 'landingPage') {
         activeSection.style.display = 'grid';
     } else {
