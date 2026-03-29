@@ -122,8 +122,8 @@ app.use(express.static(__dirname));
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: (process.env.EMAIL_USER || "").trim(),
+        pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
     }
 });
 
@@ -142,6 +142,15 @@ app.post('/api/register-applicant', async (req, res) => {
 
         // Generate 6-digit PIN
         const pin = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // Dummy Check: Skip persistence for testing
+        if (email === 'dummy@emyris.test') {
+            return res.status(200).json({ 
+                success: true, 
+                message: '[TESTING] Registration successful. (DB Persistence Skipped)', 
+                testPin: pin 
+            });
+        }
 
         applicant = await Applicant.create({
             fullName,
@@ -173,7 +182,21 @@ app.post('/api/register-applicant', async (req, res) => {
         res.status(200).json({ success: true, message: 'Registration successful. Check your email for PIN.' });
     } catch (error) {
         console.error('Registration Error:', error);
-        res.status(500).json({ success: false, message: 'Registration failed.' });
+        
+        // Data Integrity: If email fails, delete the applicant so they can try again with a fix
+        if (req.body.email !== 'dummy@emyris.test') {
+            try {
+                await Applicant.deleteOne({ email: req.body.email });
+            } catch (e) {
+                console.error('Failed to clean up applicant after email failure:', e);
+            }
+        }
+
+        res.status(500).json({ 
+            success: false, 
+            message: 'Email sending failed. Please check your SMTP configuration.',
+            error: error.message 
+        });
     }
 });
 

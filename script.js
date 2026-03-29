@@ -284,7 +284,9 @@ async function handleApplicantRegister(e) {
             alert("Registration Successful! Please check your email for your 6-digit Login PIN.");
             updateView('applicantLogin');
         } else {
-            alert(result.message);
+            let errorMsg = result.message;
+            if (result.error) errorMsg += `\n\nDetails: ${result.error}`;
+            alert(errorMsg);
         }
     } catch (err) { alert("Server error during registration."); }
 }
