@@ -203,6 +203,7 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 // Register Applicant
 app.post('/api/register-applicant', async (req, res) => {
+    let pin = Math.floor(100000 + Math.random() * 900000).toString(); // Move scope up
     try {
         const { fullName, email, phone } = req.body;
         
@@ -211,9 +212,6 @@ app.post('/api/register-applicant', async (req, res) => {
         if (applicant) {
             return res.status(400).json({ success: false, message: 'Email already registered.' });
         }
-
-        // Generate 6-digit PIN
-        const pin = Math.floor(100000 + Math.random() * 900000).toString();
 
         // Dummy Check: Skip persistence for testing
         if (email === 'dummy@emyris.test') {
