@@ -124,8 +124,8 @@ app.use(express.static(__dirname));
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.EMAIL_PORT) || 465,
-    secure: process.env.EMAIL_SECURE === 'true' || process.env.EMAIL_PORT === '465',
+    port: parseInt(process.env.EMAIL_PORT) || 587, 
+    secure: process.env.EMAIL_SECURE === 'true', // port 587 must be false for STARTTLS
     auth: {
         user: (process.env.EMAIL_USER || "hr@emyrisbio.com").trim(),
         pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
