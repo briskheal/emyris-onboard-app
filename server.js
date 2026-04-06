@@ -130,9 +130,9 @@ const transporter = nodemailer.createTransport({
         user: (process.env.EMAIL_USER || "hr@emyrisbio.com").trim(),
         pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
     },
-    connectionTimeout: 15000, 
-    greetingTimeout: 15000, 
-    socketTimeout: 30000
+    connectionTimeout: 8000, 
+    greetingTimeout: 8000, 
+    socketTimeout: 15000
 });
 
 // Unified Email Helper
