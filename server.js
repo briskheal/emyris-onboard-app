@@ -123,16 +123,16 @@ app.use(express.static(__dirname));
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    host: process.env.EMAIL_HOST || 'smtp.zoho.com',
     port: parseInt(process.env.EMAIL_PORT) || 465,
     secure: process.env.EMAIL_SECURE === 'true' || process.env.EMAIL_PORT === '465',
     auth: {
-        user: (process.env.EMAIL_USER || "").trim(),
+        user: (process.env.EMAIL_USER || "hr@emyrisbio.com").trim(),
         pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
     },
-    connectionTimeout: 10000, // 10s
-    greetingTimeout: 10000, 
-    socketTimeout: 15000
+    connectionTimeout: 15000, 
+    greetingTimeout: 15000, 
+    socketTimeout: 30000
 });
 
 // Unified Email Helper
