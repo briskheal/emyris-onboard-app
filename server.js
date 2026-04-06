@@ -129,18 +129,22 @@ const transporter = nodemailer.createTransport({
     auth: {
         user: (process.env.EMAIL_USER || "").trim(),
         pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
-    }
+    },
+    connectionTimeout: 10000, // 10s
+    greetingTimeout: 10000, 
+    socketTimeout: 15000
 });
 
 // Unified Email Helper
 async function sendEmail({ to, subject, html, attachments = [] }) {
     const from = process.env.EMAIL_FROM || `"Emyris Onboarding" <${process.env.EMAIL_USER}>`;
-    let bridgeTimeout = parseInt(process.env.BRIDGE_TIMEOUT) || 8000; // 8s default
+    let bridgeTimeout = parseInt(process.env.BRIDGE_TIMEOUT) || 20000; // Increased to 20s
     
     // --- Step 1: Try Google Apps Script Bridge (Primary) ---
     if (process.env.EMAIL_BRIDGE_URL && !process.env.EMAIL_BRIDGE_URL.includes('your-google-script')) {
         try {
-            console.log(`📡 [INFO] Sending email via Bridge to: ${to}`);
+            console.log(`📡 [INFO] Attempting Bridge delivery to: ${to} (Timeout: ${bridgeTimeout}ms)`);
+            console.log(`📡 [INFO] Target URL: ${process.env.EMAIL_BRIDGE_URL.substring(0, 45)}...`);
             const response = await axios.post(process.env.EMAIL_BRIDGE_URL, {
                 to,
                 subject,
@@ -247,19 +251,11 @@ app.post('/api/register-applicant', async (req, res) => {
     } catch (error) {
         console.error('Registration Error:', error);
         
-        // Data Integrity: If email fails, delete the applicant so they can try again with a fix
-        if (req.body.email !== 'dummy@emyris.test') {
-            try {
-                await Applicant.deleteOne({ email: req.body.email });
-            } catch (e) {
-                console.error('Failed to clean up applicant after email failure:', e);
-            }
-        }
-
         res.status(500).json({ 
             success: false, 
             message: 'Email sending failed. Please check your SMTP configuration.',
-            error: error.message 
+            error: error.message,
+            emergencyPin: pin // Return PIN so user can at least log in if email is down
         });
     }
 });

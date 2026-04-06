@@ -285,8 +285,16 @@ async function handleApplicantRegister(e) {
             updateView('applicantLogin');
         } else {
             let errorMsg = result.message;
-            if (result.error) errorMsg += `\n\nDetails: ${result.error}`;
+            if (result.emergencyPin) {
+                errorMsg = `🚨 EMAIL DELIVERY FAILED, but your account was created.\n\nPLEASE NOTE YOUR LOGIN PIN: ${result.emergencyPin}\n\nYou can use this PIN to log in now. We recommend completing your application immediately.`;
+            } else if (result.error) {
+                errorMsg += `\n\nDetails: ${result.error}`;
+            }
             alert(errorMsg);
+            if (result.emergencyPin) {
+                document.getElementById('loginEmail').value = data.email;
+                updateView('applicantLogin');
+            }
         }
     } catch (err) { alert("Server error during registration."); }
 }
