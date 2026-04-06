@@ -135,11 +135,12 @@ const transporter = nodemailer.createTransport({
 // Unified Email Helper
 async function sendEmail({ to, subject, html, attachments = [] }) {
     const from = process.env.EMAIL_FROM || `"Emyris Onboarding" <${process.env.EMAIL_USER}>`;
+    let bridgeTimeout = parseInt(process.env.BRIDGE_TIMEOUT) || 8000; // 8s default
     
     // --- Step 1: Try Google Apps Script Bridge (Primary) ---
     if (process.env.EMAIL_BRIDGE_URL && !process.env.EMAIL_BRIDGE_URL.includes('your-google-script')) {
         try {
-            console.log(`📡 Sending email via Bridge to: ${to}`);
+            console.log(`📡 [INFO] Sending email via Bridge to: ${to}`);
             const response = await axios.post(process.env.EMAIL_BRIDGE_URL, {
                 to,
                 subject,
@@ -149,30 +150,47 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
                     content: a.content.toString('base64'),
                     contentType: a.contentType
                 }))
-            });
+            }, { timeout: bridgeTimeout });
+            
+            console.log(`✅ [INFO] Bridge success for: ${to}`);
             return response.data;
         } catch (bridgeErr) {
-            console.error(`[WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
+            console.error(`[WARN] Bridge failed for ${to}: ${bridgeErr.message}. Falling back to secondary methods...`);
+            if (bridgeErr.code === 'ECONNABORTED') console.error('   Reason: Bridge request timed out.');
         }
     }
 
+    // --- Step 2: Try Resend API (Secondary) ---
     if (resend) {
-        console.log(`📧 Sending email via Resend to: ${to}`);
-        const { data, error } = await resend.emails.send({
-            from: from.replace(/"/g, '').split('<')[0].trim() + " <onboarding@resend.dev>", 
-            to,
-            subject,
-            html,
-            attachments: attachments.map(a => ({
-                filename: a.filename,
-                content: a.content.toString('base64'),
-            }))
-        });
-        if (error) throw error;
-        return data;
-    } else {
-        console.log(`✉️ Sending email via SMTP to: ${to}`);
-        return await transporter.sendMail({ from, to, subject, html, attachments });
+        try {
+            console.log(`📧 [INFO] Sending email via Resend to: ${to}`);
+            const { data, error } = await resend.emails.send({
+                from: from.replace(/"/g, '').split('<')[0].trim() + " <onboarding@resend.dev>", 
+                to,
+                subject,
+                html,
+                attachments: attachments.map(a => ({
+                    filename: a.filename,
+                    content: a.content.toString('base64'),
+                }))
+            });
+            if (error) throw error;
+            console.log(`✅ [INFO] Resend success for: ${to}`);
+            return data;
+        } catch (resendErr) {
+            console.error(`[WARN] Resend failed for ${to}: ${resendErr.message}. Falling back to SMTP...`);
+        }
+    }
+
+    // --- Step 3: Try SMTP/Nodemailer (Final Fallback) ---
+    console.log(`✉️ [INFO] Sending email via SMTP to: ${to}`);
+    try {
+        const info = await transporter.sendMail({ from, to, subject, html, attachments });
+        console.log(`✅ [INFO] SMTP success for: ${to}`);
+        return info;
+    } catch (smtpErr) {
+        console.error(`❌ [ERROR] SMTP failed for ${to}: ${smtpErr.message}`);
+        throw new Error(`Email delivery failed (Bridge/Resend/SMTP all failed). SMTP Error: ${smtpErr.message}`);
     }
 }
 
