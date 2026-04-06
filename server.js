@@ -1,5 +1,7 @@
 const express = require('express');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const axios = require('axios');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
@@ -119,13 +121,61 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
 app.use(express.static(__dirname)); 
 
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+    port: parseInt(process.env.EMAIL_PORT) || 465,
+    secure: process.env.EMAIL_SECURE === 'true' || process.env.EMAIL_PORT === '465',
     auth: {
         user: (process.env.EMAIL_USER || "").trim(),
         pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
     }
 });
+
+// Unified Email Helper
+async function sendEmail({ to, subject, html, attachments = [] }) {
+    const from = process.env.EMAIL_FROM || `"Emyris Onboarding" <${process.env.EMAIL_USER}>`;
+    
+    // --- Step 1: Try Google Apps Script Bridge (Primary) ---
+    if (process.env.EMAIL_BRIDGE_URL && !process.env.EMAIL_BRIDGE_URL.includes('your-google-script')) {
+        try {
+            console.log(`📡 Sending email via Bridge to: ${to}`);
+            const response = await axios.post(process.env.EMAIL_BRIDGE_URL, {
+                to,
+                subject,
+                html,
+                attachments: attachments.map(a => ({
+                    filename: a.filename,
+                    content: a.content.toString('base64'),
+                    contentType: a.contentType
+                }))
+            });
+            return response.data;
+        } catch (bridgeErr) {
+            console.error(`[WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
+        }
+    }
+
+    if (resend) {
+        console.log(`📧 Sending email via Resend to: ${to}`);
+        const { data, error } = await resend.emails.send({
+            from: from.replace(/"/g, '').split('<')[0].trim() + " <onboarding@resend.dev>", 
+            to,
+            subject,
+            html,
+            attachments: attachments.map(a => ({
+                filename: a.filename,
+                content: a.content.toString('base64'),
+            }))
+        });
+        if (error) throw error;
+        return data;
+    } else {
+        console.log(`✉️ Sending email via SMTP to: ${to}`);
+        return await transporter.sendMail({ from, to, subject, html, attachments });
+    }
+}
+
 
 // --- APPLICANT APIs ---
 
@@ -159,9 +209,7 @@ app.post('/api/register-applicant', async (req, res) => {
             password: pin
         });
 
-        // Send Welcome Email with PIN
-        const mailOptions = {
-            from: `"Emyris Onboarding" <${process.env.EMAIL_USER}>`,
+        await sendEmail({
             to: email,
             subject: 'Welcome to Emyris Onboarding - Your Login Credentials',
             html: `
@@ -176,9 +224,7 @@ app.post('/api/register-applicant', async (req, res) => {
                     <p style="font-size: 0.9em; color: #7f8c8d;">Please keep this PIN secure.</p>
                 </div>
             `
-        };
-
-        await transporter.sendMail(mailOptions);
+        });
         res.status(200).json({ success: true, message: 'Registration successful. Check your email for PIN.' });
     } catch (error) {
         console.error('Registration Error:', error);
@@ -278,16 +324,14 @@ app.post('/api/submit-onboarding', async (req, res) => {
         `;
 
         // Notify Admin
-        await transporter.sendMail({
-            from: `"Emyris Hub" <${process.env.EMAIL_USER}>`,
+        await sendEmail({
             to: process.env.EMAIL_USER,
             subject: `Form Submitted: ${applicant.fullName}`,
             html: emailHtml
         });
 
         // Notify Applicant
-        await transporter.sendMail({
-            from: `"Emyris Onboarding" <${process.env.EMAIL_USER}>`,
+        await sendEmail({
             to: email,
             subject: 'Application Received - Emyris Biolifesciences',
             html: `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`
@@ -509,8 +553,7 @@ app.post('/api/admin/send-letter', async (req, res) => {
         const fileName    = `${letterLabel.replace(/ /g,'_')}_${applicant.fullName.replace(/ /g,'_')}.pdf`;
         const pdfBuffer   = Buffer.from(pdfBase64.split(',')[1], 'base64');
 
-        await transporter.sendMail({
-            from: `"${company.name}" <${process.env.EMAIL_USER}>`,
+        await sendEmail({
             to: email,
             subject: `${letterLabel} – ${company.name}`,
             html: `
