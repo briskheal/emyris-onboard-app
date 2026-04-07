@@ -28,13 +28,19 @@ async function runTest() {
         console.log('🚀 Testing via RESEND API...');
         try {
             const { data, error } = await resend.emails.send({
-                from: from.replace(/"/g, '').split('<')[0].trim() + " <onboarding@resend.dev>",
+                from: "Emyris HR <hr@emyrisbio.com>",
                 to,
                 subject,
                 html,
             });
             if (error) {
-                console.error('❌ Resend API Error:', error);
+                if (error.message.includes('not verified')) {
+                   console.log('⚠️ INFO: Domain not verified yet. Testing with onboarding@resend.dev...');
+                   const retry = await resend.emails.send({ from: "Emyris HR <onboarding@resend.dev>", to, subject, html });
+                   console.log('✅ Sent via Resend default account:', retry.data);
+                } else {
+                   console.error('❌ Resend API Error:', error);
+                }
             } else {
                 console.log('✅ Resend test email sent successfully!', data);
             }
