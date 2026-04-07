@@ -696,12 +696,12 @@ async function renderAssetLists() {
         const allAssets = await res.json();
         
         const categories = {
-            'logo': 'logoList',
-            'stamp': 'stampList',
-            'signature': 'sigList',
-            'mobile': 'mobileList',
-            'tada': 'tadaList',
-            'letterhead': 'lhList' // For Setup Tab if needed
+            logo: 'logoList',
+            stamp: 'stampList',
+            digitalSignature: 'sigList',
+            letterheadImage: 'lhList',
+            mobileAppTemplate: 'mobileList',
+            tadaTemplate: 'tadaList'
         };
 
         const activeMap = {
@@ -794,9 +794,10 @@ async function renderAssetLists() {
 
         updateStatus('logoStatus', counts['logo'], 'Logo');
         updateStatus('stampStatus', counts['stamp'], 'Stamp');
-        updateStatus('sigStatus', counts['signature'], 'Signature');
-        updateStatus('mobileStatus', counts['mobile'], 'Images');
-        updateStatus('tadaStatus',   counts['tada'],   'Images');
+        updateStatus('sigStatus', counts['digitalSignature'], 'Signature');
+        updateStatus('letterheadStatus', counts['letterheadImage'], 'Letterhead');
+        updateStatus('mobileStatus', counts['mobileAppTemplate'], 'Images');
+        updateStatus('tadaStatus',   counts['tadaTemplate'],   'Images');
 
         // Dynamic Statuses
         if (companyData.customAssetCategories) {
