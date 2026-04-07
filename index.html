@@ -295,10 +295,23 @@
                                     </div>
                                 </div>
 
+                                <!-- REQUIRED DOCUMENTS -->
+                                <div class="setup-section" style="margin-top: 2rem;">
+                                    <h4>📜 Required Documents (Testimonials)</h4>
+                                    <div id="requiredDocsContainer" class="division-list" style="margin-top: 1rem; min-height: 50px; background: rgba(0,0,0,0.1); border-radius: 12px; padding: 1rem; border: 1px dashed var(--glass-border);">
+                                        <p id="noDocsPlaceholder" style="text-align: center; color: var(--text-muted); opacity: 0.6;">No documents defined yet.</p>
+                                    </div>
+                                    <div id="standardDocsSuggestions" class="division-list" style="margin-top: 1.5rem;"></div>
+                                    <div style="display: flex; gap: 8px; margin-top: 2rem;">
+                                        <input type="text" id="customDocInput" class="wf-input" style="flex: 1;" placeholder="Add custom document (e.g. Aadhar)...">
+                                        <button type="button" class="btn btn-primary btn-sm" onclick="addCustomRequiredDoc()">+ Add</button>
+                                    </div>
+                                </div>
+
                                 <div id="dynamicBrandingGrid" class="input-grid branding-upload-grid" style="margin-top: 1.5rem; padding: 0;"></div>
 
                                 <div style="margin-top: 2rem; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 1.5rem; display: flex; justify-content: flex-end;">
-                                    <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem;">💾 Save Complete Profile</button>
+                                    <button type="submit" class="btn btn-primary" style="padding: 1rem 3rem;">💾 Save Configuration</button>
                                 </div>
                             </div>
                         </form>
@@ -319,6 +332,18 @@
                     </div>
 
                     <div id="adminApplicantsTab" class="admin-tab-content hidden">
+                        <!-- NEW: PROACTIVE LIFECYCLE ALERTS -->
+                        <div id="lifecycleAlertsContainer" class="hidden" style="margin-bottom: 1.5rem;">
+                            <div style="background: rgba(99, 102, 241, 0.1); border: 1px solid var(--primary); border-radius: 12px; padding: 1.25rem;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; color: var(--primary-light); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                                    🚀 Operational Lifecycle Alerts
+                                </div>
+                                <div id="lifecycleAlertsList" style="display: flex; flex-direction: column; gap: 8px;">
+                                    <!-- Dynamic -->
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="search-bar">
                             <input type="text" id="applicantSearch" placeholder="Search by Email (User Key) or Name..." oninput="filterApplicants()">
                         </div>
@@ -427,7 +452,16 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div style="display: flex; gap: 0.75rem;">
+                                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                        <!-- NEW: TARGET APPLICANT SELECTION FOR HUB PUBLISHING -->
+                                        <div class="pill-container" style="background: rgba(99, 102, 241, 0.05); border-color: var(--primary); height: 42px; padding: 0 10px;">
+                                            <label style="color: var(--primary-light);">TARGET APPLICANT:</label>
+                                            <select id="hubTargetApplicant" style="background:transparent; border:none; color:white; font-size:0.85rem; width:150px;">
+                                                <option value="">-- Choose --</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary" onclick="publishLetterToHub()" style="padding: 0.75rem 1.5rem; font-size: 0.8rem; background: var(--accent); border-color: var(--accent);">🌐 Publish to Hub</button>
+                                        <div style="width: 2px; height: 30px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
                                         <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1.5rem;">👁️ Preview Fidelity</button>
                                         <button class="btn btn-sm btn-primary" onclick="saveActiveTemplate()" style="padding: 0.5rem 2rem;">💾 Commit Template</button>
                                     </div>
@@ -727,90 +761,31 @@
                 </section>
 
                 <!-- Step 5: Testimonials -->
-                <section class="form-step" data-step="5">
+                <section class="form-step" data-step="5" id="testimonialStep">
                     <div class="section-header">
-                        <h3>Testimonials Section</h3>
-                        <p>Please upload the required documents for verification.</p>
+                        <h3>📁 Applicant Testimonial Repository</h3>
+                        <p>Upload all relevant certifications and identity documents as required by the company.</p>
                     </div>
 
-                    <div class="experience-toggle-wrapper">
-                        <span class="toggle-label">Select Category:</span>
-                        <div class="toggle-group">
-                            <input type="radio" id="fresh" name="category" value="fresh" checked>
-                            <label for="fresh">FRESHER</label>
-                            <input type="radio" id="exp" name="category" value="experienced">
-                            <label for="exp">EXPERIENCED</label>
-                        </div>
+                    <div id="dynamicTestimonialUploads" class="upload-grid" style="margin-top: 2rem;">
+                        <!-- Automatically rendered based on Company Setup in admin -->
                     </div>
 
-                    <div class="upload-grid">
-                        <!-- Common -->
-                        <div class="upload-box" id="certUpload">
-                            <label>Educational Certificates (Higher-Lower)*</label>
-                            <div class="drop-zone" onclick="document.getElementById('fileCert').click()">
-                                <span class="drop-icon">📄</span>
-                                <span class="drop-text">Click or Drag to Upload</span>
-                                <input type="file" id="fileCert" class="hidden" multiple required>
-                            </div>
-                        </div>
-                        <div class="upload-box" id="photoUpload">
-                            <label>Passport Size Photograph*</label>
-                            <div class="drop-zone" onclick="document.getElementById('filePhoto').click()">
-                                <span class="drop-icon">👤</span>
-                                <span class="drop-text">Click or Drag to Upload</span>
-                                <input type="file" id="filePhoto" class="hidden" required accept="image/*">
-                            </div>
-                        </div>
-                        <div class="upload-box" id="medUpload">
-                            <label>Medically Fit Certificate</label>
-                            <div class="drop-zone" onclick="document.getElementById('fileMed').click()">
-                                <span class="drop-icon">🏥</span>
-                                <span class="drop-text">Click or Drag to Upload</span>
-                                <input type="file" id="fileMed" class="hidden">
-                            </div>
-                        </div>
-
-                        <!-- Experienced Only -->
-                        <div class="upload-box exp-only hidden" id="appointmentUpload">
-                            <label>Last Company Appointment Letter*</label>
-                            <div class="drop-zone" onclick="document.getElementById('fileAppt').click()">
-                                <span class="drop-icon">✉️</span>
-                                <span class="drop-text">Click or Drag to Upload</span>
-                                <input type="file" id="fileAppt" class="hidden">
-                            </div>
-                        </div>
-                        <div class="upload-box exp-only hidden" id="salarySlipUpload">
-                            <label>Last 3 Months Salary Slips*</label>
-                            <div class="drop-zone" onclick="document.getElementById('fileSlips').click()">
-                                <span class="drop-icon">💰</span>
-                                <span class="drop-text">Click or Drag to Upload</span>
-                                <input type="file" id="fileSlips" class="hidden" multiple>
-                            </div>
-                        </div>
-                        
-                        <!-- Signature -->
-                        <div class="upload-box" id="sigUpload">
-                            <label>Signature (Upload Image)*</label>
-                            <small>Sign on a paper and upload here</small>
-                            <div class="drop-zone" onclick="document.getElementById('fileSig').click()">
-                                <span class="drop-icon">✍️</span>
-                                <span class="drop-text">Click or Drag to Upload</span>
-                                <input type="file" id="fileSig" class="hidden" required accept="image/*">
-                            </div>
+                    <div class="declaration-block" style="margin-top: 3rem; background: rgba(99, 102, 241, 0.03); border: 1px solid rgba(99, 102, 241, 0.2); padding: 2.5rem; border-radius: 24px; position: relative; overflow: hidden;">
+                        <div style="position: absolute; top:0; right:0; padding: 1rem; opacity: 0.1; font-size: 4rem;">⚖️</div>
+                        <h4 style="color: var(--accent); margin-bottom: 1.5rem; font-size: 1.2rem;">Official Declaration</h4>
+                        <p style="font-size: 0.95rem; line-height: 1.7; color: var(--text-main); margin-bottom: 2rem;">
+                            I hereby declare that I am medically fit to perform my duties and that I do not have any criminal or police cases pending against me. I agree to abide by all existing organizational policies and any amendments or changes introduced in the future. I understand that if any information provided by me is found to be false, or if I am involved in any police complaint, misconduct, indiscipline, or failure to follow company instructions, my employment with Emyris Biolifesciences Pvt. Ltd. is liable to be terminated without any prior notice.
+                        </p>
+                        <div style="display: flex; gap: 1rem; align-items: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+                            <input type="checkbox" id="agree" required style="width: 24px; height: 24px; cursor: pointer;">
+                            <label for="agree" style="font-size: 0.95rem; font-weight: 600; cursor: pointer; color: white;">I solemnly affirm and agree to the above declaration</label>
                         </div>
                     </div>
 
-                    <div class="declaration-block">
-                        <p><strong>Declaration by Employee:</strong> I hereby declare that I am medically fit to perform my duties and that I do not have any criminal or police cases pending against me. I agree to abide by all existing organizational policies and any amendments or changes introduced in the future. I understand that if any information provided by me is found to be false, or if I am involved in any police complaint, misconduct, indiscipline, or failure to follow company instructions, my employment with Emyris Biolifesciences Pvt. Ltd. is liable to be terminated without any prior notice.</p>
-                        <div class="declaration-check">
-                            <input type="checkbox" id="agree" required>
-                            <label for="agree">I agree to the above declaration</label>
-                        </div>
-                    </div>
-
-                    <div class="nav-buttons">
-                        <button type="button" class="btn btn-secondary" onclick="prevStep(4)">Previous</button>
-                        <button type="button" class="btn btn-primary" onclick="showReview()">Review Application</button>
+                    <div class="nav-buttons" style="margin-top: 3rem;">
+                        <button type="button" class="btn btn-secondary" onclick="prevStep(4)">Previous Phase</button>
+                        <button type="button" class="btn btn-primary" onclick="showReview()" style="padding: 1rem 3rem;">Review Before Submit 🔍</button>
                     </div>
                 </section>
 
@@ -889,14 +864,116 @@
                 </div>
             </div>
 
+            <!-- ===========================
+                 APPLICANT ONBOARDING HUB
+                 =========================== -->
+            <div id="applicantDashboard" class="view-section hidden">
+                <div class="dashboard-grid">
+                    
+                    <!-- Left Sidebar: Profile & Status -->
+                    <div class="dash-sidebar">
+                        <div class="applicant-card-premium">
+                            <div class="profile-header">
+                                <div class="avatar-lg" id="applicantAvatar">?</div>
+                                <h2 id="dash_fullName">Loading...</h2>
+                                <p id="dash_email"> applicant@email.com</p>
+                                <div id="dash_statusBadge" class="badge">DRAFT</div>
+                            </div>
+                            
+                            <div class="timeline-simple" id="onboardingTimeline">
+                                <!-- Replaced by JS: Progress Steps -->
+                            </div>
+
+                            <button class="btn btn-outline" style="width:100%; margin-top: 1.5rem;" onclick="logoutApplicant()">Logout Securely</button>
+                        </div>
+                    </div>
+
+                    <!-- Main Content Area -->
+                    <div class="dash-main">
+                        
+                        <!-- Dynamic Alert for crucial actions -->
+                        <div id="dash_actionAlert" class="dash-alert hidden"></div>
+
+                        <!-- 1. Offer Letter Section (Only if generated by admin) -->
+                        <div id="offerLetterSection" class="dash-card hidden">
+                            <div class="dash-card-header">
+                                <div>
+                                    <h3>🎁 Official Offer of Employment</h3>
+                                    <p>Congratulations! Your expertise has been officially recognized. Review and accept below.</p>
+                                </div>
+                                <div class="icon-bubble">✉️</div>
+                            </div>
+                            <div class="dash-card-body">
+                                <div id="offerPreviewer" class="letter-preview-box">
+                                    <!-- Offer Letter Content Rendered Here -->
+                                </div>
+                                
+                                <div id="acceptanceForm" class="acceptance-panel" style="margin-top: 2rem;">
+                                    <h4 style="color: var(--accent); margin-bottom: 1rem;">Finalize Your Onboarding</h4>
+                                    <div class="input-grid" style="grid-template-columns: 1fr auto;">
+                                        <div class="form-group">
+                                            <label>Confirm Your Actual Date of Joining (ADOJ)*</label>
+                                            <input type="date" id="actualJoiningDateInput" style="height: 48px;">
+                                            <small style="color: var(--text-muted); display: block; margin-top: 5px;">This date will trigger your Appointment & Probation cycle.</small>
+                                        </div>
+                                        <div style="display: flex; align-items: flex-end; padding-bottom: 5px;">
+                                            <button class="btn btn-primary" onclick="acceptOfferLetter()" style="padding: 1.1rem 2rem;">Accepet Offer & Joining 🚀</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="offerAcceptedStatus" class="dash-alert success hidden" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); margin-top: 1.5rem;">
+                                    <div style="font-size: 1.2rem; margin-bottom: 4px;">✅ Offer Accepted!</div>
+                                    <p>Your journey with us has officially begun. Your joining date is confirmed as <strong id="confirmedJoiningDateText">...</strong></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Appointment Letter Section (Active 30 days after ADOJ) -->
+                        <div id="appointmentLetterSection" class="dash-card hidden">
+                            <div class="dash-card-header">
+                                <div>
+                                    <h3>📜 Permanent Appointment Order</h3>
+                                    <p>Your official appointment order is now available for download.</p>
+                                </div>
+                                <div class="icon-bubble">💠</div>
+                            </div>
+                            <div class="dash-card-body">
+                                <div id="apptPreviewer" class="letter-preview-box">
+                                    <!-- Appt Letter Content Rendered Here -->
+                                </div>
+                                <div style="margin-top: 1.5rem; text-align: center;">
+                                    <button class="btn btn-outline" onclick="downloadLetter('appointment')">📥 Download Official Copy</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 3. Waiting / Pending Status Card -->
+                        <div id="waitingStatusCard" class="dash-card">
+                            <div class="dash-card-header">
+                                <h3>⏳ Application Pulse</h3>
+                                <p>Checking the pulse of your application status within our pipeline.</p>
+                            </div>
+                            <div class="dash-card-body">
+                                <div id="statusDeepDive" class="status-summary-box">
+                                    <div class="status-icon-pending">⚙️</div>
+                                    <h4 id="statusTitle">Documents Under Verification</h4>
+                                    <p id="statusDesc">Our compliance team is currently reviewing your uploaded credentials. You will be notified the moment your Offer Section is activated.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="successView" class="view-section hidden success-view">
                 <div class="success-icon">✓</div>
-                <h2>Application Submitted Successfully!</h2>
+                <h2>Profile Updated Successfully!</h2>
                 <div class="submission-details">
                     <p>User Key (Email): <span id="appEmail"></span></p>
                     <p>Status: <span class="badge success">Submitted</span></p>
                 </div>
-                <p>Your documents have been archived for review. You will be notified of the decision via email.</p>
+                <p>Your documents are being archived. Use your Login PIN to check updates on your Offer and Appointment cycle.</p>
                 <button class="btn btn-primary" onclick="backToLanding()">Return Home</button>
             </div>
         </main>

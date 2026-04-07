@@ -21,7 +21,7 @@ let connMain, connAssets;
 if (MONGODB_URI) {
     connMain = mongoose.createConnection(MONGODB_URI);
     connAssets = mongoose.createConnection(MONGODB_ASSETS_URI);
-    
+
     connMain.on('connected', () => console.log('✅ Main DB Connected'));
     connAssets.on('connected', () => console.log('💎 Asset DB Connected'));
 } else {
@@ -56,7 +56,17 @@ const companySchema = new mongoose.Schema({
     offerCounter: { type: Number, default: 1001 },
     apptCounter: { type: Number, default: 1001 },
     miscCounter: { type: Number, default: 1001 },
-    customAssetCategories: { type: [String], default: [] }
+    customAssetCategories: { type: [String], default: [] },
+    requiredDocs: {
+        type: [String], default: [
+            "Aadhar Card",
+            "PAN Card",
+            "Educational Certificates",
+            "Experience Certificate",
+            "Previous Company Appointment Letter",
+            "Last Three Months Pay Slip"
+        ]
+    }
 });
 
 const assetSchema = new mongoose.Schema({
@@ -82,6 +92,12 @@ const applicantSchema = new mongoose.Schema({
     division: String,
     reportingTo: String,
     refNo: String,
+    actualJoiningDate: Date,
+    offerAccepted: { type: Boolean, default: false },
+    offerAcceptedAt: Date,
+    offerLetterData: String, // Stores the snapshot of the generated letter
+    apptLetterData: String,  // Stores the snapshot of the appt letter
+    probationReminderSent: { type: Boolean, default: false },
     tasks: {
         offerLetter: { type: Boolean, default: false },
         appointmentLetter: { type: Boolean, default: false },
@@ -119,7 +135,7 @@ process.on('uncaughtException', (err) => {
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
-app.use(express.static(__dirname)); 
+app.use(express.static(__dirname));
 
 // ─── EMAIL DELIVERY ENGINE ───────────────────────────────────────────────────
 // WHY BRIDGE INSTEAD OF ZOHO SMTP?
@@ -137,7 +153,7 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
     if (bridgeUrl) {
         try {
             console.log('🌉 [INFO] Sending via Google Apps Script Bridge...');
-            
+
             // Convert Buffer attachments to base64 strings for the bridge
             const bridgeAttachments = attachments.map(att => ({
                 filename: att.filename,
@@ -145,11 +161,11 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
                 contentType: att.contentType
             }));
 
-            const response = await axios.post(bridgeUrl, { 
-                to, subject, html, 
-                attachments: bridgeAttachments 
+            const response = await axios.post(bridgeUrl, {
+                to, subject, html,
+                attachments: bridgeAttachments
             }, { timeout: 25000 }); // Longer timeout for attachments
-            
+
             console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
             return response.data;
         } catch (bridgeErr) {
@@ -212,21 +228,21 @@ app.post('/api/register-applicant', async (req, res) => {
             `
         });
 
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             message: 'Registration Successful. PIN sent to inbox.',
-            pin: pin 
+            pin: pin
         });
 
     } catch (error) {
         console.error('🛑 [REGISTRATION ERROR]:', error.message);
-        
+
         // --- SMART RECOVERY ---
-        res.status(200).json({ 
-            success: false, 
+        res.status(200).json({
+            success: false,
             needsRecovery: true, // Tell frontend to show PIN
             message: 'Account created, but we had trouble delivering the email.',
-            pin: pin 
+            pin: pin
         });
     }
 });
@@ -287,15 +303,15 @@ app.post('/api/applicant-login', async (req, res) => {
             }
         }
 
-        res.status(200).json({ 
-            success: true, 
+        res.status(200).json({
+            success: true,
             applicant: {
                 fullName: applicant.fullName,
                 email: applicant.email,
                 phone: applicant.phone,
                 status: applicant.status,
                 formData: applicant.formData
-            } 
+            }
         });
     } catch (error) {
         res.status(500).json({ success: false, message: 'Login error.' });
@@ -317,14 +333,14 @@ app.post('/api/save-draft', async (req, res) => {
 app.post('/api/submit-onboarding', async (req, res) => {
     try {
         const { email, formData } = req.body;
-        
+
         const applicant = await Applicant.findOneAndUpdate(
-            { email }, 
-            { 
-                formData, 
-                status: 'submitted', 
-                canLogin: false, 
-                submittedAt: new Date() 
+            { email },
+            {
+                formData,
+                status: 'submitted',
+                canLogin: false,
+                submittedAt: new Date()
             },
             { new: true }
         );
@@ -365,7 +381,7 @@ app.post('/api/admin-login', (req, res) => {
     const { username, password } = req.body;
     const adminUser = process.env.ADMIN_USER || 'EMYRIS@BIOLIFE';
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
-    
+
     if (username === adminUser && password === adminPass) {
         res.status(200).json({ success: true });
     } else {
@@ -414,10 +430,10 @@ app.post('/api/admin/reset-applicant', async (req, res) => {
         const { email } = req.body;
         await Applicant.findOneAndUpdate(
             { email },
-            { 
-                formData: {}, 
-                status: 'draft', 
-                canLogin: true, 
+            {
+                formData: {},
+                status: 'draft',
+                canLogin: true,
                 approvedAt: null, // Reset approval timer
                 tasks: {
                     offerLetter: false,
@@ -425,7 +441,7 @@ app.post('/api/admin/reset-applicant', async (req, res) => {
                     appLinkSent: false,
                     loginDetailsSent: false
                 },
-                submittedAt: null 
+                submittedAt: null
             }
         );
         res.status(200).json({ success: true });
@@ -477,12 +493,12 @@ app.post('/api/admin/next-ref', async (req, res) => {
     try {
         const company = await Company.findOne();
         if (!company) return res.status(404).json({ error: 'No company profile' });
-        
+
         const { type } = req.body; // 'offer', 'appt', or 'misc'
-        
+
         let counterKey = 'offerCounter'; // Default
         let prefix = "OFR";
-        
+
         if (type === 'appt') {
             counterKey = 'apptCounter';
             prefix = "APT";
@@ -493,15 +509,15 @@ app.post('/api/admin/next-ref', async (req, res) => {
 
         const counter = company[counterKey] || 1001;
         const fyFrom = company.fyFrom ? new Date(company.fyFrom) : new Date();
-        const fyTo   = company.fyTo   ? new Date(company.fyTo)   : new Date();
+        const fyTo = company.fyTo ? new Date(company.fyTo) : new Date();
         const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
-        
+
         const refNo = `REF/${prefix}/${counter}/${fyShort}`;
-        
+
         const updateObj = {};
         updateObj[counterKey] = counter + 1;
         await Company.findOneAndUpdate({}, updateObj);
-        
+
         res.json({ success: true, refNo, counter });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -510,7 +526,7 @@ app.post('/api/admin/next-ref', async (req, res) => {
 app.post('/api/admin/save-template', async (req, res) => {
     try {
         const { type, body, fontSize, fontType, headerHeight, footerHeight, signatoryName, signatoryDesg } = req.body;
-        
+
         const update = {
             letterFontSize: fontSize,
             letterFontType: fontType,
@@ -562,12 +578,12 @@ app.post('/api/admin/send-letter', async (req, res) => {
     try {
         const { email, letterType, pdfBase64 } = req.body;
         const applicant = await Applicant.findOne({ email });
-        const company   = await Company.findOne();
+        const company = await Company.findOne();
         if (!applicant || !company) return res.status(404).json({ error: 'Not found' });
 
         const letterLabel = letterType === 'offer' ? 'Offer Letter' : 'Appointment Letter';
-        const fileName    = `${letterLabel.replace(/ /g,'_')}_${applicant.fullName.replace(/ /g,'_')}.pdf`;
-        const pdfBuffer   = Buffer.from(pdfBase64.split(',')[1], 'base64');
+        const fileName = `${letterLabel.replace(/ /g, '_')}_${applicant.fullName.replace(/ /g, '_')}.pdf`;
+        const pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
 
         await sendEmail({
             to: email,
@@ -588,6 +604,96 @@ app.post('/api/admin/send-letter', async (req, res) => {
         console.error('Send letter error:', e);
         res.status(500).json({ error: 'Email failed', detail: e.message });
     }
+});
+
+// --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
+app.post('/api/admin/save-letter-snapshot', async (req, res) => {
+    try {
+        const { email, letterType, letterData } = req.body; // letterData can be HTML/Text or Base64
+        const update = {};
+        if (letterType === 'offer') update.offerLetterData = letterData;
+        else if (letterType === 'appt') update.apptLetterData = letterData;
+
+        await Applicant.findOneAndUpdate({ email }, { $set: update });
+        res.json({ success: true, message: `Letter saved to applicant hub.` });
+    } catch (e) { res.status(500).json({ error: 'Save failed' }); }
+});
+
+// --- NEW: APPLICANT ACCEPT OFFER ---
+app.post('/api/applicant/accept-offer', async (req, res) => {
+    try {
+        const { email, actualJoiningDate } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        const company = await Company.findOne() || { name: 'Company' };
+        if (!applicant) return res.status(404).json({ error: 'Not found' });
+
+        applicant.offerAccepted = true;
+        applicant.offerAcceptedAt = new Date();
+        applicant.actualJoiningDate = new Date(actualJoiningDate);
+        await applicant.save();
+
+        // 1. Congratulate Applicant
+        await sendEmail({
+            to: email,
+            subject: `Congratulations on Joining ${company.name}! 🚀`,
+            html: `
+                <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
+                    <h2 style="color:#6366f1">Welcome Aboard, ${applicant.fullName}!</h2>
+                    <p>We are thrilled to officially welcome you to <strong>${company.name}</strong>.</p>
+                    <p>Your acceptance of the Offer of Employment has been recorded. Your confirmed <strong>Actual Date of Joining (ADOJ)</strong> is: <strong>${new Date(actualJoiningDate).toDateString()}</strong>.</p>
+                    <p>Your official Appointment Order and further orientation details will be shared within 30 days of your joining.</p>
+                    <br>
+                    <p>Best Regards,</p>
+                    <p><strong>Team HR</strong><br>${company.name}</p>
+                </div>`
+        });
+
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Acceptance failed' }); }
+});
+
+// --- NEW: LIFECYCLE CHECKS (Admins can poll this or call on load) ---
+app.get('/api/admin/lifecycle-check', async (req, res) => {
+    try {
+        const applicants = await Applicant.find({ 
+            offerAccepted: true, 
+            actualJoiningDate: { $exists: true } 
+        });
+
+        const alerts = [];
+        const now = new Date();
+
+        applicants.forEach(app => {
+            const adoj = new Date(app.actualJoiningDate);
+            const diffTime = Math.abs(now - adoj);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
+
+            // 1. Appointment Letter Logic (Send within 30 days of joining)
+            if (diffDays >= 30 && !app.apptLetterData) {
+                alerts.push({
+                    type: 'APPOINTMENT_PENDING',
+                    email: app.email,
+                    name: app.fullName,
+                    days: diffDays,
+                    message: `${app.fullName} has completed 30 days. Appointment Letter should be issued.`
+                });
+            }
+
+            // 2. Probation to Confirmation (Review at 5th month)
+            if (diffMonths >= 5 && !app.probationReminderSent) {
+                alerts.push({
+                    type: 'PROBATION_REVIEW',
+                    email: app.email,
+                    name: app.fullName,
+                    months: diffMonths,
+                    message: `${app.fullName} is approaching 5 months of tenure. Initiate Probation Review.`
+                });
+            }
+        });
+
+        res.json(alerts);
+    } catch (e) { res.status(500).json({ error: 'Check failed' }); }
 });
 
 // Company Profile Fetching (With latest Assets)
@@ -627,67 +733,49 @@ app.get('/api/admin/asset-library', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed to fetch library' }); }
 });
 
-// Advanced Asset Upload (Stores in Asset DB)
+// --- INDIVIDUAL ASSET UPLOAD (REAL-TIME) ---
+app.post('/api/admin/upload-asset', async (req, res) => {
+    try {
+        const { category, name, data, setActive } = req.body;
+        if (!category || !data) return res.status(400).json({ error: 'Missing data' });
+
+        const asset = await Asset.create({ category, name, data });
+
+        if (setActive) {
+            const company = await Company.findOne();
+            if (company) {
+                const map = {
+                    'logo': 'activeLogoId',
+                    'stamp': 'activeStampId',
+                    'digitalSignature': 'activeSignatureId',
+                    'letterheadImage': 'activeLetterheadId'
+                };
+                const field = map[category];
+                if (field) {
+                    company[field] = asset._id;
+                    await company.save();
+                }
+            }
+        }
+        res.json({ success: true, asset });
+    } catch (e) { res.status(500).json({ error: 'Upload failed' }); }
+});
+
+// --- UPDATE COMPANY PROFILE METADATA ---
 app.post('/api/company-profile', async (req, res) => {
     try {
         const updateData = req.body;
         let profile = await Company.findOne();
         if (!profile) profile = await Company.create({});
 
-        // Handle File Assets (logo, stamp, signature, letterheadImage)
-        const assetTypeMap = {
-            logo: 'logo',
-            stamp: 'stamp',
-            digitalSignature: 'signature',
-            letterheadImage: 'letterhead'
-        };
-
-        for (const [field, type] of Object.entries(assetTypeMap)) {
-            if (updateData[field] && Array.isArray(updateData[field]) && updateData[field].length > 0) {
-                // Process EVERY file in the array
-                for (const file of updateData[field]) {
-                    const newAsset = await Asset.create({
-                        category: type,
-                        name: file.name,
-                        data: file.data
-                    });
-                    
-                    // Link the LAST one as the active pointer
-                    const profileKey = field === 'digitalSignature' ? 'activeSignatureId' : 
-                                      (field === 'letterheadImage' ? 'activeLetterheadId' : 
-                                      `active${field.charAt(0).toUpperCase() + field.slice(1)}Id`);
-                    
-                    profile[profileKey] = newAsset._id;
-                }
-                delete updateData[field]; // Don't save blob in Main DB
-            }
-        }
-
-        // --- HANDLE CUSTOM CATEGORIES ---
-        if (profile.customAssetCategories && profile.customAssetCategories.length > 0) {
-            for (const categoryName of profile.customAssetCategories) {
-                const categoryKey = categoryName.replace(/\s+/g, '_');
-                if (updateData[categoryKey] && Array.isArray(updateData[categoryKey]) && updateData[categoryKey].length > 0) {
-                    for (const file of updateData[categoryKey]) {
-                        await Asset.create({
-                            category: categoryName,
-                            name: file.name,
-                            data: file.data
-                        });
-                    }
-                    delete updateData[categoryKey];
-                }
-            }
-        }
-
         Object.assign(profile, updateData);
         profile.updatedAt = new Date();
         await profile.save();
-        
+
         res.status(200).json({ success: true, profile });
-    } catch (error) { 
-        console.error('Upload error:', error);
-        res.status(500).json({ error: 'Failed' }); 
+    } catch (error) {
+        console.error('Update error:', error);
+        res.status(500).json({ error: 'Failed' });
     }
 });
 
@@ -696,7 +784,7 @@ app.post('/api/admin/delete-asset', async (req, res) => {
     try {
         const { assetId } = req.body;
         await Asset.findByIdAndUpdate(assetId, { active: false });
-        
+
         // Remove from active pointers if it was the active one
         const company = await Company.findOne();
         if (company) {
@@ -710,7 +798,7 @@ app.post('/api/admin/delete-asset', async (req, res) => {
             });
             if (changed) await company.save();
         }
-        
+
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
@@ -725,8 +813,8 @@ app.post('/api/admin/set-active-asset', async (req, res) => {
         const map = {
             'logo': 'activeLogoId',
             'stamp': 'activeStampId',
-            'signature': 'activeSignatureId',
-            'letterhead': 'activeLetterheadId'
+            'digitalSignature': 'activeSignatureId',
+            'letterheadImage': 'activeLetterheadId'
         };
 
         const field = map[category];
@@ -743,10 +831,10 @@ app.post('/api/admin/add-category', async (req, res) => {
     try {
         const { categoryName } = req.body;
         if (!categoryName) return res.status(400).json({ error: 'Name required' });
-        
+
         const company = await Company.findOne();
         if (!company) return res.status(404).json({ error: 'Company not found' });
-        
+
         if (!company.customAssetCategories.includes(categoryName)) {
             company.customAssetCategories.push(categoryName);
             await company.save();
@@ -755,16 +843,23 @@ app.post('/api/admin/add-category', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to add category' }); }
 });
 
+app.delete('/api/admin/divisions/:id', async (req, res) => {
+    try {
+        await Division.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed to delete division' }); }
+});
+
 app.post('/api/admin/delete-category', async (req, res) => {
     try {
         const { categoryName } = req.body;
-        
+
         // Safety: Ensure category is absolutely blank before deletion
         const existingAssets = await Asset.countDocuments({ category: categoryName, active: true });
         if (existingAssets > 0) {
-            return res.status(400).json({ 
-                success: false, 
-                message: `Cannot delete category "${categoryName}". It still contains ${existingAssets} asset(s). Please delete all files inside first.` 
+            return res.status(400).json({
+                success: false,
+                message: `Cannot delete category "${categoryName}". It still contains ${existingAssets} asset(s). Please delete all files inside first.`
             });
         }
 
@@ -808,14 +903,14 @@ app.post('/api/admin/system/vacuum', async (req, res) => {
     try {
         const profile = await Company.findOne();
         if (!profile) return res.status(404).json({ error: 'Not found' });
-        
+
         const categories = ['logo', 'stamp', 'digitalSignature', 'letterheadImage', 'mobileAppTemplate', 'tadaTemplate'];
         categories.forEach(cat => {
             if (profile[cat] && profile[cat].length > 1) {
                 profile[cat] = [profile[cat][profile[cat].length - 1]]; // Prune everything except latest
             }
         });
-        
+
         await profile.save();
         res.json({ success: true, message: 'Asset history vacuumed successfully' });
     } catch (e) { res.status(500).json({ error: 'Vacuum failed' }); }
@@ -826,12 +921,12 @@ async function migrateAssets() {
     try {
         const profile = await Company.findOne();
         if (!profile) return;
-        const categories = ['logo','stamp','digitalSignature','letterheadImage','mobileAppTemplate','tadaTemplate'];
+        const categories = ['logo', 'stamp', 'digitalSignature', 'letterheadImage', 'mobileAppTemplate', 'tadaTemplate'];
         let changed = false;
         categories.forEach(cat => {
             if (profile[cat] && profile[cat].length > 0) {
                 if (typeof profile[cat][0] === 'string') {
-                    profile[cat] = profile[cat].map((s, i) => ({ name: `Legacy_${i+1}`, data: s }));
+                    profile[cat] = profile[cat].map((s, i) => ({ name: `Legacy_${i + 1}`, data: s }));
                     changed = true;
                 }
             }
