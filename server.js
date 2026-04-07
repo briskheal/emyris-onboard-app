@@ -121,55 +121,35 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
 app.use(express.static(__dirname)); 
 
+// --- PROFESSIONAL DELIVERY STACK ---
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+
+// Zoho SMTP Backup Transport
 const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587, 
-    secure: process.env.EMAIL_SECURE === 'true', // port 587 must be false for STARTTLS
+    port: parseInt(process.env.EMAIL_PORT) || 587,
+    secure: false, 
     auth: {
         user: (process.env.EMAIL_USER || "hr@emyrisbio.com").trim(),
         pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
     },
-    connectionTimeout: 8000, 
-    greetingTimeout: 8000, 
-    socketTimeout: 15000
+    tls: { rejectUnauthorized: false }
 });
 
-// Unified Email Helper
+// ROBUST UNIFIED EMAIL HANDLER
 async function sendEmail({ to, subject, html, attachments = [] }) {
-    const from = process.env.EMAIL_FROM || `"Emyris Onboarding" <${process.env.EMAIL_USER}>`;
-    let bridgeTimeout = parseInt(process.env.BRIDGE_TIMEOUT) || 20000; // Increased to 20s
+    const fromName = "Emyris HR";
+    const fromEmail = process.env.EMAIL_FROM || "hr@emyrisbio.com";
+    const authUser = (process.env.EMAIL_USER || "hr@emyrisbio.com").trim();
     
-    // --- Step 1: Try Google Apps Script Bridge (Primary) ---
-    if (process.env.EMAIL_BRIDGE_URL && !process.env.EMAIL_BRIDGE_URL.includes('your-google-script')) {
-        try {
-            console.log(`📡 [INFO] Attempting Bridge delivery to: ${to} (Timeout: ${bridgeTimeout}ms)`);
-            console.log(`📡 [INFO] Target URL: ${process.env.EMAIL_BRIDGE_URL.substring(0, 45)}...`);
-            const response = await axios.post(process.env.EMAIL_BRIDGE_URL, {
-                to,
-                subject,
-                html,
-                attachments: attachments.map(a => ({
-                    filename: a.filename,
-                    content: a.content.toString('base64'),
-                    contentType: a.contentType
-                }))
-            }, { timeout: bridgeTimeout });
-            
-            console.log(`✅ [INFO] Bridge success for: ${to}`);
-            return response.data;
-        } catch (bridgeErr) {
-            console.error(`[WARN] Bridge failed for ${to}: ${bridgeErr.message}. Falling back to secondary methods...`);
-            if (bridgeErr.code === 'ECONNABORTED') console.error('   Reason: Bridge request timed out.');
-        }
-    }
+    console.log(`📡 [OUTGOING] Target: ${to} | Subject: ${subject}`);
 
-    // --- Step 2: Try Resend API (Secondary) ---
+    // --- STRATEGY 1: RESEND API (Zero-Lag, Professional Primary) ---
     if (resend) {
         try {
-            console.log(`📧 [INFO] Sending email via Resend to: ${to}`);
+            console.log("🚀 [INFO] Attempting delivery via Resend API...");
             const { data, error } = await resend.emails.send({
-                from: from.replace(/"/g, '').split('<')[0].trim() + " <onboarding@resend.dev>", 
+                from: `${fromName} <onboarding@resend.dev>`, // Change to your verified domain email once set up
                 to,
                 subject,
                 html,
@@ -179,82 +159,106 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
                 }))
             });
             if (error) throw error;
-            console.log(`✅ [INFO] Resend success for: ${to}`);
+            console.log(`✅ [SUCCESS] Resend message sent: ${data.id}`);
             return data;
         } catch (resendErr) {
-            console.error(`[WARN] Resend failed for ${to}: ${resendErr.message}. Falling back to SMTP...`);
+            console.error(`⚠️ [WARN] Resend failed: ${resendErr.message}. Cascading to SMTP backup...`);
         }
     }
 
-    // --- Step 3: Try SMTP/Nodemailer (Final Fallback) ---
-    console.log(`✉️ [INFO] Sending email via SMTP to: ${to}`);
+    // --- STRATEGY 2: ZOHO SMTP (Standard Official Route) ---
+    console.log("✉️ [INFO] Attempting delivery via Zoho SMTP...");
     try {
-        const info = await transporter.sendMail({ from, to, subject, html, attachments });
-        console.log(`✅ [INFO] SMTP success for: ${to}`);
+        const info = await transporter.sendMail({ 
+            from: `"${fromName}" <${fromEmail}>`, 
+            to, subject, html, attachments 
+        });
+        console.log(`✅ [SUCCESS] SMTP message sent: ${info.messageId}`);
         return info;
     } catch (smtpErr) {
-        console.error(`❌ [ERROR] SMTP failed for ${to}: ${smtpErr.message}`);
-        throw new Error(`Email delivery failed (Bridge/Resend/SMTP all failed). SMTP Error: ${smtpErr.message}`);
+        console.error(`❌ [FAILURE] All delivery routes exhausted: ${smtpErr.message}`);
+        throw smtpErr;
     }
 }
 
-
-// --- APPLICANT APIs ---
-
-// Register Applicant
+// --- APPLICANT REGISTRATION MODULE (RESTART) ---
 app.post('/api/register-applicant', async (req, res) => {
-    let pin = Math.floor(100000 + Math.random() * 900000).toString(); // Move scope up
+    const { fullName, email, phone } = req.body;
+    let pin = Math.floor(100000 + Math.random() * 900000).toString();
+
     try {
-        const { fullName, email, phone } = req.body;
-        
-        // Check if already exists
-        let applicant = await Applicant.findOne({ email });
-        if (applicant) {
-            return res.status(400).json({ success: false, message: 'Email already registered.' });
-        }
+        // 1. Uniqueness Guard
+        const existing = await Applicant.findOne({ email });
+        if (existing) return res.status(400).json({ success: false, message: 'Email already registered.' });
 
-        // Dummy Check: Skip persistence for testing
-        if (email === 'dummy@emyris.test') {
-            return res.status(200).json({ 
-                success: true, 
-                message: '[TESTING] Registration successful. (DB Persistence Skipped)', 
-                testPin: pin 
-            });
-        }
+        // 2. Database Persistence
+        await Applicant.create({ fullName, email, phone, password: pin });
+        console.log(`💾 [DB] Account Created: ${email}`);
 
-        applicant = await Applicant.create({
-            fullName,
-            email,
-            phone,
-            password: pin
-        });
-
+        // 3. Synchronous Email Handover
         await sendEmail({
             to: email,
-            subject: 'Welcome to Emyris Onboarding - Your Login Credentials',
+            subject: 'Emyris Onboarding: Your Secure Login PIN',
             html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
-                    <h2 style="color: #2c3e50;">Welcome, ${fullName}!</h2>
-                    <p>Your registration for the Emyris Onboarding Portal was successful.</p>
-                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                        <p style="margin: 0;"><strong>Your Login ID (User Key):</strong> ${email}</p>
-                        <p style="margin: 10px 0 0 0;"><strong>Your Security PIN:</strong> <span style="font-size: 1.2em; color: #3498db; letter-spacing: 2px;">${pin}</span></p>
+                <div style="font-family: 'Segoe UI', Arial; padding: 30px; border: 1px solid #e1e1e1; border-radius: 8px; color: #333;">
+                    <h2 style="color: #003366;">Welcome to Emyris Biolifesciences, ${fullName}!</h2>
+                    <p>Your recruitment profile has been successfully generated.</p>
+                    <div style="background: #f4f6f8; padding: 20px; border-left: 5px solid #003366; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 1.1em;"><strong>Your Login PIN:</strong></p>
+                        <p style="font-size: 2em; color: #003366; font-weight: bold; margin: 10px 0;">${pin}</p>
                     </div>
-                    <p>You can use these credentials to log in and complete your onboarding application at any time.</p>
-                    <p style="font-size: 0.9em; color: #7f8c8d;">Please keep this PIN secure.</p>
+                    <p>Please use this PIN and your email to log in and complete your onboarding application.</p>
                 </div>
             `
         });
-        res.status(200).json({ success: true, message: 'Registration successful. Check your email for PIN.' });
-    } catch (error) {
-        console.error('Registration Error:', error);
-        
-        res.status(500).json({ 
-            success: false, 
-            message: 'Email sending failed. Please check your SMTP configuration.',
-            error: error.message,
-            emergencyPin: pin // Return PIN so user can at least log in if email is down
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Registration Successful. PIN sent to inbox.',
+            pin: pin 
         });
+
+    } catch (error) {
+        console.error('🛑 [REGISTRATION ERROR]:', error.message);
+        
+        // --- SMART RECOVERY ---
+        res.status(200).json({ 
+            success: false, 
+            needsRecovery: true, // Tell frontend to show PIN
+            message: 'Account created, but we had trouble delivering the email.',
+            pin: pin 
+        });
+    }
+});
+
+// PIN RECOVERY MODULE
+app.post('/api/resend-pin', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ success: false, message: 'Email not found.' });
+
+        await sendEmail({
+            to: email,
+            subject: 'Emyris Onboarding: Your Login PIN (Recovery)',
+            html: `
+                <div style="font-family: 'Segoe UI', Arial; padding: 30px; border: 1px solid #e1e1e1; border-radius: 8px; color: #333;">
+                    <h2 style="color: #003366;">PIN Recovery</h2>
+                    <p>Hello ${applicant.fullName},</p>
+                    <p>As requested, here is your login PIN for the Emyris Onboarding portal.</p>
+                    <div style="background: #f4f6f8; padding: 20px; border-left: 5px solid #003366; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 1.1em;"><strong>Your Login PIN:</strong></p>
+                        <p style="font-size: 2em; color: #003366; font-weight: bold; margin: 10px 0;">${applicant.password}</p>
+                    </div>
+                    <p>Please use this PIN to log in and continue your application.</p>
+                </div>
+            `
+        });
+
+        res.status(200).json({ success: true, message: 'PIN sent to your email.' });
+    } catch (error) {
+        console.error('🛑 [RECOVERY ERROR]:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to send PIN. Please contact HR.' });
     }
 });
 

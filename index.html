@@ -877,6 +877,9 @@
                         <div class="form-group">
                             <label>6-Digit PIN</label>
                             <input type="password" id="loginPin" required placeholder="Enter PIN" maxlength="6">
+                            <div style="text-align: right; margin-top: 5px;">
+                                <a href="javascript:void(0)" onclick="handleForgotPin()" style="font-size: 0.8rem; color: var(--accent); text-decoration: none; font-weight: 500;">Forgot PIN? / Resend</a>
+                            </div>
                         </div>
                         <div class="login-actions">
                             <button type="button" class="btn btn-outline" onclick="backToLanding()">Cancel</button>
@@ -915,7 +918,7 @@
                 <button class="close-btn" onclick="closeWorkflow()">&times;</button>
             </div>
             <div class="applicant-info-bar">
-                <span id="wfName">Applicant Name</span> | <span id="wfEmail">email@test.com</span>
+                <span id="wfName">Applicant Name</span> | <span id="wfEmail">email@test.com</span> | <span id="wfPin" style="color:var(--accent); font-weight:bold;">PIN: 000000</span>
             </div>
 
             <!-- Assignment Panel -->

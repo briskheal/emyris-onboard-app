@@ -280,21 +280,13 @@ async function handleApplicantRegister(e) {
             body: JSON.stringify(data)
         });
         const result = await res.json();
-        if (result.success) {
-            alert("Registration Successful! Please check your email for your 6-digit Login PIN.");
+        if (result.success || result.needsRecovery) {
+            const pin = result.pin;
+            alert(`✅ Registration Successful!\n\nYOUR LOGIN PIN: ${pin}\n\nPlease note this down now. We have also sent it to: ${data.email}`);
+            document.getElementById('loginEmail').value = data.email;
             updateView('applicantLogin');
         } else {
-            let errorMsg = result.message;
-            if (result.emergencyPin) {
-                errorMsg = `🚨 EMAIL DELIVERY FAILED, but your account was created.\n\nPLEASE NOTE YOUR LOGIN PIN: ${result.emergencyPin}\n\nYou can use this PIN to log in now. We recommend completing your application immediately.`;
-            } else if (result.error) {
-                errorMsg += `\n\nDetails: ${result.error}`;
-            }
-            alert(errorMsg);
-            if (result.emergencyPin) {
-                document.getElementById('loginEmail').value = data.email;
-                updateView('applicantLogin');
-            }
+            alert(`❌ Error: ${result.message}`);
         }
     } catch (err) { alert("Server error during registration."); }
 }
@@ -318,6 +310,31 @@ async function handleApplicantLogin(e) {
             alert(result.message);
         }
     } catch (err) { alert("Login failed. Check connection."); }
+}
+
+async function handleForgotPin() {
+    const email = document.getElementById('loginEmail').value;
+    if (!email) {
+        alert("Please enter your registered email address first.");
+        return;
+    }
+
+    if (!confirm(`Should we resend the Login PIN to: ${email}?`)) return;
+
+    try {
+        lockUI("🔄 Resending PIN...");
+        const res = await fetch('/api/resend-pin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const result = await res.json();
+        alert(result.message);
+    } catch (err) { 
+        alert("Recovery failed. Check connection."); 
+    } finally {
+        unlockUI();
+    }
 }
 
 function resumeApplication() {
@@ -955,6 +972,7 @@ async function openWorkflow(email) {
 
     document.getElementById('wfName').innerText = app.fullName;
     document.getElementById('wfEmail').innerText = app.email;
+    document.getElementById('wfPin').innerText = `PIN: ${app.password || 'N/A'}`;
     
     // Assign Panel sync
     const divSelect = document.getElementById('wfDivisionSelect');

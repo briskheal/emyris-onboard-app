@@ -24,15 +24,7 @@ async function runTest() {
     const subject = 'Emyris Email Integration Test';
     const html = '<h3>SUCCESS!</h3><p>If you see this, your email configuration for <b>Emyris Onboard</b> is correctly set up.</p>';
 
-    if (bridgeUrl) {
-        console.log('📡 Testing via GOOGLE APPS SCRIPT BRIDGE...');
-        try {
-            const response = await axios.post(bridgeUrl, { to, subject, html });
-            console.log('✅ Bridge test response:', response.data);
-        } catch (e) {
-            console.error('❌ Bridge Error:', e.message);
-        }
-    } else if (resend) {
+    if (resend) {
         console.log('🚀 Testing via RESEND API...');
         try {
             const { data, error } = await resend.emails.send({
@@ -50,14 +42,19 @@ async function runTest() {
             console.error('❌ Unexpected Resend Error:', e.message);
         }
     } else {
-        console.log('✉️ Testing via SMTP (Nodemailer)...');
+        console.log('✉️ Testing via ZOHO SMTP (Nodemailer)...');
         try {
-            const info = await transporter.sendMail({ from, to, subject, html });
+            const info = await transporter.sendMail({ 
+                from, // Uses process.env.EMAIL_FROM || Emyris Test <EMAIL_USER>
+                to, 
+                subject, 
+                html 
+            });
             console.log('✅ SMTP test email sent successfully!', info.response);
         } catch (e) {
             console.error('❌ SMTP Error:', e.message);
             if (e.message.includes('Invalid login')) {
-                console.warn('Tip: Check if EMAIL_PASS is a 16-character App Password, not your regular Gmail password.');
+                console.warn('Tip: Check if EMAIL_PASS is a 12/16-character Zoho App Password.');
             }
         }
     }
