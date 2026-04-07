@@ -1,7 +1,6 @@
 // ============================================================
 // EMYRIS ONBOARD - EMAIL BRIDGE (Google Apps Script)
-// Deploy this script under the hr@emyrisbio.com Google account
-// so all emails arrive from hr@emyrisbio.com
+// Deploy this script under the emy.onboardapp@gmail.com account
 // ============================================================
 
 function doPost(e) {
@@ -19,9 +18,7 @@ function doPost(e) {
 
     GmailApp.sendEmail(to, subject, "", {
       htmlBody: html,
-      name: "Emyris HR",
-      // This will send FROM hr@emyrisbio.com automatically
-      // because this script runs under that Google account
+      name: "Emyris HR"
     });
 
     return ContentService
@@ -35,7 +32,6 @@ function doPost(e) {
   }
 }
 
-// Test this by running doGet (optional health check)
 function doGet(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ status: "ok", script: "Emyris Email Bridge", account: Session.getActiveUser().getEmail() }))
