@@ -121,62 +121,70 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
 app.use(express.static(__dirname)); 
 
-// --- PROFESSIONAL DELIVERY STACK ---
-const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
-
-// Zoho SMTP Backup Transport
-const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
-    secure: false, 
-    auth: {
-        user: (process.env.EMAIL_USER || "hr@emyrisbio.com").trim(),
-        pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
-    },
-    tls: { rejectUnauthorized: false }
-});
-
-// ROBUST UNIFIED EMAIL HANDLER
+// ─── EMAIL DELIVERY ENGINE ───────────────────────────────────────────────────
+// WHY BRIDGE INSTEAD OF ZOHO SMTP?
+// Render.com FREE tier BLOCKS outbound SMTP ports (25, 465, 587).
+// Zoho SMTP will always timeout on free Render plans.
+// The Google Apps Script Bridge uses HTTPS (port 443) which is NEVER blocked.
+// It delivers from hr@emyrisbio.com and is the CORRECT solution for this stack.
+// ─────────────────────────────────────────────────────────────────────────────
 async function sendEmail({ to, subject, html, attachments = [] }) {
-    const fromName = "Emyris HR";
-    const fromEmail = process.env.EMAIL_FROM || "hr@emyrisbio.com";
-    const authUser = (process.env.EMAIL_USER || "hr@emyrisbio.com").trim();
-    
-    console.log(`📡 [OUTGOING] Target: ${to} | Subject: ${subject}`);
+    const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
+    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject}`);
 
-    // --- STRATEGY 1: RESEND API (Zero-Lag, Professional Primary) ---
-    if (resend) {
+    // STRATEGY 1: Google Apps Script Bridge (HTTPS - works on ALL hosting tiers)
+    if (bridgeUrl) {
         try {
-            console.log("🚀 [INFO] Attempting delivery via Resend API...");
-            const { data, error } = await resend.emails.send({
-                from: `${fromName} <onboarding@resend.dev>`, // Change to your verified domain email once set up
-                to,
-                subject,
-                html,
-                attachments: attachments.map(a => ({
-                    filename: a.filename,
-                    content: a.content.toString('base64'),
-                }))
+            console.log('🌉 [INFO] Sending via Google Apps Script Bridge (HTTPS)...');
+            const response = await axios.post(bridgeUrl, { to, subject, html }, {
+                timeout: 15000 // 15s timeout
             });
-            if (error) throw error;
-            console.log(`✅ [SUCCESS] Resend message sent: ${data.id}`);
-            return data;
-        } catch (resendErr) {
-            console.error(`⚠️ [WARN] Resend failed: ${resendErr.message}. Cascading to SMTP backup...`);
+            console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
+            return response.data;
+        } catch (bridgeErr) {
+            console.error(`⚠️ [WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
         }
     }
 
-    // --- STRATEGY 2: ZOHO SMTP (Standard Official Route) ---
-    console.log("✉️ [INFO] Attempting delivery via Zoho SMTP...");
+    // STRATEGY 2: Resend API (if configured - also uses HTTPS, bypass SMTP blocks)
+    const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
+    if (resend) {
+        try {
+            console.log('🚀 [INFO] Sending via Resend API...');
+            const { data, error } = await resend.emails.send({
+                from: `Emyris HR <onboarding@resend.dev>`,
+                to, subject, html
+            });
+            if (error) throw error;
+            console.log(`✅ [SUCCESS] Resend delivery confirmed: ${data.id}`);
+            return data;
+        } catch (resendErr) {
+            console.error(`⚠️ [WARN] Resend failed: ${resendErr.message}`);
+        }
+    }
+
+    // STRATEGY 3: SMTP (only works on paid hosting or local dev)
+    console.log('✉️ [INFO] Attempting SMTP (will fail on Render free tier)...');
+    const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || 'smtp.zoho.com',
+        port: parseInt(process.env.EMAIL_PORT) || 587,
+        secure: false,
+        auth: {
+            user: (process.env.EMAIL_USER || '').trim(),
+            pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
+        },
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 10000
+    });
     try {
-        const info = await transporter.sendMail({ 
-            from: `"${fromName}" <${fromEmail}>`, 
-            to, subject, html, attachments 
+        const info = await transporter.sendMail({
+            from: `"Emyris HR" <${process.env.EMAIL_USER}>`,
+            to, subject, html
         });
-        console.log(`✅ [SUCCESS] SMTP message sent: ${info.messageId}`);
+        console.log(`✅ [SUCCESS] SMTP delivery confirmed: ${info.messageId}`);
         return info;
     } catch (smtpErr) {
-        console.error(`❌ [FAILURE] All delivery routes exhausted: ${smtpErr.message}`);
+        console.error(`❌ [FAILURE] All email strategies exhausted: ${smtpErr.message}`);
         throw smtpErr;
     }
 }
