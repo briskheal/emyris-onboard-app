@@ -103,7 +103,8 @@ const applicantSchema = new mongoose.Schema({
         appointmentLetter: { type: Boolean, default: false },
         appLinkSent: { type: Boolean, default: false },
         loginDetailsSent: { type: Boolean, default: false }
-    }
+    },
+    verificationChecks: { type: Object, default: {} }
 });
 
 const divisionSchema = new mongoose.Schema({
@@ -568,9 +569,47 @@ app.post('/api/admin/update-workflow-data', async (req, res) => {
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
         if (refNo !== undefined) update.refNo = refNo;
         await Applicant.findOneAndUpdate({ email }, { $set: update });
-        // Refresh local allApplicants on client is handled via fetch
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// --- VERIFY AND ACTIVATE APPLICANT ---
+app.post('/api/admin/verify-and-activate', async (req, res) => {
+    try {
+        const { email, verificationChecks } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        const company = await Company.findOne() || { name: 'Emyris Bio' };
+
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        applicant.status = 'approved';
+        applicant.approvedAt = new Date();
+        applicant.verificationChecks = verificationChecks;
+        await applicant.save();
+
+        // Trigger Congratulation Message
+        await sendEmail({
+            to: email,
+            subject: `Registration Verified - Welcome to ${company.name} 🚀`,
+            html: `
+                <div style="font-family:Arial,sans-serif;padding:32px;background:#f8fafc;border-radius:12px;color:#1e293b;line-height:1.6;">
+                    <h2 style="color:#6366f1;margin-top:0;">Congratulations, ${applicant.fullName}!</h2>
+                    <p>We are pleased to inform you that your registration documents have been <strong>successfully verified</strong> by our HR team.</p>
+                    <p>Your record is now <strong>Active</strong> in our system. You can now log in to your portal to view your onboarding milestones and track your Offer Letter status.</p>
+                    <p>Our team will soon initiate the next steps including official email provisioning and mobile app access.</p>
+                    <br>
+                    <div style="border-top:1px solid #e2e8f0;padding-top:20px;margin-top:20px;">
+                        <p style="margin:0;font-weight:700;">HR Department</p>
+                        <p style="margin:0;color:#64748b;font-size:0.9rem;">${company.name}</p>
+                    </div>
+                </div>`
+        });
+
+        res.json({ success: true, message: 'Record activated and mail triggered.' });
+    } catch (e) {
+        console.error('Activation error:', e);
+        res.status(500).json({ error: 'Activation failed' });
+    }
 });
 
 // --- SEND LETTER VIA EMAIL ---
@@ -655,9 +694,9 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
 // --- NEW: LIFECYCLE CHECKS (Admins can poll this or call on load) ---
 app.get('/api/admin/lifecycle-check', async (req, res) => {
     try {
-        const applicants = await Applicant.find({ 
-            offerAccepted: true, 
-            actualJoiningDate: { $exists: true } 
+        const applicants = await Applicant.find({
+            offerAccepted: true,
+            actualJoiningDate: { $exists: true }
         });
 
         const alerts = [];

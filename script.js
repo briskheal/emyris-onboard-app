@@ -1315,203 +1315,276 @@ async function deleteAssetRecord(assetId) {
     finally { unlockUI(); }
 }
 
-function renderApplicantsTable(data) {
-    const body = document.getElementById('applicantsTableBody');
-    body.innerHTML = data.map(app => {
-        const t = app.tasks || {};
-        const pipelineIcons = `
-            <div class="pipeline-row">
-                <span class="p-icon ${t.offerLetter ? 'done' : ''}" title="Offer Letter">📄</span>
-                <span class="p-icon ${t.appointmentLetter ? 'done' : ''}" title="Appt Letter">📜</span>
-                <span class="p-icon ${t.appLinkSent ? 'done' : ''}" title="App Link">📱</span>
-                <span class="p-icon ${t.loginDetailsSent ? 'done' : ''}" title="Login ID">🔑</span>
-            </div>
-        `;
-
-        let actionButtons = '';
-        if (app.status === 'submitted') {
-            actionButtons = `
-                <button class="btn-action success" onclick="updateStatus('${app.email}', 'approved')" title="Approve">✓</button>
-                <button class="btn-action error" onclick="updateStatus('${app.email}', 'rejected')" title="Reject">✕</button>
-            `;
-        } else if (app.status === 'approved') {
-            actionButtons = `
-                <button class="btn-action warning" onclick="openWorkflow('${app.email}')" title="Workflow Settings">⚙️</button>
-            `;
-        } else {
-            actionButtons = `<button class="btn-action primary" onclick="openWorkflow('${app.email}')" title="View Record">👁️</button>`;
-        }
+function renderApplicantsTable(applicants) {
+    const tbody = document.querySelector('#applicantsTable tbody');
+    if (!tbody) return;
+    tbody.innerHTML = applicants.map(app => {
+        const date = app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Draft';
+        const progress = calculateAppProgress(app);
+        
+        let statusClass = app.status || 'draft';
+        let statusText = app.status ? app.status.toUpperCase() : 'DRAFT';
 
         return `
-            <tr>
-                <td>${new Date(app.registeredAt).toLocaleDateString()}</td>
-                <td><strong>${app.fullName}</strong></td>
-                <td>${app.email}</td>
-                <td><span class="badge ${app.status}">${app.status}</span></td>
-                <td>${app.canLogin ? '✅ Active' : '🔒 Locked'}</td>
-                <td>${pipelineIcons}</td>
-                <td class="action-flex">
-                    ${actionButtons}
+            <tr class="applicant-row">
+                <td>
+                    <div class="user-info-cell">
+                        <div class="user-avatar">${app.fullName[0].toUpperCase()}</div>
+                        <div>
+                            <div class="user-name">${app.fullName}</div>
+                            <div class="user-email">${app.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    <div class="progress-container-mini">
+                        <div class="progress-bar-mini" style="width: ${progress}%"></div>
+                        <span style="font-size:10px">${progress}%</span>
+                    </div>
+                </td>
+                <td>${date}</td>
+                <td style="text-align: right;">
+                    <button class="btn btn-sm btn-primary" onclick="openVerificationView('${app.email}')" style="background: var(--accent); border-color: var(--accent); padding: 8px 16px; font-weight: 700; border-radius: 8px;">
+                        🔎 VERIFY RECORD
+                    </button>
                 </td>
             </tr>
         `;
     }).join('');
 }
 
-async function toggleAccess(email, canLogin) {
-    await fetch('/api/admin/toggle-access', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, canLogin })
-    });
-    fetchApplicants();
-}
+// --- APPLICANT VERIFICATION DASHBOARD (FULL PAGE) ---
 
-async function updateStatus(email, status) {
-    if (!confirm(`Mark application as ${status.toUpperCase()}? This will lock the applicant's account.`)) return;
-    await fetch('/api/admin/update-status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, status })
-    });
-    fetchApplicants();
-}
+let activeV_Applicant = null;
+let verificationChecks = {}; // { docName: true/false }
 
-function filterApplicants() {
-    const term = document.getElementById('applicantSearch').value.toLowerCase();
-    const filtered = allApplicants.filter(a => a.email.toLowerCase().includes(term) || a.fullName.toLowerCase().includes(term));
-    renderApplicantsTable(filtered);
-}
-
-// --- WORKFLOW LOGIC ---
-
-let activeWfEmail = null;
-
-async function openWorkflow(email) {
-    activeWfEmail = email;
+async function openVerificationView(email) {
     const app = allApplicants.find(a => a.email === email);
     if (!app) return;
+    activeV_Applicant = app;
+    verificationChecks = app.verificationChecks || {};
 
-    document.getElementById('wfName').innerText = app.fullName;
-    document.getElementById('wfEmail').innerText = app.email;
-    document.getElementById('wfPin').innerText = `PIN: ${app.password || 'N/A'}`;
+    // 1. Navigation & Headers
+    document.getElementById('adminDashboard').classList.add('hidden');
+    document.getElementById('applicantVerificationView').classList.remove('hidden');
+    document.getElementById('v_header_title').innerText = `VERIFYING: ${app.fullName.toUpperCase()}`;
     
-    // Assign Panel sync
-    const divSelect = document.getElementById('wfDivisionSelect');
-    await fetchDivisionsToDropdown(divSelect);
-    divSelect.value = app.division || "";
-    document.getElementById('wfReportingTo').value = app.reportingTo || "";
-    document.getElementById('wfRefDisplay').innerText = app.refNo ? `Last Ref: ${app.refNo}` : "No Ref Generated Yet";
+    const badge = document.getElementById('v_statusBadge');
+    badge.innerText = (app.status || 'NEW').toUpperCase();
+    badge.className = `badge ${app.status || 'draft'}`;
 
-    // Sync Access Toggle Text
-    const toggleBtn = document.getElementById('modalToggleAccess');
-    toggleBtn.innerHTML = app.canLogin ? '<span>🔒</span> Lock Access' : '<span>🔓</span> Grant Access';
-    toggleBtn.className = app.canLogin ? 'btn btn-danger btn-sm' : 'btn btn-success btn-sm';
+    // 2. Profile Dossier
+    renderVerificationProfile(app);
 
-    // Sync Task Status
-    updateWfModalUI(app.tasks || {});
-    
-    document.getElementById('workflowModal').classList.remove('hidden');
-    document.getElementById('workflowModal').style.display = 'flex';
+    // 3. Checklist (Documents & Testimonials)
+    renderVerificationChecklist(app);
+
+    // 4. Assignments
+    const divSel = document.getElementById('v_division');
+    await fetchDivisionsToDropdown(divSel);
+    divSel.value = app.division || "";
+    document.getElementById('v_reportingTo').value = app.reportingTo || "";
+    document.getElementById('v_proposed_desg').innerText = app.formData?.designation || "NOT SPECIFIED";
+
+    // 5. Pipeline Switches
+    syncPipelineSwitches(app.tasks || {});
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-async function fetchDivisionsToDropdown(selectEl) {
-    const res = await fetch('/api/admin/divisions');
-    const divisions = await res.json();
-    selectEl.innerHTML = '<option value="">-- Select Division --</option>' + 
-        divisions.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+function closeVerificationView() {
+    document.getElementById('applicantVerificationView').classList.add('hidden');
+    document.getElementById('adminDashboard').classList.remove('hidden');
+    activeV_Applicant = null;
+    fetchApplicants(); // Refresh list
 }
 
-async function saveWorkflowAssignment() {
-    const data = {
-        email: activeWfEmail,
-        division: document.getElementById('wfDivisionSelect').value,
-        reportingTo: document.getElementById('wfReportingTo').value
-    };
+function renderVerificationProfile(app) {
+    const container = document.getElementById('v_profile_content');
+    const fd = app.formData || {};
     
-    // Auto-generate Ref if not present
-    const app = allApplicants.find(a => a.email === activeWfEmail);
-    if (!app.refNo) {
-        const refRes = await fetch('/api/admin/next-ref', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'offer' })
-        });
-        const refData = await refRes.json();
-        if (refData.success) {
-            data.refNo = refData.refNo;
-            document.getElementById('wfRefDisplay').innerText = `Generated Ref: ${data.refNo}`;
+    const rows = [
+        { label: 'Full Name', val: app.fullName },
+        { label: 'Primary Email', val: app.email },
+        { label: 'Contact Phone', val: app.phone },
+        { label: 'Designation', val: fd.designation || 'N/A' },
+        { label: 'HQ/Base City', val: fd.hq || 'N/A' },
+        { label: 'Date of Birth', val: formatDatePretty(fd.dob) },
+        { label: 'Current Address', val: fd.address || 'N/A' },
+        { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : 'N/A' }
+    ];
+
+    container.innerHTML = rows.map(r => `
+        <div class="detail-row">
+            <label>${r.label}</label>
+            <span>${r.val}</span>
+        </div>
+    `).join('');
+}
+
+function renderVerificationChecklist(app) {
+    const container = document.getElementById('v_checklist_container');
+    const docs = companyData.requiredDocs || [];
+    const uploads = app.documents || [];
+    
+    if (docs.length === 0 && uploads.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No documents uploaded for verification.</p>';
+        return;
+    }
+
+    const allDocNames = [...new Set([...docs, ...uploads.map(u => u.category)])];
+    
+    container.innerHTML = allDocNames.map(dName => {
+        const upload = uploads.find(u => u.category === dName);
+        const isVerified = verificationChecks[dName] === true;
+        
+        return `
+            <div class="v-check-item ${isVerified ? 'verified' : ''}">
+                <div class="v-check-info">
+                    <span>${dName}</span>
+                    <label style="font-size:0.7rem; color:${upload ? 'var(--success)' : '#ef4444'}">
+                        ${upload ? '✅ File Uploaded' : '❌ Missing File'}
+                    </label>
+                </div>
+                <div class="v-check-actions">
+                    ${upload ? `<button class="btn btn-tool" onclick="viewDocument('${upload.data}')" title="View Document">👁️</button>` : ''}
+                    ${upload ? `<button class="btn btn-tool" onclick="downloadAsset('${upload.data}', '${dName}')" title="Download">📥</button>` : ''}
+                    <label class="switch-premium">
+                        <input type="checkbox" ${isVerified ? 'checked' : ''} onchange="toggleDocCheck('${dName}', this.checked)">
+                        <span class="slider-premium"></span>
+                    </label>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    updateVerificationProgress();
+}
+
+function toggleDocCheck(docName, isChecked) {
+    verificationChecks[docName] = isChecked;
+    updateVerificationProgress();
+}
+
+function updateVerificationProgress() {
+    const total = Object.keys(verificationChecks).length;
+    const checked = Object.values(verificationChecks).filter(v => v === true).length;
+    
+    const progressEl = document.getElementById('v_progress_ratio');
+    if (progressEl) progressEl.innerText = `${checked}/${total} VERIFIED`;
+    
+    const masterBtn = document.getElementById('masterVerifyBtn');
+    if (masterBtn) {
+        if (checked === total && total > 0) {
+            masterBtn.classList.remove('btn-outline');
+            masterBtn.classList.add('btn-primary');
+            masterBtn.style.background = 'var(--success)';
+            masterBtn.style.borderColor = 'var(--success)';
+        } else {
+            masterBtn.classList.add('btn-outline');
+            masterBtn.classList.remove('btn-primary');
+            masterBtn.style.background = 'transparent';
         }
     }
+}
 
-    const res = await fetch('/api/admin/update-workflow-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    });
-    if ((await res.json()).success) {
-        showToast("Workflow assignment saved!", "success");
-        await fetchApplicants();
+async function saveInternalAssignment() {
+    const data = {
+        email: activeV_Applicant.email,
+        division: document.getElementById('v_division').value,
+        reportingTo: document.getElementById('v_reportingTo').value
+    };
+
+    try {
+        lockUI("⚙️ Updating Assignment...");
+        const res = await fetch('/api/admin/update-workflow-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if ((await res.json()).success) {
+            showToast("✅ Core Assignment Updated!", "success");
+            activeV_Applicant.division = data.division;
+            activeV_Applicant.reportingTo = data.reportingTo;
+        }
+    } catch (e) { alert("Save failed"); }
+    finally { unlockUI(); }
+}
+
+async function commitMasterVerification() {
+    const total = Object.keys(verificationChecks).length;
+    const checked = Object.values(verificationChecks).filter(v => v === true).length;
+
+    if (checked < total) {
+        if (!confirm("Not all documents are checked. Proceed with partial verification?")) return;
+    }
+
+    try {
+        lockUI("🛡️ Activating Record...");
+        const res = await fetch('/api/admin/verify-and-activate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: activeV_Applicant.email, 
+                verificationChecks 
+            })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast("🎉 Record Activated! Internal status updated.", "success");
+            activeV_Applicant.status = 'approved';
+            openVerificationView(activeV_Applicant.email);
+        }
+    } catch (e) { alert("Activation failed"); }
+    finally { unlockUI(); }
+}
+
+function syncPipelineSwitches(tasks) {
+    const checkStep = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.checked = !!val;
+    };
+    checkStep('pipe_offer', tasks.offerLetter);
+    checkStep('pipe_hr', tasks.appointmentLetter);
+    checkStep('pipe_app', tasks.appLinkSent);
+    checkStep('pipe_email', tasks.loginDetailsSent);
+    
+    const ongoingCount = Object.values(tasks).filter(t => t === true).length;
+    const display = document.getElementById('pipelineStatusDisplay');
+    if (display) {
+        if (ongoingCount === 4) {
+            display.innerText = "COMPLETED";
+            display.style.borderColor = "var(--success)";
+            display.style.color = "var(--success)";
+        } else {
+            display.innerText = "ONGOING";
+            display.style.borderColor = "var(--primary)";
+            display.style.color = "var(--primary-light)";
+        }
     }
 }
 
-async function toggleAccessFromModal() {
-    const app = allApplicants.find(a => a.email === activeWfEmail);
-    if (!app) return;
-    await toggleAccess(activeWfEmail, !app.canLogin);
-    openWorkflow(activeWfEmail); // Re-sync UI
-}
-
-function closeWorkflow() {
-    document.getElementById('workflowModal').classList.add('hidden');
-    document.getElementById('workflowModal').style.display = 'none';
-}
-
-function updateWfModalUI(tasks) {
-    const setStatus = (id, done) => {
-        const el = document.getElementById(id);
-        el.innerText = done ? 'Completed ✅' : 'Pending ⏳';
-        el.className = done ? 'completed' : 'pending';
-    };
-
-    setStatus('status_offer', !!tasks.offerLetter);
-    setStatus('status_appt', !!tasks.appointmentLetter);
-    setStatus('status_appLink', !!tasks.appLinkSent);
-    setStatus('status_loginSent', !!tasks.loginDetailsSent);
-}
-
-async function handleTaskUpload(taskKey) {
-    const fileInput = event.target;
-    const file = fileInput.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const base64 = e.target.result;
-        await sendTaskUpdate(taskKey, base64);
-    };
-    reader.readAsDataURL(file);
-}
-
-async function toggleWfTask(taskKey) {
-    const app = allApplicants.find(a => a.email === activeWfEmail);
-    const currentValue = app.tasks ? !!app.tasks[taskKey] : false;
-    await sendTaskUpdate(taskKey, !currentValue);
-}
-
-async function sendTaskUpdate(taskKey, value) {
+async function togglePipelineStep(step, isChecked) {
+    if (!activeV_Applicant) return;
     try {
         const res = await fetch('/api/admin/update-task', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: activeWfEmail, taskKey, value })
+            body: JSON.stringify({ email: activeV_Applicant.email, task: step, completed: isChecked })
         });
         if ((await res.json()).success) {
-            await fetchApplicants(); // Refresh list
-            const app = allApplicants.find(a => a.email === activeWfEmail);
-            updateWfModalUI(app.tasks || {});
+            if (!activeV_Applicant.tasks) activeV_Applicant.tasks = {};
+            activeV_Applicant.tasks[step] = isChecked;
+            syncPipelineSwitches(activeV_Applicant.tasks);
+            showToast(`🚀 Onboarding Step: ${step} updated`, "success");
         }
-    } catch (err) { alert("Task update failed."); }
+    } catch (e) { alert("Step update failed"); }
+}
+
+async function toggleAccessFromModal() {
+    // Legacy support or remove
 }
 
 async function resetApplicantData() {
@@ -2498,6 +2571,8 @@ async function nukeDatabase() {
     } catch (e) { showToast("❌ Reset failed", "error"); }
     finally { unlockUI(); }
 }
+
+
 
 async function vacuumAssets() {
     if (!confirm("This will prune the asset history, keeping only the currently active version of each asset to save space. Proceed?")) return;

@@ -1071,22 +1071,127 @@
                     </div>
                 </div>
             </div>
+    <!-- ===========================
+         FULL-PAGE VERIFICATION DASHBOARD
+         =========================== -->
+    <div id="applicantVerificationView" class="view-section hidden">
+        <div class="glass-header-nav">
+            <button class="btn btn-outline btn-sm" onclick="closeVerificationView()" style="display: flex; align-items: center; gap: 8px;">
+                <span>⬅️</span> Back to Applicants Record
+            </button>
+            <div id="v_header_title" style="font-weight: 700; color: white; font-size: 1.1rem; letter-spacing: -0.01em;">VERIFYING: Loading...</div>
+            <div style="display: flex; gap: 1rem;">
+                <button class="btn btn-sm" id="v_statusBadge" style="pointer-events: none; opacity: 0.8;">NEW</button>
+            </div>
+        </div>
 
-            <div class="modal-footer">
-                <div class="modal-actions-grid">
-                    <button class="btn btn-primary btn-sm" onclick="downloadApplicantPDF(activeWfEmail)">
-                        <span>📄</span> Download Application PDF
-                    </button>
-                    <button id="modalToggleAccess" class="btn btn-secondary btn-sm" onclick="toggleAccessFromModal()">
-                        <span>🔑</span> Toggle Login Access
-                    </button>
-                    <button class="btn btn-danger btn-sm" onclick="resetApplicantData()">
-                        <span>⚠️</span> Reset Entire File
-                    </button>
+        <div class="verification-grid">
+            <!-- Column 1: Personal & Professional Dossier -->
+            <div class="v-col-left">
+                <div class="v-card profile-dossier">
+                    <div class="v-card-head">👤 Personal Profile Summary</div>
+                    <div id="v_profile_content" class="v-card-body compact-details">
+                        <!-- Rendered by JS -->
+                    </div>
+                </div>
+
+                <div class="v-card assignment-card" style="margin-top: 1.5rem;">
+                    <div class="v-card-head">🏢 Organizational Assignment</div>
+                    <div class="v-card-body">
+                        <div class="form-group">
+                            <label>Proposed Designation (Applicant Choice)</label>
+                            <div id="v_proposed_desg" class="static-val">...</div>
+                        </div>
+                        <div class="input-grid">
+                            <div class="form-group">
+                                <label>Confirm Division*</label>
+                                <select id="v_division" class="wf-input" style="width: 100%;"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Assign Reporting Manager*</label>
+                                <input type="text" id="v_reportingTo" class="wf-input" placeholder="Enter Full Name">
+                            </div>
+                        </div>
+                        <div style="margin-top: 1rem;">
+                            <button class="btn btn-primary" style="width: 100%;" onclick="saveInternalAssignment()">Update Core Assignment</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 2: Verification Checklist (Testimonials) -->
+            <div class="v-col-center">
+                <div class="v-card verification-checklist">
+                    <div class="v-card-head" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>📋 Document Verification Checklist</span>
+                        <div id="v_progress_ratio" style="font-size: 0.75rem; color: var(--accent);">0/0 VERIFIED</div>
+                    </div>
+                    <div class="v-card-body" id="v_checklist_container">
+                        <!-- Checklist items rendered by JS: Label, View/Download, Checked Switch -->
+                    </div>
+                    <div class="v-card-footer" style="background: rgba(0,0,0,0.1); padding: 1.5rem; text-align: center;">
+                        <button id="masterVerifyBtn" class="btn btn-outline" style="width: 100%;" onclick="commitMasterVerification()">✅ Finalize Master Verification & Activate Record</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Column 3: The Onboarding Pipeline switches -->
+            <div class="v-col-right">
+                <div class="v-card pipeline-card">
+                    <div class="v-card-head">⚡ Onboarding Pipeline Controls</div>
+                    <div class="v-card-body pipeline-list">
+                        <div class="pipeline-item">
+                            <div class="pipe-info">
+                                <label>1. Offer Letter Process</label>
+                                <p>Trigger & track generation</p>
+                            </div>
+                            <label class="switch-premium">
+                                <input type="checkbox" id="pipe_offer" onchange="togglePipelineStep('offerLetter', this.checked)">
+                                <span class="slider-premium"></span>
+                            </label>
+                        </div>
+                        <div class="pipeline-item">
+                            <div class="pipe-info">
+                                <label>2. Official Email ID Creation</label>
+                                <p>Provision company credentials</p>
+                            </div>
+                            <label class="switch-premium">
+                                <input type="checkbox" id="pipe_email" onchange="togglePipelineStep('loginDetailsSent', this.checked)">
+                                <span class="slider-premium"></span>
+                            </label>
+                        </div>
+                        <div class="pipeline-item">
+                            <div class="pipe-info">
+                                <label>3. Mobile Application Code</label>
+                                <p>Generate secure access code</p>
+                            </div>
+                            <label class="switch-premium">
+                                <input type="checkbox" id="pipe_app" onchange="togglePipelineStep('appLinkSent', this.checked)">
+                                <span class="slider-premium"></span>
+                            </label>
+                        </div>
+                        <div class="pipeline-item">
+                            <div class="pipe-info">
+                                <label>4. HR Process Complete</label>
+                                <p>Final move to active employee</p>
+                            </div>
+                            <label class="switch-premium">
+                                <input type="checkbox" id="pipe_hr" onchange="togglePipelineStep('appointmentLetter', this.checked)">
+                                <span class="slider-premium"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="pipeline-footer" style="padding: 1.5rem; text-align: center;">
+                        <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.5rem;">Pipeline Status</div>
+                        <div id="pipelineStatusDisplay" class="status-indicator">ONGOING</div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Existing: Workflow Modal (REPLACED BY VIEW ABOVE) -->
+    <div id="workflowModal" class="hidden" style="display:none !important;"></div>
 
     <script src="script.js"></script>
 </body>
