@@ -133,67 +133,34 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
     const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
     console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject}`);
 
-    // STRATEGY 1: Resend API (Professional Highest Priority - works on ALL tiers)
-    if (resend) {
-        try {
-            console.log('🚀 [INFO] Attempting delivery via Resend API...');
-            // NOTE: Must verify emyrisbio.com domain in Resend dashboard for this to work
-            const { data, error } = await resend.emails.send({
-                from: `Emyris HR <hr@emyrisbio.com>`,
-                to, subject, html
-            });
-            if (error) {
-                // If domain not verified, try fallback to onboarding@resend.dev
-                if (error.message.includes('not verified')) {
-                    console.warn('⚠️ [WARN] Domain not verified. Falling back to onboarding@resend.dev...');
-                    await resend.emails.send({ from: 'Emyris HR <onboarding@resend.dev>', to, subject, html });
-                    console.log('✅ [SUCCESS] Sent via Resend default domain.');
-                    return;
-                }
-                throw error;
-            }
-            console.log(`✅ [SUCCESS] Resend delivery confirmed: ${data.id}`);
-            return data;
-        } catch (resendErr) {
-            console.error(`⚠️ [WARN] Resend failed: ${resendErr.message}. Cascading...`);
-        }
-    }
-
-    // STRATEGY 2: Google Apps Script Bridge (HTTPS Backup)
+    // STRATEGY 1: Google Apps Script Bridge (HTTPS - The only way to send on Render Free)
     if (bridgeUrl) {
         try {
-            console.log('🚀 [INFO] Sending via Resend API...');
-            const { data, error } = await resend.emails.send({
-                from: `Emyris HR <onboarding@resend.dev>`,
-                to, subject, html
-            });
-            if (error) throw error;
-            console.log(`✅ [SUCCESS] Resend delivery confirmed: ${data.id}`);
-            return data;
-        } catch (resendErr) {
-            console.error(`⚠️ [WARN] Resend failed: ${resendErr.message}`);
+            console.log('🌉 [INFO] Sending via Google Apps Script Bridge...');
+            const response = await axios.post(bridgeUrl, { to, subject, html }, { timeout: 15000 });
+            console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
+            return response.data;
+        } catch (bridgeErr) {
+            console.error(`⚠️ [WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
         }
     }
 
-    // STRATEGY 3: SMTP (only works on paid hosting or local dev)
-    console.log('✉️ [INFO] Attempting SMTP (will fail on Render free tier)...');
+    // STRATEGY 2: Local Gmail / SMTP (Only works locally, NOT on Render Free)
     const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST || 'smtp.zoho.com',
-        port: parseInt(process.env.EMAIL_PORT) || 587,
-        secure: false,
+        service: 'gmail',
         auth: {
-            user: (process.env.EMAIL_USER || '').trim(),
-            pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
-        },
-        tls: { rejectUnauthorized: false },
-        connectionTimeout: 10000
+            user: "emy.onboardapp@gmail.com",
+            pass: "hemm awdq wyei jksv"
+        }
     });
+
     try {
+        console.log('✉️ [INFO] Attempting Gmail SMTP (local mode)...');
         const info = await transporter.sendMail({
-            from: `"Emyris HR" <${process.env.EMAIL_USER}>`,
+            from: `"Emyris HR" <emy.onboardapp@gmail.com>`,
             to, subject, html
         });
-        console.log(`✅ [SUCCESS] SMTP delivery confirmed: ${info.messageId}`);
+        console.log(`✅ [SUCCESS] Gmail delivery confirmed: ${info.messageId}`);
         return info;
     } catch (smtpErr) {
         console.error(`❌ [FAILURE] All email strategies exhausted: ${smtpErr.message}`);

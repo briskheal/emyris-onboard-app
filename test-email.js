@@ -9,12 +9,10 @@ const resend = resendSecret ? new Resend(resendSecret) : null;
 const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
 
 const transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.zoho.com',
-    port: parseInt(process.env.EMAIL_PORT) || 465,
-    secure: process.env.EMAIL_SECURE === 'true' || process.env.EMAIL_PORT === '465',
+    service: 'gmail',
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: "emy.onboardapp@gmail.com",
+        pass: "hemmawdqwyeijksv"
     }
 });
 
