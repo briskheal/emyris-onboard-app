@@ -16,9 +16,27 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    var attachmentsData = payload.attachments || [];
+    var blobs = [];
+
+    for (var i = 0; i < attachmentsData.length; i++) {
+      var att = attachmentsData[i];
+      var content = att.content;
+      
+      // Remove data:application/pdf;base64, prefix if present
+      if (content.indexOf(",") > -1) {
+        content = content.split(",")[1];
+      }
+      
+      var decoded = Utilities.base64Decode(content);
+      var blob = Utilities.newBlob(decoded, att.contentType || 'application/octet-stream', att.filename || "attachment_" + i);
+      blobs.push(blob);
+    }
+
     GmailApp.sendEmail(to, subject, "", {
       htmlBody: html,
-      name: "Emyris HR"
+      name: "Emyris HR",
+      attachments: blobs
     });
 
     return ContentService

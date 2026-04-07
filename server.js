@@ -137,7 +137,19 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
     if (bridgeUrl) {
         try {
             console.log('🌉 [INFO] Sending via Google Apps Script Bridge...');
-            const response = await axios.post(bridgeUrl, { to, subject, html }, { timeout: 15000 });
+            
+            // Convert Buffer attachments to base64 strings for the bridge
+            const bridgeAttachments = attachments.map(att => ({
+                filename: att.filename,
+                content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
+                contentType: att.contentType
+            }));
+
+            const response = await axios.post(bridgeUrl, { 
+                to, subject, html, 
+                attachments: bridgeAttachments 
+            }, { timeout: 25000 }); // Longer timeout for attachments
+            
             console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
             return response.data;
         } catch (bridgeErr) {
