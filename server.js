@@ -149,10 +149,11 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: "emy.onboardapp@gmail.com",
-            pass: "hemm awdq wyei jksv"
+            user: process.env.EMAIL_USER || "emy.onboardapp@gmail.com",
+            pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
         }
     });
+
 
     try {
         console.log('✉️ [INFO] Attempting Gmail SMTP (local mode)...');
