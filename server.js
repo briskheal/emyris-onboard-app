@@ -462,10 +462,10 @@ app.post('/api/applicant/upload-document', async (req, res) => {
 
 app.post('/api/admin-login', (req, res) => {
     const { username, password } = req.body;
-    const adminUser = process.env.ADMIN_USER || 'EMYRIS@BIOLIFE';
+    const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
 
-    if (username === adminUser && password === adminPass) {
+    if (username && username.toUpperCase() === adminUser && password === adminPass) {
         res.status(200).json({ success: true });
     } else {
         res.status(401).json({ success: false });
