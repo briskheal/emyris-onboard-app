@@ -11,6 +11,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Try to use system DNS, but force IPv4 on connection
+// Mongoose 8/Node 18+ can fail resolving IPv6 mappings on some SRV clusters.
+// Removed forced DNS to avoid ISP blocks.
+
 // MongoDB Connection Strings
 const MONGODB_URI = process.env.MONGODB_URI;
 // Fallback to same cluster but different DB if ASSET_URI isn't provided
@@ -18,9 +22,15 @@ const MONGODB_ASSETS_URI = process.env.MONGODB_ASSETS_URI || (MONGODB_URI ? MONG
 
 let connMain, connAssets;
 
+const dbOptions = { 
+    family: 4,               // Force IPv4
+    serverSelectionTimeoutMS: 15000,
+    connectTimeoutMS: 10000 
+};
+
 if (MONGODB_URI) {
-    connMain = mongoose.createConnection(MONGODB_URI);
-    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI);
+    connMain = mongoose.createConnection(MONGODB_URI, dbOptions);
+    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI, dbOptions);
 
     connMain.on('connected', () => console.log('✅ Main DB Connected'));
     connAssets.on('connected', () => console.log('💎 Asset DB Connected'));
@@ -248,6 +258,17 @@ app.post('/api/register-applicant', async (req, res) => {
     }
 });
 
+// HEALTH CHECK ENDPOINT
+app.get('/api/health', (req, res) => {
+    const status = {
+        server: 'online',
+        mainDB: connMain ? (connMain.readyState === 1 ? 'connected' : 'disconnected (' + connMain.readyState + ')') : 'not initialized',
+        assetDB: connAssets ? (connAssets.readyState === 1 ? 'connected' : 'disconnected (' + connAssets.readyState + ')') : 'not initialized',
+        timestamp: new Date()
+    };
+    res.json(status);
+});
+
 // PIN RECOVERY MODULE
 app.post('/api/resend-pin', async (req, res) => {
     const { email } = req.body;
@@ -323,9 +344,12 @@ app.post('/api/applicant-login', async (req, res) => {
 app.post('/api/save-draft', async (req, res) => {
     try {
         const { email, formData } = req.body;
-        await Applicant.findOneAndUpdate({ email }, { formData, updatedAt: new Date() });
+        console.log(`📝 [DRAFT] Saving for ${email} (${JSON.stringify(formData).length} bytes)`);
+        const result = await Applicant.findOneAndUpdate({ email }, { formData, updatedAt: new Date() });
+        if (!result) console.error(`❌ [DRAFT] No applicant found for ${email}`);
         res.status(200).json({ success: true });
     } catch (error) {
+        console.error(`🛑 [DRAFT ERROR]:`, error.message);
         res.status(500).json({ success: false });
     }
 });
@@ -356,23 +380,59 @@ app.post('/api/submit-onboarding', async (req, res) => {
             </div>
         `;
 
-        // Notify Admin
-        await sendEmail({
+        // Notify Admin (Non-blocking)
+        sendEmail({
             to: process.env.EMAIL_USER,
             subject: `Form Submitted: ${applicant.fullName}`,
             html: emailHtml
-        });
+        }).catch(e => console.error("Admin notification failed:", e.message));
 
-        // Notify Applicant
-        await sendEmail({
+        // Notify Applicant (Non-blocking)
+        sendEmail({
             to: email,
             subject: 'Application Received - Emyris Biolifesciences',
             html: `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`
-        });
+        }).catch(e => console.error("Applicant confirmation failed:", e.message));
 
         res.status(200).json({ success: true, message: 'Application submitted!' });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Submission failed.' });
+        console.error("Submission Error:", error);
+        res.status(500).json({ success: false, message: 'Submission failed: ' + error.message });
+    }
+});
+
+// --- APPLICANT DOCUMENT UPLOAD ---
+app.post('/api/applicant/upload-document', async (req, res) => {
+    try {
+        const { email, category, fileName, fileData } = req.body;
+        if (!email || !category || !fileData) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) {
+            return res.status(404).json({ success: false, message: 'Applicant not found' });
+        }
+
+        // Add or update the document in the array
+        const docObj = {
+            category,
+            name: fileName,
+            data: fileData,
+            uploadedAt: new Date()
+        };
+
+        // Remove previous version of this category if exists
+        applicant.documents = (applicant.documents || []).filter(d => d.category !== category);
+        applicant.documents.push(docObj);
+
+        await applicant.save();
+        console.log(`📎 [DOC] Uploaded: ${category} for ${email}`);
+
+        res.status(200).json({ success: true, message: `${category} uploaded successfully` });
+    } catch (error) {
+        console.error("Upload Error:", error);
+        res.status(500).json({ success: false, message: 'Upload failed: ' + error.message });
     }
 });
 

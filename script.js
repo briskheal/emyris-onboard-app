@@ -316,21 +316,28 @@ function renderApplicantDocuments() {
     container.innerHTML = '';
 
     const docs = companyData.requiredDocs || [];
+    const existingDocs = currentApplicant?.documents || [];
     
+    // Helper to check if a doc is already uploaded
+    const getUpload = (name) => existingDocs.find(d => d.category === name);
+
     if (docs.length === 0) {
         container.innerHTML = `<p style="color: var(--text-muted); text-align: center; width:100%;">No specific documents required by the company.</p>`;
     } else {
         docs.forEach(docName => {
             const safeId = docName.replace(/[^a-z0-9]/gi, '_');
+            const upload = getUpload(docName);
             const box = document.createElement('div');
             box.className = 'upload-box';
             box.innerHTML = `
                 <label>${docName}*</label>
                 <div class="drop-zone" id="drop_${safeId}" onclick="document.getElementById('file_${safeId}').click()">
-                    <div class="progress-ribbon" id="ribbon_file_${safeId}"></div>
-                    <span class="drop-icon">📎</span>
-                    <span id="status_${safeId}" class="drop-label">Choose ${docName} or Drag Here</span>
-                    <input type="file" id="file_${safeId}" name="doc_${safeId}" class="hidden" required>
+                    <div class="progress-ribbon ${upload ? 'waiting' : ''}" id="ribbon_file_${safeId}" style="width: ${upload ? '100%' : '0%'}"></div>
+                    <span class="drop-icon">${upload ? '✅' : '📎'}</span>
+                    <span id="status_${safeId}" class="drop-label" style="color: ${upload ? 'var(--success)' : 'inherit'}">
+                        ${upload ? `${docName} Uploaded` : `Choose ${docName} or Drag Here`}
+                    </span>
+                    <input type="file" id="file_${safeId}" name="doc_${safeId}" class="hidden" ${upload ? '' : 'required'}>
                 </div>
             `;
             container.appendChild(box);
@@ -339,15 +346,18 @@ function renderApplicantDocuments() {
     }
     
     // Add Signature as a mandatory fixed box
+    const sigUpload = getUpload('Digital Signature');
     const sigBox = document.createElement('div');
     sigBox.className = 'upload-box';
     sigBox.innerHTML = `
         <label>Digital Signature (Photo)*</label>
         <div class="drop-zone" id="drop_Signature" onclick="document.getElementById('file_Signature').click()">
-            <div class="progress-ribbon" id="ribbon_file_Signature"></div>
-            <span class="drop-icon">✍️</span>
-            <span id="status_Signature" class="drop-label">Upload Sign on White Paper</span>
-            <input type="file" id="file_Signature" name="doc_Signature" class="hidden" required>
+            <div class="progress-ribbon ${sigUpload ? 'waiting' : ''}" id="ribbon_file_Signature" style="width: ${sigUpload ? '100%' : '0%'}"></div>
+            <span class="drop-icon">${sigUpload ? '✍️ ✅' : '✍️'}</span>
+            <span id="status_Signature" class="drop-label" style="color: ${sigUpload ? 'var(--success)' : 'inherit'}">
+                ${sigUpload ? 'Signature Saved' : 'Upload Sign on White Paper'}
+            </span>
+            <input type="file" id="file_Signature" name="doc_Signature" class="hidden" ${sigUpload ? '' : 'required'}>
         </div>
     `;
     container.appendChild(sigBox);
@@ -372,17 +382,28 @@ function attachApplicantFileListener(inputId, category) {
         }
         if (ribbon) {
             ribbon.classList.add('active');
-            ribbon.style.width = '100%';
-        }
-        
-        try {
-            const reader = new FileReader();
-            reader.onload = async (event) => {
+            try {
+                // 1. Get File Data (with compression if it's an image)
+                let fileData = "";
+                if (files[0].type.startsWith('image/')) {
+                    fileData = await compressAndResize(files[0], 1600);
+                }
+                
+                if (!fileData) {
+                    fileData = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => resolve(e.target.result);
+                        reader.onerror = (e) => reject(new Error("File reading failed"));
+                        reader.readAsDataURL(files[0]);
+                    });
+                }
+
+                // 2. Upload to Server
                 const data = {
                     email: currentApplicant.email,
                     category: category,
                     fileName: files[0].name,
-                    fileData: event.target.result
+                    fileData: fileData
                 };
 
                 const res = await fetch('/api/applicant/upload-document', {
@@ -390,28 +411,42 @@ function attachApplicantFileListener(inputId, category) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
+                
                 const result = await res.json();
 
+                // 3. Update UI based on result
                 if (result.success) {
                     if (label) {
                         label.innerText = `✅ ${category} Uploaded`;
                         label.style.color = 'var(--success)';
                     }
-                    if (ribbon) ribbon.classList.add('waiting'); 
-                    showToast(`✅ ${category} saved!`);
+                    if (ribbon) {
+                        ribbon.classList.remove('active');
+                        ribbon.classList.add('waiting'); 
+                        ribbon.style.width = '100%';
+                    }
+
+                    // Update local state
+                    if (!currentApplicant.documents) currentApplicant.documents = [];
+                    currentApplicant.documents = currentApplicant.documents.filter(d => d.category !== category);
+                    currentApplicant.documents.push({ category, name: files[0].name });
+
+                    showToast(`✅ ${category} saved!`, "success");
                 } else {
-                    throw new Error(result.message);
+                    throw new Error(result.message || "Server rejected upload");
                 }
-            };
-            reader.readAsDataURL(files[0]);
-        } catch (err) {
-            console.error("Upload error:", err);
-            if (label) {
-                label.innerText = `❌ Error. Retry?`;
-                label.style.color = 'var(--error)';
+            } catch (err) {
+                console.error("Upload error:", err);
+                if (label) {
+                    label.innerText = `❌ Error. Retry?`;
+                    label.style.color = 'var(--error)';
+                }
+                if (ribbon) {
+                    ribbon.classList.remove('active', 'waiting');
+                    ribbon.style.width = '0%';
+                }
+                showToast(`❌ Failed: ${err.message}`, "error");
             }
-            if (ribbon) ribbon.style.width = '0%';
-            showToast(`❌ Failed: ${category}`, "error");
         }
     });
 }
