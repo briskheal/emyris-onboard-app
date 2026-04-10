@@ -1,5 +1,10 @@
 let currentStep = 1;
-let isSaving = false; // NAV GUARD
+let isSaving = false;
+let companyData = { name: "", address: "", phone: "", tollFree: "", website: "", logo: "" };
+let currentApplicant = null;
+let allApplicants = [];
+let activeV_Applicant = null;
+let verificationChecks = {};
 
 // --- SYSTEM MAINTENANCE ---
 async function downloadDatabase() {
@@ -17,31 +22,23 @@ async function downloadDatabase() {
         a.click();
         window.URL.revokeObjectURL(url);
         showToast("✅ Database export successful", "success");
-    } catch (e) {
-        showToast("❌ Export failed", "error");
-    } finally {
-        unlockUI();
-    }
+    } catch (e) { showToast("❌ Export failed", "error"); }
+    finally { unlockUI(); }
 }
 
 async function fetchDatabaseStats() {
     try {
         const res = await fetch('/api/admin/db-stats');
         const data = await res.json();
-        
         if (data.success) {
             const summary = data.summary;
             const usedMB = (summary.totalStorageUsedBytes / (1024 * 1024)).toFixed(2);
-            
             const bar = document.getElementById('storage_perc_bar');
             const percText = document.getElementById('storage_perc_text');
             const usedText = document.getElementById('storage_used_text');
-            
             if (bar) bar.style.width = summary.usedPercentage + '%';
             if (percText) percText.innerText = summary.usedPercentage + '% Used';
             if (usedText) usedText.innerText = usedMB + ' MB';
-            
-            // Color feedback
             if (summary.usedPercentage > 85) bar.style.background = 'linear-gradient(90deg, #ef4444, #b91c1c)';
             else if (summary.usedPercentage > 60) bar.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
         }
@@ -51,36 +48,31 @@ async function fetchDatabaseStats() {
 async function nukeDatabase() {
     const confirm1 = confirm("☢️ WARNING: This will PERMANENTLY delete all Applicant data and reset letter counters. Proceed?");
     if (!confirm1) return;
-    
     const confirm2 = prompt("⚠️ NUCLEAR SAFETY CHECK: Type 'DELETE ALL' to confirm the total wipe.");
     if (confirm2 !== "DELETE ALL") {
         showToast("❌ Clear cancelled. Safety check failed.", "error");
         return;
     }
-
     try {
         lockUI("☢️ Nuking Database... Please Wait");
         const res = await fetch('/api/admin/system/clear', { method: 'POST' });
-        const json = await res.json();
-        if (json.success) {
+        if ((await res.json()).success) {
             showToast("✅ Database cleared successfully", "success");
             await fetchCompanyData();
-            await fetchApplicants(); 
-            switchAdminTab('profile'); 
+            if (typeof fetchApplicants === 'function') await fetchApplicants(); 
+            if (typeof switchAdminTab === 'function') switchAdminTab('profile'); 
         }
-    } catch (e) {
-        showToast("❌ System wipe failed", "error");
-    } finally {
-        unlockUI();
-    }
+    } catch (e) { showToast("❌ System wipe failed", "error"); }
+    finally { unlockUI(); }
 }
 
-// Toggle UI Lock while saving/uploading
+// --- UI HELPERS ---
 function lockUI(msg = "⚙️ Processing... Please Wait") {
     isSaving = true;
     const overlay = document.getElementById('processingOverlay');
     if (overlay) {
-        document.getElementById('processingText').innerText = msg;
+        const text = document.getElementById('processingText');
+        if (text) text.innerText = msg;
         overlay.classList.remove('hidden');
     }
     document.querySelectorAll('.admin-nav button').forEach(b => b.classList.add('nav-locked'));
@@ -93,32 +85,16 @@ function unlockUI() {
     document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('nav-locked'));
 }
 
-// Navigation Guard
-window.onbeforeunload = function() {
-    if (isSaving) return "Changes you made may not be saved.";
-};
+window.onbeforeunload = function() { if (isSaving) return "Changes you made may not be saved."; };
 
-let companyData = {
-    name: "",
-    address: "",
-    phone: "",
-    tollFree: "",
-    website: "",
-    logo: ""
-};
-
-let currentApplicant = null; // Stores logged-in applicant data
-let allApplicants = []; // For Admin View
-
-// Initial Setup
+// --- INITIALIZATION ---
 window.addEventListener('DOMContentLoaded', async () => {
     await fetchCompanyData();
-    updateView('landingPage');
-    initBackgroundAnimations();
+    if (typeof updateView === 'function') updateView('landingPage');
+    if (typeof initBackgroundAnimations === 'function') initBackgroundAnimations();
     initFileListeners();
 });
 
-// Show live image & file name on label when user picks a file
 function initFileListeners() {
     const fileMap = {
         compLogoInput: { status: 'logoStatus', preview: 'logoPreview' },
@@ -129,49 +105,19 @@ function initFileListeners() {
         mobileTemplateInput: { status: 'mobileStatus' },
         tadaTemplateInput: { status: 'tadaStatus' }
     };
-
-    const editor = document.getElementById('unifiedEditor');
-    if (editor) {
-        editor.addEventListener('input', () => {
-            const container = document.getElementById('livePreviewContainer');
-            if (container && !container.classList.contains('hidden')) {
-                updateLivePreviewFrame();
-            }
-        });
-        
-        ['letterFontType', 'letterFontSize', 'letterAlignment'].forEach(id => {
-            document.getElementById(id)?.addEventListener('change', () => {
-                const container = document.getElementById('livePreviewContainer');
-                if (container && !container.classList.contains('hidden')) {
-                    updateLivePreviewFrame();
-                }
-            });
-        });
-    }
     for (const [inputId, config] of Object.entries(fileMap)) {
         attachFileListener(inputId, config);
     }
 }
 
-// Reusable function to attach listeners to both static and dynamic inputs
 function attachFileListener(inputId, config) {
     const el = document.getElementById(inputId);
     if (el) el.addEventListener('change', () => {
         const label = document.getElementById(config.status);
         const files = el.files;
-        
-        // Activate ribbon
-        const ribbon = document.getElementById(`ribbon_${inputId}`);
-        if (ribbon) {
-            ribbon.classList.remove('active', 'waiting');
-            ribbon.style.width = '0%';
-        }
-
         if (label && files.length > 0) {
             label.innerText = files.length === 1 ? `✅ ${files[0].name.substring(0, 15)}` : `✅ ${files.length} Files Selected`;
             label.style.color = 'var(--success)';
-            
-            // Show preview if image (first one)
             if (config.preview && files[0].type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
@@ -184,6 +130,7 @@ function attachFileListener(inputId, config) {
     });
 }
 
+// --- COMPANY DATA ---
 async function fetchCompanyData() {
     try {
         const response = await fetch('/api/company-profile');
@@ -194,246 +141,60 @@ async function fetchCompanyData() {
 }
 
 function initBackgroundAnimations() {
-    gsap.to(".blob-1", { x: '+=50', y: '+=30', duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
-    gsap.to(".blob-2", { x: '-=40', y: '+=60', duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    if (typeof gsap !== 'undefined') {
+        gsap.to(".blob-1", { x: '+=50', y: '+=30', duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
+        gsap.to(".blob-2", { x: '-=40', y: '+=60', duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    }
 }
 
 function applyCompanyData() {
-    document.getElementById('displayCompanyName').innerText = companyData.name;
+    const dpName = document.getElementById('displayCompanyName');
+    if (dpName) dpName.innerText = companyData.name;
     const logoImg = document.getElementById('displayLogo');
-    if (companyData.logo && companyData.logo.length > 0) {
-        logoImg.src = companyData.logo[companyData.logo.length - 1].data; // Use .data
+    if (companyData.logo && companyData.logo.length > 0 && logoImg) {
+        logoImg.src = companyData.logo[companyData.logo.length - 1].data;
         logoImg.classList.remove('hidden');
     }
     const quickContact = document.getElementById('quickContact');
-    quickContact.innerHTML = `
-        ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
-        ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
-        ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
-    `;
+    if (quickContact) {
+        quickContact.innerHTML = `
+            ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
+            ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
+            ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
+        `;
+    }
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
 
-    // Dynamic header logo icon
     const headerImg = document.getElementById('headerLogoImg');
-    const headerLetter = document.getElementById('headerLogoLetter');
+    const headerLogoLetter = document.getElementById('headerLogoLetter');
     if (companyData.logo && companyData.logo.length > 0 && headerImg) {
         headerImg.src = companyData.logo[companyData.logo.length - 1].data;
         headerImg.classList.remove('hidden');
-async function nukeDatabase() {
-    const confirm1 = confirm("☢️ WARNING: This will PERMANENTLY delete all Applicant data and reset letter counters. Proceed?");
-    if (!confirm1) return;
-    
-    const confirm2 = prompt("⚠️ NUCLEAR SAFETY CHECK: Type 'DELETE ALL' to confirm the total wipe.");
-    if (confirm2 !== "DELETE ALL") {
-        showToast("❌ Clear cancelled. Safety check failed.", "error");
-        return;
-    }
-
-    try {
-        lockUI("☢️ Nuking Database... Please Wait");
-        const res = await fetch('/api/admin/system/clear', { method: 'POST' });
-        const json = await res.json();
-        if (json.success) {
-            showToast("✅ Database cleared successfully", "success");
-            await fetchCompanyData();
-            await fetchApplicants(); 
-            switchAdminTab('profile'); 
-        }
-    } catch (e) {
-        showToast("❌ System wipe failed", "error");
-    } finally {
-        unlockUI();
-    }
-}
-
-// Toggle UI Lock while saving/uploading
-function lockUI(msg = "⚙️ Processing... Please Wait") {
-    isSaving = true;
-    const overlay = document.getElementById('processingOverlay');
-    if (overlay) {
-        document.getElementById('processingText').innerText = msg;
-        overlay.classList.remove('hidden');
-    }
-    document.querySelectorAll('.admin-nav button').forEach(b => b.classList.add('nav-locked'));
-}
-
-function unlockUI() {
-    isSaving = false;
-    const overlay = document.getElementById('processingOverlay');
-    if (overlay) overlay.classList.add('hidden');
-    document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('nav-locked'));
-}
-
-// Navigation Guard
-window.onbeforeunload = function() {
-    if (isSaving) return "Changes you made may not be saved.";
-};
-
-let companyData = {
-    name: "",
-    address: "",
-    phone: "",
-    tollFree: "",
-    website: "",
-    logo: ""
-};
-
-let currentApplicant = null; // Stores logged-in applicant data
-let allApplicants = []; // For Admin View
-
-// Initial Setup
-window.addEventListener('DOMContentLoaded', async () => {
-    await fetchCompanyData();
-    updateView('landingPage');
-    initBackgroundAnimations();
-    initFileListeners();
-});
-
-// Show live image & file name on label when user picks a file
-function initFileListeners() {
-    const fileMap = {
-        compLogoInput: { status: 'logoStatus', preview: 'logoPreview' },
-        compStampInput: { status: 'stampStatus', preview: 'stampPreview' },
-        compSigInput: { status: 'sigStatus', preview: 'sigPreview' },
-        letterheadInput: { status: 'letterheadStatus', preview: 'letterheadPreview' },
-        sidebarStampInput: { status: 'sidebarStampStatus', preview: 'sidebarStampPreview' },
-        mobileTemplateInput: { status: 'mobileStatus' },
-        tadaTemplateInput: { status: 'tadaStatus' }
-    };
-
-    const editor = document.getElementById('unifiedEditor');
-    if (editor) {
-        editor.addEventListener('input', () => {
-            const container = document.getElementById('livePreviewContainer');
-            if (container && !container.classList.contains('hidden')) {
-                updateLivePreviewFrame();
-            }
-        });
-        
-        ['letterFontType', 'letterFontSize', 'letterAlignment'].forEach(id => {
-            document.getElementById(id)?.addEventListener('change', () => {
-                const container = document.getElementById('livePreviewContainer');
-                if (container && !container.classList.contains('hidden')) {
-                    updateLivePreviewFrame();
-                }
-            });
-        });
-    }
-    for (const [inputId, config] of Object.entries(fileMap)) {
-        attachFileListener(inputId, config);
-    }
-}
-
-// Reusable function to attach listeners to both static and dynamic inputs
-function attachFileListener(inputId, config) {
-    const el = document.getElementById(inputId);
-    if (el) el.addEventListener('change', () => {
-        const label = document.getElementById(config.status);
-        const files = el.files;
-        
-        // Activate ribbon
-        const ribbon = document.getElementById(`ribbon_${inputId}`);
-        if (ribbon) {
-            ribbon.classList.remove('active', 'waiting');
-            ribbon.style.width = '0%';
-        }
-
-        if (label && files.length > 0) {
-            label.innerText = files.length === 1 ? `✅ ${files[0].name.substring(0, 15)}` : `✅ ${files.length} Files Selected`;
-            label.style.color = 'var(--success)';
-            
-            // Show preview if image (first one)
-            if (config.preview && files[0].type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = document.getElementById(config.preview);
-                    if (img) { img.src = e.target.result; img.classList.remove('hidden'); }
-                };
-                reader.readAsDataURL(files[0]);
-            }
-        }
-    });
-}
-
-async function fetchCompanyData() {
-    try {
-        const response = await fetch('/api/company-profile');
-        const data = await response.json();
-        if (data && data.name) companyData = data;
-    } catch (error) { console.error('Error fetching company data:', error); }
-    applyCompanyData();
-}
-
-function initBackgroundAnimations() {
-    gsap.to(".blob-1", { x: '+=50', y: '+=30', duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
-    gsap.to(".blob-2", { x: '-=40', y: '+=60', duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
-}
-
-function applyCompanyData() {
-    document.getElementById('displayCompanyName').innerText = companyData.name;
-    const logoImg = document.getElementById('displayLogo');
-    if (companyData.logo && companyData.logo.length > 0) {
-        logoImg.src = companyData.logo[companyData.logo.length - 1].data; // Use .data
-        logoImg.classList.remove('hidden');
-    }
-    const quickContact = document.getElementById('quickContact');
-    quickContact.innerHTML = `
-        ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
-        ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
-        ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
-    `;
-    const headerTitle = document.getElementById('headerCompName');
-    if (headerTitle) headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
-
-    // Dynamic header logo icon
-    const headerImg = document.getElementById('headerLogoImg');
-    const headerLetter = document.getElementById('headerLogoLetter');
-    if (companyData.logo && companyData.logo.length > 0 && headerImg) {
-        headerImg.src = companyData.logo[companyData.logo.length - 1].data;
-        headerImg.classList.remove('hidden');
-        if (headerLetter) headerLetter.style.display = 'none';
-    } else if (headerLetter) {
-        // Use first letter of each word (max 2)
-        const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('') : '';
-        headerLetter.innerText = initials;
-        headerLetter.style.display = 'inline';
+        if (headerLogoLetter) headerLogoLetter.style.display = 'none';
+    } else if (headerLogoLetter) {
+        const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('') : 'E';
+        headerLogoLetter.innerText = initials;
+        headerLogoLetter.style.display = 'inline';
         if (headerImg) headerImg.classList.add('hidden');
     }
-
-    // --- Dynamic Required Docs ---
-    renderRequiredDocsChips();
-    renderRequiredDocsSuggestions();
-    renderApplicantDocuments();
+    if (typeof renderRequiredDocsChips === 'function') renderRequiredDocsChips();
+    if (typeof renderRequiredDocsSuggestions === 'function') renderRequiredDocsSuggestions();
+    if (typeof renderApplicantDocuments === 'function') renderApplicantDocuments();
 }
 
 // --- REQUIRED DOCUMENTS LOGIC ---
-
 const STANDARD_DOCS = [
-    "Aadhar Card", 
-    "PAN Card", 
-    "Educational Certificates", 
-    "Higher Sem/Year Marks-Sheet",
-    "Profile Photograph",
-    "Passport",
-    "Driving License",
-    "Previous Company Relieving Letter",
-    "Experience Certificate", 
-    "Previous Appointment Letter",
-    "Salary Certificate / Three Months Pay Slip",
-    "Cancelled Cheque / Bank Passbook",
-    "Medical Fitness Certificate",
-    "Police Clearance / Declaration"
+    "Aadhar Card - Front", "Aadhar Card - Back", "PAN Card", "Degree/Provisional Certificate",
+    "Experience Letter - Previous Company", "Relieving Letter - Previous Company",
+    "3 Months Pay Slips", "Bank Statement", "Passport Photo", "Medical Fitness Certificate"
 ];
 
 function renderRequiredDocsChips() {
     const container = document.getElementById('requiredDocsContainer');
     const placeholder = document.getElementById('noDocsPlaceholder');
     if (!container) return;
-
-    // Clear existing chips
     container.querySelectorAll('.division-chip').forEach(c => c.remove());
-    
     const docs = companyData.requiredDocs || [];
     if (docs.length > 0) {
         if (placeholder) placeholder.style.display = 'none';
@@ -441,84 +202,62 @@ function renderRequiredDocsChips() {
             const chip = document.createElement('div');
             chip.className = 'division-chip';
             chip.style.background = 'var(--primary)';
-            chip.innerHTML = `
-                <span>${doc}</span>
-                <button type="button" onclick="toggleDocRequirement('${doc}')">×</button>
-            `;
+            chip.innerHTML = `<span>${doc}</span><button type="button" onclick="toggleDocRequirement('${doc}')">×</button>`;
             container.appendChild(chip);
         });
-    } else {
-        if (placeholder) placeholder.style.display = 'block';
-    }
+    } else if (placeholder) placeholder.style.display = 'block';
 }
 
 function renderRequiredDocsSuggestions() {
     const container = document.getElementById('standardDocsSuggestions');
     if (!container) return;
     container.innerHTML = '';
-
     const selected = companyData.requiredDocs || [];
-    
     STANDARD_DOCS.forEach(doc => {
         const isSelected = selected.includes(doc);
         const chip = document.createElement('div');
         chip.className = 'division-chip';
-        // If selected, make it greyed out or special
         chip.style.background = isSelected ? 'rgba(255,255,255,0.05)' : 'rgba(99, 102, 241, 0.15)';
-        chip.style.border = isSelected ? '1px solid var(--glass-border)' : '1px solid var(--primary)';
-        chip.style.color = isSelected ? 'var(--text-muted)' : 'white';
         chip.style.opacity = isSelected ? '0.5' : '1';
-        chip.style.cursor = isSelected ? 'default' : 'pointer';
-        
         chip.innerHTML = `<span>${isSelected ? '✓ ' : '+ '}${doc}</span>`;
         if (!isSelected) chip.onclick = () => toggleDocRequirement(doc);
-        
         container.appendChild(chip);
     });
 }
 
 function toggleDocRequirement(docName) {
     if (!companyData.requiredDocs) companyData.requiredDocs = [];
-    
     const idx = companyData.requiredDocs.indexOf(docName);
-    if (idx > -1) {
-        companyData.requiredDocs.splice(idx, 1);
-    } else {
-        companyData.requiredDocs.push(docName);
-    }
-    
+    if (idx > -1) companyData.requiredDocs.splice(idx, 1);
+    else companyData.requiredDocs.push(docName);
     renderRequiredDocsChips();
     renderRequiredDocsSuggestions();
 }
 
 function addCustomRequiredDoc() {
     const input = document.getElementById('customDocInput');
-    const val = input.value.trim();
-    if (!val) return;
-    
-    if (!companyData.requiredDocs) companyData.requiredDocs = [];
-    if (!companyData.requiredDocs.includes(val)) {
-        companyData.requiredDocs.push(val);
-        input.value = '';
-        renderRequiredDocsChips();
-        renderRequiredDocsSuggestions();
+    const val = input.value?.trim();
+    if (val) {
+        if (!companyData.requiredDocs) companyData.requiredDocs = [];
+        if (!companyData.requiredDocs.includes(val)) {
+            companyData.requiredDocs.push(val);
+            input.value = '';
+            renderRequiredDocsChips();
+            renderRequiredDocsSuggestions();
+        }
     }
 }
 
-// Generate the Upload Fields in Step 5
 function renderApplicantDocuments() {
     const container = document.getElementById('dynamicTestimonialUploads');
     if (!container) return;
     container.innerHTML = '';
-
     const docs = companyData.requiredDocs || [];
     const existingDocs = currentApplicant?.documents || [];
-    
-    // Helper to check if a doc is already uploaded
     const getUpload = (name) => existingDocs.find(d => d.category === name);
 
     if (docs.length === 0) {
-        container.innerHTML = `<p style="color: var(--text-muted); text-align: center; width:100%;">No specific documents required by the company.</p>`;
+        container.innerHTML = `<p style="color: var(--text-muted); text-align: center; width:100%;">No specific documents required.</p>`;
     } else {
         docs.forEach(docName => {
             const safeId = docName.replace(/[^a-z0-9]/gi, '_');
@@ -527,90 +266,61 @@ function renderApplicantDocuments() {
             box.className = 'upload-box';
             box.innerHTML = `
                 <label>${docName}*</label>
-                <div class="drop-zone" id="drop_${safeId}" onclick="document.getElementById('file_${safeId}').click()">
+                <div class="drop-zone" onclick="document.getElementById('file_${safeId}').click()">
                     <div class="progress-ribbon ${upload ? 'waiting' : ''}" id="ribbon_file_${safeId}" style="width: ${upload ? '100%' : '0%'}"></div>
                     <span class="drop-icon">${upload ? '✅' : '📎'}</span>
-                    <span id="status_${safeId}" class="drop-label" style="color: ${upload ? 'var(--success)' : 'inherit'}">
-                        ${upload ? `${docName} Uploaded` : `Choose ${docName} or Drag Here`}
-                    </span>
-                    <input type="file" id="file_${safeId}" name="doc_${safeId}" class="hidden">
+                    <span id="status_${safeId}" class="drop-label">${upload ? `${docName} Uploaded` : `Choose ${docName}`}</span>
+                    <input type="file" id="file_${safeId}" class="hidden">
                 </div>
             `;
             container.appendChild(box);
             attachApplicantFileListener(`file_${safeId}`, docName);
         });
     }
-    
-    // Add Signature as a mandatory fixed box
     const sigUpload = getUpload('Digital Signature');
     const sigBox = document.createElement('div');
     sigBox.className = 'upload-box';
     sigBox.innerHTML = `
         <label>Digital Signature (Photo)*</label>
-        <div class="drop-zone" id="drop_Signature" onclick="document.getElementById('file_Signature').click()">
+        <div class="drop-zone" onclick="document.getElementById('file_Signature').click()">
             <div class="progress-ribbon ${sigUpload ? 'waiting' : ''}" id="ribbon_file_Signature" style="width: ${sigUpload ? '100%' : '0%'}"></div>
             <span class="drop-icon">${sigUpload ? '✍️ ✅' : '✍️'}</span>
-            <span id="status_Signature" class="drop-label" style="color: ${sigUpload ? 'var(--success)' : 'inherit'}">
-                ${sigUpload ? 'Signature Saved' : 'Upload Sign on White Paper'}
-            </span>
-            <input type="file" id="file_Signature" name="doc_Signature" class="hidden">
+            <span id="status_Signature" class="drop-label">${sigUpload ? 'Signature Saved' : 'Upload Sign'}</span>
+            <input type="file" id="file_Signature" class="hidden">
         </div>
     `;
-    container.appendChild(sigBox);
+    if (container) container.appendChild(sigBox);
     attachApplicantFileListener(`file_Signature`, 'Digital Signature');
 }
 
 function attachApplicantFileListener(inputId, category) {
     const input = document.getElementById(inputId);
     if (!input) return;
-
     input.addEventListener('change', async (e) => {
-        const files = e.target.files;
-        if (files.length === 0) return;
-
+        const file = e.target.files[0];
+        if (!file) return;
         const safeId = inputId.replace('file_', '');
         const label = document.getElementById(`status_${safeId}`);
         const ribbon = document.getElementById(`ribbon_${inputId}`);
-        const file = files[0];
-
         const fileSizeMB = file.size / (1024 * 1024);
         const isImage = file.type.startsWith('image/');
         const maxSizeMB = isImage ? 20 : 8;
-
         if (fileSizeMB > maxSizeMB) {
-            if (label) { label.innerText = `❌ File too large (${fileSizeMB.toFixed(1)}MB). Max ${maxSizeMB}MB.`; label.style.color = "var(--error)"; }
-            showToast(`❌ Too large. Max ${maxSizeMB}MB allowed.`, "error");
-            input.value = '';
+            showToast(`❌ Too large. Max ${maxSizeMB}MB.`, "error");
             return;
         }
-
-        if (label) { label.innerText = `⏳ Uploading...`; label.style.color = "var(--accent)"; }
+        if (label) label.innerText = `⏳ Uploading...`;
         if (ribbon) { ribbon.classList.add('active'); ribbon.style.width = '30%'; }
-
         try {
-            let fileData = '';
-            if (isImage) { fileData = await compressAndResize(file, 1200); }
-            if (!fileData) {
-                fileData = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => resolve(ev.target.result);
-                    reader.onerror = () => reject(new Error('File reading failed'));
-                    reader.readAsDataURL(file);
-                });
-            }
-            if (ribbon) ribbon.style.width = '60%';
-
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 25000);
+            let fileData = isImage ? await compressAndResize(file, 1200) : await new Promise((res, rej) => {
+                const r = new FileReader(); r.onload = (ev) => res(ev.target.result); r.onerror = rej; r.readAsDataURL(file);
+            });
             const res = await fetch('/api/applicant/upload-document', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: currentApplicant.email, category, fileName: file.name, fileData }),
-                signal: controller.signal
+                body: JSON.stringify({ email: currentApplicant.email, category, fileName: file.name, fileData })
             });
-            clearTimeout(timeoutId);
             const result = await res.json();
-
             if (result.success) {
                 if (label) { label.innerText = `✅ ${category} Uploaded`; label.style.color = "var(--success)"; }
                 if (ribbon) { ribbon.classList.remove('active'); ribbon.classList.add('waiting'); ribbon.style.width = '100%'; }
@@ -914,54 +624,47 @@ async function saveDraft() {
 function nextStep(step) {
     if (step === 1 && document.getElementById('welcome').classList.contains('active')) {
         updateView('onboardingForm');
-        document.getElementById('onboardingForm').classList.remove('hidden');
-        document.getElementById('onboardingForm').style.display = 'block';
         updateProgress(1);
         return;
     }
 
     const currentSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
+    if (!currentSection) return;
+
+    // 1. Regular Form Validation
     const inputs = currentSection.querySelectorAll('input[required], select[required], textarea[required]');
     let isValid = true;
     inputs.forEach(input => {
-        if (input.classList.contains('hidden') || input.type === 'file') return;
-        if (!input.value) {
+        if (input.offsetParent === null) return; // Skip if hidden
+        if (input.type === 'file') return; // Handled separately
+        if (!input.value.trim()) {
             isValid = false;
             input.classList.add('error');
-            setTimeout(() => input.classList.remove('error'), 2000);
+            setTimeout(() => input.classList.remove('error'), 3000);
         }
     });
+    if (!isValid) return showToast("⚠️ Please fill all required fields", "warning");
 
-    if (!isValid) return alert("Please fill all required fields.");
-
-    // Final check for documents on step 6
+    // 2. Document Validation (Step 5 to 6)
     if (currentStep === 5) {
-        const docInputs = document.querySelectorAll('.doc-upload-input');
-        for (let input of docInputs) {
-            if (!input.files || input.files.length === 0) {
-                return alert("Please upload all required documents before submitting.");
-            }
+        const requiredDocs = companyData.requiredDocs || [];
+        const uploadedDocs = currentApplicant?.documents?.map(d => d.category) || [];
+        const missing = requiredDocs.filter(d => !uploadedDocs.includes(d));
+        if (!uploadedDocs.includes('Digital Signature')) missing.push('Digital Signature');
+        if (missing.length > 0) {
+            return alert(`⚠️ Please upload all required documents:\n\n${missing.join('\n')}`);
         }
     }
 
-    saveDraft(); // Sync to DB
-
-    gsap.to(currentSection, { opacity: 0, x: -50, filter: 'blur(10px)', duration: 0.4, onComplete: () => {
-        currentSection.classList.add('hidden');
-        currentSection.classList.remove('active');
-        currentStep = step;
-        
-        // Refresh dynamic testimonials if entering Step 5
-        if (currentStep === 5) renderApplicantDocuments();
-
-        const nextSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
-        nextSection.classList.remove('hidden');
-        gsap.fromTo(nextSection, { opacity: 0, x: 50 }, { opacity: 1, x: 0, duration: 0.5, onComplete: () => {
-            nextSection.classList.add('active');
-            updateProgress(currentStep);
-        }});
-    }});
+    // 3. Perform Transition
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    currentStep = step;
+    document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+    updateProgress(currentStep);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    saveDraft();
 }
+
 
 function prevStep(step) {
     const currentSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
@@ -980,13 +683,14 @@ function prevStep(step) {
 }
 
 function updateProgress(step) {
-    document.querySelectorAll('.step').forEach((s, i) => {
-        const n = parseInt(s.dataset.step);
-        s.classList.toggle('active', n === step);
-        s.classList.toggle('completed', n < step);
-    });
-    document.querySelectorAll('.step-line').forEach((l, i) => l.classList.toggle('active', i < step - 1));
+    const totalSteps = 6;
+    const progress = (step / totalSteps) * 100;
+    const bar = document.getElementById('formProgress');
+    const indicator = document.getElementById('stepIndicator');
+    if (bar) bar.style.width = `${progress}%`;
+    if (indicator) indicator.innerText = `Step ${step} of ${totalSteps}`;
 }
+
 
 function showReview() {
     const form = document.getElementById('onboardingForm');
