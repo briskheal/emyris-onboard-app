@@ -1,4 +1,4 @@
-let currentStep = 1;
+﻿let currentStep = 1;
 let isSaving = false; // NAV GUARD
 
 // --- SYSTEM MAINTENANCE ---
@@ -397,33 +397,67 @@ function attachApplicantFileListener(inputId, category) {
         if (files.length === 0) return;
 
         const safeId = inputId.replace('file_', '');
-        const label = document.getElementById(`status_${safeId}`);
-        const ribbon = document.getElementById(`ribbon_${inputId}`);
+        const label = document.getElementById(status_${safeId});
+        const ribbon = document.getElementById(ibbon_${inputId});
+        const file = files[0];
 
-        if (label) {
-            label.innerText = `⏳ Uploading...`;
-            label.style.color = 'var(--accent)';
+        const fileSizeMB = file.size / (1024 * 1024);
+        const isImage = file.type.startsWith('image/');
+        const maxSizeMB = isImage ? 20 : 8;
+
+        if (fileSizeMB > maxSizeMB) {
+            if (label) { label.innerText = \u274c File too large (${fileSizeMB.toFixed(1)}MB). Max ${maxSizeMB}MB.; label.style.color = 'var(--error)'; }
+            showToast(\u274c File too large. Max ${maxSizeMB}MB allowed., "error");
+            input.value = '';
+            return;
         }
-        if (ribbon) {
-            ribbon.classList.add('active');
-            ribbon.style.width = '30%';
-        }
-        
+
+        if (label) { label.innerText = \u23f3 Uploading...; label.style.color = 'var(--accent)'; }
+        if (ribbon) { ribbon.classList.add('active'); ribbon.style.width = '30%'; }
+
         try {
-            // 1. Get File Data (with compression if it's an image)
             let fileData = "";
-            if (files[0].type.startsWith('image/')) {
-                fileData = await compressAndResize(files[0], 1600);
-            }
-            
+            if (isImage) { fileData = await compressAndResize(file, 1200); }
             if (!fileData) {
                 fileData = await new Promise((resolve, reject) => {
                     const reader = new FileReader();
-                    reader.onload = (e) => resolve(e.target.result);
-                    reader.onerror = (e) => reject(new Error("File reading failed"));
-                    reader.readAsDataURL(files[0]);
+                    reader.onload = (ev) => resolve(ev.target.result);
+                    reader.onerror = () => reject(new Error("File reading failed"));
+                    reader.readAsDataURL(file);
                 });
             }
+            if (ribbon) ribbon.style.width = '60%';
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+            const res = await fetch('/api/applicant/upload-document', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: currentApplicant.email, category, fileName: file.name, fileData }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            const result = await res.json();
+
+            if (result.success) {
+                if (label) { label.innerText = \u2705 ${category} Uploaded; label.style.color = 'var(--success)'; }
+                if (ribbon) { ribbon.classList.remove('active'); ribbon.classList.add('waiting'); ribbon.style.width = '100%'; }
+                if (!currentApplicant.documents) currentApplicant.documents = [];
+                currentApplicant.documents = currentApplicant.documents.filter(d => d.category !== category);
+                currentApplicant.documents.push({ category, name: file.name });
+                showToast(\u2705 ${category} saved!, "success");
+            } else { throw new Error(result.message || "Server rejected upload"); }
+        } catch (err) {
+            console.error("Upload error:", err);
+            const errMsg = err.name === 'AbortError' ? 'Upload timed out. Try a smaller file.' : err.message;
+            if (label) { label.innerText = \u274c ${errMsg}; label.style.color = 'var(--error)'; }
+            if (ribbon) { ribbon.classList.remove('active', 'waiting'); ribbon.style.width = '0%'; }
+            showToast(\u274c Upload failed: ${errMsg}, "error");
+            input.value = '';
+        }
+    });
+}
 
             // 2. Upload to Server
             const data = {

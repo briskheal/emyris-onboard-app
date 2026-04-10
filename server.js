@@ -98,7 +98,7 @@ const applicantSchema = new mongoose.Schema({
     registeredAt: { type: Date, default: Date.now },
     submittedAt: Date,
     approvedAt: Date,
-    documents: [Object],
+    documents: { type: [mongoose.Schema.Types.Mixed], default: [] },
     division: String,
     reportingTo: String,
     refNo: String,
@@ -407,6 +407,13 @@ app.post('/api/applicant/upload-document', async (req, res) => {
         const { email, category, fileName, fileData } = req.body;
         if (!email || !category || !fileData) {
             return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+
+        const sizeKB = Math.round(Buffer.byteLength(fileData || '', 'utf8') / 1024);
+        console.log(`📎 [DOC-UPLOAD] ${email} | ${category} | ${fileName} | ${sizeKB}KB`);
+
+        if (sizeKB > 8192) {
+            return res.status(413).json({ success: false, message: `File too large (${sizeKB}KB). Maximum 8MB allowed.` });
         }
 
         const applicant = await Applicant.findOne({ email });
