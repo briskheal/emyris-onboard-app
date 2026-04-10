@@ -24,6 +24,30 @@ async function downloadDatabase() {
     }
 }
 
+async function fetchDatabaseStats() {
+    try {
+        const res = await fetch('/api/admin/db-stats');
+        const data = await res.json();
+        
+        if (data.success) {
+            const summary = data.summary;
+            const usedMB = (summary.totalStorageUsedBytes / (1024 * 1024)).toFixed(2);
+            
+            const bar = document.getElementById('storage_perc_bar');
+            const percText = document.getElementById('storage_perc_text');
+            const usedText = document.getElementById('storage_used_text');
+            
+            if (bar) bar.style.width = summary.usedPercentage + '%';
+            if (percText) percText.innerText = summary.usedPercentage + '% Used';
+            if (usedText) usedText.innerText = usedMB + ' MB';
+            
+            // Color feedback
+            if (summary.usedPercentage > 85) bar.style.background = 'linear-gradient(90deg, #ef4444, #b91c1c)';
+            else if (summary.usedPercentage > 60) bar.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
+        }
+    } catch (e) { console.error("Stats fail:", e); }
+}
+
 async function nukeDatabase() {
     const confirm1 = confirm("☢️ WARNING: This will PERMANENTLY delete all Applicant data and reset letter counters. Proceed?");
     if (!confirm1) return;
@@ -1050,6 +1074,7 @@ function switchAdminTab(tab) {
     
     if (tab === 'profile') {
         document.getElementById('adminProfileTab').classList.remove('hidden');
+        fetchDatabaseStats();
         const f = document.getElementById('companyProfileForm');
         f.compName.value = companyData.name || '';
         f.compWeb.value = companyData.website || '';

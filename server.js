@@ -527,6 +527,45 @@ app.get('/api/admin/divisions', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// Admin - DB Statistics
+app.get('/api/admin/db-stats', async (req, res) => {
+    try {
+        if (!connMain || !connAssets) return res.status(500).json({ success: false, message: 'DB not connected' });
+
+        const mainStats = await connMain.db.stats();
+        const assetStats = await connAssets.db.stats();
+
+        // Atlas M0 limit is 512MB = 536,870,912 bytes
+        const LIMIT = 512 * 1024 * 1024; 
+
+        const totalUsed = mainStats.dataSize + assetStats.dataSize;
+        const totalStorageUsed = mainStats.storageSize + assetStats.storageSize; // Physical disk usage
+
+        res.json({
+            success: true,
+            main: {
+                used: mainStats.dataSize,
+                storage: mainStats.storageSize,
+                objects: mainStats.objects
+            },
+            assets: {
+                used: assetStats.dataSize,
+                storage: assetStats.storageSize,
+                objects: assetStats.objects
+            },
+            summary: {
+                totalUsedBytes: totalUsed,
+                totalStorageUsedBytes: totalStorageUsed,
+                limitBytes: LIMIT,
+                usedPercentage: ((totalStorageUsed / LIMIT) * 100).toFixed(2),
+                leftPercentage: (100 - (totalStorageUsed / LIMIT) * 100).toFixed(2)
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 app.post('/api/admin/divisions', async (req, res) => {
     try {
         const { name } = req.body;

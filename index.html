@@ -324,6 +324,19 @@
                                     <p style="margin: 6px 0 0; font-size: 0.8rem; color: var(--text-muted); max-width: 450px; line-height: 1.4;">Download a full JSON snapshot of your environment, or permanently clear all applicants and reset sequences for a new recruitment cycle.</p>
                                 </div>
                                 <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                                    <div id="storageStatsBox" style="background: rgba(0,0,0,0.25); border: 1px solid var(--glass-border); padding: 8px 16px; border-radius: 12px; display: flex; flex-direction: column; gap: 4px; min-width: 180px;">
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">
+                                            <span>Storage</span>
+                                            <span id="storage_perc_text">0% Used</span>
+                                        </div>
+                                        <div style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; border: 1px solid rgba(255,255,255,0.02);">
+                                            <div id="storage_perc_bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 1s ease;"></div>
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600;">
+                                            <span id="storage_used_text">0 MB</span>
+                                            <span style="color: var(--text-muted);">/ 512 MB</span>
+                                        </div>
+                                    </div>
                                     <button type="button" class="btn btn-outline" onclick="downloadDatabase()" style="padding: 0.6rem 1rem; font-size: 0.85rem;">📥 Backup Data</button>
                                     <button type="button" class="btn" onclick="nukeDatabase()" style="padding: 0.6rem 1rem; font-size: 0.85rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; border-radius: 10px;">☢️ Nuclear Reset</button>
                                 </div>
