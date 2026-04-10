@@ -458,6 +458,14 @@ app.post('/api/admin-login', (req, res) => {
     }
 });
 
+app.get('/api/admin/applicant-pin/:email', async (req, res) => {
+    try {
+        const applicant = await Applicant.findOne({ email: req.params.email }).select('fullName email password status');
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+        res.json({ name: applicant.fullName, email: applicant.email, pin: applicant.password, status: applicant.status });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 app.get('/api/admin/applicants', async (req, res) => {
     try {
         const applicants = await Applicant.find().sort({ registeredAt: -1 });

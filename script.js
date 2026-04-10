@@ -1,4 +1,4 @@
-﻿let currentStep = 1;
+let currentStep = 1;
 let isSaving = false; // NAV GUARD
 
 // --- SYSTEM MAINTENANCE ---
@@ -1356,6 +1356,24 @@ async function deleteAssetRecord(assetId) {
         }
     } catch (e) { showToast("❌ Delete failed", "error"); }
     finally { unlockUI(); }
+}
+
+// Calculate how much of the onboarding form the applicant has filled
+function calculateAppProgress(app) {
+    const fd = app.formData || {};
+    let filled = 0;
+    let total = 8; // key fields to track
+
+    if (fd.firstName || app.fullName) filled++;
+    if (fd.phone || app.phone) filled++;
+    if (fd.dob) filled++;
+    if (fd.address) filled++;
+    if (fd.designation) filled++;
+    if (fd.bankName || fd.accNo) filled++;
+    if (app.documents && app.documents.length > 0) filled++;
+    if (app.status && app.status !== 'draft') filled++;
+
+    return Math.round((filled / total) * 100);
 }
 
 function renderApplicantsTable(applicants) {
