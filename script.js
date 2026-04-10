@@ -220,6 +220,178 @@ function applyCompanyData() {
     if (companyData.logo && companyData.logo.length > 0 && headerImg) {
         headerImg.src = companyData.logo[companyData.logo.length - 1].data;
         headerImg.classList.remove('hidden');
+async function nukeDatabase() {
+    const confirm1 = confirm("☢️ WARNING: This will PERMANENTLY delete all Applicant data and reset letter counters. Proceed?");
+    if (!confirm1) return;
+    
+    const confirm2 = prompt("⚠️ NUCLEAR SAFETY CHECK: Type 'DELETE ALL' to confirm the total wipe.");
+    if (confirm2 !== "DELETE ALL") {
+        showToast("❌ Clear cancelled. Safety check failed.", "error");
+        return;
+    }
+
+    try {
+        lockUI("☢️ Nuking Database... Please Wait");
+        const res = await fetch('/api/admin/system/clear', { method: 'POST' });
+        const json = await res.json();
+        if (json.success) {
+            showToast("✅ Database cleared successfully", "success");
+            await fetchCompanyData();
+            await fetchApplicants(); 
+            switchAdminTab('profile'); 
+        }
+    } catch (e) {
+        showToast("❌ System wipe failed", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+// Toggle UI Lock while saving/uploading
+function lockUI(msg = "⚙️ Processing... Please Wait") {
+    isSaving = true;
+    const overlay = document.getElementById('processingOverlay');
+    if (overlay) {
+        document.getElementById('processingText').innerText = msg;
+        overlay.classList.remove('hidden');
+    }
+    document.querySelectorAll('.admin-nav button').forEach(b => b.classList.add('nav-locked'));
+}
+
+function unlockUI() {
+    isSaving = false;
+    const overlay = document.getElementById('processingOverlay');
+    if (overlay) overlay.classList.add('hidden');
+    document.querySelectorAll('.admin-nav button').forEach(b => b.classList.remove('nav-locked'));
+}
+
+// Navigation Guard
+window.onbeforeunload = function() {
+    if (isSaving) return "Changes you made may not be saved.";
+};
+
+let companyData = {
+    name: "",
+    address: "",
+    phone: "",
+    tollFree: "",
+    website: "",
+    logo: ""
+};
+
+let currentApplicant = null; // Stores logged-in applicant data
+let allApplicants = []; // For Admin View
+
+// Initial Setup
+window.addEventListener('DOMContentLoaded', async () => {
+    await fetchCompanyData();
+    updateView('landingPage');
+    initBackgroundAnimations();
+    initFileListeners();
+});
+
+// Show live image & file name on label when user picks a file
+function initFileListeners() {
+    const fileMap = {
+        compLogoInput: { status: 'logoStatus', preview: 'logoPreview' },
+        compStampInput: { status: 'stampStatus', preview: 'stampPreview' },
+        compSigInput: { status: 'sigStatus', preview: 'sigPreview' },
+        letterheadInput: { status: 'letterheadStatus', preview: 'letterheadPreview' },
+        sidebarStampInput: { status: 'sidebarStampStatus', preview: 'sidebarStampPreview' },
+        mobileTemplateInput: { status: 'mobileStatus' },
+        tadaTemplateInput: { status: 'tadaStatus' }
+    };
+
+    const editor = document.getElementById('unifiedEditor');
+    if (editor) {
+        editor.addEventListener('input', () => {
+            const container = document.getElementById('livePreviewContainer');
+            if (container && !container.classList.contains('hidden')) {
+                updateLivePreviewFrame();
+            }
+        });
+        
+        ['letterFontType', 'letterFontSize', 'letterAlignment'].forEach(id => {
+            document.getElementById(id)?.addEventListener('change', () => {
+                const container = document.getElementById('livePreviewContainer');
+                if (container && !container.classList.contains('hidden')) {
+                    updateLivePreviewFrame();
+                }
+            });
+        });
+    }
+    for (const [inputId, config] of Object.entries(fileMap)) {
+        attachFileListener(inputId, config);
+    }
+}
+
+// Reusable function to attach listeners to both static and dynamic inputs
+function attachFileListener(inputId, config) {
+    const el = document.getElementById(inputId);
+    if (el) el.addEventListener('change', () => {
+        const label = document.getElementById(config.status);
+        const files = el.files;
+        
+        // Activate ribbon
+        const ribbon = document.getElementById(`ribbon_${inputId}`);
+        if (ribbon) {
+            ribbon.classList.remove('active', 'waiting');
+            ribbon.style.width = '0%';
+        }
+
+        if (label && files.length > 0) {
+            label.innerText = files.length === 1 ? `✅ ${files[0].name.substring(0, 15)}` : `✅ ${files.length} Files Selected`;
+            label.style.color = 'var(--success)';
+            
+            // Show preview if image (first one)
+            if (config.preview && files[0].type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById(config.preview);
+                    if (img) { img.src = e.target.result; img.classList.remove('hidden'); }
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        }
+    });
+}
+
+async function fetchCompanyData() {
+    try {
+        const response = await fetch('/api/company-profile');
+        const data = await response.json();
+        if (data && data.name) companyData = data;
+    } catch (error) { console.error('Error fetching company data:', error); }
+    applyCompanyData();
+}
+
+function initBackgroundAnimations() {
+    gsap.to(".blob-1", { x: '+=50', y: '+=30', duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    gsap.to(".blob-2", { x: '-=40', y: '+=60', duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
+}
+
+function applyCompanyData() {
+    document.getElementById('displayCompanyName').innerText = companyData.name;
+    const logoImg = document.getElementById('displayLogo');
+    if (companyData.logo && companyData.logo.length > 0) {
+        logoImg.src = companyData.logo[companyData.logo.length - 1].data; // Use .data
+        logoImg.classList.remove('hidden');
+    }
+    const quickContact = document.getElementById('quickContact');
+    quickContact.innerHTML = `
+        ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
+        ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
+        ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
+    `;
+    const headerTitle = document.getElementById('headerCompName');
+    if (headerTitle) headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
+
+    // Dynamic header logo icon
+    const headerImg = document.getElementById('headerLogoImg');
+    const headerLetter = document.getElementById('headerLogoLetter');
+    if (companyData.logo && companyData.logo.length > 0 && headerImg) {
+        headerImg.src = companyData.logo[companyData.logo.length - 1].data;
+        headerImg.classList.remove('hidden');
         if (headerLetter) headerLetter.style.display = 'none';
     } else if (headerLetter) {
         // Use first letter of each word (max 2)
@@ -361,7 +533,7 @@ function renderApplicantDocuments() {
                     <span id="status_${safeId}" class="drop-label" style="color: ${upload ? 'var(--success)' : 'inherit'}">
                         ${upload ? `${docName} Uploaded` : `Choose ${docName} or Drag Here`}
                     </span>
-                    <input type="file" id="file_${safeId}" name="doc_${safeId}" class="hidden" ${upload ? '' : 'required'}>
+                    <input type="file" id="file_${safeId}" name="doc_${safeId}" class="hidden">
                 </div>
             `;
             container.appendChild(box);
@@ -381,7 +553,7 @@ function renderApplicantDocuments() {
             <span id="status_Signature" class="drop-label" style="color: ${sigUpload ? 'var(--success)' : 'inherit'}">
                 ${sigUpload ? 'Signature Saved' : 'Upload Sign on White Paper'}
             </span>
-            <input type="file" id="file_Signature" name="doc_Signature" class="hidden" ${sigUpload ? '' : 'required'}>
+            <input type="file" id="file_Signature" name="doc_Signature" class="hidden">
         </div>
     `;
     container.appendChild(sigBox);
@@ -489,7 +661,7 @@ function updateView(viewId) {
     activeSection.classList.add('active');
     
     // 4. Update body classes
-    const majorViews = ['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin'];
+    const majorViews = ['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin', 'applicantVerificationView'];
     if (majorViews.includes(viewId)) {
         document.body.classList.add('onboarding-inactive');
     } else {
@@ -752,6 +924,7 @@ function nextStep(step) {
     const inputs = currentSection.querySelectorAll('input[required], select[required], textarea[required]');
     let isValid = true;
     inputs.forEach(input => {
+        if (input.classList.contains('hidden') || input.type === 'file') return;
         if (!input.value) {
             isValid = false;
             input.classList.add('error');
@@ -760,6 +933,16 @@ function nextStep(step) {
     });
 
     if (!isValid) return alert("Please fill all required fields.");
+
+    // Final check for documents on step 6
+    if (currentStep === 5) {
+        const docInputs = document.querySelectorAll('.doc-upload-input');
+        for (let input of docInputs) {
+            if (!input.files || input.files.length === 0) {
+                return alert("Please upload all required documents before submitting.");
+            }
+        }
+    }
 
     saveDraft(); // Sync to DB
 
@@ -812,19 +995,55 @@ function showReview() {
     reviewContent.innerHTML = '';
 
     const groups = {
-        "Personal": ["firstName", "lastName", "dob", "gender", "bloodGroup", "fatherName"],
-        "Employment": ["designation", "joiningDate", "salary", "hq"],
-        "Contact": ["phone", "address", "city", "state", "pin"],
-        "Bank": ["bankName", "accNo", "ifsc"]
+        "👥 Personal": ["firstName", "lastName", "dob", "gender", "bloodGroup", "fatherName"],
+        "💼 Employment": ["designation", "joiningDate", "salary", "hq"],
+        "📞 Contact": ["phone", "address", "city", "state", "pin"],
+        "🏦 Bank": ["bankName", "accNo", "ifsc"]
     };
 
     for (const [name, fields] of Object.entries(groups)) {
         let items = fields.map(f => {
             const val = formData.get(f) || "N/A";
-            return `<div class="review-item"><span class="review-label">${f}</span><span class="review-value">${val}</span></div>`;
+            const cleanLabel = f.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+            return `<div class="review-item"><span class="review-label">${cleanLabel}</span><span class="review-value">${val}</span></div>`;
         }).join('');
         reviewContent.innerHTML += `<div class="review-section-group"><h4>${name}</h4><div class="review-grid">${items}</div></div>`;
     }
+
+    // Add Documents Section
+    const reqDocs = companyData.requiredDocs || [];
+    const uploadedDocs = currentApplicant.documents || [];
+    
+    let docItems = reqDocs.map(dName => {
+        const up = uploadedDocs.find(u => u.category === dName);
+        return `
+            <div class="review-item">
+                <span class="review-label">${dName}</span>
+                <span class="review-value" style="color: ${up ? 'var(--success)' : '#ef4444'}">
+                    ${up ? '✅ Already Uploaded' : '❌ NOT UPLOADED'}
+                </span>
+            </div>
+        `;
+    }).join('');
+
+    // Add Signature to docs
+    const sig = uploadedDocs.find(u => u.category === 'Digital Signature');
+    docItems += `
+        <div class="review-item">
+            <span class="review-label">Digital Signature</span>
+            <span class="review-value" style="color: ${sig ? 'var(--success)' : '#ef4444'}">
+                ${sig ? '✅ Already Uploaded' : '❌ NOT UPLOADED'}
+            </span>
+        </div>
+    `;
+
+    reviewContent.innerHTML += `
+        <div class="review-section-group">
+            <h4>📁 Uploaded Testimonials</h4>
+            <div class="review-grid">${docItems}</div>
+        </div>
+    `;
+
     nextStep(6);
 }
 
@@ -841,7 +1060,10 @@ async function handleAdminLogin() {
     if ((await res.json()).success) {
         updateView('adminDashboard');
         switchAdminTab('profile');
-    } else alert("Invalid Admin Credentials");
+    } else {
+        alert("Invalid Admin Credentials");
+        document.getElementById('adminPass').value = '';
+    }
 }
 
 function logoutAdmin() {
@@ -1445,11 +1667,6 @@ async function toggleAccess(email, canLogin) {
     } catch (e) { showToast("Toggle failed", "error"); }
 }
 
-// --- APPLICANT VERIFICATION DASHBOARD (FULL PAGE) ---
-
-let activeV_Applicant = null;
-let verificationChecks = {}; // { docName: true/false }
-
 async function openVerificationView(email) {
     const app = allApplicants.find(a => a.email === email);
     if (!app) return;
@@ -1457,8 +1674,7 @@ async function openVerificationView(email) {
     verificationChecks = app.verificationChecks || {};
 
     // 1. Navigation & Headers
-    document.getElementById('adminDashboard').classList.add('hidden');
-    document.getElementById('applicantVerificationView').classList.remove('hidden');
+    updateView('applicantVerificationView');
     document.getElementById('v_header_title').innerText = `VERIFYING: ${app.fullName.toUpperCase()}`;
     
     const badge = document.getElementById('v_statusBadge');
@@ -1484,13 +1700,6 @@ async function openVerificationView(email) {
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function closeVerificationView() {
-    document.getElementById('applicantVerificationView').classList.add('hidden');
-    document.getElementById('adminDashboard').classList.remove('hidden');
-    activeV_Applicant = null;
-    fetchApplicants(); // Refresh list
 }
 
 function renderVerificationProfile(app) {
