@@ -1468,8 +1468,9 @@ async function openVerificationView(email) {
     // 2. Profile Dossier
     renderVerificationProfile(app);
 
-    // 3. Checklist (Documents & Testimonials)
+    // 3. Checklist (Documents & Testimonials) + Gallery
     renderVerificationChecklist(app);
+    renderDocGallery(app);
 
     // 4. Assignments
     const divSel = document.getElementById('v_division');
@@ -1565,6 +1566,9 @@ function updateVerificationProgress() {
     
     const progressEl = document.getElementById('v_progress_ratio');
     if (progressEl) progressEl.innerText = `${checked}/${total} VERIFIED`;
+
+    const fillEl = document.getElementById('v_progress_fill');
+    if (fillEl) fillEl.style.width = total > 0 ? `${Math.round((checked/total)*100)}%` : '0%';
     
     const masterBtn = document.getElementById('masterVerifyBtn');
     if (masterBtn) {
@@ -1579,6 +1583,53 @@ function updateVerificationProgress() {
             masterBtn.style.background = 'transparent';
         }
     }
+}
+
+function renderDocGallery(app) {
+    const gallery = document.getElementById('v_doc_gallery');
+    if (!gallery) return;
+    const docs = companyData.requiredDocs || [];
+    const uploads = app.documents || [];
+    const allDocNames = [...new Set([...docs, ...uploads.map(u => u.category)])];
+    if (allDocNames.length === 0) {
+        gallery.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem;">No documents required or uploaded.</p>';
+        return;
+    }
+    gallery.innerHTML = allDocNames.map(dName => {
+        const upload = uploads.find(u => u.category === dName);
+        const hasFile = !!upload;
+        const isPdf = upload && upload.name && upload.name.toLowerCase().endsWith('.pdf');
+        const safeData = upload ? upload.data.replace(/'/g, '%27') : '';
+        return `
+            <div class="doc-preview-card ${hasFile ? 'uploaded' : 'missing'}">
+                <div class="doc-icon">${hasFile ? (isPdf ? '📄' : '🖼️') : '❌'}</div>
+                <div class="doc-name">${dName}</div>
+                <div class="doc-status-tag" style="background:${hasFile ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)'}; color:${hasFile ? '#10b981' : '#ef4444'}">
+                    ${hasFile ? '✅ Uploaded' : '❌ Missing'}
+                </div>
+                ${hasFile ? `
+                <div class="doc-actions-row">
+                    <button class="btn-tool" onclick="viewDocument('${safeData}')" title="View">👁️</button>
+                    <button class="btn-tool" onclick="downloadAsset('${safeData}', '${dName}')" title="Download">📥</button>
+                </div>` : '<div style="font-size:0.65rem;text-align:center;color:var(--text-muted);">Not uploaded</div>'}
+            </div>
+        `;
+    }).join('');
+}
+
+async function updatePipelineTask(taskName, isChecked) {
+    if (!activeV_Applicant) return;
+    if (!activeV_Applicant.tasks) activeV_Applicant.tasks = {};
+    activeV_Applicant.tasks[taskName] = isChecked;
+    try {
+        await fetch('/api/admin/update-workflow-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: activeV_Applicant.email, tasks: activeV_Applicant.tasks })
+        });
+        syncPipelineSwitches(activeV_Applicant.tasks);
+        showToast('✅ Pipeline updated', 'success');
+    } catch (e) { showToast('Pipeline save failed', 'error'); }
 }
 
 async function saveInternalAssignment() {
