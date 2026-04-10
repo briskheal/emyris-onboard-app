@@ -1361,6 +1361,11 @@ function renderApplicantsTable(applicants) {
 
         return `
             <tr class="applicant-row">
+                <td style="text-align: center; vertical-align: middle; padding-left: 15px;">
+                    <button class="btn-tool-danger" onclick="deleteApplicant('${app.email}')" title="Delete Applicant" style="padding: 4px 8px; font-size: 0.8rem; opacity: 0.4; transition: opacity 0.2s;">
+                        🗑️
+                    </button>
+                </td>
                 <td><span style="font-size: 0.8rem; color: var(--text-muted);">${date}</span></td>
                 <td>
                     <div class="user-info-cell">
@@ -1383,9 +1388,6 @@ function renderApplicantsTable(applicants) {
                     </div>
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
-                    <button class="btn btn-sm btn-tool" onclick="deleteApplicant('${app.email}')" title="Delete Applicant" style="color:#ef4444; border-color:rgba(239,68,68,0.2); margin-right:4px;">
-                        🗑️
-                    </button>
                     <button class="btn btn-sm btn-primary" onclick="openVerificationView('${app.email}')" style="background: var(--accent); border-color: var(--accent); padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">
                         🔎 VERIFY
                     </button>
@@ -1474,6 +1476,11 @@ async function openVerificationView(email) {
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeVerificationView() {
+    updateView('adminDashboard');
+    switchAdminTab('applicants');
 }
 
 function renderVerificationProfile(app) {
