@@ -299,41 +299,87 @@ function attachApplicantFileListener(inputId, category) {
     input.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
         const safeId = inputId.replace('file_', '');
         const label = document.getElementById(`status_${safeId}`);
         const ribbon = document.getElementById(`ribbon_${inputId}`);
+        
         const fileSizeMB = file.size / (1024 * 1024);
         const isImage = file.type.startsWith('image/');
         const maxSizeMB = isImage ? 20 : 8;
+
         if (fileSizeMB > maxSizeMB) {
             showToast(`❌ Too large. Max ${maxSizeMB}MB.`, "error");
             return;
         }
+
         if (label) label.innerText = `⏳ Uploading...`;
-        if (ribbon) { ribbon.classList.add('active'); ribbon.style.width = '30%'; }
+        if (ribbon) { 
+            ribbon.classList.add('active'); 
+            ribbon.style.width = '30%'; 
+        }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
         try {
-            let fileData = isImage ? await compressAndResize(file, 1200) : await new Promise((res, rej) => {
-                const r = new FileReader(); r.onload = (ev) => res(ev.target.result); r.onerror = rej; r.readAsDataURL(file);
+            let fileData = isImage ? await compressAndResize(file, 1000) : await new Promise((res, rej) => {
+                const r = new FileReader(); 
+                r.onload = (ev) => res(ev.target.result); 
+                r.onerror = rej; 
+                r.readAsDataURL(file);
             });
+
+            if (ribbon) ribbon.style.width = '60%';
+
             const res = await fetch('/api/applicant/upload-document', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: currentApplicant.email, category, fileName: file.name, fileData })
+                body: JSON.stringify({ email: currentApplicant.email, category, fileName: file.name, fileData }),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
             const result = await res.json();
+
             if (result.success) {
-                if (label) { label.innerText = `✅ ${category} Uploaded`; label.style.color = "var(--success)"; }
-                if (ribbon) { ribbon.classList.remove('active'); ribbon.classList.add('waiting'); ribbon.style.width = '100%'; }
+                if (label) { 
+                    label.innerText = `✅ ${category} Uploaded`; 
+                    label.style.color = "var(--success)"; 
+                }
+                if (ribbon) { 
+                    ribbon.classList.remove('active'); 
+                    ribbon.classList.add('waiting'); 
+                    ribbon.style.width = '100%'; 
+                }
+                
                 if (!currentApplicant.documents) currentApplicant.documents = [];
+                // Update local metadata (don't store the huge blob in memory if possible, but the backend now returns metadata)
                 currentApplicant.documents = currentApplicant.documents.filter(d => d.category !== category);
-                currentApplicant.documents.push({ category, name: file.name });
+                currentApplicant.documents.push({ 
+                    category, 
+                    name: file.name, 
+                    uploadedAt: new Date(),
+                    assetId: result.assetId // Backend will provide this
+                });
+                
                 showToast(`✅ ${category} saved!`, "success");
-            } else { throw new Error(result.message || 'Server rejected upload'); }
+            } else { 
+                throw new Error(result.message || 'Server rejected upload'); 
+            }
         } catch (err) {
+            clearTimeout(timeoutId);
             console.error('Upload error:', err);
-            const errMsg = err.name === 'AbortError' ? 'Upload timed out. Try a smaller file.' : err.message;
-            if (label) { label.innerText = `❌ ${errMsg}`; label.style.color = "var(--error)"; }
-            if (ribbon) { ribbon.classList.remove('active', 'waiting'); ribbon.style.width = '0%'; }
+            const errMsg = err.name === 'AbortError' ? 'Upload timed out. Try a smaller file or better connection.' : err.message;
+            
+            if (label) { 
+                label.innerText = `❌ ${errMsg.substring(0, 30)}...`; 
+                label.style.color = "var(--error)"; 
+            }
+            if (ribbon) { 
+                ribbon.classList.remove('active', 'waiting'); 
+                ribbon.style.width = '0%'; 
+            }
             showToast(`❌ Upload failed: ${errMsg}`, "error");
             input.value = '';
         }
@@ -1336,7 +1382,10 @@ function renderApplicantsTable(applicants) {
                         <span style="font-size:10px; color: var(--text-muted);">${progress}%</span>
                     </div>
                 </td>
-                <td style="text-align: right;">
+                <td style="text-align: right; white-space: nowrap;">
+                    <button class="btn btn-sm btn-tool" onclick="deleteApplicant('${app.email}')" title="Delete Applicant" style="color:#ef4444; border-color:rgba(239,68,68,0.2); margin-right:4px;">
+                        🗑️
+                    </button>
                     <button class="btn btn-sm btn-primary" onclick="openVerificationView('${app.email}')" style="background: var(--accent); border-color: var(--accent); padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">
                         🔎 VERIFY
                     </button>
@@ -1353,6 +1402,27 @@ function filterApplicants() {
         (a.email && a.email.toLowerCase().includes(query))
     );
     renderApplicantsTable(filtered);
+}
+
+async function deleteApplicant(email) {
+    if (!confirm(`🚨 CRITICAL: Are you sure you want to permanently delete applicant ${email} and all their uploaded testimonials? This cannot be undone.`)) return;
+    
+    try {
+        lockUI("🗑️ Deleting Record...");
+        const res = await fetch('/api/admin/delete-applicant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast("✅ Applicant and assets deleted successfully.", "success");
+            await fetchApplicants(); // Refresh table
+        } else {
+            showToast("❌ Delete failed: " + result.error, "error");
+        }
+    } catch (e) { showToast("❌ Server communication error", "error"); }
+    finally { unlockUI(); }
 }
 
 async function toggleAccess(email, canLogin) {
@@ -1454,8 +1524,7 @@ function renderVerificationChecklist(app) {
                     </label>
                 </div>
                 <div class="v-check-actions">
-                    ${upload ? `<button class="btn btn-tool" onclick="viewDocument('${upload.data}')" title="View Document">👁️</button>` : ''}
-                    ${upload ? `<button class="btn btn-tool" onclick="downloadAsset('${upload.data}', '${dName}')" title="Download">📥</button>` : ''}
+                    ${upload ? `<button class="btn btn-tool" onclick="viewDocument('${upload.assetId || upload.data || ''}')" title="View Document">👁️</button>` : ''} ${upload ? `<button class="btn btn-tool" onclick="downloadAsset('${upload.assetId || upload.data || ''}', '${dName}')" title="Download">📥</button>` : ''}
                     <label class="switch-premium">
                         <input type="checkbox" ${isVerified ? 'checked' : ''} onchange="toggleDocCheck('${dName}', this.checked)">
                         <span class="slider-premium"></span>
@@ -1522,8 +1591,7 @@ function renderDocGallery(app) {
                 </div>
                 ${hasFile ? `
                 <div class="doc-actions-row">
-                    <button class="btn-tool" onclick="viewDocument('${safeData}')" title="View">👁️</button>
-                    <button class="btn-tool" onclick="downloadAsset('${safeData}', '${dName}')" title="Download">📥</button>
+                    <button class="btn-tool" onclick="viewDocument('${upload.assetId || upload.data || ''}')" title="View">👁️</button> <button class="btn-tool" onclick="downloadAsset('${upload.assetId || upload.data || ''}', '${dName}')" title="Download">📥</button>
                 </div>` : '<div style="font-size:0.65rem;text-align:center;color:var(--text-muted);">Not uploaded</div>'}
             </div>
         `;
@@ -2057,7 +2125,7 @@ async function convertPdfToPng(dataUri) {
 }
 
 // --- PERFORMANCE ENGINE: IMAGE OPTIMIZATION ---
-function compressAndResize(file, maxWidth = 1800) {
+function compressAndResize(file, maxWidth = 1000) {
     return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) return resolve(null);
         const reader = new FileReader();
@@ -2077,7 +2145,7 @@ function compressAndResize(file, maxWidth = 1800) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL(file.type, 0.85); 
+                const dataUrl = canvas.toDataURL(file.type || 'image/jpeg', 0.7); 
                 resolve(dataUrl);
             };
             img.onerror = (err) => reject(err);
@@ -2516,21 +2584,56 @@ function numberToWords(num) {
     return str.trim() + " Only";
 }
 
-function viewDocument(data) {
-    if (!data) return;
-    const win = window.open();
-    if (data.startsWith('data:image')) {
-        win.document.write(`<img src="${data}" style="max-width:100%; height:auto;">`);
-    } else {
-        win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+async function viewDocument(idOrData) {
+    if (!idOrData) return;
+    
+    // Open window immediately to avoid popup blockers
+    const win = window.open("", "_blank");
+    win.document.write("<html><head><title>Loading Document...</title></head><body style='background:#0f172a; color:white; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><div>⌛ Loading Document Data... Please wait.</div></body></html>");
+
+    let finalData = idOrData;
+    if (!idOrData.startsWith('data:')) {
+        try {
+            const res = await fetch(`/api/admin/document/${idOrData}`);
+            const result = await res.json();
+            if (result.data) finalData = result.data;
+            else throw new Error("Missing data in response");
+        } catch (e) {
+            console.error("Fetch failed:", e);
+            win.document.body.innerHTML = "❌ Failed to load document data. It may have been cleared or the connection was lost.";
+            return;
+        }
     }
+    
+    // Clear and write final content
+    win.document.open();
+    if (finalData.startsWith('data:image')) {
+        win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${finalData}" style="max-width:100%; height:auto;"></body></html>`);
+    } else {
+        win.document.write(`<html><head><title>View Document</title></head><body style="margin:0;"><iframe src="${finalData}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe></body></html>`);
+    }
+    win.document.close();
 }
 
-function downloadAsset(data, name) {
-    if (!data) return;
+async function downloadAsset(idOrData, name) {
+    if (!idOrData) return;
+    let finalData = idOrData;
+    
+    if (!idOrData.startsWith('data:')) {
+        try {
+            showToast("⌛ Preparing Download...", "secondary");
+            const res = await fetch(`/api/admin/document/${idOrData}`);
+            const result = await res.json();
+            if (result.data) finalData = result.data;
+            else throw new Error("Fail");
+        } catch (e) {
+            return showToast("❌ Download failed", "error");
+        }
+    }
+
     const a = document.createElement('a');
-    a.href = data;
-    a.download = name || 'document';
+    a.href = finalData;
+    a.download = (name || 'document').replace(/[^a-z0-9]/gi, '_');
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

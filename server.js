@@ -412,8 +412,8 @@ app.post('/api/applicant/upload-document', async (req, res) => {
         const sizeKB = Math.round(Buffer.byteLength(fileData || '', 'utf8') / 1024);
         console.log(`📎 [DOC-UPLOAD] ${email} | ${category} | ${fileName} | ${sizeKB}KB`);
 
-        if (sizeKB > 8192) {
-            return res.status(413).json({ success: false, message: `File too large (${sizeKB}KB). Maximum 8MB allowed.` });
+        if (sizeKB > 12 * 1024) { // Increased to 12MB as it's now in Asset DB
+            return res.status(413).json({ success: false, message: `File too large (${sizeKB}KB). Maximum 12MB allowed.` });
         }
 
         const applicant = await Applicant.findOne({ email });
@@ -421,26 +421,40 @@ app.post('/api/applicant/upload-document', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Applicant not found' });
         }
 
-        // Add or update the document in the array
-        const docObj = {
-            category,
+        // 1. Store in Asset Collection (Asset DB)
+        const newAsset = new Asset({
+            category: `doc_${category}`,
             name: fileName,
             data: fileData,
+            active: true,
+            uploadedAt: new Date()
+        });
+        const savedAsset = await newAsset.save();
+
+        // 2. Link metadata in Applicant (WITHOUT the heavy data)
+        const docMetadata = {
+            category,
+            name: fileName,
+            assetId: savedAsset._id,
+            sizeKB,
             uploadedAt: new Date()
         };
 
-        // Remove previous version of this category if exists
         applicant.documents = (applicant.documents || []).filter(d => d.category !== category);
-        applicant.documents.push(docObj);
+        applicant.documents.push(docMetadata);
         applicant.markModified('documents');
 
         await applicant.save();
-        console.log(`📎 [DOC] Uploaded: ${category} for ${email}`);
+        console.log(`✅ [DOC] Refactored Upload: ${category} for ${email} (Asset: ${savedAsset._id})`);
 
-        res.status(200).json({ success: true, message: `${category} uploaded successfully` });
+        res.status(200).json({ 
+            success: true, 
+            message: `${category} uploaded successfully`,
+            assetId: savedAsset._id 
+        });
     } catch (error) {
-        console.error("Upload Error:", error);
-        res.status(500).json({ success: false, message: 'Upload failed: ' + error.message });
+        console.error('❌ Document upload error:', error);
+        res.status(500).json({ success: false, message: 'Server error during upload' });
     }
 });
 
@@ -468,10 +482,26 @@ app.get('/api/admin/applicant-pin/:email', async (req, res) => {
 
 app.get('/api/admin/applicants', async (req, res) => {
     try {
-        const applicants = await Applicant.find().sort({ registeredAt: -1 });
+        // Optimization: Exclude Large Document Data from the Main List
+        const applicants = await Applicant.find()
+            .select('-documents.data') // Strip any legacy embedded data
+            .sort({ registeredAt: -1 });
+        
         res.status(200).json(applicants);
     } catch (error) {
+        console.error("List Fetch Error:", error);
         res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// New Endpoint for Lazy Loading Document Data
+app.get('/api/admin/document/:assetId', async (req, res) => {
+    try {
+        const asset = await Asset.findById(req.params.assetId);
+        if (!asset) return res.status(404).json({ error: 'Document data not found' });
+        res.json({ data: asset.data });
+    } catch (e) {
+        res.status(500).json({ error: 'Fetch failed' });
     }
 });
 
@@ -1050,6 +1080,11 @@ app.get('/api/admin/system/export', async (req, res) => {
 app.post('/api/admin/system/clear', async (req, res) => {
     try {
         await Applicant.deleteMany({});
+        // CASCADING DELETE: Remove all applicant documents from Asset DB
+        if (connAssets) {
+            await Asset.deleteMany({ category: { $regex: /^doc_/ } });
+        }
+        
         const company = await Company.findOne();
         if (company) {
             company.offerCounter = 1001;
@@ -1057,8 +1092,34 @@ app.post('/api/admin/system/clear', async (req, res) => {
             company.miscCounter = 1001;
             await company.save();
         }
-        res.json({ success: true, message: 'Applicant database cleared and counters reset.' });
+        res.json({ success: true, message: 'Applicant database cleared and asset testimonials removed.' });
     } catch (e) { res.status(500).json({ error: 'Clear failed' }); }
+});
+
+app.post('/api/admin/delete-applicant', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        // Collect all assets linked to this applicant
+        const assetIds = (applicant.documents || [])
+            .filter(d => d.assetId)
+            .map(d => d.assetId);
+
+        // 1. Delete Assets from Assets DB
+        if (assetIds.length > 0 && connAssets) {
+            await Asset.deleteMany({ _id: { $in: assetIds } });
+        }
+
+        // 2. Delete Applicant from Main DB
+        await Applicant.deleteOne({ email });
+
+        res.json({ success: true, message: `Applicant ${email} and all linked assets deleted.` });
+    } catch (e) {
+        console.error('Delete error:', e);
+        res.status(500).json({ error: 'Failed' });
+    }
 });
 
 app.post('/api/admin/system/vacuum', async (req, res) => {
