@@ -425,6 +425,7 @@ app.post('/api/applicant/upload-document', async (req, res) => {
         // Remove previous version of this category if exists
         applicant.documents = (applicant.documents || []).filter(d => d.category !== category);
         applicant.documents.push(docObj);
+        applicant.markModified('documents');
 
         await applicant.save();
         console.log(`📎 [DOC] Uploaded: ${category} for ${email}`);

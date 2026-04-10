@@ -406,71 +406,73 @@ function attachApplicantFileListener(inputId, category) {
         }
         if (ribbon) {
             ribbon.classList.add('active');
-            try {
-                // 1. Get File Data (with compression if it's an image)
-                let fileData = "";
-                if (files[0].type.startsWith('image/')) {
-                    fileData = await compressAndResize(files[0], 1600);
-                }
-                
-                if (!fileData) {
-                    fileData = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = (e) => resolve(e.target.result);
-                        reader.onerror = (e) => reject(new Error("File reading failed"));
-                        reader.readAsDataURL(files[0]);
-                    });
-                }
-
-                // 2. Upload to Server
-                const data = {
-                    email: currentApplicant.email,
-                    category: category,
-                    fileName: files[0].name,
-                    fileData: fileData
-                };
-
-                const res = await fetch('/api/applicant/upload-document', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+            ribbon.style.width = '30%';
+        }
+        
+        try {
+            // 1. Get File Data (with compression if it's an image)
+            let fileData = "";
+            if (files[0].type.startsWith('image/')) {
+                fileData = await compressAndResize(files[0], 1600);
+            }
+            
+            if (!fileData) {
+                fileData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(new Error("File reading failed"));
+                    reader.readAsDataURL(files[0]);
                 });
-                
-                const result = await res.json();
+            }
 
-                // 3. Update UI based on result
-                if (result.success) {
-                    if (label) {
-                        label.innerText = `✅ ${category} Uploaded`;
-                        label.style.color = 'var(--success)';
-                    }
-                    if (ribbon) {
-                        ribbon.classList.remove('active');
-                        ribbon.classList.add('waiting'); 
-                        ribbon.style.width = '100%';
-                    }
+            // 2. Upload to Server
+            const data = {
+                email: currentApplicant.email,
+                category: category,
+                fileName: files[0].name,
+                fileData: fileData
+            };
 
-                    // Update local state
-                    if (!currentApplicant.documents) currentApplicant.documents = [];
-                    currentApplicant.documents = currentApplicant.documents.filter(d => d.category !== category);
-                    currentApplicant.documents.push({ category, name: files[0].name });
+            const res = await fetch('/api/applicant/upload-document', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await res.json();
 
-                    showToast(`✅ ${category} saved!`, "success");
-                } else {
-                    throw new Error(result.message || "Server rejected upload");
-                }
-            } catch (err) {
-                console.error("Upload error:", err);
+            // 3. Update UI based on result
+            if (result.success) {
                 if (label) {
-                    label.innerText = `❌ Error. Retry?`;
-                    label.style.color = 'var(--error)';
+                    label.innerText = `✅ ${category} Uploaded`;
+                    label.style.color = 'var(--success)';
                 }
                 if (ribbon) {
-                    ribbon.classList.remove('active', 'waiting');
-                    ribbon.style.width = '0%';
+                    ribbon.classList.remove('active');
+                    ribbon.classList.add('waiting'); 
+                    ribbon.style.width = '100%';
                 }
-                showToast(`❌ Failed: ${err.message}`, "error");
+
+                // Update local state
+                if (!currentApplicant.documents) currentApplicant.documents = [];
+                currentApplicant.documents = currentApplicant.documents.filter(d => d.category !== category);
+                currentApplicant.documents.push({ category, name: files[0].name });
+
+                showToast(`✅ ${category} saved!`, "success");
+            } else {
+                throw new Error(result.message || "Server rejected upload");
             }
+        } catch (err) {
+            console.error("Upload error:", err);
+            if (label) {
+                label.innerText = `❌ Error. Retry?`;
+                label.style.color = 'var(--error)';
+            }
+            if (ribbon) {
+                ribbon.classList.remove('active', 'waiting');
+                ribbon.style.width = '0%';
+            }
+            showToast(`❌ Failed: ${err.message}`, "error");
         }
     });
 }
@@ -1376,7 +1378,7 @@ async function deleteAssetRecord(assetId) {
 }
 
 function renderApplicantsTable(applicants) {
-    const tbody = document.querySelector('#applicantsTable tbody');
+    const tbody = document.getElementById('applicantsTableBody');
     if (!tbody) return;
     tbody.innerHTML = applicants.map(app => {
         const date = app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Draft';
@@ -2521,6 +2523,26 @@ function numberToWords(num) {
     return str.trim() + " Only";
 }
 
+function viewDocument(data) {
+    if (!data) return;
+    const win = window.open();
+    if (data.startsWith('data:image')) {
+        win.document.write(`<img src="${data}" style="max-width:100%; height:auto;">`);
+    } else {
+        win.document.write(`<iframe src="${data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+    }
+}
+
+function downloadAsset(data, name) {
+    if (!data) return;
+    const a = document.createElement('a');
+    a.href = data;
+    a.download = name || 'document';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
 function downloadApplicantPDF(email) {
     const app = allApplicants.find(a => a.email === email);
     if (!app || !app.formData) return alert("No data found for this applicant.");
@@ -2673,6 +2695,24 @@ async function fetchLifecycleAlerts() {
             container.classList.add('hidden');
         }
     } catch (e) { console.error("Lifecycle check failed", e); }
+}
+
+async function fetchApplicants() {
+    try {
+        const res = await fetch('/api/admin/applicants');
+        const data = await res.json();
+        
+        if (Array.isArray(data)) {
+            allApplicants = data;
+            calculateStats(allApplicants);
+            renderApplicantsTable(allApplicants);
+        } else {
+            console.error("Failed to fetch applicants:", data);
+            showToast("⚠️ Could not load applicant data", "error");
+        }
+    } catch (err) {
+        console.error("Fetch applicants crash:", err);
+    }
 }
 
 async function populateHubApplicantSelect() {
