@@ -1380,8 +1380,9 @@ async function deleteAssetRecord(assetId) {
 function renderApplicantsTable(applicants) {
     const tbody = document.getElementById('applicantsTableBody');
     if (!tbody) return;
+    
     tbody.innerHTML = applicants.map(app => {
-        const date = app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : 'Draft';
+        const date = app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : (app.registeredAt ? new Date(app.registeredAt).toLocaleDateString() : 'Draft');
         const progress = calculateAppProgress(app);
         
         let statusClass = app.status || 'draft';
@@ -1389,31 +1390,60 @@ function renderApplicantsTable(applicants) {
 
         return `
             <tr class="applicant-row">
+                <td><span style="font-size: 0.8rem; color: var(--text-muted);">${date}</span></td>
                 <td>
                     <div class="user-info-cell">
-                        <div class="user-avatar">${app.fullName[0].toUpperCase()}</div>
-                        <div>
-                            <div class="user-name">${app.fullName}</div>
-                            <div class="user-email">${app.email}</div>
-                        </div>
+                        <div class="user-avatar">${app.fullName ? app.fullName[0].toUpperCase() : '?'}</div>
+                        <div class="user-name">${app.fullName || 'Unnamed'}</div>
                     </div>
                 </td>
+                <td style="font-family: monospace; font-size: 0.8rem; color: var(--primary-light);">${app.email}</td>
                 <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td style="text-align: center;">
+                    <label class="switch-premium" title="Toggle Login Access">
+                        <input type="checkbox" ${app.canLogin ? 'checked' : ''} onchange="toggleAccess('${app.email}', this.checked)">
+                        <span class="slider-premium"></span>
+                    </label>
+                </td>
                 <td>
                     <div class="progress-container-mini">
                         <div class="progress-bar-mini" style="width: ${progress}%"></div>
-                        <span style="font-size:10px">${progress}%</span>
+                        <span style="font-size:10px; color: var(--text-muted);">${progress}%</span>
                     </div>
                 </td>
-                <td>${date}</td>
                 <td style="text-align: right;">
-                    <button class="btn btn-sm btn-primary" onclick="openVerificationView('${app.email}')" style="background: var(--accent); border-color: var(--accent); padding: 8px 16px; font-weight: 700; border-radius: 8px;">
-                        🔎 VERIFY RECORD
+                    <button class="btn btn-sm btn-primary" onclick="openVerificationView('${app.email}')" style="background: var(--accent); border-color: var(--accent); padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">
+                        🔎 VERIFY
                     </button>
                 </td>
             </tr>
         `;
     }).join('');
+}
+
+function filterApplicants() {
+    const query = document.getElementById('applicantSearch').value.toLowerCase();
+    const filtered = allApplicants.filter(a => 
+        (a.fullName && a.fullName.toLowerCase().includes(query)) || 
+        (a.email && a.email.toLowerCase().includes(query))
+    );
+    renderApplicantsTable(filtered);
+}
+
+async function toggleAccess(email, canLogin) {
+    try {
+        const res = await fetch('/api/admin/toggle-access', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, canLogin })
+        });
+        if ((await res.json()).success) {
+            showToast(`Access ${canLogin ? 'granted' : 'revoked'} for ${email}`, "success");
+            // Sync local state
+            const app = allApplicants.find(a => a.email === email);
+            if (app) app.canLogin = canLogin;
+        }
+    } catch (e) { showToast("Toggle failed", "error"); }
 }
 
 // --- APPLICANT VERIFICATION DASHBOARD (FULL PAGE) ---

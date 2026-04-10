@@ -567,6 +567,14 @@ app.get('/api/admin/db-stats', async (req, res) => {
     }
 });
 
+app.post('/api/admin/toggle-access', async (req, res) => {
+    try {
+        const { email, canLogin } = req.body;
+        await Applicant.findOneAndUpdate({ email }, { canLogin });
+        res.status(200).json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 app.post('/api/admin/divisions', async (req, res) => {
     try {
         const { name } = req.body;
