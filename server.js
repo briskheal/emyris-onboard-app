@@ -11,9 +11,18 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const dns = require('dns');
+
+// Fix for MongoDB DNS/SRV issues on Windows/Render
+try {
+    dns.setServers(['8.8.8.8', '1.1.1.1']);
+    console.log('🌐 DNS Overridden: Using Google & Cloudflare resolvers.');
+} catch (e) {
+    console.warn('⚠️ Could not override DNS servers:', e.message);
+}
+
 // Try to use system DNS, but force IPv4 on connection
 // Mongoose 8/Node 18+ can fail resolving IPv6 mappings on some SRV clusters.
-// Removed forced DNS to avoid ISP blocks.
 
 // MongoDB Connection Strings
 const MONGODB_URI = process.env.MONGODB_URI;
