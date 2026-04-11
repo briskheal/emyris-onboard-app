@@ -187,14 +187,28 @@ function applyCompanyData() {
     // Populate Designation dropdown map
     const applicantDesg = document.getElementById('designation');
     const reportingToDesg = document.getElementById('v_reportingTo');
-    const desgs = companyData.designations || [];
+    const rawDesgs = companyData.designations || [];
+    
+    // Normalize to objects if strings exist
+    const desgs = rawDesgs.map(d => {
+        if (typeof d === 'string') return { title: d, department: 'SALES' };
+        return d;
+    });
+
+    // Populate datalist for department suggestions
+    const deptList = document.getElementById('deptSuggestions');
+    if (deptList) {
+        const depts = [...new Set(desgs.map(d => d.department))];
+        deptList.innerHTML = depts.map(dt => `<option value="${dt}">`).join('');
+    }
     
     if (applicantDesg) {
         applicantDesg.innerHTML = '<option value="" disabled selected>Select Designation</option>';
         desgs.forEach(d => {
+            const label = d.department ? `${d.title} (${d.department})` : d.title;
             const opt = document.createElement('option');
-            opt.value = d;
-            opt.innerText = d;
+            opt.value = d.title;
+            opt.innerText = label;
             applicantDesg.appendChild(opt);
         });
     }
@@ -202,9 +216,10 @@ function applyCompanyData() {
     if (reportingToDesg && reportingToDesg.tagName === 'SELECT') {
         reportingToDesg.innerHTML = '<option value="">-- Select Reporting Manager --</option>';
         desgs.forEach(d => {
+            const label = d.department ? `${d.title} (${d.department})` : d.title;
             const opt = document.createElement('option');
-            opt.value = d;
-            opt.innerText = d;
+            opt.value = d.title;
+            opt.innerText = label;
             reportingToDesg.appendChild(opt);
         });
     }
@@ -2197,39 +2212,85 @@ async function deleteDivision(id) {
 }
 
 function renderDesignationList() {
-    const list = document.getElementById('profileDesignationList');
-    if (!list) return;
-    const desgs = companyData.designations || [];
-    list.innerHTML = desgs.map(d => `
-        <div class="division-chip" style="background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3);">
-            ${d}
-            <button onclick="deleteDesignation('${d.replace(/'/g, '\\\'')}')">&times;</button>
+    const container = document.getElementById('profileDesignationList');
+    if (!container) return;
+    
+    const rawDesgs = companyData.designations || [];
+    // Normalize & Group
+    const groups = {};
+    rawDesgs.forEach(d => {
+        const item = typeof d === 'string' ? { title: d, department: 'SALES' } : d;
+        if (!groups[item.department]) groups[item.department] = [];
+        groups[item.department].push(item.title);
+    });
+
+    const deptNames = Object.keys(groups).sort();
+    
+    if (deptNames.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; padding: 2rem; text-align: center; color: var(--text-muted); background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px dashed rgba(255,255,255,0.1);">No designations defined. Add one below.</div>`;
+        return;
+    }
+
+    container.innerHTML = deptNames.map(dept => `
+        <div class="v-card" style="margin: 0; background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 0.5rem;">
+                <h5 style="color: var(--accent); margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em;">${dept}</h5>
+                <span style="font-size: 0.7rem; color: var(--text-muted); font-weight: 700;">${groups[dept].length} ITEMS</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                ${groups[dept].map(title => `
+                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 0.82rem;">
+                        <span>${title}</span>
+                        <button onclick="deleteDesignation('${title.replace(/'/g, "\\'")}', '${dept.replace(/'/g, "\\'")}')" style="background: transparent; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.1rem; line-height: 1;">&times;</button>
+                    </div>
+                `).join('')}
+            </div>
         </div>
     `).join('');
 }
 
 async function addDesignation() {
-    const input = document.getElementById('profileNewDesignationInput');
-    const name = input ? input.value.trim() : "";
+    const nameIn = document.getElementById('profileNewDesignationInput');
+    const deptIn = document.getElementById('profileNewDeptInput');
+    const name = nameIn?.value.trim();
+    const dept = deptIn?.value.trim().toUpperCase() || 'SALES';
+    
     if (!name) return;
+    
     if (!companyData.designations) companyData.designations = [];
-    if (!companyData.designations.includes(name)) {
-        companyData.designations.push(name);
-        await submitProfileUpdate({ designations: companyData.designations }, true);
-        if (input) input.value = "";
-        renderDesignationList();
-        applyCompanyData();
-        showToast("Designation added successfully");
-    }
+    
+    // Check if already exists in this dept
+    const exists = companyData.designations.find(d => 
+        (typeof d === 'object' && d.title === name && d.department === dept) ||
+        (typeof d === 'string' && d === name && dept === 'SALES')
+    );
+    
+    if (exists) return showToast("Designation already exists in this department", "error");
+
+    companyData.designations.push({ title: name, department: dept });
+    await submitProfileUpdate({ designations: companyData.designations }, true);
+    
+    if (nameIn) nameIn.value = "";
+    // Keep deptIn value for batch entry if needed, or clear it? 
+    // Usually admin adds multiple to same dept.
+    
+    renderDesignationList();
+    applyCompanyData();
+    showToast(`Added ${name} to ${dept}`);
 }
 
-async function deleteDesignation(name) {
-    if (!confirm(`Delete designation "${name}"?`)) return;
-    companyData.designations = companyData.designations.filter(d => d !== name);
+async function deleteDesignation(title, dept) {
+    if (!confirm(`Delete "${title}" from ${dept}?`)) return;
+    
+    companyData.designations = companyData.designations.filter(d => {
+        if (typeof d === 'string') return d !== title || dept !== 'SALES';
+        return d.title !== title || d.department !== dept;
+    });
+    
     await submitProfileUpdate({ designations: companyData.designations }, true);
     renderDesignationList();
     applyCompanyData();
-    showToast("Designation deleted");
+    showToast("Designation removed");
 }
 
 

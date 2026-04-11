@@ -208,12 +208,27 @@
                             <div class="setup-section">
                                 <div class="setup-section-head">
                                     <h4>👔 Designation Management</h4>
-                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Define designations for applicant choices and reporting managers.</p>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Group designations by department for structural organization.</p>
                                 </div>
-                                <div id="profileDesignationList" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;"></div>
-                                <div style="display: flex; gap: 0.75rem; align-items: center;">
-                                    <input type="text" id="profileNewDesignationInput" class="form-input-sm" placeholder="NEW DESIGNATION NAME" style="text-transform:capitalize; background: rgba(15, 23, 42, 0.4); border-color: rgba(255,255,255,0.1); width: 250px;">
-                                    <button type="button" class="btn btn-primary btn-sm" onclick="addDesignation()">+ Add Designation</button>
+                                
+                                <!-- Department Grid -->
+                                <div id="profileDesignationList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+                                    <!-- Cards rendered by script.js -->
+                                </div>
+
+                                <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 14px;">
+                                    <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                                            <label style="font-size: 0.72rem; color: var(--accent); margin-bottom: 6px;">New Designation</label>
+                                            <input type="text" id="profileNewDesignationInput" class="form-input-sm" placeholder="e.g. Sales Executive" style="width: 100%;">
+                                        </div>
+                                        <div class="form-group" style="flex: 1; min-width: 200px;">
+                                            <label style="font-size: 0.72rem; color: var(--accent); margin-bottom: 6px;">Under Department</label>
+                                            <input type="text" id="profileNewDeptInput" class="form-input-sm" placeholder="e.g. SALES" list="deptSuggestions" style="width: 100%;">
+                                            <datalist id="deptSuggestions"></datalist>
+                                        </div>
+                                        <button type="button" class="btn btn-primary" onclick="addDesignation()" style="height: 42px; padding: 0 1.5rem;">+ Add To List</button>
+                                    </div>
                                 </div>
                             </div>
 

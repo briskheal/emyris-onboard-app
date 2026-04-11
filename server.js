@@ -81,17 +81,17 @@ const companySchema = new mongoose.Schema({
     empCodeCounter: { type: Number, default: 1001 },
     customAssetCategories: { type: [String], default: [] },
     designations: { 
-        type: [String], 
+        type: [mongoose.Schema.Types.Mixed], 
         default: [
-            "Territory Business Manager",
-            "Area Sales Manager",
-            "Regional Sales Manager",
-            "Sr. Regional Sales Manager",
-            "Zonal Sales Manager",
-            "Sr. Zonal Sales Manager",
-            "Sales Manager",
-            "National Sales Manager",
-            "General Manager (Sales & Mktng)"
+            { title: "Territory Business Manager", department: "SALES" },
+            { title: "Area Sales Manager", department: "SALES" },
+            { title: "Regional Sales Manager", department: "SALES" },
+            { title: "Sr. Regional Sales Manager", department: "SALES" },
+            { title: "Zonal Sales Manager", department: "SALES" },
+            { title: "Sr. Zonal Sales Manager", department: "SALES" },
+            { title: "Sales Manager", department: "SALES" },
+            { title: "National Sales Manager", department: "SALES" },
+            { title: "General Manager (Sales & Mktng)", department: "SALES" }
         ] 
     },
     requiredDocs: {
