@@ -850,6 +850,7 @@ async function saveCompanyProfile(e) {
         offerCounter: parseInt(rawData.offerCounter) || 1001,
         apptCounter: parseInt(rawData.apptCounter) || 1001,
         miscCounter: parseInt(rawData.miscCounter) || 1001,
+        empCodeCounter: parseInt(rawData.empCodeCounter) || 1001,
         requiredDocs: companyData.requiredDocs || []
     };
     
@@ -1054,6 +1055,7 @@ function switchAdminTab(tab) {
         f.offerCounter.value = companyData.offerCounter || 1001;
         f.apptCounter.value = companyData.apptCounter || 1001;
         f.miscCounter.value = companyData.miscCounter || 1001;
+        f.empCodeCounter.value = companyData.empCodeCounter || 1001;
 
         renderAssetLists();
 
@@ -1095,7 +1097,8 @@ async function saveCompanyProfile(e) {
         fyTo: rawData.fyTo,
         offerCounter: parseInt(rawData.offerCounter) || 1001,
         apptCounter: parseInt(rawData.apptCounter) || 1001,
-        miscCounter: parseInt(rawData.miscCounter) || 1001
+        miscCounter: parseInt(rawData.miscCounter) || 1001,
+        empCodeCounter: parseInt(rawData.empCodeCounter) || 1001
     };
     
     // File uploads are now handled real-time via attachFileListener
@@ -2942,6 +2945,7 @@ function toggleLivePreviewUI(show) {
             '{{CITY_STATE}}': 'Metropolis, NY',
             '{{PIN}}': '10001',
             '{{DESIGNATION}}': 'Senior Developer',
+            '{{EMP_CODE}}': 'EMP1001',
             '{{COMPANY_NAME}}': companyData.name || 'Emyris Bio',
             '{{JOINING_DATE}}': new Date().toLocaleDateString(),
             '{{HQ}}': 'New York',

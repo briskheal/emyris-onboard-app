@@ -78,6 +78,7 @@ const companySchema = new mongoose.Schema({
     offerCounter: { type: Number, default: 1001 },
     apptCounter: { type: Number, default: 1001 },
     miscCounter: { type: Number, default: 1001 },
+    empCodeCounter: { type: Number, default: 1001 },
     customAssetCategories: { type: [String], default: [] },
     requiredDocs: {
         type: [String], default: [
@@ -1119,6 +1120,7 @@ app.post('/api/admin/system/clear', async (req, res) => {
             company.offerCounter = 1001;
             company.apptCounter = 1001;
             company.miscCounter = 1001;
+            company.empCodeCounter = 1001;
             await company.save();
         }
         res.json({ success: true, message: 'Applicant database cleared and asset testimonials removed.' });
