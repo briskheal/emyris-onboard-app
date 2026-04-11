@@ -35,6 +35,12 @@
         </div>
     </div>
 
+    <!-- Global Upload Indicator -->
+    <div id="globalUploadStatus" class="cloud-upload-status">
+        <div class="upload-spinner"></div>
+        <span style="color:white; font-size:0.85rem; font-weight:600;">☁️ Uploading to Emyris Cloud...</span>
+    </div>
+
     <div class="app-container">
         <!-- Background Decorations -->
         <div class="blob blob-1"></div>
@@ -79,7 +85,7 @@
                     <img id="displayLogo" src="" alt="Company Logo" class="hidden">
                     <h2 id="displayCompanyName"></h2>
                 </div>
-                <div class="landing-cards-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; width: 100%;">
+                <div class="landing-cards-grid">
                     <div class="landing-card" onclick="showApplicantRegister()">
                         <div class="landing-card-icon">✨</div>
                         <h3>Start New Journey</h3>
@@ -183,6 +189,55 @@
                                     <label>Company Address</label>
                                     <textarea name="compAddress"></textarea>
                                 </div>
+                            </div>
+
+                            <!-- Card 1.5: Division Management -->
+                            <div class="setup-section">
+                                <div class="setup-section-head">
+                                    <h4>🏢 Division & Recruitment Management</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Define business divisions for applicant categorization.</p>
+                                </div>
+                                <div id="profileDivisionList" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;"></div>
+                                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                    <input type="text" id="profileNewDivisionInput" class="form-input-sm" placeholder="NEW DIVISION NAME" style="text-transform:uppercase; background: rgba(15, 23, 42, 0.4); border-color: rgba(255,255,255,0.1); width: 250px;">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="addDivision('profile')">+ Add Division</button>
+                                </div>
+                            </div>
+
+                            <!-- Card 1.75: Letter Templates Launcher -->
+                            <div class="setup-section">
+                                <div class="setup-section-head">
+                                    <h4>📝 Letter Templates</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Click any template card to open it in the editor. Uses template variables from the Setup & Letters tab.</p>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 1rem;">
+                                    <div onclick="openTemplateEditor('offer')" style="background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.25); border-radius: 14px; padding: 1.25rem 1rem; text-align: center; cursor: pointer; transition: all 0.25s;" onmouseover="this.style.background='rgba(99,102,241,0.15)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(99,102,241,0.07)'; this.style.transform='none'">
+                                        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📄</div>
+                                        <div style="font-size: 0.82rem; font-weight: 700; color: white;">Offer Letter</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Initial employment offer</div>
+                                    </div>
+                                    <div onclick="openTemplateEditor('appt')" style="background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.25); border-radius: 14px; padding: 1.25rem 1rem; text-align: center; cursor: pointer; transition: all 0.25s;" onmouseover="this.style.background='rgba(16,185,129,0.15)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(16,185,129,0.07)'; this.style.transform='none'">
+                                        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">📋</div>
+                                        <div style="font-size: 0.82rem; font-weight: 700; color: white;">Appointment Letter</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Post-joining confirmation</div>
+                                    </div>
+                                    <div onclick="openTemplateEditor('confirm')" style="background: rgba(6,182,212,0.07); border: 1px solid rgba(6,182,212,0.25); border-radius: 14px; padding: 1.25rem 1rem; text-align: center; cursor: pointer; transition: all 0.25s;" onmouseover="this.style.background='rgba(6,182,212,0.15)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(6,182,212,0.07)'; this.style.transform='none'">
+                                        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">✅</div>
+                                        <div style="font-size: 0.82rem; font-weight: 700; color: white;">Confirmation Letter</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Probation completion</div>
+                                    </div>
+                                    <div onclick="openTemplateEditor('revised_salary')" style="background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.25); border-radius: 14px; padding: 1.25rem 1rem; text-align: center; cursor: pointer; transition: all 0.25s;" onmouseover="this.style.background='rgba(245,158,11,0.15)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(245,158,11,0.07)'; this.style.transform='none'">
+                                        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">💰</div>
+                                        <div style="font-size: 0.82rem; font-weight: 700; color: white;">Revised Salary</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Salary increment letter</div>
+                                    </div>
+                                    <div onclick="openTemplateEditor('incentive')" style="background: rgba(168,85,247,0.07); border: 1px solid rgba(168,85,247,0.25); border-radius: 14px; padding: 1.25rem 1rem; text-align: center; cursor: pointer; transition: all 0.25s;" onmouseover="this.style.background='rgba(168,85,247,0.15)'; this.style.transform='translateY(-3px)'" onmouseout="this.style.background='rgba(168,85,247,0.07)'; this.style.transform='none'">
+                                        <div style="font-size: 1.8rem; margin-bottom: 0.5rem;">🎯</div>
+                                        <div style="font-size: 0.82rem; font-weight: 700; color: white;">Incentive Circular</div>
+                                        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">Incentive / bonus notice</div>
+                                    </div>
+                                </div>
+                                <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">⚡ Templates are edited in the <strong style="color: var(--primary-light);">Setup &amp; Letters</strong> tab. Click any card to jump directly.</p>
                             </div>
 
                             <!-- Card 2: Financial Year & Counters -->
@@ -405,17 +460,7 @@
                     <div id="adminSetupTab" class="admin-tab-content hidden">
                         <div class="editor-workspace">
                             
-                            <!-- Division Management -->
-                            <div class="guide-box" style="margin-bottom: 2rem;">
-                                <h4 style="margin-bottom: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                                    🏢 Division & Recruitment Management
-                                </h4>
-                                <div id="divisionList" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;"></div>
-                                <div style="display: flex; gap: 0.75rem; align-items: center;">
-                                    <input type="text" id="newDivisionInput" class="form-input-sm" placeholder="NEW DIVISION NAME" style="text-transform:uppercase; background: rgba(15, 23, 42, 0.4); border-color: rgba(255,255,255,0.1); width: 250px;">
-                                    <button class="btn btn-primary btn-sm" onclick="addDivision()">+ Add Division</button>
-                                </div>
-                            </div>
+                            <!-- Division Management moved to Profile Tab for better visibility -->
 
                             <!-- 1. Guide & Placeholders -->
                             <div class="guide-box">
@@ -423,26 +468,42 @@
                                     💡 Template Variable Guide
                                 </h4>
                                 <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                    <!-- Personal -->
+                                    <span class="placeholder-tag" style="opacity:0.5; cursor:default; font-size:0.65rem; background:transparent; border:none; padding: 0 4px;">👤 PERSONAL</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{FULL_NAME}}')">{{FULL_NAME}}</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{FIRST_NAME}}')">{{FIRST_NAME}}</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{TITLE}}')">{{TITLE}}</span>
-                                    <span class="placeholder-tag" onclick="copyTag('{{DESIGNATION}}')">{{DESIGNATION}}</span>
-                                    <span class="placeholder-tag" onclick="copyTag('{{DIVISION}}')">{{DIVISION}}</span>
-                                    <span class="placeholder-tag" onclick="copyTag('{{HQ}}')">{{HQ}}</span>
-                                    <span class="placeholder-tag" onclick="copyTag('{{SALARY_MONTHLY}}')">{{SALARY_MONTHLY}}</span>
-                                    <span class="placeholder-tag" onclick="copyTag('{{SALARY_ANNUAL}}')">{{SALARY_ANNUAL}}</span>
-                                    <span class="placeholder-tag" onclick="copyTag('{{JOINING_DATE}}')">{{JOINING_DATE}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{TITLE_SHORT}}')">{{TITLE_SHORT}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{PHONE}}')">{{PHONE}}</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{ADDRESS}}')">{{ADDRESS}}</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{CITY_STATE}}')">{{CITY_STATE}}</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{PIN}}')">{{PIN}}</span>
-                                    <span class="placeholder-tag" onclick="copyTag('{{PHONE}}')">{{PHONE}}</span>
+                                    <!-- Employment -->
+                                    <span class="placeholder-tag" style="opacity:0.5; cursor:default; font-size:0.65rem; background:transparent; border:none; padding: 0 4px; width:100%; margin-top:6px;">💼 EMPLOYMENT</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{DESIGNATION}}')">{{DESIGNATION}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{DIVISION}}')">{{DIVISION}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{HQ}}')">{{HQ}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{JOINING_DATE}}')">{{JOINING_DATE}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{REPORTING_TO}}')">{{REPORTING_TO}}</span>
+                                    <!-- Salary -->
+                                    <span class="placeholder-tag" style="opacity:0.5; cursor:default; font-size:0.65rem; background:transparent; border:none; padding: 0 4px; width:100%; margin-top:6px;">💰 SALARY</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{SALARY_MONTHLY}}')">{{SALARY_MONTHLY}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{SALARY_ANNUAL}}')">{{SALARY_ANNUAL}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{SALARY_WORDS}}')">{{SALARY_WORDS}}</span>
+                                    <!-- Bank -->
+                                    <span class="placeholder-tag" style="opacity:0.5; cursor:default; font-size:0.65rem; background:transparent; border:none; padding: 0 4px; width:100%; margin-top:6px;">🏦 BANK</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{BANK_NAME}}')">{{BANK_NAME}}</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{BANK_ACC}}')">{{BANK_ACC}}</span>
                                     <span class="placeholder-tag" onclick="copyTag('{{IFSC}}')">{{IFSC}}</span>
+                                    <!-- Company & Doc -->
+                                    <span class="placeholder-tag" style="opacity:0.5; cursor:default; font-size:0.65rem; background:transparent; border:none; padding: 0 4px; width:100%; margin-top:6px;">🏢 COMPANY & DOC</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{COMPANY_NAME}}')">{{COMPANY_NAME}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{SIGNATORY_NAME}}')">{{SIGNATORY_NAME}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{SIGNATORY_DESG}}')">{{SIGNATORY_DESG}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{REF_NO}}')">{{REF_NO}}</span>
+                                    <span class="placeholder-tag" onclick="copyTag('{{TODAY_DATE}}')">{{TODAY_DATE}}</span>
                                 </div>
-                                <p style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-muted);">
-                                    Click variables to copy. <code>{{REF_NO}}</code> and <code>{{TODAY_DATE}}</code> are auto-injected by the system.
-                                </p>
+                                <p style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">Click any variable to copy it. <code>{{REF_NO}}</code> and <code>{{TODAY_DATE}}</code> are auto-injected. Variables work across all 5 letter template types.</p>
                             </div>
 
                             <!-- 2. The Master Editor Card -->
@@ -455,8 +516,13 @@
                                     <div class="pill-container" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3);">
                                         <label>ACTIVE TEMPLATE:</label>
                                         <select id="activeTemplateSelect" onchange="switchEditorTemplate()">
-                                            <option value="offer">📄 Offer Letter</option>
-                                            <option value="appt">📋 Appointment Letter</option>
+                                            <optgroup label="Core Letters">
+                                                <option value="offer">📄 Offer Letter</option>
+                                                <option value="appt">📋 Appointment Letter</option>
+                                                <option value="confirm">✅ Confirmation Letter</option>
+                                                <option value="revised_salary">💰 Revised Salary Letter</option>
+                                                <option value="incentive">🎯 Incentive Circular</option>
+                                            </optgroup>
                                         </select>
                                     </div>
                                 </div>
@@ -667,9 +733,11 @@
                                     <option value="">-- Select Division --</option>
                                 </select>
                             </div>
-                            <div class="form-group" style="margin-bottom:1.25rem;">
+                            <div class="form-group" style="margin-bottom: 1.25rem;">
                                 <label style="font-size:0.75rem;color:var(--text-muted);display:block;margin-bottom:6px;">Reporting To</label>
-                                <input type="text" id="v_reportingTo" placeholder="Manager name" style="width:100%;background:rgba(15,23,42,0.5);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:10px;font-size:0.875rem;">
+                                <select id="v_reportingTo" style="width:100%;background:rgba(15,23,42,0.5);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:10px;font-size:0.875rem;">
+                                    <option value="">-- Select Reporting Manager --</option>
+                                </select>
                             </div>
                             <button class="btn btn-outline btn-sm" onclick="saveInternalAssignment()" style="width:100%;">💾 Save Assignment</button>
                         </div>

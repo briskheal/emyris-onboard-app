@@ -5,6 +5,7 @@ let currentApplicant = null;
 let allApplicants = [];
 let activeV_Applicant = null;
 let verificationChecks = {};
+let activeUploads = 0;
 
 // --- SYSTEM MAINTENANCE ---
 async function downloadDatabase() {
@@ -306,7 +307,7 @@ function attachApplicantFileListener(inputId, category) {
         
         const fileSizeMB = file.size / (1024 * 1024);
         const isImage = file.type.startsWith('image/');
-        const maxSizeMB = isImage ? 20 : 8;
+        const maxSizeMB = 12; // Synced with server 12MB limit
 
         if (fileSizeMB > maxSizeMB) {
             showToast(`❌ Too large. Max ${maxSizeMB}MB.`, "error");
@@ -319,8 +320,12 @@ function attachApplicantFileListener(inputId, category) {
             ribbon.style.width = '30%'; 
         }
 
+        // Global Indicator ON
+        activeUploads++;
+        document.getElementById('globalUploadStatus').classList.add('show');
+
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120s timeout (increased for slow connections)
 
         try {
             let fileData = isImage ? await compressAndResize(file, 1000) : await new Promise((res, rej) => {
@@ -382,6 +387,11 @@ function attachApplicantFileListener(inputId, category) {
             }
             showToast(`❌ Upload failed: ${errMsg}`, "error");
             input.value = '';
+        } finally {
+            activeUploads = Math.max(0, activeUploads - 1);
+            if (activeUploads === 0) {
+                document.getElementById('globalUploadStatus').classList.remove('show');
+            }
         }
     });
 }
@@ -538,6 +548,7 @@ function resumeApplication() {
             }
         }
     }
+    renderApplicantDocuments();
 }
 
 function renderApplicantDashboard() {
@@ -706,6 +717,7 @@ function nextStep(step) {
     document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
     currentStep = step;
     document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+    if (currentStep === 5) renderApplicantDocuments(); 
     updateProgress(currentStep);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     saveDraft();
@@ -1465,8 +1477,10 @@ async function openVerificationView(email) {
     renderDocGallery(app);
 
     // 4. Assignments
+    await populateDivisions(); // Ensure fresh lists
+    await populateManagers();  // Populate the hierarchical selector
+    
     const divSel = document.getElementById('v_division');
-    await fetchDivisionsToDropdown(divSel);
     divSel.value = app.division || "";
     document.getElementById('v_reportingTo').value = app.reportingTo || "";
     document.getElementById('v_proposed_desg').innerText = app.formData?.designation || "NOT SPECIFIED";
@@ -1804,6 +1818,20 @@ function viewAssetRaw(val) {
 }
 
 // --- SETUP TAB LOGIC ---
+
+function openTemplateEditor(templateKey) {
+    // Switch to Setup & Letters tab, then select the template
+    switchAdminTab('setup');
+    // Wait for tab DOM to be ready, then set the correct template
+    setTimeout(() => {
+        populateTemplateSelect(templateKey);
+        switchEditorTemplate();
+        // Scroll editor into view smoothly
+        const editor = document.getElementById('unifiedEditor');
+        if (editor) editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
 async function loadSetupData() {
     if (!companyData || !companyData.name) await fetchCompanyData();
     populateDivisions();
@@ -1827,7 +1855,10 @@ async function loadSetupData() {
     // Initialize Unified Editor specific state
     window.letterTemplates = {
         offer: companyData.offerLetterBody || "",
-        appt: companyData.apptLetterBody || ""
+        appt: companyData.apptLetterBody || "",
+        confirm: companyData.confirmLetterBody || "",
+        revised_salary: companyData.revisedSalaryBody || "",
+        incentive: companyData.incentiveCircularBody || ""
     };
     if (companyData.miscLetters) {
         companyData.miscLetters.forEach(m => {
@@ -1882,8 +1913,13 @@ function populateTemplateSelect(forceSelectVal) {
     const currentVal = forceSelectVal || sel.value;
     
     let html = `
-        <option value="offer">📄 Offer Letter</option>
-        <option value="appt">📋 Appointment Letter</option>
+        <optgroup label="Core Letters">
+            <option value="offer">📄 Offer Letter</option>
+            <option value="appt">📋 Appointment Letter</option>
+            <option value="confirm">✅ Confirmation Letter</option>
+            <option value="revised_salary">💰 Revised Salary Letter</option>
+            <option value="incentive">🎯 Incentive Circular</option>
+        </optgroup>
     `;
     
     if (companyData.miscLetters && companyData.miscLetters.length > 0) {
@@ -1973,6 +2009,9 @@ async function saveActiveTemplate() {
         const data = {};
         if (type === 'offer') data.offerLetterBody = content;
         else if (type === 'appt') data.apptLetterBody = content;
+        else if (type === 'confirm') data.confirmLetterBody = content;
+        else if (type === 'revised_salary') data.revisedSalaryBody = content;
+        else if (type === 'incentive') data.incentiveCircularBody = content;
         else if (type.startsWith('misc_')) {
             const id = type.split('_')[1];
             if (!companyData.miscLetters) companyData.miscLetters = [];
@@ -2056,25 +2095,82 @@ function syncEditorStyles() {
 async function populateDivisions() {
     const res = await fetch('/api/admin/divisions');
     const divisions = await res.json();
+    
     const list = document.getElementById('divisionList');
-    list.innerHTML = divisions.map(d => `
+    const profileList = document.getElementById('profileDivisionList');
+    
+    const html = divisions.map(d => `
         <div class="division-chip">
             ${d.name}
             <button onclick="deleteDivision('${d._id}')">&times;</button>
         </div>
     `).join('');
+
+    if (list) list.innerHTML = html;
+    if (profileList) profileList.innerHTML = html;
+
+    // Update all division dropdowns globally
+    const selects = ['v_division'];
+    selects.forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) {
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">-- Select Division --</option>' + 
+                divisions.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+            sel.value = currentVal;
+        }
+    });
+
+    if (typeof populateManagers === 'function') populateManagers();
 }
 
-async function addDivision() {
-    const name = document.getElementById('newDivisionInput').value;
+async function addDivision(source = 'setup') {
+    const inputId = source === 'profile' ? 'profileNewDivisionInput' : 'newDivisionInput';
+    const input = document.getElementById(inputId);
+    const name = input ? input.value : "";
+    
     if (!name) return;
     await fetch('/api/admin/divisions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name })
     });
-    document.getElementById('newDivisionInput').value = "";
+    if (input) input.value = "";
     populateDivisions();
+}
+
+async function populateManagers() {
+    const select = document.getElementById('v_reportingTo');
+    if (!select) return;
+
+    try {
+        const res = await fetch('/api/admin/applicants');
+        const applicants = await res.json();
+        const joined = applicants.filter(a => a.status === 'joined' || a.status === 'approved');
+
+        // Group by Division
+        const grouped = {};
+        joined.forEach(a => {
+            const div = a.division || 'General/Unassigned';
+            if (!grouped[div]) grouped[div] = [];
+            grouped[div].push(a);
+        });
+
+        let html = '<option value="">-- Select Reporting Manager --</option>';
+        for (const [div, users] of Object.entries(grouped)) {
+            html += `<optgroup label="${div}">`;
+            users.forEach(u => {
+                html += `<option value="${u.fullName} (${u.formData?.designation || 'Manager'})">${u.fullName} - ${u.formData?.designation || 'Manager'}</option>`;
+            });
+            html += `</optgroup>`;
+        }
+        
+        const currentVal = select.value;
+        select.innerHTML = html;
+        select.value = currentVal;
+    } catch (e) {
+        console.error("Failed to populate managers:", e);
+    }
 }
 
 async function deleteDivision(id) {
