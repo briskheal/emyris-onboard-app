@@ -527,33 +527,33 @@
                                     </div>
                                 </div>
 
-                                <div class="editor-admin-bar">
-                                    <div style="display: flex; gap: 1.5rem; align-items: center;">
+                                <div class="editor-admin-bar" style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem; background: rgba(0,0,0,0.15); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
                                         <div class="pill-container" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05); height: auto; padding: 6px 15px;">
                                             <div style="display: flex; flex-direction: column; gap: 2px;">
                                                 <label style="font-size: 0.6rem; color: var(--accent); margin: 0;">OFFICIAL SIGNATORY</label>
-                                                <input type="text" id="signatoryName" placeholder="Name" style="font-size: 0.85rem; padding: 0; height: 1.2rem; width: 180px;">
+                                                <input type="text" id="signatoryName" placeholder="Name" style="font-size: 0.85rem; padding: 0; height: 1.2rem; width: 140px;">
                                             </div>
                                         </div>
                                         <div class="pill-container" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05); height: auto; padding: 6px 15px;">
                                             <div style="display: flex; flex-direction: column; gap: 2px;">
                                                 <label style="font-size: 0.6rem; color: var(--accent); margin: 0;">ROLE / DESIGNATION</label>
-                                                <input type="text" id="signatoryDesg" placeholder="Designation" style="font-size: 0.85rem; padding: 0; height: 1.2rem; width: 180px;">
+                                                <input type="text" id="signatoryDesg" placeholder="Designation" style="font-size: 0.85rem; padding: 0; height: 1.2rem; width: 140px;">
                                             </div>
                                         </div>
                                     </div>
-                                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
                                         <!-- NEW: TARGET APPLICANT SELECTION FOR HUB PUBLISHING -->
-                                        <div class="pill-container" style="background: rgba(99, 102, 241, 0.05); border-color: var(--primary); height: 42px; padding: 0 10px;">
-                                            <label style="color: var(--primary-light);">TARGET APPLICANT:</label>
-                                            <select id="hubTargetApplicant" style="background:transparent; border:none; color:white; font-size:0.85rem; width:150px;">
+                                        <div class="pill-container" style="background: rgba(99, 102, 241, 0.05); border-color: var(--primary); height: auto; padding: 6px 10px; display: flex; align-items: center; min-height: 42px;">
+                                            <label style="color: var(--primary-light); margin:0;">TARGET APPLICANT:</label>
+                                            <select id="hubTargetApplicant" style="background:transparent; border:none; color:white; font-size:0.85rem; width:auto; margin-left: 5px;">
                                                 <option value="">-- Choose --</option>
                                             </select>
                                         </div>
-                                        <button class="btn btn-sm btn-primary" onclick="publishLetterToHub()" style="padding: 0.75rem 1.5rem; font-size: 0.8rem; background: var(--accent); border-color: var(--accent);">🌐 Publish to Hub</button>
-                                        <div style="width: 2px; height: 30px; background: rgba(255,255,255,0.1); margin: 0 5px;"></div>
-                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1.5rem;">👁️ Preview Fidelity</button>
-                                        <button class="btn btn-sm btn-primary" onclick="saveActiveTemplate()" style="padding: 0.5rem 2rem;">💾 Commit Template</button>
+                                        <button class="btn btn-sm btn-primary" onclick="publishLetterToHub()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: var(--accent); border-color: var(--accent); height: 42px;">🌐 Publish to Hub</button>
+                                        <div style="width: 1px; height: 30px; background: rgba(255,255,255,0.1); margin: 0 5px; display: none;"></div>
+                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1rem; height: 42px;">👁️ Preview</button>
+                                        <button class="btn btn-sm btn-primary" onclick="saveActiveTemplate()" style="padding: 0.5rem 1rem; height: 42px;">💾 Save</button>
                                     </div>
                                 </div>
 

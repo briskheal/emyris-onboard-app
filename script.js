@@ -2834,6 +2834,169 @@ function copyTag(text) {
     });
 }
 
+function execCmd(command, value = null) {
+    document.getElementById('unifiedEditor').focus();
+    document.execCommand(command, false, value);
+}
+
+function syncEditorStyles() {
+    const editor = document.getElementById('unifiedEditor');
+    const font = document.getElementById('letterFontType').value;
+    const size = document.getElementById('letterFontSize').value;
+    const align = document.getElementById('letterAlignment').value || 'left';
+    editor.style.fontFamily = font === 'helvetica' ? 'Helvetica, Arial, sans-serif' : font === 'times' ? '"Times New Roman", Times, serif' : font === 'courier' ? '"Courier New", Courier, monospace' : 'Verdana, sans-serif';
+    editor.style.fontSize = size + 'pt';
+    editor.style.textAlign = align;
+}
+
+function openTemplateEditor(type) {
+    switchAdminTab('setup');
+    document.getElementById('activeTemplateSelect').value = type;
+    switchEditorTemplate();
+    window.scrollTo({ top: document.querySelector('.editor-card').offsetTop - 50, behavior: 'smooth' });
+}
+
+function switchEditorTemplate() {
+    const type = document.getElementById('activeTemplateSelect').value;
+    const editor = document.getElementById('unifiedEditor');
+    
+    // Load from companyData
+    let body = "";
+    if (type === 'offer') body = companyData.offerLetterBody || "";
+    else if (type === 'appt') body = companyData.apptLetterBody || "";
+    else if (type === 'confirm') body = companyData.confirmLetterBody || "";
+    else if (type === 'revised_salary') body = companyData.revisedSalaryBody || "";
+    else if (type === 'incentive') body = companyData.incentiveCircularBody || "";
+    
+    if(!body && type === 'offer') body = `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}`;
+    
+    // Convert newlines to HTML breaks if needed, but assuming HTML since it's a rich editor. If plain text, convert.
+    if (body.includes('<') && body.includes('>')) {
+        editor.innerHTML = body;
+    } else {
+        editor.innerHTML = body.replace(/\\n/g, '<br>');
+    }
+    
+    document.getElementById('letterFontType').value = companyData.letterFontType || 'helvetica';
+    document.getElementById('letterFontSize').value = companyData.letterFontSize || 11;
+    document.getElementById('headerHeight').value = companyData.headerHeight || 65;
+    document.getElementById('footerHeight').value = companyData.footerHeight || 25;
+    document.getElementById('signatoryName').value = companyData.signatoryName || "";
+    document.getElementById('signatoryDesg').value = companyData.signatoryDesignation || "";
+    
+    syncEditorStyles();
+}
+
+async function saveActiveTemplate() {
+    const type = document.getElementById('activeTemplateSelect').value;
+    const body = document.getElementById('unifiedEditor').innerHTML;
+    const fontType = document.getElementById('letterFontType').value;
+    const fontSize = document.getElementById('letterFontSize').value;
+    const headerHeight = document.getElementById('headerHeight').value;
+    const footerHeight = document.getElementById('footerHeight').value;
+    const signatoryName = document.getElementById('signatoryName').value;
+    const signatoryDesg = document.getElementById('signatoryDesg').value;
+
+    try {
+        lockUI("💾 Saving Template...");
+        const res = await fetch('/api/admin/save-template', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                type, body, 
+                fontType, fontSize, headerHeight, footerHeight, 
+                signatoryName, signatoryDesg 
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast("✅ Template saved successfully!", "success");
+            await fetchCompanyData(); // refresh local data
+        } else {
+            showToast("❌ Failed to save template", "error");
+        }
+    } catch (e) {
+        showToast("❌ Network error saving template", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+function toggleLivePreviewUI(show) {
+    const editor = document.getElementById('unifiedEditor');
+    const previewContainer = document.getElementById('livePreviewContainer');
+    const previewFrame = document.getElementById('livePreviewFrame');
+    
+    if (show) {
+        editor.classList.add('hidden');
+        document.querySelector('.editor-toolbar').classList.add('hidden');
+        previewContainer.classList.remove('hidden');
+        
+        let content = editor.innerHTML;
+        // Inject dummy variables to see how it looks
+        const dummyData = {
+            '{{FULL_NAME}}': 'John Doe',
+            '{{FIRST_NAME}}': 'John',
+            '{{TITLE_SHORT}}': 'Mr.',
+            '{{ADDRESS}}': '123 Main Street',
+            '{{CITY_STATE}}': 'Metropolis, NY',
+            '{{PIN}}': '10001',
+            '{{DESIGNATION}}': 'Senior Developer',
+            '{{COMPANY_NAME}}': companyData.name || 'Emyris Bio',
+            '{{JOINING_DATE}}': new Date().toLocaleDateString(),
+            '{{HQ}}': 'New York',
+            '{{REPORTING_TO}}': 'Jane Smith',
+            '{{SALARY_MONTHLY}}': '100,000',
+            '{{SALARY_ANNUAL}}': '1,200,000',
+            '{{SALARY_WORDS}}': 'Twelve Lakhs Only',
+            '{{SIGNATORY_NAME}}': document.getElementById('signatoryName').value || 'HR Head',
+            '{{SIGNATORY_DESG}}': document.getElementById('signatoryDesg').value || 'Human Resources',
+            '{{REF_NO}}': 'REF/OFR/1001/26-27',
+            '{{TODAY_DATE}}': new Date().toLocaleDateString()
+        };
+        
+        for (const [key, val] of Object.entries(dummyData)) {
+            content = content.replace(new RegExp(key, 'g'), val);
+        }
+        
+        const fontStr = document.getElementById('letterFontType').value;
+        const fontMap = {
+            'helvetica': 'Helvetica, Arial, sans-serif',
+            'times': '"Times New Roman", Times, serif',
+            'courier': '"Courier New", Courier, monospace',
+            'verdana': 'Verdana, sans-serif'
+        };
+        
+        const html = `<div style="font-family: ${fontMap[fontStr]}; font-size: ${document.getElementById('letterFontSize').value}pt; padding: 20px; text-align: ${document.getElementById('letterAlignment').value || 'left'}">${content}</div>`;
+        previewFrame.innerHTML = html;
+        previewFrame.style.background = 'white';
+        previewFrame.style.color = 'black';
+        previewFrame.style.minHeight = '500px';
+        previewFrame.style.borderRadius = '8px';
+        previewFrame.style.padding = '20px';
+    } else {
+        previewContainer.classList.add('hidden');
+        editor.classList.remove('hidden');
+        document.querySelector('.editor-toolbar').classList.remove('hidden');
+    }
+}
+
+async function previewActiveTemplate() {
+    showToast("Generating PDF preview...", "success");
+    const doc = new window.jspdf.jsPDF();
+    const frame = document.getElementById('livePreviewFrame');
+    
+    html2canvas(frame, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL('image/jpeg', 1.0);
+        const pdfWidth = doc.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        doc.addImage(imgData, 'JPEG', 0, parseInt(document.getElementById('headerHeight').value) || 20, pdfWidth, pdfHeight);
+        doc.save('Template_Preview.pdf');
+    });
+}
+
+
 // --- SYSTEM MAINTENANCE ---
 async function nukeDatabase() {
     if (!confirm("🚨 WARNING: This will permanently delete ALL applicant data and reset all counters. This action cannot be undone!")) return;
