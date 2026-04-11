@@ -2185,10 +2185,14 @@ async function deleteDivision(id) {
 
 
 function injectDummyApplicant() {
+    const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
+    const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
+    const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
+
     const dummy = {
         fullName: "SMRUTI RANJAN DASH",
         email: "test@dummy.com",
-        refNo: `REF/OFR/${companyData.offerCounter || 1001}/${new Date().getFullYear().toString().slice(-2)}-${(new Date().getFullYear()+1).toString().slice(-2)}`,
+        refNo: `EMY/OFR/${companyData.offerCounter || 1001}/${fyShort}`,
         division: "CRITIZA",
         reportingTo: "MR. ASHOK KUMAR (VP SALES)",
         formData: {
@@ -2642,6 +2646,7 @@ function fillLetterPlaceholders(text, app) {
         "{{CITY_STATE}}": `${fd.city || ""}, ${fd.state || ""}`.toUpperCase(),
         "{{PIN}}": fd.pin || "",
         "{{DESIGNATION}}": (fd.designation || "").toUpperCase(),
+        "{{EMP_CODE}}": app.empCode || `EMY/EMPC/${companyData.empCodeCounter || 1001}`,
         "{{DIVISION}}": (app.division || "").toUpperCase(),
         "{{HQ}}": (fd.hq || "").toUpperCase(),
         "{{REPORTING_TO}}": (app.reportingTo || "").toUpperCase(),
@@ -2937,6 +2942,16 @@ function toggleLivePreviewUI(show) {
         
         let content = editor.innerHTML;
         // Inject dummy variables to see how it looks
+        const type = document.getElementById('activeTemplateSelect').value;
+        const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
+        const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
+        const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
+        
+        let refPrefix = 'EMY/OFR';
+        let refCounter = companyData.offerCounter || 1001;
+        if(type === 'appt') { refPrefix = 'EMY/APT'; refCounter = companyData.apptCounter || 1001; }
+        else if(type === 'confirm' || type === 'revised_salary' || type === 'incentive') { refPrefix = 'EMY/MISC'; refCounter = companyData.miscCounter || 1001; }
+
         const dummyData = {
             '{{FULL_NAME}}': 'John Doe',
             '{{FIRST_NAME}}': 'John',
@@ -2945,7 +2960,7 @@ function toggleLivePreviewUI(show) {
             '{{CITY_STATE}}': 'Metropolis, NY',
             '{{PIN}}': '10001',
             '{{DESIGNATION}}': 'Senior Developer',
-            '{{EMP_CODE}}': 'EMP1001',
+            '{{EMP_CODE}}': `EMY/EMPC/${companyData.empCodeCounter || 1001}`,
             '{{COMPANY_NAME}}': companyData.name || 'Emyris Bio',
             '{{JOINING_DATE}}': new Date().toLocaleDateString(),
             '{{HQ}}': 'New York',
@@ -2955,7 +2970,7 @@ function toggleLivePreviewUI(show) {
             '{{SALARY_WORDS}}': 'Twelve Lakhs Only',
             '{{SIGNATORY_NAME}}': document.getElementById('signatoryName').value || 'HR Head',
             '{{SIGNATORY_DESG}}': document.getElementById('signatoryDesg').value || 'Human Resources',
-            '{{REF_NO}}': 'REF/OFR/1001/26-27',
+            '{{REF_NO}}': `${refPrefix}/${refCounter}/${fyShort}`,
             '{{TODAY_DATE}}': new Date().toLocaleDateString()
         };
         

@@ -681,14 +681,17 @@ app.post('/api/admin/next-ref', async (req, res) => {
         const { type } = req.body; // 'offer', 'appt', or 'misc'
 
         let counterKey = 'offerCounter'; // Default
-        let prefix = "OFR";
+        let prefix = "EMY/OFR";
 
         if (type === 'appt') {
             counterKey = 'apptCounter';
-            prefix = "APT";
+            prefix = "EMY/APT";
         } else if (type === 'misc' || (type && type.startsWith('misc_'))) {
             counterKey = 'miscCounter';
-            prefix = "MSC";
+            prefix = "EMY/MISC";
+        } else if (type === 'empcode') {
+            counterKey = 'empCodeCounter';
+            prefix = "EMY/EMPC";
         }
 
         const counter = company[counterKey] || 1001;
@@ -696,7 +699,7 @@ app.post('/api/admin/next-ref', async (req, res) => {
         const fyTo = company.fyTo ? new Date(company.fyTo) : new Date();
         const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
 
-        const refNo = `REF/${prefix}/${counter}/${fyShort}`;
+        const refNo = `${prefix}/${counter}/${fyShort}`;
 
         const updateObj = {};
         updateObj[counterKey] = counter + 1;
