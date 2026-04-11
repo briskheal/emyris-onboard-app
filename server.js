@@ -80,6 +80,20 @@ const companySchema = new mongoose.Schema({
     miscCounter: { type: Number, default: 1001 },
     empCodeCounter: { type: Number, default: 1001 },
     customAssetCategories: { type: [String], default: [] },
+    designations: { 
+        type: [String], 
+        default: [
+            "Territory Business Manager",
+            "Area Sales Manager",
+            "Regional Sales Manager",
+            "Sr. Regional Sales Manager",
+            "Zonal Sales Manager",
+            "Sr. Zonal Sales Manager",
+            "Sales Manager",
+            "National Sales Manager",
+            "General Manager (Sales & Mktng)"
+        ] 
+    },
     requiredDocs: {
         type: [String], default: [
             "Aadhar Card",
@@ -115,6 +129,8 @@ const applicantSchema = new mongoose.Schema({
     division: String,
     reportingTo: String,
     refNo: String,
+    salaryBreakup: { type: Object, default: {} },
+    verificationChecks: { type: Object, default: {} },
     actualJoiningDate: Date,
     offerAccepted: { type: Boolean, default: false },
     offerAcceptedAt: Date,
@@ -749,11 +765,12 @@ app.post('/api/admin/save-template', async (req, res) => {
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, refNo } = req.body;
+        const { email, division, reportingTo, refNo, salaryBreakup } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
         if (refNo !== undefined) update.refNo = refNo;
+        if (salaryBreakup !== undefined) update.salaryBreakup = salaryBreakup;
         await Applicant.findOneAndUpdate({ email }, { $set: update });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -870,6 +887,21 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
                     <br>
                     <p>Best Regards,</p>
                     <p><strong>Team HR</strong><br>${company.name}</p>
+                </div>`
+        });
+
+        // 2. Notify Admin
+        await sendEmail({
+            to: (process.env.ADMIN_USER || 'hr@emyrisbio.com').toLowerCase(),
+            subject: `🔥 Offer Accepted: ${applicant.fullName}`,
+            html: `
+                <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
+                    <h2 style="color:#10b981">Great News! Offer Accepted</h2>
+                    <p>Applicant <strong>${applicant.fullName}</strong> has officially accepted their Offer of Employment.</p>
+                    <p><strong>Actual Date of Joining (ADOJ):</strong> ${new Date(actualJoiningDate).toDateString()}</p>
+                    <p>You can now proceed with their <strong>Appointment Order</strong> issuance logic.</p>
+                    <br>
+                    <p>---<br>Emyris Onboard automated notification</p>
                 </div>`
         });
 

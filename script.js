@@ -182,6 +182,34 @@ function applyCompanyData() {
     if (typeof renderRequiredDocsChips === 'function') renderRequiredDocsChips();
     if (typeof renderRequiredDocsSuggestions === 'function') renderRequiredDocsSuggestions();
     if (typeof renderApplicantDocuments === 'function') renderApplicantDocuments();
+    if (typeof loadSetupProfile === 'function') loadSetupProfile();
+    
+    // Populate Designation dropdown map
+    const applicantDesg = document.getElementById('designation');
+    const reportingToDesg = document.getElementById('v_reportingTo');
+    const desgs = companyData.designations || [];
+    
+    if (applicantDesg) {
+        applicantDesg.innerHTML = '<option value="" disabled selected>Select Designation</option>';
+        desgs.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.innerText = d;
+            applicantDesg.appendChild(opt);
+        });
+    }
+    
+    if (reportingToDesg && reportingToDesg.tagName === 'SELECT') {
+        reportingToDesg.innerHTML = '<option value="">-- Select Reporting Manager --</option>';
+        desgs.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d;
+            opt.innerText = d;
+            reportingToDesg.appendChild(opt);
+        });
+    }
+
+    if (typeof renderDesignationList === 'function') renderDesignationList();
 }
 
 // --- REQUIRED DOCUMENTS LOGIC ---
@@ -353,9 +381,9 @@ function attachApplicantFileListener(inputId, category) {
                     label.style.color = "var(--success)"; 
                 }
                 if (ribbon) { 
-                    ribbon.classList.remove('active'); 
-                    ribbon.classList.add('waiting'); 
+                    ribbon.classList.remove('active', 'waiting'); 
                     ribbon.style.width = '100%'; 
+                    ribbon.style.background = 'linear-gradient(to right, #10b981, #34d399)';
                 }
                 
                 if (!currentApplicant.documents) currentApplicant.documents = [];
@@ -832,84 +860,7 @@ function logoutAdmin() {
     updateView('landingPage');
 }
 
-async function saveCompanyProfile(e) {
-    e.preventDefault();
-    lockUI("Saving Profile...");
-    const formData = new FormData(e.target);
-    const rawData = Object.fromEntries(formData.entries());
-    
-    // Base data
-    const data = {
-        name: rawData.compName,
-        website: rawData.compWeb,
-        phone: rawData.compPhone,
-        tollFree: rawData.compTollFree,
-        address: rawData.compAddress,
-        fyFrom: rawData.fyFrom,
-        fyTo: rawData.fyTo,
-        offerCounter: parseInt(rawData.offerCounter) || 1001,
-        apptCounter: parseInt(rawData.apptCounter) || 1001,
-        miscCounter: parseInt(rawData.miscCounter) || 1001,
-        empCodeCounter: parseInt(rawData.empCodeCounter) || 1001,
-        requiredDocs: companyData.requiredDocs || []
-    };
-    
-    // Simple helper: Only capture NEWLY selected files
-    const readFiles = (id) => {
-        return new Promise(async (resolve) => {
-            const el = document.getElementById(id);
-            if (!el || !el.files.length) return resolve([]);
-            
-            const total = el.files.length;
-            const ribbon = document.getElementById(`ribbon_${id}`);
-
-            const results = [];
-            for (let i = 0; i < el.files.length; i++) {
-                const f = el.files[i];
-                const res = await new Promise((resFile) => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => resFile(event.target.result);
-                    reader.readAsDataURL(f);
-                });
-                results.push({ name: f.name, data: res }); // Use original filename
-                
-                // Update ribbon progress
-                if (ribbon) {
-                    const percent = Math.round(((i + 1) / total) * 100);
-                    ribbon.classList.add('active');
-                    ribbon.style.width = `${percent}%`;
-                }
-            }
-            resolve(results);
-        });
-    };
-
-    const logos = await readFiles('compLogoInput');
-    const stamps = await readFiles('compStampInput');
-    const sigs = await readFiles('compSigInput');
-    const lh = await readFiles('letterheadInput');
-    const mobile = await readFiles('mobileTemplateInput');
-    const tada = await readFiles('tadaTemplateInput');
-
-    // Send ONLY the new files to the server
-    if (logos.length) data.logo = logos;
-    if (stamps.length) data.stamp = stamps;
-    if (sigs.length) data.digitalSignature = sigs;
-    if (lh.length) data.letterheadImage = lh;
-    if (mobile.length) data.mobileAppTemplate = mobile;
-    if (tada.length) data.tadaTemplate = tada;
-
-    // --- READ CUSTOM CATEGORIES ---
-    if (companyData.customAssetCategories && companyData.customAssetCategories.length > 0) {
-        for (const cat of companyData.customAssetCategories) {
-            const safeKey = cat.replace(/\s+/g, '_');
-            const files = await readFiles(`input_${safeKey}`);
-            if (files.length) data[safeKey] = files;
-        }
-    }
-
-    await submitProfileUpdate(data);
-}
+// Removed legacy saveCompanyProfile function
 
 async function submitProfileUpdate(data, silent = false) {
     if (!silent) lockUI("💾 Saving Changes...");
@@ -1091,14 +1042,16 @@ async function saveCompanyProfile(e) {
         name: rawData.compName,
         website: rawData.compWeb,
         phone: rawData.compPhone,
-        tollFree: rawData.compTollFree,
+        tollFree: rawData.tollFree,
         address: rawData.compAddress,
         fyFrom: rawData.fyFrom,
         fyTo: rawData.fyTo,
         offerCounter: parseInt(rawData.offerCounter) || 1001,
         apptCounter: parseInt(rawData.apptCounter) || 1001,
         miscCounter: parseInt(rawData.miscCounter) || 1001,
-        empCodeCounter: parseInt(rawData.empCodeCounter) || 1001
+        empCodeCounter: parseInt(rawData.empCodeCounter) || 1001,
+        requiredDocs: companyData.requiredDocs || [],
+        designations: companyData.designations || []
     };
     
     // File uploads are now handled real-time via attachFileListener
@@ -1363,6 +1316,9 @@ function calculateAppProgress(app) {
     return Math.round((filled / total) * 100);
 }
 
+// Corrected location for helper functions below
+
+
 function renderApplicantsTable(applicants) {
     const tbody = document.getElementById('applicantsTableBody');
     if (!tbody) return;
@@ -1487,6 +1443,18 @@ async function openVerificationView(email) {
     divSel.value = app.division || "";
     document.getElementById('v_reportingTo').value = app.reportingTo || "";
     document.getElementById('v_proposed_desg').innerText = app.formData?.designation || "NOT SPECIFIED";
+
+    // 4.5 Salary Breakup
+    const sal = app.salaryBreakup || {};
+    document.getElementById('v_salBasic').value = sal.basic || '';
+    document.getElementById('v_salHra').value = sal.hra || '';
+    document.getElementById('v_salLta').value = sal.lta || '';
+    document.getElementById('v_salConv').value = sal.conveyance || '';
+    document.getElementById('v_salMed').value = sal.medical || '';
+    document.getElementById('v_salSpecial').value = sal.special || '';
+    document.getElementById('v_salEdu').value = sal.edu || '';
+    document.getElementById('v_salFixed').value = sal.fixed || '';
+    if(typeof calcSalaryTotal === 'function') calcSalaryTotal();
 
     // 5. Pipeline Switches
     syncPipelineSwitches(app.tasks || {});
@@ -1641,7 +1609,17 @@ async function saveInternalAssignment() {
     const data = {
         email: activeV_Applicant.email,
         division: document.getElementById('v_division').value,
-        reportingTo: document.getElementById('v_reportingTo').value
+        reportingTo: document.getElementById('v_reportingTo').value,
+        salaryBreakup: {
+            basic: parseFloat(document.getElementById('v_salBasic').value) || 0,
+            hra: parseFloat(document.getElementById('v_salHra').value) || 0,
+            lta: parseFloat(document.getElementById('v_salLta').value) || 0,
+            conveyance: parseFloat(document.getElementById('v_salConv').value) || 0,
+            medical: parseFloat(document.getElementById('v_salMed').value) || 0,
+            special: parseFloat(document.getElementById('v_salSpecial').value) || 0,
+            edu: parseFloat(document.getElementById('v_salEdu').value) || 0,
+            fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
+        }
     };
 
     try {
@@ -1652,12 +1630,24 @@ async function saveInternalAssignment() {
             body: JSON.stringify(data)
         });
         if ((await res.json()).success) {
-            showToast("✅ Core Assignment Updated!", "success");
+            showToast("✅ Core Assignment & Salary Updated!", "success");
             activeV_Applicant.division = data.division;
             activeV_Applicant.reportingTo = data.reportingTo;
+            activeV_Applicant.salaryBreakup = data.salaryBreakup;
         }
     } catch (e) { alert("Save failed"); }
     finally { unlockUI(); }
+}
+
+function calcSalaryTotal() {
+    const fields = ['v_salBasic', 'v_salHra', 'v_salLta', 'v_salConv', 'v_salMed', 'v_salSpecial', 'v_salEdu', 'v_salFixed'];
+    let total = 0;
+    fields.forEach(id => {
+        const val = parseFloat(document.getElementById(id).value) || 0;
+        total += val;
+    });
+    const totalEl = document.getElementById('v_salTotal');
+    if(totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
 }
 
 async function commitMasterVerification() {
@@ -1682,7 +1672,17 @@ async function commitMasterVerification() {
         if (result.success) {
             showToast("🎉 Record Activated! Internal status updated.", "success");
             activeV_Applicant.status = 'approved';
-            openVerificationView(activeV_Applicant.email);
+            
+            // Auto-transition to Letters module
+            switchAdminTab('setup');
+            setTimeout(() => {
+                const targetSel = document.getElementById('hubTargetApplicant');
+                if (targetSel) {
+                    targetSel.value = activeV_Applicant.email;
+                    // Trigger populate to show their name if needed, though value set is enough
+                    switchEditorTemplate(); 
+                }
+            }, 500);
         }
     } catch (e) { alert("Activation failed"); }
     finally { unlockUI(); }
@@ -1996,6 +1996,20 @@ async function deleteMiscellaneousLetter() {
 }
 
 
+function fillEditorWithRealData() {
+    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+    const applicant = allApplicants.find(a => a.email === targetEmail);
+    if (!applicant) return alert("Please select a target applicant from the dropdown first (under 'Target Applicant').");
+    
+    if (!confirm(`This will permanently replace placeholders in the editor with data for ${applicant.fullName}. Proceed?`)) return;
+
+    const editor = document.getElementById('unifiedEditor');
+    const content = editor.innerHTML;
+    const filled = fillLetterPlaceholders(content, applicant);
+    editor.innerHTML = filled;
+    showToast(`⚡ Variables populated for ${applicant.fullName}`, "success");
+}
+
 async function saveActiveTemplate() {
     const btn = event.target;
     const originalText = btn.innerHTML;
@@ -2182,6 +2196,42 @@ async function deleteDivision(id) {
     populateDivisions();
 }
 
+function renderDesignationList() {
+    const list = document.getElementById('profileDesignationList');
+    if (!list) return;
+    const desgs = companyData.designations || [];
+    list.innerHTML = desgs.map(d => `
+        <div class="division-chip" style="background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.3);">
+            ${d}
+            <button onclick="deleteDesignation('${d.replace(/'/g, '\\\'')}')">&times;</button>
+        </div>
+    `).join('');
+}
+
+async function addDesignation() {
+    const input = document.getElementById('profileNewDesignationInput');
+    const name = input ? input.value.trim() : "";
+    if (!name) return;
+    if (!companyData.designations) companyData.designations = [];
+    if (!companyData.designations.includes(name)) {
+        companyData.designations.push(name);
+        await submitProfileUpdate({ designations: companyData.designations }, true);
+        if (input) input.value = "";
+        renderDesignationList();
+        applyCompanyData();
+        showToast("Designation added successfully");
+    }
+}
+
+async function deleteDesignation(name) {
+    if (!confirm(`Delete designation "${name}"?`)) return;
+    companyData.designations = companyData.designations.filter(d => d !== name);
+    await submitProfileUpdate({ designations: companyData.designations }, true);
+    renderDesignationList();
+    applyCompanyData();
+    showToast("Designation deleted");
+}
+
 
 
 function injectDummyApplicant() {
@@ -2319,16 +2369,24 @@ async function previewActiveTemplate() {
         companyData.signatoryName = document.getElementById('signatoryName')?.value || "";
         companyData.signatoryDesignation = document.getElementById('signatoryDesg')?.value || "";
 
-        allApplicants.push(mockApplicant);
+        const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+        const realApp = allApplicants.find(a => a.email === targetEmail);
+        const finalApp = realApp || mockApplicant;
+        const finalEmail = realApp ? realApp.email : dummyEmail;
+
+        if (!realApp) {
+            allApplicants.push(mockApplicant);
+        }
         
-        const pdfData = await generateLetterPDF(dummyEmail, type);
+        const pdfData = await generateLetterPDF(finalEmail, type);
         
         if (pdfData && pdfData.doc) {
             savePDF(pdfData.doc, `PREVIEW_${type.toUpperCase()}.pdf`);
             showToast("✅ PDF Preview Generated", "success");
             
-            // Also show it visually in the UI if container exists
-            updateLivePreviewFrame(editorHtml, dummyRef);
+            // Handle placeholders for live frame
+            const finalHtml = fillLetterPlaceholders(editorHtml, finalApp);
+            updateLivePreviewFrame(finalHtml, realApp ? realApp.refNo : dummyRef);
         } else {
             showToast("❌ Generation failed", "error");
         }
@@ -2543,6 +2601,14 @@ async function generateLetterPDF(email, type) {
     };
 
     drawPageExtras();
+
+    // Monkey-patch to ensure background/header is drawn on all newly auto-generated pages
+    const originalAddPage = doc.addPage.bind(doc);
+    doc.addPage = function() {
+        originalAddPage(...arguments);
+        drawPageExtras();
+        return doc;
+    };
     
     // Draw Ref No & Date in TOP RIGHT
     doc.setFont(FONT_TYPE, "bold");
@@ -2659,7 +2725,35 @@ function fillLetterPlaceholders(text, app) {
         "{{JOINING_DATE}}": formatDatePretty(fd.joiningDate),
         "{{COMPANY_NAME}}": companyData.name,
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
-        "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || ""
+        "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || "",
+        "{{SALARY_BREAKUP}}": (() => {
+            const sal = app.salaryBreakup || {};
+            const formatRs = (num) => 'Rs. ' + (Number(num) || 0).toLocaleString('en-IN');
+            const total = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
+                          (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
+            return `
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid #333;">
+                <thead>
+                    <tr style="background: #f4f4f4;">
+                        <th style="border: 1px solid #333; padding: 8px; text-align: left;">Earnings Components</th>
+                        <th style="border: 1px solid #333; padding: 8px; text-align: right;">Amount (Monthly)</th>
+                        <th style="border: 1px solid #333; padding: 8px; text-align: right;">Amount (Annual)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Basic Salary</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.basic)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.basic||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">HRA</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.hra)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.hra||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Leave Travel Allowance (LTA)</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.lta)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.lta||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Conveyance Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.conveyance)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.conveyance||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Medical Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.medical)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.medical||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.special||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
+                    <tr style="font-weight: bold; background: #e9e9e9;"><td style="border: 1px solid #333; padding: 8px;">Gross Total</td><td style="border: 1px solid #333; padding: 8px; text-align: right;">${formatRs(total)}</td><td style="border: 1px solid #333; padding: 8px; text-align: right;">${formatRs(total*12)}</td></tr>
+                </tbody>
+            </table>
+            `;
+        })()
     };
 
     let result = text;
@@ -3132,6 +3226,18 @@ async function publishLetterToHub() {
         const result = await res.json();
         if (result.success) {
             showToast(`✅ ${type.toUpperCase()} published successfully!`, "success");
+            // Also mark the task as done in the pipeline if it's offer or appt
+            let taskKey = "";
+            if (type === 'offer') taskKey = 'offerLetter';
+            else if (type === 'appt') taskKey = 'appointmentLetter';
+
+            if (taskKey) {
+                await fetch('/api/admin/update-task', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, task: taskKey, completed: true })
+                });
+            }
         }
     } catch (e) { alert("Publication failed. Check server."); }
     finally { unlockUI(); }
