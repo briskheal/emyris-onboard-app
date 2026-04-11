@@ -2340,3 +2340,68 @@ input:checked + .slider:before {
 @media (max-width: 768px) { .landing-cards-grid { grid-template-columns: 1fr; } }
 .landing-card { background: var(--card-bg); border: 1px solid var(--glass-border); padding: 2.5rem 1.5rem; border-radius: 20px; cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); backdrop-filter: blur(10px); display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 .landing-card:hover { transform: translateY(-8px) scale(1.02); border-color: var(--primary); background: rgba(99, 102, 241, 0.08); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+/* Departmental Picker Styles */
+.picker-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-top: 10px;
+}
+
+.picker-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.picker-card h5 {
+    color: var(--primary-light);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 0.5rem;
+}
+
+.picker-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.picker-btn {
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    color: var(--text-main);
+    font-size: 0.82rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+
+.picker-btn:hover {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: var(--primary);
+    transform: translateX(4px);
+}
+
+.picker-btn.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.picker-btn.active::after {
+    content: "✓";
+    font-weight: bold;
+}

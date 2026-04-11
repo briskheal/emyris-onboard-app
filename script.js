@@ -184,17 +184,6 @@ function applyCompanyData() {
     if (typeof renderApplicantDocuments === 'function') renderApplicantDocuments();
     if (typeof loadSetupProfile === 'function') loadSetupProfile();
     
-    // Populate Designation dropdown map
-    const applicantDesg = document.getElementById('designation');
-    const reportingToDesg = document.getElementById('v_reportingTo');
-    const rawDesgs = companyData.designations || [];
-    
-    // Normalize to objects if strings exist
-    const desgs = rawDesgs.map(d => {
-        if (typeof d === 'string') return { title: d, department: 'SALES' };
-        return d;
-    });
-
     // Populate datalist for department suggestions
     const deptList = document.getElementById('deptSuggestions');
     if (deptList) {
@@ -202,27 +191,10 @@ function applyCompanyData() {
         deptList.innerHTML = depts.map(dt => `<option value="${dt}">`).join('');
     }
     
-    if (applicantDesg) {
-        applicantDesg.innerHTML = '<option value="" disabled selected>Select Designation</option>';
-        desgs.forEach(d => {
-            const label = d.department ? `${d.title} (${d.department})` : d.title;
-            const opt = document.createElement('option');
-            opt.value = d.title;
-            opt.innerText = label;
-            applicantDesg.appendChild(opt);
-        });
-    }
+    // BEAUTIFUL DEPARTMENTAL PICKERS
+    renderDepartmentalPicker('departmentalDesignationPicker', 'designation', null);
     
-    if (reportingToDesg && reportingToDesg.tagName === 'SELECT') {
-        reportingToDesg.innerHTML = '<option value="">-- Select Reporting Manager --</option>';
-        desgs.forEach(d => {
-            const label = d.department ? `${d.title} (${d.department})` : d.title;
-            const opt = document.createElement('option');
-            opt.value = d.title;
-            opt.innerText = label;
-            reportingToDesg.appendChild(opt);
-        });
-    }
+    if (typeof renderDesignationList === 'function') renderDesignationList();
 
     if (typeof renderDesignationList === 'function') renderDesignationList();
 }
@@ -399,6 +371,7 @@ function attachApplicantFileListener(inputId, category) {
                     ribbon.classList.remove('active', 'waiting'); 
                     ribbon.style.width = '100%'; 
                     ribbon.style.background = 'linear-gradient(to right, #10b981, #34d399)';
+                    setTimeout(() => { ribbon.style.width = '0'; }, 3000); // Clear after 3s
                 }
                 
                 if (!currentApplicant.documents) currentApplicant.documents = [];
@@ -1449,6 +1422,26 @@ async function openVerificationView(email) {
     // 3. Checklist (Documents & Testimonials) + Gallery
     renderVerificationChecklist(app);
     renderDocGallery(app);
+    
+    // Render reporting manager picker in verification side?
+    // Actually, normally keep it select for admins, but user wants it "Beautiful" everywhere.
+    // Let's at least ensure it's populated there.
+    const reportingTarget = document.getElementById('v_reportingTo');
+    if (reportingTarget) {
+        // Fallback to select for admin view for space, or we can use a small version?
+        // Let's stick to the Optgroup logic I just deleted from applyCompanyData but for THIS specific ID.
+        const desgs = (companyData.designations || []).map(d => typeof d === 'string' ? { title: d, department: 'SALES' } : d);
+        const groups = {};
+        desgs.forEach(d => {
+            if (!groups[d.department]) groups[d.department] = [];
+            groups[d.department].push(d.title);
+        });
+        let html = `<option value="">-- Select Reporting Manager --</option>`;
+        Object.keys(groups).sort().forEach(dept => {
+            html += `<optgroup label="${dept}">${groups[dept].map(t => `<option value="${t}" ${app.reportingTo === t ? 'selected' : ''}>${t}</option>`).join('')}</optgroup>`;
+        });
+        reportingTarget.innerHTML = html;
+    }
 
     // 4. Assignments
     await populateDivisions(); // Ensure fresh lists
@@ -1588,7 +1581,6 @@ function renderDocGallery(app) {
         const upload = uploads.find(u => u.category === dName);
         const hasFile = !!upload;
         const isPdf = upload && upload.name && upload.name.toLowerCase().endsWith('.pdf');
-        const safeData = upload ? upload.data.replace(/'/g, '%27') : '';
         return `
             <div class="doc-preview-card ${hasFile ? 'uploaded' : 'missing'}">
                 <div class="doc-icon">${hasFile ? (isPdf ? '📄' : '🖼️') : '❌'}</div>
@@ -1598,7 +1590,8 @@ function renderDocGallery(app) {
                 </div>
                 ${hasFile ? `
                 <div class="doc-actions-row">
-                    <button class="btn-tool" onclick="viewDocument('${upload.assetId || upload.data || ''}')" title="View">👁️</button> <button class="btn-tool" onclick="downloadAsset('${upload.assetId || upload.data || ''}', '${dName}')" title="Download">📥</button>
+                    <button class="btn-tool" onclick="viewDocument('${upload.assetId || ''}')" title="View">👁️</button> 
+                    <button class="btn-tool" onclick="downloadAsset('${upload.assetId || ''}', '${dName}')" title="Download">📥</button>
                 </div>` : '<div style="font-size:0.65rem;text-align:center;color:var(--text-muted);">Not uploaded</div>'}
             </div>
         `;
@@ -2209,6 +2202,49 @@ async function deleteDivision(id) {
     if (!confirm("Remove this division?")) return;
     await fetch(`/api/admin/divisions/${id}`, { method: 'DELETE' });
     populateDivisions();
+}
+
+function renderDepartmentalPicker(containerId, hiddenInputId, selectedValue) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const rawDesgs = companyData.designations || [];
+    const desgs = rawDesgs.map(d => typeof d === 'string' ? { title: d, department: 'SALES' } : d);
+    
+    const groups = {};
+    desgs.forEach(d => {
+        if (!groups[d.department]) groups[d.department] = [];
+        groups[d.department].push(d.title);
+    });
+
+    const deptNames = Object.keys(groups).sort();
+    
+    container.innerHTML = deptNames.map(dept => `
+        <div class="picker-card">
+            <h5>${dept}</h5>
+            <div class="picker-grid">
+                ${groups[dept].map(title => `
+                    <div class="picker-btn ${selectedValue === title ? 'active' : ''}" 
+                         onclick="selectFromPicker('${containerId}', '${hiddenInputId}', '${title.replace(/'/g, "\\'")}', this)">
+                        ${title}
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `).join('');
+}
+
+function selectFromPicker(containerId, hiddenInputId, value, btnEl) {
+    document.getElementById(hiddenInputId).value = value;
+    // Clear other actives in this container
+    const container = document.getElementById(containerId);
+    container.querySelectorAll('.picker-btn').forEach(b => b.classList.remove('active'));
+    btnEl.classList.add('active');
+    
+    // Special trigger: if this is the registration form, update the view-state label if any
+    if (hiddenInputId === 'designation') {
+        showToast(`Selected: ${value}`, "success");
+    }
 }
 
 function renderDesignationList() {

@@ -982,11 +982,13 @@
                         <p>Your role and identity numbers within the organization.</p>
                     </div>
                     <div class="input-grid">
-                        <div class="form-group">
-                            <label for="designation">Designation Applied For</label>
-                            <select id="designation" name="designation" required>
-                                <option value="" disabled selected>Select Designation</option>
-                            </select>
+                        <div class="form-group" style="grid-column: 1 / -1;">
+                            <label>Designation Applied For</label>
+                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">Please select your department and the specific role you are applying for.</p>
+                            <input type="hidden" id="designation" name="designation" required>
+                            <div id="departmentalDesignationPicker" class="picker-container">
+                                <!-- Cards rendered by script.js -->
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="joiningDate">Expected Date of Joining</label>
