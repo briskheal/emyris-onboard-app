@@ -603,6 +603,44 @@ app.post('/api/admin/update-task', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Update failed' }); }
 });
 
+app.post('/api/admin/reject-document', async (req, res) => {
+    try {
+        const { email, docCategory, reason } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        // Unlock login so they can fix it
+        applicant.canLogin = true;
+        // Optionally mark the specific doc as rejected in verificationChecks
+        if (!applicant.verificationChecks) applicant.verificationChecks = {};
+        applicant.verificationChecks[docCategory] = 'rejected';
+        
+        await applicant.save();
+
+        // Notify Applicant
+        await sendEmail({
+            to: email,
+            subject: `Action Required: Document Verification for Emyris Onboarding`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 25px; border: 1px solid #fee2e2; border-radius: 12px; background: #fffcfc;">
+                    <h3 style="color: #b91c1c;">Hi ${applicant.fullName},</h3>
+                    <p>During our review, we found an issue with your <strong>${docCategory}</strong>.</p>
+                    <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0;">
+                        <p style="margin: 0; color: #991b1b;"><strong>Reason for Rejection:</strong><br>${reason || 'The document was either unclear, incorrect, or expired.'}</p>
+                    </div>
+                    <p>Your portal has been <strong>unlocked</strong>. Please log in using your registered email and PIN to re-upload the correct document.</p>
+                    <a href="https://emyris-onboard-app.onrender.com" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Login to Portal</a>
+                </div>
+            `
+        });
+
+        res.json({ success: true, message: 'Rejection email sent and login unlocked.' });
+    } catch (e) {
+        console.error('Reject Error:', e);
+        res.status(500).json({ error: 'Failed to process rejection' });
+    }
+});
+
 // --- DIVISION APIs ---
 app.get('/api/admin/divisions', async (req, res) => {
     try {

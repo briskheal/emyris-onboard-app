@@ -1524,9 +1524,11 @@ function renderVerificationChecklist(app) {
                         ${upload ? '✅ File Uploaded' : '❌ Missing File'}
                     </label>
                 </div>
-                <div class="v-check-actions">
-                    ${upload ? `<button class="btn btn-tool" onclick="viewDocument('${upload.assetId || upload.data || ''}')" title="View Document">👁️</button>` : ''} ${upload ? `<button class="btn btn-tool" onclick="downloadAsset('${upload.assetId || upload.data || ''}', '${dName}')" title="Download">📥</button>` : ''}
-                    <label class="switch-premium">
+                <div class="v-check-actions" style="display:flex; align-items:center; gap:0.5rem;">
+                    ${upload ? `<button class="btn btn-tool" onclick="viewDocument('${upload.assetId || upload.data || ''}')" title="View Document">👁️</button>` : ''} 
+                    ${upload ? `<button class="btn btn-tool" onclick="downloadAsset('${upload.assetId || upload.data || ''}', '${dName}')" title="Download">📥</button>` : ''}
+                    ${upload ? `<button class="btn btn-tool btn-tool-danger" onclick="rejectDocument('${dName}')" title="Reject Document">🚩</button>` : ''}
+                    <label class="switch-premium" style="margin-left:0.5rem;">
                         <input type="checkbox" ${isVerified ? 'checked' : ''} onchange="toggleDocCheck('${dName}', this.checked)">
                         <span class="slider-premium"></span>
                     </label>
@@ -1541,6 +1543,37 @@ function renderVerificationChecklist(app) {
 function toggleDocCheck(docName, isChecked) {
     verificationChecks[docName] = isChecked;
     updateVerificationProgress();
+}
+
+async function rejectDocument(docCategory) {
+    const reason = prompt(`Reason for rejecting ${docCategory}:`, "The document is unclear or incorrect.");
+    if (reason === null) return; // Cancelled
+
+    try {
+        lockUI(`🚩 Rejecting ${docCategory}...`);
+        const res = await fetch('/api/admin/reject-document', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: activeV_Applicant.email,
+                docCategory,
+                reason
+            })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast(`✅ ${docCategory} rejected. Applicant notified.`, "success");
+            // Mark as unchecked in UI
+            verificationChecks[docCategory] = false;
+            renderVerificationChecklist(activeV_Applicant);
+        } else {
+            showToast("Failed to reject document", "error");
+        }
+    } catch (e) {
+        showToast("Error processing rejection", "error");
+    } finally {
+        unlockUI();
+    }
 }
 
 function updateVerificationProgress() {
@@ -2794,6 +2827,9 @@ async function generateLetterPDF(email, type) {
 
 function fillLetterPlaceholders(text, app) {
     const fd = app.formData || {};
+    const sal = app.salaryBreakup || {};
+    const totalMonthly = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
+    const totalAnnual = totalMonthly * 12;
     const placeholders = {
         "{{TODAY_DATE}}": new Date().toLocaleDateString('en-GB'),
         "{{REF_NO}}": app.refNo || "REF/PENDING",
@@ -2814,9 +2850,9 @@ function fillLetterPlaceholders(text, app) {
         "{{DIVISION}}": (app.division || "").toUpperCase(),
         "{{HQ}}": (fd.hq || "").toUpperCase(),
         "{{REPORTING_TO}}": (app.reportingTo || "").toUpperCase(),
-        "{{SALARY_MONTHLY}}": Number(fd.salary || 0).toLocaleString('en-IN'),
-        "{{SALARY_ANNUAL}}": (Number(fd.salary || 0) * 12).toLocaleString('en-IN'),
-        "{{SALARY_WORDS}}": numberToWords(Number(fd.salary || 0)),
+        "{{SALARY_MONTHLY}}": totalMonthly.toLocaleString('en-IN'),
+        "{{SALARY_ANNUAL}}": totalAnnual.toLocaleString('en-IN'),
+        "{{SALARY_WORDS}}": numberToWords(totalAnnual),
         "{{BANK_NAME}}": (fd.bankName || "").toUpperCase(),
         "{{BANK_ACC}}": fd.accNo || "",
         "{{IFSC}}": (fd.ifsc || "").toUpperCase(),
