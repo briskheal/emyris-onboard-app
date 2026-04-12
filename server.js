@@ -11,15 +11,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const dns = require('dns');
 
-// Fix for MongoDB DNS/SRV issues on Windows/Render
-try {
-    dns.setServers(['8.8.8.8', '1.1.1.1']);
-    console.log('🌐 DNS Overridden: Using Google & Cloudflare resolvers.');
-} catch (e) {
-    console.warn('⚠️ Could not override DNS servers:', e.message);
-}
 
 // Try to use system DNS, but force IPv4 on connection
 // Mongoose 8/Node 18+ can fail resolving IPv6 mappings on some SRV clusters.
@@ -958,7 +950,30 @@ app.get('/api/company-profile', async (req, res) => {
     try {
         let profile = await Company.findOne().lean();
         if (!profile) {
-            profile = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD." });
+            // Creation will apply all schema defaults
+            const newCompany = await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD." });
+            profile = newCompany.toObject();
+        }
+
+        // Safety: Ensure fields with defaults are present if the document was created before they were added to schema
+        if (!profile.designations || profile.designations.length === 0) {
+            profile.designations = [
+                { title: "Territory Business Manager", department: "SALES" },
+                { title: "Area Sales Manager", department: "SALES" },
+                { title: "Regional Sales Manager", department: "SALES" },
+                { title: "Sr. Regional Sales Manager", department: "SALES" },
+                { title: "Zonal Sales Manager", department: "SALES" },
+                { title: "Sr. Zonal Sales Manager", department: "SALES" },
+                { title: "Sales Manager", department: "SALES" },
+                { title: "National Sales Manager", department: "SALES" },
+                { title: "General Manager (Sales & Mktng)", department: "SALES" }
+            ];
+        }
+        if (!profile.requiredDocs || profile.requiredDocs.length === 0) {
+            profile.requiredDocs = [
+                "Aadhar Card", "PAN Card", "Educational Certificates",
+                "Experience Certificate", "Previous Company Appointment Letter", "Last Three Months Pay Slip"
+            ];
         }
 
         // Hydrate with latest active assets from Asset DB

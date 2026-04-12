@@ -2370,6 +2370,12 @@ input:checked + .slider:before {
     display: flex;
     flex-direction: column;
     gap: 0.6rem;
+    max-height: 250px;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+.picker-grid::-webkit-scrollbar { width: 4px; }
+.picker-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px;
 }
 
 .picker-btn {

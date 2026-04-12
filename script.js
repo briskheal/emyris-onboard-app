@@ -187,7 +187,8 @@ function applyCompanyData() {
     // Populate datalist for department suggestions
     const deptList = document.getElementById('deptSuggestions');
     if (deptList) {
-        const depts = [...new Set(desgs.map(d => d.department))];
+        const currentDesgs = companyData.designations || [];
+        const depts = [...new Set(currentDesgs.map(d => typeof d === 'string' ? 'SALES' : d.department))];
         deptList.innerHTML = depts.map(dt => `<option value="${dt}">`).join('');
     }
     
