@@ -731,30 +731,43 @@ function nextStep(step) {
     }
 
     // 3. Perform Transition
-    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    // Move scroll to top BEFORE transition to avoid "jumping"
+    window.scrollTo({ top: 0, behavior: 'instant' }); 
+    
+    document.querySelectorAll('.form-step').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none'; // Force hide
+    });
+
     currentStep = step;
-    document.querySelector(`.form-step[data-step="${currentStep}"]`).classList.add('active');
+    const targetSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
+    if (targetSection) {
+        targetSection.style.display = 'block';
+        setTimeout(() => targetSection.classList.add('active'), 10);
+    }
+    
     if (currentStep === 5) renderApplicantDocuments(); 
     updateProgress(currentStep);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     saveDraft();
 }
 
-
 function prevStep(step) {
-    const currentSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
+    window.scrollTo({ top: 0, behavior: 'instant' }); 
+    
+    document.querySelectorAll('.form-step').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
+
+    currentStep = step;
+    const targetSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
+    if (targetSection) {
+        targetSection.style.display = 'block';
+        setTimeout(() => targetSection.classList.add('active'), 10);
+    }
+    
+    updateProgress(currentStep);
     saveDraft();
-    gsap.to(currentSection, { opacity: 0, x: 50, duration: 0.4, onComplete: () => {
-        currentSection.classList.add('hidden');
-        currentSection.classList.remove('active');
-        currentStep = step;
-        const prevSection = document.querySelector(`.form-step[data-step="${currentStep}"]`);
-        prevSection.classList.remove('hidden');
-        gsap.fromTo(prevSection, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 0.5, onComplete: () => {
-            prevSection.classList.add('active');
-            updateProgress(currentStep);
-        }});
-    }});
 }
 
 function updateProgress(step) {
