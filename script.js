@@ -416,51 +416,42 @@ function attachApplicantFileListener(inputId, category) {
 function updateView(viewId) {
     const sections = document.querySelectorAll('.view-section');
     
-    // 1. Hide everything first
+    // 1. Hide everything
     sections.forEach(s => {
         s.classList.add('hidden');
         s.style.display = 'none';
         s.classList.remove('active');
     });
     
-    // 2. Perform scroll reset in the next frame to ensure DOM layout is updated
-    requestAnimationFrame(() => {
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-    });
+    // 2. Perform scroll reset
+    window.scrollTo(0, 0);
     
     const activeSection = document.getElementById(viewId);
     if (!activeSection) return;
     
-    // 3. Show the new section
+    // 3. Show and animate
     activeSection.classList.remove('hidden');
-    // Ensure display property matches its intended layout
-    if (viewId === 'landingPage') {
+    if (viewId === 'landingPage' || viewId === 'adminDashboard') {
         activeSection.style.display = 'flex';
     } else {
         activeSection.style.display = 'block';
     }
     activeSection.classList.add('active');
     
-    // 4. Update body classes
+    // 4. Update body classes for Progressive Indicator
     const majorViews = ['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin', 'applicantVerificationView'];
     if (majorViews.includes(viewId)) {
         document.body.classList.add('onboarding-inactive');
+        document.body.classList.remove('onboarding-active');
     } else {
         document.body.classList.remove('onboarding-inactive');
+        document.body.classList.add('onboarding-active');
     }
     
-    // 5. Minimal GSAP entry
+    // 5. Smooth Entry
     gsap.fromTo(activeSection, 
-        { opacity: 0, y: 15 }, 
-        { 
-            opacity: 1, 
-            y: 0, 
-            duration: 0.4, 
-            ease: "power2.out", 
-            clearProps: "all" 
-        }
+        { opacity: 0 }, 
+        { opacity: 1, duration: 0.4, ease: "power2.out", clearProps: "all" }
     );
 }
 

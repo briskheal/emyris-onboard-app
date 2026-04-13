@@ -98,12 +98,14 @@ body {
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
+    min-height: 80px; /* Lock header height */
 }
 
 .logo-container {
     display: flex;
     align-items: center;
     gap: 1rem;
+    height: 48px; /* Lock logo area height */
 }
 
 .logo-icon {
@@ -201,7 +203,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    min-height: 600px; /* Prevent footer jumping during transitions */
+    min-height: 450px; /* Balanced height for all screens */
 }
 
 /* Shared Section Style */
@@ -244,8 +246,10 @@ body {
 .view-section.active {
     position: relative !important;
     height: auto !important;
-    min-height: auto !important;
+    min-height: 400px; /* Consistent height base */
     visibility: visible !important;
+    display: flex !important;
+    flex-direction: column;
 }
 
 #landingPage {
