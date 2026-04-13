@@ -387,8 +387,9 @@ body {
 
 /* Admin Login */
 .login-card {
-    max-width: 400px;
+    max-width: 440px;
     margin: 0 auto;
+    padding: 0.5rem 0;
 }
 
 .login-actions {
@@ -1225,13 +1226,13 @@ input:checked + .slider:before {
 }
 
 .landing-card-icon {
-    font-size: 2.5rem;
-    margin-bottom: 15px;
-    padding: 15px;
+    font-size: 2rem;
+    margin-bottom: 12px;
+    padding: 10px;
     background: rgba(99, 102, 241, 0.1);
     border-radius: 50%;
-    width: 70px;
-    height: 70px;
+    width: 60px;
+    height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1422,21 +1423,21 @@ input:checked + .slider:before {
 /* Login Card Enhancements */
 .login-header {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 1.25rem;
 }
 
 .premium-title {
-    font-size: 1.8rem;
+    font-size: 1.4rem;
     background: linear-gradient(45deg, var(--primary), var(--primary-light));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
 }
 
 .login-icon {
-    font-size: 2.5rem;
-    margin-bottom: 1rem;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
 }
 
 /* ===========================
