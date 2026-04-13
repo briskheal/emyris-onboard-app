@@ -1656,20 +1656,33 @@ async function updatePipelineTask(taskName, isChecked) {
 }
 
 async function saveInternalAssignment() {
+    const salaryBreakup = {
+        basic: parseFloat(document.getElementById('v_salBasic').value) || 0,
+        hra: parseFloat(document.getElementById('v_salHra').value) || 0,
+        lta: parseFloat(document.getElementById('v_salLta').value) || 0,
+        conveyance: parseFloat(document.getElementById('v_salConv').value) || 0,
+        medical: parseFloat(document.getElementById('v_salMed').value) || 0,
+        special: parseFloat(document.getElementById('v_salSpecial').value) || 0,
+        edu: parseFloat(document.getElementById('v_salEdu').value) || 0,
+        fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
+    };
+
+    // Strict Match Check for 4L/Annual consistency
+    const monthlyTotal = Object.values(salaryBreakup).reduce((a, b) => a + b, 0);
+    const calculatedAnnual = monthlyTotal * 12;
+    const targetAnnual = parseFloat(activeV_Applicant.formData?.salary) || 0;
+
+    if (Math.abs(calculatedAnnual - targetAnnual) > 100) {
+        if (!confirm(`🚨 SALARY MISMATCH ALERT:\n\nThe current breakup totals ₹${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Applicant's registered salary is ₹${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
+            return;
+        }
+    }
+
     const data = {
         email: activeV_Applicant.email,
         division: document.getElementById('v_division').value,
         reportingTo: document.getElementById('v_reportingTo').value,
-        salaryBreakup: {
-            basic: parseFloat(document.getElementById('v_salBasic').value) || 0,
-            hra: parseFloat(document.getElementById('v_salHra').value) || 0,
-            lta: parseFloat(document.getElementById('v_salLta').value) || 0,
-            conveyance: parseFloat(document.getElementById('v_salConv').value) || 0,
-            medical: parseFloat(document.getElementById('v_salMed').value) || 0,
-            special: parseFloat(document.getElementById('v_salSpecial').value) || 0,
-            edu: parseFloat(document.getElementById('v_salEdu').value) || 0,
-            fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
-        }
+        salaryBreakup
     };
 
     try {
@@ -1702,8 +1715,41 @@ function calcSalaryTotal() {
         const val = parseFloat(document.getElementById(id).value) || 0;
         total += val;
     });
+    const annual = total * 12;
+    
     const totalEl = document.getElementById('v_salTotal');
     if(totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
+    
+    const annualEl = document.getElementById('v_salAnnualTotal');
+    if(annualEl) annualEl.innerText = `₹${annual.toLocaleString('en-IN')}`;
+
+    // Target Check
+    const feedback = document.getElementById('v_salary_feedback');
+    const note = document.getElementById('v_expected_salary_note');
+    
+    if (activeV_Applicant && activeV_Applicant.formData && activeV_Applicant.formData.salary) {
+        const targetAnnual = parseFloat(activeV_Applicant.formData.salary);
+        note.innerText = `Target Annual: ₹${targetAnnual.toLocaleString('en-IN')}`;
+        
+        if (feedback) {
+            feedback.style.display = 'block';
+            const diff = Math.abs(annual - targetAnnual);
+            if (diff < 10) { // Tiny rounding margin
+                feedback.innerHTML = "✅ Matches target annual salary perfectly.";
+                feedback.style.background = "rgba(16,185,129,0.15)";
+                feedback.style.color = "#10b981";
+                feedback.classList.remove('error-feedback');
+            } else {
+                feedback.innerHTML = `⚠️ Mismatch: ₹${annual.toLocaleString('en-IN')} vs Target ₹${targetAnnual.toLocaleString('en-IN')}`;
+                feedback.style.background = "rgba(239,68,68,0.12)";
+                feedback.style.color = "#ef4444";
+                feedback.classList.add('error-feedback');
+            }
+        }
+    } else {
+        if(feedback) feedback.style.display = 'none';
+        if(note) note.innerText = "";
+    }
 }
 
 async function commitMasterVerification() {

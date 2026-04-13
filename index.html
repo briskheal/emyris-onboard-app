@@ -804,9 +804,17 @@
                                     </div>
                                 </div>
                                 <div style="margin-top:0.75rem; background:rgba(16,185,129,0.1); padding:0.5rem 1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
-                                    <span style="font-size:0.8rem; font-weight:700; color:var(--success);">Total Monthly Gross:</span>
+                                    <span style="font-size:0.8rem; font-weight:700; color:var(--success);">Monthly Total:</span>
                                     <span id="v_salTotal" style="font-size:0.95rem; font-weight:700; color:var(--success);">₹0</span>
                                 </div>
+                                <div id="v_salary_feedback" style="margin-top:0.5rem; padding:0.4rem 0.8rem; border-radius:6px; font-size:0.75rem; display:none;">
+                                    <!-- Dynamic feedback here -->
+                                </div>
+                                <div style="margin-top:0.5rem; background:rgba(99,102,241,0.1); padding:0.5rem 1rem; border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                                    <span style="font-size:0.8rem; font-weight:700; color:var(--primary);">Annualized CTC:</span>
+                                    <span id="v_salAnnualTotal" style="font-size:0.95rem; font-weight:700; color:var(--primary);">₹0</span>
+                                </div>
+                                <div id="v_expected_salary_note" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; text-align:right;"></div>
                             </div>
                             <button class="btn btn-primary btn-sm" onclick="saveInternalAssignment()" style="width:100%; padding:10px;">💾 Save Assignment & Salary</button>
                         </div>
