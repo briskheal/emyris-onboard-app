@@ -893,6 +893,12 @@ app.post('/api/admin/render-template', async (req, res) => {
     }
 });
 
+// --- HELPERS ---
+function calculateMonthlyGross(sal) {
+    if (!sal) return 0;
+    return (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
+}
+
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
@@ -901,7 +907,27 @@ app.post('/api/admin/update-workflow-data', async (req, res) => {
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
         if (refNo !== undefined) update.refNo = refNo;
-        if (salaryBreakup !== undefined) update.salaryBreakup = salaryBreakup;
+        if (salaryBreakup !== undefined) {
+            // Enhanced Validation: Ensure components are numeric and Basic is present
+            const s = salaryBreakup;
+            const components = ['basic', 'hra', 'lta', 'conveyance', 'medical', 'special', 'edu', 'fixed'];
+            
+            for (const key of components) {
+                if (s[key] !== undefined && (isNaN(Number(s[key])) || Number(s[key]) < 0)) {
+                    return res.status(400).json({ error: `Invalid value for salary component: ${key}. Must be a non-negative number.` });
+                }
+            }
+
+            const monthlyGross = calculateMonthlyGross(s);
+            if (monthlyGross <= 0) {
+                return res.status(400).json({ error: 'Monthly Gross cannot be zero. Please check the salary breakdown.' });
+            }
+            if (!s.basic || Number(s.basic) <= 0) {
+                return res.status(400).json({ error: 'Basic salary component is mandatory and must be greater than zero.' });
+            }
+
+            update.salaryBreakup = s;
+        }
         await Applicant.findOneAndUpdate({ email }, { $set: update });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -915,6 +941,12 @@ app.post('/api/admin/verify-and-activate', async (req, res) => {
         const company = await Company.findOne() || { name: 'Emyris Bio' };
 
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        // SUGGESTED DEVELOPMENT: Ensure salary and assignment are set before activation
+        const gross = calculateMonthlyGross(applicant.salaryBreakup);
+        if (gross <= 0 || !applicant.division || !applicant.reportingTo) {
+            return res.status(400).json({ error: 'Incomplete Assignment. Please set Division, Reporting Manager and Salary Breakup before activating.' });
+        }
 
         applicant.status = 'approved';
         applicant.approvedAt = new Date();
@@ -1344,19 +1376,46 @@ app.post('/api/admin/delete-applicant', async (req, res) => {
 
 app.post('/api/admin/system/vacuum', async (req, res) => {
     try {
-        const profile = await Company.findOne();
-        if (!profile) return res.status(404).json({ error: 'Not found' });
+        if (!connAssets) return res.status(503).json({ error: 'Asset database not connected' });
 
-        const categories = ['logo', 'stamp', 'digitalSignature', 'letterheadImage', 'mobileAppTemplate', 'tadaTemplate'];
-        categories.forEach(cat => {
-            if (profile[cat] && profile[cat].length > 1) {
-                profile[cat] = [profile[cat][profile[cat].length - 1]]; // Prune everything except latest
+        const company = await Company.findOne();
+        const applicants = await Applicant.find();
+
+        // 1. Collect all "In-Use" Asset IDs
+        const inUseIds = new Set();
+        
+        // From Company Branding
+        if (company) {
+            ['activeLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'].forEach(key => {
+                if (company[key]) inUseIds.add(company[key]);
+            });
+        }
+
+        // From Applicant Documents
+        applicants.forEach(app => {
+            if (app.documents) {
+                app.documents.forEach(doc => {
+                    if (doc.assetId) inUseIds.add(doc.assetId.toString());
+                });
             }
         });
 
-        await profile.save();
-        res.json({ success: true, message: 'Asset history vacuumed successfully' });
-    } catch (e) { res.status(500).json({ error: 'Vacuum failed' }); }
+        // 2. Delete Assets that are NOT in the inUse list
+        // Note: Only target categories that are "managed" (branding or applicant docs)
+        // to avoid accidental deletion of other potential data.
+        const result = await Asset.deleteMany({
+            _id: { $nin: Array.from(inUseIds) }
+        });
+
+        res.json({ 
+            success: true, 
+            message: `Vacuum complete. Pruned ${result.deletedCount} unused assets.`,
+            stats: { pruned: result.deletedCount, kept: inUseIds.size }
+        });
+    } catch (e) { 
+        console.error('Vacuum failure:', e);
+        res.status(500).json({ error: 'Vacuum failed' }); 
+    }
 });
 
 // Helper for existing data migration

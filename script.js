@@ -60,8 +60,8 @@ async function nukeDatabase() {
         if ((await res.json()).success) {
             showToast("✅ Database cleared successfully", "success");
             await fetchCompanyData();
-            if (typeof fetchApplicants === 'function') await fetchApplicants(); 
-            if (typeof switchAdminTab === 'function') switchAdminTab('profile'); 
+            await fetchApplicants(); 
+            switchAdminTab('profile'); 
         }
     } catch (e) { showToast("❌ System wipe failed", "error"); }
     finally { unlockUI(); }
@@ -88,13 +88,7 @@ function unlockUI() {
 
 window.onbeforeunload = function() { if (isSaving) return "Changes you made may not be saved."; };
 
-// --- INITIALIZATION ---
-window.addEventListener('DOMContentLoaded', async () => {
-    await fetchCompanyData();
-    if (typeof updateView === 'function') updateView('landingPage');
-    if (typeof initBackgroundAnimations === 'function') initBackgroundAnimations();
-    initFileListeners();
-});
+// Initialization handled by window.onload at bottom of file
 
 function initFileListeners() {
     const fileMap = {
@@ -107,11 +101,11 @@ function initFileListeners() {
         tadaTemplateInput: { status: 'tadaStatus' }
     };
     for (const [inputId, config] of Object.entries(fileMap)) {
-        attachFileListener(inputId, config);
+        attachStatusListener(inputId, config);
     }
 }
 
-function attachFileListener(inputId, config) {
+function attachStatusListener(inputId, config) {
     const el = document.getElementById(inputId);
     if (el) el.addEventListener('change', () => {
         const label = document.getElementById(config.status);
@@ -195,8 +189,6 @@ function applyCompanyData() {
     // BEAUTIFUL DEPARTMENTAL PICKERS
     renderDepartmentalPicker('departmentalDesignationPicker', 'designation', null);
     
-    if (typeof renderDesignationList === 'function') renderDesignationList();
-
     if (typeof renderDesignationList === 'function') renderDesignationList();
 }
 
@@ -431,12 +423,13 @@ function updateView(viewId) {
     
     // 3. Show and animate
     activeSection.classList.remove('hidden');
-    if (viewId === 'landingPage' || viewId === 'adminDashboard') {
-        activeSection.style.display = 'flex';
-    } else {
-        activeSection.style.display = 'block';
-    }
+    activeSection.style.display = (viewId === 'landingPage' || viewId === 'adminDashboard') ? 'flex' : 'block';
     activeSection.classList.add('active');
+    
+    // SMOOTHLINE: Smooth fade-in for section transition
+    if (typeof gsap !== 'undefined') {
+        gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
+    }
     
     // 4. Update body classes for Progressive Indicator
     const majorViews = ['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin', 'applicantVerificationView'];
@@ -896,7 +889,7 @@ function showToast(message, type = 'success') {
 }
 
 // --- REAL-TIME ASSET UPLOAD LOGIC ---
-function attachFileListener(id, info) {
+function attachAssetUploadListener(id, info) {
     const el = document.getElementById(id);
     if (!el) return;
     
@@ -1004,12 +997,12 @@ function switchAdminTab(tab) {
         renderAssetLists();
 
         // Attach listeners for profile tab file inputs
-        attachFileListener('compLogoInput', { status: 'logoStatus' });
-        attachFileListener('compStampInput', { status: 'stampStatus' });
-        attachFileListener('compSigInput', { status: 'sigStatus' });
-        attachFileListener('letterheadInput', { status: 'letterheadStatus' });
-        attachFileListener('mobileTemplateInput', { status: 'mobileStatus' });
-        attachFileListener('tadaTemplateInput', { status: 'tadaStatus' });
+        attachAssetUploadListener('compLogoInput', { status: 'logoStatus' });
+        attachAssetUploadListener('compStampInput', { status: 'stampStatus' });
+        attachAssetUploadListener('compSigInput', { status: 'sigStatus' });
+        attachAssetUploadListener('letterheadInput', { status: 'letterheadStatus' });
+        attachAssetUploadListener('mobileTemplateInput', { status: 'mobileStatus' });
+        attachAssetUploadListener('tadaTemplateInput', { status: 'tadaStatus' });
 
     } else if (tab === 'setup') {
         document.getElementById('adminSetupTab').classList.remove('hidden');
@@ -1053,10 +1046,21 @@ async function saveCompanyProfile(e) {
 }
 
 async function fetchApplicants() {
-    const res = await fetch('/api/admin/applicants');
-    allApplicants = await res.json();
-    calculateStats(allApplicants);
-    renderApplicantsTable(allApplicants);
+    try {
+        const res = await fetch('/api/admin/applicants');
+        const data = await res.json();
+        
+        if (Array.isArray(data)) {
+            allApplicants = data;
+            calculateStats(allApplicants);
+            renderApplicantsTable(allApplicants);
+        } else {
+            console.error("Failed to fetch applicants:", data);
+            showToast("⚠️ Could not load applicant data", "error");
+        }
+    } catch (err) {
+        console.error("Fetch applicants crash:", err);
+    }
 }
 
 function calculateStats(applicants) {
@@ -1142,7 +1146,7 @@ async function renderAssetLists() {
                     categories[cat] = `list_${safeKey}`;
 
                     // IMPORTANT: Attach listener for NEWLY created dynamic input
-                    attachFileListener(`input_${safeKey}`, { status: `status_${safeKey}`, ribbon: `ribbon_input_${safeKey}` });
+                    attachAssetUploadListener(`input_${safeKey}`, { status: `status_${safeKey}`, ribbon: `ribbon_input_${safeKey}` });
                 });
             }
         }
@@ -1675,13 +1679,19 @@ async function saveInternalAssignment() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        if ((await res.json()).success) {
+        const result = await res.json();
+        if (result.success) {
             showToast("✅ Core Assignment & Salary Updated!", "success");
             activeV_Applicant.division = data.division;
             activeV_Applicant.reportingTo = data.reportingTo;
             activeV_Applicant.salaryBreakup = data.salaryBreakup;
+        } else {
+            showToast(result.error || "Save failed", "error");
         }
-    } catch (e) { alert("Save failed"); }
+    } catch (e) { 
+        console.error("Save assignment error:", e);
+        showToast("Network error: Save failed", "error"); 
+    }
     finally { unlockUI(); }
 }
 
@@ -1725,12 +1735,16 @@ async function commitMasterVerification() {
                 const targetSel = document.getElementById('hubTargetApplicant');
                 if (targetSel) {
                     targetSel.value = activeV_Applicant.email;
-                    // Trigger populate to show their name if needed, though value set is enough
                     switchEditorTemplate(); 
                 }
             }, 500);
+        } else {
+            showToast(result.error || "Activation failed", "error");
         }
-    } catch (e) { alert("Activation failed"); }
+    } catch (e) { 
+        console.error("Master verification crash:", e);
+        showToast("Network Error: Activation failed", "error"); 
+    }
     finally { unlockUI(); }
 }
 
@@ -3074,198 +3088,8 @@ function copyTag(text) {
     });
 }
 
-function execCmd(command, value = null) {
-    document.getElementById('unifiedEditor').focus();
-    document.execCommand(command, false, value);
-}
-
-function syncEditorStyles() {
-    const editor = document.getElementById('unifiedEditor');
-    const font = document.getElementById('letterFontType').value;
-    const size = document.getElementById('letterFontSize').value;
-    const align = document.getElementById('letterAlignment').value || 'left';
-    editor.style.fontFamily = font === 'helvetica' ? 'Helvetica, Arial, sans-serif' : font === 'times' ? '"Times New Roman", Times, serif' : font === 'courier' ? '"Courier New", Courier, monospace' : 'Verdana, sans-serif';
-    editor.style.fontSize = size + 'pt';
-    editor.style.textAlign = align;
-}
-
-function openTemplateEditor(type) {
-    switchAdminTab('setup');
-    document.getElementById('activeTemplateSelect').value = type;
-    switchEditorTemplate();
-    window.scrollTo({ top: document.querySelector('.editor-card').offsetTop - 50, behavior: 'smooth' });
-}
-
-function switchEditorTemplate() {
-    const type = document.getElementById('activeTemplateSelect').value;
-    const editor = document.getElementById('unifiedEditor');
-    
-    // Load from companyData
-    let body = "";
-    if (type === 'offer') body = companyData.offerLetterBody || "";
-    else if (type === 'appt') body = companyData.apptLetterBody || "";
-    else if (type === 'confirm') body = companyData.confirmLetterBody || "";
-    else if (type === 'revised_salary') body = companyData.revisedSalaryBody || "";
-    else if (type === 'incentive') body = companyData.incentiveCircularBody || "";
-    
-    if(!body && type === 'offer') body = `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}`;
-    
-    // Convert newlines to HTML breaks if needed, but assuming HTML since it's a rich editor. If plain text, convert.
-    if (body.includes('<') && body.includes('>')) {
-        editor.innerHTML = body;
-    } else {
-        editor.innerHTML = body.replace(/\\n/g, '<br>');
-    }
-    
-    document.getElementById('letterFontType').value = companyData.letterFontType || 'helvetica';
-    document.getElementById('letterFontSize').value = companyData.letterFontSize || 11;
-    document.getElementById('headerHeight').value = companyData.headerHeight || 65;
-    document.getElementById('footerHeight').value = companyData.footerHeight || 25;
-    document.getElementById('signatoryName').value = companyData.signatoryName || "";
-    document.getElementById('signatoryDesg').value = companyData.signatoryDesignation || "";
-    
-    syncEditorStyles();
-}
-
-async function saveActiveTemplate() {
-    const type = document.getElementById('activeTemplateSelect').value;
-    const body = document.getElementById('unifiedEditor').innerHTML;
-    const fontType = document.getElementById('letterFontType').value;
-    const fontSize = document.getElementById('letterFontSize').value;
-    const headerHeight = document.getElementById('headerHeight').value;
-    const footerHeight = document.getElementById('footerHeight').value;
-    const signatoryName = document.getElementById('signatoryName').value;
-    const signatoryDesg = document.getElementById('signatoryDesg').value;
-
-    try {
-        lockUI("💾 Saving Template...");
-        const res = await fetch('/api/admin/save-template', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                type, body, 
-                fontType, fontSize, headerHeight, footerHeight, 
-                signatoryName, signatoryDesg 
-            })
-        });
-        const data = await res.json();
-        if (data.success) {
-            showToast("✅ Template saved successfully!", "success");
-            await fetchCompanyData(); // refresh local data
-        } else {
-            showToast("❌ Failed to save template", "error");
-        }
-    } catch (e) {
-        showToast("❌ Network error saving template", "error");
-    } finally {
-        unlockUI();
-    }
-}
-
-function toggleLivePreviewUI(show) {
-    const editor = document.getElementById('unifiedEditor');
-    const previewContainer = document.getElementById('livePreviewContainer');
-    const previewFrame = document.getElementById('livePreviewFrame');
-    
-    if (show) {
-        editor.classList.add('hidden');
-        document.querySelector('.editor-toolbar').classList.add('hidden');
-        previewContainer.classList.remove('hidden');
-        
-        let content = editor.innerHTML;
-        // Inject dummy variables to see how it looks
-        const type = document.getElementById('activeTemplateSelect').value;
-        const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
-        const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
-        const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
-        
-        let refPrefix = 'EMY/OFR';
-        let refCounter = companyData.offerCounter || 1001;
-        if(type === 'appt') { refPrefix = 'EMY/APT'; refCounter = companyData.apptCounter || 1001; }
-        else if(type === 'confirm' || type === 'revised_salary' || type === 'incentive') { refPrefix = 'EMY/MISC'; refCounter = companyData.miscCounter || 1001; }
-
-        const dummyData = {
-            '{{FULL_NAME}}': 'John Doe',
-            '{{FIRST_NAME}}': 'John',
-            '{{TITLE_SHORT}}': 'Mr.',
-            '{{ADDRESS}}': '123 Main Street',
-            '{{CITY_STATE}}': 'Metropolis, NY',
-            '{{PIN}}': '10001',
-            '{{DESIGNATION}}': 'Senior Developer',
-            '{{EMP_CODE}}': `EMY/EMPC/${companyData.empCodeCounter || 1001}`,
-            '{{COMPANY_NAME}}': companyData.name || 'Emyris Bio',
-            '{{JOINING_DATE}}': new Date().toLocaleDateString(),
-            '{{HQ}}': 'New York',
-            '{{REPORTING_TO}}': 'Jane Smith',
-            '{{SALARY_MONTHLY}}': '100,000',
-            '{{SALARY_ANNUAL}}': '1,200,000',
-            '{{SALARY_WORDS}}': 'Twelve Lakhs Only',
-            '{{SIGNATORY_NAME}}': document.getElementById('signatoryName').value || 'HR Head',
-            '{{SIGNATORY_DESG}}': document.getElementById('signatoryDesg').value || 'Human Resources',
-            '{{REF_NO}}': `${refPrefix}/${refCounter}/${fyShort}`,
-            '{{TODAY_DATE}}': new Date().toLocaleDateString()
-        };
-        
-        for (const [key, val] of Object.entries(dummyData)) {
-            content = content.replace(new RegExp(key, 'g'), val);
-        }
-        
-        const fontStr = document.getElementById('letterFontType').value;
-        const fontMap = {
-            'helvetica': 'Helvetica, Arial, sans-serif',
-            'times': '"Times New Roman", Times, serif',
-            'courier': '"Courier New", Courier, monospace',
-            'verdana': 'Verdana, sans-serif'
-        };
-        
-        const html = `<div style="font-family: ${fontMap[fontStr]}; font-size: ${document.getElementById('letterFontSize').value}pt; padding: 20px; text-align: ${document.getElementById('letterAlignment').value || 'left'}">${content}</div>`;
-        previewFrame.innerHTML = html;
-        previewFrame.style.background = 'white';
-        previewFrame.style.color = 'black';
-        previewFrame.style.minHeight = '500px';
-        previewFrame.style.borderRadius = '8px';
-        previewFrame.style.padding = '20px';
-    } else {
-        previewContainer.classList.add('hidden');
-        editor.classList.remove('hidden');
-        document.querySelector('.editor-toolbar').classList.remove('hidden');
-    }
-}
-
-async function previewActiveTemplate() {
-    showToast("Generating PDF preview...", "success");
-    const doc = new window.jspdf.jsPDF();
-    const frame = document.getElementById('livePreviewFrame');
-    
-    html2canvas(frame, { scale: 2 }).then(canvas => {
-        const imgData = canvas.toDataURL('image/jpeg', 1.0);
-        const pdfWidth = doc.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        doc.addImage(imgData, 'JPEG', 0, parseInt(document.getElementById('headerHeight').value) || 20, pdfWidth, pdfHeight);
-        doc.save('Template_Preview.pdf');
-    });
-}
-
-
 // --- SYSTEM MAINTENANCE ---
-async function nukeDatabase() {
-    if (!confirm("🚨 WARNING: This will permanently delete ALL applicant data and reset all counters. This action cannot be undone!")) return;
-    if (!confirm("Are you ABSOLUTELY sure?")) return;
-
-    try {
-        lockUI("☢️ Nuking Database...");
-        const res = await fetch('/api/admin/system/clear', { method: 'POST' });
-        const result = await res.json();
-        if (result.success) {
-            showToast("💥 Database cleared successfully!", "success");
-            await fetchApplicants();
-            await fetchCompanyData();
-            switchAdminTab('applicants');
-        }
-    } catch (e) { showToast("❌ Reset failed", "error"); }
-    finally { unlockUI(); }
-}
+// Consolidated into main nukeDatabase above
 
 
 
@@ -3310,23 +3134,7 @@ async function fetchLifecycleAlerts() {
     } catch (e) { console.error("Lifecycle check failed", e); }
 }
 
-async function fetchApplicants() {
-    try {
-        const res = await fetch('/api/admin/applicants');
-        const data = await res.json();
-        
-        if (Array.isArray(data)) {
-            allApplicants = data;
-            calculateStats(allApplicants);
-            renderApplicantsTable(allApplicants);
-        } else {
-            console.error("Failed to fetch applicants:", data);
-            showToast("⚠️ Could not load applicant data", "error");
-        }
-    } catch (err) {
-        console.error("Fetch applicants crash:", err);
-    }
-}
+// Consolidated into version near admin area or line 1056
 
 async function populateHubApplicantSelect() {
     const sel = document.getElementById('hubTargetApplicant');
@@ -3390,7 +3198,9 @@ async function publishLetterToHub() {
 async function initializeApp() {
     console.log('🚀 Emyris App initialized');
     await fetchCompanyData();
+    updateView('landingPage');
     initBackgroundAnimations();
+    initFileListeners();
 }
 
 window.onload = initializeApp;
