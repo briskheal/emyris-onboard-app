@@ -3328,10 +3328,15 @@ async function populateHubApplicantSelect() {
     const sel = document.getElementById('hubTargetApplicant');
     if (!sel) return;
     
-    // Ensure we have current allApplicants data
-    if (!allApplicants.length) {
+    try {
+        // ALWAYS fetch fresh data to ensure latest salary/designation is used in letters
         const res = await fetch('/api/admin/applicants');
-        allApplicants = await res.json();
+        const data = await res.json();
+        if (Array.isArray(data)) {
+            allApplicants = data;
+        }
+    } catch (e) {
+        console.error("Select refresh failed", e);
     }
     
     // Select approved or ongoing ones

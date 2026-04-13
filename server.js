@@ -16,6 +16,55 @@ const PORT = process.env.PORT || 3000;
 // Try to use system DNS, but force IPv4 on connection
 // Mongoose 8/Node 18+ can fail resolving IPv6 mappings on some SRV clusters.
 
+// --- TEMPLATE ENGINE UTILITIES ---
+function numberToWords(num) {
+    const a = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    
+    const count = (n) => {
+        if (n < 20) return a[n];
+        let s = b[Math.floor(n / 10)];
+        if (n % 10 > 0) s += ' ' + a[n % 10];
+        return s;
+    };
+
+    if (num === 0) return 'zero';
+    let words = '';
+    
+    if (Math.floor(num / 10000000) > 0) {
+        words += count(Math.floor(num / 10000000)) + ' crore ';
+        num %= 10000000;
+    }
+    if (Math.floor(num / 100000) > 0) {
+        words += count(Math.floor(num / 100000)) + ' lakh ';
+        num %= 100000;
+    }
+    if (Math.floor(num / 1000) > 0) {
+        words += count(Math.floor(num / 1000)) + ' thousand ';
+        num %= 1000;
+    }
+    if (Math.floor(num / 100) > 0) {
+        words += count(Math.floor(num / 100)) + ' hundred ';
+        num %= 100;
+    }
+    if (num > 0) {
+        if (words !== '') words += 'and ';
+        words += count(num);
+    }
+    return words.toUpperCase() + ' ONLY';
+}
+
+function resolveTemplate(template, data) {
+    let result = template;
+    for (const [key, value] of Object.entries(data)) {
+        const placeholder = `{{${key}}}`;
+        result = result.split(placeholder).join(value || '');
+    }
+    // Handle special cases or nested objects if needed
+    return result;
+}
+
+
 // MongoDB Connection Strings
 const MONGODB_URI = process.env.MONGODB_URI;
 // Fallback to same cluster but different DB if ASSET_URI isn't provided
@@ -236,8 +285,11 @@ app.post('/api/register-applicant', async (req, res) => {
 
     try {
         // 1. Uniqueness Guard
-        const existing = await Applicant.findOne({ email });
-        if (existing) return res.status(400).json({ success: false, message: 'Email already registered.' });
+        const existingEmail = await Applicant.findOne({ email });
+        if (existingEmail) return res.status(400).json({ success: false, message: 'Email already registered.' });
+
+        const existingPhone = await Applicant.findOne({ phone });
+        if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
 
         // 2. Database Persistence
         await Applicant.create({ fullName, email, phone, password: pin });
@@ -789,6 +841,55 @@ app.post('/api/admin/save-template', async (req, res) => {
     } catch (e) {
         console.error('Save template error:', e);
         res.status(500).json({ success: false, error: 'Database save failed' });
+    }
+});
+
+app.post('/api/admin/render-template', async (req, res) => {
+    try {
+        const { email, type, customBody } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        const company = await Company.findOne();
+        
+        if (!applicant || !company) return res.status(404).json({ error: 'Data missing' });
+
+        let template = customBody || (type === 'offer' ? company.offerLetterBody : company.apptLetterBody);
+        
+        const fd = applicant.formData || {};
+        const sal = applicant.salaryBreakup || {};
+        
+        // Calculate Total
+        const monthlyTotal = Object.values(sal).reduce((a, b) => a + (parseFloat(b) || 0), 0);
+        const annualCTC = monthlyTotal * 12;
+
+        const map = {
+            'FULL_NAME': applicant.fullName.toUpperCase(),
+            'FIRST_NAME': applicant.fullName.split(' ')[0],
+            'TITLE': (fd.gender === 'Female' ? 'Ms.' : 'Mr.'),
+            'TITLE_SHORT': (fd.gender === 'Female' ? 'Ms.' : 'Mr.'),
+            'PHONE': applicant.phone,
+            'ADDRESS': fd.address || '',
+            'CITY_STATE': `${fd.city || ''}, ${fd.state || ''}`,
+            'PIN': fd.pin || '',
+            'DESIGNATION': fd.designation || '',
+            'DIVISION': applicant.division || '',
+            'HQ': fd.hq || '',
+            'JOINING_DATE': fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+            'REPORTING_TO': applicant.reportingTo || '',
+            'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
+            'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
+            'SALARY_WORDS': numberToWords(annualCTC),
+            'COMPANY_NAME': company.name,
+            'SIGNATORY_NAME': company.signatoryName || '',
+            'SIGNATORY_DESG': company.signatoryDesignation || '',
+            'REF_NO': applicant.refNo || 'PENDING',
+            'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+            'EMP_CODE': applicant.formData?.empCode || 'TBD'
+        };
+
+        const resolved = resolveTemplate(template, map);
+        res.json({ success: true, resolved });
+    } catch (e) {
+        res.status(500).json({ error: 'Render failed' });
     }
 });
 
