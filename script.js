@@ -1812,18 +1812,38 @@ async function commitMasterVerification() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast("🎉 Record Activated! Internal status updated.", "success");
+            showToast("🎉 Record Activated! Transitioning to Document Engine...", "success");
             activeV_Applicant.status = 'approved';
             
+            // Capture a local reference for the closure
+            const targetApplicant = activeV_Applicant;
+
             // Auto-transition to Letters module
             switchAdminTab('setup');
-            setTimeout(() => {
+            
+            setTimeout(async () => {
+                // 1. Set the Target Applicant in the Editor Dropdown
                 const targetSel = document.getElementById('hubTargetApplicant');
-                if (targetSel) {
-                    targetSel.value = activeV_Applicant.email;
-                    switchEditorTemplate(); 
+                if (targetSel) targetSel.value = targetApplicant.email;
+                
+                // 2. Set Active Template to 'Offer'
+                const templateSel = document.getElementById('activeTemplateSelect');
+                if (templateSel) templateSel.value = 'offer';
+                
+                // 3. Load the template into the editor
+                await switchEditorTemplate();
+                
+                // 4. AUTO-POPULATE: Inject real data into the loaded template immediately
+                const editor = document.getElementById('unifiedEditor');
+                if (editor) {
+                    const filledHtml = fillLetterPlaceholders(editor.innerHTML, targetApplicant);
+                    editor.innerHTML = filledHtml;
+                    
+                    // Scroll editor into view
+                    editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    showToast(`⚡ Data auto-filled for ${targetApplicant.fullName}`, "success");
                 }
-            }, 500);
+            }, 800);
         } else {
             showToast(result.error || "Activation failed", "error");
         }
