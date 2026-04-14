@@ -1440,6 +1440,7 @@ async function openVerificationView(email) {
     const divSel = document.getElementById('v_division');
     divSel.value = app.division || "";
     document.getElementById('v_reportingTo').value = app.reportingTo || "";
+    document.getElementById('v_hq').value = app.hq || app.formData?.hq || "";
     document.getElementById('v_proposed_desg').innerText = app.formData?.designation || "NOT SPECIFIED";
 
     // 4.5 Salary Breakup
@@ -1475,7 +1476,7 @@ function renderVerificationProfile(app) {
         { label: 'Primary Email', val: app.email },
         { label: 'Contact Phone', val: app.phone },
         { label: 'Designation', val: fd.designation || 'N/A' },
-        { label: 'HQ/Base City', val: fd.hq || 'N/A' },
+        { label: 'Joining HQ', val: app.hq || fd.hq || 'N/A' },
         { label: 'Date of Birth', val: formatDatePretty(fd.dob) },
         { label: 'Current Address', val: fd.address || 'N/A' },
         { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : 'N/A' }
@@ -1663,6 +1664,7 @@ async function saveInternalAssignment() {
         email: activeV_Applicant.email,
         division: document.getElementById('v_division').value,
         reportingTo: document.getElementById('v_reportingTo').value,
+        hq: document.getElementById('v_hq').value,
         salaryBreakup
     };
 
@@ -1678,6 +1680,7 @@ async function saveInternalAssignment() {
             showToast("✅ Core Assignment & Salary Updated!", "success");
             activeV_Applicant.division = data.division;
             activeV_Applicant.reportingTo = data.reportingTo;
+            activeV_Applicant.hq = data.hq;
             activeV_Applicant.salaryBreakup = data.salaryBreakup;
         } else {
             showToast(result.error || "Save failed", "error");
@@ -2992,7 +2995,7 @@ function fillLetterPlaceholders(text, app) {
         "{{DESIGNATION}}": (fd.designation || "").toUpperCase(),
         "{{EMP_CODE}}": app.empCode || `EMY/EMPC/${companyData.empCodeCounter || 1001}`,
         "{{DIVISION}}": (app.division || "").toUpperCase(),
-        "{{HQ}}": (fd.hq || "").toUpperCase(),
+        "{{HQ}}": (app.hq || fd.hq || "").toUpperCase(),
         "{{REPORTING_TO}}": (app.reportingTo || "").toUpperCase(),
         "{{SALARY_MONTHLY}}": totalMonthly.toLocaleString('en-IN'),
         "{{SALARY_ANNUAL}}": totalAnnual.toLocaleString('en-IN'),

@@ -169,6 +169,8 @@ const applicantSchema = new mongoose.Schema({
     documents: { type: [mongoose.Schema.Types.Mixed], default: [] },
     division: String,
     reportingTo: String,
+    hq: String,
+    empCode: String,
     refNo: String,
     salaryBreakup: { type: Object, default: {} },
     verificationChecks: { type: Object, default: {} },
@@ -902,10 +904,12 @@ function calculateMonthlyGross(sal) {
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, refNo, salaryBreakup } = req.body;
+        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
+        if (hq !== undefined) update.hq = hq;
+        if (empCode !== undefined) update.empCode = empCode;
         if (refNo !== undefined) update.refNo = refNo;
         if (salaryBreakup !== undefined) {
             // Enhanced Validation: Ensure components are numeric and Basic is present
