@@ -1432,25 +1432,6 @@ async function openVerificationView(email) {
     renderVerificationChecklist(app);
     renderDocGallery(app);
     
-    // Render reporting manager picker in verification side?
-    // Actually, normally keep it select for admins, but user wants it "Beautiful" everywhere.
-    // Let's at least ensure it's populated there.
-    const reportingTarget = document.getElementById('v_reportingTo');
-    if (reportingTarget) {
-        // Fallback to select for admin view for space, or we can use a small version?
-        // Let's stick to the Optgroup logic I just deleted from applyCompanyData but for THIS specific ID.
-        const desgs = (companyData.designations || []).map(d => typeof d === 'string' ? { title: d, department: 'SALES' } : d);
-        const groups = {};
-        desgs.forEach(d => {
-            if (!groups[d.department]) groups[d.department] = [];
-            groups[d.department].push(d.title);
-        });
-        let html = `<option value="">-- Select Reporting Manager --</option>`;
-        Object.keys(groups).sort().forEach(dept => {
-            html += `<optgroup label="${dept}">${groups[dept].map(t => `<option value="${t}" ${app.reportingTo === t ? 'selected' : ''}>${t}</option>`).join('')}</optgroup>`;
-        });
-        reportingTarget.innerHTML = html;
-    }
 
     // 4. Assignments
     await populateDivisions(); // Ensure fresh lists
@@ -1714,6 +1695,47 @@ function autoCalcHRA() {
     if (hraField) {
         hraField.value = Math.round(basic * 0.4);
     }
+}
+
+function autoDistributeSalary() {
+    if (!activeV_Applicant || !activeV_Applicant.formData || !activeV_Applicant.formData.salary) {
+        showToast("No target salary found for this applicant", "error");
+        return;
+    }
+    
+    const annual = parseFloat(activeV_Applicant.formData.salary);
+    const monthly = Math.round(annual / 12);
+    
+    // User logic: Basic is 7% of monthly salary
+    const basic = Math.round(monthly * 0.07);
+    const hra = Math.round(basic * 0.4);
+    
+    // Distribute remainder into Special Allowance for now, keep others 0 or fixed?
+    // User wants "amongst breaks up available"
+    // I will put 0 in others and the rest in Special.
+    const fields = {
+        'v_salBasic': basic,
+        'v_salHra': hra,
+        'v_salLta': 0,
+        'v_salConv': 0,
+        'v_salMed': 0,
+        'v_salEdu': 0,
+        'v_salFixed': 0
+    };
+    
+    for (const [id, val] of Object.entries(fields)) {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    }
+    
+    // Special Allowance gets the deficit to match exactly
+    const currentSum = basic + hra;
+    const special = monthly - currentSum;
+    const specialEl = document.getElementById('v_salSpecial');
+    if (specialEl) specialEl.value = special;
+    
+    calcSalaryTotal();
+    showToast("⚡ Salary breakup auto-calculated (Basic @ 7%)", "success");
 }
 
 function calcSalaryTotal() {
@@ -2288,17 +2310,37 @@ async function populateManagers() {
         });
 
         let html = '<option value="">-- Select Reporting Manager --</option>';
+        
+        // 1. Add Actual People (Grouped by Division)
         for (const [div, users] of Object.entries(grouped)) {
-            html += `<optgroup label="${div}">`;
+            html += `<optgroup label="STAFF: ${div}">`;
             users.forEach(u => {
                 html += `<option value="${u.fullName} (${u.formData?.designation || 'Manager'})">${u.fullName} - ${u.formData?.designation || 'Manager'}</option>`;
             });
             html += `</optgroup>`;
         }
+
+        // 2. Add Company Roles (Fallback/Standard)
+        if (companyData && companyData.designations) {
+            const desgs = (companyData.designations || []).map(d => typeof d === 'string' ? { title: d, department: 'MANAGEMENT' } : d);
+            const dGroups = {};
+            desgs.forEach(d => {
+                if (!dGroups[d.department]) dGroups[d.department] = [];
+                dGroups[d.department].push(d.title);
+            });
+            
+            for (const [dept, titles] of Object.entries(dGroups)) {
+                html += `<optgroup label="ROLE: ${dept}">`;
+                titles.forEach(t => {
+                    html += `<option value="${t}">${t} (Role Only)</option>`;
+                });
+                html += `</optgroup>`;
+            }
+        }
         
         const currentVal = select.value;
         select.innerHTML = html;
-        select.value = currentVal;
+        if (currentVal) select.value = currentVal;
     } catch (e) {
         console.error("Failed to populate managers:", e);
     }
