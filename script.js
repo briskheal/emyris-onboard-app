@@ -1704,27 +1704,27 @@ function autoDistributeSalary() {
     }
     
     const annual = parseFloat(activeV_Applicant.formData.salary);
-    const monthly = Math.round(annual / 12);
+    const monthly = annual / 12;
     
-    // 1. Basic: 7% of monthly salary (as previously requested)
-    const basic = Math.round(monthly * 0.07);
+    // 1. Basic: 40% of monthly gross
+    const basic = monthly * 0.40;
     
     // 2. HRA: 40% of Basic
-    const hra = Math.round(basic * 0.4);
+    const hra = basic * 0.40;
     
     // 3. Fixed Allowances
-    const edu = 200;
-    const conveyance = 3000;
+    const edu = 200.00;
+    const conveyance = 3000.00;
     
     // 4. LTA: 7% of (Monthly - (Basic + HRA))
     const ltaBase = monthly - (basic + hra);
-    const lta = Math.round(ltaBase * 0.07);
+    const lta = ltaBase * 0.07;
     
     // 5. Initialize other fields to 0
-    const medical = 0;
-    const fixedAllw = 0;
+    const medical = 0.00;
+    const fixedAllw = 0.00;
     
-    // 6. Special Allowance: The Deficit to match Monthly Gross exactly
+    // 6. Special Allowance: match Monthly Gross exactly
     const used = basic + hra + lta + edu + conveyance + medical + fixedAllw;
     const special = monthly - used;
     
@@ -1741,11 +1741,11 @@ function autoDistributeSalary() {
     
     for (const [id, val] of Object.entries(fields)) {
         const el = document.getElementById(id);
-        if (el) el.value = val;
+        if (el) el.value = val.toFixed(2);
     }
     
     calcSalaryTotal();
-    showToast("⚡ Salary breakup refined and applied!", "success");
+    showToast("⚡ Salary breakup updated (Basic @ 40%)", "success");
 }
 
 function calcSalaryTotal() {
@@ -1758,10 +1758,10 @@ function calcSalaryTotal() {
     const annual = total * 12;
     
     const totalEl = document.getElementById('v_salTotal');
-    if(totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
+    if(totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     
     const annualEl = document.getElementById('v_salAnnualTotal');
-    if(annualEl) annualEl.innerText = `₹${annual.toLocaleString('en-IN')}`;
+    if(annualEl) annualEl.innerText = `₹${annual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
     // Target Check
     const feedback = document.getElementById('v_salary_feedback');
@@ -1769,12 +1769,12 @@ function calcSalaryTotal() {
     
     if (activeV_Applicant && activeV_Applicant.formData && activeV_Applicant.formData.salary) {
         const targetAnnual = parseFloat(activeV_Applicant.formData.salary);
-        note.innerText = `Target Annual: ₹${targetAnnual.toLocaleString('en-IN')}`;
+        note.innerText = `Target Annual: ₹${targetAnnual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
         if (feedback) {
             feedback.style.display = 'block';
             const diff = Math.abs(annual - targetAnnual);
-            if (diff < 10) { // Tiny rounding margin
+            if (diff < 0.1) { // Rounding margin for decimals
                 feedback.innerHTML = "✅ Matches target annual salary perfectly.";
                 feedback.style.background = "rgba(16,185,129,0.15)";
                 feedback.style.color = "#10b981";
