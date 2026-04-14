@@ -1706,21 +1706,37 @@ function autoDistributeSalary() {
     const annual = parseFloat(activeV_Applicant.formData.salary);
     const monthly = Math.round(annual / 12);
     
-    // User logic: Basic is 7% of monthly salary
+    // 1. Basic: 7% of monthly salary (as previously requested)
     const basic = Math.round(monthly * 0.07);
+    
+    // 2. HRA: 40% of Basic
     const hra = Math.round(basic * 0.4);
     
-    // Distribute remainder into Special Allowance for now, keep others 0 or fixed?
-    // User wants "amongst breaks up available"
-    // I will put 0 in others and the rest in Special.
+    // 3. Fixed Allowances
+    const edu = 200;
+    const conveyance = 3000;
+    
+    // 4. LTA: 7% of (Monthly - (Basic + HRA))
+    const ltaBase = monthly - (basic + hra);
+    const lta = Math.round(ltaBase * 0.07);
+    
+    // 5. Initialize other fields to 0
+    const medical = 0;
+    const fixedAllw = 0;
+    
+    // 6. Special Allowance: The Deficit to match Monthly Gross exactly
+    const used = basic + hra + lta + edu + conveyance + medical + fixedAllw;
+    const special = monthly - used;
+    
     const fields = {
         'v_salBasic': basic,
         'v_salHra': hra,
-        'v_salLta': 0,
-        'v_salConv': 0,
-        'v_salMed': 0,
-        'v_salEdu': 0,
-        'v_salFixed': 0
+        'v_salLta': lta,
+        'v_salConv': conveyance,
+        'v_salMed': medical,
+        'v_salEdu': edu,
+        'v_salFixed': fixedAllw,
+        'v_salSpecial': special
     };
     
     for (const [id, val] of Object.entries(fields)) {
@@ -1728,14 +1744,8 @@ function autoDistributeSalary() {
         if (el) el.value = val;
     }
     
-    // Special Allowance gets the deficit to match exactly
-    const currentSum = basic + hra;
-    const special = monthly - currentSum;
-    const specialEl = document.getElementById('v_salSpecial');
-    if (specialEl) specialEl.value = special;
-    
     calcSalaryTotal();
-    showToast("⚡ Salary breakup auto-calculated (Basic @ 7%)", "success");
+    showToast("⚡ Salary breakup refined and applied!", "success");
 }
 
 function calcSalaryTotal() {
