@@ -1716,14 +1716,6 @@ function autoCalcHRA() {
     }
 }
 
-function autoCalcHRA() {
-    const basic = parseFloat(document.getElementById('v_salBasic').value) || 0;
-    const hraField = document.getElementById('v_salHra');
-    if (hraField) {
-        hraField.value = Math.round(basic * 0.4);
-    }
-}
-
 function calcSalaryTotal() {
     const fields = ['v_salBasic', 'v_salHra', 'v_salLta', 'v_salConv', 'v_salMed', 'v_salSpecial', 'v_salEdu', 'v_salFixed'];
     let total = 0;
