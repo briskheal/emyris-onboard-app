@@ -657,7 +657,7 @@ function renderApplicantDashboard() {
         { id: 'draft', label: 'Registration', done: true },
         { id: 'submitted', label: 'Submission', done: !!app.submittedAt },
         { id: 'verified', label: 'Verification', done: allApproved },
-        { id: 'approved', label: 'Offer Issued', done: !!app.offerLetterData },
+        { id: 'approved', label: 'Offer Issued', done: app.status === 'approved' && !!app.offerLetterData },
         { id: 'accepted', label: 'Offer Accepted', done: app.offerAccepted },
         { id: 'joined', label: 'Joined', done: app.offerAccepted && app.actualJoiningDate && new Date(app.actualJoiningDate) <= new Date() }
     ];
@@ -678,13 +678,13 @@ function renderApplicantDashboard() {
     if (docsList) {
         const uploads = app.documents || [];
         const allDocNames = [...new Set([...requiredDocs, ...uploads.map(u => u.category)])];
-        let allApproved = true;
+        let dashboardAllApproved = true;
 
         docsList.innerHTML = allDocNames.map(dName => {
             const status = checks[dName];
             const isApproved = status === true;
             const isRejected = status === 'rejected';
-            if (!isApproved) allApproved = false;
+            if (!isApproved) dashboardAllApproved = false;
             
             return `
                 <div class="doc-status-row ${isRejected ? 'rejected-mode' : ''}">
@@ -705,7 +705,7 @@ function renderApplicantDashboard() {
         
         const approvedIcon = document.getElementById('allDocsApprovedIcon');
         if (approvedIcon) {
-            if (allApproved && requiredDocs.length > 0) approvedIcon.classList.remove('hidden');
+            if (dashboardAllApproved && requiredDocs.length > 0) approvedIcon.classList.remove('hidden');
             else approvedIcon.classList.add('hidden');
         }
     }
