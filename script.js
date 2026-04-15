@@ -1844,7 +1844,8 @@ async function saveInternalAssignment() {
         division: document.getElementById('v_division').value,
         reportingTo: document.getElementById('v_reportingTo').value,
         hq: document.getElementById('v_hq').value,
-        salaryBreakup
+        salaryBreakup,
+        verificationChecks
     };
 
     try {

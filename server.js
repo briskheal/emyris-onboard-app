@@ -416,12 +416,17 @@ app.post('/api/applicant-login', async (req, res) => {
                 status: applicant.status,
                 formData: applicant.formData,
                 documents: applicant.documents || [],
+                verificationChecks: applicant.verificationChecks || {},
+                salaryBreakup: applicant.salaryBreakup || {},
                 tasks: applicant.tasks || {},
                 division: applicant.division,
                 reportingTo: applicant.reportingTo,
+                hq: applicant.hq,
                 refNo: applicant.refNo,
                 actualJoiningDate: applicant.actualJoiningDate,
-                offerAccepted: applicant.offerAccepted
+                offerAccepted: applicant.offerAccepted,
+                offerLetterData: applicant.offerLetterData,
+                apptLetterData: applicant.apptLetterData
             }
         });
     } catch (error) {
@@ -938,13 +943,14 @@ function calculateMonthlyGross(sal) {
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup } = req.body;
+        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
         if (hq !== undefined) update.hq = hq;
         if (empCode !== undefined) update.empCode = empCode;
         if (refNo !== undefined) update.refNo = refNo;
+        if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (salaryBreakup !== undefined) {
             // Enhanced Validation: Ensure components are numeric and Basic is present
             const s = salaryBreakup;

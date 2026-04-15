@@ -2506,3 +2506,8 @@ input:checked + .slider:before {
 .doc-status-tag.approved { background: rgba(16, 185, 129, 0.15); color: #10b981; }
 .doc-status-tag.rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
 .doc-status-tag.pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+
+.doc-status-row.rejected-mode {
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-left: 4px solid #ef4444;
+}
