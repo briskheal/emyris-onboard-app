@@ -680,7 +680,7 @@ app.post('/api/admin/reject-document', async (req, res) => {
         // Optionally mark the specific doc as rejected in verificationChecks
         if (!applicant.verificationChecks) applicant.verificationChecks = {};
         applicant.verificationChecks[docCategory] = 'rejected';
-        
+        applicant.markModified('verificationChecks');
         await applicant.save();
 
         // Notify Applicant
@@ -1507,6 +1507,7 @@ app.post('/api/applicant/resubmit-document', async (req, res) => {
         // Reset verification status
         if (applicant.verificationChecks) {
             delete applicant.verificationChecks[category];
+            applicant.markModified('verificationChecks');
         }
         
         await applicant.save();

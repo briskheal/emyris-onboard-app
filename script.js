@@ -647,14 +647,19 @@ function renderApplicantDashboard() {
     // 2. Avatar
     document.getElementById('applicantAvatar').innerText = app.fullName[0].toUpperCase();
 
+    const checks = app.verificationChecks || {};
+    const requiredDocs = companyData.requiredDocs || [];
+    const allApproved = requiredDocs.length > 0 && requiredDocs.every(d => checks[d] === true);
+
     // 3. Timeline logic
     const timeline = document.getElementById('onboardingTimeline');
     const steps = [
         { id: 'draft', label: 'Registration', done: true },
-        { id: 'submitted', label: 'Verification', done: !!app.submittedAt },
-        { id: 'approved', label: 'Offer Issued', done: app.status === 'approved' || !!app.offerLetterData },
+        { id: 'submitted', label: 'Submission', done: !!app.submittedAt },
+        { id: 'verified', label: 'Verification', done: allApproved },
+        { id: 'approved', label: 'Offer Issued', done: !!app.offerLetterData },
         { id: 'accepted', label: 'Offer Accepted', done: app.offerAccepted },
-        { id: 'joined', label: 'Joined', done: app.offerAccepted && new Date(app.actualJoiningDate) <= new Date() }
+        { id: 'joined', label: 'Joined', done: app.offerAccepted && app.actualJoiningDate && new Date(app.actualJoiningDate) <= new Date() }
     ];
     
     timeline.innerHTML = steps.map((s, i) => `
@@ -674,8 +679,11 @@ function renderApplicantDashboard() {
     // 4a. Render Documents Status
     const docsList = document.getElementById('dash_docsList');
     if (docsList) {
+        const uploads = app.documents || [];
+        const allDocNames = [...new Set([...requiredDocs, ...uploads.map(u => u.category)])];
         let allApproved = true;
-        docsList.innerHTML = requiredDocs.map(dName => {
+
+        docsList.innerHTML = allDocNames.map(dName => {
             const status = checks[dName];
             const isApproved = status === true;
             const isRejected = status === 'rejected';
