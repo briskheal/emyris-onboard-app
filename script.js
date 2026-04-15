@@ -677,10 +677,11 @@ function renderApplicantDashboard() {
     const docsList = document.getElementById('dash_docsList');
     if (docsList) {
         const uploads = app.documents || [];
-        const allDocNames = [...new Set([...requiredDocs, ...uploads.map(u => u.category)])];
+        const allDocNames = [...new Set([...requiredDocs, "Digital Signature", ...uploads.map(u => u.category)])];
         let dashboardAllApproved = true;
 
         docsList.innerHTML = allDocNames.map(dName => {
+            const upload = uploads.find(u => u.category === dName);
             const status = checks[dName];
             const isApproved = status === true;
             const isRejected = status === 'rejected';
@@ -691,13 +692,12 @@ function renderApplicantDashboard() {
                     <div class="doc-info">
                         <span class="name">${dName}</span>
                         <span class="doc-status-tag ${isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending')}">
-                            ${isApproved ? 'Approved' : (isRejected ? 'Rejected' : 'Under Review')}
+                            ${isApproved ? 'Approved' : (isRejected ? 'Rejected' : 'Pending')}
                         </span>
                     </div>
                     <div class="doc-actions">
-                        ${isRejected ? `<button class="btn btn-sm btn-outline" onclick="triggerDocResubmit('${dName}')" style="border-color: #ef4444; color: #ef4444;">🔁 Re-upload</button>` : ''}
+                        ${!isApproved ? `<button class="btn btn-sm btn-outline" onclick="triggerDocResubmit('${dName}')" style="border-color: var(--primary); color: var(--primary);">🔁 ${upload ? 'Re-upload' : 'Upload Now'}</button>` : ''}
                         ${isApproved ? '<span style="color:var(--success)">✅</span>' : ''}
-                        ${!isApproved && !isRejected ? '⏳' : ''}
                     </div>
                 </div>
             `;
