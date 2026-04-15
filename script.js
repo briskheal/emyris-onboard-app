@@ -673,9 +673,6 @@ function renderApplicantDashboard() {
     const offerSec = document.getElementById('offerLetterSection');
     const waitingSec = document.getElementById('waitingStatusCard');
     const docsCard = document.getElementById('docsVerificationCard');
-    const checks = app.verificationChecks || {};
-    const requiredDocs = companyData.requiredDocs || [];
-    
     // 4a. Render Documents Status
     const docsList = document.getElementById('dash_docsList');
     if (docsList) {
