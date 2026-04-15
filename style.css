@@ -2454,3 +2454,55 @@ input:checked + .slider:before {
     content: "✓";
     font-weight: bold;
 }
+
+/* Documents Status in Dashboard */
+.docs-status-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.doc-status-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.doc-status-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.doc-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.doc-info .name {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.doc-info .status {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+}
+
+.doc-status-tag {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.doc-status-tag.approved { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+.doc-status-tag.rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.doc-status-tag.pending { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }

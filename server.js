@@ -1488,6 +1488,29 @@ app.get('/api/admin/applicants/:email', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
+app.post('/api/applicant/resubmit-document', async (req, res) => {
+    try {
+        const { email, category, data, name } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        // Remove old document of same category
+        applicant.documents = applicant.documents.filter(d => d.category !== category);
+        // Add new
+        applicant.documents.push({ category, data, name, uploadedAt: new Date() });
+        // Reset verification status
+        if (applicant.verificationChecks) {
+            delete applicant.verificationChecks[category];
+        }
+        
+        await applicant.save();
+        res.json({ success: true, message: 'Document resubmitted successfully.' });
+    } catch (e) {
+        console.error('Resubmit error:', e);
+        res.status(500).json({ error: 'Resubmission failed' });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

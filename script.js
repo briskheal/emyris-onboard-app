@@ -667,12 +667,51 @@ function renderApplicantDashboard() {
     // 4. Offer Letter Logic
     const offerSec = document.getElementById('offerLetterSection');
     const waitingSec = document.getElementById('waitingStatusCard');
+    const docsCard = document.getElementById('docsVerificationCard');
+    const checks = app.verificationChecks || {};
+    const requiredDocs = companyData.requiredDocs || [];
     
+    // 4a. Render Documents Status
+    const docsList = document.getElementById('dash_docsList');
+    if (docsList) {
+        let allApproved = true;
+        docsList.innerHTML = requiredDocs.map(dName => {
+            const status = checks[dName];
+            const isApproved = status === true;
+            const isRejected = status === 'rejected';
+            if (!isApproved) allApproved = false;
+            
+            return `
+                <div class="doc-status-row ${isRejected ? 'rejected-mode' : ''}">
+                    <div class="doc-info">
+                        <span class="name">${dName}</span>
+                        <span class="doc-status-tag ${isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending')}">
+                            ${isApproved ? 'Approved' : (isRejected ? 'Rejected' : 'Under Review')}
+                        </span>
+                    </div>
+                    <div class="doc-actions">
+                        ${isRejected ? `<button class="btn btn-sm btn-outline" onclick="triggerDocResubmit('${dName}')" style="border-color: #ef4444; color: #ef4444;">🔁 Re-upload</button>` : ''}
+                        ${isApproved ? '<span style="color:var(--success)">✅</span>' : ''}
+                        ${!isApproved && !isRejected ? '⏳' : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        const approvedIcon = document.getElementById('allDocsApprovedIcon');
+        if (approvedIcon) {
+            if (allApproved && requiredDocs.length > 0) approvedIcon.classList.remove('hidden');
+            else approvedIcon.classList.add('hidden');
+        }
+    }
+
     if (app.offerLetterData) {
         offerSec.classList.remove('hidden');
         waitingSec.classList.add('hidden');
+        docsCard.classList.add('hidden'); // Hide docs card once offer is here
+        
         const previewer = document.getElementById('offerPreviewer');
-        previewer.innerHTML = app.offerLetterData; // Assuming it's the generated HTML snapshot
+        previewer.innerHTML = app.offerLetterData; 
         
         const form = document.getElementById('acceptanceForm');
         const acceptedAlert = document.getElementById('offerAcceptedStatus');
@@ -684,14 +723,23 @@ function renderApplicantDashboard() {
         } else {
             form.classList.remove('hidden');
             acceptedAlert.classList.add('hidden');
+            // Pre-fill date if available in formData
+            const joiningDateInput = document.getElementById('actualJoiningDateInput');
+            if (joiningDateInput && app.formData?.joiningDate) {
+                joiningDateInput.value = app.formData.joiningDate;
+            }
         }
     } else {
         offerSec.classList.add('hidden');
         waitingSec.classList.remove('hidden');
+        docsCard.classList.remove('hidden');
+        
         // Update waiting text based on status
         if (app.status === 'submitted') {
-            document.getElementById('statusTitle').innerText = "Document Verification in Progress";
-            document.getElementById('statusDesc').innerText = "Our HR team is meticulously reviewing your testimonials. We'll activate your Offer section once the profile is validated.";
+            const statusTitle = document.getElementById('statusTitle');
+            const statusDesc = document.getElementById('statusDesc');
+            if (statusTitle) statusTitle.innerText = "Document Verification in Progress";
+            if (statusDesc) statusDesc.innerText = "Our HR team is meticulously reviewing your testimonials. We'll activate your Offer section once all documents are validated.";
         }
     }
 
@@ -708,6 +756,55 @@ function renderApplicantDashboard() {
             apptSec.classList.add('hidden');
         }
     }
+}
+
+function toggleOfferPreview() {
+    const p = document.getElementById('offerPreviewer');
+    if (p) p.classList.toggle('hidden');
+}
+
+async function triggerDocResubmit(category) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,image/*';
+    input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        try {
+            lockUI(`📤 Resubmitting ${category}...`);
+            const reader = new FileReader();
+            reader.onload = async () => {
+                const base64 = reader.result;
+                const res = await fetch('/api/applicant/resubmit-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentApplicant.email, category, data: base64, name: file.name })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast("✅ Document resubmitted successfully!", "success");
+                    const msg = document.getElementById('resubmitMessage');
+                    if (msg) msg.classList.remove('hidden');
+                    
+                    // Refresh applicant data
+                    const loginRes = await fetch('/api/applicant-login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: currentApplicant.email, password: currentApplicant.password })
+                    });
+                    const loginResult = await loginRes.json();
+                    if (loginResult.success) {
+                        currentApplicant = loginResult.applicant;
+                        renderApplicantDashboard();
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
+        } catch (err) { alert("Resubmission failed"); }
+        finally { unlockUI(); }
+    };
+    input.click();
 }
 
 async function acceptOfferLetter() {
