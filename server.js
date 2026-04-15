@@ -157,6 +157,7 @@ const assetSchema = new mongoose.Schema({
 
 const applicantSchema = new mongoose.Schema({
     email: { type: String, unique: true, required: true },
+    title: { type: String, default: "Mr." },
     fullName: { type: String, required: true },
     phone: { type: String, required: true },
     password: { type: String, required: true },
@@ -199,6 +200,12 @@ const divisionSchema = new mongoose.Schema({
 const Company = connMain ? connMain.model('Company', companySchema) : mongoose.model('Company', companySchema);
 const Applicant = connMain ? connMain.model('Applicant', applicantSchema) : mongoose.model('Applicant', applicantSchema);
 const Division = connMain ? connMain.model('Division', divisionSchema) : mongoose.model('Division', divisionSchema);
+
+const hqSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    active: { type: Boolean, default: true }
+});
+const HQ = connMain ? connMain.model('HQ', hqSchema) : mongoose.model('HQ', hqSchema);
 const Asset = connAssets ? connAssets.model('Asset', assetSchema) : mongoose.model('Asset', assetSchema);
 
 // Startup logic
@@ -282,7 +289,7 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 // --- APPLICANT REGISTRATION MODULE (RESTART) ---
 app.post('/api/register-applicant', async (req, res) => {
-    const { fullName, email, phone } = req.body;
+    const { title, fullName, email, phone } = req.body;
     let pin = Math.floor(100000 + Math.random() * 900000).toString();
 
     try {
@@ -294,7 +301,7 @@ app.post('/api/register-applicant', async (req, res) => {
         if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
 
         // 2. Database Persistence
-        await Applicant.create({ fullName, email, phone, password: pin });
+        await Applicant.create({ title, fullName, email, phone, password: pin });
         console.log(`💾 [DB] Account Created: ${email}`);
 
         // 3. Synchronous Email Handover
@@ -703,6 +710,13 @@ app.get('/api/admin/divisions', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+app.get('/api/admin/hqs', async (req, res) => {
+    try {
+        const hqs = await HQ.find({ active: true }).sort({ name: 1 });
+        res.json(hqs);
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 // Admin - DB Statistics
 app.get('/api/admin/db-stats', async (req, res) => {
     try {
@@ -755,7 +769,6 @@ app.post('/api/admin/divisions', async (req, res) => {
         const { name } = req.body;
         const existing = await Division.findOne({ name: name.toUpperCase().trim() });
         if (existing) {
-            // Reactivate if was deleted
             existing.active = true;
             await existing.save();
         } else {
@@ -765,9 +778,30 @@ app.post('/api/admin/divisions', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+app.post('/api/admin/hqs', async (req, res) => {
+    try {
+        const { name } = req.body;
+        const existing = await HQ.findOne({ name: name.toUpperCase().trim() });
+        if (existing) {
+            existing.active = true;
+            await existing.save();
+        } else {
+            await HQ.create({ name: name.toUpperCase().trim() });
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 app.delete('/api/admin/divisions/:id', async (req, res) => {
     try {
         await Division.findByIdAndUpdate(req.params.id, { active: false });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.delete('/api/admin/hqs/:id', async (req, res) => {
+    try {
+        await HQ.findByIdAndUpdate(req.params.id, { active: false });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -1445,6 +1479,14 @@ async function migrateAssets() {
         console.error('Migration error:', e);
     }
 }
+
+app.get('/api/admin/applicants/:email', async (req, res) => {
+    try {
+        const applicant = await Applicant.findOne({ email: req.params.email });
+        if (!applicant) return res.status(404).json({ success: false, message: 'Not found' });
+        res.json({ success: true, applicant });
+    } catch (e) { res.status(500).json({ success: false }); }
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

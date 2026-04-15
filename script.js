@@ -3,6 +3,7 @@ let isSaving = false;
 let companyData = { name: "", address: "", phone: "", tollFree: "", website: "", logo: "" };
 let currentApplicant = null;
 let allApplicants = [];
+let allHQs = [];
 let activeV_Applicant = null;
 let verificationChecks = {};
 let activeUploads = 0;
@@ -133,6 +134,7 @@ async function fetchCompanyData() {
         if (data && data.name) companyData = data;
     } catch (error) { console.error('Error fetching company data:', error); }
     applyCompanyData();
+    fetchHQs(); // Fetch HQs whenever company data is refreshed
 }
 
 function initBackgroundAnimations() {
@@ -140,6 +142,67 @@ function initBackgroundAnimations() {
         gsap.to(".blob-1", { x: '+=50', y: '+=30', duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
         gsap.to(".blob-2", { x: '-=40', y: '+=60', duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
     }
+}
+
+// HQ Management Functions
+async function fetchHQs() {
+    try {
+        const res = await fetch('/api/admin/hqs');
+        allHQs = await res.json();
+    } catch (e) { allHQs = []; }
+    populateHQs();
+}
+
+function populateHQs() {
+    const list = document.getElementById('profileHQList');
+    if (list) {
+        list.innerHTML = allHQs.map(h => `
+            <div class="division-chip">
+                <span>${h.name}</span>
+                <button onclick="deleteHQ('${h._id}')">✕</button>
+            </div>
+        `).join('');
+    }
+    
+    // Populate select boxes in onboarding and verification
+    const selects = ['hq', 'v_hq'];
+    selects.forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) {
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">-- Select HQ --</option>' + 
+                allHQs.map(h => `<option value="${h.name}">${h.name}</option>`).join('');
+            sel.value = currentVal;
+        }
+    });
+}
+
+async function addHQ() {
+    const input = document.getElementById('profileNewHQInput');
+    if (!input || !input.value.trim()) return;
+    try {
+        const res = await fetch('/api/admin/hqs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: input.value.trim().toUpperCase() })
+        });
+        if ((await res.json()).success) {
+            input.value = "";
+            fetchHQs();
+            showToast("✅ HQ added successfully", "success");
+        }
+    } catch (e) { showToast("Add HQ failed", "error"); }
+}
+
+async function deleteHQ(id) {
+    if (!confirm("Are you sure you want to delete this HQ?")) return;
+    try {
+        const res = await fetch(`/api/admin/hqs/${id}`, { method: 'DELETE' });
+        if ((await res.json()).success) {
+            fetchHQs();
+            showToast("✅ HQ deleted", "success");
+        }
+    } catch (e) { showToast("Delete HQ failed", "error"); }
 }
 
 function applyCompanyData() {
@@ -459,6 +522,7 @@ function showApplicantLogin() { updateView('applicantLogin'); }
 async function handleApplicantRegister(e) {
     e.preventDefault();
     const data = {
+        title: document.getElementById('regTitle').value,
         fullName: document.getElementById('regName').value,
         email: document.getElementById('regEmail').value,
         phone: document.getElementById('regPhone').value
@@ -536,15 +600,33 @@ function resumeApplication() {
     }
 
     updateView('welcome');
-    if (currentApplicant.formData) {
-        const form = document.getElementById('onboardingForm');
-        for (const [key, value] of Object.entries(currentApplicant.formData)) {
-            const field = form.elements[key];
-            if (field) {
-                if (field.type === 'radio') {
-                    if (field.value === value) field.checked = true;
-                } else {
-                    field.value = value;
+    const form = document.getElementById('onboardingForm');
+    
+    // Pre-fill fields from currentApplicant root if and then from formData
+    if (form) {
+        if (currentApplicant.title) {
+            const titleField = form.elements['title'];
+            if (titleField) titleField.value = currentApplicant.title;
+        }
+        
+        // Try to split full name if name fields are empty
+        const [first, ...rest] = (currentApplicant.fullName || "").split(' ');
+        const last = rest.pop() || "";
+        const middle = rest.join(' ');
+        
+        if (form.elements['firstName']) form.elements['firstName'].value = first || "";
+        if (form.elements['middleName']) form.elements['middleName'].value = middle || "";
+        if (form.elements['lastName']) form.elements['lastName'].value = last || "";
+
+        if (currentApplicant.formData) {
+            for (const [key, value] of Object.entries(currentApplicant.formData)) {
+                const field = form.elements[key];
+                if (field) {
+                    if (field.type === 'radio') {
+                        if (field.value === value) field.checked = true;
+                    } else {
+                        field.value = value;
+                    }
                 }
             }
         }
@@ -1839,8 +1921,16 @@ async function commitMasterVerification() {
                 // 4. AUTO-POPULATE: Inject real data into the loaded template immediately
                 const editor = document.getElementById('unifiedEditor');
                 if (editor) {
-                    const filledHtml = fillLetterPlaceholders(editor.innerHTML, targetApplicant);
-                    editor.innerHTML = filledHtml;
+                    // Refresh applicant data from server to get generated fields (if any)
+                    try {
+                        const resApp = await fetch(`/api/admin/applicants/${targetApplicant.email}`);
+                        const latestApp = await resApp.json();
+                        const filledHtml = fillLetterPlaceholders(editor.innerHTML, latestApp.success ? latestApp.applicant : targetApplicant);
+                        editor.innerHTML = filledHtml;
+                    } catch(e) {
+                        const filledHtml = fillLetterPlaceholders(editor.innerHTML, targetApplicant);
+                        editor.innerHTML = filledHtml;
+                    }
                     
                     // Scroll editor into view
                     editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2980,8 +3070,8 @@ function fillLetterPlaceholders(text, app) {
     const placeholders = {
         "{{TODAY_DATE}}": new Date().toLocaleDateString('en-GB'),
         "{{REF_NO}}": app.refNo || "REF/PENDING",
-        "{{TITLE}}": fd.gender === 'male' ? 'MR.' : 'MS.',
-        "{{TITLE_SHORT}}": fd.gender === 'male' ? 'Mr.' : 'Ms.',
+        "{{TITLE}}": (app.title || (fd.gender === 'male' ? 'Mr.' : 'Ms.')).toUpperCase(),
+        "{{TITLE_SHORT}}": app.title || (fd.gender === 'male' ? 'Mr.' : 'Ms.'),
         "{{FULL_NAME}}": (app.fullName || "").toUpperCase(),
         "{{FIRST_NAME}}": (fd.firstName || "").toUpperCase(),
         "{{FATHER_NAME}}": (fd.fatherName || "").toUpperCase(),

@@ -834,7 +834,7 @@ input:checked + .slider:before {
 
 .btn-secondary {
     background: #e2e8f0;
-    color: var(--text-main);
+    color: #1e293b; /* Darker text for readability */
 }
 
 .btn-secondary:hover {

@@ -190,13 +190,26 @@
                             <!-- Card 1.5: Division Management -->
                             <div class="setup-section">
                                 <div class="setup-section-head">
-                                    <h4>🏢 Division & Recruitment Management</h4>
+                                    <h4>🏢 Division Management</h4>
                                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Define business divisions for applicant categorization.</p>
                                 </div>
                                 <div id="profileDivisionList" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;"></div>
                                 <div style="display: flex; gap: 0.75rem; align-items: center;">
                                     <input type="text" id="profileNewDivisionInput" class="form-input-sm" placeholder="NEW DIVISION NAME" style="text-transform:uppercase; background: rgba(15, 23, 42, 0.4); border-color: rgba(255,255,255,0.1); width: 250px;">
                                     <button type="button" class="btn btn-primary btn-sm" onclick="addDivision('profile')">+ Add Division</button>
+                                </div>
+                            </div>
+
+                            <!-- Card 1.55: HQ Management -->
+                            <div class="setup-section">
+                                <div class="setup-section-head">
+                                    <h4>📍 Headquarters (HQ) Management</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Define available HQs for recruitment selection.</p>
+                                </div>
+                                <div id="profileHQList" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;"></div>
+                                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                                    <input type="text" id="profileNewHQInput" class="form-input-sm" placeholder="NEW HQ NAME" style="text-transform:uppercase; background: rgba(15, 23, 42, 0.4); border-color: rgba(255,255,255,0.1); width: 250px;">
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="addHQ()">+ Add HQ</button>
                                 </div>
                             </div>
 
@@ -769,7 +782,9 @@
                             </div>
                             <div class="form-group" style="margin-bottom:1rem;">
                                 <label style="font-size:0.7rem;color:var(--text-muted);display:block;margin-bottom:4px;">Joining HQ</label>
-                                <input type="text" id="v_hq" style="width:100%;background:rgba(15,23,42,0.5);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:10px;font-size:0.875rem;" placeholder="Assigned Work HQ">
+                                <select id="v_hq" style="width:100%;background:rgba(15,23,42,0.5);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 12px;border-radius:10px;font-size:0.875rem;">
+                                    <option value="">-- Select HQ --</option>
+                                </select>
                             </div>
                             <div class="form-group" style="margin-bottom:1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -890,6 +905,15 @@
                     </div>
                     <div class="input-grid">
                         <div class="form-group">
+                            <label for="title">Title*</label>
+                            <select id="onboardingTitle" name="title" required>
+                                <option value="Mr.">Mr.</option>
+                                <option value="Mrs.">Mrs.</option>
+                                <option value="Ms.">Ms.</option>
+                                <option value="Dr.">Dr.</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <label for="firstName">First Name</label>
                             <input type="text" id="firstName" name="firstName" required placeholder="John">
                         </div>
@@ -977,7 +1001,9 @@
                         </div>
                         <div class="form-group">
                             <label for="hq">Joining HQ</label>
-                            <input type="text" id="hq" name="hq" required placeholder="Proposed Work HQ">
+                            <select id="hq" name="hq" required>
+                                <option value="">-- Select HQ --</option>
+                            </select>
                         </div>
                     </div>
                     <div class="nav-buttons">
@@ -1129,9 +1155,19 @@
                         <p>Fill these details to receive your 6-digit Login PIN.</p>
                     </div>
                     <form onsubmit="handleApplicantRegister(event)">
-                        <div class="form-group">
-                            <label>Full Name</label>
-                            <input type="text" id="regName" required placeholder="Enter full name">
+                        <div class="form-group" style="display: flex; gap: 0.5rem; align-items: flex-end;">
+                            <div style="flex: 0 0 80px;">
+                                <label>Title</label>
+                                <select id="regTitle" required>
+                                    <option value="Mr.">Mr.</option>
+                                    <option value="Mrs.">Mrs.</option>
+                                    <option value="Ms.">Ms.</option>
+                                </select>
+                            </div>
+                            <div style="flex: 1;">
+                                <label>Full Name</label>
+                                <input type="text" id="regName" required placeholder="Enter full name">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Email Address</label>
