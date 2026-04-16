@@ -1183,15 +1183,16 @@ input:checked + .slider:before {
 
 .top-scroll-marquee {
     width: 100%;
-    background: rgba(15, 23, 42, 0.9);
+    background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 10px 0;
+    border-bottom: 2px solid var(--primary);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); /* Glow effect */
+    padding: 12px 0;
     overflow: hidden;
     position: fixed;
     top: 0;
     left: 0;
-    z-index: 9999;
+    z-index: 100000; /* Ultra high z-index */
 }
 
 .marquee-content {
