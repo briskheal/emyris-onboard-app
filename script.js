@@ -552,21 +552,37 @@ function showApplicantRegister() {
         });
     }
 
-    // Populate Designation Dropdown
+    // Populate Designation Dropdown (Grouped by Department)
     const desgSel = document.getElementById('regDesignation');
     if (desgSel) {
+        const populateGrouped = (desgList) => {
+            const groups = {};
+            desgList.forEach(d => {
+                const dept = (typeof d === 'object' ? d.department : 'SALES') || 'SALES';
+                const title = typeof d === 'object' ? d.title : d;
+                if (!groups[dept]) groups[dept] = [];
+                groups[dept].push(title);
+            });
+
+            let html = '<option value="">-- Select Designation --</option>';
+            Object.keys(groups).sort().forEach(dept => {
+                html += `<optgroup label="${dept}">`;
+                groups[dept].sort().forEach(title => {
+                    html += `<option value="${title}">${title}</option>`;
+                });
+                html += `</optgroup>`;
+            });
+            desgSel.innerHTML = html;
+        };
+
         const rawDesgs = companyData.designations || [];
         if (rawDesgs.length === 0) {
-            // If empty, wait and try again once (handle lazy load)
             setTimeout(() => {
-                const retryDesgs = companyData.designations || [];
-                desgSel.innerHTML = '<option value="">-- Select Designation --</option>' + 
-                    retryDesgs.map(d => typeof d === 'string' ? d : d.title).sort().map(d => `<option value="${d}">${d}</option>`).join('');
+                populateGrouped(companyData.designations || []);
             }, 1000);
+        } else {
+            populateGrouped(rawDesgs);
         }
-        const desgs = rawDesgs.map(d => typeof d === 'string' ? d : d.title);
-        desgSel.innerHTML = '<option value="">-- Select Designation --</option>' + 
-            desgs.sort().map(d => `<option value="${d}">${d}</option>`).join('');
     }
 }
 function showApplicantLogin() { updateView('applicantLogin'); }
