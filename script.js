@@ -243,17 +243,27 @@ function applyCompanyData() {
 
     const headerImg = document.getElementById('headerLogoImg');
     const headerLogoLetter = document.getElementById('headerLogoLetter');
+    const landingLogoFallback = document.getElementById('landingLogoFallback');
+    
     if (companyData.logo && companyData.logo.length > 0 && headerImg) {
-        headerImg.src = companyData.logo[companyData.logo.length - 1].data;
+        const logoData = companyData.logo[companyData.logo.length - 1].data;
+        headerImg.src = logoData;
         headerImg.classList.remove('hidden');
         if (headerLogoLetter) headerLogoLetter.style.display = 'none';
+        if (landingLogoFallback) landingLogoFallback.style.display = 'none';
         console.log('✅ Updated Header Logo');
-    } else if (headerLogoLetter) {
+    } else {
         const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('') : 'E';
-        headerLogoLetter.innerText = initials;
-        headerLogoLetter.style.display = 'inline';
+        if (headerLogoLetter) {
+            headerLogoLetter.innerText = initials;
+            headerLogoLetter.style.display = 'inline';
+        }
+        if (landingLogoFallback) {
+            landingLogoFallback.innerText = initials;
+            landingLogoFallback.style.display = 'flex';
+        }
         if (headerImg) headerImg.classList.add('hidden');
-        console.log('ℹ️ Using Header Initials:', initials);
+        console.log('ℹ️ Using Initials:', initials);
     }
 
     try {
@@ -277,16 +287,21 @@ function applyCompanyData() {
     } catch (e) { console.error('❌ Error in child layout functions:', e); }
     
     // Apply Marquee Settings (Force high-contrast amber for now)
-    const marquee = document.querySelector('.marquee-content');
-    if (marquee) {
-        marquee.innerText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
-        // Force the high-contrast Amber color to resolve 'blocked' visibility issues
-        marquee.style.color = '#fbbf24'; 
-        marquee.style.animationDuration = `${companyData.marqueeSpeed || 15}s`;
-        console.log('✅ Updated Marquee (Forced Contrast):', marquee.innerText, 'Color:', marquee.style.color);
-    } else {
-        console.warn('⚠️ Marquee element not found in DOM');
+    const masterMarquee = document.querySelector('#masterMarquee .marquee-content');
+    const landingMarquee = document.getElementById('landingMarqueeText');
+    const mText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
+    const mSpeed = `${companyData.marqueeSpeed || 15}s`;
+    
+    if (masterMarquee) {
+        masterMarquee.innerText = mText;
+        masterMarquee.style.color = '#fbbf24'; 
+        masterMarquee.style.animationDuration = mSpeed;
     }
+    if (landingMarquee) {
+        landingMarquee.innerText = mText;
+        landingMarquee.style.animationDuration = mSpeed;
+    }
+    console.log('✅ Marquees Synchronized');
 }
 
 function applyMarqueePreview() {
@@ -516,81 +531,62 @@ function attachApplicantFileListener(inputId, category) {
 }
 
 function updateView(viewId) {
+    const landingPage = document.getElementById('landingPage');
+    const appShell = document.getElementById('appShell');
     const sections = document.querySelectorAll('.view-section');
-    
-    // 1. Hide everything
-    sections.forEach(s => {
-        s.classList.add('hidden');
-        s.style.display = 'none';
-        s.classList.remove('active');
-    });
+    const indicator = document.getElementById('stepIndicator');
 
-    // Handle Body-level layout classes (for header branding control)
-    if (viewId === 'landingPage') {
-        document.body.classList.add('on-landing');
-    } else {
-        document.body.classList.remove('on-landing');
-    }
-    
-    // 2. Perform scroll reset
+    // Reset Scroll
     window.scrollTo(0, 0);
-    
-    // 3. Robust Branding Control (Prevents Duplicate Company Name)
-    const headerBranding = document.getElementById('headerBranding');
-    if (headerBranding) {
-        if (viewId === 'landingPage') {
-            headerBranding.style.setProperty('display', 'none', 'important');
-        } else {
-            headerBranding.style.setProperty('display', 'flex', 'important');
-        }
-    }
 
-    const activeSection = document.getElementById(viewId);
-    if (!activeSection) return;
-    
-    // 3. Show and animate
-    activeSection.classList.remove('hidden');
-    activeSection.style.display = (viewId === 'landingPage' || viewId === 'adminDashboard') ? 'flex' : 'block';
-    activeSection.classList.add('active');
-    
-    // SMOOTHLINE: Smooth fade-in for section transition
-    if (typeof gsap !== 'undefined') {
-        gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
-    }
-    
-    // 4. Update body classes for Progressive Indicator & Branding Control
-    const majorViews = ['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin', 'applicantVerificationView'];
-    
-    // Branding Logic: Hide header logos on Landing Page to avoid duplication
     if (viewId === 'landingPage') {
+        // Switch to Landing Architecture
+        if (landingPage) landingPage.classList.remove('hidden');
+        if (appShell) appShell.classList.add('hidden');
         document.body.classList.add('at-landing');
+        console.log('[UI] Switched to Fullscreen Landing Screen');
     } else {
+        // Switch to App Shell Architecture
+        if (landingPage) landingPage.classList.add('hidden');
+        if (appShell) appShell.classList.remove('hidden');
         document.body.classList.remove('at-landing');
-    }
 
-    // Marquee visibility control: Hide in Admin areas to save space
-    if (viewId === 'adminDashboard' || viewId === 'applicantVerificationView') {
-        document.body.classList.add('hide-marquee');
-    } else {
-        document.body.classList.remove('hide-marquee');
-    }
+        // Hide all inner sections
+        sections.forEach(s => {
+            s.classList.add('hidden');
+            s.style.display = 'none';
+        });
 
-    // Diagnostic Logging for UI Consistency
-    console.log(`[UI Sync] Switched to ${viewId}. State: Header Branding ${viewId === 'landingPage' ? 'Suppressed' : 'Active'} | Onboarding ${majorViews.includes(viewId) ? 'Systemic' : 'Active'}`);
+        // Show targets
+        const activeSection = document.getElementById(viewId);
+        if (activeSection) {
+            activeSection.classList.remove('hidden');
+            activeSection.style.display = (viewId === 'adminDashboard') ? 'flex' : 'block';
+            
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
+            }
+        }
 
-    if (majorViews.includes(viewId)) {
-        document.body.classList.add('onboarding-inactive');
-        document.body.classList.remove('onboarding-active');
-    } else {
-        document.body.classList.remove('onboarding-inactive');
-        document.body.classList.add('onboarding-active');
+        // Show/Hide Step Indicator Based on Context (Onboarding flow)
+        const onboardingSteps = ['applicantRegister', 'applicantLogin', 'applicantWelcome', 'applicantDataEntry', 'applicantDocumentUpload', 'applicantStatusView'];
+        if (indicator) {
+            if (onboardingSteps.includes(viewId)) {
+                indicator.style.display = 'flex';
+            } else {
+                indicator.style.display = 'none';
+            }
+        }
+
+        // Marquee Visibility
+        if (viewId === 'adminDashboard' || viewId === 'applicantVerificationView') {
+            document.body.classList.add('hide-marquee');
+        } else {
+            document.body.classList.remove('hide-marquee');
+        }
+
+        console.log(`[UI] App Shell Active -> ${viewId}`);
     }
-    
-    // 5. Smooth Entry
-    gsap.fromTo(activeSection, 
-        { opacity: 0 }, 
-        { opacity: 1, duration: 0.4, ease: "power2.out", clearProps: "all" }
-    );
 }
 
 function backToLanding() { updateView('landingPage'); }

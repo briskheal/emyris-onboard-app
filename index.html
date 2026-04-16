@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -42,11 +42,48 @@
         <span style="color:white; font-size:0.85rem; font-weight:600;">☁️ Uploading to Emyris Cloud...</span>
     </div>
 
-    <div class="app-container">
-        <!-- Background Decorations -->
+    <!-- ======================================================= -->
+    <!-- LANDING PAGE: Fixed fullscreen, self-contained, no deps  -->
+    <!-- ======================================================= -->
+    <div id="landingPage" class="landing-screen">
+        <div class="landing-hero">
+            <div class="landing-logo-wrap">
+                <img id="displayLogo" src="" alt="Company Logo" class="landing-logo-img hidden">
+                <div id="landingLogoFallback" class="landing-logo-fallback">E</div>
+            </div>
+            <h1 id="displayCompanyName" class="landing-company-name">Emyris Biolifesciences</h1>
+            <div class="landing-divider"></div>
+            <p class="landing-tagline">Employee Onboarding Portal</p>
+        </div>
+        <div class="landing-cards">
+            <button class="lcard" onclick="showApplicantRegister()">
+                <span class="lcard-icon">&#x2728;</span>
+                <h3>Start New Journey</h3>
+                <p>Register and generate your unique portal PIN</p>
+            </button>
+            <button class="lcard" onclick="showApplicantLogin()">
+                <span class="lcard-icon">&#x1F511;</span>
+                <h3>Resume Journey</h3>
+                <p>Login with Email &amp; PIN to continue</p>
+            </button>
+            <button class="lcard" onclick="showAdminLogin()">
+                <span class="lcard-icon">&#x1F6E1;&#xFE0F;</span>
+                <h3>Admin Gateway</h3>
+                <p>Authorized personnel &mdash; manage profiles</p>
+            </button>
+        </div>
+        <div class="landing-marquee-bar">
+            <div id="landingMarqueeText" class="landing-marquee-content">Enhancing Life and Excelling in Care</div>
+        </div>
+    </div>
+
+    <!-- ======================================================= -->
+    <!-- APP SHELL: Header + steps + all inner views             -->
+    <!-- Hidden until user navigates away from landing page      -->
+    <!-- ======================================================= -->
+    <div id="appShell" class="app-container hidden">
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
-
         <header class="main-header">
             <div class="header-main-row">
                 <div class="logo-container" id="headerBrandingLayer">
@@ -56,11 +93,11 @@
                     </div>
                     <a id="headerLogoLink" href="javascript:void(0)" onclick="backToLanding()" class="logo-link">
                         <div class="logo-text">
-                            <h1 id="headerCompName"></h1>
+                            <h2 id="headerCompName"></h2>
                         </div>
                     </a>
                 </div>
-                <div class="step-indicator">
+                <div class="step-indicator" id="stepIndicator" style="display:none">
                     <div class="step active" data-step="1">1</div>
                     <div class="step-line"></div>
                     <div class="step" data-step="2">2</div>
@@ -76,39 +113,11 @@
                     <div class="step" data-step="7">7</div>
                 </div>
             </div>
-            <!-- Integrated Scrolling Marquee -->
             <div id="masterMarquee" class="top-scroll-marquee">
                 <div class="marquee-content">Enhancing Life and Excelling in Care</div>
             </div>
         </header>
-
         <main class="form-wrapper">
-            <!-- New: Single Column Landing Page -->
-            <div class="view-section active" id="landingPage">
-                <div class="company-display" style="text-align: center; margin-bottom: 2rem;">
-                    <img id="displayLogo" src="" alt="Company Logo" class="hidden" style="max-height: 80px; max-width: 280px; margin-bottom: 1.25rem; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));">
-                    <h2 id="displayCompanyName" style="font-size: 1.85rem; font-weight: 800; color: white; letter-spacing: 1px; text-transform: uppercase;"></h2>
-                    <div class="accent-line" style="width: 50px; height: 3px; background: var(--accent); margin: 0.75rem auto; border-radius: 2px;"></div>
-                </div>
-                <div class="landing-cards-grid">
-                    <div class="landing-card" onclick="showApplicantRegister()">
-                        <div class="landing-card-icon">✨</div>
-                        <h3>Start New Journey</h3>
-                        <p style="font-size: 0.85rem; line-height: 1.4; color: var(--text-muted);">Register to generate your unique PIN and begin.</p>
-                    </div>
-                    <div class="landing-card" onclick="showApplicantLogin()">
-                        <div class="landing-card-icon">🔑</div>
-                        <h3>Resume Journey</h3>
-                        <p style="font-size: 0.85rem; line-height: 1.4; color: var(--text-muted);">Login with your Email & PIN to complete steps.</p>
-                    </div>
-                    <div class="landing-card" onclick="showAdminLogin()">
-                        <div class="landing-card-icon">🛡️</div>
-                        <h3>Admin Gateway</h3>
-                        <p style="font-size: 0.85rem; line-height: 1.4; color: var(--text-muted);">Authorized personnel only. Manage profiles.</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- New: Admin Login -->
             <div class="view-section hidden" id="adminLogin">
                 <div class="login-card">
