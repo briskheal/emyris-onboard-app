@@ -804,7 +804,7 @@ function renderApplicantDashboard() {
     const timeline = document.getElementById('onboardingTimeline');
     const steps = [
         { id: 'draft', label: 'Registration', done: true },
-        { id: 'submitted', label: 'Submission', done: !!app.submittedAt },
+        { id: 'submitted', label: 'Submission', done: !!app.submittedAt || ['submitted', 'approved'].includes(app.status) },
         { id: 'verified', label: 'Verification', done: allApproved },
         { id: 'approved', label: 'Offer Issued', done: app.status === 'approved' && !!app.offerLetterData },
         { id: 'accepted', label: 'Offer Accepted', done: app.offerAccepted },
@@ -3249,23 +3249,28 @@ async function generateLetterPDF(email, type) {
     return new Promise((resolve) => {
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = mergedHTML;
-        // Exact styling for html2canvas to match jsPDF output
-        tempContainer.style.width = (USABLE_W * 3.779527) + 'px'; // Convert mm to px at 96PPI
+        // Optimization for single-page PDF output
+        const pxWidth = (USABLE_W * 3.7795); // 96 DPI conversion
+        tempContainer.style.width = pxWidth + 'px';
         tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
-        tempContainer.style.fontSize = (FONT_SIZE * 1.3333) + 'px'; // Convert pt to px
-        tempContainer.style.lineHeight = '1.6';
+        tempContainer.style.fontSize = (FONT_SIZE * 1.333) + 'px'; 
+        tempContainer.style.lineHeight = '1.3'; 
+        tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.top = '-9999px';
-        tempContainer.style.left = '-9999px';
-        tempContainer.style.whiteSpace = 'pre-wrap'; // Preserve tabs/spaces
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.top = '0';
+        tempContainer.style.left = '200vw'; 
+        tempContainer.style.background = '#ffffff';
+        tempContainer.style.padding = '0';
+        tempContainer.style.margin = '0';
+        tempContainer.style.whiteSpace = 'pre-wrap';
         document.body.appendChild(tempContainer);
 
         doc.html(tempContainer, {
             x: MARGIN_L,
             y: yMarker,
             width: USABLE_W,
-            windowWidth: (USABLE_W * 3.779527),
+            windowWidth: pxWidth,
             autoPaging: 'text',
             margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L], // top, right, bottom, left
             callback: function (pdf) {
