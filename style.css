@@ -98,12 +98,14 @@ body {
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
-    min-height: 65px;
+    min-height: 110px; /* Highly stable height to house branding + marquee without jumping */
     margin-bottom: 1.25rem;
     transition: all 0.4s ease;
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
 }
 
 .header-main-row {
@@ -111,6 +113,7 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    min-height: 48px;
 }
 
 .logo-container {
@@ -160,9 +163,7 @@ body {
 
 /* Conditional Branding Visibility */
 body.at-landing #headerBrandingLayer {
-    opacity: 0;
-    pointer-events: none;
-    transform: translateX(-20px);
+    display: none !important; /* Total removal from layout to prevent jumps and duplication */
 }
 
 #headerBrandingLayer {
@@ -252,11 +253,12 @@ body.at-landing #headerBrandingLayer {
 }
 
 .company-display {
-    margin-bottom: 3.5rem;
+    margin-bottom: 2rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
+    min-height: 160px; /* Preserve space for logo and title to prevent layout shifting on load */
     animation: fadeInDown 1s ease-out;
 }
 
@@ -323,14 +325,6 @@ body.at-landing #headerBrandingLayer {
 /* Landing Page Hero */
 .hero-content {
     text-align: center;
-}
-
-.company-display {
-    margin-bottom: 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
 }
 
 .company-display img {
@@ -526,7 +520,7 @@ body.at-landing #headerBrandingLayer {
 }
 
 .onboarding-inactive .main-header .step-indicator {
-    display: none;
+    display: none !important;
 }
 
 .hidden {
