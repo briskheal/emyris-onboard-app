@@ -289,22 +289,16 @@ function applyCompanyData() {
     } catch (e) { console.error('❌ Error in child layout functions:', e); }
     
     // Apply Marquee Settings from Company Profile
-    const masterMarquee = document.querySelector('#masterMarquee .marquee-content');
-    const landingMarquee = document.getElementById('landingMarqueeText');
+    const marqueeElements = document.querySelectorAll('.marquee-inner');
     const mText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
     const mColor = companyData.marqueeColor || "#fbbf24"; 
     const mSpeed = `${companyData.marqueeSpeed || 15}s`;
     
-    if (masterMarquee) {
-        masterMarquee.innerText = mText;
-        masterMarquee.style.color = mColor; 
-        masterMarquee.style.animationDuration = mSpeed;
-    }
-    if (landingMarquee) {
-        landingMarquee.innerText = mText;
-        landingMarquee.style.color = mColor;
-        landingMarquee.style.animationDuration = mSpeed;
-    }
+    marqueeElements.forEach(el => {
+        el.innerText = mText;
+        el.style.color = mColor;
+        el.style.animationDuration = mSpeed;
+    });
     console.log('✅ Marquees Synchronized with Profile Settings');
 }
 
@@ -313,20 +307,13 @@ function applyMarqueePreview() {
     const color = document.getElementById('profile_marqueeColor')?.value || '#fbbf24';
     const speed = document.getElementById('profile_marqueeSpeed')?.value || 15;
     
-    // Update both Marquees
-    const masterMarquee = document.querySelector('#masterMarquee .marquee-content');
-    const landingMarquee = document.getElementById('landingMarqueeText');
-    
-    if (masterMarquee) {
-        masterMarquee.innerText = text;
-        masterMarquee.style.color = color;
-        masterMarquee.style.animationDuration = `${speed}s`;
-    }
-    if (landingMarquee) {
-        landingMarquee.innerText = text;
-        landingMarquee.style.color = color;
-        landingMarquee.style.animationDuration = `${speed}s`;
-    }
+    // Update all Marquee elements
+    const marquees = document.querySelectorAll('.marquee-inner');
+    marquees.forEach(el => {
+        el.innerText = text;
+        el.style.color = color;
+        el.style.animationDuration = `${speed}s`;
+    });
 }
 
 // --- REQUIRED DOCUMENTS LOGIC ---
@@ -1337,13 +1324,13 @@ function switchAdminTab(tab) {
         f.empCodeCounter.value = companyData.empCodeCounter || 1001;
 
         f.marqueeText.value = companyData.marqueeText || "Enhancing Life and Excelling in Care";
-        f.marqueeColor.value = companyData.marqueeColor || "#94a3b8";
-        f.marqueeSpeed.value = companyData.marqueeSpeed || 20;
-        const colorPicker = document.getElementById('marqueeColorPicker');
-        if (colorPicker) colorPicker.value = companyData.marqueeColor || "#94a3b8";
+        f.marqueeColor.value = companyData.marqueeColor || "#fbbf24";
+        const picker = document.getElementById('marqueeColorPicker');
+        if (picker) picker.value = f.marqueeColor.value;
+        
+        f.marqueeSpeed.value = companyData.marqueeSpeed || 15;
         const speedLabel = document.getElementById('speedValueLabel');
-        if (speedLabel) speedLabel.innerText = (companyData.marqueeSpeed || 20) + 's';
-
+        if (speedLabel) speedLabel.innerText = f.marqueeSpeed.value + 's';
         renderAssetLists();
 
         // Attach listeners for profile tab file inputs
@@ -1378,7 +1365,7 @@ async function saveCompanyProfile(e) {
         name: rawData.compName,
         website: rawData.compWeb,
         phone: rawData.compPhone,
-        tollFree: rawData.tollFree,
+        tollFree: rawData.compTollFree,
         address: rawData.compAddress,
         fyFrom: rawData.fyFrom,
         fyTo: rawData.fyTo,

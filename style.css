@@ -118,13 +118,45 @@ body {
 
 .top-scroll-marquee {
     width: 100%;
-    height: 24px;
-    background: rgba(0, 0, 0, 0.3);
+    height: 28px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-top: 0.75rem;
     display: flex;
     align-items: center;
     overflow: hidden;
     position: relative;
+    border-left: 3px solid var(--accent);
+}
+
+.landing-marquee-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background: rgba(15, 23, 42, 0.6);
     border-bottom: 1px solid var(--glass-border);
+    padding: 10px 0;
+    overflow: hidden;
+    z-index: 10;
+}
+
+.marquee-inner {
+    white-space: nowrap;
+    display: inline-block;
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    animation: marquee 20s linear infinite;
+    padding-left: 100%;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+@keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-100%); }
 }
 
 .logo-container {
@@ -399,29 +431,6 @@ body.at-landing #headerBrandingLayer {
     font-size: 0.8rem;
     color: var(--text-muted);
     line-height: 1.4;
-}
-
-.landing-marquee-bar {
-    position: absolute;
-    top: 0; /* Moved to top */
-    left: 0;
-    width: 100%;
-    background: rgba(15, 23, 42, 0.6);
-    border-bottom: 1px solid var(--glass-border);
-    padding: 10px 0;
-    overflow: hidden;
-}
-
-.landing-marquee-content {
-    white-space: nowrap;
-    display: inline-block;
-    color: var(--accent);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-size: 0.75rem; /* Slightly smaller */
-    animation: marquee 25s linear infinite;
-    padding-left: 100%;
 }
 
 .landing-footer {
@@ -1368,41 +1377,6 @@ input:checked + .slider:before {
 
 
 /* Applicant Portal & Admin Enhancements */
-
-/* Integrated Scrolling Marquee */
-.top-scroll-marquee {
-    width: 100%;
-    height: 28px;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 8px;
-    margin-top: 0.75rem;
-    display: flex;
-    align-items: center;
-    overflow: hidden;
-    position: relative;
-    border-left: 3px solid var(--accent);
-}
-
-.marquee-content {
-    white-space: nowrap;
-    display: inline-block;
-    color: var(--accent) !important;
-    text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
-    font-size: 0.85rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    animation: marquee 20s linear infinite;
-    padding-left: 100%;
-}
-
-@keyframes marquee {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-100%); }
-}
-
-/* Ensure marquee works well in header-main-row if we want it side-by-side on large screens */
-/* But for now, we'll keep it as a vertical stack within the header */
 
 .landing-cards-grid {
     display: grid;
