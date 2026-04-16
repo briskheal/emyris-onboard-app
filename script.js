@@ -1802,6 +1802,24 @@ async function openVerificationView(email) {
     // 5. Pipeline Switches
     syncPipelineSwitches(app.tasks || {});
 
+    // 6. Offer Acceptance Note (Admin visibility)
+    const accNote = document.getElementById('v_acceptance_note');
+    if (accNote) {
+        if (app.offerAccepted) {
+            accNote.innerHTML = `
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+                    <h5 style="color: var(--success); margin: 0 0 5px 0; font-size: 0.9rem;">🎉 OFFER ACCEPTED</h5>
+                    <p style="font-size: 0.8rem; color: var(--text-main); margin: 0;">
+                        The candidate has confirmed their acceptance.
+                        <br><strong>Confirmed ADOJ:</strong> ${new Date(app.actualJoiningDate).toDateString()}
+                    </p>
+                </div>
+            `;
+        } else {
+            accNote.innerHTML = '';
+        }
+    }
+
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -1823,7 +1841,9 @@ function renderVerificationProfile(app) {
         { label: 'Joining HQ', val: app.hq || fd.hq || 'N/A' },
         { label: 'Date of Birth', val: formatDatePretty(fd.dob) },
         { label: 'Current Address', val: fd.address || 'N/A' },
-        { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : 'N/A' }
+        { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : 'N/A' },
+        { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
+        { label: 'Confirmed ADOJ', val: app.actualJoiningDate ? `<span style="color:var(--accent); font-weight:bold;">${new Date(app.actualJoiningDate).toDateString()}</span>` : 'N/A' }
     ];
 
     container.innerHTML = rows.map(r => `
