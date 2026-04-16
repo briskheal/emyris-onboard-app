@@ -144,13 +144,15 @@ body {
 .marquee-inner {
     white-space: nowrap;
     display: inline-block;
-    color: var(--accent);
+    color: transparent; /* Prevent orange flash */
+    opacity: 0; /* Hide until JS loads data */
     font-size: 0.85rem;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
     animation: marquee 20s linear infinite;
     padding-left: 100%;
+    transition: opacity 0.3s ease, color 0.3s ease;
 }
 
 @keyframes marquee {

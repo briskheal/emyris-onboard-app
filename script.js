@@ -298,6 +298,7 @@ function applyCompanyData() {
         el.innerText = mText;
         el.style.color = mColor;
         el.style.animationDuration = mSpeed;
+        el.style.opacity = '1';
     });
     console.log('✅ Marquees Synchronized with Profile Settings');
 }
@@ -313,6 +314,7 @@ function applyMarqueePreview() {
         el.innerText = text;
         el.style.color = color;
         el.style.animationDuration = `${speed}s`;
+        el.style.opacity = '1';
     });
 }
 
