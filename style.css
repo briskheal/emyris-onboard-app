@@ -104,21 +104,24 @@ body {
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    padding: 0.75rem 1.5rem;
+    padding: 1rem 1.75rem;
 }
 
 /* Hide header branding when on landing page to avoid duplication */
-#landingPage.active ~ .main-header .header-branding-row,
-body:has(#landingPage.active) .header-branding-row {
-    display: none;
-}
-/* Refined Rule: If landing page is active, hide the sub-parts of header */
-.view-section#landingPage.active ~ .main-header #headerBranding {
-    display: none;
-}
-/* Modern approach: use JS to toggle or CSS based on parent class */
 body.on-landing .header-branding-row {
-    display: none;
+    display: none !important;
+}
+
+/* Ensure the marquee is NEVER blocked and always has space */
+.top-scroll-marquee.integrated-header-marquee {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom: 2px solid var(--primary);
+    padding: 12px 0;
+    overflow: hidden;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
 }
 
 .logo-container {
@@ -238,6 +241,28 @@ body.on-landing .header-branding-row {
     backdrop-filter: blur(12px);
     transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
     margin: 0 auto;
+}
+
+#landingPage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 5rem 2rem; 
+}
+
+.company-display {
+    margin-bottom: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    animation: fadeInDown 1s ease-out;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 #applicantRegister, #applicantLogin, #adminLogin {
@@ -1220,7 +1245,7 @@ input:checked + .slider:before {
 }
 
 @keyframes marquee {
-    0% { transform: translateX(100%); }
+    0% { transform: translateX(100vw); }
     100% { transform: translateX(-100%); }
 }
 
