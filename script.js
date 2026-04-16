@@ -206,12 +206,21 @@ async function deleteHQ(id) {
 }
 
 function applyCompanyData() {
+    console.log('🏗️ Applying Company Data:', companyData);
     const dpName = document.getElementById('displayCompanyName');
-    if (dpName) dpName.innerText = companyData.name;
+    if (dpName) {
+        dpName.innerText = companyData.name || 'Emyris Biolifesciences';
+        console.log('✅ Updated Hero Name:', dpName.innerText);
+    }
     const logoImg = document.getElementById('displayLogo');
-    if (companyData.logo && companyData.logo.length > 0 && logoImg) {
-        logoImg.src = companyData.logo[companyData.logo.length - 1].data;
-        logoImg.classList.remove('hidden');
+    if (logoImg) {
+        if (companyData.logo && companyData.logo.length > 0) {
+            logoImg.src = companyData.logo[companyData.logo.length - 1].data;
+            logoImg.classList.remove('hidden');
+            console.log('✅ Updated Hero Logo');
+        } else {
+            console.log('⚠️ No Logo in companyData');
+        }
     }
     const quickContact = document.getElementById('quickContact');
     if (quickContact) {
@@ -222,7 +231,10 @@ function applyCompanyData() {
         `;
     }
     const headerTitle = document.getElementById('headerCompName');
-    if (headerTitle) headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
+    if (headerTitle) {
+        headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
+        console.log('✅ Updated Header Name:', headerTitle.innerText);
+    }
 
     const headerImg = document.getElementById('headerLogoImg');
     const headerLogoLetter = document.getElementById('headerLogoLetter');
@@ -230,37 +242,44 @@ function applyCompanyData() {
         headerImg.src = companyData.logo[companyData.logo.length - 1].data;
         headerImg.classList.remove('hidden');
         if (headerLogoLetter) headerLogoLetter.style.display = 'none';
+        console.log('✅ Updated Header Logo');
     } else if (headerLogoLetter) {
         const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('') : 'E';
         headerLogoLetter.innerText = initials;
         headerLogoLetter.style.display = 'inline';
         if (headerImg) headerImg.classList.add('hidden');
+        console.log('ℹ️ Using Header Initials:', initials);
     }
-    if (typeof renderRequiredDocsChips === 'function') renderRequiredDocsChips();
-    if (typeof renderRequiredDocsSuggestions === 'function') renderRequiredDocsSuggestions();
-    if (typeof renderApplicantDocuments === 'function') renderApplicantDocuments();
-    if (typeof loadSetupProfile === 'function') loadSetupProfile();
-    
-    // Populate datalist for department suggestions
-    const deptList = document.getElementById('deptSuggestions');
-    if (deptList) {
-        const currentDesgs = companyData.designations || [];
-        const depts = [...new Set(currentDesgs.map(d => typeof d === 'string' ? 'SALES' : d.department))];
-        deptList.innerHTML = depts.map(dt => `<option value="${dt}">`).join('');
-    }
-    
-    // BEAUTIFUL DEPARTMENTAL PICKERS
-    renderDepartmentalPicker('departmentalDesignationPicker', 'designation', null);
-    
-    if (typeof renderDesignationList === 'function') renderDesignationList();
+
+    try {
+        if (typeof renderRequiredDocsChips === 'function') renderRequiredDocsChips();
+        if (typeof renderRequiredDocsSuggestions === 'function') renderRequiredDocsSuggestions();
+        if (typeof renderApplicantDocuments === 'function') renderApplicantDocuments();
+        if (typeof loadSetupProfile === 'function') loadSetupProfile();
+        
+        // Populate datalist for department suggestions
+        const deptList = document.getElementById('deptSuggestions');
+        if (deptList) {
+            const currentDesgs = companyData.designations || [];
+            const depts = [...new Set(currentDesgs.map(d => typeof d === 'string' ? 'SALES' : d.department))];
+            deptList.innerHTML = depts.map(dt => `<option value="${dt}">`).join('');
+        }
+        
+        // BEAUTIFUL DEPARTMENTAL PICKERS
+        renderDepartmentalPicker('departmentalDesignationPicker', 'designation', null);
+        
+        if (typeof renderDesignationList === 'function') renderDesignationList();
+    } catch (e) { console.error('❌ Error in child layout functions:', e); }
     
     // Apply Marquee Settings
     const marquee = document.querySelector('.marquee-content');
     if (marquee) {
         marquee.innerText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
         marquee.style.color = companyData.marqueeColor || "#94a3b8";
-        // Apply animation timing properly
         marquee.style.animationDuration = `${companyData.marqueeSpeed || 20}s`;
+        console.log('✅ Updated Marquee:', marquee.innerText, 'Color:', marquee.style.color);
+    } else {
+        console.warn('⚠️ Marquee element not found in DOM');
     }
 }
 
@@ -3623,9 +3642,13 @@ async function publishLetterToHub() {
 
 // Master initialization
 async function initializeApp() {
-    console.log('🚀 Emyris App initialized');
+    console.log('🚀 Emyris App initialized v1.3');
     await fetchCompanyData();
-    updateView('landingPage');
+    // Add a small delay to ensure DOM and data are settled before applying view classes
+    setTimeout(() => {
+        updateView('landingPage');
+        console.log('✅ View state synchronized: landingPage');
+    }, 150);
     initBackgroundAnimations();
     initFileListeners();
 }

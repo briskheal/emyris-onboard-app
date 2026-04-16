@@ -1227,19 +1227,25 @@ input:checked + .slider:before {
 
 .top-scroll-marquee.integrated-header-marquee {
     width: 100%;
-    background: rgba(15, 23, 42, 0.4);
-    border-bottom: 2px solid var(--primary); /* Stronger indicator border */
-    padding: 10px 0;
+    background: #020617; /* Deep Navy Space - solid for clarity */
+    border-bottom: 2px solid var(--primary);
+    padding: 12px 0;
     overflow: hidden;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 1000;
 }
 
 .marquee-content {
     white-space: nowrap;
     display: inline-block;
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    font-weight: 600;
-    letter-spacing: 2px;
+    color: #ffffff !important; /* Pure white for readability */
+    text-shadow: 0 0 12px rgba(99, 102, 241, 0.6);
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 2.5px;
     text-transform: uppercase;
     animation: marquee 20s linear infinite;
 }
