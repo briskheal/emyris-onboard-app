@@ -1,16 +1,20 @@
 :root {
     color-scheme: dark;
     --primary: #6366f1; /* Electric Indigo */
+    --primary-light: #818cf8;
+    --primary-dark: #4f46e5;
     --secondary: #06b6d4; /* Vibrant Cyan */
     --accent: #f59e0b;
     --success: #10b981;
     --error: #ef4444;
     --bg-body: #020617; /* Deep Navy Space */
+    --bg-soft: #0f172a;
     --card-bg: rgba(255, 255, 255, 0.03);
     --glass-bg: rgba(255, 255, 255, 0.04);
     --glass-border: rgba(255, 255, 255, 0.1);
     --text-main: #f1f5f9;
     --text-muted: #94a3b8;
+    --text-soft: #cbd5e1;
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
     --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.1);
@@ -31,6 +35,7 @@ body {
     color: var(--text-main);
     min-height: 100vh;
     overflow-x: hidden;
+    padding-top: 0; /* Marquee is now integrated into header */
 }
 
 .app-container {
@@ -88,40 +93,24 @@ body {
 
 /* Header & Progressive Indicator */
 .main-header {
-    display: flex;
-    flex-direction: column;
-    margin-bottom: 1.25rem;
     background: var(--glass-bg);
     border-radius: var(--radius);
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
+    min-height: 65px;
+    margin-bottom: 1.25rem;
+    transition: all 0.4s ease;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.header-branding-row {
+.header-main-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    padding: 1rem 1.75rem;
-}
-
-/* Hide header branding when on landing page to avoid duplication */
-body.on-landing .header-branding-row {
-    display: none !important;
-}
-
-/* Ensure the marquee is NEVER blocked and always has space */
-.top-scroll-marquee.integrated-header-marquee {
-    width: 100%;
-    background: rgba(15, 23, 42, 0.6);
-    border-bottom: 2px solid var(--primary);
-    padding: 12px 0;
-    overflow: hidden;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
 }
 
 .logo-container {
@@ -167,6 +156,17 @@ body.on-landing .header-branding-row {
     font-size: 1.1rem;
     letter-spacing: 1px;
     color: var(--primary-dark);
+}
+
+/* Conditional Branding Visibility */
+body.at-landing #headerBrandingLayer {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-20px);
+}
+
+#headerBrandingLayer {
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .logo-text p {
@@ -1225,35 +1225,40 @@ input:checked + .slider:before {
 
 /* Applicant Portal & Admin Enhancements */
 
-.top-scroll-marquee.integrated-header-marquee {
+/* Integrated Scrolling Marquee */
+.top-scroll-marquee {
     width: 100%;
-    background: #000000; /* Pure black for maximum standout */
-    border-bottom: 2px solid #fbbf24; /* Amber border */
-    padding: 8px 0;
-    overflow: hidden;
-    min-height: 40px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    margin-top: 0.75rem;
     display: flex;
     align-items: center;
+    overflow: hidden;
     position: relative;
-    z-index: 1000;
+    border-left: 3px solid var(--accent);
 }
 
 .marquee-content {
     white-space: nowrap;
     display: inline-block;
-    color: #fbbf24 !important; /* Bright Amber */
-    text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
-    font-size: 1.05rem;
-    font-weight: 800;
-    letter-spacing: 2px;
+    color: var(--accent) !important;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
     text-transform: uppercase;
-    animation: marquee 16s linear infinite;
+    animation: marquee 20s linear infinite;
+    padding-left: 100%;
 }
 
 @keyframes marquee {
-    0% { transform: translateX(100vw); }
+    0% { transform: translateX(0); }
     100% { transform: translateX(-100%); }
 }
+
+/* Ensure marquee works well in header-main-row if we want it side-by-side on large screens */
+/* But for now, we'll keep it as a vertical stack within the header */
 
 .landing-cards-grid {
     display: grid;
@@ -2598,7 +2603,7 @@ input:checked + .slider:before {
 
 /* Compact Mode Overrides */
 body.onboarding-inactive .main-header { margin-bottom: 0.5rem !important; padding: 0.4rem 1.25rem !important; min-height: 55px !important; }
-body.onboarding-inactive .top-scroll-marquee { display: none !important; }
+body.onboarding-inactive.hide-marquee .top-scroll-marquee { display: none !important; }
 #applicantRegister .login-header, #applicantLogin .login-header { margin-bottom: 0.75rem !important; }
 #applicantRegister .login-icon, #applicantLogin .login-icon { display: none !important; } /* Hide icon to save space */
 

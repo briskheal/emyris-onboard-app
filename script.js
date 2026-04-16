@@ -142,6 +142,11 @@ function initBackgroundAnimations() {
         gsap.to(".blob-1", { x: '+=50', y: '+=30', duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
         gsap.to(".blob-2", { x: '-=40', y: '+=60', duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
     }
+
+    // Diagnostic Logging for Viewport Responsiveness
+    window.addEventListener('resize', () => {
+        console.log(`[Diagnostic] Viewport: ${window.innerWidth}x${window.innerHeight} | Orientation: ${window.innerWidth > window.innerHeight ? 'Landscape' : 'Portrait'}`);
+    });
 }
 
 // HQ Management Functions
@@ -553,8 +558,26 @@ function updateView(viewId) {
         gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
     }
     
-    // 4. Update body classes for Progressive Indicator
+    // 4. Update body classes for Progressive Indicator & Branding Control
     const majorViews = ['landingPage', 'adminLogin', 'adminDashboard', 'applicantRegister', 'applicantLogin', 'applicantVerificationView'];
+    
+    // Branding Logic: Hide header logos on Landing Page to avoid duplication
+    if (viewId === 'landingPage') {
+        document.body.classList.add('at-landing');
+    } else {
+        document.body.classList.remove('at-landing');
+    }
+
+    // Marquee visibility control: Hide in Admin areas to save space
+    if (viewId === 'adminDashboard' || viewId === 'applicantVerificationView') {
+        document.body.classList.add('hide-marquee');
+    } else {
+        document.body.classList.remove('hide-marquee');
+    }
+
+    // Diagnostic Logging for UI Consistency
+    console.log(`[UI Sync] Switched to ${viewId}. State: Header Branding ${viewId === 'landingPage' ? 'Suppressed' : 'Active'} | Onboarding ${majorViews.includes(viewId) ? 'Systemic' : 'Active'}`);
+
     if (majorViews.includes(viewId)) {
         document.body.classList.add('onboarding-inactive');
         document.body.classList.remove('onboarding-active');
