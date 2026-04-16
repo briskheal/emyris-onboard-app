@@ -271,13 +271,14 @@ function applyCompanyData() {
         if (typeof renderDesignationList === 'function') renderDesignationList();
     } catch (e) { console.error('❌ Error in child layout functions:', e); }
     
-    // Apply Marquee Settings
+    // Apply Marquee Settings (Force high-contrast amber for now)
     const marquee = document.querySelector('.marquee-content');
     if (marquee) {
         marquee.innerText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
-        marquee.style.color = companyData.marqueeColor || "#94a3b8";
-        marquee.style.animationDuration = `${companyData.marqueeSpeed || 20}s`;
-        console.log('✅ Updated Marquee:', marquee.innerText, 'Color:', marquee.style.color);
+        // Force the high-contrast Amber color to resolve 'blocked' visibility issues
+        marquee.style.color = '#fbbf24'; 
+        marquee.style.animationDuration = `${companyData.marqueeSpeed || 15}s`;
+        console.log('✅ Updated Marquee (Forced Contrast):', marquee.innerText, 'Color:', marquee.style.color);
     } else {
         console.warn('⚠️ Marquee element not found in DOM');
     }
