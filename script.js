@@ -228,13 +228,15 @@ function applyCompanyData() {
         }
     }
     const quickContact = document.getElementById('quickContact');
-    if (quickContact) {
-        quickContact.innerHTML = `
-            ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
-            ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
-            ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
-        `;
-    }
+    const landingQuickContact = document.getElementById('landingQuickContact');
+    const contactHTML = `
+        ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
+        ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
+        ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
+    `;
+
+    if (quickContact) quickContact.innerHTML = contactHTML;
+    if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) {
         headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();

@@ -98,14 +98,13 @@ body {
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
-    min-height: 110px; /* Highly stable height to house branding + marquee without jumping */
+    min-height: 80px; /* Adjusted */
     margin-bottom: 1.25rem;
     transition: all 0.4s ease;
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 0.75rem 1.5rem;
+    justify-content: flex-start;
 }
 
 .header-main-row {
@@ -114,6 +113,18 @@ body {
     align-items: center;
     width: 100%;
     min-height: 48px;
+    padding: 0.75rem 1.5rem; /* Padding applied to row instead */
+}
+
+.top-scroll-marquee {
+    width: 100%;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    border-bottom: 1px solid var(--glass-border);
 }
 
 .logo-container {
@@ -272,14 +283,14 @@ body.at-landing #headerBrandingLayer {
 
 .landing-hero {
     text-align: center;
-    margin-bottom: 4rem;
+    margin-bottom: 3rem; /* Tighter spacing */
     animation: fadeInUp 1s ease-out;
 }
 
 .landing-logo-wrap {
-    width: 120px;
-    height: 120px;
-    margin: 0 auto 1.5rem;
+    width: 80px; /* Reduced from 120px */
+    height: 80px; /* Reduced from 120px */
+    margin: 0 auto 1.25rem;
     position: relative;
     display: flex;
     align-items: center;
@@ -297,57 +308,57 @@ body.at-landing #headerBrandingLayer {
     width: 100%;
     height: 100%;
     background: linear-gradient(135deg, var(--primary), var(--secondary));
-    border-radius: 20px;
+    border-radius: 16px; /* Slightly smaller radius */
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 3rem;
+    font-size: 2rem; /* Smaller text */
     font-weight: 800;
     color: white;
     box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
 }
 
 .landing-company-name {
-    font-size: 2.5rem;
-    font-weight: 800;
+    font-size: 1.5rem; /* Reduced from 2.5rem */
+    font-weight: 700;
     color: white;
-    margin-bottom: 1rem;
-    letter-spacing: -0.5px;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.2px;
     background: linear-gradient(to right, #fff, var(--text-muted));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .landing-divider {
-    width: 60px;
-    height: 4px;
+    width: 40px; /* Smaller divider */
+    height: 3px;
     background: var(--accent);
-    margin: 0 auto 1.5rem;
+    margin: 0 auto 1rem;
     border-radius: 2px;
 }
 
 .landing-tagline {
     color: var(--text-muted);
-    font-size: 1.1rem;
-    font-weight: 500;
-    letter-spacing: 2px;
+    font-size: 0.85rem; /* Smaller tagline */
+    font-weight: 600;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
 }
 
 .landing-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
     width: 100%;
-    max-width: 1000px;
+    max-width: 900px; /* Slightly narrower */
     animation: fadeInUp 1.2s ease-out;
 }
 
 .lcard {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
-    padding: 2.5rem 2rem;
-    border-radius: 24px;
+    padding: 2rem 1.5rem; /* Compact padding */
+    border-radius: 20px;
     text-align: center;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -355,41 +366,41 @@ body.at-landing #headerBrandingLayer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
 .lcard:hover {
     background: rgba(255, 255, 255, 0.08);
     border-color: var(--primary);
-    transform: translateY(-8px);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.3);
 }
 
 .lcard-icon {
-    font-size: 2.5rem;
-    margin-bottom: 0.5rem;
+    font-size: 2rem;
+    margin-bottom: 0.25rem;
 }
 
 .lcard h3 {
-    font-size: 1.25rem;
+    font-size: 1.1rem;
     color: white;
     font-weight: 700;
 }
 
 .lcard p {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
-    line-height: 1.5;
+    line-height: 1.4;
 }
 
 .landing-marquee-bar {
     position: absolute;
-    bottom: 0;
+    top: 0; /* Moved to top */
     left: 0;
     width: 100%;
-    background: rgba(15, 23, 42, 0.8);
-    border-top: 1px solid var(--glass-border);
-    padding: 12px 0;
+    background: rgba(15, 23, 42, 0.6);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 10px 0;
     overflow: hidden;
 }
 
@@ -400,9 +411,28 @@ body.at-landing #headerBrandingLayer {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 2px;
-    font-size: 0.85rem;
+    font-size: 0.75rem; /* Slightly smaller */
     animation: marquee 25s linear infinite;
     padding-left: 100%;
+}
+
+.landing-footer {
+    position: absolute;
+    bottom: 2rem;
+    width: 100%;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    padding: 0 1rem;
+}
+
+.footer-contact {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
 }
 
 @keyframes fadeInUp {

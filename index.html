@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -46,6 +46,14 @@
     <!-- LANDING PAGE: Fixed fullscreen, self-contained, no deps  -->
     <!-- ======================================================= -->
     <div id="landingPage" class="landing-screen">
+        <!-- Marquee now at the top -->
+        <div class="landing-marquee-bar">
+            <div id="landingMarqueeText" class="landing-marquee-content">Enhancing Life and Excelling in Care</div>
+        </div>
+
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+
         <div class="landing-hero">
             <div class="landing-logo-wrap">
                 <img id="displayLogo" src="" alt="Company Logo" class="landing-logo-img hidden">
@@ -55,6 +63,7 @@
             <div class="landing-divider"></div>
             <p class="landing-tagline">Employee Onboarding Portal</p>
         </div>
+
         <div class="landing-cards">
             <button class="lcard" onclick="showApplicantRegister()">
                 <span class="lcard-icon">&#x2728;</span>
@@ -72,9 +81,12 @@
                 <p>Authorized personnel &mdash; manage profiles</p>
             </button>
         </div>
-        <div class="landing-marquee-bar">
-            <div id="landingMarqueeText" class="landing-marquee-content">Enhancing Life and Excelling in Care</div>
-        </div>
+
+        <!-- Footer added back to landing page -->
+        <footer class="landing-footer">
+            <div id="landingQuickContact" class="footer-contact"></div>
+            <div>&copy; 2026 Emyris Biolifesciences Pvt. Ltd. | Secure Onboarding Portal</div>
+        </footer>
     </div>
 
     <!-- ======================================================= -->
@@ -85,6 +97,9 @@
         <div class="blob blob-1"></div>
         <div class="blob blob-2"></div>
         <header class="main-header">
+            <div id="masterMarquee" class="top-scroll-marquee">
+                <div class="marquee-content">Enhancing Life and Excelling in Care</div>
+            </div>
             <div class="header-main-row">
                 <div class="logo-container" id="headerBrandingLayer">
                     <div class="logo-icon" id="headerLogoIcon">
@@ -112,9 +127,6 @@
                     <div class="step-line"></div>
                     <div class="step" data-step="7">7</div>
                 </div>
-            </div>
-            <div id="masterMarquee" class="top-scroll-marquee">
-                <div class="marquee-content">Enhancing Life and Excelling in Care</div>
             </div>
         </header>
         <main class="form-wrapper">
