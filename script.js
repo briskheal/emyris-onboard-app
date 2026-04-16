@@ -556,6 +556,7 @@ function updateView(viewId) {
         sections.forEach(s => {
             s.classList.add('hidden');
             s.style.display = 'none';
+            s.classList.remove('active');
         });
 
         // Show targets
@@ -563,6 +564,7 @@ function updateView(viewId) {
         if (activeSection) {
             activeSection.classList.remove('hidden');
             activeSection.style.display = (viewId === 'adminDashboard') ? 'flex' : 'block';
+            activeSection.classList.add('active');
             
             if (typeof gsap !== 'undefined') {
                 gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
