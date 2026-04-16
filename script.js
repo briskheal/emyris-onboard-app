@@ -516,7 +516,27 @@ function showAdminLogin() { updateView('adminLogin'); }
 
 // --- APPLICANT AUTH ---
 
-function showApplicantRegister() { updateView('applicantRegister'); }
+function showApplicantRegister() { 
+    updateView('applicantRegister'); 
+    
+    // Populate Division Dropdown
+    const divSel = document.getElementById('regDivision');
+    if (divSel) {
+        fetch('/api/admin/divisions').then(res => res.json()).then(divisions => {
+            divSel.innerHTML = '<option value="">-- Select Division --</option>' + 
+                divisions.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+        });
+    }
+
+    // Populate Designation Dropdown
+    const desgSel = document.getElementById('regDesignation');
+    if (desgSel) {
+        const rawDesgs = companyData.designations || [];
+        const desgs = rawDesgs.map(d => typeof d === 'string' ? d : d.title);
+        desgSel.innerHTML = '<option value="">-- Select Designation --</option>' + 
+            desgs.sort().map(d => `<option value="${d}">${d}</option>`).join('');
+    }
+}
 function showApplicantLogin() { updateView('applicantLogin'); }
 
 async function handleApplicantRegister(e) {
@@ -524,6 +544,8 @@ async function handleApplicantRegister(e) {
     const data = {
         title: document.getElementById('regTitle').value,
         fullName: document.getElementById('regName').value,
+        division: document.getElementById('regDivision').value,
+        designation: document.getElementById('regDesignation').value,
         email: document.getElementById('regEmail').value,
         phone: document.getElementById('regPhone').value
     };
@@ -2007,6 +2029,7 @@ async function commitMasterVerification() {
             const targetApplicant = activeV_Applicant;
 
             // Auto-transition to Letters module
+            updateView('adminDashboard');
             switchAdminTab('setup');
             
             setTimeout(async () => {
@@ -2022,20 +2045,11 @@ async function commitMasterVerification() {
                 await switchEditorTemplate();
                 
                 // 4. AUTO-POPULATE: Inject real data into the loaded template immediately
+                fillEditorWithRealData(true);
+                
+                // Scroll editor into view
                 const editor = document.getElementById('unifiedEditor');
                 if (editor) {
-                    // Refresh applicant data from server to get generated fields (if any)
-                    try {
-                        const resApp = await fetch(`/api/admin/applicants/${targetApplicant.email}`);
-                        const latestApp = await resApp.json();
-                        const filledHtml = fillLetterPlaceholders(editor.innerHTML, latestApp.success ? latestApp.applicant : targetApplicant);
-                        editor.innerHTML = filledHtml;
-                    } catch(e) {
-                        const filledHtml = fillLetterPlaceholders(editor.innerHTML, targetApplicant);
-                        editor.innerHTML = filledHtml;
-                    }
-                    
-                    // Scroll editor into view
                     editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     showToast(`⚡ Data auto-filled for ${targetApplicant.fullName}`, "success");
                 }
@@ -2358,12 +2372,12 @@ async function deleteMiscellaneousLetter() {
 }
 
 
-function fillEditorWithRealData() {
+function fillEditorWithRealData(skipConfirm = false) {
     const targetEmail = document.getElementById('hubTargetApplicant')?.value;
     const applicant = allApplicants.find(a => a.email === targetEmail);
     if (!applicant) return alert("Please select a target applicant from the dropdown first (under 'Target Applicant').");
     
-    if (!confirm(`This will permanently replace placeholders in the editor with data for ${applicant.fullName}. Proceed?`)) return;
+    if (!skipConfirm && !confirm(`This will permanently replace placeholders in the editor with data for ${applicant.fullName}. Proceed?`)) return;
 
     const editor = document.getElementById('unifiedEditor');
     const content = editor.innerHTML;

@@ -7,6 +7,15 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 
 dotenv.config();
+const dns = require('dns');
+
+// Force Google DNS for SRV resolution (fixes ECONNREFUSED on some environments)
+try {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+    console.log('🌐 [DNS] Switched to Google DNS');
+} catch (e) {
+    console.warn('⚠️ [DNS] Failed to set custom DNS servers:', e.message);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -289,7 +298,7 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 // --- APPLICANT REGISTRATION MODULE (RESTART) ---
 app.post('/api/register-applicant', async (req, res) => {
-    const { title, fullName, email, phone } = req.body;
+    const { title, fullName, email, phone, division, designation } = req.body;
     let pin = Math.floor(100000 + Math.random() * 900000).toString();
 
     try {
@@ -301,7 +310,15 @@ app.post('/api/register-applicant', async (req, res) => {
         if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
 
         // 2. Database Persistence
-        await Applicant.create({ title, fullName, email, phone, password: pin });
+        await Applicant.create({ 
+            title, 
+            fullName, 
+            email, 
+            phone, 
+            division,
+            formData: { designation }, // Store pre-selected designation in formData
+            password: pin 
+        });
         console.log(`💾 [DB] Account Created: ${email}`);
 
         // 3. Synchronous Email Handover
