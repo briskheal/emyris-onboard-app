@@ -39,7 +39,6 @@ body {
     width: 100%;
     margin: 0 auto;
     padding: 2rem; /* Professional breathing room */
-    padding-top: 4.5rem; /* Push down for fixed marquee */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -1181,18 +1180,19 @@ input:checked + .slider:before {
 
 /* Applicant Portal & Admin Enhancements */
 
-.top-scroll-marquee {
-    width: 100%;
+.top-scroll-marquee.integrated-marquee {
+    width: calc(100% + 4rem);
+    margin: -2rem -2rem 1.5rem -2rem; /* Negate parent padding to go full-width */
     background: rgba(15, 23, 42, 0.95);
     backdrop-filter: blur(12px);
     border-bottom: 2px solid var(--primary);
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.3); /* Glow effect */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     padding: 12px 0;
     overflow: hidden;
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 100000; /* Ultra high z-index */
+    position: sticky;
+    top: -2rem; 
+    z-index: 100;
+    border-radius: 0 0 12px 12px;
 }
 
 .marquee-content {
