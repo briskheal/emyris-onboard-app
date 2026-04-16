@@ -126,7 +126,7 @@ body {
     align-items: center;
     overflow: hidden;
     position: relative;
-    border-left: 3px solid var(--accent);
+    border: 1px solid var(--glass-border);
 }
 
 .landing-marquee-bar {
@@ -151,7 +151,6 @@ body {
     text-transform: uppercase;
     animation: marquee 20s linear infinite;
     padding-left: 100%;
-    text-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
 }
 
 @keyframes marquee {
