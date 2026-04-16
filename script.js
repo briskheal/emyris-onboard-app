@@ -529,6 +529,16 @@ function updateView(viewId) {
     // 2. Perform scroll reset
     window.scrollTo(0, 0);
     
+    // 3. Robust Branding Control (Prevents Duplicate Company Name)
+    const headerBranding = document.getElementById('headerBranding');
+    if (headerBranding) {
+        if (viewId === 'landingPage') {
+            headerBranding.style.setProperty('display', 'none', 'important');
+        } else {
+            headerBranding.style.setProperty('display', 'flex', 'important');
+        }
+    }
+
     const activeSection = document.getElementById(viewId);
     if (!activeSection) return;
     
