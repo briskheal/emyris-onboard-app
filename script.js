@@ -288,34 +288,44 @@ function applyCompanyData() {
         if (typeof renderDesignationList === 'function') renderDesignationList();
     } catch (e) { console.error('❌ Error in child layout functions:', e); }
     
-    // Apply Marquee Settings (Force high-contrast amber for now)
+    // Apply Marquee Settings from Company Profile
     const masterMarquee = document.querySelector('#masterMarquee .marquee-content');
     const landingMarquee = document.getElementById('landingMarqueeText');
     const mText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
+    const mColor = companyData.marqueeColor || "#fbbf24"; 
     const mSpeed = `${companyData.marqueeSpeed || 15}s`;
     
     if (masterMarquee) {
         masterMarquee.innerText = mText;
-        masterMarquee.style.color = '#fbbf24'; 
+        masterMarquee.style.color = mColor; 
         masterMarquee.style.animationDuration = mSpeed;
     }
     if (landingMarquee) {
         landingMarquee.innerText = mText;
+        landingMarquee.style.color = mColor;
         landingMarquee.style.animationDuration = mSpeed;
     }
-    console.log('✅ Marquees Synchronized');
+    console.log('✅ Marquees Synchronized with Profile Settings');
 }
 
 function applyMarqueePreview() {
     const text = document.getElementById('profile_marqueeText')?.value || '';
-    const color = document.getElementById('profile_marqueeColor')?.value || '#94a3b8';
-    const speed = document.getElementById('profile_marqueeSpeed')?.value || 20;
+    const color = document.getElementById('profile_marqueeColor')?.value || '#fbbf24';
+    const speed = document.getElementById('profile_marqueeSpeed')?.value || 15;
     
-    const marquee = document.querySelector('.marquee-content');
-    if (marquee) {
-        marquee.innerText = text;
-        marquee.style.color = color;
-        marquee.style.animationDuration = `${speed}s`;
+    // Update both Marquees
+    const masterMarquee = document.querySelector('#masterMarquee .marquee-content');
+    const landingMarquee = document.getElementById('landingMarqueeText');
+    
+    if (masterMarquee) {
+        masterMarquee.innerText = text;
+        masterMarquee.style.color = color;
+        masterMarquee.style.animationDuration = `${speed}s`;
+    }
+    if (landingMarquee) {
+        landingMarquee.innerText = text;
+        landingMarquee.style.color = color;
+        landingMarquee.style.animationDuration = `${speed}s`;
     }
 }
 
