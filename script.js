@@ -253,6 +253,27 @@ function applyCompanyData() {
     renderDepartmentalPicker('departmentalDesignationPicker', 'designation', null);
     
     if (typeof renderDesignationList === 'function') renderDesignationList();
+    
+    // Apply Marquee Settings
+    const marquee = document.querySelector('.marquee-content');
+    if (marquee) {
+        marquee.innerText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
+        marquee.style.color = companyData.marqueeColor || "#94a3b8";
+        marquee.style.animationDuration = `${companyData.marqueeSpeed || 20}s`;
+    }
+}
+
+function applyMarqueePreview() {
+    const text = document.getElementById('profile_marqueeText')?.value || '';
+    const color = document.getElementById('profile_marqueeColor')?.value || '#94a3b8';
+    const speed = document.getElementById('profile_marqueeSpeed')?.value || 20;
+    
+    const marquee = document.querySelector('.marquee-content');
+    if (marquee) {
+        marquee.innerText = text;
+        marquee.style.color = color;
+        marquee.style.animationDuration = `${speed}s`;
+    }
 }
 
 // --- REQUIRED DOCUMENTS LOGIC ---
@@ -522,9 +543,12 @@ function showApplicantRegister() {
     // Populate Division Dropdown
     const divSel = document.getElementById('regDivision');
     if (divSel) {
+        divSel.innerHTML = '<option value="">-- Loading --</option>';
         fetch('/api/admin/divisions').then(res => res.json()).then(divisions => {
             divSel.innerHTML = '<option value="">-- Select Division --</option>' + 
                 divisions.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+        }).catch(() => {
+            divSel.innerHTML = '<option value="">-- Error --</option>';
         });
     }
 
@@ -532,6 +556,14 @@ function showApplicantRegister() {
     const desgSel = document.getElementById('regDesignation');
     if (desgSel) {
         const rawDesgs = companyData.designations || [];
+        if (rawDesgs.length === 0) {
+            // If empty, wait and try again once (handle lazy load)
+            setTimeout(() => {
+                const retryDesgs = companyData.designations || [];
+                desgSel.innerHTML = '<option value="">-- Select Designation --</option>' + 
+                    retryDesgs.map(d => typeof d === 'string' ? d : d.title).sort().map(d => `<option value="${d}">${d}</option>`).join('');
+            }, 1000);
+        }
         const desgs = rawDesgs.map(d => typeof d === 'string' ? d : d.title);
         desgSel.innerHTML = '<option value="">-- Select Designation --</option>' + 
             desgs.sort().map(d => `<option value="${d}">${d}</option>`).join('');
@@ -550,7 +582,25 @@ async function handleApplicantRegister(e) {
         phone: document.getElementById('regPhone').value
     };
 
+    // Mandatory Field Validation
+    const required = ['title', 'fullName', 'division', 'designation', 'email', 'phone'];
+    const missing = required.filter(key => !data[key] || data[key].trim() === '');
+    
+    if (missing.length > 0) {
+        showToast("⚠️ Please fill all required fields", "warning");
+        // Highlight missing fields
+        missing.forEach(key => {
+            const el = document.getElementById('reg' + key.charAt(0).toUpperCase() + key.slice(1));
+            if (el) {
+                el.classList.add('error');
+                setTimeout(() => el.classList.remove('error'), 3000);
+            }
+        });
+        return;
+    }
+
     try {
+        lockUI("🛡️ Creating Application...");
         const res = await fetch('/api/register-applicant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -566,6 +616,7 @@ async function handleApplicantRegister(e) {
             alert(`❌ Error: ${result.message}`);
         }
     } catch (err) { alert("Server error during registration."); }
+    finally { unlockUI(); }
 }
 
 async function handleApplicantLogin(e) {
@@ -1200,6 +1251,14 @@ function switchAdminTab(tab) {
         f.miscCounter.value = companyData.miscCounter || 1001;
         f.empCodeCounter.value = companyData.empCodeCounter || 1001;
 
+        f.marqueeText.value = companyData.marqueeText || "Enhancing Life and Excelling in Care";
+        f.marqueeColor.value = companyData.marqueeColor || "#94a3b8";
+        f.marqueeSpeed.value = companyData.marqueeSpeed || 20;
+        const colorPicker = document.getElementById('marqueeColorPicker');
+        if (colorPicker) colorPicker.value = companyData.marqueeColor || "#94a3b8";
+        const speedLabel = document.getElementById('speedValueLabel');
+        if (speedLabel) speedLabel.innerText = (companyData.marqueeSpeed || 20) + 's';
+
         renderAssetLists();
 
         // Attach listeners for profile tab file inputs
@@ -1242,6 +1301,9 @@ async function saveCompanyProfile(e) {
         apptCounter: parseInt(rawData.apptCounter) || 1001,
         miscCounter: parseInt(rawData.miscCounter) || 1001,
         empCodeCounter: parseInt(rawData.empCodeCounter) || 1001,
+        marqueeText: rawData.marqueeText,
+        marqueeColor: rawData.marqueeColor,
+        marqueeSpeed: parseInt(rawData.marqueeSpeed) || 20,
         requiredDocs: companyData.requiredDocs || [],
         designations: companyData.designations || []
     };
@@ -1733,12 +1795,14 @@ function renderVerificationChecklist(app) {
         `;
     }).join('');
     
-    updateVerificationProgress();
+    updateVerificationProgress(allDocNames.length);
 }
 
 function toggleDocCheck(docName, isChecked) {
     verificationChecks[docName] = isChecked;
-    updateVerificationProgress();
+    // Recalculate total from checklist items
+    const total = document.querySelectorAll('.v-check-item').length;
+    updateVerificationProgress(total);
 }
 
 async function rejectDocument(docCategory) {
@@ -1772,8 +1836,7 @@ async function rejectDocument(docCategory) {
     }
 }
 
-function updateVerificationProgress() {
-    const total = Object.keys(verificationChecks).length;
+function updateVerificationProgress(total) {
     const checked = Object.values(verificationChecks).filter(v => v === true).length;
     
     const progressEl = document.getElementById('v_progress_ratio');
@@ -3269,12 +3332,16 @@ function numberToWords(num) {
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
     const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
-    if ((num = num.toString()).length > 9) return 'overflow';
+    if ((num = num.toString()).length > 9) return 'Overflow';
     let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
     if (!n) return ''; 
-    str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
-    str += (n[5] != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-    return str.trim() + " Only";
+    let str = '';
+    str += (Number(n[1]) != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
+    str += (Number(n[2]) != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
+    str += (Number(n[3]) != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
+    str += (Number(n[4]) != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
+    str += (Number(n[5]) != 0) ? ((str != '') ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
+    return (str.trim() + " Only").toUpperCase();
 }
 
 async function viewDocument(idOrData) {
