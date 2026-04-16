@@ -89,16 +89,36 @@ body {
 /* Header & Progressive Indicator */
 .main-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     margin-bottom: 1.25rem;
     background: var(--glass-bg);
-    padding: 0.75rem 1.5rem;
     border-radius: var(--radius);
     backdrop-filter: blur(10px);
     border: 1px solid var(--border-color);
     box-shadow: var(--shadow);
-    min-height: 65px;
+    overflow: hidden;
+}
+
+.header-branding-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem 1.5rem;
+}
+
+/* Hide header branding when on landing page to avoid duplication */
+#landingPage.active ~ .main-header .header-branding-row,
+body:has(#landingPage.active) .header-branding-row {
+    display: none;
+}
+/* Refined Rule: If landing page is active, hide the sub-parts of header */
+.view-section#landingPage.active ~ .main-header #headerBranding {
+    display: none;
+}
+/* Modern approach: use JS to toggle or CSS based on parent class */
+body.on-landing .header-branding-row {
+    display: none;
 }
 
 .logo-container {
@@ -1180,19 +1200,12 @@ input:checked + .slider:before {
 
 /* Applicant Portal & Admin Enhancements */
 
-.top-scroll-marquee.integrated-marquee {
-    width: calc(100% + 4rem);
-    margin: -2rem -2rem 1.5rem -2rem; /* Negate parent padding to go full-width */
-    background: rgba(15, 23, 42, 0.95);
-    backdrop-filter: blur(12px);
-    border-bottom: 2px solid var(--primary);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-    padding: 12px 0;
+.top-scroll-marquee.integrated-header-marquee {
+    width: 100%;
+    background: rgba(15, 23, 42, 0.4);
+    border-bottom: 2px solid var(--primary); /* Stronger indicator border */
+    padding: 10px 0;
     overflow: hidden;
-    position: sticky;
-    top: -2rem; 
-    z-index: 100;
-    border-radius: 0 0 12px 12px;
 }
 
 .marquee-content {
@@ -1207,7 +1220,7 @@ input:checked + .slider:before {
 }
 
 @keyframes marquee {
-    0% { transform: translateX(100vw); }
+    0% { transform: translateX(100%); }
     100% { transform: translateX(-100%); }
 }
 

@@ -259,6 +259,7 @@ function applyCompanyData() {
     if (marquee) {
         marquee.innerText = companyData.marqueeText || "Enhancing Life and Excelling in Care";
         marquee.style.color = companyData.marqueeColor || "#94a3b8";
+        // Apply animation timing properly
         marquee.style.animationDuration = `${companyData.marqueeSpeed || 20}s`;
     }
 }
@@ -498,6 +499,13 @@ function updateView(viewId) {
         s.style.display = 'none';
         s.classList.remove('active');
     });
+
+    // Handle Body-level layout classes (for header branding control)
+    if (viewId === 'landingPage') {
+        document.body.classList.add('on-landing');
+    } else {
+        document.body.classList.remove('on-landing');
+    }
     
     // 2. Perform scroll reset
     window.scrollTo(0, 0);
