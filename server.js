@@ -186,7 +186,6 @@ const applicantSchema = new mongoose.Schema({
     empCode: String,
     refNo: String,
     salaryBreakup: { type: Object, default: {} },
-    verificationChecks: { type: Object, default: {} },
     actualJoiningDate: Date,
     offerAccepted: { type: Boolean, default: false },
     offerAcceptedAt: Date,
@@ -199,7 +198,9 @@ const applicantSchema = new mongoose.Schema({
         appLinkSent: { type: Boolean, default: false },
         loginDetailsSent: { type: Boolean, default: false }
     },
-    verificationChecks: { type: Object, default: {} }
+    verificationChecks: { type: Object, default: {} },
+    rejectionReason: String,
+    rejectedAt: Date
 });
 
 const divisionSchema = new mongoose.Schema({
@@ -648,6 +649,8 @@ app.post('/api/admin/update-status', async (req, res) => {
             update.approvedAt = new Date(); // Start 7-day timer
         } else if (status === 'rejected') {
             update.canLogin = false;
+            update.rejectedAt = new Date();
+            update.rejectionReason = req.body.reason || "Application not accepted.";
         }
         await Applicant.findOneAndUpdate({ email }, update);
         res.status(200).json({ success: true });
@@ -1015,6 +1018,7 @@ app.post('/api/admin/verify-and-activate', async (req, res) => {
         applicant.status = 'approved';
         applicant.approvedAt = new Date();
         applicant.verificationChecks = verificationChecks;
+        applicant.canLogin = true; // Automatically grant access upon verification/activation
         await applicant.save();
 
         // Trigger Congratulation Message
@@ -1079,7 +1083,7 @@ app.post('/api/admin/send-letter', async (req, res) => {
 app.post('/api/admin/save-letter-snapshot', async (req, res) => {
     try {
         const { email, letterType, letterData } = req.body; // letterData can be HTML/Text or Base64
-        const update = {};
+        const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
         if (letterType === 'offer') update.offerLetterData = letterData;
         else if (letterType === 'appt') update.apptLetterData = letterData;
 
@@ -1436,6 +1440,35 @@ app.post('/api/admin/delete-applicant', async (req, res) => {
         console.error('Delete error:', e);
         res.status(500).json({ error: 'Failed' });
     }
+});
+
+// --- APPLICANT DATA MANAGEMENT ---
+app.post('/api/applicant/delete-document', async (req, res) => {
+    try {
+        const { email, assetId, category } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Not found' });
+
+        // 1. Remove from Document Array
+        applicant.documents = applicant.documents.filter(d => 
+            d.assetId.toString() !== assetId
+        );
+
+        // 2. Delete from Asset DB
+        if (connAssets) {
+            await Asset.findByIdAndDelete(assetId);
+        }
+
+        // 3. Reset verification for this category if it was the last file? 
+        // Or just reset always to be safe.
+        if (applicant.verificationChecks && applicant.verificationChecks[category]) {
+            delete applicant.verificationChecks[category];
+            applicant.markModified('verificationChecks');
+        }
+
+        await applicant.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
 
 app.post('/api/admin/system/vacuum', async (req, res) => {

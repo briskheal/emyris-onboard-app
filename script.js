@@ -69,7 +69,7 @@ async function nukeDatabase() {
 }
 
 // --- UI HELPERS ---
-function lockUI(msg = "⚙️ Processing... Please Wait") {
+function lockUI(msg = "🏋️ Processing... Please Wait") {
     isSaving = true;
     const overlay = document.getElementById('processingOverlay');
     if (overlay) {
@@ -282,8 +282,7 @@ function applyCompanyData() {
             deptList.innerHTML = depts.map(dt => `<option value="${dt}">`).join('');
         }
         
-        // BEAUTIFUL DEPARTMENTAL PICKERS
-        renderDepartmentalPicker('departmentalDesignationPicker', 'designation', null);
+        // Designation handled during registration; no longer needed in onboarding form step 3
         
         if (typeof renderDesignationList === 'function') renderDesignationList();
     } catch (e) { console.error('❌ Error in child layout functions:', e); }
@@ -389,43 +388,91 @@ function renderApplicantDocuments() {
     container.innerHTML = '';
     const docs = companyData.requiredDocs || [];
     const existingDocs = currentApplicant?.documents || [];
-    const getUpload = (name) => existingDocs.find(d => d.category === name);
 
     if (docs.length === 0) {
         container.innerHTML = `<p style="color: var(--text-muted); text-align: center; width:100%;">No specific documents required.</p>`;
     } else {
         docs.forEach(docName => {
             const safeId = docName.replace(/[^a-z0-9]/gi, '_');
-            const upload = getUpload(docName);
+            const categoryDocs = existingDocs.filter(d => d.category === docName);
+            const hasUploads = categoryDocs.length > 0;
+            
             const box = document.createElement('div');
             box.className = 'upload-box';
+            
+            let filesHtml = '';
+            if (hasUploads) {
+                filesHtml = `
+                    <div class="uploaded-files-list">
+                        ${categoryDocs.map((d, idx) => `
+                            <div class="file-item-pill">
+                                <div class="status-icon-pending">🏋️</div>
+                                <span class="file-name">📄 ${d.name}</span>
+                                <button type="button" class="btn-remove-file" onclick="deleteApplicantDoc('${d.assetId}', '${docName}')">&times;</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+
             box.innerHTML = `
-                <label>${docName}*</label>
-                <div class="drop-zone" onclick="document.getElementById('file_${safeId}').click()">
-                    <div class="progress-ribbon ${upload ? 'waiting' : ''}" id="ribbon_file_${safeId}" style="width: ${upload ? '100%' : '0%'}"></div>
-                    <span class="drop-icon">${upload ? '✅' : '📎'}</span>
-                    <span id="status_${safeId}" class="drop-label">${upload ? `${docName} Uploaded` : `Choose ${docName}`}</span>
+                <label>${docName}${hasUploads ? '' : '*'}</label>
+                <div class="drop-zone ${hasUploads ? 'has-files' : ''}" onclick="document.getElementById('file_${safeId}').click()">
+                    <div class="progress-ribbon" id="ribbon_file_${safeId}" style="width: 0%"></div>
+                    <span class="drop-icon">${hasUploads ? '🏋️' : '📎'}</span>
+                    <span id="status_${safeId}" class="drop-label">${hasUploads ? `Add More for ${docName}` : `Choose ${docName}`}</span>
                     <input type="file" id="file_${safeId}" class="hidden">
                 </div>
+                ${filesHtml}
             `;
             container.appendChild(box);
             attachApplicantFileListener(`file_${safeId}`, docName);
         });
     }
-    const sigUpload = getUpload('Digital Signature');
+
+    // Digital Signature (Usually Single)
+    const sigDocs = existingDocs.filter(d => d.category === 'Digital Signature');
+    const hasSig = sigDocs.length > 0;
     const sigBox = document.createElement('div');
     sigBox.className = 'upload-box';
     sigBox.innerHTML = `
         <label>Digital Signature (Photo)*</label>
         <div class="drop-zone" onclick="document.getElementById('file_Signature').click()">
-            <div class="progress-ribbon ${sigUpload ? 'waiting' : ''}" id="ribbon_file_Signature" style="width: ${sigUpload ? '100%' : '0%'}"></div>
-            <span class="drop-icon">${sigUpload ? '✍️ ✅' : '✍️'}</span>
-            <span id="status_Signature" class="drop-label">${sigUpload ? 'Signature Saved' : 'Upload Sign'}</span>
+            <div class="progress-ribbon" id="ribbon_file_Signature" style="width: 0%"></div>
+            <span class="drop-icon">${hasSig ? '✍️ ✅' : '✍️'}</span>
+            <span id="status_Signature" class="drop-label">${hasSig ? 'Signature Saved' : 'Upload Sign'}</span>
             <input type="file" id="file_Signature" class="hidden">
         </div>
+        ${hasSig ? `
+            <div class="uploaded-files-list">
+                <div class="file-item-pill">
+                    <span class="file-name">🖋️ ${sigDocs[0].name}</span>
+                    <button type="button" class="btn-remove-file" onclick="deleteApplicantDoc('${sigDocs[0].assetId}', 'Digital Signature')">&times;</button>
+                </div>
+            </div>
+        ` : ''}
     `;
     if (container) container.appendChild(sigBox);
     attachApplicantFileListener(`file_Signature`, 'Digital Signature');
+}
+
+async function deleteApplicantDoc(assetId, category) {
+    if (!confirm("Are you sure you want to remove this document?")) return;
+    try {
+        lockUI("🏋️ Removing Document...");
+        const res = await fetch('/api/applicant/delete-document', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentApplicant.email, assetId, category })
+        });
+        const result = await res.json();
+        if (result.success) {
+            currentApplicant.documents = currentApplicant.documents.filter(d => d.assetId !== assetId);
+            renderApplicantDocuments();
+            showToast("🗑️ Document removed", "success");
+        }
+    } catch (e) { showToast("❌ Deletion failed", "error"); }
+    finally { unlockUI(); }
 }
 
 function attachApplicantFileListener(inputId, category) {
@@ -448,7 +495,7 @@ function attachApplicantFileListener(inputId, category) {
             return;
         }
 
-        if (label) label.innerText = `⏳ Uploading...`;
+        if (label) label.innerText = `🏋️ Uploading...`;
         if (ribbon) { 
             ribbon.classList.add('active'); 
             ribbon.style.width = '30%'; 
@@ -494,15 +541,15 @@ function attachApplicantFileListener(inputId, category) {
                 }
                 
                 if (!currentApplicant.documents) currentApplicant.documents = [];
-                // Update local metadata (don't store the huge blob in memory if possible, but the backend now returns metadata)
-                currentApplicant.documents = currentApplicant.documents.filter(d => d.category !== category);
+                // Allow multiple files per category now, so we DON'T filter out existing ones
                 currentApplicant.documents.push({ 
                     category, 
                     name: file.name, 
                     uploadedAt: new Date(),
-                    assetId: result.assetId // Backend will provide this
+                    assetId: result.assetId 
                 });
                 
+                renderApplicantDocuments(); // Full refresh to show the new item list
                 showToast(`✅ ${category} saved!`, "success");
             } else { 
                 throw new Error(result.message || 'Server rejected upload'); 
@@ -832,28 +879,43 @@ function renderApplicantDashboard() {
     const docsList = document.getElementById('dash_docsList');
     if (docsList) {
         const uploads = app.documents || [];
-        const allDocNames = [...new Set([...requiredDocs, "Digital Signature", ...uploads.map(u => u.category)])];
+        const required = companyData.requiredDocs || [];
+        const allDocNames = [...new Set([...required, "Digital Signature", ...uploads.map(u => u.category)])];
         let dashboardAllApproved = true;
 
         docsList.innerHTML = allDocNames.map(dName => {
-            const upload = uploads.find(u => u.category === dName);
+            const categoryFiles = uploads.filter(u => u.category === dName);
             const status = checks[dName];
             const isApproved = status === true;
             const isRejected = status === 'rejected';
             if (!isApproved) dashboardAllApproved = false;
             
             return `
-                <div class="doc-status-row ${isRejected ? 'rejected-mode' : ''}">
-                    <div class="doc-info">
-                        <span class="name">${dName}</span>
-                        <span class="doc-status-tag ${isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending')}">
-                            ${isApproved ? 'Approved' : (isRejected ? 'Rejected' : 'Pending')}
-                        </span>
+                <div class="doc-status-row ${isRejected ? 'rejected-mode' : ''}" style="flex-direction: column; align-items: stretch; gap: 0.75rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div class="doc-info">
+                            <span class="name" style="font-weight: 700;">${dName}</span>
+                            <span class="doc-status-tag ${isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending')}">
+                                ${isApproved ? 'Approved' : (isRejected ? 'Rejected' : 'Pending')}
+                            </span>
+                        </div>
+                        <div class="doc-actions">
+                            ${!isApproved ? `<button class="btn btn-sm btn-outline" onclick="triggerDocResubmit('${dName}')" style="border-color: var(--primary); color: var(--primary);">🏋️ ${categoryFiles.length > 0 ? 'Add More' : 'Upload Now'}</button>` : ''}
+                            ${isApproved ? '<span style="color:var(--success)">✅</span>' : ''}
+                        </div>
                     </div>
-                    <div class="doc-actions">
-                        ${!isApproved ? `<button class="btn btn-sm btn-outline" onclick="triggerDocResubmit('${dName}')" style="border-color: var(--primary); color: var(--primary);">🔁 ${upload ? 'Re-upload' : 'Upload Now'}</button>` : ''}
-                        ${isApproved ? '<span style="color:var(--success)">✅</span>' : ''}
-                    </div>
+                    
+                    ${categoryFiles.length > 0 ? `
+                        <div class="dash-file-list" style="display: flex; flex-direction: column; gap: 4px; padding-left: 10px; border-left: 2px solid rgba(255,255,255,0.05);">
+                            ${categoryFiles.map(f => `
+                                <div style="font-size: 0.75rem; color: var(--text-soft); display: flex; align-items: center; gap: 6px;">
+                                    <span>📄</span>
+                                    <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 250px;">${f.name}</span>
+                                    <span style="font-size: 0.65rem; color: var(--text-muted);">(${new Date(f.uploadedAt).toLocaleDateString()})</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `<p style="font-size: 0.75rem; color: var(--error); padding-left: 10px; margin: 0;">No files uploaded yet.</p>`}
                 </div>
             `;
         }).join('');
@@ -932,7 +994,7 @@ async function triggerDocResubmit(category) {
         if (!file) return;
         
         try {
-            lockUI(`📤 Resubmitting ${category}...`);
+            lockUI(`🏋️ Resubmitting ${category}...`);
             const reader = new FileReader();
             reader.onload = async () => {
                 const base64 = reader.result;
@@ -1193,7 +1255,7 @@ function logoutAdmin() {
 // Removed legacy saveCompanyProfile function
 
 async function submitProfileUpdate(data, silent = false) {
-    if (!silent) lockUI("💾 Saving Changes...");
+    if (!silent) lockUI("🏋️ Saving Changes...");
     try {
         const res = await fetch('/api/company-profile', {
             method: 'POST',
@@ -1372,7 +1434,7 @@ function switchAdminTab(tab) {
 
 async function saveCompanyProfile(e) {
     e.preventDefault();
-    lockUI("💾 Saving Profile...");
+    lockUI("🏋️ Saving Profile...");
     const formData = new FormData(e.target);
     const rawData = Object.fromEntries(formData.entries());
     
@@ -1711,13 +1773,44 @@ function renderApplicantsTable(applicants) {
                     </div>
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
-                    <button class="btn btn-sm btn-primary" onclick="openVerificationView('${app.email}')" style="background: var(--accent); border-color: var(--accent); padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">
-                        🔎 VERIFY
-                    </button>
-                </td>
+                    ${(() => {
+                        if (app.status === 'approved') {
+                            return `<button class="btn btn-sm" onclick="openVerificationView('${app.email}')" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">🗂️ DATABASE</button>`;
+                        } else if (app.status === 'rejected') {
+                            return `<button class="btn btn-sm" onclick="openVerificationView('${app.email}')" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">🕵️ AUDIT</button>`;
+                        } else {
+                            return `<button class="btn btn-sm btn-primary" onclick="openVerificationView('${app.email}')" style="background: var(--accent); border-color: var(--accent); padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">🔎 VERIFY</button>`;
+                        }
+                    })()}
+                </td> (Checked)
             </tr>
         `;
     }).join('');
+}
+
+function previewIssuedLetter(email, type) {
+    const app = allApplicants.find(a => a.email === email);
+    if (!app) return;
+    const content = type === 'offer' ? app.offerLetterData : app.apptLetterData;
+    if (!content) return showToast("No saved letter found.", "warning");
+
+    const win = window.open('', '_blank');
+    win.document.write(`
+        <html>
+            <head>
+                <title>Preview: ${type.toUpperCase()}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.6; }
+                    .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: 1000px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">${content}</div>
+            </body>
+        </html>
+    `);
+    win.document.close();
 }
 
 function filterApplicants() {
@@ -1767,6 +1860,7 @@ async function toggleAccess(email, canLogin) {
 }
 
 async function openVerificationView(email) {
+    resetVerificationUI(); // Ensure a clean slate before loading new data
     const app = allApplicants.find(a => a.email === email);
     if (!app) return;
     activeV_Applicant = app;
@@ -1813,12 +1907,14 @@ async function openVerificationView(email) {
     // 5. Pipeline Switches
     syncPipelineSwitches(app.tasks || {});
 
-    // 6. Offer Acceptance Note (Admin visibility)
+    // 6. Acceptance & Rejection Notes (Admin visibility)
     const accNote = document.getElementById('v_acceptance_note');
+    const rejNote = document.getElementById('v_rejection_note');
+    
     if (accNote) {
         if (app.offerAccepted) {
             accNote.innerHTML = `
-                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem;">
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
                     <h5 style="color: var(--success); margin: 0 0 5px 0; font-size: 0.9rem;">🎉 OFFER ACCEPTED</h5>
                     <p style="font-size: 0.8rem; color: var(--text-main); margin: 0;">
                         The candidate has confirmed their acceptance.
@@ -1826,16 +1922,68 @@ async function openVerificationView(email) {
                     </p>
                 </div>
             `;
+            accNote.style.display = 'block';
         } else {
             accNote.innerHTML = '';
+            accNote.style.display = 'none';
         }
     }
+
+    if (rejNote) {
+        if (app.status === 'rejected') {
+            rejNote.innerHTML = `
+                <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 12px; padding: 1rem; margin-bottom: 1rem;">
+                    <h5 style="color: #ef4444; margin: 0 0 5px 0; font-size: 0.9rem;">🚫 APPLICATION REJECTED</h5>
+                    <p style="font-size: 0.8rem; color: var(--text-main); margin: 0;">
+                        <strong>Reason:</strong> ${app.rejectionReason || "No specific reason provided."}
+                        <br><small style="color:var(--text-muted);">${app.rejectedAt ? new Date(app.rejectedAt).toLocaleString() : ''}</small>
+                    </p>
+                </div>
+            `;
+            rejNote.style.display = 'block';
+        } else {
+            rejNote.innerHTML = '';
+            rejNote.style.display = 'none';
+        }
+    }
+
+    // 7. Toggle Approval/Rejection buttons based on status
+    const isProcessed = ['approved', 'rejected', 'onboarding', 'joined'].includes(app.status);
+    const approveBtn = document.getElementById('v_approve_btn_bottom');
+    const rejectBtn = document.getElementById('v_reject_btn');
+    const masterBtn = document.getElementById('masterVerifyBtn');
+    
+    if (approveBtn) approveBtn.style.display = isProcessed ? 'none' : 'block';
+    if (rejectBtn) rejectBtn.style.display = isProcessed ? 'none' : 'block';
+    if (masterBtn) masterBtn.style.display = isProcessed ? 'none' : 'block';
 
     // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function resetVerificationUI() {
+    // 1. Clear text inputs and selects
+    document.querySelectorAll('#applicantVerificationView input:not([type="checkbox"]), #applicantVerificationView select').forEach(i => i.value = '');
+    // 2. Reset checkboxes
+    document.querySelectorAll('#applicantVerificationView input[type="checkbox"]').forEach(i => i.checked = false);
+    // 3. Clear dynamic containers
+    ['v_profile_content', 'v_checklist_container', 'v_doc_gallery', 'v_acceptance_note', 'v_rejection_note'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+    });
+    // 4. Reset labels/badges
+    const badge = document.getElementById('v_statusBadge');
+    if (badge) { badge.innerText = '...'; badge.className = 'badge draft'; }
+    const totalEl = document.getElementById('v_salTotal');
+    const annualEl = document.getElementById('v_salAnnualTotal');
+    if (totalEl) totalEl.innerText = '₹0';
+    if (annualEl) annualEl.innerText = '₹0';
+    const feedback = document.getElementById('v_salary_feedback');
+    if (feedback) feedback.style.display = 'none';
+}
+
 function closeVerificationView() {
+    resetVerificationUI();
     updateView('adminDashboard');
     switchAdminTab('applicants');
 }
@@ -1854,7 +2002,17 @@ function renderVerificationProfile(app) {
         { label: 'Current Address', val: fd.address || 'N/A' },
         { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : 'N/A' },
         { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
-        { label: 'Confirmed ADOJ', val: app.actualJoiningDate ? `<span style="color:var(--accent); font-weight:bold;">${new Date(app.actualJoiningDate).toDateString()}</span>` : 'N/A' }
+        { label: 'Confirmed ADOJ', val: app.actualJoiningDate ? `<span style="color:var(--accent); font-weight:bold;">${new Date(app.actualJoiningDate).toDateString()}</span>` : 'N/A' },
+        { 
+            label: 'Published Letters', 
+            val: `
+                <div style="display:flex; gap:0.5rem; margin-top:5px; flex-wrap:wrap;">
+                    ${app.offerLetterData ? `<button class="btn btn-sm btn-outline" onclick="previewIssuedLetter('${app.email}', 'offer')" style="padding:4px 8px; font-size:0.7rem; color:var(--accent); border-color:var(--accent);">📄 OFFER</button>` : ''}
+                    ${app.apptLetterData ? `<button class="btn btn-sm btn-outline" onclick="previewIssuedLetter('${app.email}', 'appt')" style="padding:4px 8px; font-size:0.7rem; color:var(--primary-light); border-color:var(--primary-light);">📜 APPT</button>` : ''}
+                    ${(!app.offerLetterData && !app.apptLetterData) ? '<span style="color:var(--text-muted); font-size:0.75rem;">None</span>' : ''}
+                </div>
+            `
+        }
     ];
 
     container.innerHTML = rows.map(r => `
@@ -1878,21 +2036,31 @@ function renderVerificationChecklist(app) {
     const allDocNames = [...new Set([...docs, ...uploads.map(u => u.category)])];
     
     container.innerHTML = allDocNames.map(dName => {
-        const upload = uploads.find(u => u.category === dName);
+        const categoryFiles = uploads.filter(d => d.category === dName);
+        const hasFiles = categoryFiles.length > 0;
         const isVerified = verificationChecks[dName] === true;
         
         return `
-            <div class="v-check-item ${isVerified ? 'verified' : ''}">
+            <div class="v-check-item ${isVerified ? 'verified' : (hasFiles ? 'waiting' : 'missing')}">
                 <div class="v-check-info">
-                    <span>${dName}</span>
-                    <label style="font-size:0.7rem; color:${upload ? 'var(--success)' : '#ef4444'}">
-                        ${upload ? '✅ File Uploaded' : '❌ Missing File'}
+                    <span style="font-weight: 700;">${dName}</span>
+                    <label style="font-size:0.7rem; color:${hasFiles ? 'var(--success)' : '#ef4444'}">
+                        ${hasFiles ? `✅ ${categoryFiles.length} File(s)` : '❌ Missing File'}
                     </label>
+                    <div class="v-check-file-list" style="margin-top: 5px;">
+                        ${categoryFiles.map(f => `
+                            <div style="font-size: 0.7rem; color: var(--text-soft); display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                                <span>📄 ${f.name}</span>
+                                <div style="display:flex; gap: 4px;">
+                                    <button class="btn btn-tool" onclick="viewDocument('${f.assetId || ''}')" style="padding: 2px 5px; font-size: 0.65rem;">👁️</button>
+                                    <button class="btn btn-tool" onclick="downloadAsset('${f.assetId || ''}', '${dName}')" style="padding: 2px 5px; font-size: 0.65rem;">📥</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
                 <div class="v-check-actions" style="display:flex; align-items:center; gap:0.5rem;">
-                    ${upload ? `<button class="btn btn-tool" onclick="viewDocument('${upload.assetId || upload.data || ''}')" title="View Document">👁️</button>` : ''} 
-                    ${upload ? `<button class="btn btn-tool" onclick="downloadAsset('${upload.assetId || upload.data || ''}', '${dName}')" title="Download">📥</button>` : ''}
-                    ${upload ? `<button class="btn btn-tool btn-tool-danger" onclick="rejectDocument('${dName}')" title="Reject Document">🚩</button>` : ''}
+                    ${hasFiles ? `<button class="btn btn-tool btn-tool-danger" onclick="rejectDocument('${dName}')" title="Reject Category">🚩</button>` : ''}
                     <label class="switch-premium" style="margin-left:0.5rem;">
                         <input type="checkbox" ${isVerified ? 'checked' : ''} onchange="toggleDocCheck('${dName}', this.checked)">
                         <span class="slider-premium"></span>
@@ -1977,25 +2145,38 @@ function renderDocGallery(app) {
         gallery.innerHTML = '<p style="color:var(--text-muted);font-size:0.82rem;">No documents required or uploaded.</p>';
         return;
     }
-    gallery.innerHTML = allDocNames.map(dName => {
-        const upload = uploads.find(u => u.category === dName);
-        const hasFile = !!upload;
-        const isPdf = upload && upload.name && upload.name.toLowerCase().endsWith('.pdf');
-        return `
-            <div class="doc-preview-card ${hasFile ? 'uploaded' : 'missing'}">
-                <div class="doc-icon">${hasFile ? (isPdf ? '📄' : '🖼️') : '❌'}</div>
-                <div class="doc-name">${dName}</div>
-                <div class="doc-status-tag" style="background:${hasFile ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.12)'}; color:${hasFile ? '#10b981' : '#ef4444'}">
-                    ${hasFile ? '✅ Uploaded' : '❌ Missing'}
+    const galleryItems = [];
+    allDocNames.forEach(dName => {
+        const categoryFiles = uploads.filter(u => u.category === dName);
+        if (categoryFiles.length === 0) {
+            galleryItems.push(`
+                <div class="doc-preview-card missing">
+                    <div class="doc-icon">❌</div>
+                    <div class="doc-name">${dName}</div>
+                    <div class="doc-status-tag" style="background:rgba(239,68,68,0.12); color:#ef4444">❌ Missing</div>
+                    <div style="font-size:0.65rem;text-align:center;color:var(--text-muted);">Not uploaded</div>
                 </div>
-                ${hasFile ? `
-                <div class="doc-actions-row">
-                    <button class="btn-tool" onclick="viewDocument('${upload.assetId || ''}')" title="View">👁️</button> 
-                    <button class="btn-tool" onclick="downloadAsset('${upload.assetId || ''}', '${dName}')" title="Download">📥</button>
-                </div>` : '<div style="font-size:0.65rem;text-align:center;color:var(--text-muted);">Not uploaded</div>'}
-            </div>
-        `;
-    }).join('');
+            `);
+        } else {
+            categoryFiles.forEach(f => {
+                const isPdf = f.name && f.name.toLowerCase().endsWith('.pdf');
+                galleryItems.push(`
+                    <div class="doc-preview-card uploaded">
+                        <div class="doc-icon">${isPdf ? '📄' : '🖼️'}</div>
+                        <div class="doc-name">${dName}</div>
+                        <div class="doc-status-tag" style="background:rgba(16,185,129,0.15); color:#10b981">
+                            ✅ ${f.name}
+                        </div>
+                        <div class="doc-actions-row">
+                            <button class="btn-tool" onclick="viewDocument('${f.assetId || ''}')" title="View">👁️</button> 
+                            <button class="btn-tool" onclick="downloadAsset('${f.assetId || ''}', '${f.name}')" title="Download">📥</button>
+                        </div>
+                    </div>
+                `);
+            });
+        }
+    });
+    gallery.innerHTML = galleryItems.join('');
 }
 
 async function updatePipelineTask(taskName, isChecked) {
@@ -2046,7 +2227,7 @@ async function saveInternalAssignment(silent = false) {
     };
 
     try {
-        lockUI("⚙️ Updating Assignment...");
+        lockUI("🏋️ Updating Assignment...");
         const res = await fetch('/api/admin/update-workflow-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -2201,46 +2382,49 @@ async function commitMasterVerification() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast("🎉 Record Activated! Transitioning to Document Engine...", "success");
-            activeV_Applicant.status = 'approved';
+            showToast("🎉 Record Activated! Refreshing Data...", "success");
             
-            // Capture a local reference for the closure
-            const targetApplicant = activeV_Applicant;
+            // CRITICAL: Refresh the local cache from server to get new status/vars
+            await fetchApplicants();
+            
+            // Find the fresh record in the updated list
+            const freshApp = allApplicants.find(a => a.email === activeV_Applicant.email);
+            if (freshApp) activeV_Applicant = freshApp;
 
             // Auto-transition to Letters module
             updateView('adminDashboard');
             switchAdminTab('setup');
             
             setTimeout(async () => {
-                // Ensure applicant isn't hidden prematurely if they are the direct transition target
-                window._forceSelectEmail = targetApplicant.email;
+                const targetEmail = activeV_Applicant.email;
+                window._forceSelectEmail = targetEmail;
 
-                // 1. Set Active Template to 'Offer'
+                // 1. Set Active Template to 'offer'
                 const templateSel = document.getElementById('activeTemplateSelect');
                 if (templateSel) templateSel.value = 'offer';
                 
                 // 2. Load the template into the editor
                 await switchEditorTemplate();
                 
-                // 2.5 Refresh the Target Applicant Dropdown before setting value
+                // 2.5 Refresh the Target Applicant Dropdown (uses fresh allApplicants)
                 await populateHubApplicantSelect();
                 
                 // 3. Set the Target Applicant in the Editor Dropdown
                 const targetSel = document.getElementById('hubTargetApplicant');
-                if (targetSel) targetSel.value = targetApplicant.email;
+                if (targetSel) targetSel.value = targetEmail;
                 
                 // 4. AUTO-POPULATE: Inject real data into the loaded template immediately
                 fillEditorWithRealData(true);
                 
                 // Scroll editor into view
                 setTimeout(() => {
-                    const editorContainer = document.getElementById('unifiedEditor').closest('.setup-section') || document.getElementById('unifiedEditor');
+                    const editorContainer = document.getElementById('unifiedEditor');
                     if (editorContainer) {
                         editorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        showToast(`⚡ Data auto-filled for ${targetApplicant.fullName}`, "success");
+                        showToast(`⚡ Data auto-filled for ${activeV_Applicant.fullName}`, "success");
                     }
                 }, 300);
-            }, 800);
+            }, 500);
         } else {
             showToast(result.error || "Activation failed", "error");
         }
@@ -2249,6 +2433,41 @@ async function commitMasterVerification() {
         showToast("Network Error: Activation failed", "error"); 
     }
     finally { unlockUI(); }
+}
+
+async function rejectApplicantFlow() {
+    if (!activeV_Applicant) return;
+    const reason = prompt("🚨 ATTENTION: Please specify the reason for rejection (this will be logged for audit purposes):");
+    if (reason === null) return; // Cancelled
+    
+    if (!reason.trim()) {
+        return showToast("⚠️ A reason is required for rejection.", "warning");
+    }
+
+    if (!confirm(`Are you sure you want to REJECT ${activeV_Applicant.fullName}? Access will be revoked immediately.`)) return;
+
+    try {
+        lockUI("🚫 Processing Rejection...");
+        const res = await fetch('/api/admin/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: activeV_Applicant.email, 
+                status: 'rejected',
+                reason: reason.trim()
+            })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast("Application Rejected Successfully", "success");
+            await fetchApplicants();
+            closeVerificationView();
+        }
+    } catch (e) {
+        showToast("Rejection failed", "error");
+    } finally {
+        unlockUI();
+    }
 }
 
 function syncPipelineSwitches(tasks) {
@@ -2577,7 +2796,7 @@ function fillEditorWithRealData(skipConfirm = false) {
 async function saveActiveTemplate() {
     const btn = event.target;
     const originalText = btn.innerHTML;
-    btn.innerHTML = "⌛ Saving...";
+    btn.innerHTML = "🏋️ Saving...";
     btn.disabled = true;
 
     try {
@@ -2939,7 +3158,7 @@ function injectDummyApplicant() {
     const original = [...allApplicants];
     allApplicants.push(dummy);
     
-    showToast("🧪 Generating High-Fidelity Test Offer Letter...", "success");
+    showToast("🏋️ Generating High-Fidelity Test Offer Letter...", "success");
     downloadLetter("test@dummy.com", "offer").then(() => {
         allApplicants = original;
     });
@@ -3026,7 +3245,7 @@ async function previewActiveTemplate() {
         }
     };
 
-    lockUI("⏳ Generating Live Preview...");
+    lockUI("🏋️ Generating Live Preview...");
     
     // Create shallow copies to prevent contaminating real data
     const originalConfig = { ...companyData };
@@ -3746,7 +3965,9 @@ async function publishLetterToHub() {
             if (window._forceSelectEmail === email) {
                 window._forceSelectEmail = null;
             }
+            await fetchApplicants(); // Refresh main list to sync canLogin and other states
             await populateHubApplicantSelect();
+            await switchEditorTemplate(); // HARD RESET: Revert editor to clean template after publication
         }
     } catch (e) { showToast("? Publication failed. Check server.", "error"); }
     finally { unlockUI(); }

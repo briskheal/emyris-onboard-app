@@ -35,14 +35,14 @@
     <div id="processingOverlay" class="hidden">
         <div class="processing-content">
             <div class="spinner-ring"></div>
-            <p id="processingText">⚙️ Processing... Please Wait</p>
+            <p id="processingText">🏋️ Processing... Please Wait</p>
         </div>
     </div>
 
     <!-- Global Upload Indicator -->
     <div id="globalUploadStatus" class="cloud-upload-status">
         <div class="upload-spinner"></div>
-        <span style="color:white; font-size:0.85rem; font-weight:600;">☁️ Uploading to Emyris Cloud...</span>
+        <span style="color:white; font-size:0.85rem; font-weight:600;">🏋️ Uploading to Emyris Cloud...</span>
     </div>
 
     <!-- ======================================================= -->
@@ -653,7 +653,7 @@
                                                 <option value="">-- Choose --</option>
                                             </select>
                                         </div>
-                                        <button class="btn btn-sm" onclick="fillEditorWithRealData()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: rgba(168, 85, 247, 0.15); border: 1px solid var(--accent); color: white; height: 42px;">⚡ Fill Data</button>
+                                        <!-- Removed redundant Autofill button per user request -->
                                         <button class="btn btn-sm btn-primary" onclick="publishLetterToHub()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: var(--accent); border-color: var(--accent); height: 42px;">🌐 Publish to Hub</button>
                                         <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1rem; height: 42px;">👁️ Preview</button>
                                         <button class="btn btn-sm btn-primary" onclick="saveActiveTemplate()" style="padding: 0.5rem 1rem; height: 42px;">💾 Save</button>
@@ -793,6 +793,7 @@
                         <div class="v-card">
                             <h4>👤 Applicant Dossier</h4>
                             <div id="v_acceptance_note"></div>
+                            <div id="v_rejection_note" style="display:none;"></div>
                             <div id="v_profile_content">
                                 <!-- Rendered by JS -->
                             </div>
@@ -937,9 +938,11 @@
                     <div class="approve-banner">
                         <h4>✅ Ready to Approve?</h4>
                         <p>Once verified, click below to officially approve this applicant and move them to the Offer Letter stage. Their login portal will be updated automatically.</p>
-                        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;">
                             <button class="btn btn-outline" onclick="closeVerificationView()" style="padding:10px 24px;">← Back to Dashboard</button>
-                            <button class="btn btn-primary" onclick="commitMasterVerification()" style="padding:10px 24px;background:linear-gradient(135deg,#6366f1,#10b981);border:none;font-weight:700;">
+                            <button id="v_reject_btn" class="btn btn-sm" onclick="rejectApplicantFlow()" style="padding:10px 24px; border: 1px solid rgba(239,68,68,0.4); color: #ef4444; background: rgba(239,68,68,0.05); font-weight:700; border-radius: 12px;">
+                                🚫 REJECT APPLICATION
+                            </button>
+                            <button id="v_approve_btn_bottom" class="btn btn-primary" onclick="commitMasterVerification()" style="padding:10px 24px;background:linear-gradient(135deg,#6366f1,#10b981);border:none;font-weight:700;">
                                 🎉 APPROVE & SEND OFFER LETTER
                             </button>
                         </div>
@@ -1082,14 +1085,7 @@
                         <p>Your role and identity numbers within the organization.</p>
                     </div>
                     <div class="input-grid">
-                        <div class="form-group" style="grid-column: 1 / -1;">
-                            <label>Designation Applied For</label>
-                            <p style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px;">Please select your department and the specific role you are applying for.</p>
-                            <input type="hidden" id="designation" name="designation" required>
-                            <div id="departmentalDesignationPicker" class="picker-container">
-                                <!-- Cards rendered by script.js -->
-                            </div>
-                        </div>
+                        <input type="hidden" id="designation" name="designation">
                         <div class="form-group">
                             <label for="joiningDate">Expected Date of Joining</label>
                             <input type="date" id="joiningDate" name="joiningDate" required>
@@ -1410,12 +1406,12 @@
                         <!-- 3. Waiting / Pending Status Card -->
                         <div id="waitingStatusCard" class="dash-card">
                             <div class="dash-card-header">
-                                <h3>⏳ Application Pulse</h3>
+                                <h3>🏋️ Application Pulse</h3>
                                 <p>Checking the pulse of your application status within our pipeline.</p>
                             </div>
                             <div class="dash-card-body">
                                 <div id="statusDeepDive" class="status-summary-box">
-                                    <div class="status-icon-pending">⚙️</div>
+                                    <div class="status-icon-pending">🏋️</div>
                                     <h4 id="statusTitle">Documents Under Verification</h4>
                                     <p id="statusDesc">Our compliance team is currently reviewing your uploaded credentials. You will be notified the moment your Offer Section is activated.</p>
                                 </div>
