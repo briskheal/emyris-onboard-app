@@ -2212,6 +2212,9 @@ async function commitMasterVerification() {
             switchAdminTab('setup');
             
             setTimeout(async () => {
+                // Ensure applicant isn't hidden prematurely if they are the direct transition target
+                window._forceSelectEmail = targetApplicant.email;
+
                 // 1. Set Active Template to 'Offer'
                 const templateSel = document.getElementById('activeTemplateSelect');
                 if (templateSel) templateSel.value = 'offer';
@@ -2230,11 +2233,13 @@ async function commitMasterVerification() {
                 fillEditorWithRealData(true);
                 
                 // Scroll editor into view
-                const editor = document.getElementById('unifiedEditor');
-                if (editor) {
-                    editor.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    showToast(`⚡ Data auto-filled for ${targetApplicant.fullName}`, "success");
-                }
+                setTimeout(() => {
+                    const editorContainer = document.getElementById('unifiedEditor').closest('.setup-section') || document.getElementById('unifiedEditor');
+                    if (editorContainer) {
+                        editorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        showToast(`⚡ Data auto-filled for ${targetApplicant.fullName}`, "success");
+                    }
+                }, 300);
             }, 800);
         } else {
             showToast(result.error || "Activation failed", "error");
@@ -3689,9 +3694,9 @@ async function populateHubApplicantSelect() {
     
     // Context-aware filtering: hide applicants who have already received this core letter
     if (activeTemplate === 'offer') {
-        filtered = filtered.filter(a => !(a.tasks && a.tasks.offerLetter));
+        filtered = filtered.filter(a => !(a.tasks && a.tasks.offerLetter) || a.email === window._forceSelectEmail);
     } else if (activeTemplate === 'appt') {
-        filtered = filtered.filter(a => !(a.tasks && a.tasks.appointmentLetter));
+        filtered = filtered.filter(a => !(a.tasks && a.tasks.appointmentLetter) || a.email === window._forceSelectEmail);
     }
     
     const currentVal = sel.value;
@@ -3737,7 +3742,10 @@ async function publishLetterToHub() {
                 });
             }
             
-            // Immediately refresh dropdown to remove them from list
+            // Un-force the email and immediately refresh dropdown to remove them from list
+            if (window._forceSelectEmail === email) {
+                window._forceSelectEmail = null;
+            }
             await populateHubApplicantSelect();
         }
     } catch (e) { showToast("? Publication failed. Check server.", "error"); }
