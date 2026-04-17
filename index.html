@@ -474,39 +474,70 @@
                             </div>
                         </form>
 
-                        <!-- Compact System Maintenance Banner -->
                         <div class="setup-section maintenance-section" style="margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 2rem;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(99, 102, 241, 0.05); padding: 1.25rem 1.5rem; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.15); flex-wrap: wrap; gap: 1rem;">
-                                <div style="flex: 1; min-width: 250px;">
-                                    <h4 style="margin: 0; color: var(--primary-light); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">🛠️ System Maintenance & Data Pipeline</h4>
-                                    <p style="margin: 6px 0 0; font-size: 0.8rem; color: var(--text-muted); max-width: 450px; line-height: 1.4;">Download a full JSON snapshot of your environment, or permanently clear all applicants and reset sequences for a new recruitment cycle.</p>
-                                </div>
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; width: 100%; align-items: stretch;">
-                                    <!-- Storage Stats Card -->
-                                    <div id="storageStatsBox" style="background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.3); padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; cursor: default; min-height: 100px;">
-                                        <div style="display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--primary-light); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8;">
-                                            <span>🗄️</span><span>DB Capacity</span>
+                            <!-- Locked State Interface -->
+                            <div id="maintenanceLocked" style="display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.02); border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 2.5rem; text-align: center; gap: 1rem;">
+                                <div style="font-size: 2rem; opacity: 0.5;">🔒</div>
+                                <div style="max-width: 400px;">
+                                    <h4 style="margin: 0; color: var(--text-muted); font-size: 1rem;">Restricted Segment</h4>
+                                    <p style="margin: 5px 0 1rem; font-size: 0.8rem; color: var(--text-muted); opacity: 0.6;">System maintenance and data pipelines require elevated re-authentication for security.</p>
+                                    
+                                    <div id="reauthContainer" style="display: none; background: rgba(99,102,241,0.05); padding: 1.25rem; border-radius: 10px; border: 1px solid rgba(99,102,241,0.2); margin-top: 1rem; text-align: left;">
+                                        <div class="form-group" style="margin-bottom: 0.75rem;">
+                                            <label style="font-size: 0.7rem; color: var(--primary-light);">Admin ID</label>
+                                            <input type="text" id="reauthId" class="wf-input-sm" style="background: rgba(0,0,0,0.2); width: 100%; border-radius: 5px; height: 35px;" placeholder="Enter Admin ID">
                                         </div>
-                                        <div style="height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; margin: 2px 0;">
-                                            <div id="storage_perc_bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 1s ease;"></div>
+                                        <div class="form-group" style="margin-bottom: 1rem;">
+                                            <label style="font-size: 0.7rem; color: var(--primary-light);">Password</label>
+                                            <input type="password" id="reauthPass" class="wf-input-sm" style="background: rgba(0,0,0,0.2); width: 100%; border-radius: 5px; height: 35px;" placeholder="Enter Password">
                                         </div>
-                                        <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: 700;">
-                                            <span id="storage_used_text" style="color: #fff;">0 MB</span>
-                                            <span id="storage_perc_text" style="color: var(--primary-light);">0% Used</span>
+                                        <div style="display: flex; gap: 10px;">
+                                            <button type="button" class="btn btn-sm" style="flex: 1; font-size: 0.75rem; padding: 8px;" onclick="cancelMaintenanceAuth()">Cancel</button>
+                                            <button type="button" class="btn btn-sm btn-primary" style="flex: 2; font-size: 0.75rem; padding: 8px;" onclick="verifyMaintenanceAuth()">Verify & Unlock 🔓</button>
                                         </div>
                                     </div>
-                                    <!-- Backup Button -->
-                                    <button type="button" onclick="downloadDatabase()" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 1rem; border-radius: 12px; border: 1px solid rgba(99,102,241,0.35); background: rgba(99,102,241,0.08); color: var(--primary-light); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; line-height: 1.2; min-height: 100px;" onmouseover="this.style.background='rgba(99,102,241,0.18)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(99,102,241,0.08)'; this.style.transform='translateY(0)'">
-                                        <span style="font-size: 1.4rem;">📥</span>
-                                        <span style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; opacity: 0.8;">Backup Library</span>
-                                        <span style="font-size: 0.85rem;">Export JSON</span>
-                                    </button>
-                                    <!-- Nuclear Reset Button -->
-                                    <button type="button" onclick="nukeDatabase()" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 1rem; border-radius: 12px; border: 1px solid rgba(239,68,68,0.35); background: rgba(239,68,68,0.07); color: #fca5a5; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; line-height: 1.2; min-height: 100px;" onmouseover="this.style.background='rgba(239,68,68,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(239,68,68,0.07)'; this.style.transform='translateY(0)'">
-                                        <span style="font-size: 1.4rem;">☢️</span>
-                                        <span style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; opacity: 0.8;">System Reset</span>
-                                        <span style="font-size: 0.85rem;">Wipe All Data</span>
-                                    </button>
+                                    
+                                    <button id="showReauthBtn" type="button" class="btn btn-sm btn-outline" style="min-width: 140px; border-color: rgba(99, 102, 241, 0.4); color: var(--primary-light); margin-top: 0.5rem;" onclick="toggleReauthForm(true)">🔓 Unlock Segment</button>
+                                </div>
+                            </div>
+
+                            <!-- Unlocked Content -->
+                            <div id="maintenanceUnlocked" class="hidden">
+                                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(99, 102, 241, 0.05); padding: 1.25rem 1.5rem; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.15); flex-wrap: wrap; gap: 1rem;">
+                                    <div style="flex: 1; min-width: 250px;">
+                                        <h4 style="margin: 0; color: var(--primary-light); font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">🛠️ System Maintenance & Data Pipeline</h4>
+                                        <p style="margin: 6px 0 0; font-size: 0.8rem; color: var(--text-muted); max-width: 450px; line-height: 1.4;">Download a full JSON snapshot of your environment, or permanently clear all applicants and reset sequences for a new recruitment cycle.</p>
+                                    </div>
+                                    <div style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; width: 100%; align-items: stretch; display: grid;">
+                                        <!-- Storage Stats Card -->
+                                        <div id="storageStatsBox" style="background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.3); padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; gap: 8px; cursor: default; min-height: 100px;">
+                                            <div style="display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--primary-light); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.8;">
+                                                <span>🗄️</span><span>DB Capacity</span>
+                                            </div>
+                                            <div style="height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; margin: 2px 0;">
+                                                <div id="storage_perc_bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7); transition: width 1s ease;"></div>
+                                            </div>
+                                            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: 700;">
+                                                <span id="storage_used_text" style="color: #fff;">0 MB</span>
+                                                <span id="storage_perc_text" style="color: var(--primary-light);">0% Used</span>
+                                            </div>
+                                        </div>
+                                        <!-- Backup Button -->
+                                        <button type="button" onclick="downloadDatabase()" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 1rem; border-radius: 12px; border: 1px solid rgba(99,102,241,0.35); background: rgba(99,102,241,0.08); color: var(--primary-light); font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; line-height: 1.2; min-height: 100px;" onmouseover="this.style.background='rgba(99,102,241,0.18)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(99,102,241,0.08)'; this.style.transform='translateY(0)'">
+                                            <span style="font-size: 1.4rem;">📥</span>
+                                            <span style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; opacity: 0.8;">Backup Library</span>
+                                            <span style="font-size: 0.85rem;">Export JSON</span>
+                                        </button>
+                                        <!-- Nuclear Reset Button -->
+                                        <button type="button" onclick="nukeDatabase()" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 1rem; border-radius: 12px; border: 1px solid rgba(239,68,68,0.35); background: rgba(239,68,68,0.07); color: #fca5a5; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; line-height: 1.2; min-height: 100px;" onmouseover="this.style.background='rgba(239,68,68,0.15)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(239,68,68,0.07)'; this.style.transform='translateY(0)'">
+                                            <span style="font-size: 1.4rem;">☢️</span>
+                                            <span style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; opacity: 0.8;">System Reset</span>
+                                            <span style="font-size: 0.85rem;">Wipe All Data</span>
+                                        </button>
+                                    </div>
+                                    <div style="width: 100%; border-top: 1px dashed rgba(255,255,255,0.05); margin-top: 0.5rem; padding-top: 0.5rem; display: flex; justify-content: flex-end;">
+                                        <button type="button" class="btn btn-sm btn-outline" style="font-size: 0.7rem; padding: 4px 12px; opacity: 0.5;" onclick="lockMaintenanceMode()">🔒 Relock segment</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

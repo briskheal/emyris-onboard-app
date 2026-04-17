@@ -3987,3 +3987,61 @@ async function initializeApp() {
 }
 
 window.onload = initializeApp;
+
+// --- SYSTEM MAINTENANCE RE-AUTH LOGIC ---
+function toggleReauthForm(show) {
+    const container = document.getElementById('reauthContainer');
+    const showBtn = document.getElementById('showReauthBtn');
+    if (show) {
+        container.style.display = 'block';
+        showBtn.style.display = 'none';
+        document.getElementById('reauthId').focus();
+    } else {
+        container.style.display = 'none';
+        showBtn.style.display = 'inline-block';
+        document.getElementById('reauthId').value = '';
+        document.getElementById('reauthPass').value = '';
+    }
+}
+
+function cancelMaintenanceAuth() {
+    toggleReauthForm(false);
+}
+
+async function verifyMaintenanceAuth() {
+    const username = document.getElementById('reauthId').value.trim();
+    const password = document.getElementById('reauthPass').value.trim();
+    
+    if (!username || !password) {
+        return showToast("⚠️ Admin ID and Password are required", "warning");
+    }
+
+    try {
+        lockUI("🔐 Verifying Identity...");
+        const res = await fetch('/api/admin-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast("🔓 Access Granted. Maintaining secure pipeline.");
+            document.getElementById('maintenanceLocked').classList.add('hidden');
+            document.getElementById('maintenanceUnlocked').classList.remove('hidden');
+            fetchDatabaseStats(); // Refresh stats on unlock
+        } else {
+            showToast("❌ Re-authentication failed. Incorrect credentials.", "error");
+            document.getElementById('reauthPass').value = '';
+        }
+    } catch (e) {
+        showToast("❌ Server Error during re-auth", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+function lockMaintenanceMode() {
+    document.getElementById('maintenanceUnlocked').classList.add('hidden');
+    document.getElementById('maintenanceLocked').classList.remove('hidden');
+    toggleReauthForm(false);
+}
