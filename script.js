@@ -689,9 +689,11 @@ async function handleApplicantRegister(e) {
             document.getElementById('loginEmail').value = data.email;
             updateView('applicantLogin');
         } else {
-            alert(`❌ Error: ${result.message}`);
+            showToast(`❌ Error: ${result.message}`, 'error');
         }
-    } catch (err) { alert("Server error during registration."); }
+    } catch (err) { 
+        showToast("❌ Server error during registration.", 'error'); 
+    }
     finally { unlockUI(); }
 }
 
@@ -711,15 +713,18 @@ async function handleApplicantLogin(e) {
             currentApplicant = result.applicant;
             resumeApplication();
         } else {
-            alert(result.message);
+            showToast(`❌ ${result.message}`, 'error');
         }
-    } catch (err) { alert("Login failed. Check connection."); }
+    } catch (err) { 
+        showToast("❌ Login failed. Check connection.", 'error'); 
+    }
 }
 
 async function handleForgotPin() {
     const email = document.getElementById('loginEmail').value;
     if (!email) {
-        alert("Please enter your registered email address first.");
+        showToast('⚠️ Please enter your registered email address first.', 'warning');
+        document.getElementById('loginEmail').focus();
         return;
     }
 
@@ -733,13 +738,14 @@ async function handleForgotPin() {
             body: JSON.stringify({ email })
         });
         const result = await res.json();
-        alert(result.message);
+        showToast(result.message, result.success ? 'success' : 'error');
     } catch (err) { 
-        alert("Recovery failed. Check connection."); 
+        showToast('❌ Recovery failed. Check connection.', 'error');
     } finally {
         unlockUI();
     }
 }
+
 
 function resumeApplication() {
     if (['approved', 'submitted'].includes(currentApplicant.status) || currentApplicant.offerAccepted) {
@@ -955,7 +961,7 @@ async function triggerDocResubmit(category) {
                 }
             };
             reader.readAsDataURL(file);
-        } catch (err) { alert("Resubmission failed"); }
+        } catch (err) { showToast("? Resubmission failed", "error"); }
         finally { unlockUI(); }
     };
     input.click();
@@ -963,7 +969,11 @@ async function triggerDocResubmit(category) {
 
 async function acceptOfferLetter() {
     const adoj = document.getElementById('actualJoiningDateInput').value;
-    if (!adoj) return alert("Please select your Actual Date of Joining first.");
+    if (!adoj) {
+        showToast('⚠️ Please select your Actual Date of Joining first.', 'warning');
+        document.getElementById('actualJoiningDateInput').focus();
+        return;
+    }
 
     if (!confirm(`Are you sure you want to accept the offer and confirm joining on ${new Date(adoj).toDateString()}?`)) return;
 
@@ -975,21 +985,19 @@ async function acceptOfferLetter() {
             body: JSON.stringify({ email: currentApplicant.email, actualJoiningDate: adoj })
         });
         if ((await res.json()).success) {
-            showToast("🎉 Congratulations! Welcome to the family.", "success");
-            // Refresh local data then re-render
-            const logRes = await fetch('/api/applicant-login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: currentApplicant.email, password: "SKIP" }) // Assuming backend handles refresh
-            });
-            // Better: just fetch current data directly
+            showToast('🎉 Congratulations! Welcome to the family.', 'success');
             currentApplicant.offerAccepted = true;
             currentApplicant.actualJoiningDate = adoj;
             renderApplicantDashboard();
+        } else {
+            showToast('❌ Acceptance failed. Please try again.', 'error');
         }
-    } catch (e) { alert("Acceptance failed."); }
+    } catch (e) { 
+        showToast('❌ Network error. Please try again.', 'error');
+    }
     finally { unlockUI(); }
 }
+
 
 function logoutApplicant() {
     currentApplicant = null;
@@ -1043,7 +1051,8 @@ function nextStep(step) {
         const missing = requiredDocs.filter(d => !uploadedDocs.includes(d));
         if (!uploadedDocs.includes('Digital Signature')) missing.push('Digital Signature');
         if (missing.length > 0) {
-            return alert(`⚠️ Please upload all required documents:\n\n${missing.join('\n')}`);
+            showToast(`⚠️ Missing: ${missing.slice(0, 2).join(', ')}${missing.length > 2 ? ` +${missing.length-2} more` : ''}`, 'warning');
+            return;
         }
     }
 
@@ -1170,10 +1179,12 @@ async function handleAdminLogin() {
         updateView('adminDashboard');
         switchAdminTab('profile');
     } else {
-        alert("Invalid Admin Credentials");
+        showToast('❌ Invalid Admin Credentials', 'error');
         document.getElementById('adminPass').value = '';
+        document.getElementById('adminPass').focus();
     }
 }
+
 
 function logoutAdmin() {
     updateView('landingPage');
@@ -2262,7 +2273,7 @@ async function togglePipelineStep(step, isChecked) {
             syncPipelineSwitches(activeV_Applicant.tasks);
             showToast(`🚀 Onboarding Step: ${step} updated`, "success");
         }
-    } catch (e) { alert("Step update failed"); }
+    } catch (e) { showToast("? Step update failed", "error"); }
 }
 
 async function toggleAccessFromModal() {
@@ -2279,11 +2290,11 @@ async function resetApplicantData() {
             body: JSON.stringify({ email: activeWfEmail })
         });
         if ((await res.json()).success) {
-            alert("Applicant record reset successfully.");
+            showToast("? Applicant record reset successfully.", "success");
             closeWorkflow();
             await fetchApplicants();
         }
-    } catch (err) { alert("Reset failed."); }
+    } catch (err) { showToast("? Reset failed.", "error"); }
 }
 
 // --- PDF GENERATION ---
@@ -2534,7 +2545,7 @@ async function deleteMiscellaneousLetter() {
 function fillEditorWithRealData(skipConfirm = false) {
     const targetEmail = document.getElementById('hubTargetApplicant')?.value;
     const applicant = allApplicants.find(a => a.email === targetEmail);
-    if (!applicant) return alert("Please select a target applicant from the dropdown first (under 'Target Applicant').");
+    if (!applicant) return showToast("?? Please select a target applicant first.", "warning");
     
     if (!skipConfirm && !confirm(`This will permanently replace placeholders in the editor with data for ${applicant.fullName}. Proceed?`)) return;
 
@@ -2635,6 +2646,9 @@ function syncEditorStyles() {
         editor.style.fontSize = `${size}pt`;
         editor.style.fontFamily = fontStack;
         editor.style.textAlign = align;
+        // Match app's dark theme
+        editor.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+        editor.style.color = '#f1f5f9';
     }
 
     // Update live preview if open
@@ -3195,8 +3209,8 @@ function savePDF(doc, filename) {
 
 async function generateLetterPDF(email, type) {
     const app = allApplicants.find(a => a.email === email);
-    if (!app || !app.formData) return alert("Applicant data missing.");
-    if (!companyData.letterheadImage) return alert("Please upload Letterhead Strip in Setup first.");
+    if (!app || !app.formData) return showToast("?? Applicant data missing.", "warning");
+    if (!companyData.letterheadImage) return showToast("?? Please upload Letterhead Strip in Setup first.", "warning");
 
     let template = "";
     if (type === 'offer') template = companyData.offerLetterBody;
@@ -3207,7 +3221,7 @@ async function generateLetterPDF(email, type) {
         if (miscObj) template = miscObj.body;
     }
     
-    if (!template) return alert(`Please configure the letter template in Setup first.`);
+    if (!template) return showToast("?? Please configure the letter template in Setup first.", "warning");
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -3502,7 +3516,7 @@ async function downloadAsset(idOrData, name) {
 
 function downloadApplicantPDF(email) {
     const app = allApplicants.find(a => a.email === email);
-    if (!app || !app.formData) return alert("No data found for this applicant.");
+    if (!app || !app.formData) return showToast("?? No data found for this applicant.", "warning");
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -3555,7 +3569,7 @@ function downloadApplicantPDF(email) {
 // --- FORM SUBMISSION ---
 document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    if (!document.getElementById('agree').checked) return alert("Agree to declaration.");
+    if (!document.getElementById('agree').checked) return showToast("?? Agree to the declaration first.", "warning");
 
     const submitBtn = e.target.querySelector('.btn-submit');
     const originalText = submitBtn.innerText;
@@ -3574,12 +3588,12 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
             document.getElementById('appEmail').innerText = currentApplicant.email;
             updateView('successView');
         } else {
-            alert("Submission failed.");
+            showToast("? Submission failed.", "error");
             submitBtn.innerText = originalText;
             submitBtn.disabled = false;
         }
     } catch (err) { 
-        alert("Server error."); 
+        showToast("? Server error.", "error"); 
         submitBtn.innerText = originalText;
         submitBtn.disabled = false;
     }
@@ -3666,8 +3680,8 @@ async function publishLetterToHub() {
     const type = document.getElementById('activeTemplateSelect').value;
     const content = document.getElementById('unifiedEditor').innerHTML.trim();
     
-    if (!email) return alert("Please select a target applicant from the 'Target Applicant' dropdown first.");
-    if (!content || content === '<br>') return alert("Letter is empty.");
+    if (!email) return showToast("?? Please select a target applicant first.", "warning");
+    if (!content || content === '<br>') return showToast("?? Letter content is empty.", "warning");
 
     if (!confirm(`Are you sure you want to officially publish this ${type.toUpperCase()} template to ${email}'s dashboard node?`)) return;
 
@@ -3694,7 +3708,7 @@ async function publishLetterToHub() {
                 });
             }
         }
-    } catch (e) { alert("Publication failed. Check server."); }
+    } catch (e) { showToast("? Publication failed. Check server.", "error"); }
     finally { unlockUI(); }
 }
 

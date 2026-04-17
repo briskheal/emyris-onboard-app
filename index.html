@@ -7,13 +7,16 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <link rel="stylesheet" href="style.css?v=1.3">
+
     <!-- Toast Notification -->
     <style>
-        #toastNotif { position:fixed; bottom:2rem; right:2rem; background:#0f172a; color:#fff; padding:1rem 1.8rem; border-radius:14px; font-weight:600; font-size:0.95rem; box-shadow:0 10px 30px rgba(0,0,0,0.25); z-index:9999; transform:translateY(100px); opacity:0; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); }
+        #toastNotif { position:fixed; bottom:2rem; right:2rem; background:#0f172a; color:#fff; padding:1rem 1.8rem; border-radius:14px; font-weight:600; font-size:0.95rem; box-shadow:0 10px 30px rgba(0,0,0,0.25); z-index:9999; transform:translateY(100px); opacity:0; transition:all 0.4s cubic-bezier(0.16,1,0.3,1); max-width: 420px; display: flex; align-items: center; gap: 10px; }
         #toastNotif.show { transform:translateY(0); opacity:1; }
         #toastNotif.success { background: linear-gradient(135deg,#064e3b,#10b981); }
         #toastNotif.error { background: linear-gradient(135deg,#7f1d1d,#ef4444); }
+        #toastNotif.warning { background: linear-gradient(135deg,#78350f,#f59e0b); color: #fff; }
+        #toastNotif.secondary { background: linear-gradient(135deg,#1e3a5f,#3b82f6); }
 
         /* Full Component Width Overrides for Admin Tools */
         .admin-wide-container { width: 100% !important; max-width: 100% !important; margin: 0; }
