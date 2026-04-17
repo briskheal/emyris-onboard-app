@@ -2203,16 +2203,19 @@ async function commitMasterVerification() {
             switchAdminTab('setup');
             
             setTimeout(async () => {
-                // 1. Set the Target Applicant in the Editor Dropdown
-                const targetSel = document.getElementById('hubTargetApplicant');
-                if (targetSel) targetSel.value = targetApplicant.email;
-                
-                // 2. Set Active Template to 'Offer'
+                // 1. Set Active Template to 'Offer'
                 const templateSel = document.getElementById('activeTemplateSelect');
                 if (templateSel) templateSel.value = 'offer';
                 
-                // 3. Load the template into the editor
+                // 2. Load the template into the editor
                 await switchEditorTemplate();
+                
+                // 2.5 Refresh the Target Applicant Dropdown before setting value
+                await populateHubApplicantSelect();
+                
+                // 3. Set the Target Applicant in the Editor Dropdown
+                const targetSel = document.getElementById('hubTargetApplicant');
+                if (targetSel) targetSel.value = targetApplicant.email;
                 
                 // 4. AUTO-POPULATE: Inject real data into the loaded template immediately
                 fillEditorWithRealData(true);
@@ -2519,6 +2522,7 @@ async function switchEditorTemplate() {
     if (delBtn) delBtn.style.display = type.startsWith('misc_') ? 'inline-block' : 'none';
 
     syncEditorStyles();
+    await populateHubApplicantSelect(); // Refresh target applicants based on the active template
 }
 
 async function deleteMiscellaneousLetter() {
@@ -3669,10 +3673,26 @@ async function populateHubApplicantSelect() {
         console.error("Select refresh failed", e);
     }
     
+    const activeTemplate = document.getElementById('activeTemplateSelect')?.value;
+    
     // Select approved or ongoing ones
-    const filtered = allApplicants.filter(a => ['approved', 'submitted', 'onboarding'].includes(a.status));
+    let filtered = allApplicants.filter(a => ['approved', 'submitted', 'onboarding'].includes(a.status));
+    
+    // Context-aware filtering: hide applicants who have already received this core letter
+    if (activeTemplate === 'offer') {
+        filtered = filtered.filter(a => !(a.tasks && a.tasks.offerLetter));
+    } else if (activeTemplate === 'appt') {
+        filtered = filtered.filter(a => !(a.tasks && a.tasks.appointmentLetter));
+    }
+    
+    const currentVal = sel.value;
     sel.innerHTML = '<option value="">-- Choose Target --</option>' + 
         filtered.map(a => `<option value="${a.email}">${a.fullName}</option>`).join('');
+        
+    // Preserve previously selected value if still valid
+    if (currentVal && Array.from(sel.options).some(o => o.value === currentVal)) {
+        sel.value = currentVal;
+    }
 }
 
 async function publishLetterToHub() {
@@ -3707,6 +3727,9 @@ async function publishLetterToHub() {
                     body: JSON.stringify({ email, task: taskKey, completed: true })
                 });
             }
+            
+            // Immediately refresh dropdown to remove them from list
+            await populateHubApplicantSelect();
         }
     } catch (e) { showToast("? Publication failed. Check server.", "error"); }
     finally { unlockUI(); }
