@@ -2013,7 +2013,7 @@ async function updatePipelineTask(taskName, isChecked) {
     } catch (e) { showToast('Pipeline save failed', 'error'); }
 }
 
-async function saveInternalAssignment() {
+async function saveInternalAssignment(silent = false) {
     const salaryBreakup = {
         basic: parseFloat(document.getElementById('v_salBasic').value) || 0,
         hra: parseFloat(document.getElementById('v_salHra').value) || 0,
@@ -2032,7 +2032,7 @@ async function saveInternalAssignment() {
 
     if (Math.abs(calculatedAnnual - targetAnnual) > 100) {
         if (!confirm(`🚨 SALARY MISMATCH ALERT:\n\nThe current breakup totals ₹${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Applicant's registered salary is ₹${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
-            return;
+            return false;
         }
     }
 
@@ -2054,17 +2054,20 @@ async function saveInternalAssignment() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast("✅ Core Assignment & Salary Updated!", "success");
+            if (!silent) showToast("✅ Core Assignment & Salary Updated!", "success");
             activeV_Applicant.division = data.division;
             activeV_Applicant.reportingTo = data.reportingTo;
             activeV_Applicant.hq = data.hq;
             activeV_Applicant.salaryBreakup = data.salaryBreakup;
+            return true;
         } else {
-            showToast(result.error || "Save failed", "error");
+            if (!silent) showToast(result.error || "Save failed", "error");
+            return false;
         }
     } catch (e) { 
         console.error("Save assignment error:", e);
-        showToast("Network error: Save failed", "error"); 
+        if (!silent) showToast("Network error: Save failed", "error");
+        return false;
     }
     finally { unlockUI(); }
 }
@@ -2179,6 +2182,12 @@ async function commitMasterVerification() {
     if (checked < total) {
         if (!confirm("Not all documents are checked. Proceed with partial verification?")) return;
     }
+
+    // AUTO-SAVE ASSIGNMENT & SALARY BEFORE PROCEEDING
+    // This solves the bug where users approve without saving the salary first.
+    // The true parameter makes the toast silent so we don't spam them with notifications.
+    const assignSuccess = await saveInternalAssignment(true);
+    if (!assignSuccess) return; // Halt if the salary mismatched and they cancelled the prompt, or validation failed.
 
     try {
         lockUI("🛡️ Activating Record...");
