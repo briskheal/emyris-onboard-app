@@ -3682,12 +3682,12 @@ function fillLetterPlaceholders(text, app) {
             const total = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
                           (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
             return `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid #333;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid #333; color: #000000;">
                 <thead>
-                    <tr style="background: #f4f4f4;">
-                        <th style="border: 1px solid #333; padding: 8px; text-align: left;">Earnings Components</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: right;">Amount (Monthly)</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: right;">Amount (Annual)</th>
+                    <tr style="background: #2c3e50;">
+                        <th style="border: 1px solid #333; padding: 8px; text-align: left; color: #ffffff;">Earnings Components</th>
+                        <th style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">Amount (Monthly)</th>
+                        <th style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">Amount (Annual)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -3699,7 +3699,7 @@ function fillLetterPlaceholders(text, app) {
                     <tr><td style="border: 1px solid #333; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.special||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid #333; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid #333; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
-                    <tr style="font-weight: bold; background: #e9e9e9;"><td style="border: 1px solid #333; padding: 8px;">Gross Total</td><td style="border: 1px solid #333; padding: 8px; text-align: right;">${formatRs(total)}</td><td style="border: 1px solid #333; padding: 8px; text-align: right;">${formatRs(total*12)}</td></tr>
+                    <tr style="font-weight: bold; background: #2c3e50; color: #ffffff;"><td style="border: 1px solid #333; padding: 8px; color: #ffffff;">Gross Total</td><td style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">${formatRs(total)}</td><td style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">${formatRs(total*12)}</td></tr>
                 </tbody>
             </table>
             `;
