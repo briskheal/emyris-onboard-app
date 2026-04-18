@@ -3682,12 +3682,12 @@ function fillLetterPlaceholders(text, app) {
             const total = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
                           (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
             return `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid #333; color: #000000;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid #555; color: #ffffff;">
                 <thead>
                     <tr style="background: #2c3e50;">
-                        <th style="border: 1px solid #333; padding: 8px; text-align: left; color: #ffffff;">Earnings Components</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">Amount (Monthly)</th>
-                        <th style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">Amount (Annual)</th>
+                        <th style="border: 1px solid #555; padding: 8px; text-align: left; color: #ffffff;">Earnings Components</th>
+                        <th style="border: 1px solid #555; padding: 8px; text-align: right; color: #ffffff;">Amount (Monthly)</th>
+                        <th style="border: 1px solid #555; padding: 8px; text-align: right; color: #ffffff;">Amount (Annual)</th>
                     </tr>
                 </thead>
                 <tbody>
