@@ -3383,26 +3383,30 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
         frame.style.backgroundImage = 'none';
     }
 
-    // 2. High-Fidelity Placeholder replacement
-    const todayStr = new Date().toLocaleDateString('en-GB');
-    const placeholders = {
-        '{{REF_NO}}': specificRef,
-        '{{TODAY_DATE}}': todayStr,
-        '{{FULL_NAME}}': 'SMRUTI RANJAN DASH',
-        '{{FIRST_NAME}}': 'SMRUTI',
-        '{{DESIGNATION}}': 'PRODUCT MANAGER',
-        '{{HQ}}': 'BHUBANESWAR',
-        '{{SALARY_MONTHLY}}': '75,000',
-        '{{SALARY_ANNUAL}}': '9,00,000',
-        '{{SIGNATORY_NAME}}': document.getElementById('signatoryName')?.value || 'AUTHORIZED SIGNATORY',
-        '{{SIGNATORY_DESG}}': document.getElementById('signatoryDesg')?.value || 'COMPANY OFFICIAL',
-        '{{COMPANY_NAME}}': companyData.name || 'EMYRIS BIOLIFESCIENCES',
-        '{{JOINING_DATE}}': formatDatePretty(new Date().toISOString())
+    // 2. High-Fidelity Placeholder replacement using core helper
+    const mockApp = {
+        fullName: 'SMRUTI RANJAN DASH',
+        refNo: specificRef,
+        salaryBreakup: { basic: 30000, hra: 12000, lta: 3000, conveyance: 2000, medical: 2000, special: 21000, edu: 0, fixed: 5000 }, // Mock 75k gross
+        formData: {
+            firstName: 'SMRUTI',
+            designation: document.getElementById('signatoryDesg')?.value || 'PRODUCT MANAGER',
+            hq: 'BHUBANESWAR',
+            joiningDate: new Date().toISOString()
+        }
     };
 
-    Object.entries(placeholders).forEach(([key, val]) => {
-        const regex = new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-        rendered = rendered.replace(regex, `<span class="preview-highlight">${val}</span>`);
+    // Use core helper (defaults to forPDF = false, which is white text)
+    rendered = fillLetterPlaceholders(html, mockApp);
+    
+    // Highlight placeholders in preview for visual clarity
+    const todayStr = new Date().toLocaleDateString('en-GB');
+    const highlights = [
+        'SMRUTI RANJAN DASH', specificRef, todayStr, 'PRODUCT MANAGER', 'BHUBANESWAR', 'Rs. 75,000'
+    ];
+    highlights.forEach(h => {
+        const regex = new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+        rendered = rendered.replace(regex, `<span class="preview-highlight">${h}</span>`);
     });
 
     frame.innerHTML = rendered;
@@ -3530,7 +3534,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
     
     // If we have an override, it's already filled, so we don't need to fill again
-    const mergedHTML = htmlOverride ? cleanedTemplate : fillLetterPlaceholders(cleanedTemplate, app);
+    const mergedHTML = htmlOverride ? cleanedTemplate : fillLetterPlaceholders(cleanedTemplate, app, true);
     
     let yMarker = MARGIN_T;
     
@@ -3641,7 +3645,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     });
 }
 
-function fillLetterPlaceholders(text, app) {
+function fillLetterPlaceholders(text, app, forPDF = false) {
     const fd = app.formData || {};
     const sal = app.salaryBreakup || {};
     const totalMonthly = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
@@ -3681,25 +3685,32 @@ function fillLetterPlaceholders(text, app) {
             const formatRs = (num) => 'Rs. ' + (Number(num) || 0).toLocaleString('en-IN');
             const total = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
                           (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
+            
+            // Dynamic styles based on target (Screen vs PDF)
+            const tableColor = forPDF ? "#333333" : "#ffffff";
+            const borderColor = forPDF ? "#000000" : "#555";
+            const headerBg = forPDF ? "#f4f4f4" : "#2c3e50";
+            const headerTextColor = forPDF ? "#000000" : "#ffffff";
+
             return `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid #555; color: #ffffff;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid ${borderColor}; color: ${tableColor};">
                 <thead>
-                    <tr style="background: #2c3e50;">
-                        <th style="border: 1px solid #555; padding: 8px; text-align: left; color: #ffffff;">Earnings Components</th>
-                        <th style="border: 1px solid #555; padding: 8px; text-align: right; color: #ffffff;">Amount (Monthly)</th>
-                        <th style="border: 1px solid #555; padding: 8px; text-align: right; color: #ffffff;">Amount (Annual)</th>
+                    <tr style="background: ${headerBg};">
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: left; color: ${headerTextColor};">Earnings Components</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">Amount (Monthly)</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">Amount (Annual)</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Basic Salary</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.basic)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.basic||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">HRA</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.hra)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.hra||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Leave Travel Allowance (LTA)</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.lta)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.lta||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Conveyance Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.conveyance)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.conveyance||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Medical Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.medical)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.medical||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.special||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid #333; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid #333; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
-                    <tr style="font-weight: bold; background: #2c3e50; color: #ffffff;"><td style="border: 1px solid #333; padding: 8px; color: #ffffff;">Gross Total</td><td style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">${formatRs(total)}</td><td style="border: 1px solid #333; padding: 8px; text-align: right; color: #ffffff;">${formatRs(total*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Basic Salary</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.basic)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.basic||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">HRA</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.hra)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.hra||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Leave Travel Allowance (LTA)</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.lta)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.lta||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Conveyance Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.conveyance)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.conveyance||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Medical Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.medical)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.medical||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.special||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
+                    <tr style="font-weight: bold; background: ${headerBg}; color: ${headerTextColor};"><td style="border: 1px solid ${borderColor}; padding: 8px; color: ${headerTextColor};">Gross Total</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">${formatRs(total)}</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">${formatRs(total*12)}</td></tr>
                 </tbody>
             </table>
             `;
