@@ -3314,7 +3314,7 @@ async function previewActiveTemplate() {
             allApplicants.push(mockApplicant);
         }
         
-        const pdfData = await generateLetterPDF(finalEmail, type);
+        const pdfData = await generateLetterPDF(finalEmail, type, editorHtml);
         
         if (pdfData && pdfData.doc) {
             savePDF(pdfData.doc, `PREVIEW_${type.toUpperCase()}.pdf`);
@@ -3432,7 +3432,11 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
 
 // --- SMART LETTER GENERATION ---
 async function downloadLetter(email, type) {
-    const pdfData = await generateLetterPDF(email, type);
+    // If we're in the Setup tab and the email matches the target, use the editor content to capture manual edits
+    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+    const editorHtml = (targetEmail === email) ? document.getElementById('unifiedEditor').innerHTML : null;
+    
+    const pdfData = await generateLetterPDF(email, type, editorHtml);
     if (!pdfData) return;
     const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
     savePDF(pdfData.doc, `${type.toUpperCase()}_LETTER_${safeEmail}.pdf`);
@@ -3448,7 +3452,11 @@ async function emailLetter(email, type) {
     btn.innerText = "⌛ Sending...";
     btn.disabled = true;
 
-    const pdfData = await generateLetterPDF(email, type);
+    // Capture manual editor edits if applicable
+    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+    const editorHtml = (targetEmail === email) ? document.getElementById('unifiedEditor').innerHTML : null;
+
+    const pdfData = await generateLetterPDF(email, type, editorHtml);
     if (!pdfData) {
         btn.innerText = originalText;
         btn.disabled = false;
@@ -3533,8 +3541,26 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     // Clean template: Remove placeholders if we are printing them in top-right
     let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
     
-    // If we have an override, it's already filled, so we don't need to fill again
-    const mergedHTML = htmlOverride ? cleanedTemplate : fillLetterPlaceholders(cleanedTemplate, app, true);
+    const mergedHTML = (() => {
+        let html = htmlOverride ? cleanedTemplate : fillLetterPlaceholders(cleanedTemplate, app, true);
+        
+        // Final Safety: If the HTML contains hardcoded 'white' or 'dark-navy' styles from the editor view,
+        // we must swap them for PDF-safe black/grey styles.
+        if (htmlOverride) {
+            html = html
+                .split('color: #ffffff').join('color: #000000')
+                .split('color:#ffffff').join('color:#000000')
+                .split('color: white').join('color: #000000')
+                .split('color:white').join('color: #000000')
+                .split('color: #f1f5f9').join('color: #000000')
+                .split('color:#f1f5f9').join('color:#000000')
+                .split('color: rgb(255, 255, 255)').join('color: #000000')
+                .split('color: rgb(241, 245, 249)').join('color: #000000')
+                .split('background: #2c3e50').join('background: #f4f4f4')
+                .split('background:#2c3e50').join('background:#f4f4f4');
+        }
+        return html;
+    })();
     
     let yMarker = MARGIN_T;
     
