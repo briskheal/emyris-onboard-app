@@ -2651,6 +2651,10 @@ async function loadSetupData() {
         });
     }
     
+    // Protected master backup — ALWAYS contains clean placeholder versions from DB.
+    // Never overwrite this with populated (real-data) content.
+    window._masterTemplates = { ...window.letterTemplates };
+    
     populateTemplateSelect();
     switchEditorTemplate();
 
@@ -2748,7 +2752,8 @@ async function switchEditorTemplate() {
         populateTemplateSelect("misc_" + newId);
         editor.innerHTML = "";
     } else {
-        editor.innerHTML = window.letterTemplates[type] || "";
+        // Always load from _masterTemplates (protected, placeholder-safe version)
+        editor.innerHTML = (window._masterTemplates && window._masterTemplates[type]) || window.letterTemplates[type] || "";
     }
     
     const delBtn = document.getElementById('deleteTemplateBtn');
@@ -2782,19 +2787,22 @@ async function deleteMiscellaneousLetter() {
 function fillEditorWithRealData(skipConfirm = false) {
     const targetEmail = document.getElementById('hubTargetApplicant')?.value;
     const applicant = allApplicants.find(a => a.email === targetEmail);
-    if (!applicant) return showToast("?? Please select a target applicant first.", "warning");
-    
-    if (!skipConfirm && !confirm(`This will permanently replace placeholders in the editor with data for ${applicant.fullName}. Proceed?`)) return;
+    if (!applicant) return; // No applicant selected — do nothing silently
 
     const type = document.getElementById('activeTemplateSelect').value;
     const editor = document.getElementById('unifiedEditor');
     
-    // Always start from the original template if available, otherwise use current editor content
-    const baseContent = window.letterTemplates[type] || editor.innerHTML;
-    const filled = fillLetterPlaceholders(baseContent, applicant);
+    // ALWAYS use the protected master template (with {{PLACEHOLDERS}}) as the base.
+    // This ensures switching between applicants always starts clean.
+    const masterBase = (window._masterTemplates && window._masterTemplates[type]) || window.letterTemplates[type] || editor.innerHTML;
     
+    if (!masterBase || masterBase.trim() === '') {
+        return showToast("⚠️ No master template found. Please create and save a template with {{PLACEHOLDERS}} first.", "warning");
+    }
+    
+    const filled = fillLetterPlaceholders(masterBase, applicant);
     editor.innerHTML = filled;
-    showToast(`⚡ Variables populated for ${applicant.fullName}`, "success");
+    showToast(`⚡ Data loaded for ${applicant.fullName} — ready to issue.`, "success");
 }
 
 async function saveActiveTemplate() {
@@ -2808,7 +2816,19 @@ async function saveActiveTemplate() {
         const editor = document.getElementById('unifiedEditor');
         const content = editor.innerHTML;
         
+        // Safety Guard: Detect if content has been populated (placeholders replaced with real data).
+        // A populated letter has no {{placeholders}} remaining.
+        const hasPlaceholders = content.includes('{{') && content.includes('}}');
+        const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+        if (targetEmail && !hasPlaceholders) {
+            showToast("⚠️ Cannot save a populated letter as Master Template. Use 'Issue to Applicant' to send this letter, or clear the applicant selection before editing the master.", "warning");
+            return;
+        }
+        
+        // Save to both runtime caches — letterTemplates (working copy) and _masterTemplates (protected copy)
         window.letterTemplates[type] = content;
+        if (!window._masterTemplates) window._masterTemplates = {};
+        window._masterTemplates[type] = content;
         
         const data = {};
         if (type === 'offer') data.offerLetterBody = content;
@@ -3448,18 +3468,22 @@ function savePDF(doc, filename) {
     setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
-async function generateLetterPDF(email, type) {
+async function generateLetterPDF(email, type, htmlOverride = null) {
     const app = allApplicants.find(a => a.email === email);
     if (!app || !app.formData) return showToast("?? Applicant data missing.", "warning");
     if (!companyData.letterheadImage) return showToast("?? Please upload Letterhead Strip in Setup first.", "warning");
 
     let template = "";
-    if (type === 'offer') template = companyData.offerLetterBody;
-    else if (type === 'appt') template = companyData.apptLetterBody;
-    else if (type.startsWith('misc_')) {
-        const id = type.split('_')[1];
-        const miscObj = (companyData.miscLetters || []).find(m => m.id === id);
-        if (miscObj) template = miscObj.body;
+    if (htmlOverride) {
+        template = htmlOverride;
+    } else {
+        if (type === 'offer') template = companyData.offerLetterBody;
+        else if (type === 'appt') template = companyData.apptLetterBody;
+        else if (type.startsWith('misc_')) {
+            const id = type.split('_')[1];
+            const miscObj = (companyData.miscLetters || []).find(m => m.id === id);
+            if (miscObj) template = miscObj.body;
+        }
     }
     
     if (!template) return showToast("?? Please configure the letter template in Setup first.", "warning");
@@ -3487,7 +3511,9 @@ async function generateLetterPDF(email, type) {
 
     // Clean template: Remove placeholders if we are printing them in top-right
     let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
-    const mergedHTML = fillLetterPlaceholders(cleanedTemplate, app);
+    
+    // If we have an override, it's already filled, so we don't need to fill again
+    const mergedHTML = htmlOverride ? cleanedTemplate : fillLetterPlaceholders(cleanedTemplate, app);
     
     let yMarker = MARGIN_T;
     
