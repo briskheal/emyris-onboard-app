@@ -2786,9 +2786,13 @@ function fillEditorWithRealData(skipConfirm = false) {
     
     if (!skipConfirm && !confirm(`This will permanently replace placeholders in the editor with data for ${applicant.fullName}. Proceed?`)) return;
 
+    const type = document.getElementById('activeTemplateSelect').value;
     const editor = document.getElementById('unifiedEditor');
-    const content = editor.innerHTML;
-    const filled = fillLetterPlaceholders(content, applicant);
+    
+    // Always start from the original template if available, otherwise use current editor content
+    const baseContent = window.letterTemplates[type] || editor.innerHTML;
+    const filled = fillLetterPlaceholders(baseContent, applicant);
+    
     editor.innerHTML = filled;
     showToast(`⚡ Variables populated for ${applicant.fullName}`, "success");
 }
