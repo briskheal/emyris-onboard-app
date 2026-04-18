@@ -2655,6 +2655,23 @@ async function loadSetupData() {
     // Never overwrite this with populated (real-data) content.
     window._masterTemplates = { ...window.letterTemplates };
     
+    // Auto-Heal: If a core template has no placeholders (it was corrupted by real data being saved),
+    // replace it in memory with a clean default so injection can work immediately.
+    const coreTypes = ['offer', 'appt', 'confirm', 'revised_salary'];
+    let healed = false;
+    coreTypes.forEach(t => {
+        const tmpl = window._masterTemplates[t];
+        if (tmpl && !tmpl.includes('{{')) {
+            console.warn(`⚠️ Template '${t}' appears corrupted (no placeholders found). Loading default.`);
+            window._masterTemplates[t] = getDefaultTemplate(t);
+            window.letterTemplates[t] = window._masterTemplates[t];
+            healed = true;
+        }
+    });
+    if (healed) {
+        showToast('⚠️ One or more templates were corrupted. Defaults restored in memory — click \'Save Master Template\' (with no applicant selected) to permanently save them.', 'warning');
+    }
+    
     populateTemplateSelect();
     switchEditorTemplate();
 
@@ -3710,7 +3727,51 @@ function formatDatePretty(dateStr) {
     return `${day}${suffix} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function getDefaultTemplate(type) {
+    const co = '{{COMPANY_NAME}}';
+    const header = `<p>Ref No: {{REF_NO}} &nbsp;&nbsp;&nbsp; Date: {{TODAY_DATE}}</p><p>&nbsp;</p><p>To,<br>{{TITLE_SHORT}} {{FULL_NAME}}<br>{{ADDRESS}}<br>{{CITY_STATE}} - {{PIN}}</p><p>&nbsp;</p>`;
+
+    if (type === 'offer') return `${header}
+<p><strong>Sub: OFFER OF EMPLOYMENT</strong></p><p>&nbsp;</p>
+<p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p>
+<p>We are pleased to offer you the position of <strong>{{DESIGNATION}}</strong> with <strong>${co}</strong>, based at <strong>{{HQ}}</strong>, effective from <strong>{{JOINING_DATE}}</strong>.</p><p>&nbsp;</p>
+<p>You will be reporting to <strong>{{REPORTING_TO}}</strong>. Your gross monthly CTC will be <strong>Rs. {{SALARY_MONTHLY}}/-</strong> (Rupees {{SALARY_WORDS}} per annum).</p><p>&nbsp;</p>
+<p>{{SALARY_BREAKUP}}</p><p>&nbsp;</p>
+<p>This offer is subject to your acceptance within 7 days. Please sign and return a copy of this letter as confirmation.</p><p>&nbsp;</p>
+<p>Yours sincerely,</p><p>&nbsp;</p>
+<p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
+
+    if (type === 'appt') return `${header}
+<p><strong>Sub: APPOINTMENT LETTER</strong></p><p>&nbsp;</p>
+<p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p>
+<p>With reference to your acceptance of our Offer Letter, we are pleased to appoint you as <strong>{{DESIGNATION}}</strong> in the <strong>{{DIVISION}}</strong> division of <strong>${co}</strong>.</p><p>&nbsp;</p>
+<p>Your appointment is effective from <strong>{{JOINING_DATE}}</strong>. Your Employee Code is <strong>{{EMP_CODE}}</strong>. You will be headquartered at <strong>{{HQ}}</strong> and will report to <strong>{{REPORTING_TO}}</strong>.</p><p>&nbsp;</p>
+<p>Your consolidated monthly CTC is <strong>Rs. {{SALARY_MONTHLY}}/-</strong>.</p><p>&nbsp;</p>
+<p>{{SALARY_BREAKUP}}</p><p>&nbsp;</p>
+<p>Yours sincerely,</p><p>&nbsp;</p>
+<p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
+
+    if (type === 'confirm') return `${header}
+<p><strong>Sub: CONFIRMATION OF EMPLOYMENT</strong></p><p>&nbsp;</p>
+<p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p>
+<p>We are pleased to confirm your appointment as <strong>{{DESIGNATION}}</strong> with <strong>${co}</strong>. After successful completion of your probationary period, your services are hereby confirmed.</p><p>&nbsp;</p>
+<p>Your confirmed monthly CTC remains <strong>Rs. {{SALARY_MONTHLY}}/-</strong>.</p><p>&nbsp;</p>
+<p>Yours sincerely,</p><p>&nbsp;</p>
+<p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
+
+    if (type === 'revised_salary') return `${header}
+<p><strong>Sub: REVISED SALARY LETTER</strong></p><p>&nbsp;</p>
+<p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p>
+<p>Pursuant to your performance review, your revised gross monthly CTC is <strong>Rs. {{SALARY_MONTHLY}}/-</strong> (Rupees {{SALARY_WORDS}} per annum), effective from {{TODAY_DATE}}.</p><p>&nbsp;</p>
+<p>{{SALARY_BREAKUP}}</p><p>&nbsp;</p>
+<p>Yours sincerely,</p><p>&nbsp;</p>
+<p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
+
+    return `${header}<p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p><p>[Letter content here]</p><p>&nbsp;</p><p>Yours sincerely,</p><p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
+}
+
 function numberToWords(num) {
+
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
     const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
