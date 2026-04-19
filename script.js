@@ -2010,7 +2010,7 @@ async function openVerificationView(email) {
     
 
     // 4. Assignments
-    await populateDivisions(); // Ensure fresh lists
+    await populateDivisions(true); // Force fresh lists
     await populateManagers();  // Populate the hierarchical selector
     
     const divSel = document.getElementById('v_division');
@@ -3069,14 +3069,23 @@ function syncEditorStyles() {
     }
 }
 
-async function populateDivisions() {
-    const res = await fetch('/api/admin/divisions');
+async function populateDivisions(force = false) {
+    // Add cache-busting timestamp to prevent "vanishing" due to browser cache
+    const res = await fetch(`/api/admin/divisions?t=${Date.now()}`);
     const divisions = await res.json();
     
     const list = document.getElementById('divisionList');
     const profileList = document.getElementById('profileDivisionList');
     
-    const html = divisions.map(d => `
+    // Deduplicate in memory for safety
+    const uniqueNames = new Set();
+    const uniqueDivs = divisions.filter(d => {
+        if (uniqueNames.has(d.name)) return false;
+        uniqueNames.add(d.name);
+        return true;
+    });
+
+    const html = uniqueDivs.map(d => `
         <div class="division-chip">
             ${d.name}
             <button onclick="deleteDivision('${d._id}')">&times;</button>
@@ -3093,7 +3102,7 @@ async function populateDivisions() {
         if (sel) {
             const currentVal = sel.value;
             sel.innerHTML = '<option value="">-- Select Division --</option>' + 
-                divisions.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+                uniqueDivs.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
             sel.value = currentVal;
         }
     });
@@ -3104,16 +3113,47 @@ async function populateDivisions() {
 async function addDivision(source = 'setup') {
     const inputId = source === 'profile' ? 'profileNewDivisionInput' : 'newDivisionInput';
     const input = document.getElementById(inputId);
-    const name = input ? input.value : "";
+    const name = input ? input.value.trim() : "";
     
     if (!name) return;
-    await fetch('/api/admin/divisions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name })
-    });
-    if (input) input.value = "";
-    populateDivisions();
+    
+    try {
+        const res = await fetch('/api/admin/divisions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const result = await res.json();
+        if (result.success) {
+            if (input) input.value = "";
+            showToast(`✅ Division "${name}" added`, "success");
+            await populateDivisions(true); // Force refresh
+        } else {
+            showToast("❌ Failed to add division", "error");
+        }
+    } catch (e) {
+        showToast("❌ Communication error", "error");
+    }
+}
+
+async function addHQ() {
+    const input = document.getElementById('profileNewHQInput');
+    const name = input ? input.value.trim() : "";
+    if (!name) return;
+
+    try {
+        const res = await fetch('/api/admin/hqs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const result = await res.json();
+        if (result.success) {
+            if (input) input.value = "";
+            showToast(`✅ HQ "${name}" added`, "success");
+            await populateHQs(true);
+        }
+    } catch (e) { showToast("❌ HQ addition failed", "error"); }
 }
 
 async function populateManagers() {
@@ -3121,9 +3161,14 @@ async function populateManagers() {
     if (!select) return;
 
     try {
-        const res = await fetch('/api/admin/applicants');
-        const applicants = await res.json();
-        const joined = applicants.filter(a => a.status === 'joined' || a.status === 'approved');
+        // PERFORMANCE: If we already have applicants from the main fetch, use them instead of hitting the server again
+        let applicants = allApplicants;
+        if (!applicants.length) {
+            const res = await fetch('/api/admin/applicants');
+            applicants = await res.json();
+        }
+        
+        const joined = applicants.filter(a => a.status === 'joined' || a.status === 'approved' || a.isExistingStaff);
 
         // Group by Division
         const grouped = {};
@@ -3681,25 +3726,32 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             .replace(/color\s*:\s*(#ffffff|#fff|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)|rgb\(\s*241\s*,\s*245\s*,\s*249\s*\)|#f1f5f9)/gi, 'color: #000000')
             .replace(/background\s*:\s*([^;>]+)/gi, (match, p1) => {
                 if (p1.includes('#2c3e50') || p1.includes('dark') || p1.includes('navy')) return 'background: transparent';
-                return match;
+                return 'background: transparent'; // Force ALL backgrounds transparent for PDF
             });
         
         // Inject a wrapper to kill any viewport-relative heights (vh) that cause the 100+ page bug
-        return `<div style="height: auto !important; min-height: 0 !important; overflow: visible !important;">${html}</div>`;
+        return `<div class="pdf-render-wrapper" style="height: auto !important; min-height: 0 !important; overflow: visible !important; background: transparent !important; color: #000 !important;">${html}</div>`;
     })();
     let yMarker = MARGIN_T;
 
-    const drawPageExtras = (targetDoc) => {
+    const drawPageExtras = (targetDoc, isNewPage = false) => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
             const val = lhArr[lhArr.length - 1].data;
-            // Native injection before text. Alias 'LETTERHEAD' strictly caches the image object across multiple pages!
+            // Draw at (0,0) to cover the whole A4 page as a background
             targetDoc.addImage(val, 'PNG', 0, 0, 210, 297, 'LETTERHEAD', 'FAST');
         }
     };
 
-    // Remove initial drawing - we now do it exclusively in the callback to prevent double-stamping page 1
-    // drawPageExtras(doc); 
+    // --- BACKGROUND IMAGE LOGIC ---
+    // We subscribe to the 'addPage' event to ensure the letterhead is drawn 
+    // immediately when a new page is created, effectively putting it BEHIND the text.
+    doc.internal.events.subscribe('addPage', function() {
+        drawPageExtras(this, true);
+    });
+
+    // Draw on the very first page manually BEFORE html() starts
+    drawPageExtras(doc); 
 
     // Insert top-right metadata cleanly
     doc.setFont(FONT_TYPE, "bold");
@@ -3722,13 +3774,13 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         tempContainer.style.lineHeight = '1.4'; 
         tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.top = '-10000px'; // Move far off-screen instead of just z-index
-        tempContainer.style.left = '-10000px'; 
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.top = '0';
+        tempContainer.style.left = '0';
+        tempContainer.style.zIndex = '-9999';
+        tempContainer.style.opacity = '0';
+        tempContainer.style.pointerEvents = 'none';
         tempContainer.style.background = 'transparent';
-        tempContainer.style.padding = '0';
-        tempContainer.style.margin = '0';
-        tempContainer.style.boxSizing = 'border-box';
         
         // Force every child to have transparent background to prevent overlap issues
         const children = tempContainer.querySelectorAll('*');
@@ -3757,14 +3809,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             callback: function (pdf) {
                 document.body.removeChild(tempContainer);
 
-                // --- POST-RENDER LETTERHEAD APPLICATION ---
-                // We loop through ALL generated pages and stamp the letterhead on TOP of the HTML content.
-                // This guarantees visibility even if elements had accidental background colors.
                 const totalPages = pdf.internal.getNumberOfPages();
-                for (let i = 1; i <= totalPages; i++) {
-                    pdf.setPage(i);
-                    drawPageExtras(pdf); // Re-stamp letterhead on top
-                }
                 
                 // Signatory Logic (Always on the final page)
                 pdf.setPage(totalPages);
