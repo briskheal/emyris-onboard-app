@@ -39,6 +39,70 @@
         </div>
     </div>
 
+    <!-- Existing Staff Modal -->
+    <div id="existingStaffModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 10000; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
+        <div style="background: var(--card-bg); width: 100%; max-width: 600px; border-radius: 16px; border: 1px solid var(--glass-border); padding: 2rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s ease;" id="existingStaffModalBody">
+            <h3 style="color: white; margin: 0 0 5px 0;">⚡ Add Existing Staff</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">Fast-track existing employees for letter generation. Bypasses normal verification.</p>
+            
+            <form id="existingStaffForm" onsubmit="submitExistingStaff(event)">
+                <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" id="ex_fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email Address *</label>
+                        <input type="email" id="ex_email" required>
+                    </div>
+                </div>
+                <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>Phone Number *</label>
+                        <input type="text" id="ex_phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Employee Code</label>
+                        <input type="text" id="ex_empCode">
+                    </div>
+                </div>
+                <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>Designation</label>
+                        <input type="text" id="ex_designation">
+                    </div>
+                    <div class="form-group">
+                        <label>Target Annual Salary (₹)</label>
+                        <input type="number" id="ex_salary" placeholder="e.g. 500000">
+                    </div>
+                </div>
+                <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                    <div class="form-group">
+                        <label>Date of Joining</label>
+                        <input type="date" id="ex_joinDate">
+                    </div>
+                    <div class="form-group">
+                        <label>Division</label>
+                        <select id="ex_division">
+                            <option value="">Select Division</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>HQ</label>
+                        <select id="ex_hq">
+                            <option value="">Select HQ</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="closeExistingStaffModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border: none;">Fast-Track Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Global Upload Indicator -->
     <div id="globalUploadStatus" class="cloud-upload-status">
         <div class="upload-spinner"></div>
@@ -556,8 +620,9 @@
                             </div>
                         </div>
 
-                        <div class="search-bar">
-                            <input type="text" id="applicantSearch" placeholder="Search by Email (User Key) or Name..." oninput="filterApplicants()">
+                        <div class="search-bar" style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
+                            <input type="text" id="applicantSearch" placeholder="Search by Email (User Key) or Name..." oninput="filterApplicants()" style="flex: 1;">
+                            <button type="button" class="btn btn-primary" onclick="openExistingStaffModal()" style="white-space: nowrap; height: 45px; padding: 0 1.5rem; background: linear-gradient(135deg, #10b981, #059669); border: none;">➕ Add Existing Staff</button>
                         </div>
                         <div class="table-container">
                             <table class="admin-table">

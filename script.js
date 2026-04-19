@@ -68,6 +68,93 @@ async function nukeDatabase() {
     finally { unlockUI(); }
 }
 
+// --- EXISTING STAFF FAST-TRACK ---
+function openExistingStaffModal() {
+    const modal = document.getElementById('existingStaffModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        // Small delay to allow CSS block rendering before fading in opacity
+        setTimeout(() => modal.style.opacity = '1', 10);
+        
+        // Populate divisions and HQs
+        const divSel = document.getElementById('ex_division');
+        const hqSel = document.getElementById('ex_hq');
+        
+        // Assuming fetchHQs and Divs might already be cached. Let's build options:
+        if (divSel && document.getElementById('v_division')) {
+            divSel.innerHTML = document.getElementById('v_division').innerHTML;
+        }
+        if (hqSel && document.getElementById('v_hq')) {
+            hqSel.innerHTML = document.getElementById('v_hq').innerHTML;
+        }
+    }
+}
+
+function closeExistingStaffModal() {
+    const modal = document.getElementById('existingStaffModal');
+    if (modal) {
+        modal.style.opacity = '0';
+        setTimeout(() => modal.classList.add('hidden'), 300);
+        document.getElementById('existingStaffForm').reset();
+    }
+}
+
+async function submitExistingStaff(event) {
+    event.preventDefault();
+    lockUI("⚡ Fast-Tracking Existing Staff...");
+    
+    const data = {
+        fullName: document.getElementById('ex_fullName').value,
+        email: document.getElementById('ex_email').value,
+        phone: document.getElementById('ex_phone').value,
+        empCode: document.getElementById('ex_empCode').value,
+        designation: document.getElementById('ex_designation').value,
+        targetSalary: document.getElementById('ex_salary').value,
+        joinDate: document.getElementById('ex_joinDate').value,
+        division: document.getElementById('ex_division').value,
+        hq: document.getElementById('ex_hq').value
+    };
+
+    try {
+        const res = await fetch('/api/admin/add-existing-staff', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+            showToast("🎉 Existing staff member fast-tracked successfully!", "success");
+            closeExistingStaffModal();
+            await fetchApplicants(); // Refresh main table
+            
+            // Switch to Letters tab and set up the newly added person directly into Appointment
+            updateView('adminDashboard');
+            switchAdminTab('setup');
+            
+            setTimeout(async () => {
+                const targetEmail = data.email;
+                const templateSel = document.getElementById('activeTemplateSelect');
+                if (templateSel) templateSel.value = 'appt'; // Default to appointment for existing staff
+                await switchEditorTemplate();
+                await populateHubApplicantSelect();
+                
+                const targetSel = document.getElementById('hubTargetApplicant');
+                if (targetSel) targetSel.value = targetEmail;
+            
+                fillEditorWithRealData(true);
+            }, 500);
+
+        } else {
+            showToast(result.message || "Failed to add staff.", "error");
+        }
+    } catch (e) {
+        showToast("Network error. Please try again.", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
 // --- UI HELPERS ---
 function lockUI(msg = "🏋️ Processing... Please Wait") {
     isSaving = true;
@@ -2655,22 +2742,7 @@ async function loadSetupData() {
     // Never overwrite this with populated (real-data) content.
     window._masterTemplates = { ...window.letterTemplates };
     
-    // Auto-Heal: If a core template has no placeholders (it was corrupted by real data being saved),
-    // replace it in memory with a clean default so injection can work immediately.
-    const coreTypes = ['offer', 'appt', 'confirm', 'revised_salary'];
-    let healed = false;
-    coreTypes.forEach(t => {
-        const tmpl = window._masterTemplates[t];
-        if (tmpl && !tmpl.includes('{{')) {
-            console.warn(`⚠️ Template '${t}' appears corrupted (no placeholders found). Loading default.`);
-            window._masterTemplates[t] = getDefaultTemplate(t);
-            window.letterTemplates[t] = window._masterTemplates[t];
-            healed = true;
-        }
-    });
-    if (healed) {
-        showToast('⚠️ One or more templates were corrupted. Defaults restored in memory — click \'Save Master Template\' (with no applicant selected) to permanently save them.', 'warning');
-    }
+
     
     populateTemplateSelect();
     switchEditorTemplate();

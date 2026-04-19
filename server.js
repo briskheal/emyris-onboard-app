@@ -200,7 +200,8 @@ const applicantSchema = new mongoose.Schema({
     },
     verificationChecks: { type: Object, default: {} },
     rejectionReason: String,
-    rejectedAt: Date
+    rejectedAt: Date,
+    isExistingStaff: { type: Boolean, default: false }
 });
 
 const divisionSchema = new mongoose.Schema({
@@ -603,6 +604,85 @@ app.get('/api/admin/applicant-pin/:email', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
         res.json({ name: applicant.fullName, email: applicant.email, pin: applicant.password, status: applicant.status });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// FAST-TRACK EXISTING STAFF API
+app.post('/api/admin/add-existing-staff', async (req, res) => {
+    try {
+        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate } = req.body;
+
+        // Validation
+        if (!fullName || !email || !phone) {
+            return res.status(400).json({ success: false, message: 'Name, Email, and Phone are required.' });
+        }
+
+        const existingEmail = await Applicant.findOne({ email });
+        if (existingEmail) return res.status(400).json({ success: false, message: 'Email already registered.' });
+
+        const formattedSalary = parseFloat(targetSalary) || 0;
+
+        // Auto-calculate standard salary breakup if salary is provided
+        let salaryBreakup = {};
+        if (formattedSalary > 0) {
+            const monthly = formattedSalary / 12;
+            const basic = monthly * 0.40;
+            const hra = basic * 0.40;
+            const edu = 200;
+            const conveyance = 3000;
+            const ltaBase = monthly - (basic + hra);
+            const lta = ltaBase * 0.07;
+            const used = basic + hra + lta + edu + conveyance;
+            const special = monthly - used;
+            
+            salaryBreakup = {
+                v_salBasic: basic.toFixed(2),
+                v_salHra: hra.toFixed(2),
+                v_salLta: lta.toFixed(2),
+                v_salConv: conveyance.toFixed(2),
+                v_salMed: "0.00",
+                v_salEdu: edu.toFixed(2),
+                v_salFixed: "0.00",
+                v_salSpecial: special.toFixed(2) // Remainder
+            };
+        }
+
+        // Construct the fast-tracked profile directly into 'approved' state
+        const newStaff = new Applicant({
+            fullName,
+            email,
+            phone,
+            password: 'EXISTING_STAFF_NO_PIN', // Doesn't need a real PIN as they don't log in
+            status: 'approved', // Bypass draft/submitted/verification
+            isExistingStaff: true, // Custom flag to hide offer logic
+            canLogin: false, // Prevents them from needing the portal
+            approvedAt: new Date(),
+            division: division || 'General',
+            hq: hq || 'Unassigned',
+            empCode: empCode || '',
+            actualJoiningDate: joinDate ? new Date(joinDate) : new Date(),
+            formData: {
+                designation: designation || 'Employee',
+                salary: formattedSalary.toString(),
+                first_name: fullName.split(' ')[0],
+                last_name: fullName.split(' ').slice(1).join(' ') || ''
+            },
+            salaryBreakup: salaryBreakup,
+            tasks: {
+                offerLetter: true, // Auto-mark as done
+                appointmentLetter: false,
+                appLinkSent: false,
+                loginDetailsSent: false
+            }
+        });
+
+        await newStaff.save();
+        console.log(`✅ [FAST-TRACK] Added existing staff member: ${email} (${fullName})`);
+        res.status(200).json({ success: true, message: 'Existing staff added successfully.' });
+
+    } catch (error) {
+        console.error('Fast-track error:', error);
+        res.status(500).json({ success: false, message: 'Failed to add existing staff.' });
+    }
 });
 
 app.get('/api/admin/applicants', async (req, res) => {
