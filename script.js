@@ -3646,8 +3646,7 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     frame.style.paddingTop = `${marginT}mm`;
     frame.style.paddingBottom = `${marginB}mm`;
 
-    // APPLY LETTERHEAD TO EDITOR BACKGROUND
-    const lhArr = companyData.letterheadImage || [];
+    // APPLY LETTERHEAD TO EDITOR BACKGROUND (Fidelity Preview)
     if (lhArr.length) {
         const val = lhArr[lhArr.length - 1].data;
         frame.style.backgroundImage = `url(${val})`;
