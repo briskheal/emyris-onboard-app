@@ -59,12 +59,21 @@
                 <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <div class="form-group">
                         <label>Phone Number *</label>
-                        <input type="text" id="ex_phone" required>
+                        <input type="tel" id="ex_phone" required>
                     </div>
+                    <div class="form-group">
+                        <label>Date of Birth</label>
+                        <input type="date" id="ex_dob">
+                    </div>
+                </div>
                     <div class="form-group">
                         <label>Employee Code</label>
                         <input type="text" id="ex_empCode">
                     </div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>Current Address</label>
+                    <textarea id="ex_address" placeholder="Enter residential address" rows="2" style="background: rgba(255,255,255,0.03); color: white; border: 1px solid var(--glass-border); border-radius: 12px; padding: 0.75rem; width: 100%;"></textarea>
                 </div>
                 <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <div class="form-group">
@@ -77,23 +86,23 @@
                         <span id="ex_salary_words" style="display:block; font-size:0.7rem; color:var(--accent); margin-top:4px; font-weight:600;"></span>
                     </div>
                 </div>
-                <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
                     <div class="form-group">
                         <label>Date of Joining</label>
                         <input type="date" id="ex_joinDate">
                     </div>
                     <div class="form-group">
                         <label>Division</label>
-                        <select id="ex_division">
+                        <select id="ex_division" style="width: 100%;">
                             <option value="">Select Division</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>HQ</label>
-                        <select id="ex_hq">
-                            <option value="">Select HQ</option>
-                        </select>
-                    </div>
+                </div>
+                <div class="form-group" style="margin-top: 1rem;">
+                    <label>HQ</label>
+                    <select id="ex_hq" style="width: 100%;">
+                        <option value="">Select HQ</option>
+                    </select>
                 </div>
                 
                 <div style="display: flex; gap: 1rem; margin-top: 2rem; justify-content: flex-end;">
@@ -831,7 +840,6 @@
                     .v-top-bar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem; padding: 1.25rem 1.5rem; background: rgba(99,102,241,0.07); border: 1px solid rgba(99,102,241,0.2); border-radius: 16px; }
                     .v-top-bar h2 { font-size: 1.1rem; font-weight: 700; color: var(--text-main); margin: 0; letter-spacing: 0.03em; }
                     .v-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-                    @media(max-width:768px){ .v-grid{ grid-template-columns: 1fr; } }
                     .v-card { background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 16px; padding: 1.5rem; }
                     .v-card h4 { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--primary-light); margin: 0 0 1.25rem; display: flex; align-items: center; gap: 8px; }
                     .detail-row { display: flex; flex-direction: column; gap: 2px; padding: 0.6rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }

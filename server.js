@@ -609,7 +609,7 @@ app.get('/api/admin/applicant-pin/:email', async (req, res) => {
 // FAST-TRACK EXISTING STAFF API
 app.post('/api/admin/add-existing-staff', async (req, res) => {
     try {
-        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate } = req.body;
+        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address } = req.body;
 
         // Validation
         if (!fullName || !email || !phone) {
@@ -666,6 +666,8 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             formData: {
                 designation: designation || 'Employee',
                 salary: formattedSalary.toString(),
+                dob: dob || '',
+                current_address: address || '',
                 first_name: fullName.split(' ')[0],
                 last_name: fullName.split(' ').slice(1).join(' ') || ''
             },

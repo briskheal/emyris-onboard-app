@@ -107,6 +107,8 @@ async function submitExistingStaff(event) {
         fullName: document.getElementById('ex_fullName').value,
         email: document.getElementById('ex_email').value,
         phone: document.getElementById('ex_phone').value,
+        dob: document.getElementById('ex_dob').value,
+        address: document.getElementById('ex_address').value,
         empCode: document.getElementById('ex_empCode').value,
         designation: document.getElementById('ex_designation').value,
         targetSalary: document.getElementById('ex_salary').value,

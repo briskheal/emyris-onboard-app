@@ -745,6 +745,7 @@ body.at-landing #headerBrandingLayer {
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
+    min-width: 0; /* Prevents flex/grid items from overflowing */
 }
 
 .form-group label {
@@ -764,6 +765,7 @@ body.at-landing #headerBrandingLayer {
     background: rgba(255, 255, 255, 0.03);
     color: white;
     backdrop-filter: blur(10px);
+    max-width: 100%;
 }
 
 select optgroup {
