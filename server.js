@@ -624,25 +624,28 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
         // Auto-calculate standard salary breakup if salary is provided
         let salaryBreakup = {};
         if (formattedSalary > 0) {
-            const monthly = formattedSalary / 12;
-            const basic = monthly * 0.40;
-            const hra = basic * 0.40;
-            const edu = 200;
-            const conveyance = 3000;
+            const monthly = parseFloat((formattedSalary / 12).toFixed(2));
+            const basic = parseFloat((monthly * 0.40).toFixed(2));
+            const hra = parseFloat((basic * 0.40).toFixed(2));
+            const edu = 200.00;
+            const conveyance = 3000.00;
+            const medical = 1250.00; // Fixed per requirement
+            
             const ltaBase = monthly - (basic + hra);
-            const lta = ltaBase * 0.07;
-            const used = basic + hra + lta + edu + conveyance;
-            const special = monthly - used;
+            const lta = parseFloat((ltaBase * 0.07).toFixed(2));
+            
+            const used = parseFloat((basic + hra + lta + edu + conveyance + medical).toFixed(2));
+            const special = parseFloat((monthly - used).toFixed(2));
             
             salaryBreakup = {
                 v_salBasic: basic.toFixed(2),
                 v_salHra: hra.toFixed(2),
                 v_salLta: lta.toFixed(2),
                 v_salConv: conveyance.toFixed(2),
-                v_salMed: "0.00",
+                v_salMed: medical.toFixed(2),
                 v_salEdu: edu.toFixed(2),
                 v_salFixed: "0.00",
-                v_salSpecial: special.toFixed(2) // Remainder
+                v_salSpecial: special.toFixed(2)
             };
         }
 

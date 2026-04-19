@@ -2393,29 +2393,29 @@ function autoDistributeSalary() {
     }
     
     const annual = parseFloat(activeV_Applicant.formData.salary);
-    const monthly = annual / 12;
+    const monthly = parseFloat((annual / 12).toFixed(2));
     
     // 1. Basic: 40% of monthly gross
-    const basic = monthly * 0.40;
+    const basic = parseFloat((monthly * 0.40).toFixed(2));
     
     // 2. HRA: 40% of Basic
-    const hra = basic * 0.40;
+    const hra = parseFloat((basic * 0.40).toFixed(2));
     
     // 3. Fixed Allowances
     const edu = 200.00;
     const conveyance = 3000.00;
+    const medical = 1250.00; // Fixed as requested
     
     // 4. LTA: 7% of (Monthly - (Basic + HRA))
     const ltaBase = monthly - (basic + hra);
-    const lta = ltaBase * 0.07;
+    const lta = parseFloat((ltaBase * 0.07).toFixed(2));
     
     // 5. Initialize other fields to 0
-    const medical = 0.00;
     const fixedAllw = 0.00;
     
     // 6. Special Allowance: match Monthly Gross exactly
-    const used = basic + hra + lta + edu + conveyance + medical + fixedAllw;
-    const special = monthly - used;
+    const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
+    const special = parseFloat((monthly - used).toFixed(2));
     
     const fields = {
         'v_salBasic': basic,
@@ -2434,7 +2434,7 @@ function autoDistributeSalary() {
     }
     
     calcSalaryTotal();
-    showToast("⚡ Salary breakup updated (Basic @ 40%)", "success");
+    showToast("⚡ Salary breakup updated (Medical @ 1250, Basic @ 40%)", "success");
 }
 
 function calcSalaryTotal() {
