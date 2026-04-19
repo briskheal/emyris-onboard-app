@@ -1068,6 +1068,21 @@ function renderApplicantDashboard() {
         const previewer = document.getElementById('offerPreviewer');
         previewer.innerHTML = app.offerLetterData; 
         
+        // APPLY LETTERHEAD BACKGROUND TO PORTAL PREVIEW
+        const lhArr = companyData.letterheadImage || [];
+        if (lhArr.length) {
+            const val = lhArr[lhArr.length - 1].data;
+            previewer.style.backgroundImage = `url(${val})`;
+            previewer.style.backgroundSize = '100% auto';
+            previewer.style.backgroundRepeat = 'repeat-y';
+            previewer.style.backgroundPosition = 'top center';
+            previewer.style.backgroundColor = '#ffffff'; // Ensure readability
+            previewer.style.color = '#000000';
+            previewer.style.padding = '50px'; // Professional margins for preview
+        } else {
+            previewer.style.backgroundImage = 'none';
+        }
+        
         const form = document.getElementById('acceptanceForm');
         const acceptedAlert = document.getElementById('offerAcceptedStatus');
         
@@ -3408,7 +3423,7 @@ async function convertPdfToPng(dataUri) {
     const loadingTask = pdfjsLib.getDocument(dataUri);
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 4.16 }); // 300 DPI scaling (300/72)
+    const viewport = page.getViewport({ scale: 2.0 }); // High-res scaling
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -3627,17 +3642,22 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     frame.style.textAlign = align;
     frame.style.paddingTop = `${marginT}mm`;
     frame.style.paddingBottom = `${marginB}mm`;
-}
 
-// Helper for PNG Export
-function downloadLetterAsPng(email, type) {
-    window.pendingDownloadType = 'png';
-    downloadLetter(email, type);
-}
-
-function previewActiveTemplateAsPng() {
-    window.pendingDownloadType = 'png';
-    previewActiveTemplate();
+    // APPLY LETTERHEAD TO EDITOR BACKGROUND
+    const lhArr = companyData.letterheadImage || [];
+    if (lhArr.length) {
+        const val = lhArr[lhArr.length - 1].data;
+        frame.style.backgroundImage = `url(${val})`;
+        frame.style.backgroundSize = '100% auto';
+        frame.style.backgroundRepeat = 'repeat-y';
+        frame.style.backgroundPosition = 'top center';
+        frame.style.backgroundColor = '#ffffff'; 
+        frame.style.color = '#000000';
+    } else {
+        frame.style.backgroundImage = 'none';
+        frame.style.backgroundColor = 'rgba(15, 23, 42, 0.6)'; // Restore Dark Theme
+        frame.style.color = '#f1f5f9';
+    }
 }
 
 // --- SMART LETTER GENERATION ---
@@ -3649,25 +3669,7 @@ async function downloadLetter(email, type) {
     const pdfData = await generateLetterPDF(email, type, editorHtml);
     if (!pdfData) return;
     const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
-    
-    if (window.pendingDownloadType === 'png') {
-        lockUI("🖼️ Generating High-Res PNG (300 DPI)...");
-        try {
-            const pngData = await convertPdfToPng(pdfData.doc.output('datauristring'));
-            const link = document.createElement('a');
-            link.href = pngData;
-            link.download = `${type.toUpperCase()}_LETTER_${safeEmail}.png`;
-            link.click();
-            showToast("📈 PNG Generated successfully", "success");
-        } catch (e) {
-            showToast("❌ PNG Conversion failed", "error");
-        } finally {
-            unlockUI();
-            window.pendingDownloadType = 'pdf'; // Reset
-        }
-    } else {
-        savePDF(pdfData.doc, `${type.toUpperCase()}_LETTER_${safeEmail}.pdf`);
-    }
+    savePDF(pdfData.doc, `${type.toUpperCase()}_LETTER_${safeEmail}.pdf`);
     
     // Mark task as done
     const taskKey = type === 'offer' ? 'offerLetter' : 'appointmentLetter';
@@ -3787,21 +3789,26 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     const drawPageExtras = (targetDoc, isNewPage = false) => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
-            const val = lhArr[lhArr.length - 1].data;
-            // Draw at (0,0) to cover the whole A4 page as a background
-            targetDoc.addImage(val, 'PNG', 0, 0, 210, 297, 'LETTERHEAD', 'FAST');
+            const asset = lhArr[lhArr.length - 1];
+            const val = asset.data;
+            try {
+                targetDoc.addImage(val, 0, 0, 210, 297, `LH_${asset._id}`, 'FAST');
+            } catch (err) {
+                console.error("❌ Failed to add background image:", err);
+            }
+        } else {
+            console.warn("⚠️ No active letterhead found for generation.");
         }
     };
 
     // --- BACKGROUND IMAGE LOGIC ---
-    // We subscribe to the 'addPage' event to ensure the letterhead is drawn 
-    // immediately when a new page is created, effectively putting it BEHIND the text.
     doc.internal.events.subscribe('addPage', function() {
         drawPageExtras(this, true);
     });
 
-    // Draw on the very first page manually BEFORE html() starts
+    // Draw on the very first page manually BEFORE any text or html() starts
     drawPageExtras(doc); 
+
 
     // Insert top-right metadata cleanly
     doc.setFont(FONT_TYPE, "bold");
@@ -3866,10 +3873,18 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                 let finalY = PAGE_H - MARGIN_B - 45; 
                 
                 const stampArr = companyData.stamp || [];
-                if (stampArr.length) pdf.addImage(stampArr[stampArr.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35);
+                if (stampArr.length) {
+                    try {
+                        pdf.addImage(stampArr[stampArr.length - 1].data, MARGIN_L, finalY, 35, 35, 'STAMP', 'FAST');
+                    } catch(e) { console.error("Stamp Error:", e); }
+                }
                 
                 const sigArr = companyData.digitalSignature || [];
-                if (sigArr.length) pdf.addImage(sigArr[sigArr.length - 1].data, 'PNG', 145, finalY + 10, 45, 20);
+                if (sigArr.length) {
+                    try {
+                        pdf.addImage(sigArr[sigArr.length - 1].data, 145, finalY + 10, 45, 20, 'SIG', 'FAST');
+                    } catch(e) { console.error("Signature Error:", e); }
+                }
                 
                 finalY += 42;
                 pdf.setFont("helvetica", "bold");
