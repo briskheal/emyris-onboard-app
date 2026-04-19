@@ -1030,7 +1030,7 @@ app.post('/api/admin/render-template', async (req, res) => {
             'COMPANY_NAME': company.name,
             'SIGNATORY_NAME': company.signatoryName || '',
             'SIGNATORY_DESG': company.signatoryDesignation || '',
-            'REF_NO': applicant.refNo || 'PENDING',
+            'REF_NO': applicant.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? company.apptCounter : company.offerCounter) || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`,
             'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             'EMP_CODE': applicant.formData?.empCode || 'TBD'
         };

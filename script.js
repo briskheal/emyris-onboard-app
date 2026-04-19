@@ -3668,7 +3668,10 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     const USABLE_W = 210 - MARGIN_L - MARGIN_R; 
     const LINE_H = (FONT_SIZE * 0.58); 
 
-    const refNo = app.refNo || "REF/PENDING";
+    const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
+    const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
+    const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
+    const refNo = app.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? companyData.apptCounter : companyData.offerCounter) || 1001}/${fyShort}`;
     const todayDate = new Date().toLocaleDateString('en-GB');
 
     // Clean template: Remove placeholders if we are printing them in top-right
@@ -3695,38 +3698,16 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         return html;
     })();
     
-    let yMarker = MARGIN_T;
-    
-    const drawPageExtras = () => {
+    // Rethink: We draw Extras after HTML completes to keep it simple and avoid monkey-patching.
+    const drawPageExtras = (targetDoc) => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
             const val = lhArr[lhArr.length - 1].data;
-            doc.addImage(val, 'PNG', 0, 0, 210, 297);
+            // Draw as background
+            targetDoc.addImage(val, 'PNG', 0, 0, 210, 297);
         }
     };
 
-    drawPageExtras();
-
-    // Monkey-patch to ensure background/header is drawn on all newly auto-generated pages
-    const originalAddPage = doc.addPage.bind(doc);
-    doc.addPage = function() {
-        originalAddPage(...arguments);
-        drawPageExtras();
-        return doc;
-    };
-    
-    // Draw Ref No & Date in TOP RIGHT
-    doc.setFont(FONT_TYPE, "bold");
-    doc.setFontSize(FONT_SIZE);
-    doc.text(`Ref: ${refNo}`, 188, yMarker, { align: 'right' });
-    yMarker += LINE_H;
-    doc.text(`Date: ${todayDate}`, 188, yMarker, { align: 'right' });
-    yMarker += LINE_H * 2; // Extra gap after metadata
-
-    // Instead of raw text splitting, we use doc.html onto the precise container
-    // To do this reliably with drawPageExtras spanning multiple pages, we first draw html 
-    // And intercept adding pages by hooking or drawing overlay after.
-    
     return new Promise((resolve) => {
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = mergedHTML;
@@ -3757,18 +3738,20 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             callback: function (pdf) {
                 document.body.removeChild(tempContainer);
 
-                // html2canvas doesn't know about `drawPageExtras`, so we must draw it retroactively on all pages.
-                // It also creates fresh blank pages. We draw our background on them.
+                // Rethink: Simplified post-generation loop to apply letterhead and metadata
                 const pageCount = pdf.internal.getNumberOfPages();
                 for(let i = 1; i <= pageCount; i++) {
                     pdf.setPage(i);
-                    // We must use image in background, but jsPDF paints over. 
-                    // Actually, drawPageExtras doesn't erase text if drawn correctly, but to avoid overlapping issues,
-                    // doc.html has already painted text. If we draw image now it might be behind because jsPDF is cumulative vector?
-                    // NO, jsPDF draws in z-index order. So image drawn now covers text!
-                    // BUT wait! `doc.html` is vector! We can hook but jsPDF `insertPage` is complex.
+                    drawPageExtras(pdf);
                     
-                    // IF we are dealing with a standard header, let's just draw the Header & Signatory on the LAST page.
+                    if (i === 1) {
+                        // Draw Ref No & Date ONLY on first page
+                        pdf.setFont(FONT_TYPE, "bold");
+                        pdf.setFontSize(FONT_SIZE);
+                        pdf.setTextColor(0, 0, 0);
+                        pdf.text(`Ref: ${refNo}`, 188, MARGIN_T, { align: 'right' });
+                        pdf.text(`Date: ${todayDate}`, 188, MARGIN_T + LINE_H, { align: 'right' });
+                    }
                 }
 
                 // Since we need background first, doc.html takes over. We can't safely insert backgrounds UNDER html2canvas without complex API.
@@ -3809,9 +3792,21 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
     const sal = app.salaryBreakup || {};
     const totalMonthly = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
     const totalAnnual = totalMonthly * 12;
+    const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
+    const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
+    const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
+    
+    // Determine prefix based on current context (fallback to OFR)
+    let prefix = "EMY/OFR";
+    let counter = companyData.offerCounter || 1001;
+    
+    // We try to guess the type if not provided, though fillLetterPlaceholders usually doesn't know the type.
+    // However, if app.refNo is missing, we can construct a placeholder one.
+    const simRef = app.refNo || `${prefix}/${counter}/${fyShort} (SIM)`;
+
     const placeholders = {
         "{{TODAY_DATE}}": new Date().toLocaleDateString('en-GB'),
-        "{{REF_NO}}": app.refNo || "REF/PENDING",
+        "{{REF_NO}}": simRef,
         "{{TITLE}}": (app.title || ((fd.gender||"").toLowerCase() === 'male' ? 'Mr.' : 'Ms.')).toUpperCase(),
         "{{TITLE_SHORT}}": app.title || ((fd.gender||"").toLowerCase() === 'male' ? 'Mr.' : 'Ms.'),
         "{{FULL_NAME}}": (app.fullName || "").toUpperCase(),
