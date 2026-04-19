@@ -3769,6 +3769,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                 // We know doc.html leaves us at the last page.
                 
                 // Signatory Logic
+                const pageCount = pdf.internal ? pdf.internal.getNumberOfPages() : pdf.getNumberOfPages();
                 pdf.setPage(pageCount);
                 // Approximate Y position - sadly html() doesn't return final Y. We could use margins reliably by leaving space.
                 // Let's draw signature at fixed bottom for robust layout since HTML pushed content.
