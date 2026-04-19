@@ -3825,85 +3825,90 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
 
     return new Promise((resolve) => {
         const tempContainer = document.createElement('div');
+        tempContainer.id = "pdf_rendering_chamber";
         tempContainer.innerHTML = mergedHTML;
         
         // CSS Optimization for High-Fidelity Rendering
         const pxWidth = Math.floor(USABLE_W * 3.7795); // Standard 96 DPI conversion
         tempContainer.style.width = pxWidth + 'px';
+        tempContainer.style.minHeight = '1000px'; 
         tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
         tempContainer.style.fontSize = (FONT_SIZE * 1.333) + 'px'; 
         tempContainer.style.lineHeight = '1.5';
         tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
-        tempContainer.style.position = 'absolute';
-        tempContainer.style.top = '-10000px'; // Move far off-screen instead of opacity: 0
-        tempContainer.style.left = '-10000px';
-        tempContainer.style.background = 'white'; // Use white background for the DOM element to ensure html2canvas sees it
         
-        // Force every child to have solid black text if not already set, and transparent background
+        // CRITICAL FIX: Use fixed/z-index instead of -10000px to ensure browser calculates layout/styles correctly
+        tempContainer.style.position = 'fixed';
+        tempContainer.style.top = '0';
+        tempContainer.style.left = '0';
+        tempContainer.style.zIndex = '-9999';
+        tempContainer.style.background = '#ffffff'; 
+        tempContainer.style.visibility = 'visible';
+        
+        // Force every child to have solid black text and transparent background
         const allChildren = tempContainer.querySelectorAll('*');
         allChildren.forEach(child => {
-            const style = window.getComputedStyle(child);
-            // If text is too light, force black
-            if (style.color === 'rgb(255, 255, 255)' || style.color.includes('241, 245, 249')) {
-                child.style.setProperty('color', '#000000', 'important');
-            }
+            child.style.setProperty('color', '#000000', 'important');
             child.style.backgroundColor = 'transparent';
         });
 
         document.body.appendChild(tempContainer);
 
-        doc.html(tempContainer, {
-            x: MARGIN_L,
-            y: MARGIN_T, // Start at the header margin
-            width: USABLE_W,
-            windowWidth: pxWidth,
-            autoPaging: 'text',
-            margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L],
-            html2canvas: { 
-                backgroundColor: null, 
-                scale: 2, // Use 2 for crisp text
-                logging: false,
-                useCORS: true,
-                allowTaint: true
-            },
-            callback: function (pdf) {
-                document.body.removeChild(tempContainer);
+        // Small delay to allow the browser to compute styles/layout before capture
+        setTimeout(() => {
+            doc.html(tempContainer, {
+                x: MARGIN_L,
+                y: MARGIN_T, 
+                width: USABLE_W,
+                windowWidth: pxWidth,
+                autoPaging: 'text',
+                margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L],
+                html2canvas: { 
+                    backgroundColor: '#ffffff', 
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true
+                },
+                callback: function (pdf) {
+                    document.body.removeChild(tempContainer);
 
-                const totalPages = pdf.internal.getNumberOfPages();
-                
-                // Signatory Logic (Always on the final page)
-                pdf.setPage(totalPages);
-                let finalY = PAGE_H - MARGIN_B - 45; 
-                
-                const stampArr = companyData.stamp || [];
-                if (stampArr.length) {
-                    try {
-                        pdf.addImage(stampArr[stampArr.length - 1].data, MARGIN_L, finalY, 35, 35, 'STAMP', 'FAST');
-                    } catch(e) { console.error("Stamp Error:", e); }
-                }
-                
-                const sigArr = companyData.digitalSignature || [];
-                if (sigArr.length) {
-                    try {
-                        pdf.addImage(sigArr[sigArr.length - 1].data, 145, finalY + 10, 45, 20, 'SIG', 'FAST');
-                    } catch(e) { console.error("Signature Error:", e); }
-                }
-                
-                finalY += 42;
-                pdf.setFont("helvetica", "bold");
-                pdf.setFontSize(FONT_SIZE);
-                pdf.setTextColor(0, 0, 0);
-                pdf.text("Authorized Signatory", MARGIN_L, finalY);
-                pdf.text(companyData.signatoryName || "", 145, finalY);
-                pdf.setFontSize(9);
-                pdf.setFont("helvetica", "normal");
-                pdf.text(companyData.name, MARGIN_L, finalY + 5);
-                pdf.text(companyData.signatoryDesignation || "", 145, finalY + 5);
+                    const totalPages = pdf.internal.getNumberOfPages();
+                    
+                    // Signatory Logic (Always on the final page)
+                    pdf.setPage(totalPages);
+                    let finalY = PAGE_H - MARGIN_B - 45; 
+                    
+                    const stampArr = companyData.stamp || [];
+                    if (stampArr.length) {
+                        try {
+                            pdf.addImage(stampArr[stampArr.length - 1].data, MARGIN_L, finalY, 35, 35, 'STAMP', 'FAST');
+                        } catch(e) { console.error("Stamp Error:", e); }
+                    }
+                    
+                    const sigArr = companyData.digitalSignature || [];
+                    if (sigArr.length) {
+                        try {
+                            pdf.addImage(sigArr[sigArr.length - 1].data, 145, finalY + 10, 45, 20, 'SIG', 'FAST');
+                        } catch(e) { console.error("Signature Error:", e); }
+                    }
+                    
+                    finalY += 42;
+                    pdf.setFont("helvetica", "bold");
+                    pdf.setFontSize(FONT_SIZE);
+                    pdf.setTextColor(0, 0, 0);
+                    pdf.text("Authorized Signatory", MARGIN_L, finalY);
+                    pdf.text(companyData.signatoryName || "", 145, finalY);
+                    pdf.setFontSize(9);
+                    pdf.setFont("helvetica", "normal");
+                    pdf.text(companyData.name, MARGIN_L, finalY + 5);
+                    pdf.text(companyData.signatoryDesignation || "", 145, finalY + 5);
 
-                resolve({ doc: pdf });
-            }
-        });
+                    resolve({ doc: pdf });
+                }
+            });
+        }, 300); // 300ms is usually enough for a full layout pass
     });
 }
 
