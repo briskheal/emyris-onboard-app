@@ -3771,6 +3771,14 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     // Clean template: Remove placeholders if we are printing them in top-right
     let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
     
+    // 0. Prepare Metadata Header for insertion into HTML (Ensures alignment and rendering consistency)
+    const headerHtml = `
+        <div style="text-align: right; margin-bottom: 20px; font-weight: bold; font-family: ${FONT_TYPE === 'helvetica' ? 'Arial, sans-serif' : 'serif'};">
+            <div>Ref: ${refNo}</div>
+            <div>Date: ${todayDate}</div>
+        </div>
+    `;
+
     const mergedHTML = (() => {
         let html = fillLetterPlaceholders(cleanedTemplate, app, true);
         
@@ -3784,42 +3792,36 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             });
         
         // Inject a wrapper to kill any viewport-relative heights (vh) that cause the 100+ page bug
-        return `<div class="pdf-render-wrapper" style="height: auto !important; min-height: 0 !important; overflow: visible !important; background: transparent !important; color: #000 !important;">${html}</div>`;
+        // We also inject the Ref/Date header here so it's part of the unified HTML rendering
+        return `
+            <div class="pdf-render-wrapper" style="height: auto !important; min-height: 0 !important; overflow: visible !important; background: transparent !important; color: #000000 !important; font-family: sans-serif;">
+                ${headerHtml}
+                ${html}
+            </div>`;
     })();
-    let yMarker = MARGIN_T;
 
-    const drawPageExtras = (targetDoc, isNewPage = false) => {
+    const drawPageExtras = (targetDoc) => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
             const asset = lhArr[lhArr.length - 1];
             const val = asset.data;
             try {
+                // Ensure the background is added at the absolute back for every page
                 targetDoc.addImage(val, 0, 0, 210, 297, `LH_${asset._id}`, 'FAST');
             } catch (err) {
                 console.error("❌ Failed to add background image:", err);
             }
-        } else {
-            console.warn("⚠️ No active letterhead found for generation.");
         }
     };
 
     // --- BACKGROUND IMAGE LOGIC ---
+    // Subscribe to addPage to ensure every new page gets the letterhead
     doc.internal.events.subscribe('addPage', function() {
-        drawPageExtras(this, true);
+        drawPageExtras(this);
     });
 
-    // Draw on the very first page manually BEFORE any text or html() starts
+    // Draw on the very first page manually
     drawPageExtras(doc); 
-
-
-    // Insert top-right metadata cleanly
-    doc.setFont(FONT_TYPE, "bold");
-    doc.setFontSize(FONT_SIZE);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Ref: ${refNo}`, 188, yMarker, { align: 'right' });
-    yMarker += LINE_H;
-    doc.text(`Date: ${todayDate}`, 188, yMarker, { align: 'right' });
-    yMarker += LINE_H * 2; 
 
     return new Promise((resolve) => {
         const tempContainer = document.createElement('div');
@@ -3830,37 +3832,37 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         tempContainer.style.width = pxWidth + 'px';
         tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
         tempContainer.style.fontSize = (FONT_SIZE * 1.333) + 'px'; 
-        tempContainer.style.lineHeight = '1.5'; // User requested ~1.5
+        tempContainer.style.lineHeight = '1.5';
         tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
-        tempContainer.style.position = 'fixed';
-        tempContainer.style.top = '0';
-        tempContainer.style.left = '0';
-        tempContainer.style.zIndex = '-9999';
-        tempContainer.style.opacity = '0';
-        tempContainer.style.pointerEvents = 'none';
-        tempContainer.style.background = 'transparent';
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.top = '-10000px'; // Move far off-screen instead of opacity: 0
+        tempContainer.style.left = '-10000px';
+        tempContainer.style.background = 'white'; // Use white background for the DOM element to ensure html2canvas sees it
         
-        // Force every child to have transparent background to prevent overlap issues
-        const children = tempContainer.querySelectorAll('*');
-        children.forEach(child => {
-            if (!child.style.backgroundColor || child.style.backgroundColor === '' || child.style.backgroundColor === 'initial') {
-                child.style.backgroundColor = 'transparent';
+        // Force every child to have solid black text if not already set, and transparent background
+        const allChildren = tempContainer.querySelectorAll('*');
+        allChildren.forEach(child => {
+            const style = window.getComputedStyle(child);
+            // If text is too light, force black
+            if (style.color === 'rgb(255, 255, 255)' || style.color.includes('241, 245, 249')) {
+                child.style.setProperty('color', '#000000', 'important');
             }
+            child.style.backgroundColor = 'transparent';
         });
 
         document.body.appendChild(tempContainer);
 
         doc.html(tempContainer, {
             x: MARGIN_L,
-            y: yMarker,
+            y: MARGIN_T, // Start at the header margin
             width: USABLE_W,
             windowWidth: pxWidth,
             autoPaging: 'text',
             margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L],
             html2canvas: { 
                 backgroundColor: null, 
-                scale: 1.5, // Reduced from 2 for "simpler" (smaller) file size while keeping readability
+                scale: 2, // Use 2 for crisp text
                 logging: false,
                 useCORS: true,
                 allowTaint: true
