@@ -3843,6 +3843,17 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{APPT_COUNTER}}": companyData.apptCounter || 1001,
         "{{MISC_COUNTER}}": companyData.miscCounter || 1001,
         "{{EMP_CODE_COUNTER}}": companyData.empCodeCounter || 1001,
+        // Individual Salary Components
+        "{{SAL_BASIC}}": (Number(sal.basic) || 0).toLocaleString('en-IN'),
+        "{{SAL_HRA}}": (Number(sal.hra) || 0).toLocaleString('en-IN'),
+        "{{SAL_LTA}}": (Number(sal.lta) || 0).toLocaleString('en-IN'),
+        "{{SAL_CONV}}": (Number(sal.conveyance) || 0).toLocaleString('en-IN'),
+        "{{SAL_MED}}": (Number(sal.medical) || 0).toLocaleString('en-IN'),
+        "{{SAL_SPECIAL}}": (Number(sal.special) || 0).toLocaleString('en-IN'),
+        "{{SAL_EDU}}": (Number(sal.edu) || 0).toLocaleString('en-IN'),
+        "{{SAL_FIXED}}": (Number(sal.fixed) || 0).toLocaleString('en-IN'),
+        "{{SAL_GROSS_MONTHLY}}": totalMonthly.toLocaleString('en-IN'),
+        "{{SAL_GROSS_ANNUAL}}": totalAnnual.toLocaleString('en-IN'),
         "{{SALARY_BREAKUP}}": (() => {
             const sal = app.salaryBreakup || {};
             const formatRs = (num) => 'Rs. ' + (Number(num) || 0).toLocaleString('en-IN');
