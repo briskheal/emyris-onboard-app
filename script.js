@@ -3619,15 +3619,8 @@ async function emailLetter(email, type) {
 
 // Robust PDF Saving Trigger
 function savePDF(doc, filename) {
-    const blob = doc.output('blob');
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    setTimeout(() => URL.revokeObjectURL(url), 100);
+    // native jsPDF save is more robust than manual blob creation on Windows/Chrome
+    doc.save(filename);
 }
 
 async function generateLetterPDF(email, type, htmlOverride = null) {
@@ -3648,7 +3641,9 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         }
     }
     
-    if (!template) return showToast("?? Please configure the letter template in Setup first.", "warning");
+    if (!template || template.trim() === "" || template === "<br>") {
+        return showToast("⚠️ Letter template is empty. Please configure it in Setup first.", "warning");
+    }
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -3680,23 +3675,17 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     const mergedHTML = (() => {
         let html = fillLetterPlaceholders(cleanedTemplate, app, true);
         
-        // Final Safety: If the HTML contains hardcoded 'white' or 'dark-navy' styles,
-        // we must swap them for PDF-safe black text and transparent backgrounds.
+        // Final Safety: Force visible colors for PDF (Black text on transparent)
+        // This handles whites, near-whites, and dark backgrounds from the editor
         html = html
-            .split('color: #ffffff').join('color: #000000')
-            .split('color:#ffffff').join('color:#000000')
-            .split('color: #fff').join('color: #000000')
-            .split('color:#fff').join('color:#000000')
-            .split('color: white').join('color: #000000')
-            .split('color:white').join('color: #000000')
-            .split('color: #f1f5f9').join('color: #000000')
-            .split('color:#f1f5f9').join('color:#000000')
-            .split('color: rgb(255, 255, 255)').join('color: #000000')
-            .split('color: rgb(241, 245, 249)').join('color: #000000')
-            .split('background: #2c3e50').join('background: transparent')
-            .split('background:#2c3e50').join('background: transparent');
-            
-        return html;
+            .replace(/color\s*:\s*(#ffffff|#fff|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)|rgb\(\s*241\s*,\s*245\s*,\s*249\s*\)|#f1f5f9)/gi, 'color: #000000')
+            .replace(/background\s*:\s*([^;>]+)/gi, (match, p1) => {
+                if (p1.includes('#2c3e50') || p1.includes('dark') || p1.includes('navy')) return 'background: transparent';
+                return match;
+            });
+        
+        // Inject a wrapper to kill any viewport-relative heights (vh) that cause the 100+ page bug
+        return `<div style="height: auto !important; min-height: 0 !important; overflow: visible !important;">${html}</div>`;
     })();
     let yMarker = MARGIN_T;
 
@@ -3709,16 +3698,8 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         }
     };
 
-    // Draw on the very first page before HTML renders
-    drawPageExtras(doc);
-
-    // Monkey-patch to natively draw on all auto-generated pages before HTML2Canvas paints the text slice
-    const originalAddPage = doc.addPage.bind(doc);
-    doc.addPage = function() {
-        originalAddPage(...arguments);
-        drawPageExtras(doc);
-        return doc;
-    };
+    // Remove initial drawing - we now do it exclusively in the callback to prevent double-stamping page 1
+    // drawPageExtras(doc); 
 
     // Insert top-right metadata cleanly
     doc.setFont(FONT_TYPE, "bold");
@@ -3732,23 +3713,31 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     return new Promise((resolve) => {
         const tempContainer = document.createElement('div');
         tempContainer.innerHTML = mergedHTML;
-        // Optimization for single-page PDF output
-        const pxWidth = (USABLE_W * 3.7795); // 96 DPI conversion
+        
+        // CSS Optimization for High-Fidelity Rendering
+        const pxWidth = Math.floor(USABLE_W * 3.7795); // Standard 96 DPI conversion
         tempContainer.style.width = pxWidth + 'px';
         tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
         tempContainer.style.fontSize = (FONT_SIZE * 1.333) + 'px'; 
-        tempContainer.style.lineHeight = '1.3'; 
+        tempContainer.style.lineHeight = '1.4'; 
         tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
         tempContainer.style.position = 'absolute';
-        tempContainer.style.top = '0px';
-        tempContainer.style.left = '0px'; 
-        tempContainer.style.zIndex = '-9999';
-        tempContainer.style.background = 'transparent'; // CRITICAL: must be transparent!
-
+        tempContainer.style.top = '-10000px'; // Move far off-screen instead of just z-index
+        tempContainer.style.left = '-10000px'; 
+        tempContainer.style.background = 'transparent';
         tempContainer.style.padding = '0';
         tempContainer.style.margin = '0';
-        tempContainer.style.whiteSpace = 'pre-wrap';
+        tempContainer.style.boxSizing = 'border-box';
+        
+        // Force every child to have transparent background to prevent overlap issues
+        const children = tempContainer.querySelectorAll('*');
+        children.forEach(child => {
+            if (!child.style.backgroundColor || child.style.backgroundColor === '' || child.style.backgroundColor === 'initial') {
+                child.style.backgroundColor = 'transparent';
+            }
+        });
+
         document.body.appendChild(tempContainer);
 
         doc.html(tempContainer, {
@@ -3757,25 +3746,29 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             width: USABLE_W,
             windowWidth: pxWidth,
             autoPaging: 'text',
-            margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L], // top, right, bottom, left
+            margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L],
             html2canvas: { 
-                backgroundColor: null, // CRITICAL: forces html2canvas to not paint white over our letterhead!
-                scale: 2 
+                backgroundColor: null, 
+                scale: 1.5, // Reduced from 2 for "simpler" (smaller) file size while keeping readability
+                logging: false,
+                useCORS: true,
+                allowTaint: true
             },
             callback: function (pdf) {
                 document.body.removeChild(tempContainer);
 
-
-                // A very robust compromise: We draw the stamp and signature relative to the end of the document.
-                let finalY = MARGIN_T; 
-                // We know doc.html leaves us at the last page.
+                // --- POST-RENDER LETTERHEAD APPLICATION ---
+                // We loop through ALL generated pages and stamp the letterhead on TOP of the HTML content.
+                // This guarantees visibility even if elements had accidental background colors.
+                const totalPages = pdf.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    drawPageExtras(pdf); // Re-stamp letterhead on top
+                }
                 
-                // Signatory Logic
-                const pageCount = pdf.internal ? pdf.internal.getNumberOfPages() : pdf.getNumberOfPages();
-                pdf.setPage(pageCount);
-                // Approximate Y position - sadly html() doesn't return final Y. We could use margins reliably by leaving space.
-                // Let's draw signature at fixed bottom for robust layout since HTML pushed content.
-                finalY = PAGE_H - MARGIN_B - 45; 
+                // Signatory Logic (Always on the final page)
+                pdf.setPage(totalPages);
+                let finalY = PAGE_H - MARGIN_B - 45; 
                 
                 const stampArr = companyData.stamp || [];
                 if (stampArr.length) pdf.addImage(stampArr[stampArr.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35);
@@ -3786,6 +3779,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                 finalY += 42;
                 pdf.setFont("helvetica", "bold");
                 pdf.setFontSize(FONT_SIZE);
+                pdf.setTextColor(0, 0, 0);
                 pdf.text("Authorized Signatory", MARGIN_L, finalY);
                 pdf.text(companyData.signatoryName || "", 145, finalY);
                 pdf.setFontSize(9);
@@ -3872,7 +3866,7 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
             const headerBg = "rgba(128, 128, 128, 0.15)";
 
             return `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid ${borderColor};">
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; border: 1px solid ${borderColor}; color: inherit;">
                 <thead>
                     <tr style="background: ${headerBg};">
                         <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: left;">Earnings Components</th>
