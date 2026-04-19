@@ -880,15 +880,23 @@ app.post('/api/admin/toggle-access', async (req, res) => {
 app.post('/api/admin/divisions', async (req, res) => {
     try {
         const { name } = req.body;
-        const existing = await Division.findOne({ name: name.toUpperCase().trim() });
+        if (!name) return res.status(400).json({ error: 'Name required' });
+        
+        const cleanName = name.toUpperCase().trim();
+        // Strict duplicate check across ALL records (including inactive ones)
+        const existing = await Division.findOne({ name: cleanName });
+        
         if (existing) {
             existing.active = true;
             await existing.save();
         } else {
-            await Division.create({ name: name.toUpperCase().trim() });
+            await Division.create({ name: cleanName });
         }
         res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+    } catch (e) { 
+        console.error("Division add error:", e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 app.post('/api/admin/hqs', async (req, res) => {
@@ -1483,10 +1491,18 @@ app.get('/api/admin/system/export', async (req, res) => {
 
 app.post('/api/admin/system/clear', async (req, res) => {
     try {
+        const { includeSetup } = req.body;
+        
         await Applicant.deleteMany({});
         // CASCADING DELETE: Remove all applicant documents from Asset DB
         if (connAssets) {
             await Asset.deleteMany({ category: { $regex: /^doc_/ } });
+        }
+        
+        if (includeSetup) {
+            console.log("🧨 Total Wipeout: Clearing Divisions and HQs...");
+            await Division.deleteMany({});
+            await HQ.deleteMany({});
         }
         
         const company = await Company.findOne();
@@ -1497,8 +1513,11 @@ app.post('/api/admin/system/clear', async (req, res) => {
             company.empCodeCounter = 1001;
             await company.save();
         }
-        res.json({ success: true, message: 'Applicant database cleared and asset testimonials removed.' });
-    } catch (e) { res.status(500).json({ error: 'Clear failed' }); }
+        res.json({ success: true, message: 'Database cleared. ' + (includeSetup ? 'Divisions and HQs were also removed.' : '') });
+    } catch (e) { 
+        console.error("Nuke failed:", e);
+        res.status(500).json({ error: 'Clear failed' }); 
+    }
 });
 
 app.post('/api/admin/delete-applicant', async (req, res) => {

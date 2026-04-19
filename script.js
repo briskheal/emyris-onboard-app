@@ -55,9 +55,15 @@ async function nukeDatabase() {
         showToast("❌ Clear cancelled. Safety check failed.", "error");
         return;
     }
+    const confirm3 = confirm("❓ Also clear all Divisions and HQs? (Click 'OK' for a total fresh start)");
+    
     try {
         lockUI("☢️ Nuking Database... Please Wait");
-        const res = await fetch('/api/admin/system/clear', { method: 'POST' });
+        const res = await fetch('/api/admin/system/clear', { 
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ includeSetup: confirm3 })
+        });
         if ((await res.json()).success) {
             showToast("✅ Database cleared successfully", "success");
             await fetchCompanyData();
@@ -3111,11 +3117,17 @@ async function populateDivisions(force = false) {
 }
 
 async function addDivision(source = 'setup') {
+    const btnId = source === 'profile' ? null : null; // Logic below uses generic event target if available
+    
     const inputId = source === 'profile' ? 'profileNewDivisionInput' : 'newDivisionInput';
     const input = document.getElementById(inputId);
     const name = input ? input.value.trim() : "";
     
     if (!name) return;
+    
+    // Prevent double-clicking
+    if (window._addingDiv) return;
+    window._addingDiv = true;
     
     try {
         const res = await fetch('/api/admin/divisions', {
@@ -3133,6 +3145,8 @@ async function addDivision(source = 'setup') {
         }
     } catch (e) {
         showToast("❌ Communication error", "error");
+    } finally {
+        window._addingDiv = false;
     }
 }
 
@@ -3140,6 +3154,9 @@ async function addHQ() {
     const input = document.getElementById('profileNewHQInput');
     const name = input ? input.value.trim() : "";
     if (!name) return;
+
+    if (window._addingHQ) return;
+    window._addingHQ = true;
 
     try {
         const res = await fetch('/api/admin/hqs', {
@@ -3153,7 +3170,11 @@ async function addHQ() {
             showToast(`✅ HQ "${name}" added`, "success");
             await populateHQs(true);
         }
-    } catch (e) { showToast("❌ HQ addition failed", "error"); }
+    } catch (e) { 
+        showToast("❌ HQ addition failed", "error"); 
+    } finally {
+        window._addingHQ = false;
+    }
 }
 
 async function populateManagers() {
