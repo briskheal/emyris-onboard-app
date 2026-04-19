@@ -73,7 +73,8 @@
                     </div>
                     <div class="form-group">
                         <label>Target Annual Salary (₹)</label>
-                        <input type="number" id="ex_salary" placeholder="e.g. 500000">
+                        <input type="number" id="ex_salary" placeholder="e.g. 500000" oninput="updateSalaryWords('ex_salary', 'ex_salary_words')">
+                        <span id="ex_salary_words" style="display:block; font-size:0.7rem; color:var(--accent); margin-top:4px; font-weight:600;"></span>
                     </div>
                 </div>
                 <div class="input-grid" style="grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-top: 1rem;">
@@ -1192,7 +1193,8 @@
                         </div>
                         <div class="form-group">
                             <label for="salary">Finalized Salary / Annum</label>
-                            <input type="number" id="salary" name="salary" required placeholder="Annual Amount (e.g. 600000)">
+                            <input type="number" id="salary" name="salary" required placeholder="Annual Amount (e.g. 600000)" oninput="updateSalaryWords('salary', 'salary_words')">
+                            <span id="salary_words" style="display:block; font-size:0.7rem; color:var(--accent); margin-top:4px; font-weight:600;"></span>
                         </div>
                         <div class="form-group">
                             <label for="epf">EPF No</label>

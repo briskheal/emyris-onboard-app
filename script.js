@@ -155,6 +155,44 @@ async function submitExistingStaff(event) {
     }
 }
 
+// --- NUMBER TO WORDS (INDIAN SYSTEM) ---
+function numberToWords(num) {
+    if (!num || isNaN(num) || num <= 0) return "";
+    num = Math.floor(num); // Ensure integer
+    const a = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    const count = (n) => {
+        if (n < 20) return a[n];
+        let s = b[Math.floor(n / 10)];
+        if (n % 10 > 0) s += ' ' + a[n % 10];
+        return s;
+    };
+    if (num === 0) return 'zero';
+    let words = '';
+    if (Math.floor(num / 10000000) > 0) { words += count(Math.floor(num / 10000000)) + ' crore '; num %= 10000000; }
+    if (Math.floor(num / 100000) > 0) { words += count(Math.floor(num / 100000)) + ' lakh '; num %= 100000; }
+    if (Math.floor(num / 1000) > 0) { words += count(Math.floor(num / 1000)) + ' thousand '; num %= 1000; }
+    if (Math.floor(num / 100) > 0) { words += count(Math.floor(num / 100)) + ' hundred '; num %= 100; }
+    if (num > 0) {
+        if (words !== '') words += 'and ';
+        words += count(num);
+    }
+    return words.trim().toLowerCase(); // Convert to small letters as requested
+}
+
+function updateSalaryWords(inputId, outputId) {
+    const input = document.getElementById(inputId);
+    const output = document.getElementById(outputId);
+    if (!input || !output) return;
+    
+    const val = parseFloat(input.value);
+    if (!val || isNaN(val) || val <= 0) {
+        output.innerText = "";
+        return;
+    }
+    output.innerText = `(rupees ${numberToWords(val)} only)`;
+}
+
 // --- UI HELPERS ---
 function lockUI(msg = "🏋️ Processing... Please Wait") {
     isSaving = true;
