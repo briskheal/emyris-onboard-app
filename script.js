@@ -79,6 +79,7 @@ function openExistingStaffModal() {
     const modal = document.getElementById('existingStaffModal');
     if (modal) {
         modal.classList.remove('hidden');
+        modal.style.pointerEvents = 'all'; // Enable interaction when open
         // Small delay to allow CSS block rendering before fading in opacity
         setTimeout(() => modal.style.opacity = '1', 10);
         
@@ -100,10 +101,12 @@ function closeExistingStaffModal() {
     const modal = document.getElementById('existingStaffModal');
     if (modal) {
         modal.style.opacity = '0';
+        modal.style.pointerEvents = 'none'; // Disable interactions when fading out
         setTimeout(() => modal.classList.add('hidden'), 300);
         document.getElementById('existingStaffForm').reset();
     }
 }
+
 
 async function submitExistingStaff(event) {
     event.preventDefault();
