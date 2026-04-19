@@ -2028,6 +2028,12 @@ async function openVerificationView(email) {
     document.getElementById('v_salEdu').value = sal.edu || '';
     document.getElementById('v_salFixed').value = sal.fixed || '';
     if(typeof calcSalaryTotal === 'function') calcSalaryTotal();
+    
+    // Auto-prefill salary breakup if it was never set (saves admin manual click)
+    if (!sal.basic && app.formData?.salary && parseFloat(app.formData.salary) > 0) {
+        console.log("⚡ Auto-calculating initial salary breakup for admin...");
+        autoDistributeSalary();
+    }
 
     // 5. Pipeline Switches
     syncPipelineSwitches(app.tasks || {});
