@@ -3697,16 +3697,34 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         }
         return html;
     })();
-    
-    // Rethink: We draw Extras after HTML completes to keep it simple and avoid monkey-patching.
-    const drawPageExtras = (targetDoc) => {
+    let yMarker = MARGIN_T;
+
+    const drawPageExtras = () => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
             const val = lhArr[lhArr.length - 1].data;
-            // Draw as background
-            targetDoc.addImage(val, 'PNG', 0, 0, 210, 297);
+            doc.addImage(val, 'PNG', 0, 0, 210, 297);
         }
     };
+
+    // Draw first page letterhead
+    drawPageExtras();
+
+    // Monkey-patch jsPDF to draw letterhead on every new page BEFORE html2canvas renders text over it
+    const originalAddPage = doc.addPage.bind(doc);
+    doc.addPage = function() {
+        originalAddPage(...arguments);
+        drawPageExtras();
+        return doc;
+    };
+
+    // Draw metadata on first page only
+    doc.setFont(FONT_TYPE, "bold");
+    doc.setFontSize(FONT_SIZE);
+    doc.text(`Ref: ${refNo}`, 188, yMarker, { align: 'right' });
+    yMarker += LINE_H;
+    doc.text(`Date: ${todayDate}`, 188, yMarker, { align: 'right' });
+    yMarker += LINE_H * 2; 
 
     return new Promise((resolve) => {
         const tempContainer = document.createElement('div');
@@ -3722,7 +3740,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         tempContainer.style.position = 'fixed';
         tempContainer.style.top = '0';
         tempContainer.style.left = '200vw'; 
-        tempContainer.style.background = '#ffffff';
+        tempContainer.style.background = 'transparent';
         tempContainer.style.padding = '0';
         tempContainer.style.margin = '0';
         tempContainer.style.whiteSpace = 'pre-wrap';
@@ -3738,23 +3756,6 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             callback: function (pdf) {
                 document.body.removeChild(tempContainer);
 
-                // Rethink: Simplified post-generation loop to apply letterhead and metadata
-                const pageCount = pdf.internal.getNumberOfPages();
-                for(let i = 1; i <= pageCount; i++) {
-                    pdf.setPage(i);
-                    drawPageExtras(pdf);
-                    
-                    if (i === 1) {
-                        // Draw Ref No & Date ONLY on first page
-                        pdf.setFont(FONT_TYPE, "bold");
-                        pdf.setFontSize(FONT_SIZE);
-                        pdf.setTextColor(0, 0, 0);
-                        pdf.text(`Ref: ${refNo}`, 188, MARGIN_T, { align: 'right' });
-                        pdf.text(`Date: ${todayDate}`, 188, MARGIN_T + LINE_H, { align: 'right' });
-                    }
-                }
-
-                // Since we need background first, doc.html takes over. We can't safely insert backgrounds UNDER html2canvas without complex API.
                 // A very robust compromise: We draw the stamp and signature relative to the end of the document.
                 let finalY = MARGIN_T; 
                 // We know doc.html leaves us at the last page.
@@ -3855,19 +3856,17 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
             const total = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
                           (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
             
-            // Dynamic styles based on target (Screen vs PDF)
-            const tableColor = forPDF ? "#333333" : "#ffffff";
-            const borderColor = forPDF ? "#000000" : "#555";
-            const headerBg = forPDF ? "#f4f4f4" : "#2c3e50";
-            const headerTextColor = forPDF ? "#000000" : "#ffffff";
+            // Dynamic styles: use CSS inherit/transparent colors to work in both Dark Editor and White PDF automatically.
+            const borderColor = "#888";
+            const headerBg = "rgba(128, 128, 128, 0.15)";
 
             return `
-            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid ${borderColor}; color: ${tableColor};">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; font-size: 14px; border: 1px solid ${borderColor};">
                 <thead>
                     <tr style="background: ${headerBg};">
-                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: left; color: ${headerTextColor};">Earnings Components</th>
-                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">Amount (Monthly)</th>
-                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">Amount (Annual)</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: left;">Earnings Components</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">Amount (Monthly)</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">Amount (Annual)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -3879,7 +3878,7 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.special||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
-                    <tr style="font-weight: bold; background: ${headerBg}; color: ${headerTextColor};"><td style="border: 1px solid ${borderColor}; padding: 8px; color: ${headerTextColor};">Gross Total</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">${formatRs(total)}</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; color: ${headerTextColor};">${formatRs(total*12)}</td></tr>
+                    <tr style="font-weight: bold; background: ${headerBg};"><td style="border: 1px solid ${borderColor}; padding: 8px;">Gross Total</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(total)}</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(total*12)}</td></tr>
                 </tbody>
             </table>
             `;
