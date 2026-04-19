@@ -3678,23 +3678,24 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
     
     const mergedHTML = (() => {
-        let html = htmlOverride ? cleanedTemplate : fillLetterPlaceholders(cleanedTemplate, app, true);
+        let html = fillLetterPlaceholders(cleanedTemplate, app, true);
         
-        // Final Safety: If the HTML contains hardcoded 'white' or 'dark-navy' styles from the editor view,
-        // we must swap them for PDF-safe black/grey styles.
-        if (htmlOverride) {
-            html = html
-                .split('color: #ffffff').join('color: #000000')
-                .split('color:#ffffff').join('color:#000000')
-                .split('color: white').join('color: #000000')
-                .split('color:white').join('color: #000000')
-                .split('color: #f1f5f9').join('color: #000000')
-                .split('color:#f1f5f9').join('color:#000000')
-                .split('color: rgb(255, 255, 255)').join('color: #000000')
-                .split('color: rgb(241, 245, 249)').join('color: #000000')
-                .split('background: #2c3e50').join('background: #f4f4f4')
-                .split('background:#2c3e50').join('background:#f4f4f4');
-        }
+        // Final Safety: If the HTML contains hardcoded 'white' or 'dark-navy' styles,
+        // we must swap them for PDF-safe black text and transparent backgrounds.
+        html = html
+            .split('color: #ffffff').join('color: #000000')
+            .split('color:#ffffff').join('color:#000000')
+            .split('color: #fff').join('color: #000000')
+            .split('color:#fff').join('color:#000000')
+            .split('color: white').join('color: #000000')
+            .split('color:white').join('color: #000000')
+            .split('color: #f1f5f9').join('color: #000000')
+            .split('color:#f1f5f9').join('color:#000000')
+            .split('color: rgb(255, 255, 255)').join('color: #000000')
+            .split('color: rgb(241, 245, 249)').join('color: #000000')
+            .split('background: #2c3e50').join('background: transparent')
+            .split('background:#2c3e50').join('background: transparent');
+            
         return html;
     })();
     let yMarker = MARGIN_T;
@@ -3739,9 +3740,10 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         tempContainer.style.lineHeight = '1.3'; 
         tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
-        tempContainer.style.position = 'fixed';
-        tempContainer.style.top = '0';
-        tempContainer.style.left = '200vw'; 
+        tempContainer.style.position = 'absolute';
+        tempContainer.style.top = '0px';
+        tempContainer.style.left = '0px'; 
+        tempContainer.style.zIndex = '-9999';
         tempContainer.style.background = 'transparent'; // CRITICAL: must be transparent!
 
         tempContainer.style.padding = '0';
