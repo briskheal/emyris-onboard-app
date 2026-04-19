@@ -3768,38 +3768,6 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     const refNo = app.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? companyData.apptCounter : companyData.offerCounter) || 1001}/${fyShort}`;
     const todayDate = new Date().toLocaleDateString('en-GB');
 
-    // Clean template: Remove placeholders if we are printing them in top-right
-    let cleanedTemplate = template.split('{{REF_NO}}').join('').split('{{TODAY_DATE}}').join('');
-    
-    // 0. Prepare Metadata Header for insertion into HTML (Ensures alignment and rendering consistency)
-    const headerHtml = `
-        <div style="text-align: right; margin-bottom: 20px; font-weight: bold; font-family: ${FONT_TYPE === 'helvetica' ? 'Arial, sans-serif' : 'serif'};">
-            <div>Ref: ${refNo}</div>
-            <div>Date: ${todayDate}</div>
-        </div>
-    `;
-
-    const mergedHTML = (() => {
-        let html = fillLetterPlaceholders(cleanedTemplate, app, true);
-        
-        // Final Safety: Force visible colors for PDF (Black text on transparent)
-        // This handles whites, near-whites, and dark backgrounds from the editor
-        html = html
-            .replace(/color\s*:\s*(#ffffff|#fff|white|rgb\(\s*255\s*,\s*255\s*,\s*255\s*\)|rgb\(\s*241\s*,\s*245\s*,\s*249\s*\)|#f1f5f9)/gi, 'color: #000000')
-            .replace(/background\s*:\s*([^;>]+)/gi, (match, p1) => {
-                if (p1.includes('#2c3e50') || p1.includes('dark') || p1.includes('navy')) return 'background: transparent';
-                return 'background: transparent'; // Force ALL backgrounds transparent for PDF
-            });
-        
-        // Inject a wrapper to kill any viewport-relative heights (vh) that cause the 100+ page bug
-        // We also inject the Ref/Date header here so it's part of the unified HTML rendering
-        return `
-            <div class="pdf-render-wrapper" style="height: auto !important; min-height: 0 !important; overflow: visible !important; background: transparent !important; color: #000000 !important; font-family: sans-serif;">
-                ${headerHtml}
-                ${html}
-            </div>`;
-    })();
-
     const drawPageExtras = (targetDoc) => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
@@ -3824,61 +3792,85 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     drawPageExtras(doc); 
 
     return new Promise((resolve) => {
-        const tempContainer = document.createElement('div');
-        tempContainer.id = "pdf_rendering_chamber";
-        tempContainer.innerHTML = mergedHTML;
-        
-        // CSS Optimization for High-Fidelity Rendering
-        const pxWidth = Math.floor(USABLE_W * 3.7795); // Standard 96 DPI conversion
-        tempContainer.style.width = pxWidth + 'px';
-        tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
-        tempContainer.style.fontSize = (FONT_SIZE * 1.333) + 'px'; 
-        tempContainer.style.lineHeight = '1.5';
-        tempContainer.style.color = '#000000'; 
-        tempContainer.style.textAlign = ALIGN;
-        
-        // MARGIN INTEGRATION: Use padding instead of jsPDF 'y' param for better stability
-        tempContainer.style.paddingTop = MARGIN_T + 'mm';
-        tempContainer.style.paddingBottom = MARGIN_B + 'mm';
+        // 1. Create a truly isolated rendering environment using an IFrame
+        // This prevents the main app's dark theme and layout from leaking into the PDF
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.top = '0';
+        iframe.style.left = '0';
+        iframe.style.width = '210mm'; // Proper A4 width
+        iframe.style.height = '1000mm'; // Enough height for multi-page
+        iframe.style.visibility = 'hidden';
+        iframe.style.pointerEvents = 'none';
+        iframe.style.zIndex = '-10000';
+        document.body.appendChild(iframe);
 
-        // CRITICAL FIX: Ensure visibility and layout active for capture
-        tempContainer.style.position = 'fixed';
-        tempContainer.style.top = '0';
-        tempContainer.style.left = '0';
-        tempContainer.style.zIndex = '-9999';
-        tempContainer.style.background = '#ffffff'; 
-        tempContainer.style.visibility = 'visible';
+        const idoc = iframe.contentDocument || iframe.contentWindow.document;
         
-        // Force every child to have solid black text and NO height-locking (prevents 9-page bug)
-        const allChildren = tempContainer.querySelectorAll('*');
-        allChildren.forEach(child => {
-            child.style.setProperty('color', '#000000', 'important');
-            child.style.backgroundColor = 'transparent';
-            child.style.height = 'auto'; // CRITICAL: Stop containers from stretching
-            child.style.minHeight = '0';
-            child.style.maxHeight = 'none';
-        });
+        // 2. Inject a clean document structure with its own styles
+        idoc.open();
+        idoc.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <style>
+                    body { margin: 0; padding: 0; background: #ffffff; color: #000000; -webkit-print-color-adjust: exact; }
+                    .pdf-canvas { width: ${USABLE_W}mm; margin: 0; padding: ${MARGIN_T}mm ${MARGIN_R}mm ${MARGIN_B}mm ${MARGIN_L}mm; background: #ffffff; }
+                    .pdf-canvas * { max-width: 100%; box-sizing: border-box; }
+                    
+                    /* Force black text for everything inside the canvas */
+                    .pdf-canvas, .pdf-canvas * {
+                        color: #000000 !important;
+                        background-color: transparent !important;
+                        height: auto !important;
+                        min-height: 0 !important;
+                        max-height: none !important;
+                        overflow: visible !important;
+                    }
 
-        document.body.appendChild(tempContainer);
+                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+                    th, td { border: 1px solid #888; padding: 8px; font-size: 13px; color: #000 !important; }
+                    th { background: rgba(0,0,0,0.05) !important; }
+                    
+                    .meta-header { text-align: right; margin-bottom: 25px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="pdf-canvas" id="render_me">
+                    <div class="meta-header" style="font-family: ${FONT_TYPE === 'times' ? 'serif' : 'sans-serif'}; font-size: ${FONT_SIZE}pt;">
+                        <div>Ref: ${refNo}</div>
+                        <div>Date: ${todayDate}</div>
+                    </div>
+                    <div style="font-family: ${FONT_TYPE === 'times' ? 'serif' : 'sans-serif'}; font-size: ${FONT_SIZE}pt; line-height: 1.5; text-align: ${ALIGN};">
+                        ${fillLetterPlaceholders(cleanedTemplate, app, true)}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `);
+        idoc.close();
 
-        // Allow layout pass
+        // 3. Wait for fonts and assets to settle inside the iframe
         setTimeout(() => {
-            doc.html(tempContainer, {
-                x: MARGIN_L,
-                y: 0, // Offset is now handled by padding-top in the HTML wrapper
-                width: USABLE_W,
-                windowWidth: pxWidth,
-                autoPaging: true, // Use default slicing for better page count accuracy
-                margin: [0, MARGIN_R, 0, MARGIN_L], // Side margins only, top/bottom handled in HTML
+            const renderElement = idoc.getElementById('render_me');
+            const pxWidth = Math.floor(USABLE_W * 3.7795); // 96 DPI conversion
+
+            doc.html(renderElement, {
+                x: 0,
+                y: 0,
+                width: 210, // Full width including margins now managed by CSS
+                windowWidth: 210 * 3.7795,
+                autoPaging: 'slice',
+                margin: [0, 0, 0, 0], // Margins are baked into the iframe CSS
                 html2canvas: { 
                     backgroundColor: '#ffffff', 
                     scale: 2,
-                    logging: false,
                     useCORS: true,
+                    logging: false,
                     allowTaint: true
                 },
                 callback: function (pdf) {
-                    document.body.removeChild(tempContainer);
+                    document.body.removeChild(iframe);
 
                     const totalPages = pdf.internal.getNumberOfPages();
                     
@@ -3914,7 +3906,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                     resolve({ doc: pdf });
                 }
             });
-        }, 400); 
+        }, 600); // Higher delay for IFrame stability
     });
 }
 
