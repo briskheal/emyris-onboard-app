@@ -3831,14 +3831,17 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         // CSS Optimization for High-Fidelity Rendering
         const pxWidth = Math.floor(USABLE_W * 3.7795); // Standard 96 DPI conversion
         tempContainer.style.width = pxWidth + 'px';
-        tempContainer.style.minHeight = '1000px'; 
         tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
         tempContainer.style.fontSize = (FONT_SIZE * 1.333) + 'px'; 
         tempContainer.style.lineHeight = '1.5';
         tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
         
-        // CRITICAL FIX: Use fixed/z-index instead of -10000px to ensure browser calculates layout/styles correctly
+        // MARGIN INTEGRATION: Use padding instead of jsPDF 'y' param for better stability
+        tempContainer.style.paddingTop = MARGIN_T + 'mm';
+        tempContainer.style.paddingBottom = MARGIN_B + 'mm';
+
+        // CRITICAL FIX: Ensure visibility and layout active for capture
         tempContainer.style.position = 'fixed';
         tempContainer.style.top = '0';
         tempContainer.style.left = '0';
@@ -3846,24 +3849,27 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         tempContainer.style.background = '#ffffff'; 
         tempContainer.style.visibility = 'visible';
         
-        // Force every child to have solid black text and transparent background
+        // Force every child to have solid black text and NO height-locking (prevents 9-page bug)
         const allChildren = tempContainer.querySelectorAll('*');
         allChildren.forEach(child => {
             child.style.setProperty('color', '#000000', 'important');
             child.style.backgroundColor = 'transparent';
+            child.style.height = 'auto'; // CRITICAL: Stop containers from stretching
+            child.style.minHeight = '0';
+            child.style.maxHeight = 'none';
         });
 
         document.body.appendChild(tempContainer);
 
-        // Small delay to allow the browser to compute styles/layout before capture
+        // Allow layout pass
         setTimeout(() => {
             doc.html(tempContainer, {
                 x: MARGIN_L,
-                y: MARGIN_T, 
+                y: 0, // Offset is now handled by padding-top in the HTML wrapper
                 width: USABLE_W,
                 windowWidth: pxWidth,
-                autoPaging: 'text',
-                margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L],
+                autoPaging: true, // Use default slicing for better page count accuracy
+                margin: [0, MARGIN_R, 0, MARGIN_L], // Side margins only, top/bottom handled in HTML
                 html2canvas: { 
                     backgroundColor: '#ffffff', 
                     scale: 2,
@@ -3908,7 +3914,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                     resolve({ doc: pdf });
                 }
             });
-        }, 300); // 300ms is usually enough for a full layout pass
+        }, 400); 
     });
 }
 
