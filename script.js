@@ -3699,32 +3699,21 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
     })();
     let yMarker = MARGIN_T;
 
-    const drawPageExtras = () => {
+    // We'll apply it in a post-process loop using blend modes so it doesn't obscure text!
+    const drawPageExtras = (targetDoc) => {
         const lhArr = companyData.letterheadImage || [];
         if (lhArr.length) {
             const val = lhArr[lhArr.length - 1].data;
-            doc.addImage(val, 'PNG', 0, 0, 210, 297);
+            // Use Multiply blend mode so the white background of html2canvas is ignored, 
+            // perfectly overlaying the letterhead over the page without hiding black text!
+            targetDoc.setGState(new targetDoc.GState({ blendMode: "Multiply" }));
+            targetDoc.addImage(val, 'PNG', 0, 0, 210, 297);
+            targetDoc.setGState(new targetDoc.GState({ blendMode: "Normal" }));
         }
     };
 
-    // Draw first page letterhead
-    drawPageExtras();
 
-    // Monkey-patch jsPDF to draw letterhead on every new page BEFORE html2canvas renders text over it
-    const originalAddPage = doc.addPage.bind(doc);
-    doc.addPage = function() {
-        originalAddPage(...arguments);
-        drawPageExtras();
-        return doc;
-    };
-
-    // Draw metadata on first page only
-    doc.setFont(FONT_TYPE, "bold");
-    doc.setFontSize(FONT_SIZE);
-    doc.text(`Ref: ${refNo}`, 188, yMarker, { align: 'right' });
-    yMarker += LINE_H;
-    doc.text(`Date: ${todayDate}`, 188, yMarker, { align: 'right' });
-    yMarker += LINE_H * 2; 
+    // Metadata will be written post-html-generation to perfectly pin to the first page only.
 
     return new Promise((resolve) => {
         const tempContainer = document.createElement('div');
@@ -3740,7 +3729,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         tempContainer.style.position = 'fixed';
         tempContainer.style.top = '0';
         tempContainer.style.left = '200vw'; 
-        tempContainer.style.background = 'transparent';
+        tempContainer.style.background = '#ffffff'; // White bg works perfect with Multiply blend
         tempContainer.style.padding = '0';
         tempContainer.style.margin = '0';
         tempContainer.style.whiteSpace = 'pre-wrap';
@@ -3755,6 +3744,22 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L], // top, right, bottom, left
             callback: function (pdf) {
                 document.body.removeChild(tempContainer);
+
+                // Multi-page handling using Blend Modes
+                const pageCount = pdf.internal.getNumberOfPages();
+                for(let i = 1; i <= pageCount; i++) {
+                    pdf.setPage(i);
+                    drawPageExtras(pdf); // Multiply blend mode ensures text shines through!
+                    
+                    if (i === 1) {
+                        // Draw Ref No & Date ONLY on first page cleanly
+                        pdf.setFont(FONT_TYPE, "bold");
+                        pdf.setFontSize(FONT_SIZE);
+                        pdf.setTextColor(0, 0, 0);
+                        pdf.text(`Ref: ${refNo}`, 188, MARGIN_T, { align: 'right' });
+                        pdf.text(`Date: ${todayDate}`, 188, MARGIN_T + LINE_H, { align: 'right' });
+                    }
+                }
 
                 // A very robust compromise: We draw the stamp and signature relative to the end of the document.
                 let finalY = MARGIN_T; 
