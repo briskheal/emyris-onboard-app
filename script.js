@@ -3408,7 +3408,7 @@ async function convertPdfToPng(dataUri) {
     const loadingTask = pdfjsLib.getDocument(dataUri);
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.0 }); // High-res scaling
+    const viewport = page.getViewport({ scale: 4.16 }); // 300 DPI scaling (300/72)
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -3629,6 +3629,17 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     frame.style.paddingBottom = `${marginB}mm`;
 }
 
+// Helper for PNG Export
+function downloadLetterAsPng(email, type) {
+    window.pendingDownloadType = 'png';
+    downloadLetter(email, type);
+}
+
+function previewActiveTemplateAsPng() {
+    window.pendingDownloadType = 'png';
+    previewActiveTemplate();
+}
+
 // --- SMART LETTER GENERATION ---
 async function downloadLetter(email, type) {
     // If we're in the Setup tab and the email matches the target, use the editor content to capture manual edits
@@ -3638,7 +3649,25 @@ async function downloadLetter(email, type) {
     const pdfData = await generateLetterPDF(email, type, editorHtml);
     if (!pdfData) return;
     const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
-    savePDF(pdfData.doc, `${type.toUpperCase()}_LETTER_${safeEmail}.pdf`);
+    
+    if (window.pendingDownloadType === 'png') {
+        lockUI("🖼️ Generating High-Res PNG (300 DPI)...");
+        try {
+            const pngData = await convertPdfToPng(pdfData.doc.output('datauristring'));
+            const link = document.createElement('a');
+            link.href = pngData;
+            link.download = `${type.toUpperCase()}_LETTER_${safeEmail}.png`;
+            link.click();
+            showToast("📈 PNG Generated successfully", "success");
+        } catch (e) {
+            showToast("❌ PNG Conversion failed", "error");
+        } finally {
+            unlockUI();
+            window.pendingDownloadType = 'pdf'; // Reset
+        }
+    } else {
+        savePDF(pdfData.doc, `${type.toUpperCase()}_LETTER_${safeEmail}.pdf`);
+    }
     
     // Mark task as done
     const taskKey = type === 'offer' ? 'offerLetter' : 'appointmentLetter';
@@ -3724,8 +3753,8 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
 
     const MARGIN_T = HEADER_H + 5; 
     const MARGIN_B = FOOTER_H + 5; 
-    const MARGIN_L = 22;
-    const MARGIN_R = 22;
+    const MARGIN_L = 15; // User requested ~1.5cm
+    const MARGIN_R = 15;
     const USABLE_W = 210 - MARGIN_L - MARGIN_R; 
     const LINE_H = (FONT_SIZE * 0.58); 
 
@@ -3792,7 +3821,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         tempContainer.style.width = pxWidth + 'px';
         tempContainer.style.fontFamily = FONT_TYPE === 'helvetica' ? "Arial, sans-serif" : (FONT_TYPE === 'times' ? "Times New Roman, serif" : "Courier New, monospace");
         tempContainer.style.fontSize = (FONT_SIZE * 1.333) + 'px'; 
-        tempContainer.style.lineHeight = '1.4'; 
+        tempContainer.style.lineHeight = '1.5'; // User requested ~1.5
         tempContainer.style.color = '#000000'; 
         tempContainer.style.textAlign = ALIGN;
         tempContainer.style.position = 'fixed';
