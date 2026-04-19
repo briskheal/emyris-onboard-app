@@ -3839,6 +3839,10 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{COMPANY_NAME}}": companyData.name,
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
         "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || "",
+        "{{OFFER_COUNTER}}": companyData.offerCounter || 1001,
+        "{{APPT_COUNTER}}": companyData.apptCounter || 1001,
+        "{{MISC_COUNTER}}": companyData.miscCounter || 1001,
+        "{{EMP_CODE_COUNTER}}": companyData.empCodeCounter || 1001,
         "{{SALARY_BREAKUP}}": (() => {
             const sal = app.salaryBreakup || {};
             const formatRs = (num) => 'Rs. ' + (Number(num) || 0).toLocaleString('en-IN');
@@ -4209,6 +4213,19 @@ async function publishLetterToHub() {
         const result = await res.json();
         if (result.success) {
             showToast(`✅ ${type.toUpperCase()} published successfully!`, "success");
+            
+            // Increment the relevant counter in admin settings
+            let counterKey = "";
+            if (type === 'offer') counterKey = 'offerCounter';
+            else if (type === 'appt') counterKey = 'apptCounter';
+            else if (type.startsWith('misc_')) counterKey = 'miscCounter';
+
+            if (counterKey) {
+                const newVal = (companyData[counterKey] || 1001) + 1;
+                await submitProfileUpdate({ [counterKey]: newVal }, true);
+                console.log(`📈 Incrementing ${counterKey} to ${newVal}`);
+            }
+
             // Also mark the task as done in the pipeline if it's offer or appt
             let taskKey = "";
             if (type === 'offer') taskKey = 'offerLetter';
