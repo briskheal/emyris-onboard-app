@@ -2889,6 +2889,7 @@ async function switchEditorTemplate() {
     } else {
         // Always load from _masterTemplates (protected, placeholder-safe version)
         editor.innerHTML = (window._masterTemplates && window._masterTemplates[type]) || window.letterTemplates[type] || "";
+        window.isDataPopulated = false; // Fresh template loaded
     }
     
     const delBtn = document.getElementById('deleteTemplateBtn');
@@ -2919,6 +2920,21 @@ async function deleteMiscellaneousLetter() {
 }
 
 
+function resetEditorToMaster(silent = false) {
+    const type = document.getElementById('activeTemplateSelect').value;
+    const editor = document.getElementById('unifiedEditor');
+    const master = (window._masterTemplates && window._masterTemplates[type]) || window.letterTemplates[type] || "";
+    
+    editor.innerHTML = master;
+    window.isDataPopulated = false;
+    
+    // Also clear the applicant selection to avoid confusion
+    const sel = document.getElementById('hubTargetApplicant');
+    if (sel) sel.value = "";
+
+    if (!silent) showToast("🧹 Editor reset to Master Template (Variables Restored)", "success");
+}
+
 function fillEditorWithRealData(skipConfirm = false) {
     const targetEmail = document.getElementById('hubTargetApplicant')?.value;
     const applicant = allApplicants.find(a => a.email === targetEmail);
@@ -2937,6 +2953,7 @@ function fillEditorWithRealData(skipConfirm = false) {
     
     const filled = fillLetterPlaceholders(masterBase, applicant);
     editor.innerHTML = filled;
+    window.isDataPopulated = true; // Mark as containing real data
     showToast(`⚡ Data loaded for ${applicant.fullName} — ready to issue.`, "success");
 }
 
@@ -2952,12 +2969,10 @@ async function saveActiveTemplate() {
         const content = editor.innerHTML;
         
         // Safety Guard: Detect if content has been populated (placeholders replaced with real data).
-        // A populated letter has no {{placeholders}} remaining.
         const hasPlaceholders = content.includes('{{') && content.includes('}}');
-        const targetEmail = document.getElementById('hubTargetApplicant')?.value;
-        if (targetEmail && !hasPlaceholders) {
-            showToast("⚠️ Cannot save a populated letter as Master Template. Use 'Issue to Applicant' to send this letter, or clear the applicant selection before editing the master.", "warning");
-            return;
+        if (window.isDataPopulated || !hasPlaceholders) {
+            const confirmSave = confirm("🚨 WARNING: This content appears to contain real applicant data or is missing template variables ({{...}}).\n\nIf you save this, it will overwrite your master template. Usually, you should use 'Issue to Applicant' instead.\n\nAre you ABSOLUTELY sure you want to save this as the new Master Template?");
+            if (!confirmSave) return;
         }
         
         // Save to both runtime caches — letterTemplates (working copy) and _masterTemplates (protected copy)
@@ -4213,7 +4228,7 @@ async function publishLetterToHub() {
             }
             await fetchApplicants(); // Refresh main list to sync canLogin and other states
             await populateHubApplicantSelect();
-            await switchEditorTemplate(); // HARD RESET: Revert editor to clean template after publication
+            resetEditorToMaster(true); // HARD RESET: Revert editor to clean template after publication
         }
     } catch (e) { showToast("? Publication failed. Check server.", "error"); }
     finally { unlockUI(); }
