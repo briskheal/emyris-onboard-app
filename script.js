@@ -3773,7 +3773,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         document.body.appendChild(root);
 
         // 3. Render HTML to PDF Canvas
-        await new Promise((resolve, reject) => {
+        const pdfResult = await new Promise((resolve, reject) => {
             doc.html(root, {
                 x: MARGIN_L,
                 y: MARGIN_T,
@@ -3790,7 +3790,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                 },
                 callback: function (pdf) {
                     try {
-                        const totalPages = pdf.internal.getNumberOfPages();
+                        const totalPages = pdf.internal.getNumberOfPages() || 1;
                         const lhData = lhAsset?.data;
 
                         // Post-Process: Overlay Letterhead & Signatories on ALL pages
@@ -3839,7 +3839,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
 
         document.body.removeChild(root);
         unlockUI();
-        return doc;
+        return pdfResult;
 
     } catch (err) {
         console.error("PDF Generation Failed:", err);
