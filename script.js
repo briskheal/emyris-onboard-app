@@ -3722,10 +3722,24 @@ function savePDF(doc, filename) {
     doc.save(filename);
 }
 
-async function generateLetterPDF(email, type, htmlOverride = null) {
+async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
     lockUI("⏳ Building Professional PDF...");
     try {
-        const app = companyData.applicants?.[email] || applicants.find(a => a.email === email);
+        let app = null;
+        if (typeof emailOrApp === 'object') {
+            app = emailOrApp;
+        } else {
+            // Fallback to lookup (Fixed global variable name to allApplicants)
+            app = companyData.applicants?.[emailOrApp] || 
+                  (window.allApplicants || []).find(a => a.email === emailOrApp);
+        }
+
+        if (!app) {
+            console.error("❌ Applicant record not found for PDF generation:", emailOrApp);
+            showToast("⚠️ Applicant data not found.", "error");
+            return null;
+        }
+
         const template = htmlOverride || companyData[`${type}LetterTemplate`] || (type === 'offer' ? companyData.offerLetterTemplate : companyData.appointmentLetterTemplate);
         const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
 
@@ -3734,7 +3748,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             return null;
         }
 
-        // 1. Dynamic Config from Company Profile
+        // 1. Dynamic Config
         const MARGIN_T = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
         const MARGIN_B = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
         const MARGIN_L = 15;
@@ -3747,7 +3761,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         const refNo = app.refNo || "REF/TMP/000";
         const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
-        // 2. Prepare Clean Render Element (Off-screen)
+        // 2. Prepare Clean Render Element
         const root = document.createElement('div');
         root.id = "clean-pdf-render-root";
         root.style.width = `${USABLE_W}mm`;
@@ -3772,7 +3786,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         `;
         document.body.appendChild(root);
 
-        // 3. Render HTML to PDF Canvas
+        // 3. Render Logic
         const pdfResult = await new Promise((resolve, reject) => {
             doc.html(root, {
                 x: MARGIN_L,
@@ -3793,36 +3807,27 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                         const totalPages = pdf.internal.getNumberOfPages() || 1;
                         const lhData = lhAsset?.data;
 
-                        // Post-Process: Overlay Letterhead & Signatories on ALL pages
                         for (let i = 1; i <= totalPages; i++) {
                             pdf.setPage(i);
-                            
-                            // A. Add Letterhead Background
                             if (lhData) {
                                 const format = lhData.toLowerCase().includes('png') ? 'PNG' : 'JPEG';
                                 pdf.addImage(lhData, format, 0, 0, 210, 297, undefined, 'NONE');
                             }
-
-                            // B. Add Signatory (only on the last page)
                             if (i === totalPages) {
                                 let finalY = 297 - MARGIN_B - 45;
-                                
                                 const stamps = companyData.stamp || [];
                                 if (stamps.length) {
                                     pdf.addImage(stamps[stamps.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35, undefined, 'FAST');
                                 }
-                                
                                 const sigs = companyData.digitalSignature || [];
                                 if (sigs.length) {
                                     pdf.addImage(sigs[sigs.length - 1].data, 'PNG', 145, finalY + 10, 45, 20, undefined, 'FAST');
                                 }
-
                                 finalY += 42;
                                 pdf.setFontSize(11);
                                 pdf.setFont("helvetica", "bold");
                                 pdf.text("Authorized Signatory", MARGIN_L, finalY);
                                 pdf.text(companyData.signatoryName || "Authorized Signatory", 145, finalY);
-                                
                                 pdf.setFontSize(9);
                                 pdf.setFont("helvetica", "normal");
                                 pdf.text(companyData.name || "", MARGIN_L, finalY + 5);
