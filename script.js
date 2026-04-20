@@ -3779,9 +3779,13 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         if (lhArr.length) {
             const asset = lhArr[lhArr.length - 1];
             const val = asset.data;
+            const format = (val && val.includes('image/png')) ? 'PNG' : 'JPEG';
             try {
-                // Ensure the background is added at the absolute back for every page
-                targetDoc.addImage(val, 0, 0, 210, 297, `LH_${asset._id}`, 'FAST');
+                // If it's a strip, 210x0 will auto-scale height at top. 
+                // If it's a full page image, it will fill.
+                // We use 210x297 to support full letterhead templates.
+                targetDoc.setPage(targetDoc.internal.getCurrentPageInfo().pageNumber);
+                targetDoc.addImage(val, format, 0, 0, 210, 297, undefined, 'NONE');
             } catch (err) {
                 console.error("❌ Failed to add background image:", err);
             }
@@ -3804,8 +3808,8 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         iframe.style.position = 'fixed';
         iframe.style.top = '0';
         iframe.style.left = '0';
-        iframe.style.width = '210mm'; // Proper A4 width
-        iframe.style.height = '1000mm'; // Enough height for multi-page
+        iframe.style.width = '210mm'; 
+        iframe.style.height = '1px'; // Start small, will grow
         iframe.style.visibility = 'hidden';
         iframe.style.pointerEvents = 'none';
         iframe.style.zIndex = '-10000';
@@ -3839,6 +3843,9 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                     th { background: rgba(0,0,0,0.05) !important; }
                     
                     .meta-header { text-align: right; margin-bottom: 25px; font-weight: bold; }
+                    
+                    /* Prevent extra blank pages */
+                    html, body { height: auto !important; overflow: visible !important; }
                 </style>
             </head>
             <body>
@@ -3859,7 +3866,10 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         // 3. Wait for fonts and assets to settle inside the iframe
         setTimeout(() => {
             const renderElement = idoc.getElementById('render_me');
-            const pxWidth = Math.floor(USABLE_W * 3.7795); // 96 DPI conversion
+            
+            // Adjust iframe height to match content exactly to prevent 14-page ghosting bugs
+            const contentHeight = renderElement.offsetHeight;
+            iframe.style.height = (contentHeight + 100) + 'px'; 
 
             doc.html(renderElement, {
                 x: 0,
@@ -3870,12 +3880,19 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                 margin: [0, 0, 0, 0], // Margins are baked into the iframe CSS
                 html2canvas: { 
                     backgroundColor: null, 
-                    scale: 2,
+                    scale: 1, // Reduced to fix 6-page ghosting overflow
                     useCORS: true,
                     logging: false,
                     allowTaint: true
                 },
                 callback: function (pdf) {
+                    // Re-apply background to all pages to ensure layering and visibility
+                    const numPages = pdf.internal.getNumberOfPages();
+                    for (let i = 1; i <= numPages; i++) {
+                        pdf.setPage(i);
+                        drawPageExtras(pdf);
+                    }
+                    
                     document.body.removeChild(iframe);
 
                     const totalPages = pdf.internal.getNumberOfPages();
