@@ -3723,133 +3723,146 @@ function savePDF(doc, filename) {
 }
 
 async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
-    lockUI("⏳ Building Professional PDF...");
+    lockUI("⏳ Finalizing Professional Document...");
     try {
         let app = null;
         if (typeof emailOrApp === 'object' && emailOrApp !== null) {
             app = emailOrApp;
         } else {
-            console.log("🔍 PDF Generator: Looking up applicant by email:", emailOrApp);
-            // Fallback to lookup (Checked global variable name is allApplicants)
             app = (allApplicants || []).find(a => a.email === emailOrApp);
-            
-            if (!app && companyData.applicants) {
-                app = companyData.applicants[emailOrApp];
-            }
+            if (!app && companyData.applicants) app = companyData.applicants[emailOrApp];
         }
 
         if (!app) {
-            console.error("❌ PDF Generator: Applicant record NOT found for:", emailOrApp);
-            console.log("Current allApplicants count:", (allApplicants || []).length);
-            showToast("⚠️ Applicant data not found.", "error");
+            showToast("⚠️ Applicant record not found.", "error");
             return null;
         }
 
         const template = htmlOverride || companyData[`${type}LetterTemplate`] || (type === 'offer' ? companyData.offerLetterTemplate : companyData.appointmentLetterTemplate);
-        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
-
         if (!template) {
-            showToast("⚠️ Template not found. Please check Setup.", "error");
+            showToast("⚠️ Letter template is missing in Setup.", "error");
             return null;
         }
 
-        // 1. Dynamic Config
+        // 1. Configs (A4 = 210x297mm)
         const MARGIN_T = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
         const MARGIN_B = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
-        const MARGIN_L = 15;
-        const MARGIN_R = 15;
-        const USABLE_W = 210 - MARGIN_L - MARGIN_R;
+        const MARGIN_L = 18;
+        const MARGIN_R = 18;
+        const USABLE_W_MM = 210 - MARGIN_L - MARGIN_R;
+        const PX_PER_MM = 3.78; // A4 Standard at 96DPI
+        const USABLE_W_PX = USABLE_W_MM * PX_PER_MM;
+        const PAGE_H_MM = 297;
+        const CONTENT_H_PER_PAGE_MM = PAGE_H_MM - MARGIN_T - MARGIN_B;
 
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF('p', 'mm', 'a4');
-
-        const refNo = app.refNo || "REF/TMP/000";
-        const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-
-        // 2. Prepare Clean Render Element
+        // 2. Prepare Render Asset
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+        
+        // 3. Create High-Resolution Render Root
         const root = document.createElement('div');
-        root.id = "clean-pdf-render-root";
-        root.style.width = `${USABLE_W}mm`;
+        root.style.width = `${USABLE_W_PX}px`;
         root.style.padding = "0";
         root.style.margin = "0";
-        root.style.background = "transparent";
-        root.style.color = "#000000";
+        root.style.background = "white"; // Ensure white background
+        root.style.color = "black"; // Force black text
         root.style.fontFamily = "'Plus Jakarta Sans', Arial, sans-serif";
-        root.style.fontSize = "11pt";
+        root.style.fontSize = "11.5pt";
         root.style.lineHeight = "1.6";
         root.style.position = "absolute";
-        root.style.left = "-9999px"; 
+        root.style.top = "0";
+        root.style.left = "-5000px"; 
+        root.style.visibility = "visible";
         
         root.innerHTML = `
-            <div style="text-align: right; margin-bottom: 30px; font-weight: bold;">
-                <div>Ref: ${refNo}</div>
-                <div>Date: ${todayDate}</div>
-            </div>
-            <div id="pdf-body-content">
-                ${fillLetterPlaceholders(template, app, true)}
+            <style>
+                #pdf-render-wrapper * { color: black !important; -webkit-text-fill-color: black !important; }
+                #pdf-render-wrapper table, #pdf-render-wrapper td, #pdf-render-wrapper th { border-color: black !important; color: black !important; }
+                #pdf-render-wrapper ul, #pdf-render-wrapper li { color: black !important; }
+            </style>
+            <div id="pdf-render-wrapper">
+                <div style="text-align: right; margin-bottom: 35px;">
+                    <div style="font-weight: 700; font-size: 13pt;">Ref: ${app.refNo || "REF/GEN/000"}</div>
+                    <div style="font-size: 11pt; opacity: 0.8;">Date: ${new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'})}</div>
+                </div>
+                <div class="content-wrapper">
+                    ${fillLetterPlaceholders(template, app, true)}
+                </div>
             </div>
         `;
         document.body.appendChild(root);
 
-        // 3. Render Logic
-        const pdfResult = await new Promise((resolve, reject) => {
-            doc.html(root, {
-                x: MARGIN_L,
-                y: MARGIN_T,
-                width: USABLE_W,
-                windowWidth: USABLE_W * 3.7795,
-                autoPaging: 'slice',
-                margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L], 
-                html2canvas: {
-                    backgroundColor: null, 
-                    scale: 1, 
-                    useCORS: true,
-                    logging: false,
-                    allowTaint: true
-                },
-                callback: function (pdf) {
-                    try {
-                        const totalPages = pdf.internal.getNumberOfPages() || 1;
-                        const lhData = lhAsset?.data;
-
-                        for (let i = 1; i <= totalPages; i++) {
-                            pdf.setPage(i);
-                            if (lhData) {
-                                const format = lhData.toLowerCase().includes('png') ? 'PNG' : 'JPEG';
-                                pdf.addImage(lhData, format, 0, 0, 210, 297, undefined, 'NONE');
-                            }
-                            if (i === totalPages) {
-                                let finalY = 297 - MARGIN_B - 45;
-                                const stamps = companyData.stamp || [];
-                                if (stamps.length) {
-                                    pdf.addImage(stamps[stamps.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35, undefined, 'FAST');
-                                }
-                                const sigs = companyData.digitalSignature || [];
-                                if (sigs.length) {
-                                    pdf.addImage(sigs[sigs.length - 1].data, 'PNG', 145, finalY + 10, 45, 20, undefined, 'FAST');
-                                }
-                                finalY += 42;
-                                pdf.setFontSize(11);
-                                pdf.setFont("helvetica", "bold");
-                                pdf.text("Authorized Signatory", MARGIN_L, finalY);
-                                pdf.text(companyData.signatoryName || "Authorized Signatory", 145, finalY);
-                                pdf.setFontSize(9);
-                                pdf.setFont("helvetica", "normal");
-                                pdf.text(companyData.name || "", MARGIN_L, finalY + 5);
-                                pdf.text(companyData.signatoryDesignation || "", 145, finalY + 5);
-                                resolve({ doc: pdf, totalPages });
-                            }
-                        }
-                    } catch (e) {
-                        reject(e);
-                    }
-                }
-            });
+        // 4. Transform HTML to Canvas
+        const canvas = await html2canvas(root, {
+            scale: 2, // High resolution
+            useCORS: true,
+            backgroundColor: "#ffffff",
+            logging: false
         });
-
         document.body.removeChild(root);
+
+        const canvasW = canvas.width;
+        const canvasH = canvas.height;
+        
+        const contentHeightMM = (canvasH / canvasW) * USABLE_W_MM;
+        const totalPages = Math.ceil(contentHeightMM / CONTENT_H_PER_PAGE_MM) || 1;
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+
+        for (let i = 0; i < totalPages; i++) {
+            if (i > 0) pdf.addPage();
+
+            // Layer 1: Letterhead (Bottom)
+            if (lhAsset?.data) {
+                const format = lhAsset.data.toLowerCase().includes('png') ? 'PNG' : 'JPEG';
+                pdf.addImage(lhAsset.data, format, 0, 0, 210, 297, undefined, 'NONE');
+            }
+
+            // Layer 2: Content Slice (Middle)
+            const sourceY = i * (canvasW / USABLE_W_MM) * CONTENT_H_PER_PAGE_MM;
+            const sourceH = (canvasW / USABLE_W_MM) * CONTENT_H_PER_PAGE_MM;
+            
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvasW;
+            sliceCanvas.height = Math.min(sourceH, canvasH - sourceY);
+            if (sliceCanvas.height > 0) {
+                const ctx = sliceCanvas.getContext('2d');
+                ctx.drawImage(canvas, 0, sourceY, canvasW, sliceCanvas.height, 0, 0, canvasW, sliceCanvas.height);
+                
+                const sliceData = sliceCanvas.toDataURL('image/png');
+                const sliceDisplayH = (sliceCanvas.height / canvasW) * USABLE_W_MM;
+                pdf.addImage(sliceData, 'PNG', MARGIN_L, MARGIN_T, USABLE_W_MM, sliceDisplayH, undefined, 'FAST');
+            }
+
+            // Layer 3: Signatory (Top - ONLY on last page)
+            if (i === totalPages - 1) {
+                let sigY = MARGIN_T + (contentHeightMM % CONTENT_H_PER_PAGE_MM) + 10;
+                if (sigY > 297 - MARGIN_B - 55) {
+                    pdf.addPage();
+                    if (lhAsset?.data) pdf.addImage(lhAsset.data, 'PNG', 0, 0, 210, 297, undefined, 'NONE');
+                    sigY = MARGIN_T;
+                }
+
+                const finalY = sigY + 5;
+                const stamps = companyData.stamp || [];
+                if (stamps.length) pdf.addImage(stamps[stamps.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35, undefined, 'FAST');
+                
+                const sigs = companyData.digitalSignature || [];
+                if (sigs.length) pdf.addImage(sigs[sigs.length - 1].data, 'PNG', 145, finalY + 10, 45, 20, undefined, 'FAST');
+
+                const textY = finalY + 45;
+                pdf.setFontSize(11);
+                pdf.setFont("helvetica", "bold");
+                pdf.text("Authorized Signatory", MARGIN_L, textY);
+                pdf.text(companyData.signatoryName || "HR Department", 145, textY);
+                pdf.setFontSize(9);
+                pdf.setFont("helvetica", "normal");
+                pdf.text(companyData.name || "Emyris Biolifesciences", MARGIN_L, textY + 5);
+                pdf.text(companyData.signatoryDesignation || "HR Business Partner", 145, textY + 5);
+            }
+        }
         unlockUI();
-        return pdfResult;
+        return { doc: pdf, totalPages };
 
     } catch (err) {
         console.error("PDF Generation Failed:", err);
