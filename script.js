@@ -3726,16 +3726,21 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
     lockUI("⏳ Building Professional PDF...");
     try {
         let app = null;
-        if (typeof emailOrApp === 'object') {
+        if (typeof emailOrApp === 'object' && emailOrApp !== null) {
             app = emailOrApp;
         } else {
-            // Fallback to lookup (Fixed global variable name to allApplicants)
-            app = companyData.applicants?.[emailOrApp] || 
-                  (window.allApplicants || []).find(a => a.email === emailOrApp);
+            console.log("🔍 PDF Generator: Looking up applicant by email:", emailOrApp);
+            // Fallback to lookup (Checked global variable name is allApplicants)
+            app = (allApplicants || []).find(a => a.email === emailOrApp);
+            
+            if (!app && companyData.applicants) {
+                app = companyData.applicants[emailOrApp];
+            }
         }
 
         if (!app) {
-            console.error("❌ Applicant record not found for PDF generation:", emailOrApp);
+            console.error("❌ PDF Generator: Applicant record NOT found for:", emailOrApp);
+            console.log("Current allApplicants count:", (allApplicants || []).length);
             showToast("⚠️ Applicant data not found.", "error");
             return null;
         }
