@@ -3723,214 +3723,130 @@ function savePDF(doc, filename) {
 }
 
 async function generateLetterPDF(email, type, htmlOverride = null) {
-    const app = allApplicants.find(a => a.email === email);
-    if (!app || !app.formData) return showToast("?? Applicant data missing.", "warning");
-    if (!companyData.letterheadImage) return showToast("?? Please upload Letterhead Strip in Setup first.", "warning");
+    lockUI("⏳ Building Professional PDF...");
+    try {
+        const app = companyData.applicants?.[email] || applicants.find(a => a.email === email);
+        const template = htmlOverride || companyData[`${type}LetterTemplate`] || (type === 'offer' ? companyData.offerLetterTemplate : companyData.appointmentLetterTemplate);
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
 
-    let template = "";
-    if (htmlOverride) {
-        template = htmlOverride;
-    } else {
-        if (type === 'offer') template = companyData.offerLetterBody;
-        else if (type === 'appt') template = companyData.apptLetterBody;
-        else if (type.startsWith('misc_')) {
-            const id = type.split('_')[1];
-            const miscObj = (companyData.miscLetters || []).find(m => m.id === id);
-            if (miscObj) template = miscObj.body;
+        if (!template) {
+            showToast("⚠️ Template not found. Please check Setup.", "error");
+            return null;
         }
-    }
-    
-    if (!template || template.trim() === "" || template === "<br>") {
-        return showToast("⚠️ Letter template is empty. Please configure it in Setup first.", "warning");
-    }
 
-    // Pre-processing: Clean up common editor artifacts that might bloat or break PDF rendering
-    const cleanedTemplate = template
-        .split('background-color: initial;').join('')
-        .split('background-color: transparent;').join('')
-        .split('<p><br></p>').join('<p>&nbsp;</p>');
+        // 1. Dynamic Config from Company Profile
+        const MARGIN_T = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
+        const MARGIN_B = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
+        const MARGIN_L = 15;
+        const MARGIN_R = 15;
+        const USABLE_W = 210 - MARGIN_L - MARGIN_R;
 
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // PDF Config
-    const PAGE_H = 297;
-    const HEADER_H = companyData.headerHeight || 65; 
-    const FOOTER_H = companyData.footerHeight || 25; 
-    const FONT_SIZE = companyData.letterFontSize || 11;
-    const FONT_TYPE = companyData.letterFontType || 'helvetica';
-    const ALIGN = companyData.letterAlignment || 'left';
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
 
-    const MARGIN_T = HEADER_H + 5; 
-    const MARGIN_B = FOOTER_H + 5; 
-    const MARGIN_L = 15; // User requested ~1.5cm
-    const MARGIN_R = 15;
-    const USABLE_W = 210 - MARGIN_L - MARGIN_R; 
-    const LINE_H = (FONT_SIZE * 0.58); 
+        const refNo = app.refNo || "REF/TMP/000";
+        const todayDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
 
-    const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
-    const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
-    const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
-    const refNo = app.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? companyData.apptCounter : companyData.offerCounter) || 1001}/${fyShort}`;
-    const todayDate = new Date().toLocaleDateString('en-GB');
-
-    const drawPageExtras = (targetDoc) => {
-        const lhArr = companyData.letterheadImage || [];
-        if (lhArr.length) {
-            const asset = lhArr[lhArr.length - 1];
-            const val = asset.data;
-            const format = (val && val.includes('image/png')) ? 'PNG' : 'JPEG';
-            try {
-                // If it's a strip, 210x0 will auto-scale height at top. 
-                // If it's a full page image, it will fill.
-                // We use 210x297 to support full letterhead templates.
-                targetDoc.setPage(targetDoc.internal.getCurrentPageInfo().pageNumber);
-                targetDoc.addImage(val, format, 0, 0, 210, 297, undefined, 'NONE');
-            } catch (err) {
-                console.error("❌ Failed to add background image:", err);
-            }
-        }
-    };
-
-    // --- BACKGROUND IMAGE LOGIC ---
-    // Subscribe to addPage to ensure every new page gets the letterhead
-    doc.internal.events.subscribe('addPage', function() {
-        drawPageExtras(this);
-    });
-
-    // Draw on the very first page manually
-    drawPageExtras(doc); 
-
-    return new Promise((resolve) => {
-        // 1. Create a truly isolated rendering environment using an IFrame
-        // This prevents the main app's dark theme and layout from leaking into the PDF
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.top = '0';
-        iframe.style.left = '0';
-        iframe.style.width = '210mm'; 
-        iframe.style.height = '1px'; // Start small, will grow
-        iframe.style.visibility = 'hidden';
-        iframe.style.pointerEvents = 'none';
-        iframe.style.zIndex = '-10000';
-        document.body.appendChild(iframe);
-
-        const idoc = iframe.contentDocument || iframe.contentWindow.document;
+        // 2. Prepare Clean Render Element (Off-screen)
+        const root = document.createElement('div');
+        root.id = "clean-pdf-render-root";
+        root.style.width = `${USABLE_W}mm`;
+        root.style.padding = "0";
+        root.style.margin = "0";
+        root.style.background = "transparent";
+        root.style.color = "#000000";
+        root.style.fontFamily = "'Plus Jakarta Sans', Arial, sans-serif";
+        root.style.fontSize = "11pt";
+        root.style.lineHeight = "1.6";
+        root.style.position = "absolute";
+        root.style.left = "-9999px"; 
         
-        // 2. Inject a clean document structure with its own styles
-        idoc.open();
-        idoc.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <style>
-                    body { margin: 0; padding: 0; background: transparent !important; color: #000000; -webkit-print-color-adjust: exact; }
-                    .pdf-canvas { width: ${USABLE_W}mm; margin: 0; padding: ${MARGIN_T}mm ${MARGIN_R}mm ${MARGIN_B}mm ${MARGIN_L}mm; background: transparent !important; }
-                    .pdf-canvas * { max-width: 100%; box-sizing: border-box; }
-                    
-                    /* Force black text for everything inside the canvas */
-                    .pdf-canvas, .pdf-canvas * {
-                        color: #000000 !important;
-                        background-color: transparent !important;
-                        height: auto !important;
-                        min-height: 0 !important;
-                        max-height: none !important;
-                        overflow: visible !important;
-                    }
+        root.innerHTML = `
+            <div style="text-align: right; margin-bottom: 30px; font-weight: bold;">
+                <div>Ref: ${refNo}</div>
+                <div>Date: ${todayDate}</div>
+            </div>
+            <div id="pdf-body-content">
+                ${fillLetterPlaceholders(template, app, true)}
+            </div>
+        `;
+        document.body.appendChild(root);
 
-                    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-                    th, td { border: 1px solid #888; padding: 8px; font-size: 13px; color: #000 !important; }
-                    th { background: rgba(0,0,0,0.05) !important; }
-                    
-                    .meta-header { text-align: right; margin-bottom: 25px; font-weight: bold; }
-                    
-                    /* Prevent extra blank pages */
-                    html, body { height: auto !important; overflow: visible !important; }
-                </style>
-            </head>
-            <body>
-                <div class="pdf-canvas" id="render_me">
-                    <div class="meta-header" style="font-family: ${FONT_TYPE === 'times' ? 'serif' : 'sans-serif'}; font-size: ${FONT_SIZE}pt;">
-                        <div>Ref: ${refNo}</div>
-                        <div>Date: ${todayDate}</div>
-                    </div>
-                    <div style="font-family: ${FONT_TYPE === 'times' ? 'serif' : 'sans-serif'}; font-size: ${FONT_SIZE}pt; line-height: 1.5; text-align: ${ALIGN};">
-                        ${fillLetterPlaceholders(cleanedTemplate, app, true)}
-                    </div>
-                </div>
-            </body>
-            </html>
-        `);
-        idoc.close();
-
-        // 3. Wait for fonts and assets to settle inside the iframe
-        setTimeout(() => {
-            const renderElement = idoc.getElementById('render_me');
-            
-            // Adjust iframe height to match content exactly to prevent 14-page ghosting bugs
-            const contentHeight = renderElement.offsetHeight;
-            iframe.style.height = (contentHeight + 100) + 'px'; 
-
-            doc.html(renderElement, {
-                x: 0,
-                y: 0,
-                width: 210, // Full width including margins now managed by CSS
-                windowWidth: 210 * 3.7795,
+        // 3. Render HTML to PDF Canvas
+        await new Promise((resolve, reject) => {
+            doc.html(root, {
+                x: MARGIN_L,
+                y: MARGIN_T,
+                width: USABLE_W,
+                windowWidth: USABLE_W * 3.7795,
                 autoPaging: 'slice',
-                margin: [0, 0, 0, 0], // Margins are baked into the iframe CSS
-                html2canvas: { 
+                margin: [MARGIN_T, MARGIN_R, MARGIN_B, MARGIN_L], 
+                html2canvas: {
                     backgroundColor: null, 
-                    scale: 1, // Reduced to fix 6-page ghosting overflow
+                    scale: 1, 
                     useCORS: true,
                     logging: false,
                     allowTaint: true
                 },
                 callback: function (pdf) {
-                    // Re-apply background to all pages to ensure layering and visibility
-                    const numPages = pdf.internal.getNumberOfPages();
-                    for (let i = 1; i <= numPages; i++) {
-                        pdf.setPage(i);
-                        drawPageExtras(pdf);
-                    }
-                    
-                    document.body.removeChild(iframe);
+                    try {
+                        const totalPages = pdf.internal.getNumberOfPages();
+                        const lhData = lhAsset?.data;
 
-                    const totalPages = pdf.internal.getNumberOfPages();
-                    
-                    // Signatory Logic (Always on the final page)
-                    pdf.setPage(totalPages);
-                    let finalY = PAGE_H - MARGIN_B - 45; 
-                    
-                    const stampArr = companyData.stamp || [];
-                    if (stampArr.length) {
-                        try {
-                            pdf.addImage(stampArr[stampArr.length - 1].data, MARGIN_L, finalY, 35, 35, 'STAMP', 'FAST');
-                        } catch(e) { console.error("Stamp Error:", e); }
-                    }
-                    
-                    const sigArr = companyData.digitalSignature || [];
-                    if (sigArr.length) {
-                        try {
-                            pdf.addImage(sigArr[sigArr.length - 1].data, 145, finalY + 10, 45, 20, 'SIG', 'FAST');
-                        } catch(e) { console.error("Signature Error:", e); }
-                    }
-                    
-                    finalY += 42;
-                    pdf.setFont("helvetica", "bold");
-                    pdf.setFontSize(FONT_SIZE);
-                    pdf.setTextColor(0, 0, 0);
-                    pdf.text("Authorized Signatory", MARGIN_L, finalY);
-                    pdf.text(companyData.signatoryName || "", 145, finalY);
-                    pdf.setFontSize(9);
-                    pdf.setFont("helvetica", "normal");
-                    pdf.text(companyData.name, MARGIN_L, finalY + 5);
-                    pdf.text(companyData.signatoryDesignation || "", 145, finalY + 5);
+                        // Post-Process: Overlay Letterhead & Signatories on ALL pages
+                        for (let i = 1; i <= totalPages; i++) {
+                            pdf.setPage(i);
+                            
+                            // A. Add Letterhead Background
+                            if (lhData) {
+                                const format = lhData.toLowerCase().includes('png') ? 'PNG' : 'JPEG';
+                                pdf.addImage(lhData, format, 0, 0, 210, 297, undefined, 'NONE');
+                            }
 
-                    resolve({ doc: pdf });
+                            // B. Add Signatory (only on the last page)
+                            if (i === totalPages) {
+                                let finalY = 297 - MARGIN_B - 45;
+                                
+                                const stamps = companyData.stamp || [];
+                                if (stamps.length) {
+                                    pdf.addImage(stamps[stamps.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35, undefined, 'FAST');
+                                }
+                                
+                                const sigs = companyData.digitalSignature || [];
+                                if (sigs.length) {
+                                    pdf.addImage(sigs[sigs.length - 1].data, 'PNG', 145, finalY + 10, 45, 20, undefined, 'FAST');
+                                }
+
+                                finalY += 42;
+                                pdf.setFontSize(11);
+                                pdf.setFont("helvetica", "bold");
+                                pdf.text("Authorized Signatory", MARGIN_L, finalY);
+                                pdf.text(companyData.signatoryName || "Authorized Signatory", 145, finalY);
+                                
+                                pdf.setFontSize(9);
+                                pdf.setFont("helvetica", "normal");
+                                pdf.text(companyData.name || "", MARGIN_L, finalY + 5);
+                                pdf.text(companyData.signatoryDesignation || "", 145, finalY + 5);
+                                resolve({ doc: pdf, totalPages });
+                            }
+                        }
+                    } catch (e) {
+                        reject(e);
+                    }
                 }
             });
-        }, 600); // Higher delay for IFrame stability
-    });
+        });
+
+        document.body.removeChild(root);
+        unlockUI();
+        return doc;
+
+    } catch (err) {
+        console.error("PDF Generation Failed:", err);
+        showToast("❌ PDF Generation Failed", "error");
+        unlockUI();
+        return null;
+    }
 }
 
 function fillLetterPlaceholders(text, app, forPDF = false) {
