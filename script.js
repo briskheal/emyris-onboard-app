@@ -3653,7 +3653,7 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
         frame.style.backgroundSize = '100% auto';
         frame.style.backgroundRepeat = 'repeat-y';
         frame.style.backgroundPosition = 'top center';
-        frame.style.backgroundColor = '#ffffff'; 
+        frame.style.backgroundColor = 'transparent'; 
         frame.style.color = '#000000';
     } else {
         frame.style.backgroundImage = 'none';
@@ -3744,6 +3744,12 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
         return showToast("⚠️ Letter template is empty. Please configure it in Setup first.", "warning");
     }
 
+    // Pre-processing: Clean up common editor artifacts that might bloat or break PDF rendering
+    const cleanedTemplate = template
+        .split('background-color: initial;').join('')
+        .split('background-color: transparent;').join('')
+        .split('<p><br></p>').join('<p>&nbsp;</p>');
+
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
     
@@ -3814,8 +3820,8 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
             <html>
             <head>
                 <style>
-                    body { margin: 0; padding: 0; background: #ffffff; color: #000000; -webkit-print-color-adjust: exact; }
-                    .pdf-canvas { width: ${USABLE_W}mm; margin: 0; padding: ${MARGIN_T}mm ${MARGIN_R}mm ${MARGIN_B}mm ${MARGIN_L}mm; background: #ffffff; }
+                    body { margin: 0; padding: 0; background: transparent !important; color: #000000; -webkit-print-color-adjust: exact; }
+                    .pdf-canvas { width: ${USABLE_W}mm; margin: 0; padding: ${MARGIN_T}mm ${MARGIN_R}mm ${MARGIN_B}mm ${MARGIN_L}mm; background: transparent !important; }
                     .pdf-canvas * { max-width: 100%; box-sizing: border-box; }
                     
                     /* Force black text for everything inside the canvas */
@@ -3863,7 +3869,7 @@ async function generateLetterPDF(email, type, htmlOverride = null) {
                 autoPaging: 'slice',
                 margin: [0, 0, 0, 0], // Margins are baked into the iframe CSS
                 html2canvas: { 
-                    backgroundColor: '#ffffff', 
+                    backgroundColor: null, 
                     scale: 2,
                     useCORS: true,
                     logging: false,
@@ -4007,7 +4013,7 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         })()
     };
 
-    let result = text;
+    let result = text || "";
     for (const [key, val] of Object.entries(placeholders)) {
         result = result.split(key).join(val);
     }
