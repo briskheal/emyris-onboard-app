@@ -3743,30 +3743,18 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         }
 
         // 1. Configs (A4 = 210x297mm)
-        // Match style.css: livePreviewFrame has 210mm width and 20mm default padding
         const MARGIN_T = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
         const MARGIN_B = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
-        const MARGIN_L = 20; // Exact match to style.css .livePreviewFrame padding
-        const MARGIN_R = 20; 
-        const USABLE_W_MM = 210 - MARGIN_L - MARGIN_R; // 170mm
-        const PX_PER_MM = 3.78; // A4 Standard at 96DPI
-        const USABLE_W_PX = USABLE_W_MM * PX_PER_MM;
+        const PAGE_W_MM = 210;
         const PAGE_H_MM = 297;
-        const CONTENT_H_PER_PAGE_MM = PAGE_H_MM - MARGIN_T - MARGIN_B;
+        const PX_PER_MM = 3.78; 
+        
+        // Exact clones of preview metrics
+        const size = document.getElementById('letterFontSize')?.value || 11;
+        const type = document.getElementById('letterFontType')?.value || 'helvetica';
+        const align = document.getElementById('letterAlignment')?.value || 'left';
 
-        // 2. Prepare Render Asset
-        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
-        
-        // 3. Create High-Resolution Render Root
-        const root = document.createElement('div');
-        root.style.width = `${USABLE_W_PX}px`; 
-        root.style.padding = "0";
-        root.style.margin = "0";
-        root.style.background = "#ffffff"; 
-        root.style.color = "#000000"; 
-        
-        const type = document.getElementById('letterFontType')?.value || companyData.letterFontType || 'helvetica';
-        let fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+        let fontStack = "'Plus Jakarta Sans', sans-serif";
         if (type === 'times') fontStack = "'Times New Roman', Times, serif";
         else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
         else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
@@ -3776,78 +3764,92 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
         else if (type === 'georgia') fontStack = "Georgia, serif";
 
-        const size = document.getElementById('letterFontSize')?.value || 11;
+        // 2. Create High-Fidelity Render Root (Hidden mirror of Live Preview)
+        const root = document.createElement('div');
+        root.id = "pdf-ultra-render";
+        root.style.width = `${PAGE_W_MM}mm`;
+        root.style.minHeight = `${PAGE_H_MM}mm`;
+        root.style.padding = `${MARGIN_T}mm 20mm ${MARGIN_B}mm 20mm`; // Match Live Preview Padding
+        root.style.background = "#ffffff";
+        root.style.color = "#000000";
         root.style.fontFamily = fontStack;
-        root.style.fontSize = `${size}pt`; // Match editor's dynamic size
-        root.style.lineHeight = "1.7"; // Match style.css line 2005
+        root.style.setProperty('--current-letter-font', fontStack); // Use CSS variable for children
+        root.style.fontSize = `${size}pt`;
+        root.style.lineHeight = "1.7";
+        root.style.textAlign = align;
         root.style.position = "absolute";
         root.style.top = "0";
-        root.style.left = "-10000px"; 
+        root.style.left = "-20000px"; // Far off-screen
+        root.style.boxSizing = "border-box";
         root.style.visibility = "visible";
         
-        root.innerHTML = `
-            <style>
-                #pdf-render-wrapper * { 
-                    color: #000000 !important; 
-                    -webkit-text-fill-color: #000000 !important; 
-                    font-family: inherit !important;
-                }
-                #pdf-render-wrapper table, #pdf-render-wrapper td, #pdf-render-wrapper th { border-color: #000000 !important; color: #000000 !important; }
-                #pdf-render-wrapper ul, #pdf-render-wrapper li { color: #000000 !important; }
-            </style>
-            <div id="pdf-render-wrapper">
-                <div class="content-wrapper">
-                    ${fillLetterPlaceholders(template, app, true)}
-                </div>
-            </div>
+        // Clean HTML (no highlights)
+        const rawHtml = htmlOverride || document.getElementById('unifiedEditor').innerHTML;
+        root.innerHTML = fillLetterPlaceholders(rawHtml, app, true);
+
+        // Inject forced black-text styles for child elements
+        const styleTag = document.createElement('style');
+        styleTag.innerHTML = `
+            #pdf-ultra-render * { 
+                color: #000000 !important; 
+                -webkit-text-fill-color: #000000 !important;
+                font-family: inherit !important;
+            }
+            #pdf-ultra-render table, #pdf-ultra-render td { border-color: #000000 !important; }
         `;
+        root.appendChild(styleTag);
         document.body.appendChild(root);
 
-        // Wait a tiny bit for fonts
-        await new Promise(r => setTimeout(r, 100));
+        // Wait for font rendering
+        await new Promise(r => setTimeout(r, 200));
 
-        // 4. Transform HTML to Canvas
+        // 3. Capture Canvas
         const canvas = await html2canvas(root, {
-            scale: 2.5, // Even higher resolution
+            scale: 2.5,
             useCORS: true,
             backgroundColor: "#ffffff",
             logging: false,
-            windowWidth: USABLE_W_PX
+            width: PAGE_W_MM * PX_PER_MM,
+            windowWidth: PAGE_W_MM * PX_PER_MM
         });
         document.body.removeChild(root);
 
         const canvasW = canvas.width;
         const canvasH = canvas.height;
+        const totalHeightMM = (canvasH / canvasW) * PAGE_W_MM;
         
-        const contentHeightMM = (canvasH / canvasW) * USABLE_W_MM;
-        const totalPages = Math.ceil(contentHeightMM / CONTENT_H_PER_PAGE_MM) || 1;
-
+        // 4. PDF Generation (Slicing)
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
+        
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+
+        // Tolerance to prevent tiny overflows from creating a 2nd page (5mm buffer)
+        const pageTolerance = 5; 
+        const totalPages = Math.ceil((totalHeightMM - pageTolerance) / PAGE_H_MM) || 1;
 
         for (let i = 0; i < totalPages; i++) {
             if (i > 0) pdf.addPage();
 
-            // Layer 1: Letterhead (Bottom)
+            // Layer 1: Letterhead (Background)
             if (lhAsset?.data) {
                 const format = lhAsset.data.toLowerCase().includes('png') ? 'PNG' : 'JPEG';
                 pdf.addImage(lhAsset.data, format, 0, 0, 210, 297, undefined, 'NONE');
             }
 
-            // Layer 2: Content Slice (Middle)
-            const sourceY = i * (canvasW / USABLE_W_MM) * CONTENT_H_PER_PAGE_MM;
-            const sourceH = (canvasW / USABLE_W_MM) * CONTENT_H_PER_PAGE_MM;
+            // Layer 2: Content Slice
+            const sourceY = i * (canvasW / PAGE_W_MM) * PAGE_H_MM;
+            const sourceH = (canvasW / PAGE_W_MM) * PAGE_H_MM;
             
             const sliceCanvas = document.createElement('canvas');
             sliceCanvas.width = canvasW;
             sliceCanvas.height = Math.min(sourceH, canvasH - sourceY);
+            
             if (sliceCanvas.height > 0) {
                 const ctx = sliceCanvas.getContext('2d');
                 ctx.drawImage(canvas, 0, sourceY, canvasW, sliceCanvas.height, 0, 0, canvasW, sliceCanvas.height);
-                
                 const sliceData = sliceCanvas.toDataURL('image/png');
-                const sliceDisplayH = (sliceCanvas.height / canvasW) * USABLE_W_MM;
-                pdf.addImage(sliceData, 'PNG', MARGIN_L, MARGIN_T, USABLE_W_MM, sliceDisplayH, undefined, 'FAST');
+                pdf.addImage(sliceData, 'PNG', 0, 0, PAGE_W_MM, (sliceCanvas.height / canvasW) * PAGE_W_MM, undefined, 'FAST');
             }
         }
         unlockUI();
