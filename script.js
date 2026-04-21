@@ -243,6 +243,29 @@ function initFileListeners() {
     }
 }
 
+function initEditorListeners() {
+    const editor = document.getElementById('unifiedEditor');
+    if (!editor) return;
+
+    // Paste Hygiene: Strip all HTML formatting to keep font/size uniform
+    editor.addEventListener('paste', (e) => {
+        e.preventDefault();
+        const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+        document.execCommand('insertText', false, text);
+        // Refresh preview after manual paste if applicable
+        if (typeof fillEditorWithRealData === 'function') {
+             // Optional: trigger a data sync if needed
+        }
+    });
+
+    // Ensure uniformity when user types or deletes
+    editor.addEventListener('input', () => {
+        if (editor.innerHTML === "" || editor.innerHTML === "<br>") {
+            editor.innerHTML = "<div><br></div>";
+        }
+    });
+}
+
 function attachStatusListener(inputId, config) {
     const el = document.getElementById(inputId);
     if (el) el.addEventListener('change', () => {
@@ -1424,6 +1447,7 @@ async function initializeApp() {
     }, 150);
     initBackgroundAnimations();
     initFileListeners();
+    initEditorListeners();
 }
 
 // Removed legacy saveCompanyProfile function
@@ -3107,6 +3131,7 @@ function syncEditorStyles() {
     const editor = document.getElementById('unifiedEditor');
     if (editor) {
         editor.style.fontSize = `${size}pt`;
+        editor.style.fontFamily = fontStack; // FORCE CHANGE
         editor.style.setProperty('--current-letter-font', fontStack);
         editor.style.textAlign = align;
         // Match app's dark theme

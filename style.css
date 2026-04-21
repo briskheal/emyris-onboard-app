@@ -2013,7 +2013,9 @@ input:checked + .slider:before {
 }
 
 .letter-editor *, #livePreviewFrame * {
-    font-family: var(--current-letter-font, inherit) !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    color: inherit !important;
 }
 
 .letter-editor:focus { 
