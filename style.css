@@ -2332,6 +2332,10 @@ input:checked + .slider:before {
     box-sizing: border-box;
 }
 
+#livePreviewFrame p, #unifiedEditor p {
+    margin: 0;
+}
+
 #livePreviewContainer {
     animation: fadeInScale 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }

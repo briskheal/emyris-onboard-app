@@ -3695,6 +3695,18 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
 }
 
 // --- SMART LETTER GENERATION ---
+async function sendTaskUpdate(taskKey, completed) {
+    const email = activeV_Applicant?.email || document.getElementById('hubTargetApplicant')?.value;
+    if (!email) return;
+    try {
+        await fetch('/api/admin/update-task', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, task: taskKey, completed })
+        });
+    } catch (e) { console.error("Task update failed", e); }
+}
+
 async function downloadLetter(email, type) {
     // If we're in the Setup tab and the email matches the target, use the editor content to capture manual edits
     const targetEmail = document.getElementById('hubTargetApplicant')?.value;
