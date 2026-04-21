@@ -3593,8 +3593,15 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     const html = specificHtml || document.getElementById('unifiedEditor').innerHTML;
     let rendered = html;
     
-    // 1. High-Fidelity Placeholder replacement using core helper
-    const mockApp = {
+    // 1. High-Fidelity Placeholder replacement using real targeted applicant data if available
+    const selectedEmail = document.getElementById('hubTargetApplicant')?.value;
+    let targetApp = null;
+    
+    if (selectedEmail) {
+        targetApp = (allApplicants || []).find(a => a.email === selectedEmail);
+    }
+
+    const mockApp = targetApp || {
         fullName: 'SMRUTI RANJAN DASH',
         refNo: specificRef,
         salaryBreakup: { basic: 30000, hra: 12000, lta: 3000, conveyance: 2000, medical: 2000, special: 21000, edu: 0, fixed: 5000 }, 
@@ -3798,16 +3805,23 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         root.appendChild(styleTag);
         document.body.appendChild(root);
 
-        await new Promise(r => setTimeout(r, 250)); // More time for fonts
+        // Wait for font rendering - increased for reliability
+        await new Promise(r => setTimeout(r, 500)); 
 
         // 3. Capture Canvas with Transparency
+        // 794px is the standard pixel width for 210mm at 96DPI
+        const A4_PX_W = 794; 
         const canvas = await html2canvas(root, {
             scale: 2.5,
             useCORS: true,
-            backgroundColor: null, // CRITICAL: null enables transparency
+            backgroundColor: null, 
             logging: false,
-            width: PAGE_W_MM * PX_PER_MM,
-            windowWidth: PAGE_W_MM * PX_PER_MM
+            width: A4_PX_W,
+            windowWidth: A4_PX_W,
+            onclone: (clonedDoc) => {
+                const el = clonedDoc.getElementById('pdf-ultra-render');
+                if (el) el.style.left = '0';
+            }
         });
         document.body.removeChild(root);
 
