@@ -3797,18 +3797,18 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         
         // Exact clones of preview metrics
         const size = document.getElementById('letterFontSize')?.value || 11;
-        const type = document.getElementById('letterFontType')?.value || 'helvetica';
+        const fontType = document.getElementById('letterFontType')?.value || 'helvetica';
         const align = document.getElementById('letterAlignment')?.value || 'left';
 
         let fontStack = "'Plus Jakarta Sans', sans-serif";
-        if (type === 'times') fontStack = "'Times New Roman', Times, serif";
-        else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
-        else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-        else if (type === 'courier') fontStack = "'Courier New', monospace";
-        else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
-        else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
-        else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
-        else if (type === 'georgia') fontStack = "Georgia, serif";
+        if (fontType === 'times') fontStack = "'Times New Roman', Times, serif";
+        else if (fontType === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+        else if (fontType === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+        else if (fontType === 'courier') fontStack = "'Courier New', monospace";
+        else if (fontType === 'roboto') fontStack = "'Roboto', sans-serif";
+        else if (fontType === 'outfit') fontStack = "'Outfit', sans-serif";
+        else if (fontType === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
+        else if (fontType === 'georgia') fontStack = "Georgia, serif";
 
         // 2. Prepare the ACTUAL Live Preview Frame for capture
         const previewFrame = document.getElementById('livePreviewFrame');
