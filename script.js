@@ -3743,11 +3743,12 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         }
 
         // 1. Configs (A4 = 210x297mm)
+        // Match style.css: livePreviewFrame has 210mm width and 20mm default padding
         const MARGIN_T = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
         const MARGIN_B = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
-        const MARGIN_L = 18;
-        const MARGIN_R = 18;
-        const USABLE_W_MM = 210 - MARGIN_L - MARGIN_R;
+        const MARGIN_L = 20; // Exact match to style.css .livePreviewFrame padding
+        const MARGIN_R = 20; 
+        const USABLE_W_MM = 210 - MARGIN_L - MARGIN_R; // 170mm
         const PX_PER_MM = 3.78; // A4 Standard at 96DPI
         const USABLE_W_PX = USABLE_W_MM * PX_PER_MM;
         const PAGE_H_MM = 297;
@@ -3758,11 +3759,12 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         
         // 3. Create High-Resolution Render Root
         const root = document.createElement('div');
-        root.style.width = `${USABLE_W_PX}px`;
+        root.style.width = `${USABLE_W_PX}px`; 
         root.style.padding = "0";
         root.style.margin = "0";
-        root.style.background = "white"; // Ensure white background
-        root.style.color = "black"; // Force black text
+        root.style.background = "#ffffff"; 
+        root.style.color = "#000000"; 
+        
         const type = document.getElementById('letterFontType')?.value || companyData.letterFontType || 'helvetica';
         let fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
         if (type === 'times') fontStack = "'Times New Roman', Times, serif";
@@ -3774,25 +3776,26 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
         else if (type === 'georgia') fontStack = "Georgia, serif";
 
+        const size = document.getElementById('letterFontSize')?.value || 11;
         root.style.fontFamily = fontStack;
-        root.style.fontSize = "11.5pt";
-        root.style.lineHeight = "1.6";
+        root.style.fontSize = `${size}pt`; // Match editor's dynamic size
+        root.style.lineHeight = "1.7"; // Match style.css line 2005
         root.style.position = "absolute";
         root.style.top = "0";
-        root.style.left = "-5000px"; 
+        root.style.left = "-10000px"; 
         root.style.visibility = "visible";
         
         root.innerHTML = `
             <style>
-                #pdf-render-wrapper * { color: black !important; -webkit-text-fill-color: black !important; }
-                #pdf-render-wrapper table, #pdf-render-wrapper td, #pdf-render-wrapper th { border-color: black !important; color: black !important; }
-                #pdf-render-wrapper ul, #pdf-render-wrapper li { color: black !important; }
+                #pdf-render-wrapper * { 
+                    color: #000000 !important; 
+                    -webkit-text-fill-color: #000000 !important; 
+                    font-family: inherit !important;
+                }
+                #pdf-render-wrapper table, #pdf-render-wrapper td, #pdf-render-wrapper th { border-color: #000000 !important; color: #000000 !important; }
+                #pdf-render-wrapper ul, #pdf-render-wrapper li { color: #000000 !important; }
             </style>
             <div id="pdf-render-wrapper">
-                <div style="text-align: right; margin-bottom: 35px;">
-                    <div style="font-weight: 700; font-size: 13pt;">Ref: ${app.refNo || "REF/GEN/000"}</div>
-                    <div style="font-size: 11pt; opacity: 0.8;">Date: ${new Date().toLocaleDateString('en-GB', {day:'2-digit', month:'long', year:'numeric'})}</div>
-                </div>
                 <div class="content-wrapper">
                     ${fillLetterPlaceholders(template, app, true)}
                 </div>
@@ -3800,12 +3803,16 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         `;
         document.body.appendChild(root);
 
+        // Wait a tiny bit for fonts
+        await new Promise(r => setTimeout(r, 100));
+
         // 4. Transform HTML to Canvas
         const canvas = await html2canvas(root, {
-            scale: 2, // High resolution
+            scale: 2.5, // Even higher resolution
             useCORS: true,
             backgroundColor: "#ffffff",
-            logging: false
+            logging: false,
+            windowWidth: USABLE_W_PX
         });
         document.body.removeChild(root);
 
@@ -3841,33 +3848,6 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 const sliceData = sliceCanvas.toDataURL('image/png');
                 const sliceDisplayH = (sliceCanvas.height / canvasW) * USABLE_W_MM;
                 pdf.addImage(sliceData, 'PNG', MARGIN_L, MARGIN_T, USABLE_W_MM, sliceDisplayH, undefined, 'FAST');
-            }
-
-            // Layer 3: Signatory (Top - ONLY on last page)
-            if (i === totalPages - 1) {
-                let sigY = MARGIN_T + (contentHeightMM % CONTENT_H_PER_PAGE_MM) + 10;
-                if (sigY > 297 - MARGIN_B - 55) {
-                    pdf.addPage();
-                    if (lhAsset?.data) pdf.addImage(lhAsset.data, 'PNG', 0, 0, 210, 297, undefined, 'NONE');
-                    sigY = MARGIN_T;
-                }
-
-                const finalY = sigY + 5;
-                const stamps = companyData.stamp || [];
-                if (stamps.length) pdf.addImage(stamps[stamps.length - 1].data, 'PNG', MARGIN_L, finalY, 35, 35, undefined, 'FAST');
-                
-                const sigs = companyData.digitalSignature || [];
-                if (sigs.length) pdf.addImage(sigs[sigs.length - 1].data, 'PNG', 145, finalY + 10, 45, 20, undefined, 'FAST');
-
-                const textY = finalY + 45;
-                pdf.setFontSize(11);
-                pdf.setFont("helvetica", "bold");
-                pdf.text("Authorized Signatory", MARGIN_L, textY);
-                pdf.text(companyData.signatoryName || "HR Department", 145, textY);
-                pdf.setFontSize(9);
-                pdf.setFont("helvetica", "normal");
-                pdf.text(companyData.name || "Emyris Biolifesciences", MARGIN_L, textY + 5);
-                pdf.text(companyData.signatoryDesignation || "HR Business Partner", 145, textY + 5);
             }
         }
         unlockUI();
