@@ -3071,10 +3071,15 @@ function syncEditorStyles() {
     const type = document.getElementById('letterFontType')?.value || 'helvetica';
     const align = document.getElementById('letterAlignment')?.value || 'left';
     
-    let fontStack = "'Courier New', monospace";
+    let fontStack = "'Plus Jakarta Sans', sans-serif";
     if (type === 'times') fontStack = "'Times New Roman', Times, serif";
     else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
     else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+    else if (type === 'courier') fontStack = "'Courier New', monospace";
+    else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
+    else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
+    else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
+    else if (type === 'georgia') fontStack = "Georgia, serif";
     
     const editor = document.getElementById('unifiedEditor');
     if (editor) {
@@ -3635,10 +3640,15 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     const marginT = document.getElementById('headerHeight')?.value || 65;
     const marginB = document.getElementById('footerHeight')?.value || 25;
 
-    let fontStack = "'Courier New', monospace";
+    let fontStack = "'Plus Jakarta Sans', sans-serif";
     if (type === 'times') fontStack = "'Times New Roman', Times, serif";
     else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
     else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+    else if (type === 'courier') fontStack = "'Courier New', monospace";
+    else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
+    else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
+    else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
+    else if (type === 'georgia') fontStack = "Georgia, serif";
     
     frame.style.fontSize = `${size}pt`;
     frame.style.fontFamily = fontStack;
@@ -3765,7 +3775,18 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         root.style.margin = "0";
         root.style.background = "white"; // Ensure white background
         root.style.color = "black"; // Force black text
-        root.style.fontFamily = "'Plus Jakarta Sans', Arial, sans-serif";
+        const type = document.getElementById('letterFontType')?.value || companyData.letterFontType || 'helvetica';
+        let fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+        if (type === 'times') fontStack = "'Times New Roman', Times, serif";
+        else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+        else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+        else if (type === 'courier') fontStack = "'Courier New', monospace";
+        else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
+        else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
+        else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
+        else if (type === 'georgia') fontStack = "Georgia, serif";
+
+        root.style.fontFamily = fontStack;
         root.style.fontSize = "11.5pt";
         root.style.lineHeight = "1.6";
         root.style.position = "absolute";
