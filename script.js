@@ -1389,6 +1389,7 @@ async function handleAdminLogin() {
         body: JSON.stringify({ username, password })
     });
     if ((await res.json()).success) {
+        sessionStorage.setItem('admin_auth', 'true');
         updateView('adminDashboard');
         switchAdminTab('profile');
     } else {
@@ -1400,7 +1401,28 @@ async function handleAdminLogin() {
 
 
 function logoutAdmin() {
+    sessionStorage.removeItem('admin_auth');
     updateView('landingPage');
+}
+
+async function initializeApp() {
+    console.log('🚀 Emyris App initialized v1.3');
+    await fetchCompanyData();
+    
+    const wasAdmin = sessionStorage.getItem('admin_auth') === 'true';
+    
+    setTimeout(() => {
+        if (wasAdmin) {
+            updateView('adminDashboard');
+            switchAdminTab('profile');
+            console.log('🔄 Session Recovered: Admin Dashboard');
+        } else {
+            updateView('landingPage');
+            console.log('✅ View state synchronized: landingPage');
+        }
+    }, 150);
+    initBackgroundAnimations();
+    initFileListeners();
 }
 
 // Removed legacy saveCompanyProfile function
@@ -4350,18 +4372,6 @@ async function publishLetterToHub() {
     finally { unlockUI(); }
 }
 
-// Master initialization
-async function initializeApp() {
-    console.log('🚀 Emyris App initialized v1.3');
-    await fetchCompanyData();
-    // Add a small delay to ensure DOM and data are settled before applying view classes
-    setTimeout(() => {
-        updateView('landingPage');
-        console.log('✅ View state synchronized: landingPage');
-    }, 150);
-    initBackgroundAnimations();
-    initFileListeners();
-}
 
 window.onload = initializeApp;
 
