@@ -3586,7 +3586,7 @@ function toggleLivePreviewUI(show) {
     }
 }
 
-function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE") {
+function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skipHighlights = false) {
     const frame = document.getElementById('livePreviewFrame');
     if (!frame) return;
     
@@ -3615,15 +3615,19 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
 
     rendered = fillLetterPlaceholders(html, mockApp);
     
-    // Highlight placeholders in preview for visual clarity
-    const todayStr = new Date().toLocaleDateString('en-GB');
-    const highlights = [
-        'SMRUTI RANJAN DASH', specificRef, todayStr, 'PRODUCT MANAGER', 'BHUBANESWAR', 'Rs. 75,000'
-    ];
-    highlights.forEach(h => {
-        const regex = new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-        rendered = rendered.replace(regex, `<span class="preview-highlight">${h}</span>`);
-    });
+    // Highlight placeholders in preview for visual clarity (Skip for PDF capture)
+    if (!skipHighlights) {
+        const todayStr = new Date().toLocaleDateString('en-GB');
+        const hList = [
+            'SMRUTI RANJAN DASH', specificRef, todayStr, 'PRODUCT MANAGER', 'BHUBANESWAR', 'Rs. 75,000'
+        ];
+        hList.forEach(h => {
+            if (h && typeof h === 'string') {
+                const regex = new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                rendered = rendered.replace(regex, `<span class="preview-highlight">${h}</span>`);
+            }
+        });
+    }
 
     frame.innerHTML = rendered;
     
@@ -3771,59 +3775,63 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
         else if (type === 'georgia') fontStack = "Georgia, serif";
 
-        // 2. Create High-Fidelity Render Root (Hidden mirror of Live Preview)
-        const root = document.createElement('div');
-        root.id = "pdf-ultra-render";
-        root.style.width = `${PAGE_W_MM}mm`;
-        root.style.minHeight = `${PAGE_H_MM}mm`;
-        root.style.padding = `${MARGIN_T}mm 20mm ${MARGIN_B}mm 20mm`; // Match Live Preview Padding
-        root.style.background = "transparent"; // MUST BE TRANSPARENT to show letterhead
-        root.style.color = "#000000";
-        root.style.fontFamily = fontStack;
-        root.style.setProperty('--current-letter-font', fontStack); 
-        root.style.fontSize = `${size}pt`;
-        root.style.lineHeight = "1.7";
-        root.style.textAlign = align;
-        root.style.position = "absolute";
-        root.style.top = "0";
-        root.style.left = "-20000px"; 
-        root.style.boxSizing = "border-box";
-        root.style.visibility = "visible";
+        // 1. Configs
+        const PAGE_W_MM = 210;
+        const PAGE_H_MM = 297;
+        const A4_PX_W = 794; // Critical constant for 210mm @ 96DPI
         
-        const rawHtml = htmlOverride || document.getElementById('unifiedEditor').innerHTML;
-        root.innerHTML = fillLetterPlaceholders(rawHtml, app, true);
+        // 2. Prepare the ACTUAL Live Preview Frame for capture
+        const previewFrame = document.getElementById('livePreviewFrame');
+        const previewContainer = document.getElementById('livePreviewContainer');
+        if (!previewFrame || !previewContainer) { unlockUI(); return; }
 
-        const styleTag = document.createElement('style');
-        styleTag.innerHTML = `
-            #pdf-ultra-render * { 
-                color: #000000 !important; 
-                -webkit-text-fill-color: #000000 !important;
-                font-family: inherit !important;
-            }
-            #pdf-ultra-render table, #pdf-ultra-render td { border-color: #000000 !important; }
-        `;
-        root.appendChild(styleTag);
-        document.body.appendChild(root);
+        const isInitiallyHidden = previewContainer.classList.contains('hidden');
+        const originalStyles = {
+            position: previewContainer.style.position,
+            left: previewContainer.style.left,
+            top: previewContainer.style.top,
+            zIndex: previewContainer.style.zIndex,
+            opacity: previewContainer.style.opacity,
+            display: previewContainer.style.display,
+            visibility: previewContainer.style.visibility
+        };
 
-        // Wait for font rendering - increased for reliability
-        await new Promise(r => setTimeout(r, 500)); 
+        // Render "Clean" version into the ACTUAL preview frame (no highlights)
+        // This ensures the EXACT same rendering environment (CSS, Parents, etc.)
+        updateLivePreviewFrame(htmlOverride, null, true); // Added 3rd param for clean render
 
-        // 3. Capture Canvas with Transparency
-        // 794px is the standard pixel width for 210mm at 96DPI
-        const A4_PX_W = 794; 
-        const canvas = await html2canvas(root, {
-            scale: 2.5,
+        if (isInitiallyHidden) {
+            previewContainer.classList.remove('hidden');
+            previewContainer.style.position = 'fixed';
+            previewContainer.style.left = '0';
+            previewContainer.style.top = '0';
+            previewContainer.style.zIndex = '-9999';
+            previewContainer.style.opacity = '0';
+            previewContainer.style.display = 'block';
+            previewContainer.style.visibility = 'visible';
+        }
+
+        // Wait for rendering to settle
+        await new Promise(r => setTimeout(r, 600)); 
+
+        // 3. High-Precision Capture of the ACTUAL preview frame
+        const canvas = await html2canvas(previewFrame, {
+            scale: 3, // Even higher for text fidelity
             useCORS: true,
             backgroundColor: null, 
             logging: false,
             width: A4_PX_W,
-            windowWidth: A4_PX_W,
-            onclone: (clonedDoc) => {
-                const el = clonedDoc.getElementById('pdf-ultra-render');
-                if (el) el.style.left = '0';
-            }
+            windowWidth: A4_PX_W
         });
-        document.body.removeChild(root);
+
+        // 4. Restore original state
+        if (isInitiallyHidden) {
+            previewContainer.classList.add('hidden');
+            Object.assign(previewContainer.style, originalStyles);
+        } else {
+            // Restore highlights for the user who is looking at the preview
+            updateLivePreviewFrame(htmlOverride, null, false);
+        }
 
         const canvasW = canvas.width;
         const canvasH = canvas.height;
