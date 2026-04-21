@@ -3770,24 +3770,22 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         root.style.width = `${PAGE_W_MM}mm`;
         root.style.minHeight = `${PAGE_H_MM}mm`;
         root.style.padding = `${MARGIN_T}mm 20mm ${MARGIN_B}mm 20mm`; // Match Live Preview Padding
-        root.style.background = "#ffffff";
+        root.style.background = "transparent"; // MUST BE TRANSPARENT to show letterhead
         root.style.color = "#000000";
         root.style.fontFamily = fontStack;
-        root.style.setProperty('--current-letter-font', fontStack); // Use CSS variable for children
+        root.style.setProperty('--current-letter-font', fontStack); 
         root.style.fontSize = `${size}pt`;
         root.style.lineHeight = "1.7";
         root.style.textAlign = align;
         root.style.position = "absolute";
         root.style.top = "0";
-        root.style.left = "-20000px"; // Far off-screen
+        root.style.left = "-20000px"; 
         root.style.boxSizing = "border-box";
         root.style.visibility = "visible";
         
-        // Clean HTML (no highlights)
         const rawHtml = htmlOverride || document.getElementById('unifiedEditor').innerHTML;
         root.innerHTML = fillLetterPlaceholders(rawHtml, app, true);
 
-        // Inject forced black-text styles for child elements
         const styleTag = document.createElement('style');
         styleTag.innerHTML = `
             #pdf-ultra-render * { 
@@ -3800,14 +3798,13 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         root.appendChild(styleTag);
         document.body.appendChild(root);
 
-        // Wait for font rendering
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise(r => setTimeout(r, 250)); // More time for fonts
 
-        // 3. Capture Canvas
+        // 3. Capture Canvas with Transparency
         const canvas = await html2canvas(root, {
             scale: 2.5,
             useCORS: true,
-            backgroundColor: "#ffffff",
+            backgroundColor: null, // CRITICAL: null enables transparency
             logging: false,
             width: PAGE_W_MM * PX_PER_MM,
             windowWidth: PAGE_W_MM * PX_PER_MM
