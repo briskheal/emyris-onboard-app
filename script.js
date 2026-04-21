@@ -1,3 +1,4 @@
+console.log('📁 script.js: Primary Execution Trap Active');
 let currentStep = 1;
 let isSaving = false;
 let companyData = { name: "", address: "", phone: "", tollFree: "", website: "", logo: "" };
@@ -3797,11 +3798,6 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
         else if (type === 'georgia') fontStack = "Georgia, serif";
 
-        // 1. Configs
-        const PAGE_W_MM = 210;
-        const PAGE_H_MM = 297;
-        const A4_PX_W = 794; // Critical constant for 210mm @ 96DPI
-        
         // 2. Prepare the ACTUAL Live Preview Frame for capture
         const previewFrame = document.getElementById('livePreviewFrame');
         const previewContainer = document.getElementById('livePreviewContainer');
@@ -4433,4 +4429,4 @@ function lockMaintenanceMode() {
     toggleReauthForm(false);
 }
 
-window.onload = initializeApp;
+window.addEventListener('DOMContentLoaded', initializeApp);
