@@ -3084,7 +3084,7 @@ function syncEditorStyles() {
     const editor = document.getElementById('unifiedEditor');
     if (editor) {
         editor.style.fontSize = `${size}pt`;
-        editor.style.fontFamily = fontStack;
+        editor.style.setProperty('--current-letter-font', fontStack);
         editor.style.textAlign = align;
         // Match app's dark theme
         editor.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
@@ -3593,23 +3593,11 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     const html = specificHtml || document.getElementById('unifiedEditor').innerHTML;
     let rendered = html;
     
-    // 1. Apply Background Letterhead to simulate the PDF
-    const lhArr = companyData.letterheadImage || [];
-    if (lhArr.length) {
-        const val = lhArr[lhArr.length - 1].data;
-        frame.style.backgroundImage = `url(${val})`;
-        frame.style.backgroundSize = 'contain';
-        frame.style.backgroundRepeat = 'no-repeat';
-        frame.style.backgroundPosition = 'center';
-    } else {
-        frame.style.backgroundImage = 'none';
-    }
-
-    // 2. High-Fidelity Placeholder replacement using core helper
+    // 1. High-Fidelity Placeholder replacement using core helper
     const mockApp = {
         fullName: 'SMRUTI RANJAN DASH',
         refNo: specificRef,
-        salaryBreakup: { basic: 30000, hra: 12000, lta: 3000, conveyance: 2000, medical: 2000, special: 21000, edu: 0, fixed: 5000 }, // Mock 75k gross
+        salaryBreakup: { basic: 30000, hra: 12000, lta: 3000, conveyance: 2000, medical: 2000, special: 21000, edu: 0, fixed: 5000 }, 
         formData: {
             firstName: 'SMRUTI',
             designation: document.getElementById('signatoryDesg')?.value || 'PRODUCT MANAGER',
@@ -3618,7 +3606,6 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
         }
     };
 
-    // Use core helper (defaults to forPDF = false, which is white text)
     rendered = fillLetterPlaceholders(html, mockApp);
     
     // Highlight placeholders in preview for visual clarity
@@ -3633,7 +3620,7 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
 
     frame.innerHTML = rendered;
     
-    // 3. Apply Real-time Styles accurately
+    // 2. Apply Real-time Styles accurately
     const size = document.getElementById('letterFontSize')?.value || 11;
     const type = document.getElementById('letterFontType')?.value || 'helvetica';
     const align = document.getElementById('letterAlignment')?.value || 'left';
@@ -3651,24 +3638,25 @@ function updateLivePreviewFrame(specificHtml = null, specificRef = "REF/PRV/LIVE
     else if (type === 'georgia') fontStack = "Georgia, serif";
     
     frame.style.fontSize = `${size}pt`;
-    frame.style.fontFamily = fontStack;
+    frame.style.setProperty('--current-letter-font', fontStack);
     frame.style.textAlign = align;
     frame.style.paddingTop = `${marginT}mm`;
     frame.style.paddingBottom = `${marginB}mm`;
 
-    // APPLY LETTERHEAD TO EDITOR BACKGROUND (Fidelity Preview)
+    // 3. APPLY LETTERHEAD TO PREVIEW BACKGROUND
+    const lhArr = companyData.letterheadImage || [];
     if (lhArr.length) {
         const val = lhArr[lhArr.length - 1].data;
         frame.style.backgroundImage = `url(${val})`;
         frame.style.backgroundSize = '100% auto';
         frame.style.backgroundRepeat = 'repeat-y';
         frame.style.backgroundPosition = 'top center';
-        frame.style.backgroundColor = 'transparent'; 
-        frame.style.color = '#000000';
+        frame.style.backgroundColor = '#ffffff'; // White paper base
+        frame.style.color = '#000000'; // Black text for letterhead
     } else {
         frame.style.backgroundImage = 'none';
         frame.style.backgroundColor = 'rgba(15, 23, 42, 0.6)'; // Restore Dark Theme
-        frame.style.color = '#f1f5f9';
+        frame.style.color = '#ffffff'; // White text for dark mode
     }
 }
 
