@@ -4432,3 +4432,5 @@ function lockMaintenanceMode() {
     document.getElementById('maintenanceLocked').classList.remove('hidden');
     toggleReauthForm(false);
 }
+
+window.onload = initializeApp;
