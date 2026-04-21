@@ -3794,6 +3794,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         const PAGE_W_MM = 210;
         const PAGE_H_MM = 297;
         const PX_PER_MM = 3.78; 
+        const A4_PX_W = 794; // Critical for capture width
         
         // Exact clones of preview metrics
         const size = document.getElementById('letterFontSize')?.value || 11;
