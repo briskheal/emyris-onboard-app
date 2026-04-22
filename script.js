@@ -350,6 +350,8 @@ function renderStep(step) {
     });
 
     window.scrollTo(0, 0);
+
+    if (step === 5) renderApplicantDocuments();
 }
 
 function showReview() {
