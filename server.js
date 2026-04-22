@@ -486,6 +486,10 @@ app.post('/api/submit-onboarding', async (req, res) => {
             { new: true }
         );
 
+        if (!applicant) {
+            return res.status(404).json({ success: false, message: 'Applicant session not found. Please log in again.' });
+        }
+
         const emailHtml = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
                 <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Onboarding Submission</h2>

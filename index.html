@@ -494,9 +494,20 @@
                     <div id="dynamicTestimonialUploads" class="upload-grid">
                         <!-- Injected by JS -->
                     </div>
-                    <div class="declaration-block" style="margin-top: 1.5rem;">
-                        <input type="checkbox" id="agree" required>
-                        <label for="agree">I declare that all info provided is true and correct.</label>
+                    <div class="declaration-block" style="margin-top: 1.5rem; background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05);">
+                        <h4 style="color: var(--accent); margin-bottom: 1rem;">📜 Declaration</h4>
+                        <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.6;">
+                            <li style="margin-bottom: 8px;">✅ I declare that all particulars given above are true and correct to the best of my knowledge and belief.</li>
+                            <li style="margin-bottom: 8px;">✅ I understand that any false information or suppression of material facts will lead to immediate disqualification or termination of service.</li>
+                            <li style="margin-bottom: 8px;">✅ I agree to abide by the service rules, regulations, and code of conduct of Emyris Biolifesciences.</li>
+                            <li style="margin-bottom: 8px;">✅ I authorize the company to verify my background, educational credentials, and employment history.</li>
+                            <li style="margin-bottom: 8px;">✅ I confirm that I am physically and mentally fit to perform the professional duties assigned to me.</li>
+                            <li style="margin-bottom: 0;">✅ I understand that this submission is final and cannot be edited after synchronization.</li>
+                        </ul>
+                        <div style="margin-top: 1.2rem; display: flex; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="agree" required style="width: 18px; height: 18px; cursor: pointer;">
+                            <label for="agree" style="font-weight: 600; cursor: pointer;">I Accept the Declaration</label>
+                        </div>
                     </div>
                     <div class="nav-buttons">
                         <button type="button" class="btn btn-secondary" onclick="prevStep(4)">Previous</button>

@@ -299,15 +299,36 @@ function showReview() {
     
     const reviewContent = document.getElementById('reviewContent');
     reviewContent.innerHTML = `
-        <div class="review-grid">
-            <div class="review-item"><strong>Name:</strong> ${data.title} ${data.firstName} ${data.lastName}</div>
-            <div class="review-item"><strong>DOB:</strong> ${data.dob}</div>
-            <div class="review-item"><strong>HQ:</strong> ${data.hq}</div>
-            <div class="review-item"><strong>Joining Date:</strong> ${data.joiningDate}</div>
-            <div class="review-item"><strong>CTC:</strong> ₹${data.salary}</div>
-            <div class="review-item"><strong>Bank:</strong> ${data.bankName} (${data.accNo})</div>
+        <div class="review-grid-premium">
+            <div class="review-section-sub">
+                <h4>👤 Personal & Professional</h4>
+                <div class="review-item"><strong>Full Name:</strong> ${data.title} ${data.firstName} ${data.middleName || ''} ${data.lastName}</div>
+                <div class="review-item"><strong>Father's Name:</strong> ${data.fatherName}</div>
+                <div class="review-item"><strong>DOB:</strong> ${formatDatePretty(data.dob)}</div>
+                <div class="review-item"><strong>Gender / Blood:</strong> ${data.gender} / ${data.bloodGroup}</div>
+                <div class="review-item"><strong>Designation:</strong> ${currentApplicant.designation}</div>
+                <div class="review-item"><strong>Division:</strong> ${currentApplicant.division}</div>
+            </div>
+            
+            <div class="review-section-sub">
+                <h4>📍 Contact & Location</h4>
+                <div class="review-item"><strong>Address:</strong> ${data.address}, ${data.city}, ${data.state} - ${data.pin}</div>
+                <div class="review-item"><strong>HQ Preference:</strong> ${data.hq}</div>
+                <div class="review-item"><strong>Joining Date:</strong> ${formatDatePretty(data.joiningDate)}</div>
+                <div class="review-item"><strong>Negotiated CTC:</strong> ₹${data.salary}</div>
+            </div>
+
+            <div class="review-section-sub">
+                <h4>🏦 Bank Account Details</h4>
+                <div class="review-item"><strong>Bank Name:</strong> ${data.bankName}</div>
+                <div class="review-item"><strong>Acc Holder:</strong> ${data.accHolder}</div>
+                <div class="review-item"><strong>Acc Number:</strong> ${data.accNo}</div>
+                <div class="review-item"><strong>IFSC Code:</strong> ${data.ifsc}</div>
+            </div>
         </div>
-        <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-muted);">Please ensure all uploaded documents are legible before finalizing.</p>
+        <p style="margin-top: 1.5rem; font-size: 0.82rem; color: var(--accent); background: rgba(99,102,241,0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.2);">
+            ⚠️ Please review the above details carefully. Once submitted, you cannot change them without admin intervention.
+        </p>
     `;
     
     renderStep(6);
