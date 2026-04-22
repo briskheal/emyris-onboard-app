@@ -184,6 +184,8 @@ const applicantSchema = new mongoose.Schema({
     division: String,
     reportingTo: String,
     hq: String,
+    dob: Date,
+    address: String,
     empCode: String,
     refNo: String,
     salaryBreakup: { type: Object, default: {} },
@@ -485,7 +487,9 @@ app.post('/api/submit-onboarding', async (req, res) => {
                 canLogin: false,
                 submittedAt: new Date(),
                 hq: formData.hq,
-                actualJoiningDate: formData.joiningDate
+                actualJoiningDate: formData.joiningDate,
+                dob: formData.dob ? new Date(formData.dob) : null,
+                address: formData.address || ""
             },
             { new: true }
         );
@@ -526,6 +530,26 @@ app.post('/api/submit-onboarding', async (req, res) => {
 });
 
 // --- APPLICANT DOCUMENT UPLOAD ---
+// Save Progress (Draft)
+app.post('/api/applicant/save-draft', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+        if (!email) return res.status(400).json({ error: 'Missing email' });
+
+        await Applicant.findOneAndUpdate(
+            { email },
+            { 
+                formData,
+                hq: formData.hq,
+                actualJoiningDate: formData.joiningDate,
+                dob: formData.dob ? new Date(formData.dob) : null,
+                address: formData.address || ""
+            }
+        );
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 app.post('/api/applicant/upload-document', async (req, res) => {
     try {
         const { email, category, fileName, fileData } = req.body;
@@ -564,19 +588,20 @@ app.post('/api/applicant/upload-document', async (req, res) => {
             uploadedAt: new Date()
         };
 
-        // Use atomic update to prevent race conditions during concurrent uploads
-        await Applicant.updateOne(
-            { email },
-            { 
-                $pull: { documents: { category: category } }
-            }
-        );
+        // Logic: Replace for IDs, Append for academic/financial docs
+        const multiAllowed = ['Degree Certificate', 'Provisional Certificate', 'Salary Slip', 'Experience Letter', 'Testimonial'];
+        const isMulti = multiAllowed.some(m => category.includes(m));
+
+        if (!isMulti) {
+            await Applicant.updateOne(
+                { email },
+                { $pull: { documents: { category: category } } }
+            );
+        }
         
         await Applicant.updateOne(
             { email },
-            { 
-                $push: { documents: docMetadata }
-            }
+            { $push: { documents: docMetadata } }
         );
 
         console.log(`Γ£à [DOC] Atomic Upload: ${category} for ${email} (Asset: ${savedAsset._id})`);

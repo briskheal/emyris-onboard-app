@@ -248,6 +248,10 @@ function resumeApplication() {
     // New or Draft
     updateView('onboardingForm');
     currentStep = 1;
+    
+    // Crucial: Populate dropdowns so they have options before pre-filling
+    populateDropdowns(); 
+    
     renderStep(1);
     prefillForm();
     renderApplicantDocuments();
@@ -257,10 +261,11 @@ function prefillForm() {
     const form = document.getElementById('onboardingForm');
     if (!form) return;
 
-    // Prefill from root properties
+    // 1. Prefill from root properties
     if (currentApplicant.title) document.getElementById('onboardingTitle').value = currentApplicant.title;
     
-    const nameParts = (currentApplicant.fullName || "").split(' ');
+    const fullName = currentApplicant.fullName || "";
+    const nameParts = fullName.split(' ');
     if (nameParts.length >= 1) document.getElementById('firstName').value = nameParts[0];
     if (nameParts.length >= 3) {
         document.getElementById('lastName').value = nameParts.pop();
@@ -269,11 +274,17 @@ function prefillForm() {
         document.getElementById('lastName').value = nameParts[1];
     }
 
-    // Prefill from formData
+    if (currentApplicant.phone) document.getElementById('phone').value = currentApplicant.phone;
+    if (currentApplicant.hq) document.getElementById('hq').value = currentApplicant.hq;
+    
+    // 2. Prefill from formData
     if (currentApplicant.formData) {
         for (const [key, val] of Object.entries(currentApplicant.formData)) {
             const field = form.elements[key];
-            if (field) field.value = val;
+            if (field) {
+                if (field.type === 'checkbox') field.checked = val;
+                else field.value = val;
+            }
         }
         // Sync salary words if prefilled
         if (currentApplicant.formData.salary) updateSalaryWords('salary', 'salary_words');
@@ -294,7 +305,25 @@ function nextStep(step) {
         }
     }
 
+    // Auto-save draft on every step transition
+    saveProgress();
+
     renderStep(step);
+}
+
+async function saveProgress() {
+    if (!currentApplicant) return;
+    const form = document.getElementById('onboardingForm');
+    if (!form) return;
+    
+    const formData = Object.fromEntries(new FormData(form).entries());
+    try {
+        await fetch('/api/applicant/save-draft', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentApplicant.email, formData })
+        });
+    } catch (e) { console.warn('Draft save failed'); }
 }
 
 function prevStep(step) {
@@ -326,58 +355,130 @@ function renderStep(step) {
 function showReview() {
     const form = document.getElementById('onboardingForm');
     const fd = new FormData(form);
-    const data = Object.fromEntries(fd.entries());
-    
     const reviewContent = document.getElementById('reviewContent');
-    const docs = currentApplicant.documents || [];
     
-    reviewContent.innerHTML = `
-        <div class="review-grid-premium">
-            <div class="review-section-sub">
-                <h4>👤 Personal & Professional</h4>
-                <div class="review-item"><strong>Full Name:</strong> ${data.title} ${data.firstName} ${data.middleName || ''} ${data.lastName}</div>
-                <div class="review-item"><strong>Father's Name:</strong> ${data.fatherName}</div>
-                <div class="review-item"><strong>DOB:</strong> ${formatDatePretty(data.dob)}</div>
-                <div class="review-item"><strong>Designation:</strong> ${currentApplicant.designation || currentApplicant.formData?.designation || 'Role Not Set'}</div>
-                <div class="review-item"><strong>Division:</strong> ${currentApplicant.division || 'General'}</div>
-            </div>
-            
-            <div class="review-section-sub">
-                <h4>📍 Contact & Location</h4>
-                <div class="review-item"><strong>Address:</strong> ${data.address}, ${data.city}, ${data.state} - ${data.pin}</div>
-                <div class="review-item"><strong>HQ Preference:</strong> ${data.hq}</div>
-                <div class="review-item"><strong>Joining Date:</strong> ${formatDatePretty(data.joiningDate)}</div>
-                <div class="review-item"><strong>Negotiated CTC:</strong> ₹${data.salary}</div>
-            </div>
+    // Clear and prepare
+    reviewContent.innerHTML = '';
+    const docs = currentApplicant.documents || [];
 
-            <div class="review-section-sub">
-                <h4>🏦 Bank Account Details</h4>
-                <div class="review-item"><strong>Bank Name:</strong> ${data.bankName}</div>
-                <div class="review-item"><strong>Acc Holder:</strong> ${data.accHolder}</div>
-                <div class="review-item"><strong>Acc Number:</strong> ${data.accNo}</div>
-                <div class="review-item"><strong>IFSC Code:</strong> ${data.ifsc}</div>
-            </div>
-
-            <div class="review-section-sub" style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
-                <h4>📁 Document Checklist</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
-                    ${(companyData.requiredDocs || []).map(d => {
-                        const has = docs.some(u => u.category === d);
-                        return `<div style="font-size:0.8rem; color: ${has ? 'var(--success)' : '#ef4444'}">${has ? '✅' : '⚠️'} ${d}</div>`;
-                    }).join('')}
-                    ${(() => {
-                        const hasSig = docs.some(u => u.category === 'Digital Signature');
-                        return `<div style="font-size:0.8rem; color: ${hasSig ? 'var(--success)' : '#ef4444'}">${hasSig ? '✅' : '⚠️'} Digital Signature</div>`;
-                    })()}
+    // Header with Profile Preview
+    const headerHtml = `
+        <div class="review-section-group" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.05)); border: 1px solid var(--primary); margin-bottom: 2rem;">
+            <div style="display: flex; gap: 20px; align-items: center;">
+                <div style="width: 60px; height: 60px; background: var(--primary); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);">👤</div>
+                <div>
+                    <h3 style="margin: 0; color: white; letter-spacing: -0.5px;">${currentApplicant.fullName.toUpperCase()}</h3>
+                    <p style="margin: 0; color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">${currentApplicant.designation || currentApplicant.formData?.designation || 'Role Not Set'}</p>
+                    <div style="display: flex; gap: 15px; margin-top: 5px;">
+                        <span style="font-size: 0.75rem; color: var(--primary-light);">📧 ${currentApplicant.email}</span>
+                        <span style="font-size: 0.75rem; color: var(--success);">🏢 ${currentApplicant.division || 'General'}</span>
+                    </div>
                 </div>
             </div>
         </div>
+    `;
 
-        <p style="margin-top: 1.5rem; font-size: 0.82rem; color: var(--accent); background: rgba(99,102,241,0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.2);">
-            ⚠️ Please review the above details and documents carefully. Once submitted, you cannot change them without admin intervention.
+    const groups = {
+        "👥 Personal Information": [
+            { id: 'title', label: 'Title' },
+            { id: 'firstName', label: 'First Name' },
+            { id: 'middleName', label: 'Middle Name' },
+            { id: 'lastName', label: 'Last Name' },
+            { id: 'fatherName', label: "Father's Name" },
+            { id: 'dob', label: 'Date of Birth', isDate: true },
+            { id: 'gender', label: 'Gender' },
+            { id: 'bloodGroup', label: 'Blood Group' }
+        ],
+        "💼 Employment & Location": [
+            { id: 'joiningDate', label: 'Expected DOJ', isDate: true },
+            { id: 'salary', label: 'Negotiated CTC', isMoney: true },
+            { id: 'hq', label: 'HQ Preference' },
+            { id: 'employeeType', label: 'Category' }
+        ],
+        "📍 Contact Details": [
+            { id: 'phone', label: 'Contact Phone' },
+            { id: 'address', label: 'Residential Address' },
+            { id: 'city', label: 'City' },
+            { id: 'state', label: 'State' },
+            { id: 'pin', label: 'Pincode' }
+        ],
+        "🏦 Financial Details": [
+            { id: 'bankName', label: 'Bank Name' },
+            { id: 'accHolder', label: 'Account Holder' },
+            { id: 'accNo', label: 'Account Number' },
+            { id: 'ifsc', label: 'IFSC Code' }
+        ]
+    };
+
+    let groupsHtml = '';
+    for (const [name, fields] of Object.entries(groups)) {
+        const items = fields.map(f => {
+            let val = fd.get(f.id) || "N/A";
+            if (f.isDate && val !== "N/A") val = formatDatePretty(val);
+            if (f.isMoney && val !== "N/A") val = `₹${parseFloat(val).toLocaleString('en-IN')}`;
+            
+            return `
+                <div class="review-item">
+                    <span class="review-label">${f.label}</span>
+                    <span class="review-value">${val}</span>
+                </div>
+            `;
+        }).join('');
+
+        groupsHtml += `
+            <div class="review-section-group" style="margin-bottom: 1.5rem;">
+                <h4>${name}</h4>
+                <div class="review-grid">
+                    ${items}
+                </div>
+            </div>
+        `;
+    }
+
+    // Documents Summary
+    const reqDocs = companyData.requiredDocs || [];
+    const docItems = reqDocs.map(dName => {
+        const catDocs = docs.filter(u => u.category === dName);
+        const has = catDocs.length > 0;
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid ${has ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};">
+                <span style="font-size: 0.85rem; color: white; font-weight: 500;">${dName}</span>
+                <span style="font-size: 0.75rem; font-weight: bold; color: ${has ? 'var(--success)' : '#ef4444'}">
+                    ${has ? `✅ ${catDocs.length} ${catDocs.length > 1 ? 'FILES' : 'FILE'}` : '⚠️ MISSING'}
+                </span>
+            </div>
+        `;
+    }).join('');
+
+    const sig = docs.find(u => u.category === 'Digital Signature');
+    const sigHtml = `
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid ${sig ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};">
+            <span style="font-size: 0.85rem; color: white; font-weight: 500;">Digital Signature</span>
+            <span style="font-size: 0.75rem; font-weight: bold; color: ${sig ? 'var(--success)' : '#ef4444'}">
+                ${sig ? '✅ UPLOADED' : '⚠️ MISSING'}
+            </span>
+        </div>
+    `;
+
+    const docGroupHtml = `
+        <div class="review-section-group">
+            <h4>📁 Document Verification Status</h4>
+            <div class="review-grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));">
+                ${docItems}
+                ${sigHtml}
+            </div>
+            ${docs.length === 0 ? '<div class="dash-alert warning" style="margin-top: 1rem; border-radius: 10px;">⚠️ No documents detected. Please ensure all required files are uploaded in Step 5.</div>' : ''}
+        </div>
+    `;
+
+    reviewContent.innerHTML = headerHtml + groupsHtml + docGroupHtml;
+    
+    reviewContent.innerHTML += `
+        <p style="margin-top: 1.5rem; font-size: 0.82rem; color: var(--accent); background: rgba(99, 102, 241, 0.1); padding: 15px; border-radius: 12px; border: 1px solid rgba(99, 102, 241, 0.2);">
+            ⚠️ <strong>Final Confirmation:</strong> Please review the above details and documents carefully. Once submitted, you cannot change them without admin intervention.
         </p>
     `;
-    
+
     renderStep(6);
 }
 
