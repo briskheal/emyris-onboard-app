@@ -1335,14 +1335,20 @@ app.get('/api/company-data', async (req, res) => {
         const company = await Company.findOne().lean();
         if (!company) return res.status(404).json({ error: 'Not found' });
 
-        const divisions = await Division.find({ active: true }).sort({ name: 1 }).lean();
-        const hqs = await HQ.find({ active: true }).sort({ name: 1 }).lean();
+        const rawDivisions = await Division.find({ active: true }).lean();
+        const hqs = await HQ.find({ active: true }).lean(); // Default sort
+
+        // Custom Sort: Move 'SALES' to top, keep others in insertion order
+        const salesDiv = rawDivisions.find(d => d.name === 'SALES');
+        const otherDivs = rawDivisions.filter(d => d.name !== 'SALES');
+        const divisions = salesDiv ? [salesDiv, ...otherDivs] : otherDivs;
 
         // Enrich divisions with their respective designations from company profile
         const enrichedDivisions = divisions.map(div => {
-            const desgs = (company.designations || []).filter(d => 
-                (typeof d === 'object' ? d.department : 'SALES') === div.name
-            );
+            const desgs = (company.designations || []).filter(d => {
+                const dept = (typeof d === 'object' ? d.department : 'SALES') || 'SALES';
+                return dept.toUpperCase().trim() === div.name.toUpperCase().trim();
+            });
             return {
                 ...div,
                 designations: desgs

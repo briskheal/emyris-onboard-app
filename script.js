@@ -79,10 +79,12 @@ function populateDropdowns() {
             (companyData.divisions || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
             
         divSel.onchange = (e) => {
-            const div = companyData.divisions.find(d => d.name === e.target.value);
-            if (div && div.designations) {
+            const div = (companyData.divisions || []).find(d => d.name === e.target.value);
+            if (div && div.designations && div.designations.length > 0) {
                 desSel.innerHTML = '<option value="">-- Select Designation --</option>' +
                     div.designations.map(ds => `<option value="${ds.title}">${ds.title}</option>`).join('');
+            } else if (div) {
+                desSel.innerHTML = '<option value="">⚠️ No designations for this division</option>';
             } else {
                 desSel.innerHTML = '<option value="">-- Select Division First --</option>';
             }
