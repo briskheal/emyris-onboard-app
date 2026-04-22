@@ -1377,11 +1377,11 @@ function renderVerificationProfile(app) {
         { label: 'Full Name', val: app.fullName },
         { label: 'Primary Email', val: app.email },
         { label: 'Contact Phone', val: app.phone },
-        { label: 'Designation', val: fd.designation || 'N/A' },
+        { label: 'Designation', val: app.designation || fd.designation || 'N/A' },
         { label: 'Joining HQ', val: app.hq || fd.hq || 'N/A' },
         { label: 'Date of Birth', val: formatDatePretty(fd.dob) },
         { label: 'Current Address', val: fd.address || 'N/A' },
-        { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : 'N/A' },
+        { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : (app.registeredAt ? new Date(app.registeredAt).toLocaleString() : 'N/A') },
         { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
         { label: 'Confirmed ADOJ', val: app.actualJoiningDate ? `<span style="color:var(--accent); font-weight:bold;">${new Date(app.actualJoiningDate).toDateString()}</span>` : 'N/A' },
         { 

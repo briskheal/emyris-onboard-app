@@ -81,21 +81,40 @@ function populateDropdowns() {
         divSel.onchange = (e) => {
             const divName = e.target.value;
             const div = (companyData.divisions || []).find(d => d.name === divName);
+            const picker = document.getElementById('regDesignationPicker');
+            const hiddenIn = document.getElementById('regDesignation');
             
             // Logic: If division has specific designations, show them. 
             // Otherwise, show all designations defined in company profile.
             let desgs = (div && div.designations && div.designations.length > 0) ? div.designations : (companyData.designations || []);
             
-            if (desgs.length > 0) {
-                desSel.innerHTML = '<option value="">-- Select Designation --</option>' +
-                    desgs.map(ds => {
-                        const title = typeof ds === 'string' ? ds : ds.title;
-                        return `<option value="${title}">${title}</option>`;
-                    }).join('');
-            } else if (divName) {
-                desSel.innerHTML = '<option value="">⚠️ No designations available</option>';
-            } else {
-                desSel.innerHTML = '<option value="">-- Select Division First --</option>';
+            if (desgs.length > 0 && picker) {
+                // Group by Department for the visual strip
+                const groups = {};
+                desgs.forEach(ds => {
+                    const dept = (typeof ds === 'object' ? ds.department : 'SALES') || 'SALES';
+                    if (!groups[dept]) groups[dept] = [];
+                    groups[dept].push(typeof ds === 'string' ? ds : ds.title);
+                });
+
+                picker.innerHTML = Object.keys(groups).map(dept => `
+                    <div class="dept-strip" style="background: var(--accent); color: #000; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; margin: 5px 0 2px 0; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;">${dept}</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                        ${groups[dept].map(title => `
+                            <div class="picker-chip" onclick="selectRegDesignation('${title.replace(/'/g, "\\'")}', this)" 
+                                 style="background: rgba(255,255,255,0.05); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">
+                                ${title}
+                            </div>
+                        `).join('')}
+                    </div>
+                `).join('');
+                hiddenIn.value = ""; // Reset
+            } else if (divName && picker) {
+                picker.innerHTML = '<p style="font-size: 0.75rem; color: #ef4444; text-align: center; margin: 10px 0;">⚠️ No designations available</p>';
+                hiddenIn.value = "";
+            } else if (picker) {
+                picker.innerHTML = '<p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 10px 0;">-- Select Division First --</p>';
+                hiddenIn.value = "";
             }
         };
     }
@@ -104,6 +123,18 @@ function populateDropdowns() {
         hqSel.innerHTML = '<option value="">-- Select HQ --</option>' +
             (companyData.hqs || []).map(h => `<option value="${h.name}">${h.name}</option>`).join('');
     }
+}
+
+function selectRegDesignation(title, el) {
+    document.getElementById('regDesignation').value = title;
+    document.querySelectorAll('#regDesignationPicker .picker-chip').forEach(c => {
+        c.style.background = 'rgba(255,255,255,0.05)';
+        c.style.borderColor = 'rgba(255,255,255,0.1)';
+        c.style.color = 'white';
+    });
+    el.style.background = 'var(--accent)';
+    el.style.borderColor = 'var(--accent)';
+    el.style.color = '#000';
 }
 
 // --- AUTH HANDLERS ---
@@ -298,6 +329,8 @@ function showReview() {
     const data = Object.fromEntries(fd.entries());
     
     const reviewContent = document.getElementById('reviewContent');
+    const docs = currentApplicant.documents || [];
+    
     reviewContent.innerHTML = `
         <div class="review-grid-premium">
             <div class="review-section-sub">
@@ -305,9 +338,8 @@ function showReview() {
                 <div class="review-item"><strong>Full Name:</strong> ${data.title} ${data.firstName} ${data.middleName || ''} ${data.lastName}</div>
                 <div class="review-item"><strong>Father's Name:</strong> ${data.fatherName}</div>
                 <div class="review-item"><strong>DOB:</strong> ${formatDatePretty(data.dob)}</div>
-                <div class="review-item"><strong>Gender / Blood:</strong> ${data.gender} / ${data.bloodGroup}</div>
-                <div class="review-item"><strong>Designation:</strong> ${currentApplicant.designation}</div>
-                <div class="review-item"><strong>Division:</strong> ${currentApplicant.division}</div>
+                <div class="review-item"><strong>Designation:</strong> ${currentApplicant.designation || currentApplicant.formData?.designation || 'Role Not Set'}</div>
+                <div class="review-item"><strong>Division:</strong> ${currentApplicant.division || 'General'}</div>
             </div>
             
             <div class="review-section-sub">
@@ -325,14 +357,19 @@ function showReview() {
                 <div class="review-item"><strong>Acc Number:</strong> ${data.accNo}</div>
                 <div class="review-item"><strong>IFSC Code:</strong> ${data.ifsc}</div>
             </div>
-        </div>
 
-        <div class="review-section-sub" style="margin-top: 1.5rem;">
-            <h4>📂 Uploaded Testimonials</h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                ${(currentApplicant.documents || []).length > 0 
-                    ? currentApplicant.documents.map(d => `<span style="background: rgba(16,185,129,0.1); color: #10b981; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid rgba(16,185,129,0.2);">✅ ${d.category}</span>`).join('')
-                    : '<span style="color: #ef4444; font-size: 0.85rem;">⚠️ No documents found. Please go back and upload required files.</span>'}
+            <div class="review-section-sub" style="grid-column: 1 / -1; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                <h4>📁 Document Checklist</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+                    ${(companyData.requiredDocs || []).map(d => {
+                        const has = docs.some(u => u.category === d);
+                        return `<div style="font-size:0.8rem; color: ${has ? 'var(--success)' : '#ef4444'}">${has ? '✅' : '⚠️'} ${d}</div>`;
+                    }).join('')}
+                    ${(() => {
+                        const hasSig = docs.some(u => u.category === 'Digital Signature');
+                        return `<div style="font-size:0.8rem; color: ${hasSig ? 'var(--success)' : '#ef4444'}">${hasSig ? '✅' : '⚠️'} Digital Signature</div>`;
+                    })()}
+                </div>
             </div>
         </div>
 

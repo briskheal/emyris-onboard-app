@@ -180,6 +180,7 @@ const applicantSchema = new mongoose.Schema({
     submittedAt: Date,
     approvedAt: Date,
     documents: { type: [mongoose.Schema.Types.Mixed], default: [] },
+    designation: String,
     division: String,
     reportingTo: String,
     hq: String,
@@ -321,7 +322,7 @@ app.post('/api/register-applicant', async (req, res) => {
             email, 
             phone, 
             division,
-            formData: { designation }, // Store pre-selected designation in formData
+            designation,
             password: pin 
         });
         console.log(`≡ƒÆ╛ [DB] Account Created: ${email}`);
@@ -442,6 +443,7 @@ app.post('/api/applicant-login', async (req, res) => {
                 salaryBreakup: applicant.salaryBreakup || {},
                 tasks: applicant.tasks || {},
                 division: applicant.division,
+                designation: applicant.designation,
                 reportingTo: applicant.reportingTo,
                 hq: applicant.hq,
                 refNo: applicant.refNo,
@@ -481,7 +483,9 @@ app.post('/api/submit-onboarding', async (req, res) => {
                 formData,
                 status: 'submitted',
                 canLogin: false,
-                submittedAt: new Date()
+                submittedAt: new Date(),
+                hq: formData.hq,
+                actualJoiningDate: formData.joiningDate
             },
             { new: true }
         );

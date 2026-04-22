@@ -33,10 +33,20 @@ function unlockUI() {
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toastNotif');
     if (!toast) return;
+    
+    // Clear previous state
+    toast.className = '';
+    void toast.offsetWidth; // Trigger reflow for animation reset
+    
     toast.textContent = message;
     toast.className = `show ${type}`;
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => { toast.className = ''; }, 3500);
+    
+    if (toast._timer) clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { 
+        toast.classList.remove('show');
+        // Final cleanup after fade out
+        setTimeout(() => { if (!toast.classList.contains('show')) toast.className = ''; }, 500);
+    }, 4000);
 }
 
 // --- DATA FORMATTING ---
