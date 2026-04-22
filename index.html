@@ -641,7 +641,9 @@
                                 <p>Your official appointment order is now available.</p>
                             </div>
                             <div class="dash-card-body">
-                                <button class="btn btn-outline btn-sm" style="width:100%;" onclick="downloadMyLetter('appt')">📥 Download Appointment Letter</button>
+                                <button class="btn btn-primary btn-sm" style="width:100%; margin-bottom:0.8rem;" onclick="toggleApptPreview()">👀 View Appointment Order</button>
+                                <div id="apptPreviewer" class="letter-preview-box hidden" style="background:#fff; color:#333; padding:20px; border-radius:12px; border:1px solid rgba(0,0,0,0.1); max-height:400px; overflow-y:auto; font-size:0.85rem;"></div>
+                                <button class="btn btn-outline btn-sm" style="width:100%;" onclick="downloadMyLetter('appt')">📥 Download Official Copy</button>
                             </div>
                         </div>
                     </div>

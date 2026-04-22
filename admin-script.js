@@ -1265,7 +1265,7 @@ async function openVerificationView(email) {
     divSel.value = app.division || "";
     document.getElementById('v_reportingTo').value = app.reportingTo || "";
     document.getElementById('v_hq').value = app.hq || app.formData?.hq || "";
-    document.getElementById('v_proposed_desg').innerText = app.formData?.designation || "NOT SPECIFIED";
+    document.getElementById('v_proposed_desg').innerText = app.designation || app.formData?.designation || "NOT SPECIFIED";
 
     // 4.5 Salary Breakup
     const sal = app.salaryBreakup || {};

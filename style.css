@@ -2335,7 +2335,7 @@ input:checked + .slider:before {
 }
 
 #livePreviewFrame p, #unifiedEditor p {
-    margin: 0;
+    margin: 0 0 1em 0;
 }
 
 #livePreviewContainer {
@@ -2408,14 +2408,11 @@ input:checked + .slider:before {
 }
 
 /* Timeline Premium */
-.timeline-simple {
+.onboarding-timeline {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
-    margin-top: 2.5rem;
-    text-align: left;
-    position: relative;
-    padding-left: 10px;
+    padding: 0.5rem 0;
 }
 
 .timeline-item-premium {

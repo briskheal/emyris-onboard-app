@@ -394,8 +394,7 @@ function showReview() {
         "💼 Employment & Location": [
             { id: 'joiningDate', label: 'Expected DOJ', isDate: true },
             { id: 'salary', label: 'Negotiated CTC', isMoney: true },
-            { id: 'hq', label: 'HQ Preference' },
-            { id: 'employeeType', label: 'Category' }
+            { id: 'hq', label: 'HQ Preference' }
         ],
         "📍 Contact Details": [
             { id: 'phone', label: 'Contact Phone' },
@@ -415,7 +414,7 @@ function showReview() {
     let groupsHtml = '';
     for (const [name, fields] of Object.entries(groups)) {
         const items = fields.map(f => {
-            let val = fd.get(f.id) || "N/A";
+            let val = fd.get(f.id) || currentApplicant[f.id] || "N/A";
             if (f.isDate && val !== "N/A") val = formatDatePretty(val);
             if (f.isMoney && val !== "N/A") val = `₹${parseFloat(val).toLocaleString('en-IN')}`;
             
@@ -644,9 +643,9 @@ function renderApplicantDashboard() {
         { label: 'Confirmed', done: app.status === 'confirmed' }
     ];
     timeline.innerHTML = steps.map((s, i) => `
-        <div class="timeline-item ${s.done ? 'done' : ''}">
-            <div class="timeline-dot">${s.done ? '✓' : i + 1}</div>
-            <div class="timeline-label">${s.label}</div>
+        <div class="timeline-item-premium ${s.done ? 'done' : ''}">
+            <div class="timeline-dot-premium">${s.done ? '✓' : i + 1}</div>
+            <div class="timeline-label-premium">${s.label}</div>
         </div>
     `).join('');
 
@@ -688,7 +687,13 @@ function renderApplicantDashboard() {
     if (app.offerLetterData) {
         document.getElementById('offerLetterSection').classList.remove('hidden');
         document.getElementById('waitingStatusCard').classList.add('hidden');
-        document.getElementById('offerPreviewer').innerHTML = app.offerLetterData;
+        
+        const previewer = document.getElementById('offerPreviewer');
+        if (app.offerLetterData.startsWith('data:application/pdf')) {
+            previewer.innerHTML = `<iframe src="${app.offerLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
+        } else {
+            previewer.innerHTML = app.offerLetterData;
+        }
         
         if (app.offerAccepted) {
             document.getElementById('acceptanceForm').classList.add('hidden');
@@ -703,9 +708,20 @@ function renderApplicantDashboard() {
     // Appointment Section
     if (app.apptLetterData) {
         document.getElementById('appointmentLetterSection').classList.remove('hidden');
+        const previewer = document.getElementById('apptPreviewer');
+        if (app.apptLetterData.startsWith('data:application/pdf')) {
+            previewer.innerHTML = `<iframe src="${app.apptLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
+        } else {
+            previewer.innerHTML = app.apptLetterData;
+        }
     } else {
         document.getElementById('appointmentLetterSection').classList.add('hidden');
     }
+}
+
+function toggleApptPreview() {
+    const previewer = document.getElementById('apptPreviewer');
+    previewer.classList.toggle('hidden');
 }
 
 async function acceptOfferLetter() {
