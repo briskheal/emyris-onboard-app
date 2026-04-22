@@ -65,7 +65,7 @@ function applyCompanyData() {
         landingQuickContact.innerHTML = contactHTML;
     }
 
-    syncMarquee(companyData.marqueeText);
+    syncMarquee(companyData.marqueeText, companyData.marqueeColor, companyData.marqueeSpeed);
     populateDropdowns();
 }
 

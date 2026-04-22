@@ -146,12 +146,13 @@ function updateView(viewId) {
 
 function backToLanding() { updateView('landingPage'); }
 
-function syncMarquee(text) {
+function syncMarquee(text, color, speed) {
     const marquees = document.querySelectorAll('.marquee-inner');
     marquees.forEach(m => {
         m.innerText = text || "Enhancing Life and Excelling in Care";
+        if (color) m.style.color = color;
+        if (speed) m.style.animationDuration = `${speed}s`;
         m.style.opacity = 1;
-        m.style.color = "inherit";
     });
 }
 

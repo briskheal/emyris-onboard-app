@@ -1287,26 +1287,7 @@ app.get('/api/company-profile', async (req, res) => {
             profile = newCompany.toObject();
         }
 
-        // Safety: Ensure fields with defaults are present if the document was created before they were added to schema
-        if (!profile.designations || profile.designations.length === 0) {
-            profile.designations = [
-                { title: "Territory Business Manager", department: "SALES" },
-                { title: "Area Sales Manager", department: "SALES" },
-                { title: "Regional Sales Manager", department: "SALES" },
-                { title: "Sr. Regional Sales Manager", department: "SALES" },
-                { title: "Zonal Sales Manager", department: "SALES" },
-                { title: "Sr. Zonal Sales Manager", department: "SALES" },
-                { title: "Sales Manager", department: "SALES" },
-                { title: "National Sales Manager", department: "SALES" },
-                { title: "General Manager (Sales & Mktng)", department: "SALES" }
-            ];
-        }
-        if (!profile.requiredDocs || profile.requiredDocs.length === 0) {
-            profile.requiredDocs = [
-                "Aadhar Card", "PAN Card", "Educational Certificates",
-                "Experience Certificate", "Previous Company Appointment Letter", "Last Three Months Pay Slip"
-            ];
-        }
+        // Legacy safety checks removed to allow explicit empty configurations
 
         // Hydrate with latest active assets from Asset DB
         const assetMap = {
