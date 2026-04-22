@@ -2361,7 +2361,25 @@ async function populateDivisions(force = false) {
         }
     });
 
+    // Sync Designation Management Dept Selection
+    const deptPicker = document.getElementById('profileDeptPicker');
+    if (deptPicker) {
+        const currentDept = document.getElementById('profileNewDeptInput').value;
+        deptPicker.innerHTML = uniqueDivs.map(d => `
+            <button type="button" class="chip-btn ${currentDept === d.name ? 'active' : ''}" 
+                    onclick="setProfileDept('${d.name}', this)">
+                ${d.name}
+            </button>
+        `).join('');
+    }
+
     if (typeof populateManagers === 'function') populateManagers();
+}
+
+function setProfileDept(name, btn) {
+    document.getElementById('profileNewDeptInput').value = name;
+    document.querySelectorAll('#profileDeptPicker .chip-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
 }
 
 async function addDivision(source = 'setup') {

@@ -79,12 +79,21 @@ function populateDropdowns() {
             (companyData.divisions || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
             
         divSel.onchange = (e) => {
-            const div = (companyData.divisions || []).find(d => d.name === e.target.value);
-            if (div && div.designations && div.designations.length > 0) {
+            const divName = e.target.value;
+            const div = (companyData.divisions || []).find(d => d.name === divName);
+            
+            // Logic: If division has specific designations, show them. 
+            // Otherwise, show all designations defined in company profile.
+            let desgs = (div && div.designations && div.designations.length > 0) ? div.designations : (companyData.designations || []);
+            
+            if (desgs.length > 0) {
                 desSel.innerHTML = '<option value="">-- Select Designation --</option>' +
-                    div.designations.map(ds => `<option value="${ds.title}">${ds.title}</option>`).join('');
-            } else if (div) {
-                desSel.innerHTML = '<option value="">⚠️ No designations for this division</option>';
+                    desgs.map(ds => {
+                        const title = typeof ds === 'string' ? ds : ds.title;
+                        return `<option value="${title}">${title}</option>`;
+                    }).join('');
+            } else if (divName) {
+                desSel.innerHTML = '<option value="">⚠️ No designations available</option>';
             } else {
                 desSel.innerHTML = '<option value="">-- Select Division First --</option>';
             }
@@ -192,6 +201,7 @@ async function handleForgotPin() {
 function logoutApplicant() {
     currentApplicant = null;
     backToLanding();
+    populateDropdowns(); // Ensure dropdowns are fresh
     showToast("Logged out safely.");
 }
 

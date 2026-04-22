@@ -1,26 +1,45 @@
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+dotenv.config();
 
-const fs = require('fs');
-const content = fs.readFileSync('d:/MY WORK FLOW/Emyris Onboard App/script.js', 'utf8');
-const lines = content.split('\n');
-const functionNames = {};
+const MONGODB_URI = process.env.MONGODB_URI;
 
-lines.forEach((line, index) => {
-    const asyncMatch = line.match(/async\s+function\s+([a-zA-Z0-9_]+)\s*\(/);
-    const syncMatch = line.match(/(?<!async\s+)function\s+([a-zA-Z0-9_]+)\s*\(/);
-    
-    if (asyncMatch) {
-         const name = asyncMatch[1];
-        if (!functionNames[name]) functionNames[name] = [];
-        functionNames[name].push(index + 1);
-    } else if (syncMatch) {
-        const name = syncMatch[1];
-        if (!functionNames[name]) functionNames[name] = [];
-        functionNames[name].push(index + 1);
-    }
+const divisionSchema = new mongoose.Schema({
+    name: String,
+    active: { type: Boolean, default: true }
 });
 
-Object.entries(functionNames).forEach(([name, lines]) => {
-    if (lines.length > 1) {
-        console.log(`Duplicate function: ${name} at lines ${lines.join(', ')}`);
-    }
+const hqSchema = new mongoose.Schema({
+    name: String,
+    active: { type: Boolean, default: true }
 });
+
+async function findDuplicates() {
+    console.log('🔍 Checking for duplicates in Database...');
+    const conn = await mongoose.createConnection(MONGODB_URI).asPromise();
+    const Division = conn.model('Division', divisionSchema);
+    const HQ = conn.model('HQ', hqSchema);
+
+    const divs = await Division.find({});
+    const hqs = await HQ.find({});
+
+    console.log(`Total Divisions: ${divs.length}`);
+    const divNames = divs.map(d => d.name);
+    const divDupes = divNames.filter((name, index) => divNames.indexOf(name) !== index);
+    console.log(`Duplicate Divisions:`, divDupes);
+
+    console.log(`Total HQs: ${hqs.length}`);
+    const hqNames = hqs.map(h => h.name);
+    const hqDupes = hqNames.filter((name, index) => hqNames.indexOf(name) !== index);
+    console.log(`Duplicate HQs:`, hqDupes);
+
+    if (divDupes.length > 0 || hqDupes.length > 0) {
+        console.log('⚠️ DUPLICATES FOUND. Consider running a cleanup.');
+    } else {
+        console.log('✅ NO DUPLICATES FOUND.');
+    }
+
+    await conn.close();
+}
+
+findDuplicates().catch(console.error);
