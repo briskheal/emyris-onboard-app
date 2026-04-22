@@ -326,8 +326,18 @@ function showReview() {
                 <div class="review-item"><strong>IFSC Code:</strong> ${data.ifsc}</div>
             </div>
         </div>
+
+        <div class="review-section-sub" style="margin-top: 1.5rem;">
+            <h4>📂 Uploaded Testimonials</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                ${(currentApplicant.documents || []).length > 0 
+                    ? currentApplicant.documents.map(d => `<span style="background: rgba(16,185,129,0.1); color: #10b981; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; border: 1px solid rgba(16,185,129,0.2);">✅ ${d.category}</span>`).join('')
+                    : '<span style="color: #ef4444; font-size: 0.85rem;">⚠️ No documents found. Please go back and upload required files.</span>'}
+            </div>
+        </div>
+
         <p style="margin-top: 1.5rem; font-size: 0.82rem; color: var(--accent); background: rgba(99,102,241,0.1); padding: 10px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.2);">
-            ⚠️ Please review the above details carefully. Once submitted, you cannot change them without admin intervention.
+            ⚠️ Please review the above details and documents carefully. Once submitted, you cannot change them without admin intervention.
         </p>
     `;
     
