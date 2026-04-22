@@ -241,22 +241,22 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
 app.use(express.static(__dirname));
 
-// ─── EMAIL DELIVERY ENGINE ───────────────────────────────────────────────────
+// ------------------------- EMAIL DELIVERY ENGINE -------------------------
 // WHY BRIDGE INSTEAD OF ZOHO SMTP?
 // Render.com FREE tier BLOCKS outbound SMTP ports (25, 465, 587).
 // Zoho SMTP will always timeout on free Render plans.
 // The Google Apps Script Bridge uses HTTPS (port 443) which is NEVER blocked.
 // It delivers from hr@emyrisbio.com and is the CORRECT solution for this stack.
-// ─────────────────────────────────────────────────────────────────────────────
+// -------------------------------------------------------------------------
 async function sendEmail({ to, subject, html, attachments = [] }) {
     const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
     const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
-    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject}`);
+    console.log(`≡ƒôí [OUTGOING] To: ${to} | Subject: ${subject}`);
 
     // STRATEGY 1: Google Apps Script Bridge (HTTPS - The only way to send on Render Free)
     if (bridgeUrl) {
         try {
-            console.log('🌉 [INFO] Sending via Google Apps Script Bridge...');
+            console.log('≡ƒîë [INFO] Sending via Google Apps Script Bridge...');
 
             // Convert Buffer attachments to base64 strings for the bridge
             const bridgeAttachments = attachments.map(att => ({
@@ -270,10 +270,10 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
                 attachments: bridgeAttachments
             }, { timeout: 25000 }); // Longer timeout for attachments
 
-            console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
+            console.log(`Γ£à [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
             return response.data;
         } catch (bridgeErr) {
-            console.error(`⚠️ [WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
+            console.error(`ΓÜá∩╕Å [WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
         }
     }
 
@@ -288,15 +288,15 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 
     try {
-        console.log('✉️ [INFO] Attempting Gmail SMTP (local mode)...');
+        console.log('Γ£ë∩╕Å [INFO] Attempting Gmail SMTP (local mode)...');
         const info = await transporter.sendMail({
             from: `"Emyris HR" <emy.onboardapp@gmail.com>`,
             to, subject, html
         });
-        console.log(`✅ [SUCCESS] Gmail delivery confirmed: ${info.messageId}`);
+        console.log(`Γ£à [SUCCESS] Gmail delivery confirmed: ${info.messageId}`);
         return info;
     } catch (smtpErr) {
-        console.error(`❌ [FAILURE] All email strategies exhausted: ${smtpErr.message}`);
+        console.error(`Γ¥î [FAILURE] All email strategies exhausted: ${smtpErr.message}`);
         throw smtpErr;
     }
 }
@@ -324,7 +324,7 @@ app.post('/api/register-applicant', async (req, res) => {
             formData: { designation }, // Store pre-selected designation in formData
             password: pin 
         });
-        console.log(`💾 [DB] Account Created: ${email}`);
+        console.log(`≡ƒÆ╛ [DB] Account Created: ${email}`);
 
         // 3. Synchronous Email Handover
         await sendEmail({
@@ -350,7 +350,7 @@ app.post('/api/register-applicant', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('🛑 [REGISTRATION ERROR]:', error.message);
+        console.error('≡ƒ¢æ [REGISTRATION ERROR]:', error.message);
 
         // --- SMART RECOVERY ---
         res.status(200).json({
@@ -399,7 +399,7 @@ app.post('/api/resend-pin', async (req, res) => {
 
         res.status(200).json({ success: true, message: 'PIN sent to your email.' });
     } catch (error) {
-        console.error('🛑 [RECOVERY ERROR]:', error.message);
+        console.error('≡ƒ¢æ [RECOVERY ERROR]:', error.message);
         res.status(500).json({ success: false, message: 'Failed to send PIN. Please contact HR.' });
     }
 });
@@ -460,12 +460,12 @@ app.post('/api/applicant-login', async (req, res) => {
 app.post('/api/save-draft', async (req, res) => {
     try {
         const { email, formData } = req.body;
-        console.log(`📝 [DRAFT] Saving for ${email} (${JSON.stringify(formData).length} bytes)`);
+        console.log(`≡ƒô¥ [DRAFT] Saving for ${email} (${JSON.stringify(formData).length} bytes)`);
         const result = await Applicant.findOneAndUpdate({ email }, { formData, updatedAt: new Date() });
-        if (!result) console.error(`❌ [DRAFT] No applicant found for ${email}`);
+        if (!result) console.error(`Γ¥î [DRAFT] No applicant found for ${email}`);
         res.status(200).json({ success: true });
     } catch (error) {
-        console.error(`🛑 [DRAFT ERROR]:`, error.message);
+        console.error(`≡ƒ¢æ [DRAFT ERROR]:`, error.message);
         res.status(500).json({ success: false });
     }
 });
@@ -526,7 +526,7 @@ app.post('/api/applicant/upload-document', async (req, res) => {
         }
 
         const sizeKB = Math.round(Buffer.byteLength(fileData || '', 'utf8') / 1024);
-        console.log(`📎 [DOC-UPLOAD] ${email} | ${category} | ${fileName} | ${sizeKB}KB`);
+        console.log(`≡ƒôÄ [DOC-UPLOAD] ${email} | ${category} | ${fileName} | ${sizeKB}KB`);
 
         if (sizeKB > 12 * 1024) { // Increased to 12MB as it's now in Asset DB
             return res.status(413).json({ success: false, message: `File too large (${sizeKB}KB). Maximum 12MB allowed.` });
@@ -571,7 +571,7 @@ app.post('/api/applicant/upload-document', async (req, res) => {
             }
         );
 
-        console.log(`✅ [DOC] Atomic Upload: ${category} for ${email} (Asset: ${savedAsset._id})`);
+        console.log(`Γ£à [DOC] Atomic Upload: ${category} for ${email} (Asset: ${savedAsset._id})`);
 
         res.status(200).json({ 
             success: true, 
@@ -579,7 +579,7 @@ app.post('/api/applicant/upload-document', async (req, res) => {
             assetId: savedAsset._id 
         });
     } catch (error) {
-        console.error('❌ Document upload error:', error);
+        console.error('Γ¥î Document upload error:', error);
         res.status(500).json({ success: false, message: 'Server error during upload' });
     }
 });
@@ -681,7 +681,7 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
         });
 
         await newStaff.save();
-        console.log(`✅ [FAST-TRACK] Added existing staff member: ${email} (${fullName})`);
+        console.log(`Γ£à [FAST-TRACK] Added existing staff member: ${email} (${fullName})`);
         res.status(200).json({ success: true, message: 'Existing staff added successfully.' });
 
     } catch (error) {
@@ -1117,7 +1117,7 @@ app.post('/api/admin/verify-and-activate', async (req, res) => {
         // Trigger Congratulation Message
         await sendEmail({
             to: email,
-            subject: `Registration Verified - Welcome to ${company.name} 🚀`,
+            subject: `Registration Verified - Welcome to ${company.name} ≡ƒÜÇ`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:32px;background:#f8fafc;border-radius:12px;color:#1e293b;line-height:1.6;">
                     <h2 style="color:#6366f1;margin-top:0;">Congratulations, ${applicant.fullName}!</h2>
@@ -1153,7 +1153,7 @@ app.post('/api/admin/send-letter', async (req, res) => {
 
         await sendEmail({
             to: email,
-            subject: `${letterLabel} – ${company.name}`,
+            subject: `${letterLabel} ΓÇô ${company.name}`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:24px;">
                     <h2 style="color:#0f172a">Dear ${applicant.fullName},</h2>
@@ -1201,7 +1201,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
         // 1. Congratulate Applicant
         await sendEmail({
             to: email,
-            subject: `Congratulations on Joining ${company.name}! 🚀`,
+            subject: `Congratulations on Joining ${company.name}! ≡ƒÜÇ`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
                     <h2 style="color:#6366f1">Welcome Aboard, ${applicant.fullName}!</h2>
@@ -1217,7 +1217,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
         // 2. Notify Admin
         await sendEmail({
             to: (process.env.ADMIN_USER || 'hr@emyrisbio.com').toLowerCase(),
-            subject: `🔥 Offer Accepted: ${applicant.fullName}`,
+            subject: `≡ƒöÑ Offer Accepted: ${applicant.fullName}`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
                     <h2 style="color:#10b981">Great News! Offer Accepted</h2>
@@ -1500,7 +1500,7 @@ app.post('/api/admin/system/clear', async (req, res) => {
         }
         
         if (includeSetup) {
-            console.log("🧨 Total Wipeout: Clearing Divisions and HQs...");
+            console.log("≡ƒº¿ Total Wipeout: Clearing Divisions and HQs...");
             await Division.deleteMany({});
             await HQ.deleteMany({});
         }
@@ -1636,7 +1636,7 @@ async function migrateAssets() {
         });
         if (changed) {
             await profile.save();
-            console.log('✅ Asset migration completed.');
+            console.log('Γ£à Asset migration completed.');
         }
     } catch (e) {
         console.error('Migration error:', e);
