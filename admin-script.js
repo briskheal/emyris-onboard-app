@@ -441,7 +441,7 @@ function renderRequiredDocsChips() {
             const chip = document.createElement('div');
             chip.className = 'division-chip';
             chip.style.background = 'var(--primary)';
-            chip.innerHTML = `<span>${doc}</span><button type="button" onclick="toggleDocRequirement('${doc}')">├ù</button>`;
+            chip.innerHTML = `<span>${doc}</span><button type="button" onclick="toggleDocRequirement('${doc}')">×</button>`;
             container.appendChild(chip);
         });
     } else if (placeholder) placeholder.style.display = 'block';
