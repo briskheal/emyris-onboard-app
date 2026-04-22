@@ -1643,12 +1643,13 @@ function autoCalcHRA() {
 }
 
 function autoDistributeSalary() {
-    if (!activeV_Applicant || !activeV_Applicant.formData || !activeV_Applicant.formData.salary) {
+    const targetSal = activeV_Applicant.salary || activeV_Applicant.formData?.salary;
+    if (!targetSal) {
         showToast("No target salary found for this applicant", "error");
         return;
     }
     
-    const annual = parseFloat(activeV_Applicant.formData.salary);
+    const annual = parseFloat(targetSal);
     const monthly = parseFloat((annual / 12).toFixed(2));
     
     // 1. Basic: 40% of monthly gross
@@ -1708,12 +1709,13 @@ function calcSalaryTotal() {
     const annualEl = document.getElementById('v_salAnnualTotal');
     if(annualEl) annualEl.innerText = `₹${annual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-    // Target Check
     const feedback = document.getElementById('v_salary_feedback');
     const note = document.getElementById('v_expected_salary_note');
     
-    if (activeV_Applicant && activeV_Applicant.formData && activeV_Applicant.formData.salary) {
-        const targetAnnual = parseFloat(activeV_Applicant.formData.salary);
+    const targetSal = activeV_Applicant ? (activeV_Applicant.salary || activeV_Applicant.formData?.salary) : null;
+
+    if (targetSal) {
+        const targetAnnual = parseFloat(targetSal);
         note.innerText = `Target Annual: ₹${targetAnnual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
         if (feedback) {

@@ -637,7 +637,9 @@ function renderApplicantDashboard() {
         { label: 'Submit', done: !!app.submittedAt || ['submitted', 'approved'].includes(app.status) },
         { label: 'Verify', done: app.status === 'approved' || app.offerLetterData },
         { label: 'Offer', done: !!app.offerLetterData },
-        { label: 'Accept', done: app.offerAccepted }
+        { label: 'Joined', done: !!app.actualJoiningDate },
+        { label: 'Appointed', done: !!app.apptLetterData },
+        { label: 'Confirmed', done: app.status === 'confirmed' }
     ];
     timeline.innerHTML = steps.map((s, i) => `
         <div class="timeline-item ${s.done ? 'done' : ''}">
@@ -645,6 +647,18 @@ function renderApplicantDashboard() {
             <div class="timeline-label">${s.label}</div>
         </div>
     `).join('');
+
+    // Verification Deep Dive
+    const statusTitle = document.getElementById('statusTitle');
+    const statusDesc = document.getElementById('statusDesc');
+    
+    if (app.status === 'submitted') {
+        statusTitle.innerText = "Documents Under Verification";
+        statusDesc.innerText = "Our compliance team is currently reviewing your uploaded credentials. You will be notified the moment your Offer Section is activated.";
+    } else if (app.status === 'rejected') {
+        statusTitle.innerText = "Action Required: Re-submission";
+        statusDesc.innerText = "Some of your documents were not approved. Please check the list below and resubmit them.";
+    }
 
     // Document Status List
     const docsList = document.getElementById('dash_docsList');
@@ -687,7 +701,55 @@ function renderApplicantDashboard() {
     // Appointment Section
     if (app.apptLetterData) {
         document.getElementById('appointmentLetterSection').classList.remove('hidden');
+    } else {
+        document.getElementById('appointmentLetterSection').classList.add('hidden');
     }
+}
+
+async function acceptOfferLetter() {
+    const adoj = document.getElementById('actualJoiningDateInput').value;
+    if (!adoj) return showToast("Please select your actual joining date.", "warning");
+
+    if (!confirm(`Are you sure you want to accept the offer with Joining Date: ${formatDatePretty(adoj)}?`)) return;
+
+    try {
+        lockUI("Processing Acceptance...");
+        const res = await fetch('/api/applicant/accept-offer', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentApplicant.email, actualJoiningDate: adoj })
+        });
+        const result = await res.json();
+        if (result.success) {
+            currentApplicant = result.applicant;
+            renderApplicantDashboard();
+            showToast("Congratulations! Offer Accepted. 🎉");
+        } else {
+            showToast(result.message, "error");
+        }
+    } catch (e) {
+        showToast("Acceptance failed.", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+function toggleOfferPreview() {
+    const previewer = document.getElementById('offerPreviewer');
+    previewer.classList.toggle('hidden');
+}
+
+async function downloadMyLetter(type) {
+    if (!currentApplicant) return;
+    const data = type === 'offer' ? currentApplicant.offerLetterData : currentApplicant.apptLetterData;
+    if (!data) return showToast("Letter not available.", "warning");
+
+    const a = document.createElement('a');
+    a.href = data;
+    a.download = `EMYRIS_${type.toUpperCase()}_${currentApplicant.fullName.replace(/\s+/g, '_')}.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 async function triggerDocResubmit(category) {

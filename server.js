@@ -184,6 +184,7 @@ const applicantSchema = new mongoose.Schema({
     division: String,
     reportingTo: String,
     hq: String,
+    salary: String,
     dob: Date,
     address: String,
     empCode: String,
@@ -489,7 +490,8 @@ app.post('/api/submit-onboarding', async (req, res) => {
                 hq: formData.hq,
                 actualJoiningDate: formData.joiningDate,
                 dob: formData.dob ? new Date(formData.dob) : null,
-                address: formData.address || ""
+                address: formData.address || "",
+                salary: formData.salary || ""
             },
             { new: true }
         );
@@ -543,10 +545,31 @@ app.post('/api/applicant/save-draft', async (req, res) => {
                 hq: formData.hq,
                 actualJoiningDate: formData.joiningDate,
                 dob: formData.dob ? new Date(formData.dob) : null,
-                address: formData.address || ""
+                address: formData.address || "",
+                salary: formData.salary || ""
             }
         );
         res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Accept Offer & Submit ADOJ
+app.post('/api/applicant/accept-offer', async (req, res) => {
+    try {
+        const { email, actualJoiningDate } = req.body;
+        if (!email || !actualJoiningDate) return res.status(400).json({ error: 'Missing data' });
+
+        const applicant = await Applicant.findOneAndUpdate(
+            { email },
+            { 
+                offerAccepted: true,
+                offerAcceptedAt: new Date(),
+                actualJoiningDate: new Date(actualJoiningDate),
+                status: 'onboarding' 
+            },
+            { new: true }
+        );
+        res.json({ success: true, applicant });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
