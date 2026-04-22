@@ -254,66 +254,7 @@ function initBackgroundAnimations() {
     });
 }
 
-// HQ Management Functions
-async function fetchHQs() {
-    try {
-        const res = await fetch('/api/admin/hqs');
-        allHQs = await res.json();
-    } catch (e) { allHQs = []; }
-    populateHQs();
-}
-
-function populateHQs() {
-    const list = document.getElementById('profileHQList');
-    if (list) {
-        list.innerHTML = allHQs.map(h => `
-            <div class="division-chip">
-                <span>${h.name}</span>
-                <button onclick="deleteHQ('${h._id}')">❌</button>
-            </div>
-        `).join('');
-    }
-    
-    // Populate select boxes in onboarding and verification
-    const selects = ['hq', 'v_hq'];
-    selects.forEach(id => {
-        const sel = document.getElementById(id);
-        if (sel) {
-            const currentVal = sel.value;
-            sel.innerHTML = '<option value="">-- Select HQ --</option>' + 
-                allHQs.map(h => `<option value="${h.name}">${h.name}</option>`).join('');
-            sel.value = currentVal;
-        }
-    });
-}
-
-async function addHQ() {
-    const input = document.getElementById('profileNewHQInput');
-    if (!input || !input.value.trim()) return;
-    try {
-        const res = await fetch('/api/admin/hqs', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: input.value.trim().toUpperCase() })
-        });
-        if ((await res.json()).success) {
-            input.value = "";
-            fetchHQs();
-            showToast("✅ HQ added successfully", "success");
-        }
-    } catch (e) { showToast("Add HQ failed", "error"); }
-}
-
-async function deleteHQ(id) {
-    if (!confirm("Are you sure you want to delete this HQ?")) return;
-    try {
-        const res = await fetch(`/api/admin/hqs/${id}`, { method: 'DELETE' });
-        if ((await res.json()).success) {
-            fetchHQs();
-            showToast("✅ HQ deleted", "success");
-        }
-    } catch (e) { showToast("Delete HQ failed", "error"); }
-}
+// Infrastructure Management (Divisions & HQs) moved to bottom for better organization
 
 function applyCompanyData() {
     console.log('🏗️ Applying Company Data:', companyData);
@@ -638,10 +579,13 @@ function showApplicantRegister() {
 }
 function showApplicantLogin() { updateView('applicantLogin'); }
 
+function logoutAdmin() {
+    sessionStorage.removeItem('admin_auth');
+    showToast("✅ Logged out successfully", "success");
+    // Force reload to clean all memory states
+    window.location.href = 'admin.html';
+}
 
-
-
-// Applicant-specific logic removed from Admin Gateway. Logic is now in script.js.
 
 async function initializeApp() {
     console.log('🚀 Emyris App initialized v1.3');
@@ -662,6 +606,25 @@ async function initializeApp() {
     initBackgroundAnimations();
     initFileListeners();
     initEditorListeners();
+    initInfrastructureListeners(); // Prevent Enter key submission
+}
+
+function initInfrastructureListeners() {
+    const handleEnter = (e, callback) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            callback();
+        }
+    };
+
+    const divInput = document.getElementById('profileNewDivisionInput');
+    if (divInput) divInput.onkeydown = (e) => handleEnter(e, () => addDivision('profile'));
+
+    const hqInput = document.getElementById('profileNewHQInput');
+    if (hqInput) hqInput.onkeydown = (e) => handleEnter(e, addHQ);
+    
+    const setupDivInput = document.getElementById('newDivisionInput');
+    if (setupDivInput) setupDivInput.onkeydown = (e) => handleEnter(e, () => addDivision('setup'));
 }
 
 // Removed legacy saveCompanyProfile function
@@ -1630,7 +1593,7 @@ async function saveInternalAssignment(silent = false) {
     const targetAnnual = parseFloat(activeV_Applicant.formData?.salary) || 0;
 
     if (Math.abs(calculatedAnnual - targetAnnual) > 100) {
-        if (!confirm(`≡ƒÜ¿ SALARY MISMATCH ALERT:\n\nThe current breakup totals Γé╣${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Applicant's registered salary is Γé╣${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
+        if (!confirm(`⚠️ SALARY MISMATCH ALERT:\n\nThe current breakup totals ₹${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Applicant's registered salary is ₹${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
             return false;
         }
     }
@@ -1645,7 +1608,7 @@ async function saveInternalAssignment(silent = false) {
     };
 
     try {
-        lockUI("≡ƒÅï∩╕Å Updating Assignment...");
+        lockUI("🏗️ Updating Assignment...");
         const res = await fetch('/api/admin/update-workflow-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1727,7 +1690,7 @@ function autoDistributeSalary() {
     }
     
     calcSalaryTotal();
-    showToast("ΓÜí Salary breakup updated (Medical @ 1250, Basic @ 40%)", "success");
+    showToast("✅ Salary breakup updated (Medical @ 1250, Basic @ 40%)", "success");
 }
 
 function calcSalaryTotal() {
@@ -1740,10 +1703,10 @@ function calcSalaryTotal() {
     const annual = total * 12;
     
     const totalEl = document.getElementById('v_salTotal');
-    if(totalEl) totalEl.innerText = `Γé╣${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    if(totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
     
     const annualEl = document.getElementById('v_salAnnualTotal');
-    if(annualEl) annualEl.innerText = `Γé╣${annual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+    if(annualEl) annualEl.innerText = `₹${annual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
     // Target Check
     const feedback = document.getElementById('v_salary_feedback');
@@ -1751,7 +1714,7 @@ function calcSalaryTotal() {
     
     if (activeV_Applicant && activeV_Applicant.formData && activeV_Applicant.formData.salary) {
         const targetAnnual = parseFloat(activeV_Applicant.formData.salary);
-        note.innerText = `Target Annual: Γé╣${targetAnnual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+        note.innerText = `Target Annual: ₹${targetAnnual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
         
         if (feedback) {
             feedback.style.display = 'block';
@@ -1762,7 +1725,7 @@ function calcSalaryTotal() {
                 feedback.style.color = "#10b981";
                 feedback.classList.remove('error-feedback');
             } else {
-                feedback.innerHTML = `⚠️ Mismatch: Γé╣${annual.toLocaleString('en-IN')} vs Target Γé╣${targetAnnual.toLocaleString('en-IN')}`;
+                feedback.innerHTML = `⚠️ Mismatch: ₹${annual.toLocaleString('en-IN')} vs Target ₹${targetAnnual.toLocaleString('en-IN')}`;
                 feedback.style.background = "rgba(239,68,68,0.12)";
                 feedback.style.color = "#ef4444";
                 feedback.classList.add('error-feedback');
@@ -1789,7 +1752,7 @@ async function commitMasterVerification() {
     if (!assignSuccess) return; // Halt if the salary mismatched and they cancelled the prompt, or validation failed.
 
     try {
-        lockUI("≡ƒ¢í∩╕Å Activating Record...");
+        lockUI("🛡️ Activating Record...");
         const res = await fetch('/api/admin/verify-and-activate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1800,7 +1763,7 @@ async function commitMasterVerification() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast("≡ƒÄë Record Activated! Refreshing Data...", "success");
+            showToast("🎉 Record Activated! Refreshing Data...", "success");
             
             // CRITICAL: Refresh the local cache from server to get new status/vars
             await fetchApplicants();
@@ -1839,7 +1802,7 @@ async function commitMasterVerification() {
                     const editorContainer = document.getElementById('unifiedEditor');
                     if (editorContainer) {
                         editorContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        showToast(`ΓÜí Data auto-filled for ${activeV_Applicant.fullName}`, "success");
+                        showToast(`📢 Data auto-filled for ${activeV_Applicant.fullName}`, "success");
                     }
                 }, 300);
             }, 500);
@@ -1855,7 +1818,7 @@ async function commitMasterVerification() {
 
 async function rejectApplicantFlow() {
     if (!activeV_Applicant) return;
-    const reason = prompt("≡ƒÜ¿ ATTENTION: Please specify the reason for rejection (this will be logged for audit purposes):");
+    const reason = prompt("⚠️ ATTENTION: Please specify the reason for rejection (this will be logged for audit purposes):");
     if (reason === null) return; // Cancelled
     
     if (!reason.trim()) {
@@ -1865,7 +1828,7 @@ async function rejectApplicantFlow() {
     if (!confirm(`Are you sure you want to REJECT ${activeV_Applicant.fullName}? Access will be revoked immediately.`)) return;
 
     try {
-        lockUI("≡ƒÜ½ Processing Rejection...");
+        lockUI("🚫 Processing Rejection...");
         const res = await fetch('/api/admin/update-status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1944,11 +1907,11 @@ async function resetApplicantData() {
             body: JSON.stringify({ email: activeWfEmail })
         });
         if ((await res.json()).success) {
-            showToast("? Applicant record reset successfully.", "success");
+            showToast("🔄 Applicant record reset successfully.", "success");
             closeWorkflow();
             await fetchApplicants();
         }
-    } catch (err) { showToast("? Reset failed.", "error"); }
+    } catch (err) { showToast("❌ Reset failed.", "error"); }
 }
 
 // --- PDF GENERATION ---
@@ -2134,7 +2097,7 @@ function populateTemplateSelect(forceSelectVal) {
     if (companyData.miscLetters && companyData.miscLetters.length > 0) {
         html += `<optgroup label="Miscellaneous Letters">`;
         companyData.miscLetters.forEach(m => {
-            html += `<option value="misc_${m.id}">≡ƒ¢í∩╕Å ${m.title}</option>`;
+            html += `<option value="misc_${m.id}">📂 ${m.title}</option>`;
         });
         html += `</optgroup>`;
     }
@@ -2217,7 +2180,7 @@ function resetEditorToMaster(silent = false) {
     const sel = document.getElementById('hubTargetApplicant');
     if (sel) sel.value = "";
 
-    if (!silent) showToast("≡ƒº╣ Editor reset to Master Template (Variables Restored)", "success");
+    if (!silent) showToast("🧹 Editor reset to Master Template (Variables Restored)", "success");
 }
 
 function fillEditorWithRealData(skipConfirm = false) {
@@ -2245,7 +2208,7 @@ function fillEditorWithRealData(skipConfirm = false) {
 async function saveActiveTemplate() {
     const btn = event.target;
     const originalText = btn.innerHTML;
-    btn.innerHTML = "≡ƒÅï∩╕Å Saving...";
+    btn.innerHTML = "💾 Saving...";
     btn.disabled = true;
 
     try {
@@ -2256,7 +2219,7 @@ async function saveActiveTemplate() {
         // Safety Guard: Detect if content has been populated (placeholders replaced with real data).
         const hasPlaceholders = content.includes('{{') && content.includes('}}');
         if (window.isDataPopulated || !hasPlaceholders) {
-            const confirmSave = confirm("≡ƒÜ¿ WARNING: This content appears to contain real applicant data or is missing template variables ({{...}}).\n\nIf you save this, it will overwrite your master template. Usually, you should use 'Issue to Applicant' instead.\n\nAre you ABSOLUTELY sure you want to save this as the new Master Template?");
+            const confirmSave = confirm("⚠️ WARNING: This content appears to contain real applicant data or is missing template variables ({{...}}).\n\nIf you save this, it will overwrite your master template. Usually, you should use 'Issue to Applicant' instead.\n\nAre you ABSOLUTELY sure you want to save this as the new Master Template?");
             if (!confirmSave) return;
         }
         
@@ -2402,15 +2365,11 @@ async function populateDivisions(force = false) {
 }
 
 async function addDivision(source = 'setup') {
-    const btnId = source === 'profile' ? null : null; // Logic below uses generic event target if available
-    
     const inputId = source === 'profile' ? 'profileNewDivisionInput' : 'newDivisionInput';
     const input = document.getElementById(inputId);
     const name = input ? input.value.trim() : "";
     
     if (!name) return;
-    
-    // Prevent double-clicking
     if (window._addingDiv) return;
     window._addingDiv = true;
     
@@ -2418,15 +2377,15 @@ async function addDivision(source = 'setup') {
         const res = await fetch('/api/admin/divisions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
+            body: JSON.stringify({ name: name.toUpperCase() })
         });
         const result = await res.json();
         if (result.success) {
             if (input) input.value = "";
-            showToast(`✅ Division "${name}" added`, "success");
-            await populateDivisions(true); // Force refresh
+            showToast(`✅ Division "${name.toUpperCase()}" added`, "success");
+            await populateDivisions(true);
         } else {
-            showToast("❌ Failed to add division", "error");
+            showToast("❌ Division already exists or save failed", "error");
         }
     } catch (e) {
         showToast("❌ Communication error", "error");
@@ -2447,19 +2406,63 @@ async function addHQ() {
         const res = await fetch('/api/admin/hqs', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name })
+            body: JSON.stringify({ name: name.toUpperCase() })
         });
         const result = await res.json();
         if (result.success) {
             if (input) input.value = "";
-            showToast(`✅ HQ "${name}" added`, "success");
-            await populateHQs(true);
+            showToast(`✅ HQ "${name.toUpperCase()}" added`, "success");
+            await fetchHQs(); // Consolidated fetching
+        } else {
+            showToast("❌ HQ already exists or save failed", "error");
         }
     } catch (e) { 
         showToast("❌ HQ addition failed", "error"); 
     } finally {
         window._addingHQ = false;
     }
+}
+
+async function fetchHQs() {
+    try {
+        const res = await fetch('/api/admin/hqs');
+        allHQs = await res.json();
+        populateHQs();
+    } catch (e) { console.error("HQ fetch fail:", e); }
+}
+
+function populateHQs() {
+    const list = document.getElementById('profileHQList');
+    if (list) {
+        list.innerHTML = allHQs.map(h => `
+            <div class="division-chip">
+                <span>${h.name}</span>
+                <button onclick="deleteHQ('${h._id}')">&times;</button>
+            </div>
+        `).join('');
+    }
+    
+    const selects = ['v_hq']; // HQ field in verification
+    selects.forEach(id => {
+        const sel = document.getElementById(id);
+        if (sel) {
+            const currentVal = sel.value;
+            sel.innerHTML = '<option value="">-- Select HQ --</option>' + 
+                allHQs.map(h => `<option value="${h.name}">${h.name}</option>`).join('');
+            sel.value = currentVal;
+        }
+    });
+}
+
+async function deleteHQ(id) {
+    if (!confirm("Are you sure you want to remove this HQ?")) return;
+    try {
+        const res = await fetch(`/api/admin/hqs/${id}`, { method: 'DELETE' });
+        if ((await res.json()).success) {
+            showToast("✅ HQ removed", "success");
+            await fetchHQs();
+        }
+    } catch (e) { showToast("❌ Delete failed", "error"); }
 }
 
 async function populateManagers() {
@@ -3543,7 +3546,7 @@ async function publishLetterToHub() {
     if (!confirm(`Are you sure you want to officially publish this ${type.toUpperCase()} template to ${email}'s dashboard node?`)) return;
 
     try {
-        lockUI(`≡ƒîÉ Publishing to Hub...`);
+        lockUI(`🌐 Publishing to Hub...`);
         const res = await fetch('/api/admin/save-letter-snapshot', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3630,7 +3633,7 @@ async function verifyMaintenanceAuth() {
         });
         const result = await res.json();
         if (result.success) {
-            showToast("≡ƒöô Access Granted. Maintaining secure pipeline.");
+            showToast("🔑 Access Granted. Maintaining secure pipeline.");
             document.getElementById('maintenanceLocked').classList.add('hidden');
             document.getElementById('maintenanceUnlocked').classList.remove('hidden');
             fetchDatabaseStats(); // Refresh stats on unlock

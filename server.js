@@ -251,12 +251,12 @@ app.use(express.static(__dirname));
 async function sendEmail({ to, subject, html, attachments = [] }) {
     const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
     const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
-    console.log(`≡ƒôí [OUTGOING] To: ${to} | Subject: ${subject}`);
+    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject}`);
 
     // STRATEGY 1: Google Apps Script Bridge (HTTPS - The only way to send on Render Free)
     if (bridgeUrl) {
         try {
-            console.log('≡ƒîë [INFO] Sending via Google Apps Script Bridge...');
+            console.log('☁️ [INFO] Sending via Google Apps Script Bridge...');
 
             // Convert Buffer attachments to base64 strings for the bridge
             const bridgeAttachments = attachments.map(att => ({
@@ -270,10 +270,10 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
                 attachments: bridgeAttachments
             }, { timeout: 25000 }); // Longer timeout for attachments
 
-            console.log(`Γ£à [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
+            console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
             return response.data;
         } catch (bridgeErr) {
-            console.error(`ΓÜá∩╕Å [WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
+            console.error(`⚠️ [WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
         }
     }
 
@@ -288,15 +288,15 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 
     try {
-        console.log('Γ£ë∩╕Å [INFO] Attempting Gmail SMTP (local mode)...');
+        console.log('📧 [INFO] Attempting Gmail SMTP (local mode)...');
         const info = await transporter.sendMail({
             from: `"Emyris HR" <emy.onboardapp@gmail.com>`,
             to, subject, html
         });
-        console.log(`Γ£à [SUCCESS] Gmail delivery confirmed: ${info.messageId}`);
+        console.log(`✅ [SUCCESS] Gmail delivery confirmed: ${info.messageId}`);
         return info;
     } catch (smtpErr) {
-        console.error(`Γ¥î [FAILURE] All email strategies exhausted: ${smtpErr.message}`);
+        console.error(`❌ [FAILURE] All email strategies exhausted: ${smtpErr.message}`);
         throw smtpErr;
     }
 }
@@ -1117,7 +1117,7 @@ app.post('/api/admin/verify-and-activate', async (req, res) => {
         // Trigger Congratulation Message
         await sendEmail({
             to: email,
-            subject: `Registration Verified - Welcome to ${company.name} ≡ƒÜÇ`,
+            subject: `Registration Verified - Welcome to ${company.name} 🚀`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:32px;background:#f8fafc;border-radius:12px;color:#1e293b;line-height:1.6;">
                     <h2 style="color:#6366f1;margin-top:0;">Congratulations, ${applicant.fullName}!</h2>
@@ -1201,7 +1201,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
         // 1. Congratulate Applicant
         await sendEmail({
             to: email,
-            subject: `Congratulations on Joining ${company.name}! ≡ƒÜÇ`,
+            subject: `Congratulations on Joining ${company.name}! 🚀`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
                     <h2 style="color:#6366f1">Welcome Aboard, ${applicant.fullName}!</h2>
@@ -1217,7 +1217,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
         // 2. Notify Admin
         await sendEmail({
             to: (process.env.ADMIN_USER || 'hr@emyrisbio.com').toLowerCase(),
-            subject: `≡ƒöÑ Offer Accepted: ${applicant.fullName}`,
+            subject: `🔥 Offer Accepted: ${applicant.fullName}`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
                     <h2 style="color:#10b981">Great News! Offer Accepted</h2>
@@ -1327,6 +1327,46 @@ app.get('/api/company-profile', async (req, res) => {
 
         res.status(200).json(profile);
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Applicant-facing unified company data (Hydrated with Divisions and HQs)
+app.get('/api/company-data', async (req, res) => {
+    try {
+        const company = await Company.findOne().lean();
+        if (!company) return res.status(404).json({ error: 'Not found' });
+
+        const divisions = await Division.find({ active: true }).sort({ name: 1 }).lean();
+        const hqs = await HQ.find({ active: true }).sort({ name: 1 }).lean();
+
+        // Enrich divisions with their respective designations from company profile
+        const enrichedDivisions = divisions.map(div => {
+            const desgs = (company.designations || []).filter(d => 
+                (typeof d === 'object' ? d.department : 'SALES') === div.name
+            );
+            return {
+                ...div,
+                designations: desgs
+            };
+        });
+
+        const data = {
+            ...company,
+            divisions: enrichedDivisions,
+            hqs: hqs,
+            logo: "" // Logo logic handled by asset hydration if needed
+        };
+
+        // Hydrate logo
+        if (company.activeLogoId) {
+            const asset = await Asset.findById(company.activeLogoId).lean();
+            if (asset) data.logo = asset.data;
+        }
+
+        res.json(data);
+    } catch (e) {
+        console.error("Company data fetch error:", e);
+        res.status(500).json({ error: 'Failed to fetch unified data' });
+    }
 });
 
 // Full Asset Library (Lazy-loaded)
@@ -1500,7 +1540,7 @@ app.post('/api/admin/system/clear', async (req, res) => {
         }
         
         if (includeSetup) {
-            console.log("≡ƒº¿ Total Wipeout: Clearing Divisions and HQs...");
+            console.log("🧹 Total Wipeout: Clearing Divisions and HQs...");
             await Division.deleteMany({});
             await HQ.deleteMany({});
         }
