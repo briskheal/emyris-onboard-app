@@ -665,11 +665,11 @@ app.get('/api/admin/applicant-pin/:email', async (req, res) => {
 // FAST-TRACK EXISTING STAFF API
 app.post('/api/admin/add-existing-staff', async (req, res) => {
     try {
-        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address } = req.body;
+        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo } = req.body;
 
-        // Validation
-        if (!fullName || !email || !phone) {
-            return res.status(400).json({ success: false, message: 'Name, Email, and Phone are required.' });
+        // Validation: All fields are mandatory
+        if (!fullName || !email || !phone || !empCode || !designation || !targetSalary || !division || !hq || !joinDate || !dob || !address || !reportingTo) {
+            return res.status(400).json({ success: false, message: 'All fields (Name, Email, Phone, Code, Desg, Div, HQ, Reporting, Dates, Salary, Address) are mandatory.' });
         }
 
         const existingEmail = await Applicant.findOne({ email });
@@ -743,6 +743,108 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
     } catch (error) {
         console.error('Fast-track error:', error);
         res.status(500).json({ success: false, message: 'Failed to add existing staff.' });
+    }
+});
+
+// BULK ADD EXISTING STAFF
+app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
+    try {
+        const { staffList } = req.body;
+        if (!staffList || !Array.isArray(staffList)) {
+            return res.status(400).json({ success: false, message: 'Invalid data format.' });
+        }
+
+        const results = { success: 0, failed: 0, errors: [] };
+
+        for (const staff of staffList) {
+            try {
+                const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo } = staff;
+
+                // STRICT VALIDATION: All fields are now mandatory
+                const missing = [];
+                if (!fullName) missing.push("Full Name");
+                if (!email) missing.push("Email");
+                if (!phone) missing.push("Phone");
+                if (!empCode) missing.push("Employee Code");
+                if (!designation) missing.push("Designation");
+                if (!division) missing.push("Division");
+                if (!hq) missing.push("HQ");
+                if (!reportingTo) missing.push("Reporting To");
+                if (!joinDate) missing.push("Joining Date");
+                if (!targetSalary) missing.push("Annual CTC");
+                if (!dob) missing.push("DOB");
+                if (!address) missing.push("Address");
+
+                if (missing.length > 0) {
+                    results.failed++;
+                    results.errors.push(`${email || fullName || 'Unknown'}: Missing [${missing.join(', ')}]`);
+                    continue;
+                }
+
+                const existing = await Applicant.findOne({ email });
+                if (existing) {
+                    results.failed++;
+                    results.errors.push(`${email}: Already exists`);
+                    continue;
+                }
+
+                const formattedSalary = parseFloat(targetSalary) || 0;
+                let salaryBreakup = {};
+                if (formattedSalary > 0) {
+                    const monthly = parseFloat((formattedSalary / 12).toFixed(2));
+                    const basic = parseFloat((monthly * 0.40).toFixed(2));
+                    const hra = parseFloat((basic * 0.40).toFixed(2));
+                    const edu = 200.00;
+                    const conveyance = 3000.00;
+                    const medical = 1250.00;
+                    const ltaBase = monthly - (basic + hra);
+                    const lta = parseFloat((ltaBase * 0.07).toFixed(2));
+                    const used = parseFloat((basic + hra + lta + edu + conveyance + medical).toFixed(2));
+                    const special = parseFloat((monthly - used).toFixed(2));
+                    
+                    salaryBreakup = {
+                        v_salBasic: basic.toFixed(2), v_salHra: hra.toFixed(2), v_salLta: lta.toFixed(2),
+                        v_salConv: conveyance.toFixed(2), v_salMed: medical.toFixed(2), v_salEdu: edu.toFixed(2),
+                        v_salFixed: "0.00", v_salSpecial: special.toFixed(2)
+                    };
+                }
+
+                const newStaff = new Applicant({
+                    fullName, email, phone,
+                    password: 'EXISTING_STAFF_NO_PIN',
+                    status: 'approved',
+                    isExistingStaff: true,
+                    canLogin: false,
+                    approvedAt: new Date(),
+                    division: division || 'General',
+                    reportingTo: reportingTo || '',
+                    hq: hq || 'Unassigned',
+                    empCode: empCode || '',
+                    actualJoiningDate: joinDate ? new Date(joinDate) : new Date(),
+                    formData: {
+                        designation: designation || 'Employee',
+                        salary: formattedSalary.toString(),
+                        dob: dob || '',
+                        current_address: address || '',
+                        first_name: fullName.split(' ')[0],
+                        last_name: fullName.split(' ').slice(1).join(' ') || ''
+                    },
+                    salaryBreakup: salaryBreakup,
+                    tasks: { offerLetter: true, appointmentLetter: false, appLinkSent: false, loginDetailsSent: false }
+                });
+
+                await newStaff.save();
+                results.success++;
+            } catch (err) {
+                results.failed++;
+                results.errors.push(`${staff.email || 'Unknown'}: ${err.message}`);
+            }
+        }
+
+        res.status(200).json({ success: true, results });
+    } catch (error) {
+        console.error('Bulk add error:', error);
+        res.status(500).json({ success: false, message: 'Internal server error.' });
     }
 });
 

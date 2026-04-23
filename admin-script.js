@@ -95,7 +95,36 @@ function openExistingStaffModal() {
         if (hqSel && document.getElementById('v_hq')) {
             hqSel.innerHTML = document.getElementById('v_hq').innerHTML;
         }
+
+        // Populate designations grouped by department
+        populateDesignationSelect('ex_designation');
+        populateManagers();
     }
+}
+
+// --- SHARED UI HELPERS ---
+function populateDesignationSelect(selectId) {
+    const desgSel = document.getElementById(selectId);
+    if (!desgSel) return;
+
+    const desgList = companyData.designations || [];
+    const groups = {};
+    desgList.forEach(d => {
+        const dept = (typeof d === 'object' ? d.department : 'SALES') || 'SALES';
+        const title = typeof d === 'object' ? d.title : d;
+        if (!groups[dept]) groups[dept] = [];
+        groups[dept].push(title);
+    });
+
+    let html = '<option value="">-- Select Designation --</option>';
+    Object.keys(groups).sort().forEach(dept => {
+        html += `<optgroup label="${dept}">`;
+        groups[dept].sort().forEach(title => {
+            html += `<option value="${title}">${title}</option>`;
+        });
+        html += `</optgroup>`;
+    });
+    desgSel.innerHTML = html;
 }
 
 function closeExistingStaffModal() {
@@ -124,8 +153,16 @@ async function submitExistingStaff(event) {
         targetSalary: document.getElementById('ex_salary').value,
         joinDate: document.getElementById('ex_joinDate').value,
         division: document.getElementById('ex_division').value,
+        reportingTo: document.getElementById('ex_reportingTo').value,
         hq: document.getElementById('ex_hq').value
     };
+
+    // Validation: All fields are mandatory
+    const missing = Object.entries(data).filter(([key, val]) => !val).map(([key]) => key);
+    if (missing.length > 0) {
+        unlockUI();
+        return showToast("⚠️ All fields are mandatory. Please complete the form.", "warning");
+    }
 
     try {
         const res = await fetch('/api/admin/add-existing-staff', {
@@ -1665,6 +1702,16 @@ function toggleIncrementSection() {
     }
 }
 
+function autoPopulateMonthlyGross() {
+    const annual = parseFloat(document.getElementById('ex_salary').value) || 0;
+    const monthly = Math.round(annual / 12);
+    const currentInput = document.getElementById('ex_currentSalary');
+    if (currentInput) {
+        currentInput.value = monthly;
+        calcIncrementDiff();
+    }
+}
+
 function calcIncrementDiff() {
     // Handle both Dossier and "Add Existing Staff" modal
     const isModal = document.getElementById('existingStaffModal') && !document.getElementById('existingStaffModal').classList.contains('hidden');
@@ -2447,7 +2494,7 @@ async function populateDivisions(force = false) {
     if (profileList) profileList.innerHTML = html;
 
     // Update all division dropdowns globally
-    const selects = ['v_division'];
+    const selects = ['v_division', 'ex_division'];
     selects.forEach(id => {
         const sel = document.getElementById(id);
         if (sel) {
@@ -2557,7 +2604,7 @@ function populateHQs() {
         `).join('');
     }
     
-    const selects = ['v_hq']; // HQ field in verification
+    const selects = ['v_hq', 'ex_hq']; // HQ field in verification and existing staff
     selects.forEach(id => {
         const sel = document.getElementById(id);
         if (sel) {
@@ -2581,8 +2628,7 @@ async function deleteHQ(id) {
 }
 
 async function populateManagers() {
-    const select = document.getElementById('v_reportingTo');
-    if (!select) return;
+    const selects = ['v_reportingTo', 'ex_reportingTo'];
 
     try {
         // PERFORMANCE: If we already have applicants from the main fetch, use them instead of hitting the server again
@@ -2631,9 +2677,14 @@ async function populateManagers() {
             }
         }
         
-        const currentVal = select.value;
-        select.innerHTML = html;
-        if (currentVal) select.value = currentVal;
+        selects.forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) {
+                const currentVal = sel.value;
+                sel.innerHTML = html;
+                if (currentVal) sel.value = currentVal;
+            }
+        });
     } catch (e) {
         console.error("Failed to populate managers:", e);
     }
@@ -3778,7 +3829,7 @@ async function verifyMaintenanceAuth() {
     }
 
     try {
-        lockUI("≡ƒöÉ Verifying Identity...");
+        lockUI("🛡️ Verifying Identity...");
         const res = await fetch('/api/admin-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -3805,6 +3856,81 @@ function lockMaintenanceMode() {
     document.getElementById('maintenanceUnlocked').classList.add('hidden');
     document.getElementById('maintenanceLocked').classList.remove('hidden');
     toggleReauthForm(false);
+}
+
+// --- BULK STAFF UPLOAD & TEMPLATE ---
+function downloadStaffTemplate() {
+    const headers = [
+        ["Full Name", "Email", "Phone", "Employee Code", "Designation", "Division", "HQ", "Reporting To", "Date of Joining", "Annual CTC", "Date of Birth", "Current Address"]
+    ];
+    
+    const sampleData = [
+        ["Rahul Sharma", "rahul@example.com", "9876543210", "EMP/001", "Senior Manager", "SALES", "MUMBAI", "Manager Name", "2024-01-01", "600000", "1990-05-15", "Mumbai, Maharashtra"]
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet([...headers, ...sampleData]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Existing Staff Template");
+    XLSX.writeFile(wb, "Emyris_Staff_Template.xlsx");
+}
+
+async function handleBulkUpload(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    lockUI(`📂 Processing Bulk Upload: ${file.name}...`);
+    
+    try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+        if (!jsonData.length) {
+            throw new Error("The file is empty or formatted incorrectly.");
+        }
+
+        const staffList = jsonData.map(row => ({
+            fullName: row["Full Name"],
+            email: row["Email"],
+            phone: row["Phone"],
+            empCode: row["Employee Code"],
+            designation: row["Designation"],
+            division: row["Division"],
+            hq: row["HQ"],
+            reportingTo: row["Reporting To"],
+            joinDate: row["Date of Joining"],
+            targetSalary: row["Annual CTC"],
+            dob: row["Date of Birth"],
+            address: row["Current Address"]
+        }));
+
+        const res = await fetch('/api/admin/bulk-add-existing-staff', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ staffList })
+        });
+
+        const result = await res.json();
+        if (result.success) {
+            const { success, failed, errors } = result.results;
+            let msg = `✅ Added ${success} records.`;
+            if (failed > 0) msg += ` ⚠️ Failed ${failed}. Check console.`;
+            
+            showToast(msg, failed > 0 ? "warning" : "success");
+            if (errors.length) console.warn("Bulk Upload Errors:", errors);
+            
+            await fetchApplicants(); 
+        } else {
+            throw new Error(result.message || "Bulk upload failed.");
+        }
+    } catch (e) {
+        console.error("Bulk Upload Error:", e);
+        showToast(`❌ Error: ${e.message}`, "error");
+    } finally {
+        unlockUI();
+        input.value = ""; 
+    }
 }
 
 window.addEventListener('DOMContentLoaded', initializeApp);

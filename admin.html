@@ -90,12 +90,20 @@
                             </div>
                             <div class="form-group">
                                 <label>Designation</label>
-                                <input type="text" id="ex_designation" placeholder="e.g. Senior Manager">
+                                <select id="ex_designation" style="width: 100%;">
+                                    <option value="">Select Designation</option>
+                                </select>
                             </div>
                             <div class="form-group">
                                 <label>Division</label>
                                 <select id="ex_division" style="width: 100%;">
                                     <option value="">Select Division</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Reporting To</label>
+                                <select id="ex_reportingTo" style="width: 100%;">
+                                    <option value="">Select Manager</option>
                                 </select>
                             </div>
                             <div class="form-group">
@@ -110,7 +118,7 @@
                             </div>
                             <div class="form-group">
                                 <label>Annual CTC (₹)</label>
-                                <input type="number" id="ex_salary" placeholder="e.g. 500000" oninput="updateSalaryWords('ex_salary', 'ex_salary_words')">
+                                <input type="number" id="ex_salary" placeholder="e.g. 500000" oninput="updateSalaryWords('ex_salary', 'ex_salary_words'); autoPopulateMonthlyGross()">
                                 <span id="ex_salary_words" style="display:block; font-size:0.7rem; color:var(--accent); margin-top:4px; font-weight:600;"></span>
                             </div>
                         </div>
@@ -669,7 +677,12 @@
 
                         <div class="search-bar" style="display: flex; gap: 10px; align-items: center; justify-content: space-between;">
                             <input type="text" id="applicantSearch" placeholder="Search by Email (User Key) or Name..." oninput="filterApplicants()" style="flex: 1;">
-                            <button type="button" class="btn btn-primary" onclick="openExistingStaffModal()" style="white-space: nowrap; height: 45px; padding: 0 1.5rem; background: linear-gradient(135deg, #10b981, #059669); border: none;">📞 Add Existing Staff</button>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-primary" onclick="openExistingStaffModal()" style="white-space: nowrap; height: 45px; padding: 0 1.25rem; background: linear-gradient(135deg, #10b981, #059669); border: none;">👤 Add Existing Staff</button>
+                                <button type="button" class="btn" onclick="downloadStaffTemplate()" style="white-space: nowrap; height: 45px; padding: 0 1rem; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: white;">📥 Template</button>
+                                <button type="button" class="btn" onclick="document.getElementById('bulkStaffInput').click()" style="white-space: nowrap; height: 45px; padding: 0 1rem; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); color: white;">📤 Bulk Upload</button>
+                                <input type="file" id="bulkStaffInput" hidden accept=".csv, .xlsx, .xls" onchange="handleBulkUpload(this)">
+                            </div>
                         </div>
                         <div class="table-container">
                             <table class="admin-table">
@@ -1178,5 +1191,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="shared-utils.js"></script>
     <script src="admin-script.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 </body>
 </html>
