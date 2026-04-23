@@ -1285,6 +1285,17 @@ async function openVerificationView(email) {
         autoDistributeSalary();
     }
 
+    // 4.6 Increment Tracking
+    const inc = app.incrementData || {};
+    const incEnabled = document.getElementById('v_incrementEnabled');
+    if (incEnabled) {
+        incEnabled.checked = !!inc.enabled;
+        document.getElementById('v_currentSalary').value = inc.currentSalary || '';
+        document.getElementById('v_revisedSalary').value = inc.revisedSalary || '';
+        toggleIncrementSection();
+        calcIncrementDiff();
+    }
+
     // 5. Pipeline Switches
     syncPipelineSwitches(app.tasks || {});
 
@@ -1637,6 +1648,130 @@ async function saveInternalAssignment(silent = false) {
     finally { unlockUI(); }
 }
 
+// --- SALARY INCREMENT & REVISION LOGIC ---
+function toggleIncrementSection() {
+    const isEnabled = document.getElementById('v_incrementEnabled').checked;
+    const section = document.getElementById('v_incrementSection');
+    if (section) {
+        if (isEnabled) {
+            section.classList.remove('hidden');
+            section.style.opacity = '1';
+            section.style.pointerEvents = 'all';
+        } else {
+            section.classList.add('hidden');
+            section.style.opacity = '0.5';
+            section.style.pointerEvents = 'none';
+        }
+    }
+}
+
+function calcIncrementDiff() {
+    // Handle both Dossier and "Add Existing Staff" modal
+    const isModal = document.getElementById('existingStaffModal') && !document.getElementById('existingStaffModal').classList.contains('hidden');
+    
+    const prefix = isModal ? 'ex_' : 'v_';
+    const curInput = document.getElementById(`${prefix}currentSalary`);
+    const revInput = document.getElementById(`${prefix}revisedSalary`);
+    
+    if (!curInput || !revInput) return;
+    
+    const curVal = parseFloat(curInput.value) || 0;
+    const revVal = parseFloat(revInput.value) || 0;
+    
+    const diff = revVal - curVal;
+    const annualImpact = diff * 12;
+    
+    const monthlyEl = document.getElementById(isModal ? 'calc_monthly_inc' : 'v_calc_monthly_inc');
+    const annualEl = document.getElementById(isModal ? 'calc_annual_inc' : 'v_calc_annual_inc');
+    
+    if (monthlyEl) monthlyEl.innerText = `₹${diff.toLocaleString('en-IN')}`;
+    if (annualEl) annualEl.innerText = `₹${annualImpact.toLocaleString('en-IN')}`;
+    
+    // Update color based on positive/negative
+    if (monthlyEl) monthlyEl.style.color = diff >= 0 ? 'var(--success)' : '#ef4444';
+}
+
+function applyRevisedSalary() {
+    const revised = parseFloat(document.getElementById('v_revisedSalary').value);
+    if (!revised || isNaN(revised)) {
+        return showToast("⚠️ Please enter a valid Revised Salary first.", "warning");
+    }
+    
+    // Update the Annual CTC in the main assignment panel
+    const annualTarget = revised * 12;
+    if (activeV_Applicant) activeV_Applicant.salary = annualTarget; // Temporary local update
+    
+    // Trigger auto-distribution
+    autoDistributeSalary(annualTarget);
+    showToast("✅ Revised salary applied to structure. Don't forget to SAVE.", "success");
+}
+
+async function saveIncrementData() {
+    if (!activeV_Applicant) return;
+    
+    const data = {
+        email: activeV_Applicant.email,
+        incrementData: {
+            enabled: document.getElementById('v_incrementEnabled').checked,
+            currentSalary: parseFloat(document.getElementById('v_currentSalary').value) || 0,
+            revisedSalary: parseFloat(document.getElementById('v_revisedSalary').value) || 0
+        }
+    };
+
+    try {
+        lockUI("💾 Saving Increment Record...");
+        const res = await fetch('/api/admin/update-workflow-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        if ((await res.json()).success) {
+            showToast("✅ Salary increment data saved to record.", "success");
+            activeV_Applicant.incrementData = data.incrementData;
+        }
+    } catch (e) { showToast("Save failed", "error"); }
+    finally { unlockUI(); }
+}
+
+function calcSalaryTotal() {
+    const sal = {
+        basic: parseFloat(document.getElementById('v_salBasic').value) || 0,
+        hra: parseFloat(document.getElementById('v_salHra').value) || 0,
+        lta: parseFloat(document.getElementById('v_salLta').value) || 0,
+        conveyance: parseFloat(document.getElementById('v_salConv').value) || 0,
+        medical: parseFloat(document.getElementById('v_salMed').value) || 0,
+        special: parseFloat(document.getElementById('v_salSpecial').value) || 0,
+        edu: parseFloat(document.getElementById('v_salEdu').value) || 0,
+        fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
+    };
+    
+    const total = Object.values(sal).reduce((a, b) => a + b, 0);
+    const annual = total * 12;
+    
+    const totalEl = document.getElementById('v_salTotal');
+    const annualEl = document.getElementById('v_salAnnualTotal');
+    
+    if (totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN')}`;
+    if (annualEl) annualEl.innerText = `₹${annual.toLocaleString('en-IN')}`;
+    
+    // Feedback if it matches the target
+    const targetAnnual = parseFloat(activeV_Applicant.salary || activeV_Applicant.formData?.salary) || 0;
+    const feedback = document.getElementById('v_salary_feedback');
+    if (feedback && targetAnnual > 0) {
+        feedback.style.display = 'block';
+        const diff = Math.abs(annual - targetAnnual);
+        if (diff < 10) {
+            feedback.innerText = "✅ Perfect Match with Registered CTC";
+            feedback.style.background = 'rgba(16, 185, 129, 0.1)';
+            feedback.style.color = '#10b981';
+        } else {
+            feedback.innerText = `⚠️ Gap: ₹${(annual - targetAnnual).toLocaleString('en-IN')} from Registered CTC`;
+            feedback.style.background = 'rgba(239, 68, 68, 0.1)';
+            feedback.style.color = '#ef4444';
+        }
+    }
+}
+
 function autoCalcHRA() {
     const basic = parseFloat(document.getElementById('v_salBasic').value) || 0;
     const hraField = document.getElementById('v_salHra');
@@ -1697,50 +1832,7 @@ function autoDistributeSalary() {
     showToast("✅ Salary breakup updated (Medical @ 1250, Basic @ 40%)", "success");
 }
 
-function calcSalaryTotal() {
-    const fields = ['v_salBasic', 'v_salHra', 'v_salLta', 'v_salConv', 'v_salMed', 'v_salSpecial', 'v_salEdu', 'v_salFixed'];
-    let total = 0;
-    fields.forEach(id => {
-        const val = parseFloat(document.getElementById(id).value) || 0;
-        total += val;
-    });
-    const annual = total * 12;
-    
-    const totalEl = document.getElementById('v_salTotal');
-    if(totalEl) totalEl.innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-    
-    const annualEl = document.getElementById('v_salAnnualTotal');
-    if(annualEl) annualEl.innerText = `₹${annual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-    const feedback = document.getElementById('v_salary_feedback');
-    const note = document.getElementById('v_expected_salary_note');
-    
-    const targetSal = activeV_Applicant ? (activeV_Applicant.salary || activeV_Applicant.formData?.salary) : null;
-
-    if (targetSal) {
-        const targetAnnual = parseFloat(targetSal);
-        note.innerText = `Target Annual: ₹${targetAnnual.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
-        
-        if (feedback) {
-            feedback.style.display = 'block';
-            const diff = Math.abs(annual - targetAnnual);
-            if (diff < 0.1) { // Rounding margin for decimals
-                feedback.innerHTML = "✅ Matches target annual salary perfectly.";
-                feedback.style.background = "rgba(16,185,129,0.15)";
-                feedback.style.color = "#10b981";
-                feedback.classList.remove('error-feedback');
-            } else {
-                feedback.innerHTML = `⚠️ Mismatch: ₹${annual.toLocaleString('en-IN')} vs Target ₹${targetAnnual.toLocaleString('en-IN')}`;
-                feedback.style.background = "rgba(239,68,68,0.12)";
-                feedback.style.color = "#ef4444";
-                feedback.classList.add('error-feedback');
-            }
-        }
-    } else {
-        if(feedback) feedback.style.display = 'none';
-        if(note) note.innerText = "";
-    }
-}
 
 async function commitMasterVerification() {
     const total = Object.keys(verificationChecks).length;
@@ -3246,7 +3338,6 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
             const total = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
                           (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
             
-            // Dynamic styles: use CSS inherit/transparent colors to work in both Dark Editor and White PDF automatically.
             const borderColor = "#888";
             const headerBg = "rgba(128, 128, 128, 0.15)";
 
@@ -3269,6 +3360,44 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
                     <tr style="font-weight: bold; background: ${headerBg};"><td style="border: 1px solid ${borderColor}; padding: 8px;">Gross Total</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(total)}</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(total*12)}</td></tr>
+                </tbody>
+            </table>
+            `;
+        })(),
+        "{{SALARY_REVISION_BOX}}": (() => {
+            const inc = app.incrementData || {};
+            if (!inc.enabled) return "";
+            
+            const formatRs = (num) => 'Rs. ' + (Number(num) || 0).toLocaleString('en-IN');
+            const diff = (Number(inc.revisedSalary) || 0) - (Number(inc.currentSalary) || 0);
+            const perc = inc.currentSalary > 0 ? ((diff / inc.currentSalary) * 100).toFixed(1) : 0;
+            
+            const borderColor = "#888";
+            const headerBg = "rgba(128, 128, 128, 0.15)";
+            
+            return `
+            <table style="width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 13px; border: 1px solid ${borderColor}; color: inherit;">
+                <thead>
+                    <tr style="background: ${headerBg};">
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: left;">Particulars</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">Existing (Monthly)</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">Revised (Monthly)</th>
+                        <th style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">Increment</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="border: 1px solid ${borderColor}; padding: 8px;">Gross Salary (Monthly)</td>
+                        <td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(inc.currentSalary)}</td>
+                        <td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(inc.revisedSalary)}</td>
+                        <td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right; font-weight: bold; color: #10b981;">${formatRs(diff)} (${perc}%)</td>
+                    </tr>
+                    <tr style="background: ${headerBg}; font-weight: bold;">
+                        <td style="border: 1px solid ${borderColor}; padding: 8px;">Annualized CTC</td>
+                        <td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(inc.currentSalary * 12)}</td>
+                        <td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(inc.revisedSalary * 12)}</td>
+                        <td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(diff * 12)}</td>
+                    </tr>
                 </tbody>
             </table>
             `;
@@ -3332,6 +3461,7 @@ function getDefaultTemplate(type) {
 <p><strong>Sub: REVISED SALARY LETTER</strong></p><p>&nbsp;</p>
 <p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p>
 <p>Pursuant to your performance review, your revised gross monthly CTC is <strong>Rs. {{SALARY_MONTHLY}}/-</strong> (Rupees {{SALARY_WORDS}} per annum), effective from {{TODAY_DATE}}.</p><p>&nbsp;</p>
+<p>{{SALARY_REVISION_BOX}}</p><p>&nbsp;</p>
 <p>{{SALARY_BREAKUP}}</p><p>&nbsp;</p>
 <p>Yours sincerely,</p><p>&nbsp;</p>
 <p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;

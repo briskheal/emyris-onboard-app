@@ -115,6 +115,39 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Section 3: Salary Revision (Incremental) -->
+                    <div style="background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem;">
+                        <h4 style="color: var(--primary-light); margin-top: 0; margin-bottom: 1rem; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;">
+                            <span style="opacity: 0.7;">📈</span> Salary Revision (For Increment Letters)
+                        </h4>
+                        <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label>Current Monthly Gross (₹)</label>
+                                <input type="number" id="ex_currentSalary" placeholder="Existing Monthly" oninput="calcIncrementDiff()">
+                            </div>
+                            <div class="form-group">
+                                <label>Revised Monthly Gross (₹)</label>
+                                <input type="number" id="ex_revisedSalary" placeholder="New Monthly" oninput="calcIncrementDiff()">
+                            </div>
+                        </div>
+                        
+                        <!-- Calculation Box -->
+                        <div style="margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                                <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Monthly Increment</div>
+                                <div id="calc_monthly_inc" style="font-size: 1.1rem; font-weight: 700; color: var(--success);">₹0</div>
+                            </div>
+                            <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                                <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase;">Annual Revision</div>
+                                <div id="calc_annual_inc" style="font-size: 1.1rem; font-weight: 700; color: var(--primary-light);">₹0</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; line-height: 1.4;">
+                            * If this is an increment, these values will be used for the <strong>Revised Salary Letter</strong>. 
+                            The Annual CTC above should be the final revised annual figure.
+                        </p>
+                    </div>
                 </div>
                 
                 <div style="padding: 1.5rem 2rem; background: rgba(255,255,255,0.03); border-top: 1px solid var(--glass-border); display: flex; gap: 1rem; justify-content: flex-end;">
@@ -1033,6 +1066,49 @@
                                 <div id="v_expected_salary_note" style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; text-align:right;"></div>
                             </div>
                             <button class="btn btn-primary btn-sm" onclick="saveInternalAssignment()" style="width:100%; padding:10px;">💾 Save Assignment & Salary</button>
+                        </div>
+
+                        <!-- 📈 Salary Increment Revision -->
+                        <div class="v-card" style="border-color: rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.03);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+                                <h4 style="margin: 0; color: var(--primary-light);">📈 Salary Revision (Increment)</h4>
+                                <label class="switch-premium" title="Enable Increment Tracker">
+                                    <input type="checkbox" id="v_incrementEnabled" onchange="toggleIncrementSection()">
+                                    <span class="slider-premium"></span>
+                                </label>
+                            </div>
+                            
+                            <div id="v_incrementSection" class="hidden" style="opacity: 0.5; pointer-events: none; transition: all 0.3s ease;">
+                                <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                    <div class="form-group">
+                                        <label style="font-size: 0.7rem;">Previous Monthly Gross (₹)</label>
+                                        <input type="number" id="v_currentSalary" class="form-input-sm" placeholder="Current" oninput="calcIncrementDiff()">
+                                    </div>
+                                    <div class="form-group">
+                                        <label style="font-size: 0.7rem;">Revised Monthly Gross (₹)</label>
+                                        <input type="number" id="v_revisedSalary" class="form-input-sm" placeholder="New" oninput="calcIncrementDiff()">
+                                    </div>
+                                </div>
+                                
+                                <div style="margin-top: 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                                        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Monthly Hike</div>
+                                        <div id="v_calc_monthly_inc" style="font-size: 1rem; font-weight: 700; color: var(--success);">₹0</div>
+                                    </div>
+                                    <div style="background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.05); text-align: center;">
+                                        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Annual Impact</div>
+                                        <div id="v_calc_annual_inc" style="font-size: 1rem; font-weight: 700; color: var(--primary-light);">₹0</div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 1rem; display: flex; gap: 8px;">
+                                    <button class="btn btn-sm btn-outline" onclick="applyRevisedSalary()" style="flex: 1; font-size: 0.7rem; padding: 8px;">🔄 Apply to Structure</button>
+                                    <button class="btn btn-sm btn-primary" onclick="saveIncrementData()" style="flex: 1; font-size: 0.7rem; padding: 8px;">💾 Save Revision</button>
+                                </div>
+                                <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 8px; line-height: 1.4; text-align: center;">
+                                    * Apply to Structure will automatically update the Salary Breakup above and recalculate components.
+                                </p>
+                            </div>
                         </div>
 
                         <!-- Pipeline Tracker -->
