@@ -1430,11 +1430,11 @@ function renderVerificationProfile(app) {
         { label: 'Father\'s Name', val: fd.fatherName || 'N/A' },
         { label: 'Gender', val: fd.gender || 'N/A' },
         { label: 'Blood Group', val: fd.bloodGroup || 'N/A' },
-        { label: 'Date of Birth', val: app.dob ? formatDatePretty(app.dob) : (fd.dob ? formatDatePretty(fd.dob) : 'N/A') },
+        { label: 'Date of Birth', val: app.dob ? formatDateDMY(app.dob) : (fd.dob ? formatDateDMY(fd.dob) : 'N/A') },
         { label: 'Current Address', val: `${app.address || fd.address || 'N/A'}, ${fd.city || ''}, ${fd.state || ''} - ${fd.pin || ''}` },
-        { label: 'Applied At', val: app.submittedAt ? new Date(app.submittedAt).toLocaleString() : (app.registeredAt ? new Date(app.registeredAt).toLocaleString() : 'N/A') },
+        { label: 'Applied At', val: app.submittedAt ? formatDateDMY(app.submittedAt) : (app.registeredAt ? formatDateDMY(app.registeredAt) : 'N/A') },
         { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
-        { label: 'Confirmed ADOJ', val: app.actualJoiningDate ? `<span style="color:var(--accent); font-weight:bold;">${new Date(app.actualJoiningDate).toDateString()}</span>` : 'N/A' },
+        { label: 'Confirmed ADOJ', val: app.actualJoiningDate ? `<span style="color:var(--accent); font-weight:bold;">${formatDateDMY(app.actualJoiningDate)}</span>` : 'N/A' },
         { 
             label: 'Published Letters', 
             val: `
@@ -3364,7 +3364,7 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{BANK_NAME}}": (fd.bankName || "").toUpperCase(),
         "{{BANK_ACC}}": fd.accNo || "",
         "{{IFSC}}": (fd.ifsc || "").toUpperCase(),
-        "{{JOINING_DATE}}": formatDatePretty(fd.joiningDate),
+        "{{JOINING_DATE}}": formatDateDMY(fd.joiningDate || app.actualJoiningDate),
         "{{COMPANY_NAME}}": companyData.name,
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
         "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || "",
@@ -3474,6 +3474,16 @@ function formatDatePretty(dateStr) {
     else if (day === 3 || day === 23) suffix = 'rd';
     
     return `${day}${suffix} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatDateDMY(date) {
+    if (!date) return "";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return date;
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
 }
 
 function getDefaultTemplate(type) {
@@ -3860,8 +3870,9 @@ function lockMaintenanceMode() {
 
 // --- BULK STAFF UPLOAD & TEMPLATE ---
 function downloadStaffTemplate() {
+    // Columns: Full Name*, Email*, Phone*, Employee Code*, Designation*, Division*, HQ*, Reporting To*, Date of Joining (DD-MM-YYYY)*, Annual CTC*, Date of Birth (DD-MM-YYYY)*, Current Address*
     const headers = [
-        ["Full Name", "Email", "Phone", "Employee Code", "Designation", "Division", "HQ", "Reporting To", "Date of Joining", "Annual CTC", "Date of Birth", "Current Address"]
+        ["Full Name*", "Email*", "Phone*", "Employee Code*", "Designation*", "Division*", "HQ*", "Reporting To*", "Date of Joining (DD-MM-YYYY)*", "Annual CTC*", "Date of Birth (DD-MM-YYYY)*", "Current Address*"]
     ];
     
     const sampleData = [
@@ -3891,18 +3902,18 @@ async function handleBulkUpload(input) {
         }
 
         const staffList = jsonData.map(row => ({
-            fullName: row["Full Name"],
-            email: row["Email"],
-            phone: row["Phone"],
-            empCode: row["Employee Code"],
-            designation: row["Designation"],
-            division: row["Division"],
-            hq: row["HQ"],
-            reportingTo: row["Reporting To"],
-            joinDate: row["Date of Joining"],
-            targetSalary: row["Annual CTC"],
-            dob: row["Date of Birth"],
-            address: row["Current Address"]
+            fullName: row["Full Name*"],
+            email: row["Email*"],
+            phone: row["Phone*"],
+            empCode: row["Employee Code*"],
+            designation: row["Designation*"],
+            division: row["Division*"],
+            hq: row["HQ*"],
+            reportingTo: row["Reporting To*"],
+            joinDate: row["Date of Joining (DD-MM-YYYY)*"],
+            targetSalary: row["Annual CTC*"],
+            dob: row["Date of Birth (DD-MM-YYYY)*"],
+            address: row["Current Address*"]
         }));
 
         const res = await fetch('/api/admin/bulk-add-existing-staff', {
