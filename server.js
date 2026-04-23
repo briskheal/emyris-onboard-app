@@ -480,6 +480,14 @@ app.post('/api/submit-onboarding', async (req, res) => {
     try {
         const { email, formData } = req.body;
 
+        const parseDMY = (s) => {
+            if (!s || typeof s !== 'string') return null;
+            if (s.includes('T')) return new Date(s); // Already ISO
+            const parts = s.split('-');
+            if (parts.length !== 3) return null;
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        };
+
         const applicant = await Applicant.findOneAndUpdate(
             { email },
             {
@@ -488,8 +496,8 @@ app.post('/api/submit-onboarding', async (req, res) => {
                 canLogin: false,
                 submittedAt: new Date(),
                 hq: formData.hq,
-                actualJoiningDate: formData.joiningDate,
-                dob: formData.dob ? new Date(formData.dob) : null,
+                actualJoiningDate: parseDMY(formData.joiningDate),
+                dob: parseDMY(formData.dob),
                 address: formData.address || "",
                 salary: formData.salary || ""
             },
@@ -538,13 +546,21 @@ app.post('/api/applicant/save-draft', async (req, res) => {
         const { email, formData } = req.body;
         if (!email) return res.status(400).json({ error: 'Missing email' });
 
+        const parseDMY = (s) => {
+            if (!s || typeof s !== 'string') return null;
+            if (s.includes('T')) return new Date(s); // Already ISO
+            const parts = s.split('-');
+            if (parts.length !== 3) return null;
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        };
+
         await Applicant.findOneAndUpdate(
             { email },
             { 
                 formData,
                 hq: formData.hq,
-                actualJoiningDate: formData.joiningDate,
-                dob: formData.dob ? new Date(formData.dob) : null,
+                actualJoiningDate: parseDMY(formData.joiningDate),
+                dob: parseDMY(formData.dob),
                 address: formData.address || "",
                 salary: formData.salary || ""
             }
@@ -559,12 +575,20 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
         const { email, actualJoiningDate } = req.body;
         if (!email || !actualJoiningDate) return res.status(400).json({ error: 'Missing data' });
 
+        const parseDMY = (s) => {
+            if (!s || typeof s !== 'string') return null;
+            if (s.includes('T')) return new Date(s); // Already ISO
+            const parts = s.split('-');
+            if (parts.length !== 3) return null;
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        };
+
         const applicant = await Applicant.findOneAndUpdate(
             { email },
             { 
                 offerAccepted: true,
                 offerAcceptedAt: new Date(),
-                actualJoiningDate: new Date(actualJoiningDate),
+                actualJoiningDate: parseDMY(actualJoiningDate),
                 status: 'onboarding' 
             },
             { new: true }
@@ -705,6 +729,17 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             };
         }
 
+        // Parse DD-MM-YYYY
+        const parseDMY = (s) => {
+            if (!s || typeof s !== 'string') return null;
+            const parts = s.split('-');
+            if (parts.length !== 3) return null;
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        };
+
+        const joinDateObj = parseDMY(joinDate) || new Date(joinDate);
+        const dobObj = parseDMY(dob) || new Date(dob);
+
         // Construct the fast-tracked profile directly into 'approved' state
         const newStaff = new Applicant({
             fullName,
@@ -718,15 +753,16 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             division: division || 'General',
             hq: hq || 'Unassigned',
             empCode: empCode || '',
-            actualJoiningDate: joinDate ? new Date(joinDate) : new Date(),
+            actualJoiningDate: joinDateObj,
             formData: {
                 designation: designation || 'Employee',
                 salary: formattedSalary.toString(),
-                dob: dob || '',
+                dob: dob, 
                 current_address: address || '',
                 first_name: fullName.split(' ')[0],
                 last_name: fullName.split(' ').slice(1).join(' ') || ''
             },
+            dob: dobObj,
             salaryBreakup: salaryBreakup,
             tasks: {
                 offerLetter: true, // Auto-mark as done
@@ -809,6 +845,17 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
                     };
                 }
 
+                // Parse DD-MM-YYYY
+                const parseDMY = (s) => {
+                    if (!s || typeof s !== 'string') return null;
+                    const parts = s.split('-');
+                    if (parts.length !== 3) return null;
+                    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+                };
+
+                const joinDateObj = parseDMY(joinDate) || new Date(joinDate);
+                const dobObj = parseDMY(dob) || new Date(dob);
+
                 const newStaff = new Applicant({
                     fullName, email, phone,
                     password: 'EXISTING_STAFF_NO_PIN',
@@ -820,15 +867,16 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
                     reportingTo: reportingTo || '',
                     hq: hq || 'Unassigned',
                     empCode: empCode || '',
-                    actualJoiningDate: joinDate ? new Date(joinDate) : new Date(),
+                    actualJoiningDate: joinDateObj,
                     formData: {
                         designation: designation || 'Employee',
                         salary: formattedSalary.toString(),
-                        dob: dob || '',
+                        dob: dob, // Keep as string for display
                         current_address: address || '',
                         first_name: fullName.split(' ')[0],
                         last_name: fullName.split(' ').slice(1).join(' ') || ''
                     },
+                    dob: dobObj,
                     salaryBreakup: salaryBreakup,
                     tasks: { offerLetter: true, appointmentLetter: false, appLinkSent: false, loginDetailsSent: false }
                 });

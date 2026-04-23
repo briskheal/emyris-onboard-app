@@ -2002,7 +2002,7 @@ input:checked + .slider:before {
     border-radius: 12px;
     font-family: var(--current-letter-font, 'Plus Jakarta Sans', Arial, sans-serif) !important;
     font-size: 11pt;
-    line-height: 1.7; 
+    line-height: 1.4; 
     resize: vertical; 
     outline: none;
     box-sizing: border-box; 
@@ -2330,12 +2330,12 @@ input:checked + .slider:before {
     position: relative;
     transition: all 0.3s ease;
     overflow: hidden;
-    line-height: 1.7; /* MATCH EDITOR FIDELITY */
+    line-height: 1.4; /* MATCH EDITOR FIDELITY */
     box-sizing: border-box;
 }
 
 #livePreviewFrame p, #unifiedEditor p {
-    margin: 0 0 1em 0;
+    margin: 0 0 0.8em 0;
 }
 
 #livePreviewContainer {

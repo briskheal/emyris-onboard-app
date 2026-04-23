@@ -1214,7 +1214,7 @@ function previewIssuedLetter(email, type) {
                 <title>Preview: ${type.toUpperCase()}</title>
                 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
-                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.6; }
+                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.4; }
                     .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: 1000px; }
                 </style>
             </head>
@@ -3479,6 +3479,7 @@ function formatDatePretty(dateStr) {
 
 function formatDateDMY(date) {
     if (!date) return "";
+    if (typeof date === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(date)) return date;
     const d = new Date(date);
     if (isNaN(d.getTime())) return date;
     const day = String(d.getDate()).padStart(2, '0');
@@ -3873,14 +3874,42 @@ function lockMaintenanceMode() {
 function downloadStaffTemplate() {
     // Columns: Full Name*, Email*, Phone*, Employee Code*, Designation*, Division*, HQ*, Reporting To*, Date of Joining (DD-MM-YYYY)*, Annual CTC*, Date of Birth (DD-MM-YYYY)*, Current Address*
     const headers = [
-        ["Full Name*", "Email*", "Phone*", "Employee Code*", "Designation*", "Division*", "HQ*", "Reporting To*", "Date of Joining (DD-MM-YYYY)*", "Annual CTC*", "Date of Birth (DD-MM-YYYY)*", "Current Address*"]
+        ["Full Name*", "Email*", "Phone*", "Employee Code*", "Designation*", "Division*", "HQ*", "Reporting To*", "Date of Joining (DD-MM-YYYY)*", "Annual CTC*", "Date of Birth (DD-MM-YYYY)*", "Current Address*"],
+        ["John Doe", "john@example.com", "9876543210", "EMY/001", "Sales Executive", "Sales", "Delhi", "Manager Name", "23-04-2026", "600000", "01-01-1995", "123 Street, Delhi"]
     ];
     
     const ws = XLSX.utils.aoa_to_sheet(headers);
+    
+    // Set column widths and format for dates as text (@)
+    ws['!cols'] = [
+        { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, 
+        { wch: 15 }, { wch: 20 }, { wch: 25, z: '@' }, { wch: 15 }, { wch: 25, z: '@' }, { wch: 30 }
+    ];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Existing Staff Template");
     XLSX.writeFile(wb, "Emyris_Staff_Template.xlsx");
 }
+
+// Global listener to auto-format DD-MM-YYYY inputs
+document.addEventListener('input', function (e) {
+    if (e.target.placeholder === 'DD-MM-YYYY') {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 8) val = val.substring(0, 8);
+        
+        let formatted = '';
+        if (val.length > 0) {
+            formatted = val.substring(0, 2);
+            if (val.length > 2) {
+                formatted += '-' + val.substring(2, 4);
+                if (val.length > 4) {
+                    formatted += '-' + val.substring(4, 8);
+                }
+            }
+        }
+        e.target.value = formatted;
+    }
+});
 
 async function handleBulkUpload(input) {
     const file = input.files[0];

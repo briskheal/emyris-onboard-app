@@ -76,7 +76,16 @@ function numberToWords(num) {
 
 function formatDatePretty(dateStr) {
     if (!dateStr) return "";
-    const d = new Date(dateStr);
+    let d;
+    if (typeof dateStr === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split('-');
+        d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    } else {
+        d = new Date(dateStr);
+    }
+    
+    if (isNaN(d.getTime())) return dateStr;
+
     const day = d.getDate();
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     
