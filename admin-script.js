@@ -277,6 +277,7 @@ async function fetchCompanyData() {
     } catch (error) { console.error('Error fetching company data:', error); }
     applyCompanyData();
     fetchHQs(); // Fetch HQs whenever company data is refreshed
+    populateDivisions(); // Ensure divisions are also populated globally
 }
 
 function initBackgroundAnimations() {
@@ -3875,11 +3876,7 @@ function downloadStaffTemplate() {
         ["Full Name*", "Email*", "Phone*", "Employee Code*", "Designation*", "Division*", "HQ*", "Reporting To*", "Date of Joining (DD-MM-YYYY)*", "Annual CTC*", "Date of Birth (DD-MM-YYYY)*", "Current Address*"]
     ];
     
-    const sampleData = [
-        ["Rahul Sharma", "rahul@example.com", "9876543210", "EMP/001", "Senior Manager", "SALES", "MUMBAI", "Manager Name", "2024-01-01", "600000", "1990-05-15", "Mumbai, Maharashtra"]
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet([...headers, ...sampleData]);
+    const ws = XLSX.utils.aoa_to_sheet(headers);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Existing Staff Template");
     XLSX.writeFile(wb, "Emyris_Staff_Template.xlsx");
