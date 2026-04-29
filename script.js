@@ -27,6 +27,7 @@ async function initializeApp() {
     }
 
     // Check for existing session (optional, for now we just show landing)
+    await fetchCompanyData();
     updateView('landingPage');
 }
 
