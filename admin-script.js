@@ -1735,6 +1735,10 @@ function applyRevisedSalary() {
 
 async function saveIncrementData() {
     if (!activeV_Applicant) return;
+
+    if (!confirm(`Save this salary increment data to ${activeV_Applicant.fullName}'s internal record?\n\nNOTE: This is for administrative tracking only and does NOT send any notification to the applicant.`)) {
+        return;
+    }
     
     const data = {
         email: activeV_Applicant.email,
@@ -1753,7 +1757,7 @@ async function saveIncrementData() {
             body: JSON.stringify(data)
         });
         if ((await res.json()).success) {
-            showToast("✅ Salary increment data saved to record.", "success");
+            showToast("✅ Salary increment data saved to internal record.", "success");
             activeV_Applicant.incrementData = data.incrementData;
         }
     } catch (e) { showToast("Save failed", "error"); }
@@ -3690,14 +3694,16 @@ async function publishLetterToHub() {
     if (!email) return showToast("?? Please select a target applicant first.", "warning");
     if (!content || content === '<br>') return showToast("?? Letter content is empty.", "warning");
 
+    // Clear confirmation with explicit Email choice
     if (!confirm(`Are you sure you want to officially publish this ${type.toUpperCase()} template to ${email}'s dashboard node?`)) return;
+    const notifyByEmail = confirm("Do you also want to send an automated Email Notification to the applicant about this document issuance?");
 
     try {
-        lockUI(`🌐 Publishing to Hub...`);
+        lockUI(notifyByEmail ? "🚀 Publishing & Notifying..." : "🌐 Publishing to Hub...");
         const res = await fetch('/api/admin/save-letter-snapshot', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, letterType: type, letterData: content })
+            body: JSON.stringify({ email, letterType: type, letterData: content, notifyByEmail })
         });
         const result = await res.json();
         if (result.success) {

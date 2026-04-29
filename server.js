@@ -1302,13 +1302,14 @@ app.post('/api/admin/render-template', async (req, res) => {
             'TITLE': ((fd.gender||'').toLowerCase() === 'female' ? 'Ms.' : 'Mr.'),
             'TITLE_SHORT': ((fd.gender||'').toLowerCase() === 'female' ? 'Ms.' : 'Mr.'),
             'PHONE': applicant.phone,
-            'ADDRESS': fd.address || '',
+            'ADDRESS': applicant.address || fd.address || '',
+            'DOB': applicant.dob || fd.dob || '',
             'CITY_STATE': `${fd.city || ''}, ${fd.state || ''}`,
             'PIN': fd.pin || '',
             'DESIGNATION': applicant.designation || fd.designation || '',
             'DIVISION': applicant.division || '',
             'HQ': applicant.hq || fd.hq || '',
-            'JOINING_DATE': fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '',
+            'JOINING_DATE': applicant.actualJoiningDate || (fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''),
             'REPORTING_TO': applicant.reportingTo || '',
             'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
             'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
@@ -1456,14 +1457,51 @@ app.post('/api/admin/send-letter', async (req, res) => {
 // --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
 app.post('/api/admin/save-letter-snapshot', async (req, res) => {
     try {
-        const { email, letterType, letterData } = req.body; // letterData can be HTML/Text or Base64
+        const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
         const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
         if (letterType === 'offer') update.offerLetterData = letterData;
         else if (letterType === 'appt') update.apptLetterData = letterData;
 
         await Applicant.findOneAndUpdate({ email }, { $set: update });
-        res.json({ success: true, message: `Letter saved to applicant hub.` });
-    } catch (e) { res.status(500).json({ error: 'Save failed' }); }
+
+        if (notifyByEmail) {
+            const applicant = await Applicant.findOne({ email });
+            const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
+            const label = letterType.toUpperCase().replace('_', ' ');
+
+            await sendEmail({
+                to: email,
+                subject: `Important Document Update: ${label} - ${company.name}`,
+                html: `
+                    <div style="font-family: sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+                        <div style="background: #6366f1; padding: 20px; text-align: center;">
+                            <h2 style="color: white; margin: 0;">Document Notification</h2>
+                        </div>
+                        <div style="padding: 30px;">
+                            <p>Dear ${applicant.fullName},</p>
+                            <p>We are pleased to inform you that a new document has been issued and published to your official onboarding hub.</p>
+                            <div style="background: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0;">
+                                <strong>Document Type:</strong> ${label}<br>
+                                <strong>Status:</strong> Published to Hub
+                            </div>
+                            <p>Please log in to the portal to view, download, or accept the document.</p>
+                            <div style="text-align: center; margin-top: 30px;">
+                                <a href="https://emyris-onboard-app.onrender.com" style="display: inline-block; padding: 12px 24px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Access Portal</a>
+                            </div>
+                        </div>
+                        <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">
+                            This is an automated notification from ${company.name}. Please do not reply to this email.
+                        </div>
+                    </div>
+                `
+            });
+        }
+
+        res.json({ success: true, message: `Letter saved to applicant hub${notifyByEmail ? ' and applicant notified' : ''}.` });
+    } catch (e) { 
+        console.error("Save snapshot error:", e);
+        res.status(500).json({ error: 'Save failed' }); 
+    }
 });
 
 // --- NEW: APPLICANT ACCEPT OFFER ---
