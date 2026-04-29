@@ -2468,15 +2468,7 @@ function syncEditorStyles() {
         el.style.paddingLeft = '20mm';
         el.style.paddingRight = '20mm';
         
-        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
-        if (lhAsset?.data) {
-            el.style.backgroundImage = `url(${lhAsset.data})`;
-            el.style.backgroundSize = '100% 297mm'; // Match A4 Height
-            el.style.backgroundRepeat = 'repeat-y';
-            el.style.backgroundPosition = 'top center';
-        } else {
-            el.style.backgroundImage = 'none';
-        }
+        applyBrandingLayers(el);
     };
 
     applyA4(editor);
@@ -3038,32 +3030,38 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     
     frame.innerHTML = rendered;
     
-    // 3. Robust Letterhead Injection (Using <img> for html2canvas reliability)
+    // 3. Robust Letterhead Injection
     if (!skipLetterhead) {
-        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
-        if (lhAsset?.data) {
-            // Clean old branding
-            const old = frame.querySelectorAll('.a4-branding-layer');
-            old.forEach(o => o.remove());
-            
-            // Calculate pages needed based on content height
-            const pageH_px = 297 * 3.7795275591;
-            const totalH_px = frame.scrollHeight;
-            const pages = Math.max(1, Math.ceil(totalH_px / pageH_px));
-            
-            for (let i = 0; i < pages; i++) {
-                const img = document.createElement('img');
-                img.src = lhAsset.data;
-                img.className = 'a4-branding-layer';
-                img.style.position = 'absolute';
-                img.style.top = `${i * 297}mm`;
-                img.style.left = '0';
-                img.style.width = '210mm';
-                img.style.height = '297mm';
-                img.style.zIndex = '-1';
-                img.style.pointerEvents = 'none';
-                frame.appendChild(img);
-            }
+        applyBrandingLayers(frame);
+    }
+}
+
+function applyBrandingLayers(el) {
+    if (!el) return;
+    const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+    
+    // Clean old branding
+    const old = el.querySelectorAll('.a4-branding-layer');
+    old.forEach(o => o.remove());
+    
+    if (lhAsset?.data) {
+        // Calculate pages needed based on content height
+        const pageH_px = 297 * 3.7795275591;
+        const totalH_px = el.scrollHeight;
+        const pages = Math.max(1, Math.ceil(totalH_px / pageH_px));
+        
+        for (let i = 0; i < pages; i++) {
+            const img = document.createElement('img');
+            img.src = lhAsset.data;
+            img.className = 'a4-branding-layer';
+            img.style.position = 'absolute';
+            img.style.top = `${i * 297}mm`;
+            img.style.left = '0';
+            img.style.width = '210mm';
+            img.style.height = '297mm';
+            img.style.zIndex = '-1';
+            img.style.pointerEvents = 'none';
+            el.appendChild(img);
         }
     }
 }
