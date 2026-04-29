@@ -785,6 +785,7 @@ function switchAdminTab(tab) {
         f.apptCounter.value = companyData.apptCounter || 1001;
         f.miscCounter.value = companyData.miscCounter || 1001;
         f.empCodeCounter.value = companyData.empCodeCounter || 1001;
+        f.revisedSalaryCounter.value = companyData.revisedSalaryCounter || 1001;
 
         f.marqueeText.value = companyData.marqueeText || "Enhancing Life and Excelling in Care";
         f.marqueeColor.value = companyData.marqueeColor || "#fbbf24";
@@ -836,6 +837,7 @@ async function saveCompanyProfile(e) {
         apptCounter: parseInt(rawData.apptCounter) || 1001,
         miscCounter: parseInt(rawData.miscCounter) || 1001,
         empCodeCounter: parseInt(rawData.empCodeCounter) || 1001,
+        revisedSalaryCounter: parseInt(rawData.revisedSalaryCounter) || 1001,
         marqueeText: rawData.marqueeText,
         marqueeColor: rawData.marqueeColor,
         marqueeSpeed: parseInt(rawData.marqueeSpeed) || 20,
@@ -3306,6 +3308,7 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{APPT_COUNTER}}": companyData.apptCounter || 1001,
         "{{MISC_COUNTER}}": companyData.miscCounter || 1001,
         "{{EMP_CODE_COUNTER}}": companyData.empCodeCounter || 1001,
+        "{{REV_SAL_COUNTER}}": companyData.revisedSalaryCounter || 1001,
         // Individual Salary Components
         "{{SAL_BASIC}}": (Number(sal.basic) || 0).toLocaleString('en-IN'),
         "{{SAL_HRA}}": (Number(sal.hra) || 0).toLocaleString('en-IN'),
@@ -3713,12 +3716,13 @@ async function publishLetterToHub() {
             let counterKey = "";
             if (type === 'offer') counterKey = 'offerCounter';
             else if (type === 'appt') counterKey = 'apptCounter';
+            else if (type === 'revised_salary') counterKey = 'revisedSalaryCounter';
             else if (type.startsWith('misc_')) counterKey = 'miscCounter';
 
             if (counterKey) {
                 const newVal = (companyData[counterKey] || 1001) + 1;
                 await submitProfileUpdate({ [counterKey]: newVal }, true);
-                console.log(`≡ƒôê Incrementing ${counterKey} to ${newVal}`);
+                console.log(`🚀 Incrementing ${counterKey} to ${newVal}`);
             }
 
             // Also mark the task as done in the pipeline if it's offer or appt

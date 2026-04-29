@@ -115,7 +115,7 @@ const companySchema = new mongoose.Schema({
     offerLetterBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
     apptLetterBody: String,
     confirmLetterBody: String,
-    revisedSalaryBody: String,
+    revisedSalaryBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: REVISED SALARY LETTER\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nPursuant to your performance review, your revised gross monthly CTC is Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}), effective from {{TODAY_DATE}}.\n\n{{SALARY_REVISION_BOX}}\n\n{{SALARY_BREAKUP}}\n\nWe look forward to your continued contribution to the organization.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
     incentiveCircularBody: String,
     miscLetters: { type: Array, default: [] },
     fyFrom: String,
@@ -133,6 +133,7 @@ const companySchema = new mongoose.Schema({
     apptCounter: { type: Number, default: 1001 },
     miscCounter: { type: Number, default: 1001 },
     empCodeCounter: { type: Number, default: 1001 },
+    revisedSalaryCounter: { type: Number, default: 1001 },
     customAssetCategories: { type: [String], default: [] },
     designations: { 
         type: [mongoose.Schema.Types.Mixed], 
@@ -1225,6 +1226,9 @@ app.post('/api/admin/next-ref', async (req, res) => {
         } else if (type === 'empcode') {
             counterKey = 'empCodeCounter';
             prefix = "EMY/EMPC";
+        } else if (type === 'revised_salary') {
+            counterKey = 'revisedSalaryCounter';
+            prefix = "EMY/RSV";
         }
 
         const counter = company[counterKey] || 1001;
