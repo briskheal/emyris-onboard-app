@@ -458,10 +458,10 @@ app.post('/api/applicant-login', async (req, res) => {
         const applicants = await Applicant.find({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
         
         // 2. Manual match to avoid regex/index quirks
-        const applicant = applicants.find(a => 
-            a.email.toLowerCase() === email.toLowerCase() && 
-            a.password.trim() === password.trim()
-        );
+        const applicant = applicants.find(a => {
+            const dbPin = String(a.password || a.pin || "").trim();
+            return a.email.toLowerCase() === email.toLowerCase() && dbPin === password;
+        });
 
         if (!applicant) {
             console.log(`❌ [LOGIN FAIL] ${email} / ${password}`);

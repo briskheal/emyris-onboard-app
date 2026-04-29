@@ -269,7 +269,7 @@ async function handleApplicantLogin(e) {
             body: JSON.stringify({ email, password: pin })
         });
         const result = await res.json();
-        if (result.success) {
+        if (result.success && result.applicant) {
             currentApplicant = result.applicant;
             resumeApplication();
         } else {
