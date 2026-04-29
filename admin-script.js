@@ -369,7 +369,7 @@ function applyCompanyData() {
         if (headerImg) headerImg.classList.add('hidden');
         console.log('ℹ️ Using Initials:', initials);
     }
-    const quickContact = document.getElementById('quickContact');
+    const quickContact = document.getElementById('mainAppFooterContact');
     const landingQuickContact = document.getElementById('landingQuickContact');
     // Modern Footer Contact HTML
     const contactHTML = `

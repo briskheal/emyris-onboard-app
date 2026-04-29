@@ -131,13 +131,15 @@ function applyCompanyData() {
 
     // Populate Footer Contact (Sync with Admin Portal)
     const landingQuickContact = document.getElementById('landingQuickContact');
-    if (landingQuickContact) {
-        landingQuickContact.innerHTML = `
-            ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
-            ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
-            ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
-        `;
-    }
+    const mainAppFooterContact = document.getElementById('mainAppFooterContact');
+    const contactHTML = `
+        ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
+        ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
+        ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
+    `;
+
+    if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
+    if (mainAppFooterContact) mainAppFooterContact.innerHTML = contactHTML;
 
     syncMarquee(companyData.marqueeText, companyData.marqueeColor, companyData.marqueeSpeed);
     populateDropdowns();
