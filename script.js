@@ -878,7 +878,6 @@ function renderApplicantDashboard() {
         console.error('❌ Dashboard Render Error:', err);
     }
 }
-}
 
 function toggleApptPreview() {
     document.getElementById('apptPreviewer').classList.toggle('hidden');
