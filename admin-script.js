@@ -2904,82 +2904,70 @@ function compressAndResize(file, maxWidth = 1000) {
 async function previewActiveTemplate() {
     const type = document.getElementById('activeTemplateSelect').value;
     const editorHtml = document.getElementById('unifiedEditor').innerHTML.trim();
+    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
     
     if (!editorHtml || editorHtml === '<br>') {
-        showToast("Editor is empty", "error");
+        showToast("⚠️ Editor is empty", "warning");
         return;
     }
 
-    const dummyEmail = "preview_" + Date.now() + "@emyris.test";
-    const dummyRef = `REF/PRV/TEST_01`;
-    
-    const mockApplicant = {
-        fullName: "SMRUTI RANJAN DASH",
-        firstName: "SMRUTI",
-        email: dummyEmail,
-        phone: "+91 98765 43210",
-        division: "CRITIZA",
-        reportingTo: "SR. ZONAL MANAGER",
-        refNo: dummyRef,
-        formData: {
-            firstName: "SMRUTI",
-            lastName: "DASH",
-            designation: "PRODUCT MANAGER",
-            hq: "BHUBANESWAR",
-            salary: "75000",
-            address: "PLOT NO-42, CHANDRASEKHARPUR",
-            city: "BHUBANESWAR",
-            state: "ODISHA",
-            pin: "751024",
-            joiningDate: new Date().toISOString().split('T')[0]
-        }
-    };
-
-    lockUI("✨ Generating Live Preview...");
-    
-    const originalConfig = { ...companyData };
-    const originalApplicants = [...allApplicants];
-    const originalTemplate = window.letterTemplates[type];
+    lockUI("✨ Generating High-Fidelity PDF...");
     
     try {
-        window.letterTemplates[type] = editorHtml;
-        
-        companyData.headerHeight = parseInt(document.getElementById('headerHeight')?.value || 65);
-        companyData.footerHeight = parseInt(document.getElementById('footerHeight')?.value || 25);
-        companyData.letterFontSize = parseFloat(document.getElementById('letterFontSize')?.value || 11);
-        companyData.letterAlignment = document.getElementById('letterAlignment')?.value || 'left';
-        companyData.letterFontType = document.getElementById('letterFontType')?.value || 'helvetica';
-        companyData.signatoryName = document.getElementById('signatoryName')?.value || "";
-        companyData.signatoryDesignation = document.getElementById('signatoryDesg')?.value || "";
-
-        const targetEmail = document.getElementById('hubTargetApplicant')?.value;
-        const realApp = allApplicants.find(a => a.email === targetEmail);
-        const finalApp = realApp || mockApplicant;
-        const finalEmail = realApp ? realApp.email : dummyEmail;
-
-        if (!realApp) {
-            allApplicants.push(mockApplicant);
-        }
+        const mockEmail = "preview_" + Date.now() + "@emyris.test";
+        const finalEmail = targetEmail || mockEmail;
         
         const pdfData = await generateLetterPDF(finalEmail, type, editorHtml);
         
         if (pdfData && pdfData.doc) {
-            savePDF(pdfData.doc, `PREVIEW_${type.toUpperCase()}.pdf`);
-            showToast("✅ PDF Preview Generated", "success");
+            const filename = `${type.toUpperCase()}_${finalEmail.split('@')[0]}_${Date.now()}.pdf`;
+            pdfData.doc.save(filename);
+            showToast("✅ Download Started", "success");
             
-            const finalHtml = fillLetterPlaceholders(editorHtml, finalApp);
-            updateLivePreviewFrame(finalHtml, realApp ? realApp.refNo : dummyRef);
+            // Sync the frame view too
+            const applicant = allApplicants.find(a => a.email === finalEmail) || { fullName: "PREVIEW USER", email: mockEmail, formData: {} };
+            const finalHtml = fillLetterPlaceholders(editorHtml, applicant);
+            updateLivePreviewFrame(finalHtml, applicant.refNo || "PREVIEW");
         } else {
             showToast("❌ Generation failed", "error");
         }
-        
     } catch (e) {
         console.error("Live Preview Error:", e);
         showToast("❌ Preview Generation Failed", "error");
     } finally {
-        companyData = originalConfig;
-        allApplicants = originalApplicants;
-        window.letterTemplates[type] = originalTemplate;
+        unlockUI();
+    }
+}
+
+async function printPreviewDocument() {
+    const type = document.getElementById('activeTemplateSelect').value;
+    const editorHtml = document.getElementById('unifiedEditor').innerHTML.trim();
+    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+    
+    if (!editorHtml || editorHtml === '<br>') {
+        showToast("⚠️ Editor is empty", "warning");
+        return;
+    }
+
+    lockUI("⏳ Preparing Print View...");
+    
+    try {
+        const mockEmail = "preview_" + Date.now() + "@emyris.test";
+        const finalEmail = targetEmail || mockEmail;
+        
+        const pdfData = await generateLetterPDF(finalEmail, type, editorHtml);
+        
+        if (pdfData && pdfData.doc) {
+            pdfData.doc.autoPrint();
+            window.open(pdfData.doc.output('bloburl'), '_blank');
+            showToast("✅ Print Dialog Opened", "success");
+        } else {
+            showToast("❌ Generation failed", "error");
+        }
+    } catch (e) {
+        console.error("Print Error:", e);
+        showToast("❌ Print Generation Failed", "error");
+    } finally {
         unlockUI();
     }
 }
