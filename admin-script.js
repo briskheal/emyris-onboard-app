@@ -3199,6 +3199,9 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     clonedFrame.style.width = '794px';
                     clonedFrame.style.margin = '0';
                     clonedFrame.style.transform = 'none';
+                    clonedFrame.style.boxShadow = 'none';
+                    clonedFrame.style.borderRadius = '0';
+                    clonedFrame.style.border = 'none';
                 }
             }
         });
