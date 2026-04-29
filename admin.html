@@ -922,20 +922,34 @@
                                             <input type="number" id="footerHeight" value="25" style="width: 45px;">
                                         </div>
                                     </div>
+                                    <div class="setting-group" style="margin-left: auto;">
+                                        <div class="pill-container" style="background: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.05);">
+                                            <label>🔍 Zoom</label>
+                                            <select id="editorZoom" onchange="applyFidelityZoom(this.value)" style="width: 70px;">
+                                                <option value="0.5">50%</option>
+                                                <option value="0.75">75%</option>
+                                                <option value="0.85">85%</option>
+                                                <option value="1.0" selected>100%</option>
+                                                <option value="1.25">125%</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                     <input type="hidden" id="letterAlignment" value="left">
                                 </div>
 
-                                <div id="unifiedEditor" class="letter-editor a4-page-standard" contenteditable="true" spellcheck="false"></div>
+                                <div class="fidelity-desk">
+                                    <div id="unifiedEditor" class="letter-editor a4-page-standard" contenteditable="true" spellcheck="false"></div>
 
-                                <div id="livePreviewContainer" class="hidden" style="margin-top: 0; position: relative;">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1.25rem 2rem; background: rgba(15, 23, 42, 0.95); border-radius: 0 0 16px 16px; border: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 1000; backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                                        <div style="display: flex; align-items: center; gap: 1rem;">
-                                            <h4 style="color: var(--accent); margin: 0; font-size: 1rem;">📄 Document Fidelity Preview</h4>
-                                            <button class="btn btn-sm btn-primary" onclick="previewActiveTemplate()" style="padding: 0.5rem 1.2rem; background: #10b981; border-color: #10b981;">📥 Download PDF</button>
+                                    <div id="livePreviewContainer" class="hidden" style="margin-top: 0; position: relative;">
+                                        <div class="preview-control-overlay">
+                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                                <h4 style="color: var(--accent); margin: 0; font-size: 0.9rem;">📄 Fidelity Preview</h4>
+                                                <button class="btn btn-sm btn-primary" onclick="previewActiveTemplate()" style="padding: 0.4rem 1rem; background: #10b981; border-color: #10b981;">Download PDF</button>
+                                            </div>
+                                            <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)" style="color: #ef4444; border-color: #ef4444; padding: 0.4rem 1rem; font-size: 0.75rem;">Return to Editor</button>
                                         </div>
-                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)" style="color: #ef4444; border-color: #ef4444; padding: 0.5rem 1.2rem; font-size: 0.8rem;">❌ Return to Editor</button>
+                                        <div id="livePreviewFrame" class="letter-editor a4-page-standard preview-mode"></div>
                                     </div>
-                                    <div id="livePreviewFrame" class="a4-page-standard"></div>
                                 </div>
                             </div>
                         </div>

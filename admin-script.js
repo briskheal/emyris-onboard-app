@@ -2479,6 +2479,22 @@ function syncEditorStyles() {
     }
 }
 
+function applyFidelityZoom(val) {
+    const editor = document.getElementById('unifiedEditor');
+    const preview = document.getElementById('livePreviewFrame');
+    const scale = parseFloat(val);
+    
+    if (editor) editor.style.transform = `scale(${scale})`;
+    if (preview) preview.style.transform = `scale(${scale})`;
+    
+    // Adjust desk height to accommodate scaled element
+    const desk = document.querySelector('.fidelity-desk');
+    if (desk) {
+        const baseH = 297 * 3.78; // A4 height in pixels approx
+        desk.style.minHeight = `${(baseH * scale) + 100}px`;
+    }
+}
+
 async function populateDivisions(force = false) {
     // Add cache-busting timestamp to prevent "vanishing" due to browser cache
     const res = await fetch(`/api/admin/divisions?t=${Date.now()}`);
@@ -2988,6 +3004,7 @@ function toggleLivePreviewUI(show) {
     const editor = document.getElementById('unifiedEditor');
     const toolbar = document.querySelector('.editor-toolbar');
     const adminBar = document.querySelector('.editor-admin-bar');
+    const zoom = document.getElementById('editorZoom')?.value || "1.0";
     
     if (!container || !editor) return;
     
@@ -2998,12 +3015,14 @@ function toggleLivePreviewUI(show) {
         if (toolbar) toolbar.style.display = 'none';
         if (adminBar) adminBar.style.display = 'none';
         updateLivePreviewFrame();
+        applyFidelityZoom(zoom);
         container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
         container.classList.add('hidden');
         editor.classList.remove('hidden');
         if (toolbar) toolbar.style.display = 'flex';
         if (adminBar) adminBar.style.display = 'flex';
+        applyFidelityZoom(zoom);
     }
 }
 
@@ -3191,7 +3210,10 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         // Wait for fonts and letterhead image to render
         await new Promise(r => setTimeout(r, 800)); 
 
-        // 3. High-Precision Capture
+        // 3. High-Precision Capture (Reset zoom to 1.0 for fidelity capture)
+        const currentZoom = document.getElementById('editorZoom')?.value || "1.0";
+        applyFidelityZoom(1.0);
+
         const canvas = await html2canvas(previewFrame, {
             scale: 2, 
             useCORS: true,
@@ -3215,10 +3237,11 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         // 4. Restore original state
         if (isInitiallyHidden) {
             previewContainer.classList.add('hidden');
-            Object.assign(previewContainer.style, originalStyles);
-        } else {
             updateLivePreviewFrame(htmlOverride, null, false);
         }
+
+        // Restore user zoom level
+        applyFidelityZoom(currentZoom);
 
         const canvasW = canvas.width;
         const canvasH = canvas.height;
