@@ -3000,7 +3000,7 @@ function toggleLivePreviewUI(show) {
     }
 }
 
-function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skipHighlights = false) {
+function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skipHighlights = false, skipLetterhead = false) {
     const frame = document.getElementById('livePreviewFrame');
     if (!frame) return;
     
@@ -3052,7 +3052,7 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     frame.style.textAlign = align;
 
     // 3. Apply Letterhead Image
-    if (companyData.letterheadImage && companyData.letterheadImage.length > 0) {
+    if (!skipLetterhead && companyData.letterheadImage && companyData.letterheadImage.length > 0) {
         const val = companyData.letterheadImage[companyData.letterheadImage.length - 1].data;
         frame.style.backgroundImage = `url(${val})`;
         frame.style.backgroundSize = '100% 100%';
@@ -3199,7 +3199,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
 
         // Render "Clean" version into the ACTUAL preview frame (no highlights)
         // This ensures the EXACT same rendering environment (CSS, Parents, etc.)
-        updateLivePreviewFrame(htmlOverride, null, true); // Added 3rd param for clean render
+        updateLivePreviewFrame(htmlOverride, null, true, true); // Added 3rd param for clean render, 4th to skip background
 
         if (isInitiallyHidden) {
             previewContainer.classList.remove('hidden');
