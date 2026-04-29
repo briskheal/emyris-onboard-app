@@ -858,8 +858,10 @@
                                         <!-- Removed redundant Autofill button per user request -->
                                         <button class="btn btn-sm btn-primary" id="issueLetterBtn" onclick="publishLetterToHub()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: var(--accent); border-color: var(--accent); height: 42px;">🌐 Issue to Applicant</button>
                                         <button class="btn btn-sm btn-outline" onclick="resetEditorToMaster()" style="padding: 0.5rem 1rem; height: 42px; border-color: #94a3b8; color: #94a3b8;">🧹 Clear Data / Reset</button>
-                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1rem; height: 42px;">👁️‍🗨️ Preview</button>
-                                        <button class="btn btn-sm btn-primary" id="saveTemplateBtn" onclick="saveActiveTemplate()" style="padding: 0.5rem 1rem; height: 42px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success);">💾 Save Master Template</button>
+                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1rem; height: 42px;">👁️‍🗨️ Full Preview</button>
+                                        <button class="btn btn-sm btn-primary" onclick="quickExport('download')" style="padding: 0.5rem 1rem; height: 42px; background: #3b82f6; border-color: #3b82f6;">📥 Download</button>
+                                        <button class="btn btn-sm btn-outline" onclick="quickExport('print')" style="padding: 0.5rem 1.2rem; height: 42px; border-color: #3b82f6; color: #3b82f6; font-weight: 600;">🖨️ Print</button>
+                                        <button class="btn btn-sm btn-primary" id="saveTemplateBtn" onclick="saveActiveTemplate()" style="padding: 0.5rem 1rem; height: 42px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success);">💾 Save Master</button>
                                     </div>
                                 </div>
 

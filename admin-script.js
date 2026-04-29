@@ -3666,6 +3666,43 @@ async function populateHubApplicantSelect() {
     }
 }
 
+async function quickExport(action) {
+    const type = document.getElementById('activeTemplateSelect').value;
+    const editorHtml = document.getElementById('unifiedEditor').innerHTML.trim();
+    
+    if (!editorHtml) {
+        showToast("⚠️ Editor is empty", "warning");
+        return;
+    }
+
+    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+    if (!targetEmail) {
+        showToast("⚠️ Select a Target Applicant first", "warning");
+        return;
+    }
+
+    lockUI(`⏳ Preparing ${action === 'download' ? 'Professional PDF' : 'Print View'}...`);
+    
+    try {
+        const res = await generateLetterPDF(targetEmail, type, editorHtml);
+        if (res && res.doc) {
+            if (action === 'download') {
+                const filename = `${type.toUpperCase()}_${targetEmail.split('@')[0]}_${Date.now()}.pdf`;
+                res.doc.save(filename);
+            } else {
+                res.doc.autoPrint();
+                window.open(res.doc.output('bloburl'), '_blank');
+            }
+            showToast(`✅ ${action === 'download' ? 'PDF Generated' : 'Print View Ready'}`, "success");
+        }
+    } catch (e) {
+        console.error("Quick Export Failed:", e);
+        showToast("❌ Export Failed", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
 async function publishLetterToHub() {
     const email = document.getElementById('hubTargetApplicant').value;
     const type = document.getElementById('activeTemplateSelect').value;
