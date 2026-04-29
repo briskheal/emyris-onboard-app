@@ -2253,6 +2253,8 @@ body.admin-mode .admin-header {
     overflow-wrap: break-word;
     word-wrap: break-word;
     transition: all 0.3s ease;
+    border: none !important;
+    outline: none !important;
 }
 
 .letter-editor {
@@ -2595,21 +2597,7 @@ body.admin-mode .admin-header {
     border-bottom: 1px dashed var(--primary);
 }
 
-#livePreviewFrame {
-    background: white;
-    color: black;
-    box-shadow: 0 40px 120px rgba(0,0,0,0.8);
-    margin: 0 auto;
-    width: 210mm; /* A4 Width */
-    min-height: 297mm; /* A4 Height */
-    padding: 20mm; /* Basic margin, overriden by dynamic padding */
-    border-radius: 2px;
-    position: relative;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    line-height: 1.4; /* MATCH EDITOR FIDELITY */
-    box-sizing: border-box;
-}
+
 
 #livePreviewFrame p, #unifiedEditor p {
     margin: 0 0 0.8em 0;
