@@ -277,9 +277,12 @@ function initEditorListeners() {
     // Ensure uniformity when user types or deletes
     editor.addEventListener('input', () => {
         if (editor.innerHTML === "" || editor.innerHTML === "<br>") {
-            editor.innerHTML = "<div><br></div>";
+            editor.innerHTML = "<p><br></p>";
         }
     });
+
+    // Enforce <p> as default block element
+    document.execCommand('defaultParagraphSeparator', false, 'p');
 }
 
 function attachStatusListener(inputId, config) {
@@ -2459,6 +2462,7 @@ function syncEditorStyles() {
         el.style.fontSize = `${size}pt`;
         el.style.fontFamily = fontStack;
         el.style.textAlign = align;
+        el.style.lineHeight = '1.4'; // Explicit line height for parity
         el.style.paddingTop = `${marginT_mm}mm`;
         el.style.paddingBottom = `${marginB_mm}mm`;
         el.style.paddingLeft = '20mm';
