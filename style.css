@@ -2236,23 +2236,32 @@ body.admin-mode .admin-header {
 }
 
 .letter-editor {
-    width: 100%; 
-    min-height: 700px; 
-    padding: 4rem 5rem;
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid rgba(99, 102, 241, 0.3); 
-    color: #f1f5f9;
-    border-radius: 12px;
+    width: 210mm; 
+    min-height: 297mm; 
+    margin: 0 auto 2rem;
+    padding: 65mm 20mm 25mm; /* Default A4 margins, synced by JS */
+    background: #ffffff;
+    color: #1e293b;
+    border: none;
+    border-radius: 2px;
     font-family: var(--current-letter-font, 'Plus Jakarta Sans', Arial, sans-serif) !important;
     font-size: 11pt;
     line-height: 1.4; 
-    resize: vertical; 
     outline: none;
     box-sizing: border-box; 
-    margin-bottom: 0; 
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
-    backdrop-filter: blur(12px);
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.05);
+    position: relative;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.letter-editor::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    border: 1px solid rgba(0,0,0,0.05);
+    z-index: 5;
 }
 
 .letter-editor *, #livePreviewFrame * {

@@ -2403,29 +2403,22 @@ function execCmd(command, value = null) {
         if (command === 'justifyRight') align = 'right';
         if (command === 'justifyFull') align = 'justify';
         
-        const alignInput = document.getElementById('letterAlignment');
-        if (alignInput) alignInput.value = align;
+        document.getElementById('letterAlignment').value = align;
+        syncEditorStyles();
     }
-    
-    // Immediate visual feedback if preview is open
-    const preview = document.getElementById('livePreviewContainer');
-    if (preview && !preview.classList.contains('hidden')) {
-        updateLivePreviewFrame();
-    }
-    
-    const editor = document.getElementById('unifiedEditor');
-    if (editor) editor.focus();
 }
 
 function syncEditorStyles() {
+    const editor = document.getElementById('unifiedEditor');
+    if (!editor) return;
+
     const size = document.getElementById('letterFontSize')?.value || 11;
     const type = document.getElementById('letterFontType')?.value || 'helvetica';
     const align = document.getElementById('letterAlignment')?.value || 'left';
     
-    // Dynamic Margins (mm to px conversion for editor display)
     const marginT_mm = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
     const marginB_mm = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
-    const PX_PER_MM = 3.78;
+    const PX_PER_MM = 3.7795275591;
 
     let fontStack = "'Plus Jakarta Sans', sans-serif";
     if (type === 'times') fontStack = "'Times New Roman', Times, serif";
@@ -2437,32 +2430,32 @@ function syncEditorStyles() {
     else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
     else if (type === 'georgia') fontStack = "Georgia, serif";
     
-    const editor = document.getElementById('unifiedEditor');
-    if (editor) {
-        editor.style.fontSize = `${size}pt`;
-        editor.style.fontFamily = fontStack;
-        editor.style.setProperty('--current-letter-font', fontStack);
-        editor.style.textAlign = align;
-        
-        // Apply Margins visually to editor
-        editor.style.paddingTop = `${marginT_mm * PX_PER_MM}px`;
-        editor.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
-        editor.style.paddingLeft = '20mm'; // Standard A4 left margin
-        editor.style.paddingRight = '20mm'; // Standard A4 right margin
-        
-        // Force width to match A4 aspect ratio in editor
-        editor.style.maxWidth = '210mm';
-        editor.style.margin = '0 auto';
-        
-        // Match app's dark theme
-        editor.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
-        editor.style.color = '#f1f5f9';
-    }
-
-    // Update live preview if open
-    const preview = document.getElementById('livePreviewContainer');
-    if (preview && !preview.classList.contains('hidden')) {
-        updateLivePreviewFrame();
+    // 1. Core Typography
+    editor.style.fontSize = `${size}pt`;
+    editor.style.fontFamily = fontStack;
+    editor.style.textAlign = align;
+    
+    // 2. A4 Dimensions & Padding
+    editor.style.width = '210mm';
+    editor.style.minHeight = '297mm';
+    editor.style.paddingTop = `${marginT_mm * PX_PER_MM}px`;
+    editor.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
+    editor.style.paddingLeft = '20mm';
+    editor.style.paddingRight = '20mm';
+    
+    // 3. Virtual Paper Aesthetics
+    editor.style.backgroundColor = '#ffffff';
+    editor.style.color = '#1e293b'; 
+    editor.style.margin = '0 auto 2rem';
+    
+    // 4. Background Letterhead
+    const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+    if (lhAsset?.data) {
+        editor.style.backgroundImage = `url(${lhAsset.data})`;
+        editor.style.backgroundSize = '100% 100%';
+        editor.style.backgroundRepeat = 'no-repeat';
+    } else {
+        editor.style.backgroundImage = 'none';
     }
 }
 
@@ -2798,8 +2791,6 @@ async function addDesignation() {
     await submitProfileUpdate({ designations: companyData.designations }, true);
     
     if (nameIn) nameIn.value = "";
-    // Keep deptIn value for batch entry if needed, or clear it? 
-    // Usually admin adds multiple to same dept.
     
     renderDesignationList();
     applyCompanyData();
@@ -2843,7 +2834,7 @@ function injectDummyApplicant() {
             pin: "751024",
             designation: "PRODUCT MANAGER",
             hq: "BHUBANESWAR",
-            salary: "70833", // Approx 8.5L CTC
+            salary: "70833", 
             joiningDate: new Date().toISOString().split('T')[0]
         }
     };
@@ -2851,7 +2842,7 @@ function injectDummyApplicant() {
     const original = [...allApplicants];
     allApplicants.push(dummy);
     
-    showToast("≡ƒÅï∩╕Å Generating High-Fidelity Test Offer Letter...", "success");
+    showToast("✨ Generating High-Fidelity Test Offer Letter...", "success");
     downloadLetter("test@dummy.com", "offer").then(() => {
         allApplicants = original;
     });
@@ -2861,7 +2852,7 @@ async function convertPdfToPng(dataUri) {
     const loadingTask = pdfjsLib.getDocument(dataUri);
     const pdf = await loadingTask.promise;
     const page = await pdf.getPage(1);
-    const viewport = page.getViewport({ scale: 2.0 }); // High-res scaling
+    const viewport = page.getViewport({ scale: 2.0 });
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
@@ -2872,7 +2863,6 @@ async function convertPdfToPng(dataUri) {
     return canvas.toDataURL('image/png');
 }
 
-// --- PERFORMANCE ENGINE: IMAGE OPTIMIZATION ---
 function compressAndResize(file, maxWidth = 1000) {
     return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) return resolve(null);
@@ -2902,7 +2892,6 @@ function compressAndResize(file, maxWidth = 1000) {
     });
 }
 
-// --- LIVE DOCUMENT PREVIEW ---
 async function previewActiveTemplate() {
     const type = document.getElementById('activeTemplateSelect').value;
     const editorHtml = document.getElementById('unifiedEditor').innerHTML.trim();
@@ -2915,7 +2904,6 @@ async function previewActiveTemplate() {
     const dummyEmail = "preview_" + Date.now() + "@emyris.test";
     const dummyRef = `REF/PRV/TEST_01`;
     
-    // Inject realistic mockup data directly into memory
     const mockApplicant = {
         fullName: "SMRUTI RANJAN DASH",
         firstName: "SMRUTI",
@@ -2938,15 +2926,13 @@ async function previewActiveTemplate() {
         }
     };
 
-    lockUI("≡ƒÅï∩╕Å Generating Live Preview...");
+    lockUI("✨ Generating Live Preview...");
     
-    // Create shallow copies to prevent contaminating real data
     const originalConfig = { ...companyData };
     const originalApplicants = [...allApplicants];
     const originalTemplate = window.letterTemplates[type];
     
     try {
-        // Feed live unsaved editor states into the generator's memory
         window.letterTemplates[type] = editorHtml;
         
         companyData.headerHeight = parseInt(document.getElementById('headerHeight')?.value || 65);
@@ -2972,7 +2958,6 @@ async function previewActiveTemplate() {
             savePDF(pdfData.doc, `PREVIEW_${type.toUpperCase()}.pdf`);
             showToast("✅ PDF Preview Generated", "success");
             
-            // Handle placeholders for live frame
             const finalHtml = fillLetterPlaceholders(editorHtml, finalApp);
             updateLivePreviewFrame(finalHtml, realApp ? realApp.refNo : dummyRef);
         } else {
@@ -2983,7 +2968,6 @@ async function previewActiveTemplate() {
         console.error("Live Preview Error:", e);
         showToast("❌ Preview Generation Failed", "error");
     } finally {
-        // Absolute guarantee: restore the global state exactly to how it was
         companyData = originalConfig;
         allApplicants = originalApplicants;
         window.letterTemplates[type] = originalTemplate;
@@ -2991,7 +2975,6 @@ async function previewActiveTemplate() {
     }
 }
 
-// --- VISUAL PREVIEW UI LOGIC ---
 function toggleLivePreviewUI(show) {
     const container = document.getElementById('livePreviewContainer');
     const editor = document.getElementById('unifiedEditor');
@@ -3006,7 +2989,6 @@ function toggleLivePreviewUI(show) {
         if (toolbar) toolbar.style.display = 'none';
         if (adminBar) adminBar.style.display = 'none';
         updateLivePreviewFrame();
-        // Scroll to the start of the preview frame
         container.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } else {
         container.classList.add('hidden');
@@ -3020,75 +3002,52 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     const frame = document.getElementById('livePreviewFrame');
     if (!frame) return;
     
-    // Ensure the frame has the standard A4 container class
-    frame.classList.add('letter-preview-box');
-    
     const html = specificHtml || document.getElementById('unifiedEditor').innerHTML;
     let rendered = html;
     
-    // 1. High-Fidelity Placeholder replacement
+    // 1. Placeholder replacement
     const selectedEmail = document.getElementById('hubTargetApplicant')?.value;
-    let targetApp = (allApplicants || []).find(a => a.email === selectedEmail);
-
-    const mockApp = targetApp || {
-        fullName: 'SMRUTI RANJAN DASH',
-        refNo: specificRef,
-        salaryBreakup: { basic: 30000, hra: 12000, lta: 3000, conveyance: 2000, medical: 2000, special: 21000, edu: 0, fixed: 5000 }, 
-        formData: {
-            firstName: 'SMRUTI',
-            designation: document.getElementById('signatoryDesg')?.value || 'PRODUCT MANAGER',
-            hq: 'BHUBANESWAR',
-            joiningDate: new Date().toISOString()
+    if (selectedEmail) {
+        const applicant = (window.allApplicants || []).find(a => a.email === selectedEmail);
+        if (applicant) {
+            rendered = fillLetterPlaceholders(html, applicant, true);
         }
-    };
-
-    rendered = fillLetterPlaceholders(html, mockApp);
-    
-    // Highlight placeholders in preview
-    if (!skipHighlights) {
-        const todayStr = new Date().toLocaleDateString('en-GB');
-        const hList = ['SMRUTI RANJAN DASH', specificRef, todayStr, 'PRODUCT MANAGER', 'BHUBANESWAR'];
-        hList.forEach(h => {
-            if (h && typeof h === 'string') {
-                const regex = new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                rendered = rendered.replace(regex, `<span class="preview-highlight">${h}</span>`);
-            }
-        });
     }
-
+    
+    // 2. Highlighting
+    if (!skipHighlights) {
+        rendered = rendered.replace(/\{\{([^}]+)\}\}/g, '<span class="preview-highlight">$&</span>');
+    }
+    
     frame.innerHTML = rendered;
     
-    // 2. Apply Dynamic Styles & Margins
-    const size = document.getElementById('letterFontSize')?.value || 11;
-    const font = document.getElementById('letterFontType')?.value || 'helvetica';
-    const align = document.getElementById('letterAlignment')?.value || 'left';
-    
-    // Fetch Margin Settings
-    const marginT = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
-    const marginB = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
-    
-    frame.style.fontSize = `${size}pt`;
-    frame.style.fontFamily = font;
-    frame.style.textAlign = align;
-    frame.style.paddingTop = `${marginT}mm`;
-    frame.style.paddingBottom = `${marginB}mm`;
+    // 3. Strict A4 Layout Parity
+    const marginT_mm = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
+    const marginB_mm = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
+    const PX_PER_MM = 3.7795275591;
+
+    frame.style.width = '210mm';
+    frame.style.minHeight = '297mm';
+    frame.style.paddingTop = `${marginT_mm * PX_PER_MM}px`;
+    frame.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
     frame.style.paddingLeft = '20mm';
     frame.style.paddingRight = '20mm';
-
-    // 3. Apply Letterhead Image
-    if (!skipLetterhead && companyData.letterheadImage && companyData.letterheadImage.length > 0) {
-        const val = companyData.letterheadImage[companyData.letterheadImage.length - 1].data;
-        frame.style.backgroundImage = `url(${val})`;
-        frame.style.backgroundSize = '100% 100%';
-        frame.style.backgroundRepeat = 'no-repeat';
-        frame.style.backgroundPosition = 'center';
-    } else {
-        frame.style.backgroundImage = 'none';
-        frame.style.backgroundColor = '#ffffff';
+    frame.style.backgroundColor = '#ffffff';
+    frame.style.color = '#1e293b';
+    
+    // 4. Letterhead Asset
+    if (!skipLetterhead) {
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+        if (lhAsset?.data) {
+            frame.style.backgroundImage = `url(${lhAsset.data})`;
+            frame.style.backgroundSize = '100% 100%';
+            frame.style.backgroundRepeat = 'no-repeat';
+        } else {
+            frame.style.backgroundImage = 'none';
+        }
     }
 }
 
-// --- SMART LETTER GENERATION ---
 async function sendTaskUpdate(taskKey, completed) {
     const email = activeV_Applicant?.email || document.getElementById('hubTargetApplicant')?.value;
     if (!email) return;
@@ -3102,7 +3061,6 @@ async function sendTaskUpdate(taskKey, completed) {
 }
 
 async function downloadLetter(email, type) {
-    // If we're in the Setup tab and the email matches the target, use the editor content to capture manual edits
     const targetEmail = document.getElementById('hubTargetApplicant')?.value;
     const editorHtml = (targetEmail === email) ? document.getElementById('unifiedEditor').innerHTML : null;
     
@@ -3111,7 +3069,6 @@ async function downloadLetter(email, type) {
     const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
     savePDF(pdfData.doc, `${type.toUpperCase()}_LETTER_${safeEmail}.pdf`);
     
-    // Mark task as done
     const taskKey = type === 'offer' ? 'offerLetter' : 'appointmentLetter';
     await sendTaskUpdate(taskKey, true);
 }
@@ -3119,10 +3076,9 @@ async function downloadLetter(email, type) {
 async function emailLetter(email, type) {
     const btn = event.target;
     const originalText = btn.innerText;
-    btn.innerText = "Γî¢ Sending...";
+    btn.innerText = "📨 Sending...";
     btn.disabled = true;
 
-    // Capture manual editor edits if applicable
     const targetEmail = document.getElementById('hubTargetApplicant')?.value;
     const editorHtml = (targetEmail === email) ? document.getElementById('unifiedEditor').innerHTML : null;
 
@@ -3142,7 +3098,7 @@ async function emailLetter(email, type) {
             body: JSON.stringify({ email, letterType: type, pdfBase64 })
         });
         if ((await res.json()).success) {
-            showToast("≡ƒôº Letter emailed to candidate!", "success");
+            showToast("💌 Letter emailed to candidate!", "success");
             const taskKey = type === 'offer' ? 'offerLetter' : 'appointmentLetter';
             await sendTaskUpdate(taskKey, true);
         } else {
@@ -3154,14 +3110,12 @@ async function emailLetter(email, type) {
     btn.disabled = false;
 }
 
-// Robust PDF Saving Trigger
 function savePDF(doc, filename) {
-    // native jsPDF save is more robust than manual blob creation on Windows/Chrome
     doc.save(filename);
 }
 
 async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
-    lockUI("ΓÅ│ Finalizing Professional Document...");
+    lockUI("⏳ Finalizing Professional Document...");
     try {
         let app = null;
         if (typeof emailOrApp === 'object' && emailOrApp !== null) {
@@ -3182,34 +3136,16 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             return null;
         }
 
-        // 1. Configs (A4 = 210x297mm)
-        const MARGIN_T = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
-        const MARGIN_B = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
+        // 1. A4 Constants (210x297mm)
         const PAGE_W_MM = 210;
         const PAGE_H_MM = 297;
-        const PX_PER_MM = 3.78; 
-        const A4_PX_W = 794; // Critical for capture width
-        
-        // Exact clones of preview metrics
-        const size = document.getElementById('letterFontSize')?.value || 11;
-        const fontType = document.getElementById('letterFontType')?.value || 'helvetica';
-        const align = document.getElementById('letterAlignment')?.value || 'left';
+        const A4_PX_W = 794; // 210mm at 96 DPI
 
-        let fontStack = "'Plus Jakarta Sans', sans-serif";
-        if (fontType === 'times') fontStack = "'Times New Roman', Times, serif";
-        else if (fontType === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
-        else if (fontType === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-        else if (fontType === 'courier') fontStack = "'Courier New', monospace";
-        else if (fontType === 'roboto') fontStack = "'Roboto', sans-serif";
-        else if (fontType === 'outfit') fontStack = "'Outfit', sans-serif";
-        else if (fontType === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
-        else if (fontType === 'georgia') fontStack = "Georgia, serif";
-
-        // 2. Prepare the ACTUAL Live Preview Frame for capture
         const previewFrame = document.getElementById('livePreviewFrame');
         const previewContainer = document.getElementById('livePreviewContainer');
         if (!previewFrame || !previewContainer) { unlockUI(); return; }
 
+        // 2. Prepare Frame for Capture
         const isInitiallyHidden = previewContainer.classList.contains('hidden');
         const originalStyles = {
             position: previewContainer.style.position,
@@ -3221,9 +3157,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             visibility: previewContainer.style.visibility
         };
 
-        // Render "Clean" version into the ACTUAL preview frame (no highlights)
-        // This ensures the EXACT same rendering environment (CSS, Parents, etc.)
-        updateLivePreviewFrame(htmlOverride, null, true, true); // Added 3rd param for clean render, 4th to skip background
+        updateLivePreviewFrame(htmlOverride, null, true, true); 
 
         if (isInitiallyHidden) {
             previewContainer.classList.remove('hidden');
@@ -3236,17 +3170,24 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             previewContainer.style.visibility = 'visible';
         }
 
-        // Wait for rendering to settle
         await new Promise(r => setTimeout(r, 600)); 
 
-        // 3. High-Precision Capture of the ACTUAL preview frame
+        // 3. High-Precision Capture
         const canvas = await html2canvas(previewFrame, {
-            scale: 3, // High fidelity for text
+            scale: 2, // 2x scale for print quality (192 DPI)
             useCORS: true,
-            backgroundColor: "#ffffff", // Pure white background for capture
-            logging: false,
-            width: A4_PX_W,
-            windowWidth: A4_PX_W
+            allowTaint: true,
+            backgroundColor: "#ffffff",
+            width: A4_PX_W, 
+            windowWidth: A4_PX_W,
+            onclone: (clonedDoc) => {
+                const clonedFrame = clonedDoc.getElementById('livePreviewFrame');
+                if (clonedFrame) {
+                    clonedFrame.style.width = '794px';
+                    clonedFrame.style.margin = '0';
+                    clonedFrame.style.transform = 'none';
+                }
+            }
         });
 
         // 4. Restore original state
