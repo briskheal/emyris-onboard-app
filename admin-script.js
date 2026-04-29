@@ -3143,7 +3143,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             visibility: previewContainer.style.visibility
         };
 
-        updateLivePreviewFrame(htmlOverride, null, true, true); 
+        updateLivePreviewFrame(htmlOverride, null, true, false); 
 
         if (isInitiallyHidden) {
             previewContainer.classList.remove('hidden');
@@ -3156,11 +3156,12 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             previewContainer.style.visibility = 'visible';
         }
 
-        await new Promise(r => setTimeout(r, 600)); 
+        // Wait for fonts and letterhead image to render
+        await new Promise(r => setTimeout(r, 800)); 
 
         // 3. High-Precision Capture
         const canvas = await html2canvas(previewFrame, {
-            scale: 2, // 2x scale for print quality (192 DPI)
+            scale: 2, 
             useCORS: true,
             allowTaint: true,
             backgroundColor: "#ffffff",
@@ -3181,33 +3182,24 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             previewContainer.classList.add('hidden');
             Object.assign(previewContainer.style, originalStyles);
         } else {
-            // Restore highlights for the user who is looking at the preview
             updateLivePreviewFrame(htmlOverride, null, false);
         }
 
         const canvasW = canvas.width;
         const canvasH = canvas.height;
-        const totalHeightMM = (canvasH / canvasW) * PAGE_W_MM;
         
         // 5. PDF Generation (Slicing)
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
 
-        const pageH_px = (PAGE_H_MM / PAGE_W_MM) * canvasW; 
+        const pageH_px = (297 / 210) * canvasW; 
         let cursorY = 0;
         let pageCount = 0;
 
-        while (cursorY < canvasH) {
+        // Use a 10px threshold to avoid creating a blank page for tiny overflows
+        while (cursorY < canvasH - 10) {
             if (pageCount > 0) pdf.addPage();
             
-            // Layer 1: Letterhead
-            if (lhAsset?.data) {
-                const format = lhAsset.data.toLowerCase().includes('png') ? 'PNG' : 'JPEG';
-                pdf.addImage(lhAsset.data, format, 0, 0, 210, 297, undefined, 'FAST');
-            }
-
-            // Layer 2: Content Slice (Per-Page Canvas)
             const sliceH = Math.min(pageH_px, canvasH - cursorY);
             const sliceCanvas = document.createElement('canvas');
             sliceCanvas.width = canvasW;
@@ -3217,9 +3209,9 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
             
             const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
-            const sliceH_mm = (sliceH / canvasW) * PAGE_W_MM;
+            const sliceH_mm = (sliceH / canvasW) * 210;
             
-            pdf.addImage(sliceData, 'PNG', 0, 0, PAGE_W_MM, sliceH_mm, undefined, 'FAST');
+            pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
             
             cursorY += pageH_px;
             pageCount++;
