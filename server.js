@@ -5,6 +5,7 @@ const axios = require('axios');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
+const fs = require('fs');
 
 dotenv.config();
 const dns = require('dns');
@@ -442,9 +443,12 @@ app.post('/api/resend-pin', async (req, res) => {
 // Applicant Login
 app.post('/api/applicant-login', async (req, res) => {
     try {
-        const fs = require('fs');
-        const logMsg = `[${new Date().toISOString()}] LOGIN REQ: ${JSON.stringify(req.body)}\n`;
-        fs.appendFileSync('login_debug.log', logMsg);
+        try {
+            const logMsg = `[${new Date().toISOString()}] LOGIN REQ: ${JSON.stringify(req.body)}\n`;
+            fs.appendFileSync('login_debug.log', logMsg);
+        } catch (logErr) {
+            console.warn('⚠️ Log write failed:', logErr.message);
+        }
         
         let { email, password } = req.body;
         email = (email || "").trim();

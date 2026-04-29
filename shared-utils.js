@@ -121,6 +121,7 @@ function updateSalaryWords(inputId, outputId) {
     output.innerText = `(rupees ${numberToWords(val)} only)`;
 }
 function updateView(viewId) {
+    console.log(`🎬 [VIEW CHANGE] Switching to: ${viewId}`);
     const landingPage = document.getElementById('landingPage');
     const appShell = document.getElementById('appShell');
     const sections = document.querySelectorAll('.view-section');

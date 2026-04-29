@@ -190,7 +190,7 @@
                         <h2 class="premium-title">Resume Application</h2>
                         <p>Welcome back! Please enter your Email and Login PIN.</p>
                     </div>
-                    <form onsubmit="handleApplicantLogin(event)">
+                    <form onsubmit="handleApplicantLogin(event); return false;">
                         <div class="form-group">
                             <label>Email Address</label>
                             <input type="email" id="loginEmail" required placeholder="Enter your email">
