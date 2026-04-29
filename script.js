@@ -174,12 +174,15 @@ function populateDropdowns() {
                 picker.innerHTML = Object.keys(groups).map(dept => `
                     <div class="dept-strip" style="background: var(--accent); color: #000; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; margin: 5px 0 2px 0; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;">${dept}</div>
                     <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                        ${groups[dept].map(title => `
-                            <div class="picker-chip" onclick="selectRegDesignation('${title.replace(/'/g, "\\'")}', this)" 
-                                 style="background: rgba(255,255,255,0.05); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">
-                                ${title}
-                            </div>
-                        `).join('')}
+                        ${groups[dept].map(title => {
+                            const safeTitle = String(title || 'Unknown');
+                            return `
+                                <div class="picker-chip" onclick="selectRegDesignation('${safeTitle.replace(/'/g, "\\'")}', this)" 
+                                     style="background: rgba(255,255,255,0.05); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">
+                                    ${safeTitle}
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                 `).join('');
                 hiddenIn.value = ""; // Reset
