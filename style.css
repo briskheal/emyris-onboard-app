@@ -2235,39 +2235,64 @@ body.admin-mode .admin-header {
     background: rgba(99, 102, 241, 0.1); color: #818cf8; padding: 2px 8px; border-radius: 6px;
 }
 
-.letter-editor {
-    width: 210mm; 
-    min-height: 297mm; 
-    margin: 0 auto 2rem;
-    padding: 65mm 20mm 25mm; /* Default A4 margins, synced by JS */
-    background: #ffffff;
-    color: #1e293b;
-    border: none;
-    border-radius: 2px;
-    font-family: var(--current-letter-font, 'Plus Jakarta Sans', Arial, sans-serif) !important;
-    font-size: 11pt;
-    line-height: 1.4; 
-    outline: none;
-    box-sizing: border-box; 
-    box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.05);
+/* ========================================== */
+/* UNIFIED A4 SURFACE SYSTEM (FOOL-PROOF LOGIC) */
+/* ========================================== */
+
+.a4-page-standard {
+    width: 210mm !important;
+    min-height: 297mm !important;
+    background: #ffffff !important;
+    color: #1e293b !important;
+    margin: 0 auto 3rem !important;
+    box-sizing: border-box !important;
     position: relative;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.05);
+    border-radius: 2px;
+    line-height: 1.4 !important;
     overflow-wrap: break-word;
     word-wrap: break-word;
+    transition: all 0.3s ease;
 }
 
-.letter-editor::before {
+.letter-editor {
+    outline: none;
+    padding: 65mm 20mm 25mm; /* Default, overridden by JS */
+}
+
+/* Page Boundary & Footer Marker Logic */
+.a4-page-standard::before {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    border: 1px solid rgba(0,0,0,0.05);
-    z-index: 5;
+    z-index: 10;
+    /* Repeating Page Break Lines + Footer Safety Zones */
+    background: 
+        repeating-linear-gradient(to bottom, 
+            transparent 0, 
+            transparent calc(297mm - 1px), 
+            rgba(99, 102, 241, 0.4) calc(297mm - 1px), 
+            rgba(99, 102, 241, 0.4) 297mm
+        ),
+        repeating-linear-gradient(to top, 
+            rgba(239, 68, 68, 0.08) 0, 
+            rgba(239, 68, 68, 0.08) var(--footer-h-marker, 25mm), 
+            transparent var(--footer-h-marker, 25mm), 
+            transparent 297mm
+        );
+    background-size: 100% 297mm;
 }
 
 .letter-editor *, #livePreviewFrame * {
     font-family: inherit !important;
     font-size: inherit !important;
     color: inherit !important;
+    line-height: inherit !important;
+}
+
+#livePreviewFrame {
+    padding: 65mm 20mm 25mm;
 }
 
 .letter-editor:focus { 

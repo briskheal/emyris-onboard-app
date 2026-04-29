@@ -2410,6 +2410,7 @@ function execCmd(command, value = null) {
 
 function syncEditorStyles() {
     const editor = document.getElementById('unifiedEditor');
+    const preview = document.getElementById('livePreviewFrame');
     if (!editor) return;
 
     const size = document.getElementById('letterFontSize')?.value || 11;
@@ -2418,68 +2419,50 @@ function syncEditorStyles() {
     
     const marginT_mm = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
     const marginB_mm = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
-    const PX_PER_MM = 3.7795275591;
 
+    // 1. Resolve Font
     let fontStack = "'Plus Jakarta Sans', sans-serif";
-    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
-    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
-    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-    else if (type === 'courier') fontStack = "'Courier New', monospace";
-    else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
-    else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
-    else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
-    else if (type === 'georgia') fontStack = "Georgia, serif";
-    
-    // 1. Core Typography
-    editor.style.fontSize = `${size}pt`;
-    editor.style.fontFamily = fontStack;
-    editor.style.textAlign = align;
-    editor.style.lineHeight = "1.4"; 
-    
-    // 2. A4 Dimensions & Padding
-    editor.style.width = '210mm';
-    editor.style.minHeight = '297mm';
-    editor.style.paddingTop = `${marginT_mm * PX_PER_MM}px`;
-    editor.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
-    editor.style.paddingLeft = '20mm';
-    editor.style.paddingRight = '20mm';
-    editor.style.boxSizing = 'border-box';
-    
-    // 3. Background Strategy: Letterhead + Page Break Markers
-    const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
-    
-    // Create a background layers:
-    // Layer 1: Page Break Lines (Dashed line every 297mm)
-    // Layer 2: Footer Safety Zone (Slightly tinted area at the bottom of every 297mm segment)
-    // Layer 3: The Letterhead Image itself (Repeated per page)
-    
-    const pageH_px = 297 * PX_PER_MM;
-    const footerH_px = marginB_mm * PX_PER_MM;
-    
-    const breakMarker = `linear-gradient(to bottom, transparent ${pageH_px - 2}px, rgba(99, 102, 241, 0.4) ${pageH_px - 2}px, rgba(99, 102, 241, 0.4) ${pageH_px}px, transparent ${pageH_px}px)`;
-    const footerMarker = `linear-gradient(to top, rgba(239, 68, 68, 0.03) ${footerH_px}px, transparent ${footerH_px}px)`;
-    
-    const bgLayers = [breakMarker, footerMarker];
-    const bgSizes = [`210mm ${pageH_px}px`, `210mm ${pageH_px}px` ];
-    const bgRepeats = ['repeat-y', 'repeat-y'];
+    const fontMap = {
+        'times': "'Times New Roman', Times, serif",
+        'helvetica': "'Plus Jakarta Sans', Arial, sans-serif",
+        'verdana': "Verdana, Geneva, sans-serif",
+        'courier': "'Courier New', monospace",
+        'roboto': "'Roboto', sans-serif",
+        'outfit': "'Outfit', sans-serif",
+        'jakarta': "'Plus Jakarta Sans', sans-serif",
+        'georgia': "Georgia, serif"
+    };
+    fontStack = fontMap[type] || fontStack;
 
-    if (lhAsset?.data) {
-        bgLayers.push(`url(${lhAsset.data})`);
-        bgSizes.push('210mm 297mm');
-        bgRepeats.push('repeat-y');
-    }
+    // 2. Global Constants (CSS Variables)
+    document.documentElement.style.setProperty('--current-letter-font', fontStack);
+    document.documentElement.style.setProperty('--current-letter-size', `${size}pt`);
+    document.documentElement.style.setProperty('--footer-h-marker', `${marginB_mm}mm`);
 
-    editor.style.backgroundImage = bgLayers.join(', ');
-    editor.style.backgroundSize = bgSizes.join(', ');
-    editor.style.backgroundRepeat = bgRepeats.join(', ');
-    editor.style.backgroundPosition = 'top center';
-    
-    // 4. Aesthetics
-    editor.style.backgroundColor = '#ffffff';
-    editor.style.color = '#1e293b'; 
-    editor.style.margin = '0 auto 2rem';
-    
-    // 5. Update Preview
+    const applyA4 = (el) => {
+        if (!el) return;
+        el.style.fontSize = `${size}pt`;
+        el.style.fontFamily = fontStack;
+        el.style.textAlign = align;
+        el.style.paddingTop = `${marginT_mm}mm`;
+        el.style.paddingBottom = `${marginB_mm}mm`;
+        el.style.paddingLeft = '20mm';
+        el.style.paddingRight = '20mm';
+        
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+        if (lhAsset?.data) {
+            el.style.backgroundImage = `url(${lhAsset.data})`;
+            el.style.backgroundSize = '100% 297mm'; // Match A4 Height
+            el.style.backgroundRepeat = 'repeat-y';
+            el.style.backgroundPosition = 'top center';
+        } else {
+            el.style.backgroundImage = 'none';
+        }
+    };
+
+    applyA4(editor);
+    applyA4(preview);
+
     if (!document.getElementById('livePreviewContainer').classList.contains('hidden')) {
         updateLivePreviewFrame();
     }
@@ -3047,51 +3030,8 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     
     frame.innerHTML = rendered;
     
-    // 3. Strict A4 Layout Parity (Synchronized with Editor)
-    const size = document.getElementById('letterFontSize')?.value || 11;
-    const type = document.getElementById('letterFontType')?.value || 'helvetica';
-    const align = document.getElementById('letterAlignment')?.value || 'left';
-    const marginT_mm = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
-    const marginB_mm = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
-    const PX_PER_MM = 3.7795275591;
-
-    let fontStack = "'Plus Jakarta Sans', sans-serif";
-    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
-    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
-    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-    else if (type === 'courier') fontStack = "'Courier New', monospace";
-    else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
-    else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
-    else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
-    else if (type === 'georgia') fontStack = "Georgia, serif";
-
-    frame.style.width = '210mm';
-    frame.style.minHeight = '297mm';
-    frame.style.paddingTop = `${marginT_mm * PX_PER_MM}px`;
-    frame.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
-    frame.style.paddingLeft = '20mm';
-    frame.style.paddingRight = '20mm';
-    frame.style.boxSizing = 'border-box';
-    frame.style.backgroundColor = '#ffffff';
-    frame.style.color = '#1e293b';
-    
-    // Typography Sync
-    frame.style.fontSize = `${size}pt`;
-    frame.style.fontFamily = fontStack;
-    frame.style.textAlign = align;
-    frame.style.lineHeight = "1.4"; // STRICT FIDELITY
-    
-    // 4. Letterhead Asset
-    if (!skipLetterhead) {
-        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
-        if (lhAsset?.data) {
-            frame.style.backgroundImage = `url(${lhAsset.data})`;
-            frame.style.backgroundSize = '210mm 297mm';
-            frame.style.backgroundRepeat = 'repeat-y';
-        } else {
-            frame.style.backgroundImage = 'none';
-        }
-    }
+    // Note: Styles (A4 width, fonts, margins, letterhead) are now aggressively 
+    // managed by syncEditorStyles() to ensure absolute parity.
 }
 
 async function sendTaskUpdate(taskKey, completed) {
