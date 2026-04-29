@@ -133,6 +133,7 @@ function updateView(viewId) {
         if (landingPage) landingPage.classList.remove('hidden');
         if (appShell) appShell.classList.add('hidden');
         document.body.classList.add('at-landing');
+        document.body.classList.remove('admin-mode', 'hide-marquee');
     } else {
         if (landingPage) landingPage.classList.add('hidden');
         if (appShell) appShell.classList.remove('hidden');
@@ -156,21 +157,24 @@ function updateView(viewId) {
         }
 
         // Show/Hide Step Indicator
-        const onboardingSteps = ['onboardingForm'];
+        const onboardingSteps = ['onboardingForm', 'applicantRegister', 'applicantLogin', 'applicantWelcome', 'applicantDataEntry', 'applicantDocumentUpload', 'applicantStatusView'];
         if (indicator) {
             indicator.style.display = onboardingSteps.includes(viewId) ? 'flex' : 'none';
         }
 
-        // Toggle admin-mode class for full-width layout
-        if (viewId === 'adminDashboard') {
-            document.body.classList.add('admin-mode');
-        } else if (viewId === 'landingPage') {
+        // Contextual Class Management
+        if (viewId === 'adminDashboard' || viewId === 'applicantVerificationView') {
+            document.body.classList.add('admin-mode', 'hide-marquee');
+        } else {
             document.body.classList.remove('admin-mode');
         }
     }
 }
 
 function backToLanding() { updateView('landingPage'); }
+function showAdminLogin() { updateView('adminLogin'); }
+function showApplicantRegister() { updateView('applicantRegister'); }
+function showApplicantLogin() { updateView('applicantLogin'); }
 
 function syncMarquee(text, color, speed) {
     const marquees = document.querySelectorAll('.marquee-inner');

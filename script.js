@@ -91,33 +91,51 @@ async function fetchCompanyData() {
 
 function applyCompanyData() {
     const compName = companyData.name || "Emyris Biolifesciences";
-    document.getElementById('displayCompanyName').innerText = compName;
-    document.getElementById('headerCompName').innerText = compName;
+    const dpName = document.getElementById('displayCompanyName');
+    const headerCompName = document.getElementById('headerCompName');
+    
+    if (dpName) dpName.innerText = compName;
+    if (headerCompName) headerCompName.innerText = compName;
+    
+    const logoImg = document.getElementById('displayLogo');
+    const headerLogoImg = document.getElementById('headerLogoImg');
+    const fallback = document.getElementById('landingLogoFallback');
+    const headerFallback = document.getElementById('headerLogoLetter');
     
     if (companyData.logo) {
-        const logoImg = document.getElementById('displayLogo');
-        const headerLogoImg = document.getElementById('headerLogoImg');
-        const fallback = document.getElementById('landingLogoFallback');
-        const headerFallback = document.getElementById('headerLogoLetter');
-        
-        logoImg.src = companyData.logo;
-        logoImg.classList.remove('hidden');
-        headerLogoImg.src = companyData.logo;
-        headerLogoImg.classList.remove('hidden');
-        
+        const logoData = Array.isArray(companyData.logo) ? companyData.logo[companyData.logo.length - 1].data : companyData.logo;
+        if (logoImg) {
+            logoImg.src = logoData;
+            logoImg.classList.remove('hidden');
+        }
+        if (headerLogoImg) {
+            headerLogoImg.src = logoData;
+            headerLogoImg.classList.remove('hidden');
+        }
         if (fallback) fallback.classList.add('hidden');
         if (headerFallback) headerFallback.classList.add('hidden');
+    } else {
+        const initials = compName.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).toUpperCase().join('') || 'E';
+        if (fallback) {
+            fallback.innerText = initials;
+            fallback.classList.remove('hidden');
+        }
+        if (headerFallback) {
+            headerFallback.innerText = initials;
+            headerFallback.classList.remove('hidden');
+        }
+        if (logoImg) logoImg.classList.add('hidden');
+        if (headerLogoImg) headerLogoImg.classList.add('hidden');
     }
 
     // Populate Footer Contact (Sync with Admin Portal)
     const landingQuickContact = document.getElementById('landingQuickContact');
     if (landingQuickContact) {
-        const contactHTML = `
-            ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
-            ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
-            ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
+        landingQuickContact.innerHTML = `
+            ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
+            ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
+            ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
         `;
-        landingQuickContact.innerHTML = contactHTML;
     }
 
     syncMarquee(companyData.marqueeText, companyData.marqueeColor, companyData.marqueeSpeed);
@@ -194,8 +212,6 @@ function selectRegDesignation(title, el) {
 
 // --- AUTH HANDLERS ---
 
-function showApplicantRegister() { updateView('applicantRegister'); }
-function showApplicantLogin() { updateView('applicantLogin'); }
 
 async function handleApplicantRegister(e) {
     e.preventDefault();
@@ -707,6 +723,12 @@ function renderApplicantDashboard() {
     const app = currentApplicant;
     document.getElementById('dash_fullName').innerText = app.fullName;
     document.getElementById('dash_email').innerText = app.email;
+    
+    const divEl = document.getElementById('dash_division');
+    const desEl = document.getElementById('dash_designation');
+    if (divEl) divEl.innerText = app.division || app.formData?.division || 'Division Not Set';
+    if (desEl) desEl.innerText = app.designation || app.formData?.designation || 'Role Not Set';
+    
     document.getElementById('applicantAvatar').innerText = app.fullName[0].toUpperCase();
     
     const badge = document.getElementById('dash_statusBadge');

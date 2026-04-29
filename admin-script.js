@@ -336,44 +336,27 @@ function applyCompanyData() {
         console.log('✅ Updated Hero Name:', dpName.innerText);
     }
     const logoImg = document.getElementById('displayLogo');
-    if (logoImg) {
-        if (companyData.logo && companyData.logo.length > 0) {
-            logoImg.src = companyData.logo[companyData.logo.length - 1].data;
-            logoImg.classList.remove('hidden');
-            console.log('✅ Updated Hero Logo');
-        } else {
-            console.log('⚠️ No Logo in companyData');
-        }
-    }
-    const quickContact = document.getElementById('quickContact');
-    const landingQuickContact = document.getElementById('landingQuickContact');
-    const contactHTML = `
-        ${companyData.phone ? `<div>📞 <a href="tel:${companyData.phone}" class="contact-link">${companyData.phone}</a></div>` : ''}
-        ${companyData.tollFree ? `<div>☎️ Toll Free: <a href="tel:${companyData.tollFree}" class="contact-link">${companyData.tollFree}</a></div>` : ''}
-        ${companyData.website ? `<div>🌐 <a href="${companyData.website}" target="_blank" class="contact-link">${companyData.website.replace('https://', '')}</a></div>` : ''}
-    `;
-
-    if (quickContact) quickContact.innerHTML = contactHTML;
-    if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
-    const headerTitle = document.getElementById('headerCompName');
-    if (headerTitle) {
-        headerTitle.innerText = (companyData.name || "").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
-        console.log('✅ Updated Header Name:', headerTitle.innerText);
-    }
-
     const headerImg = document.getElementById('headerLogoImg');
     const headerLogoLetter = document.getElementById('headerLogoLetter');
     const landingLogoFallback = document.getElementById('landingLogoFallback');
-    
-    if (companyData.logo && companyData.logo.length > 0 && headerImg) {
-        const logoData = companyData.logo[companyData.logo.length - 1].data;
-        headerImg.src = logoData;
-        headerImg.classList.remove('hidden');
+
+    // Handle Logo Visibility
+    if (companyData.logo && companyData.logo.length > 0) {
+        const logoData = Array.isArray(companyData.logo) ? companyData.logo[companyData.logo.length - 1].data : companyData.logo;
+        if (logoImg) {
+            logoImg.src = logoData;
+            logoImg.classList.remove('hidden');
+            logoImg.style.display = 'block';
+        }
+        if (headerImg) {
+            headerImg.src = logoData;
+            headerImg.classList.remove('hidden');
+        }
         if (headerLogoLetter) headerLogoLetter.style.display = 'none';
         if (landingLogoFallback) landingLogoFallback.style.display = 'none';
-        console.log('✅ Updated Header Logo');
+        console.log('✅ Updated Logos from Profile');
     } else {
-        const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).join('') : 'E';
+        const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).toUpperCase().join('') : 'E';
         if (headerLogoLetter) {
             headerLogoLetter.innerText = initials;
             headerLogoLetter.style.display = 'inline';
@@ -382,8 +365,25 @@ function applyCompanyData() {
             landingLogoFallback.innerText = initials;
             landingLogoFallback.style.display = 'flex';
         }
+        if (logoImg) logoImg.classList.add('hidden');
         if (headerImg) headerImg.classList.add('hidden');
-        console.log('Γä╣∩╕Å Using Initials:', initials);
+        console.log('ℹ️ Using Initials:', initials);
+    }
+    const quickContact = document.getElementById('quickContact');
+    const landingQuickContact = document.getElementById('landingQuickContact');
+    // Modern Footer Contact HTML
+    const contactHTML = `
+        ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
+        ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
+        ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
+    `;
+
+    if (quickContact) quickContact.innerHTML = contactHTML;
+    if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
+    const headerTitle = document.getElementById('headerCompName');
+    if (headerTitle) {
+        headerTitle.innerText = (companyData.name || "Emyris Biolifesciences").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
+        console.log('✅ Updated Header Name:', headerTitle.innerText);
     }
 
     try {
@@ -501,70 +501,6 @@ function addCustomRequiredDoc() {
 }
 
 
-
-function updateView(viewId) {
-    const landingPage = document.getElementById('landingPage');
-    const appShell = document.getElementById('appShell');
-    const sections = document.querySelectorAll('.view-section');
-    const indicator = document.getElementById('stepIndicator');
-
-    // Reset Scroll
-    window.scrollTo(0, 0);
-
-    if (viewId === 'landingPage') {
-        // Switch to Landing Architecture
-        if (landingPage) landingPage.classList.remove('hidden');
-        if (appShell) appShell.classList.add('hidden');
-        document.body.classList.add('at-landing');
-        console.log('[UI] Switched to Fullscreen Landing Screen');
-    } else {
-        // Switch to App Shell Architecture
-        if (landingPage) landingPage.classList.add('hidden');
-        if (appShell) appShell.classList.remove('hidden');
-        document.body.classList.remove('at-landing');
-
-        // Hide all inner sections
-        sections.forEach(s => {
-            s.classList.add('hidden');
-            s.style.display = 'none';
-            s.classList.remove('active');
-        });
-
-        // Show targets
-        const activeSection = document.getElementById(viewId);
-        if (activeSection) {
-            activeSection.classList.remove('hidden');
-            activeSection.style.display = (viewId === 'adminDashboard') ? 'flex' : 'block';
-            activeSection.classList.add('active');
-            
-            if (typeof gsap !== 'undefined') {
-                gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
-            }
-        }
-
-        // Show/Hide Step Indicator Based on Context (Onboarding flow)
-        const onboardingSteps = ['applicantRegister', 'applicantLogin', 'applicantWelcome', 'applicantDataEntry', 'applicantDocumentUpload', 'applicantStatusView'];
-        if (indicator) {
-            if (onboardingSteps.includes(viewId)) {
-                indicator.style.display = 'flex';
-            } else {
-                indicator.style.display = 'none';
-            }
-        }
-
-        // Marquee Visibility
-        if (viewId === 'adminDashboard' || viewId === 'applicantVerificationView') {
-            document.body.classList.add('hide-marquee');
-        } else {
-            document.body.classList.remove('hide-marquee');
-        }
-
-        console.log(`[UI] App Shell Active -> ${viewId}`);
-    }
-}
-
-function backToLanding() { updateView('landingPage'); }
-function showAdminLogin() { updateView('adminLogin'); }
 
 async function handleAdminLogin() {
     const username = document.getElementById('adminId').value.trim();

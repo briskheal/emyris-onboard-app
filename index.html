@@ -46,9 +46,10 @@
                 <img id="displayLogo" src="" alt="Company Logo" class="landing-logo-img hidden">
                 <div id="landingLogoFallback" class="landing-logo-fallback">E</div>
             </div>
-            <h1 id="displayCompanyName" class="landing-company-name">Emyris Biolifesciences</h1>
-            <div class="landing-divider"></div>
-            <p class="landing-tagline">Employee Onboarding Portal</p>
+            <div class="landing-hero-text">
+                <h1 id="displayCompanyName" class="landing-company-name">Emyris Biolifesciences</h1>
+                <p class="landing-tagline">Employee Onboarding Portal</p>
+            </div>
         </div>
         <div class="landing-cards">
             <button class="lcard lcard-primary" onclick="showApplicantRegister()">
@@ -551,6 +552,9 @@
                         <div>
                             <h2 id="dash_fullName" style="margin:0; font-size:1.8rem; letter-spacing:-0.5px;">...</h2>
                             <p id="dash_email" style="margin:0; color:var(--text-muted); font-size:0.9rem;">...</p>
+                            <p style="margin:5px 0 0 0; font-size:0.85rem; font-weight:700; color:var(--primary-light);">
+                                <span id="dash_division">...</span> • <span id="dash_designation">...</span>
+                            </p>
                         </div>
                     </div>
                     <div class="status-pill">
