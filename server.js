@@ -336,7 +336,8 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 // --- APPLICANT REGISTRATION MODULE (RESTART) ---
 app.post('/api/register-applicant', async (req, res) => {
-    const { title, fullName, email, phone, division, designation } = req.body;
+    let { title, fullName, email, phone, division, designation } = req.body;
+    email = email.trim().toLowerCase();
     let pin = Math.floor(100000 + Math.random() * 900000).toString();
 
     try {
@@ -408,7 +409,8 @@ app.get('/api/health', (req, res) => {
 
 // PIN RECOVERY MODULE
 app.post('/api/resend-pin', async (req, res) => {
-    const { email } = req.body;
+    let { email } = req.body;
+    email = email.trim().toLowerCase();
     try {
         const applicant = await Applicant.findOne({ email });
         if (!applicant) return res.status(404).json({ success: false, message: 'Email not found.' });
@@ -440,8 +442,14 @@ app.post('/api/resend-pin', async (req, res) => {
 // Applicant Login
 app.post('/api/applicant-login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        const applicant = await Applicant.findOne({ email, password });
+        let { email, password } = req.body;
+        password = (password || "").trim();
+        
+        // Use regex for case-insensitive email match to handle legacy mixed-case records
+        const applicant = await Applicant.findOne({ 
+            email: { $regex: new RegExp("^" + email + "$", "i") }, 
+            password: password 
+        });
 
         if (!applicant) {
             return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });

@@ -226,8 +226,8 @@ async function handleApplicantRegister(e) {
         fullName: document.getElementById('regName').value,
         division: document.getElementById('regDivision').value,
         designation: document.getElementById('regDesignation').value,
-        email: document.getElementById('regEmail').value,
-        phone: document.getElementById('regPhone').value
+        email: document.getElementById('regEmail').value.trim().toLowerCase(),
+        phone: document.getElementById('regPhone').value.trim()
     };
 
     if (!data.division || !data.designation) {
@@ -258,8 +258,8 @@ async function handleApplicantRegister(e) {
 
 async function handleApplicantLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('loginEmail').value;
-    const pin = document.getElementById('loginPin').value;
+    const email = document.getElementById('loginEmail').value.trim().toLowerCase();
+    const pin = document.getElementById('loginPin').value.trim();
 
     try {
         lockUI("🔐 Verifying PIN...");

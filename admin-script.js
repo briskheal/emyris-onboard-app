@@ -176,7 +176,7 @@ async function submitExistingStaff(event) {
     
     const data = {
         fullName: document.getElementById('ex_fullName').value,
-        email: document.getElementById('ex_email').value,
+        email: document.getElementById('ex_email').value.trim().toLowerCase(),
         phone: document.getElementById('ex_phone').value,
         dob: document.getElementById('ex_dob').value,
         pin: document.getElementById('ex_pin').value,
