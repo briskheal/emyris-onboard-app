@@ -185,14 +185,14 @@ const applicantSchema = new mongoose.Schema({
     reportingTo: String,
     hq: String,
     salary: String,
-    dob: Date,
+    dob: String, // Stored as DD-MM-YYYY
     address: String,
     pin: String,
     state: String,
     empCode: String,
     refNo: String,
     salaryBreakup: { type: Object, default: {} },
-    actualJoiningDate: Date,
+    actualJoiningDate: String, // Stored as DD-MM-YYYY
     offerAccepted: { type: Boolean, default: false },
     offerAcceptedAt: Date,
     offerLetterData: String, // Stores the snapshot of the generated letter
@@ -528,8 +528,8 @@ app.post('/api/submit-onboarding', async (req, res) => {
                 canLogin: false,
                 submittedAt: new Date(),
                 hq: formData.hq,
-                actualJoiningDate: parseDMY(formData.joiningDate),
-                dob: parseDMY(formData.dob),
+                actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
+                dob: formData.dob, // Store as string DD-MM-YYYY
                 address: formData.address || "",
                 pin: formData.pin || "",
                 state: formData.state || "",
@@ -593,8 +593,8 @@ app.post('/api/applicant/save-draft', async (req, res) => {
             { 
                 formData,
                 hq: formData.hq,
-                actualJoiningDate: parseDMY(formData.joiningDate),
-                dob: parseDMY(formData.dob),
+                actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
+                dob: formData.dob, // Store as string DD-MM-YYYY
                 address: formData.address || "",
                 pin: formData.pin || "",
                 state: formData.state || "",
@@ -793,7 +793,7 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             division: division || 'General',
             hq: hq || 'Unassigned',
             empCode: empCode || '',
-            actualJoiningDate: joinDateObj,
+            actualJoiningDate: joinDate,
             pin,
             state,
             formData: {
@@ -806,7 +806,7 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
                 first_name: fullName.split(' ')[0],
                 last_name: fullName.split(' ').slice(1).join(' ') || ''
             },
-            dob: dobObj,
+            dob: dob,
             salaryBreakup: salaryBreakup,
             tasks: {
                 offerLetter: true, // Auto-mark as done
@@ -911,7 +911,7 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
                     reportingTo: reportingTo || '',
                     hq: hq || 'Unassigned',
                     empCode: empCode || '',
-                    actualJoiningDate: joinDateObj,
+                    actualJoiningDate: joinDate,
                     formData: {
                         designation: designation || 'Employee',
                         salary: formattedSalary.toString(),
@@ -920,7 +920,7 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
                         first_name: fullName.split(' ')[0],
                         last_name: fullName.split(' ').slice(1).join(' ') || ''
                     },
-                    dob: dobObj,
+                    dob: dob,
                     salaryBreakup: salaryBreakup,
                     tasks: { offerLetter: true, appointmentLetter: false, appLinkSent: false, loginDetailsSent: false }
                 });
@@ -1445,7 +1445,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
 
         applicant.offerAccepted = true;
         applicant.offerAcceptedAt = new Date();
-        applicant.actualJoiningDate = new Date(actualJoiningDate);
+        applicant.actualJoiningDate = actualJoiningDate; // Store as string
         await applicant.save();
 
         // 1. Congratulate Applicant
@@ -1456,7 +1456,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
                     <h2 style="color:#6366f1">Welcome Aboard, ${applicant.fullName}!</h2>
                     <p>We are thrilled to officially welcome you to <strong>${company.name}</strong>.</p>
-                    <p>Your acceptance of the Offer of Employment has been recorded. Your confirmed <strong>Actual Date of Joining (ADOJ)</strong> is: <strong>${new Date(actualJoiningDate).toDateString()}</strong>.</p>
+                    <p>Your acceptance of the Offer of Employment has been recorded. Your confirmed <strong>Actual Date of Joining (ADOJ)</strong> is: <strong>${actualJoiningDate}</strong>.</p>
                     <p>Your official Appointment Order and further orientation details will be shared within 30 days of your joining.</p>
                     <br>
                     <p>Best Regards,</p>
@@ -1495,7 +1495,13 @@ app.get('/api/admin/lifecycle-check', async (req, res) => {
         const now = new Date();
 
         applicants.forEach(app => {
-            const adoj = new Date(app.actualJoiningDate);
+            const parseDMY = (s) => {
+                if (!s || typeof s !== 'string') return null;
+                const parts = s.split('-');
+                if (parts.length !== 3) return null;
+                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+            };
+            const adoj = parseDMY(app.actualJoiningDate) || new Date();
             const diffTime = Math.abs(now - adoj);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());

@@ -585,6 +585,7 @@ async function handleAdminLogin() {
         if (result.success) {
             showToast("🔓 Access Granted. Welcome to Admin Gateway.");
             sessionStorage.setItem('admin_auth', 'true');
+            document.body.classList.add('admin-mode');
             unlockUI(); // UNLOCK BEFORE SWITCHING TAB to avoid isSaving toast
             updateView('adminDashboard');
             switchAdminTab('profile');
@@ -653,6 +654,7 @@ function showApplicantLogin() { updateView('applicantLogin'); }
 
 function logoutAdmin() {
     sessionStorage.removeItem('admin_auth');
+    document.body.classList.remove('admin-mode');
     showToast("✅ Logged out successfully", "success");
     // Force reload to clean all memory states
     window.location.href = 'admin.html';
@@ -667,6 +669,7 @@ async function initializeApp() {
     
     setTimeout(() => {
         if (wasAdmin) {
+            document.body.classList.add('admin-mode');
             updateView('adminDashboard');
             switchAdminTab('profile');
             console.log('🔄 Session Recovered: Admin Dashboard');
@@ -1872,6 +1875,9 @@ function autoDistributeSalary() {
     const annual = parseFloat(targetSal);
     const monthly = parseFloat((annual / 12).toFixed(2));
     
+    // Calculate annual variation (e.g., the 0.04 variation for 4,60,000)
+    const annualVariation = parseFloat((annual - (monthly * 12)).toFixed(2));
+    
     // 1. Basic: 40% of monthly gross
     const basic = parseFloat((monthly * 0.40).toFixed(2));
     
@@ -1910,8 +1916,14 @@ function autoDistributeSalary() {
         if (el) el.value = val.toFixed(2);
     }
     
+    // Store the variation in the applicant's record locally so it gets saved
+    if (activeV_Applicant) {
+        if (!activeV_Applicant.salaryBreakup) activeV_Applicant.salaryBreakup = {};
+        activeV_Applicant.salaryBreakup.variation = annualVariation;
+    }
+    
     calcSalaryTotal();
-    showToast("✅ Salary breakup updated (Medical @ 1250, Basic @ 40%)", "success");
+    showToast(`✅ Salary breakup updated (Variation of ${annualVariation} captured)`, "success");
 }
 
 
@@ -3056,16 +3068,15 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     const frame = document.getElementById('livePreviewFrame');
     if (!frame) return;
     
+    // Ensure the frame has the standard A4 container class
+    frame.classList.add('letter-preview-box');
+    
     const html = specificHtml || document.getElementById('unifiedEditor').innerHTML;
     let rendered = html;
     
-    // 1. High-Fidelity Placeholder replacement using real targeted applicant data if available
+    // 1. High-Fidelity Placeholder replacement
     const selectedEmail = document.getElementById('hubTargetApplicant')?.value;
-    let targetApp = null;
-    
-    if (selectedEmail) {
-        targetApp = (allApplicants || []).find(a => a.email === selectedEmail);
-    }
+    let targetApp = (allApplicants || []).find(a => a.email === selectedEmail);
 
     const mockApp = targetApp || {
         fullName: 'SMRUTI RANJAN DASH',
@@ -3081,12 +3092,10 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
 
     rendered = fillLetterPlaceholders(html, mockApp);
     
-    // Highlight placeholders in preview for visual clarity (Skip for PDF capture)
+    // Highlight placeholders in preview
     if (!skipHighlights) {
         const todayStr = new Date().toLocaleDateString('en-GB');
-        const hList = [
-            'SMRUTI RANJAN DASH', specificRef, todayStr, 'PRODUCT MANAGER', 'BHUBANESWAR', 'Rs. 75,000'
-        ];
+        const hList = ['SMRUTI RANJAN DASH', specificRef, todayStr, 'PRODUCT MANAGER', 'BHUBANESWAR'];
         hList.forEach(h => {
             if (h && typeof h === 'string') {
                 const regex = new RegExp(h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
@@ -3097,43 +3106,25 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
 
     frame.innerHTML = rendered;
     
-    // 2. Apply Real-time Styles accurately
+    // 2. Apply Dynamic Styles
     const size = document.getElementById('letterFontSize')?.value || 11;
-    const type = document.getElementById('letterFontType')?.value || 'helvetica';
+    const font = document.getElementById('letterFontType')?.value || 'helvetica';
     const align = document.getElementById('letterAlignment')?.value || 'left';
-    const marginT = document.getElementById('headerHeight')?.value || 65;
-    const marginB = document.getElementById('footerHeight')?.value || 25;
-
-    let fontStack = "'Plus Jakarta Sans', sans-serif";
-    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
-    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
-    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-    else if (type === 'courier') fontStack = "'Courier New', monospace";
-    else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
-    else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
-    else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
-    else if (type === 'georgia') fontStack = "Georgia, serif";
     
     frame.style.fontSize = `${size}pt`;
-    frame.style.setProperty('--current-letter-font', fontStack);
+    frame.style.fontFamily = font;
     frame.style.textAlign = align;
-    frame.style.paddingTop = `${marginT}mm`;
-    frame.style.paddingBottom = `${marginB}mm`;
 
-    // 3. APPLY LETTERHEAD TO PREVIEW BACKGROUND
-    const lhArr = companyData.letterheadImage || [];
-    if (lhArr.length) {
-        const val = lhArr[lhArr.length - 1].data;
+    // 3. Apply Letterhead Image
+    if (companyData.letterheadImage && companyData.letterheadImage.length > 0) {
+        const val = companyData.letterheadImage[companyData.letterheadImage.length - 1].data;
         frame.style.backgroundImage = `url(${val})`;
-        frame.style.backgroundSize = '100% auto';
-        frame.style.backgroundRepeat = 'repeat-y';
-        frame.style.backgroundPosition = 'top center';
-        frame.style.backgroundColor = '#ffffff'; // White paper base
-        frame.style.color = '#000000'; // Black text for letterhead
+        frame.style.backgroundSize = '100% 100%';
+        frame.style.backgroundRepeat = 'no-repeat';
+        frame.style.backgroundPosition = 'center';
     } else {
         frame.style.backgroundImage = 'none';
-        frame.style.backgroundColor = 'rgba(15, 23, 42, 0.6)'; // Restore Dark Theme
-        frame.style.color = '#ffffff'; // White text for dark mode
+        frame.style.backgroundColor = '#ffffff';
     }
 }
 
@@ -3394,8 +3385,8 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{HQ}}": (app.hq || fd.hq || "").toUpperCase(),
         "{{REPORTING_TO}}": (app.reportingTo || "").toUpperCase(),
         "{{SALARY_MONTHLY}}": totalMonthly.toLocaleString('en-IN'),
-        "{{SALARY_ANNUAL}}": totalAnnual.toLocaleString('en-IN'),
-        "{{SALARY_WORDS}}": numberToWords(totalAnnual),
+        "{{SALARY_ANNUAL}}": (totalAnnual + (Number(sal.variation) || 0)).toLocaleString('en-IN'),
+        "{{SALARY_WORDS}}": (numberToWords(totalAnnual + (Number(sal.variation) || 0)) + " only").toUpperCase(),
         "{{BANK_NAME}}": (fd.bankName || "").toUpperCase(),
         "{{BANK_ACC}}": fd.accNo || "",
         "{{IFSC}}": (fd.ifsc || "").toUpperCase(),
@@ -3417,12 +3408,14 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{SAL_EDU}}": (Number(sal.edu) || 0).toLocaleString('en-IN'),
         "{{SAL_FIXED}}": (Number(sal.fixed) || 0).toLocaleString('en-IN'),
         "{{SAL_GROSS_MONTHLY}}": totalMonthly.toLocaleString('en-IN'),
-        "{{SAL_GROSS_ANNUAL}}": totalAnnual.toLocaleString('en-IN'),
+        "{{SAL_GROSS_ANNUAL}}": (totalAnnual + (Number(sal.variation) || 0)).toLocaleString('en-IN'),
         "{{SALARY_BREAKUP}}": (() => {
             const sal = app.salaryBreakup || {};
             const formatRs = (num) => 'Rs. ' + (Number(num) || 0).toLocaleString('en-IN');
-            const total = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
-                          (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
+            const variation = Number(sal.variation) || 0;
+            const totalM = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
+                           (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
+            const totalA = (totalM * 12) + variation;
             
             const borderColor = "#888";
             const headerBg = "rgba(128, 128, 128, 0.15)";
@@ -3442,10 +3435,10 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Leave Travel Allowance (LTA)</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.lta)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.lta||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Conveyance Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.conveyance)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.conveyance||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Medical Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.medical)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.medical||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.special||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(((sal.special||0)*12) + variation)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
-                    <tr style="font-weight: bold; background: ${headerBg};"><td style="border: 1px solid ${borderColor}; padding: 8px;">Gross Total</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(total)}</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(total*12)}</td></tr>
+                    <tr style="font-weight: bold; background: ${headerBg};"><td style="border: 1px solid ${borderColor}; padding: 8px;">Gross Total</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(totalM)}</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(totalA)}</td></tr>
                 </tbody>
             </table>
             `;

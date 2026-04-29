@@ -689,35 +689,17 @@ function applyLetterheadStyles(elementId) {
 
     let fontStack = "'Plus Jakarta Sans', sans-serif";
     if (fontType === 'times') fontStack = "'Times New Roman', Times, serif";
-    else if (fontType === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
-    else if (fontType === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
-    else if (fontType === 'courier') fontStack = "'Courier New', monospace";
-    else if (fontType === 'roboto') fontStack = "'Roboto', sans-serif";
-    else if (fontType === 'outfit') fontStack = "'Outfit', sans-serif";
-    else if (fontType === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
-    else if (fontType === 'georgia') fontStack = "Georgia, serif";
-
-    // 2. Apply Styles
+    
     frame.style.fontSize = `${size}pt`;
-    frame.style.fontFamily = fontStack;
+    frame.style.fontFamily = font;
     frame.style.textAlign = align;
-    frame.style.paddingTop = `${marginT}mm`;
-    frame.style.paddingBottom = `${marginB}mm`;
-    frame.style.lineHeight = "1.5";
 
-    // 3. Apply Letterhead Image
     if (companyData.letterheadImage && companyData.letterheadImage.length > 0) {
         const val = companyData.letterheadImage[companyData.letterheadImage.length - 1].data;
         frame.style.backgroundImage = `url(${val})`;
-        frame.style.backgroundSize = '100% auto';
-        frame.style.backgroundRepeat = 'repeat-y';
-        frame.style.backgroundPosition = 'top center';
-        frame.style.backgroundColor = '#ffffff';
-        frame.style.color = '#000000';
-    } else {
-        frame.style.backgroundImage = 'none';
-        frame.style.backgroundColor = '#ffffff';
-        frame.style.color = '#333333';
+        frame.style.backgroundSize = '100% 100%';
+        frame.style.backgroundRepeat = 'no-repeat';
+        frame.style.backgroundPosition = 'center';
     }
 }
 

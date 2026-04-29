@@ -65,7 +65,7 @@ body::before {
 
 .app-container {
     position: relative;
-    max-width: 1100px;
+    max-width: 1200px;
     width: 100%;
     margin: 0 auto;
     padding: 2rem;
@@ -73,6 +73,13 @@ body::before {
     display: flex;
     flex-direction: column;
     z-index: 10;
+    transition: max-width 0.5s ease;
+}
+
+/* Desktop Full Width for Admin */
+body.admin-mode .app-container {
+    max-width: 100% !important;
+    padding: 1.5rem 3rem;
 }
 
 /* Premium Animated Background */
@@ -306,6 +313,10 @@ body.at-landing #headerBrandingLayer {
     overflow: hidden;
 }
 
+body.admin-mode .view-section {
+    max-width: 100% !important;
+}
+
 .view-section::before {
     content: "";
     position: absolute;
@@ -328,10 +339,10 @@ body.at-landing #headerBrandingLayer {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start; /* Changed from center to allow footer space */
     z-index: 100;
-    overflow: hidden;
-    padding: 2rem;
+    overflow-y: auto; /* Allow scrolling if screen is too small */
+    padding: 6rem 2rem 10rem; /* Top space for marquee, bottom for footer */
     transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -1623,6 +1634,21 @@ input:checked + .slider:before {
 .btn-link:hover {
     color: var(--primary);
     opacity: 1;
+}
+
+/* Desktop-First Admin Mode (Full Width) */
+body.admin-mode .dashboard-container {
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 40px;
+}
+
+body.admin-mode #appShell {
+    max-width: none !important;
+}
+
+body.admin-mode .admin-header {
+    width: 100%;
 }
 
 /* Admin Tabs */
@@ -2982,4 +3008,46 @@ body.onboarding-inactive .header-logo img { height: 28px !important; }
 @keyframes slideInLow {
     from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
+}
+/* Letter Preview Box - Professional A4 Look */
+.letter-preview-box {
+    background: #ffffff;
+    color: #000000;
+    padding: 20mm;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.15);
+    width: 210mm; /* A4 Width */
+    min-height: 297mm; /* A4 Height */
+    margin: 2rem auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: visible; /* Capture full length */
+    transform-origin: top center;
+}
+
+/* Scale down for laptop screens to fit width */
+@media (max-width: 1400px) {
+    .letter-preview-box {
+        transform: scale(0.85);
+        margin-top: -50px;
+        margin-bottom: -50px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .letter-preview-box {
+        transform: scale(0.7);
+        margin-top: -100px;
+        margin-bottom: -100px;
+    }
+}
+
+.letter-preview-container {
+    background: rgba(0,0,0,0.1);
+    padding: 2rem;
+    border-radius: 12px;
+    overflow-x: auto;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
 }

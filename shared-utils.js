@@ -160,6 +160,13 @@ function updateView(viewId) {
         if (indicator) {
             indicator.style.display = onboardingSteps.includes(viewId) ? 'flex' : 'none';
         }
+
+        // Toggle admin-mode class for full-width layout
+        if (viewId === 'adminDashboard') {
+            document.body.classList.add('admin-mode');
+        } else if (viewId === 'landingPage') {
+            document.body.classList.remove('admin-mode');
+        }
     }
 }
 
@@ -199,3 +206,22 @@ async function compressAndResize(file, maxWidth = 1000) {
         };
     });
 }
+// Global listener to auto-format DD-MM-YYYY inputs
+document.addEventListener('input', function (e) {
+    if (e.target.placeholder === 'DD-MM-YYYY' || e.target.id.includes('dob') || e.target.id.includes('Date')) {
+        let val = e.target.value.replace(/\D/g, '');
+        if (val.length > 8) val = val.substring(0, 8);
+        
+        let formatted = '';
+        if (val.length > 0) {
+            formatted = val.substring(0, 2);
+            if (val.length > 2) {
+                formatted += '-' + val.substring(2, 4);
+                if (val.length > 4) {
+                    formatted += '-' + val.substring(4, 8);
+                }
+            }
+        }
+        e.target.value = formatted;
+    }
+});

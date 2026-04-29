@@ -615,15 +615,17 @@
                                     <button class="btn btn-outline btn-sm" onclick="downloadMyLetter('offer')">📥 Download PDF</button>
                                 </div>
                                 
-                                <div id="offerPreviewer" class="letter-preview-box hidden" style="background:#fff; color:#333; padding:20px; border-radius:12px; border:1px solid rgba(0,0,0,0.1); max-height:400px; overflow-y:auto; font-size:0.85rem;">
-                                    <!-- Rendered Content -->
+                                <div class="letter-preview-container">
+                                    <div id="offerPreviewer" class="letter-preview-box hidden">
+                                        <!-- Rendered Content -->
+                                    </div>
                                 </div>
                                 
                                 <div id="acceptanceForm" class="acceptance-panel" style="margin-top:1.5rem; padding:1.5rem; background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.1); border-radius:12px;">
                                     <h4 style="margin-top:0; color:var(--accent);">Finalize Onboarding</h4>
                                     <div class="form-group">
                                         <label>Confirm Your Actual Date of Joining (ADOJ)*</label>
-                                        <input type="date" id="actualJoiningDateInput" class="form-input">
+                                        <input type="text" id="actualJoiningDateInput" class="form-input" placeholder="DD-MM-YYYY">
                                         <small style="color:var(--text-muted); display:block; margin-top:5px;">This will trigger your Appointment cycle.</small>
                                     </div>
                                     <button class="btn btn-primary" onclick="acceptOfferLetter()" style="width:100%; margin-top:1rem;">Accept Offer & Confirm Joining 🚀</button>
@@ -644,7 +646,9 @@
                             </div>
                             <div class="dash-card-body">
                                 <button class="btn btn-primary btn-sm" style="width:100%; margin-bottom:0.8rem;" onclick="toggleApptPreview()">👀 View Appointment Order</button>
-                                <div id="apptPreviewer" class="letter-preview-box hidden" style="background:#fff; color:#333; padding:20px; border-radius:12px; border:1px solid rgba(0,0,0,0.1); max-height:400px; overflow-y:auto; font-size:0.85rem;"></div>
+                                <div class="letter-preview-container">
+                                    <div id="apptPreviewer" class="letter-preview-box hidden"></div>
+                                </div>
                                 <button class="btn btn-outline btn-sm" style="width:100%;" onclick="downloadMyLetter('appt')">📥 Download Official Copy</button>
                             </div>
                         </div>
