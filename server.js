@@ -105,6 +105,7 @@ const companySchema = new mongoose.Schema({
     phone: String,
     tollFree: String,
     website: String,
+    email: String,
     // Latest active IDs (pointers)
     activeLogoId: String,
     activeStampId: String,

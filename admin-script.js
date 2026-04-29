@@ -376,6 +376,7 @@ function applyCompanyData() {
         ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
         ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
         ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
+        ${companyData.email ? `<span>✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
     `;
 
     if (quickContact) quickContact.innerHTML = contactHTML;
@@ -777,6 +778,7 @@ function switchAdminTab(tab) {
         f.compWeb.value = companyData.website || '';
         f.compPhone.value = companyData.phone || '';
         f.compTollFree.value = companyData.tollFree || '';
+        f.compEmail.value = companyData.email || '';
         f.compAddress.value = companyData.address || '';
         
         f.fyFrom.value = companyData.fyFrom || '';
@@ -830,6 +832,7 @@ async function saveCompanyProfile(e) {
         website: rawData.compWeb,
         phone: rawData.compPhone,
         tollFree: rawData.compTollFree,
+        email: rawData.compEmail,
         address: rawData.compAddress,
         fyFrom: rawData.fyFrom,
         fyTo: rawData.fyTo,

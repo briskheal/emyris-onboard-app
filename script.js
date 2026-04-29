@@ -137,6 +137,7 @@ function applyCompanyData() {
         ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
         ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
         ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
+        ${companyData.email ? `<span>✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
     `;
 
     if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
