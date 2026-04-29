@@ -858,7 +858,7 @@
                                         <!-- Removed redundant Autofill button per user request -->
                                         <button class="btn btn-sm btn-primary" id="issueLetterBtn" onclick="publishLetterToHub()" style="padding: 0.5rem 1rem; font-size: 0.8rem; background: var(--accent); border-color: var(--accent); height: 42px;">🌐 Issue to Applicant</button>
                                         <button class="btn btn-sm btn-outline" onclick="resetEditorToMaster()" style="padding: 0.5rem 1rem; height: 42px; border-color: #94a3b8; color: #94a3b8;">🧹 Clear & Restore</button>
-                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1rem; height: 42px;">👁️‍🗨️ Preview & Print</button>
+                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)" style="padding: 0.5rem 1rem; height: 42px;">👁️‍🗨️ Document Fidelity Preview</button>
                                         <button class="btn btn-sm btn-primary" id="saveTemplateBtn" onclick="saveActiveTemplate()" style="padding: 0.5rem 1rem; height: 42px; background: rgba(16, 185, 129, 0.1); border: 1px solid var(--success); color: var(--success);">💾 Save Master Template</button>
                                     </div>
                                 </div>
@@ -921,10 +921,7 @@
                                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 12px; border: 1px solid var(--glass-border);">
                                         <div style="display: flex; align-items: center; gap: 1rem;">
                                             <h4 style="color: var(--accent); margin: 0; font-size: 1rem;">📄 Document Fidelity Preview</h4>
-                                            <div style="display: flex; gap: 0.75rem;">
-                                                <button class="btn btn-sm btn-primary" onclick="previewActiveTemplate()" style="padding: 0.6rem 1.5rem; font-weight: 600; background: #10b981; border-color: #10b981;">📥 Download Final PDF</button>
-                                                <button class="btn btn-sm btn-outline" onclick="printPreviewDocument()" style="padding: 0.6rem 1.5rem; border-color: #3b82f6; color: #3b82f6;">🖨️ Print Document</button>
-                                            </div>
+                                            <button class="btn btn-sm btn-primary" onclick="previewActiveTemplate()" style="padding: 0.5rem 1.2rem; background: #10b981; border-color: #10b981;">📥 Download PDF</button>
                                         </div>
                                         <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)" style="color: #ef4444; border-color: #ef4444; padding: 0.5rem 1.2rem; font-size: 0.8rem;">❌ Return to Editor</button>
                                     </div>
