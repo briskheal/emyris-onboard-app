@@ -276,7 +276,8 @@ async function handleApplicantLogin(e) {
             showToast(result.message, "error");
         }
     } catch (err) {
-        showToast("Login failed.", "error");
+        console.error('❌ Login Error:', err);
+        showToast("Login failed: " + err.message, "error");
     } finally {
         unlockUI();
     }
@@ -741,109 +742,142 @@ function applyLetterheadStyles(elementId) {
 }
 
 function renderApplicantDashboard() {
-    const app = currentApplicant;
-    document.getElementById('dash_fullName').innerText = app.fullName;
-    document.getElementById('dash_email').innerText = app.email;
-    
-    const divEl = document.getElementById('dash_division');
-    const desEl = document.getElementById('dash_designation');
-    if (divEl) divEl.innerText = app.division || app.formData?.division || 'Division Not Set';
-    if (desEl) desEl.innerText = app.designation || app.formData?.designation || 'Role Not Set';
-    
-    document.getElementById('applicantAvatar').innerText = app.fullName[0].toUpperCase();
-    
-    const badge = document.getElementById('dash_statusBadge');
-    badge.innerText = app.status.toUpperCase();
-    badge.className = `badge ${app.status}`;
+    try {
+        const app = currentApplicant;
+        if (!app) return;
 
-    // Timeline
-    const timeline = document.getElementById('onboardingTimeline');
-    const steps = [
-        { label: 'Register', done: true },
-        { label: 'Submit', done: !!app.submittedAt || ['submitted', 'approved'].includes(app.status) },
-        { label: 'Verify', done: app.status === 'approved' || app.offerLetterData },
-        { label: 'Offer', done: !!app.offerLetterData },
-        { label: 'Joined', done: !!app.actualJoiningDate },
-        { label: 'Appointed', done: !!app.apptLetterData },
-        { label: 'Confirmed', done: app.status === 'confirmed' }
-    ];
-    timeline.innerHTML = steps.map((s, i) => `
-        <div class="timeline-item-premium ${s.done ? 'done' : ''}">
-            <div class="timeline-dot-premium">${s.done ? '✓' : i + 1}</div>
-            <div class="timeline-label-premium">${s.label}</div>
-        </div>
-    `).join('');
+        if (document.getElementById('dash_fullName')) document.getElementById('dash_fullName').innerText = app.fullName || 'User';
+        if (document.getElementById('dash_email')) document.getElementById('dash_email').innerText = app.email || '';
+        
+        const divEl = document.getElementById('dash_division');
+        const desEl = document.getElementById('dash_designation');
+        if (divEl) divEl.innerText = app.division || app.formData?.division || 'Division Not Set';
+        if (desEl) desEl.innerText = app.designation || app.formData?.designation || 'Role Not Set';
+        
+        if (document.getElementById('applicantAvatar') && app.fullName) {
+            document.getElementById('applicantAvatar').innerText = app.fullName[0].toUpperCase();
+        }
+        
+        const badge = document.getElementById('dash_statusBadge');
+        if (badge) {
+            badge.innerText = (app.status || '').toUpperCase();
+            badge.className = `badge ${app.status || 'draft'}`;
+        }
 
-    // Verification Deep Dive
-    const statusTitle = document.getElementById('statusTitle');
-    const statusDesc = document.getElementById('statusDesc');
-    
-    if (app.status === 'submitted') {
-        statusTitle.innerText = "Documents Under Verification";
-        statusDesc.innerText = "Our compliance team is currently reviewing your uploaded credentials. You will be notified the moment your Offer Section is activated.";
-    } else if (app.status === 'rejected') {
-        statusTitle.innerText = "Action Required: Re-submission";
-        statusDesc.innerText = "Some of your documents were not approved. Please check the list below and resubmit them.";
-    }
-
-    // Document Status List
-    const docsList = document.getElementById('dash_docsList');
-    const required = companyData.requiredDocs || [];
-    const checks = app.verificationChecks || {};
-    
-    docsList.innerHTML = required.map(d => {
-        const status = checks[d];
-        const isApproved = status === true;
-        const isRejected = status === 'rejected';
-        return `
-            <div class="doc-status-row">
-                <div class="doc-info">
-                    <span class="name">${d}</span>
-                    <span class="tag ${isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending')}">
-                        ${isApproved ? 'Approved' : (isRejected ? 'Rejected' : 'Pending')}
-                    </span>
+        // Timeline
+        const timeline = document.getElementById('onboardingTimeline');
+        if (timeline) {
+            const steps = [
+                { label: 'Register', done: true },
+                { label: 'Submit', done: !!app.submittedAt || ['submitted', 'approved'].includes(app.status) },
+                { label: 'Verify', done: app.status === 'approved' || app.offerLetterData },
+                { label: 'Offer', done: !!app.offerLetterData },
+                { label: 'Joined', done: !!app.actualJoiningDate },
+                { label: 'Appointed', done: !!app.apptLetterData },
+                { label: 'Confirmed', done: app.status === 'confirmed' }
+            ];
+            timeline.innerHTML = steps.map((s, i) => `
+                <div class="timeline-item-premium ${s.done ? 'done' : ''}">
+                    <div class="timeline-dot-premium">${s.done ? '✓' : i + 1}</div>
+                    <div class="timeline-label-premium">${s.label}</div>
                 </div>
-                ${isRejected ? `<button class="btn btn-sm btn-outline" onclick="triggerDocResubmit('${d}')">Resubmit</button>` : ''}
-            </div>
-        `;
-    }).join('');
+            `).join('');
+        }
 
-    // Offer Section
-    if (app.offerLetterData) {
-        document.getElementById('offerLetterSection').classList.remove('hidden');
-        document.getElementById('waitingStatusCard').classList.add('hidden');
+        // Verification Deep Dive
+        const statusTitle = document.getElementById('statusTitle');
+        const statusDesc = document.getElementById('statusDesc');
         
-        const previewer = document.getElementById('offerPreviewer');
-        if (app.offerLetterData.startsWith('data:application/pdf')) {
-            previewer.innerHTML = `<iframe src="${app.offerLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
-        } else {
-            previewer.innerHTML = app.offerLetterData;
-            applyLetterheadStyles('offerPreviewer');
+        if (statusTitle && statusDesc) {
+            if (app.status === 'submitted') {
+                statusTitle.innerText = "Documents Under Verification";
+                statusDesc.innerText = "Our compliance team is currently reviewing your uploaded credentials. You will be notified the moment your Offer Section is activated.";
+            } else if (app.status === 'rejected') {
+                statusTitle.innerText = "Action Required: Re-submission";
+                statusDesc.innerText = "Some of your documents were not approved. Please check the list below and resubmit them.";
+            } else if (app.status === 'approved') {
+                statusTitle.innerText = "Welcome Aboard!";
+                statusDesc.innerText = "Your application has been approved. Please review and accept your offer letter below.";
+            }
         }
-        
-        if (app.offerAccepted) {
-            document.getElementById('acceptanceForm').classList.add('hidden');
-            document.getElementById('offerAcceptedStatus').classList.remove('hidden');
-            document.getElementById('confirmedJoiningDateText').innerText = formatDatePretty(app.actualJoiningDate);
-        }
-    } else {
-        document.getElementById('offerLetterSection').classList.add('hidden');
-        document.getElementById('waitingStatusCard').classList.remove('hidden');
-    }
 
-    // Appointment Section
-    if (app.apptLetterData) {
-        document.getElementById('appointmentLetterSection').classList.remove('hidden');
-        const previewer = document.getElementById('apptPreviewer');
-        if (app.apptLetterData.startsWith('data:application/pdf')) {
-            previewer.innerHTML = `<iframe src="${app.apptLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
-        } else {
-            previewer.innerHTML = app.apptLetterData;
-            applyLetterheadStyles('apptPreviewer');
+        // Document Status List
+        const docsList = document.getElementById('dash_docsList');
+        if (docsList) {
+            const required = companyData.requiredDocs || [];
+            const checks = app.verificationChecks || {};
+            
+            docsList.innerHTML = required.map(d => {
+                const status = checks[d];
+                const isApproved = status === true;
+                const isRejected = status === 'rejected';
+                return `
+                    <div class="doc-status-row">
+                        <div class="doc-info">
+                            <span class="name">${d}</span>
+                            <span class="tag ${isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending')}">
+                                ${isApproved ? 'Approved' : (isRejected ? 'Rejected' : 'Pending')}
+                            </span>
+                        </div>
+                        ${isRejected ? `<button class="btn btn-sm btn-outline" onclick="triggerDocResubmit('${d}')">Resubmit</button>` : ''}
+                    </div>
+                `;
+            }).join('');
         }
-    } else {
-        document.getElementById('appointmentLetterSection').classList.add('hidden');
+
+        // Offer Section
+        if (app.offerLetterData) {
+            const ols = document.getElementById('offerLetterSection');
+            const wsc = document.getElementById('waitingStatusCard');
+            if (ols) ols.classList.remove('hidden');
+            if (wsc) wsc.classList.add('hidden');
+            
+            const previewer = document.getElementById('offerPreviewer');
+            if (previewer) {
+                if (app.offerLetterData.startsWith('data:application/pdf')) {
+                    previewer.innerHTML = `<iframe src="${app.offerLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
+                } else {
+                    previewer.innerHTML = app.offerLetterData;
+                    applyLetterheadStyles('offerPreviewer');
+                }
+            }
+            
+            if (app.offerAccepted) {
+                const af = document.getElementById('acceptanceForm');
+                const oas = document.getElementById('offerAcceptedStatus');
+                const cjd = document.getElementById('confirmedJoiningDateText');
+                if (af) af.classList.add('hidden');
+                if (oas) oas.classList.remove('hidden');
+                if (cjd) cjd.innerText = formatDatePretty(app.actualJoiningDate);
+            }
+        } else {
+            const ols = document.getElementById('offerLetterSection');
+            const wsc = document.getElementById('waitingStatusCard');
+            if (ols) ols.classList.add('hidden');
+            if (wsc) wsc.classList.remove('hidden');
+        }
+
+        // Appointment Section
+        if (app.apptLetterData) {
+            const als = document.getElementById('appointmentLetterSection');
+            if (als) als.classList.remove('hidden');
+            const previewer = document.getElementById('apptPreviewer');
+            if (previewer) {
+                if (app.apptLetterData.startsWith('data:application/pdf')) {
+                    previewer.innerHTML = `<iframe src="${app.apptLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
+                } else {
+                    previewer.innerHTML = app.apptLetterData;
+                    applyLetterheadStyles('apptPreviewer');
+                }
+            }
+        } else {
+            const als = document.getElementById('appointmentLetterSection');
+            if (als) als.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error('❌ Dashboard Render Error:', err);
     }
+}
 }
 
 function toggleApptPreview() {

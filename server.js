@@ -442,23 +442,25 @@ app.post('/api/resend-pin', async (req, res) => {
 // Applicant Login
 app.post('/api/applicant-login', async (req, res) => {
     try {
+        const fs = require('fs');
+        const logMsg = `[${new Date().toISOString()}] LOGIN REQ: ${JSON.stringify(req.body)}\n`;
+        fs.appendFileSync('login_debug.log', logMsg);
+        
         let { email, password } = req.body;
         email = (email || "").trim();
         password = (password || "").trim();
         
-        // 1. Find by email first (Case-Insensitive)
-        const applicant = await Applicant.findOne({ 
-            email: { $regex: new RegExp("^" + email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "$", "i") }
-        });
+        // 1. Fetch applicants (Case-Insensitive Search)
+        const applicants = await Applicant.find({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+        
+        // 2. Manual match to avoid regex/index quirks
+        const applicant = applicants.find(a => 
+            a.email.toLowerCase() === email.toLowerCase() && 
+            a.password.trim() === password.trim()
+        );
 
         if (!applicant) {
-            console.log(`❌ [LOGIN FAILED] Email Not Found: ${email}`);
-            return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });
-        }
-
-        // 2. Compare PIN (Password)
-        if (applicant.password !== password) {
-            console.log(`❌ [LOGIN FAILED] Incorrect PIN for ${email}. Expected: ${applicant.password}, Received: ${password}`);
+            console.log(`❌ [LOGIN FAIL] ${email} / ${password}`);
             return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });
         }
 
