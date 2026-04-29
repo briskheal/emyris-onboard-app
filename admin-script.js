@@ -2479,6 +2479,25 @@ function syncEditorStyles() {
     }
 }
 
+function trimDocument() {
+    const editor = document.getElementById('unifiedEditor');
+    if (!editor) return;
+    
+    // Remove trailing <p><br></p> or <div><br></div> or empty paragraphs
+    let html = editor.innerHTML;
+    const regex = /(<(p|div|br)[^>]*>\s*(&nbsp;|<br>)?\s*<\/\2>|<br\s*\/?>)\s*$/gi;
+    
+    let iterations = 0;
+    while (regex.test(html) && iterations < 20) {
+        html = html.replace(regex, '');
+        iterations++;
+    }
+    
+    editor.innerHTML = html.trim() || "<p><br></p>";
+    syncEditorStyles();
+    showToast("🧹 Document trimmed and sanitized", "success");
+}
+
 function applyFidelityZoom(val) {
     const editor = document.getElementById('unifiedEditor');
     const preview = document.getElementById('livePreviewFrame');
@@ -3065,9 +3084,12 @@ function applyBrandingLayers(el) {
     
     if (lhAsset?.data) {
         // Calculate pages needed based on content height
+        // Use a 10mm tolerance to prevent "ghost" pages from tiny overflows
         const pageH_px = 297 * 3.7795275591;
+        const tolerance_px = 10 * 3.7795275591; 
         const totalH_px = el.scrollHeight;
-        const pages = Math.max(1, Math.ceil(totalH_px / pageH_px));
+        
+        const pages = Math.max(1, Math.ceil((totalH_px - tolerance_px) / pageH_px));
         
         for (let i = 0; i < pages; i++) {
             const img = document.createElement('img');

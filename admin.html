@@ -942,8 +942,9 @@
 
                                     <div id="livePreviewContainer" class="hidden" style="margin-top: 0; position: relative;">
                                         <div class="preview-control-overlay">
-                                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                            <div style="display: flex; align-items: center; gap: 0.5rem;">
                                                 <h4 style="color: var(--accent); margin: 0; font-size: 0.9rem;">📄 Fidelity Preview</h4>
+                                                <button class="btn btn-sm" onclick="trimDocument()" style="padding: 0.3rem 0.8rem; background: rgba(255,255,255,0.1); font-size: 0.7rem; color: white; border: 1px solid rgba(255,255,255,0.2);">🧹 Trim White-space</button>
                                                 <button class="btn btn-sm btn-primary" onclick="previewActiveTemplate()" style="padding: 0.4rem 1rem; background: #10b981; border-color: #10b981;">Download PDF</button>
                                             </div>
                                             <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)" style="color: #ef4444; border-color: #ef4444; padding: 0.4rem 1rem; font-size: 0.75rem;">Return to Editor</button>
