@@ -2329,7 +2329,7 @@ function fillEditorWithRealData(skipConfirm = false) {
     const filled = fillLetterPlaceholders(masterBase, applicant);
     editor.innerHTML = filled;
     window.isDataPopulated = true; // Mark as containing real data
-    showToast(`ΓÜí Data loaded for ${applicant.fullName} ΓÇö ready to issue.`, "success");
+    showToast(`Data loaded for ${applicant.fullName} - ready to issue.`, "success");
 }
 
 async function saveActiveTemplate() {
