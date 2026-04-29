@@ -2430,10 +2430,11 @@ function syncEditorStyles() {
     else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
     else if (type === 'georgia') fontStack = "Georgia, serif";
     
-    // 1. Core Typography
+    // 1. Core Typography (Synchronized with Preview)
     editor.style.fontSize = `${size}pt`;
     editor.style.fontFamily = fontStack;
     editor.style.textAlign = align;
+    editor.style.lineHeight = "1.4"; // STRICT FIDELITY
     
     // 2. A4 Dimensions & Padding
     editor.style.width = '210mm';
@@ -2442,6 +2443,7 @@ function syncEditorStyles() {
     editor.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
     editor.style.paddingLeft = '20mm';
     editor.style.paddingRight = '20mm';
+    editor.style.boxSizing = 'border-box';
     
     // 3. Virtual Paper Aesthetics
     editor.style.backgroundColor = '#ffffff';
@@ -3021,10 +3023,23 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     
     frame.innerHTML = rendered;
     
-    // 3. Strict A4 Layout Parity
+    // 3. Strict A4 Layout Parity (Synchronized with Editor)
+    const size = document.getElementById('letterFontSize')?.value || 11;
+    const type = document.getElementById('letterFontType')?.value || 'helvetica';
+    const align = document.getElementById('letterAlignment')?.value || 'left';
     const marginT_mm = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
     const marginB_mm = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
     const PX_PER_MM = 3.7795275591;
+
+    let fontStack = "'Plus Jakarta Sans', sans-serif";
+    if (type === 'times') fontStack = "'Times New Roman', Times, serif";
+    else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+    else if (type === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+    else if (type === 'courier') fontStack = "'Courier New', monospace";
+    else if (type === 'roboto') fontStack = "'Roboto', sans-serif";
+    else if (type === 'outfit') fontStack = "'Outfit', sans-serif";
+    else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
+    else if (type === 'georgia') fontStack = "Georgia, serif";
 
     frame.style.width = '210mm';
     frame.style.minHeight = '297mm';
@@ -3032,8 +3047,15 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     frame.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
     frame.style.paddingLeft = '20mm';
     frame.style.paddingRight = '20mm';
+    frame.style.boxSizing = 'border-box';
     frame.style.backgroundColor = '#ffffff';
     frame.style.color = '#1e293b';
+    
+    // Typography Sync
+    frame.style.fontSize = `${size}pt`;
+    frame.style.fontFamily = fontStack;
+    frame.style.textAlign = align;
+    frame.style.lineHeight = "1.4"; // STRICT FIDELITY
     
     // 4. Letterhead Asset
     if (!skipLetterhead) {
