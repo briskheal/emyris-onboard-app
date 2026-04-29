@@ -313,20 +313,24 @@ function logoutApplicant() {
 
 // --- ONBOARDING FLOW ---
 
+// Statuses that mean "beyond the onboarding form" — show the hub dashboard
+const POST_SUBMISSION_STATUSES = ['submitted', 'approved', 'onboarding', 'joined', 'confirmed', 'rejected'];
+
 function resumeApplication() {
-    if (['submitted', 'approved'].includes(currentApplicant.status) || currentApplicant.offerAccepted) {
+    const app = currentApplicant;
+    const isPostSubmission = POST_SUBMISSION_STATUSES.includes(app.status);
+    const hasOffer = !!(app.offerAccepted || app.offerLetterData);
+
+    if (isPostSubmission || hasOffer) {
         renderApplicantDashboard();
         updateView('applicantDashboard');
         return;
     }
 
-    // New or Draft
+    // Still in draft — show the multi-step form
     updateView('onboardingForm');
     currentStep = 1;
-    
-    // Crucial: Populate dropdowns so they have options before pre-filling
-    populateDropdowns(); 
-    
+    populateDropdowns();
     renderStep(1);
     prefillForm();
     renderApplicantDocuments();

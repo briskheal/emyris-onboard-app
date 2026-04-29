@@ -448,10 +448,14 @@ app.post('/api/applicant-login', async (req, res) => {
         }
 
         if (!applicant.canLogin) {
-            let reason = "Your application reached a non-editable state.";
-            if (applicant.status === 'approved') reason = "Your application has been approved.";
-            if (applicant.status === 'rejected') reason = "Your application was not accepted at this time.";
-            return res.status(403).json({ success: false, message: `Access Locked: ${reason}` });
+            let reason = "Your application is in a stage that does not require portal access.";
+            if (applicant.status === 'submitted')  reason = "Your form has been submitted and is under HR review. You will be notified by email.";
+            if (applicant.status === 'approved')   reason = "Your application has been approved. Please check your email for your offer letter.";
+            if (applicant.status === 'onboarding') reason = "You are already onboarded. Please contact HR for any queries.";
+            if (applicant.status === 'joined')     reason = "You have already joined. Your onboarding portal access is now closed.";
+            if (applicant.status === 'confirmed')  reason = "Your employment has been confirmed. Portal access is no longer required.";
+            if (applicant.status === 'rejected')   reason = "Your application was not accepted at this time. Please contact HR for details.";
+            return res.status(403).json({ success: false, message: `Portal Notice: ${reason}` });
         }
 
         // 7-Day Auto-Lock Logic for Approved Applicants
