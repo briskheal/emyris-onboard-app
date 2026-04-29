@@ -223,6 +223,9 @@
                                 <div class="avatar-lg" id="applicantAvatar">?</div>
                                 <h2 id="dash_fullName">Loading...</h2>
                                 <p id="dash_email"> applicant@email.com</p>
+                                <p style="margin:5px 0 15px 0; font-size:0.85rem; font-weight:700; color:var(--primary-light); text-transform: uppercase;">
+                                    <span id="dash_division">...</span> • <span id="dash_designation">...</span>
+                                </p>
                                 <div id="dash_statusBadge" class="badge">DRAFT</div>
                             </div>
                             
@@ -544,125 +547,7 @@
                 </div>
             </div>
 
-            <!-- APPLICANT DASHBOARD (RESUME JOURNEY) -->
-            <div class="view-section hidden" id="applicantDashboard">
-                <div class="dashboard-header">
-                    <div style="display:flex; align-items:center; gap:1.5rem;">
-                        <div class="avatar-large" id="applicantAvatar">?</div>
-                        <div>
-                            <h2 id="dash_fullName" style="margin:0; font-size:1.8rem; letter-spacing:-0.5px;">...</h2>
-                            <p id="dash_email" style="margin:0; color:var(--text-muted); font-size:0.9rem;">...</p>
-                            <p style="margin:5px 0 0 0; font-size:0.85rem; font-weight:700; color:var(--primary-light);">
-                                <span id="dash_division">...</span> • <span id="dash_designation">...</span>
-                            </p>
-                        </div>
-                    </div>
-                    <div class="status-pill">
-                        <span id="dash_statusBadge" class="badge">DRAFT</span>
-                    </div>
-                </div>
 
-                <div class="dashboard-grid">
-                    <!-- Left: Progress & Documents -->
-                    <div class="dash-column">
-                        <div class="dash-card">
-                            <div class="dash-card-header">
-                                <h3>📈 Your Onboarding Progress</h3>
-                                <p>Stay updated on your application status.</p>
-                            </div>
-                            <div class="dash-card-body">
-                                <div class="onboarding-timeline" id="onboardingTimeline">
-                                    <!-- Dynamic Timeline -->
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="dash-card">
-                            <div class="dash-card-header">
-                                <h3>📂 Document Verification</h3>
-                                <p>Track approval of your submitted testimonials.</p>
-                            </div>
-                            <div class="dash-card-body">
-                                <div id="dash_docsList" class="docs-status-grid">
-                                    <!-- Dynamic List -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Letters & Actions -->
-                    <div class="dash-column">
-                        <!-- Waiting Pulse (Shown if no letter yet) -->
-                        <div id="waitingStatusCard" class="dash-card">
-                            <div class="dash-card-header">
-                                <h3>🏋️ Application Pulse</h3>
-                                <p>Checking status within our pipeline.</p>
-                            </div>
-                            <div class="dash-card-body">
-                                <div class="status-summary-box">
-                                    <div class="status-icon-pending">🏋️</div>
-                                    <h4 id="statusTitle">Review in Progress</h4>
-                                    <p id="statusDesc">Our compliance team is currently reviewing your uploaded credentials. You will be notified the moment your Offer Section is activated.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Offer Section -->
-                        <div id="offerLetterSection" class="dash-card hidden">
-                            <div class="dash-card-header">
-                                <h3>🎁 Official Offer of Employment</h3>
-                                <p>Review and accept your official offer below.</p>
-                            </div>
-                            <div class="dash-card-body">
-                                <div style="display:flex; gap:0.8rem; margin-bottom:1.5rem;">
-                                    <button class="btn btn-primary btn-sm" onclick="toggleOfferPreview()">👀 View Offer</button>
-                                    <button class="btn btn-outline btn-sm" onclick="downloadMyLetter('offer')">📥 Download PDF</button>
-                                </div>
-                                
-                                <div class="letter-preview-container">
-                                    <div id="offerPreviewer" class="letter-preview-box hidden">
-                                        <!-- Rendered Content -->
-                                    </div>
-                                </div>
-                                
-                                <div id="acceptanceForm" class="acceptance-panel" style="margin-top:1.5rem; padding:1.5rem; background:rgba(99,102,241,0.05); border:1px solid rgba(99,102,241,0.1); border-radius:12px;">
-                                    <h4 style="margin-top:0; color:var(--accent);">Finalize Onboarding</h4>
-                                    <div class="form-group">
-                                        <label>Confirm Your Actual Date of Joining (ADOJ)*</label>
-                                        <input type="text" id="actualJoiningDateInput" class="form-input" placeholder="DD-MM-YYYY">
-                                        <small style="color:var(--text-muted); display:block; margin-top:5px;">This will trigger your Appointment cycle.</small>
-                                    </div>
-                                    <button class="btn btn-primary" onclick="acceptOfferLetter()" style="width:100%; margin-top:1rem;">Accept Offer & Confirm Joining 🚀</button>
-                                </div>
-
-                                <div id="offerAcceptedStatus" class="dash-alert success hidden">
-                                    <div style="font-size:1.1rem; margin-bottom:4px; font-weight:bold;">✅ Offer Accepted!</div>
-                                    <p style="margin:0;">Joining confirmed for: <strong id="confirmedJoiningDateText">...</strong></p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Appointment Section -->
-                        <div id="appointmentLetterSection" class="dash-card hidden">
-                            <div class="dash-card-header">
-                                <h3>📜 Appointment Order</h3>
-                                <p>Your official appointment order is now available.</p>
-                            </div>
-                            <div class="dash-card-body">
-                                <button class="btn btn-primary btn-sm" style="width:100%; margin-bottom:0.8rem;" onclick="toggleApptPreview()">👀 View Appointment Order</button>
-                                <div class="letter-preview-container">
-                                    <div id="apptPreviewer" class="letter-preview-box hidden"></div>
-                                </div>
-                                <button class="btn btn-outline btn-sm" style="width:100%;" onclick="downloadMyLetter('appt')">📥 Download Official Copy</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div style="text-align:center; margin-top:2rem;">
-                    <button class="btn btn-secondary" onclick="logoutApplicant()">Logout Safely</button>
-                </div>
-            </div>
         </main>
     </div>
     <script src="script.js"></script>
