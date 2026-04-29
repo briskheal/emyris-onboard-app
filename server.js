@@ -443,17 +443,26 @@ app.post('/api/resend-pin', async (req, res) => {
 app.post('/api/applicant-login', async (req, res) => {
     try {
         let { email, password } = req.body;
+        email = (email || "").trim();
         password = (password || "").trim();
         
-        // Use regex for case-insensitive email match to handle legacy mixed-case records
+        // 1. Find by email first (Case-Insensitive)
         const applicant = await Applicant.findOne({ 
-            email: { $regex: new RegExp("^" + email + "$", "i") }, 
-            password: password 
+            email: { $regex: new RegExp("^" + email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "$", "i") }
         });
 
         if (!applicant) {
+            console.log(`❌ [LOGIN FAILED] Email Not Found: ${email}`);
             return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });
         }
+
+        // 2. Compare PIN (Password)
+        if (applicant.password !== password) {
+            console.log(`❌ [LOGIN FAILED] Incorrect PIN for ${email}. Expected: ${applicant.password}, Received: ${password}`);
+            return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });
+        }
+
+        console.log(`✅ [LOGIN SUCCESS] Email: ${email}`);
 
         if (!applicant.canLogin) {
             // Special bypass for submitted/approved applicants so they can see their dashboard

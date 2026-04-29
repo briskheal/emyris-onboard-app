@@ -363,8 +363,19 @@ function prefillForm() {
         for (const [key, val] of Object.entries(currentApplicant.formData)) {
             const field = form.elements[key];
             if (field) {
-                if (field.type === 'checkbox') field.checked = val;
-                else field.value = val;
+                if (field.type === 'checkbox') {
+                    field.checked = val;
+                } else if (field.type === 'date' && val && val.includes('-')) {
+                    // Convert DD-MM-YYYY to YYYY-MM-DD for native date picker
+                    const parts = val.split('-');
+                    if (parts.length === 3 && parts[0].length === 2) {
+                        field.value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    } else {
+                        field.value = val;
+                    }
+                } else {
+                    field.value = val;
+                }
             }
         }
         // Sync salary words if prefilled
