@@ -187,6 +187,8 @@ const applicantSchema = new mongoose.Schema({
     salary: String,
     dob: Date,
     address: String,
+    pin: String,
+    state: String,
     empCode: String,
     refNo: String,
     salaryBreakup: { type: Object, default: {} },
@@ -229,6 +231,33 @@ const Asset = connAssets ? connAssets.model('Asset', assetSchema) : mongoose.mod
 // Startup logic
 async function initializeApp() {
     console.log('🚀 Server starting - Clean Slate protocol active.');
+    await seedData();
+}
+
+async function seedData() {
+    try {
+        const divCount = await Division.countDocuments();
+        if (divCount === 0) {
+            console.log('🌱 Seeding default divisions...');
+            await Division.create([
+                { name: 'SALES', active: true },
+                { name: 'MARKETING', active: true },
+                { name: 'OPERATIONS', active: true }
+            ]);
+        }
+        const hqCount = await HQ.countDocuments();
+        if (hqCount === 0) {
+            console.log('🌱 Seeding default HQs...');
+            await HQ.create([
+                { name: 'DELHI', active: true },
+                { name: 'MUMBAI', active: true },
+                { name: 'KOLKATA', active: true },
+                { name: 'CHENNAI', active: true }
+            ]);
+        }
+    } catch (e) {
+        console.error('❌ Seeding failed', e);
+    }
 }
 if (connMain) connMain.once('open', initializeApp);
 else initializeApp();
@@ -485,6 +514,9 @@ app.post('/api/submit-onboarding', async (req, res) => {
             if (s.includes('T')) return new Date(s); // Already ISO
             const parts = s.split('-');
             if (parts.length !== 3) return null;
+            // Handle YYYY-MM-DD (Native Date Picker)
+            if (parts[0].length === 4) return new Date(s);
+            // Handle DD-MM-YYYY (Legacy)
             return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
         };
 
@@ -499,6 +531,8 @@ app.post('/api/submit-onboarding', async (req, res) => {
                 actualJoiningDate: parseDMY(formData.joiningDate),
                 dob: parseDMY(formData.dob),
                 address: formData.address || "",
+                pin: formData.pin || "",
+                state: formData.state || "",
                 salary: formData.salary || ""
             },
             { new: true }
@@ -562,6 +596,8 @@ app.post('/api/applicant/save-draft', async (req, res) => {
                 actualJoiningDate: parseDMY(formData.joiningDate),
                 dob: parseDMY(formData.dob),
                 address: formData.address || "",
+                pin: formData.pin || "",
+                state: formData.state || "",
                 salary: formData.salary || ""
             }
         );
@@ -689,11 +725,11 @@ app.get('/api/admin/applicant-pin/:email', async (req, res) => {
 // FAST-TRACK EXISTING STAFF API
 app.post('/api/admin/add-existing-staff', async (req, res) => {
     try {
-        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo } = req.body;
+        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo, pin, state } = req.body;
 
         // Validation: All fields are mandatory
-        if (!fullName || !email || !phone || !empCode || !designation || !targetSalary || !division || !hq || !joinDate || !dob || !address || !reportingTo) {
-            return res.status(400).json({ success: false, message: 'All fields (Name, Email, Phone, Code, Desg, Div, HQ, Reporting, Dates, Salary, Address) are mandatory.' });
+        if (!fullName || !email || !phone || !empCode || !designation || !targetSalary || !division || !hq || !joinDate || !dob || !address || !reportingTo || !pin || !state) {
+            return res.status(400).json({ success: false, message: 'All fields (Name, Email, Phone, Code, Desg, Div, HQ, Reporting, Dates, Salary, Address, Pincode, State) are mandatory.' });
         }
 
         const existingEmail = await Applicant.findOne({ email });
@@ -729,16 +765,20 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             };
         }
 
-        // Parse DD-MM-YYYY
+        // Robust Date Parsing
         const parseDMY = (s) => {
             if (!s || typeof s !== 'string') return null;
+            if (s.includes('T')) return new Date(s); // Already ISO
             const parts = s.split('-');
             if (parts.length !== 3) return null;
+            // Handle YYYY-MM-DD (Native Date Picker)
+            if (parts[0].length === 4) return new Date(s);
+            // Handle DD-MM-YYYY (Legacy)
             return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
         };
 
-        const joinDateObj = parseDMY(joinDate) || new Date(joinDate);
-        const dobObj = parseDMY(dob) || new Date(dob);
+        const joinDateObj = parseDMY(joinDate);
+        const dobObj = parseDMY(dob);
 
         // Construct the fast-tracked profile directly into 'approved' state
         const newStaff = new Applicant({
@@ -754,10 +794,14 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             hq: hq || 'Unassigned',
             empCode: empCode || '',
             actualJoiningDate: joinDateObj,
+            pin,
+            state,
             formData: {
                 designation: designation || 'Employee',
                 salary: formattedSalary.toString(),
                 dob: dob, 
+                pin,
+                state,
                 current_address: address || '',
                 first_name: fullName.split(' ')[0],
                 last_name: fullName.split(' ').slice(1).join(' ') || ''
@@ -1549,10 +1593,14 @@ app.get('/api/company-data', async (req, res) => {
             logo: "" // Logo logic handled by asset hydration if needed
         };
 
-        // Hydrate logo
+        // Hydrate logo and letterhead
         if (company.activeLogoId) {
             const asset = await Asset.findById(company.activeLogoId).lean();
             if (asset) data.logo = asset.data;
+        }
+        if (company.activeLetterheadId) {
+            const asset = await Asset.findById(company.activeLetterheadId).lean();
+            if (asset) data.letterheadImage = [asset];
         }
 
         res.json(data);

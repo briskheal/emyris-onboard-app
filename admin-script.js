@@ -99,6 +99,38 @@ function openExistingStaffModal() {
         // Populate designations grouped by department
         populateDesignationSelect('ex_designation');
         populateManagers();
+
+        // Add PIN Listener for automated state selection
+        const exPinInput = document.getElementById('ex_pin');
+        if (exPinInput) {
+            exPinInput.addEventListener('input', async (e) => {
+                const pin = e.target.value;
+                if (pin.length === 6) {
+                    await fetchStateFromPinAdmin(pin);
+                }
+            });
+        }
+    }
+}
+
+async function fetchStateFromPinAdmin(pin) {
+    try {
+        const stateInput = document.getElementById('ex_state');
+        if (!stateInput) return;
+
+        stateInput.placeholder = "🔍 Detecting...";
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+        const data = await res.json();
+        
+        if (data && data[0] && data[0].Status === "Success") {
+            const details = data[0].PostOffice[0];
+            stateInput.value = details.State;
+            showToast(`Location detected: ${details.State}`, "success");
+        } else {
+            stateInput.placeholder = "Not found";
+        }
+    } catch (e) {
+        console.warn("State detection failed", e);
     }
 }
 
@@ -147,6 +179,8 @@ async function submitExistingStaff(event) {
         email: document.getElementById('ex_email').value,
         phone: document.getElementById('ex_phone').value,
         dob: document.getElementById('ex_dob').value,
+        pin: document.getElementById('ex_pin').value,
+        state: document.getElementById('ex_state').value,
         address: document.getElementById('ex_address').value,
         empCode: document.getElementById('ex_empCode').value,
         designation: document.getElementById('ex_designation').value,
@@ -3809,8 +3843,6 @@ async function publishLetterToHub() {
     finally { unlockUI(); }
 }
 
-
-window.onload = initializeApp;
 
 // --- SYSTEM MAINTENANCE RE-AUTH LOGIC ---
 function toggleReauthForm(show) {

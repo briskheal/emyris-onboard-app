@@ -11,33 +11,68 @@ let activeUploads = 0;
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', initializeApp);
 
-// Global listener to auto-format DD-MM-YYYY inputs
-document.addEventListener('input', function (e) {
-    if (e.target.placeholder === 'DD-MM-YYYY') {
-        let val = e.target.value.replace(/\D/g, '');
-        if (val.length > 8) val = val.substring(0, 8);
-        
-        let formatted = '';
-        if (val.length > 0) {
-            formatted = val.substring(0, 2);
-            if (val.length > 2) {
-                formatted += '-' + val.substring(2, 4);
-                if (val.length > 4) {
-                    formatted += '-' + val.substring(4, 8);
-                }
-            }
-        }
-        e.target.value = formatted;
-    }
-});
-
 async function initializeApp() {
     console.log('🚀 Applicant Portal initializing...');
     initBackgroundAnimations();
-    await fetchCompanyData();
-    
+    initCardEffects(); // Magnetic/Glow effects for landing cards
+    // PIN Code -> State Auto-Selection
+    const pinInput = document.getElementById('pin');
+    if (pinInput) {
+        pinInput.addEventListener('input', async (e) => {
+            const pin = e.target.value;
+            if (pin.length === 6) {
+                await fetchStateFromPin(pin);
+            }
+        });
+    }
+
     // Check for existing session (optional, for now we just show landing)
     updateView('landingPage');
+}
+
+async function fetchStateFromPin(pin) {
+    try {
+        const stateInput = document.getElementById('state');
+        const cityInput = document.getElementById('city');
+        if (!stateInput) return;
+
+        stateInput.placeholder = "🔍 Detecting State...";
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+        const data = await res.json();
+        
+        if (data && data[0] && data[0].Status === "Success") {
+            const details = data[0].PostOffice[0];
+            stateInput.value = details.State;
+            if (cityInput && !cityInput.value) {
+                cityInput.value = details.District;
+            }
+            showToast(`Location detected: ${details.District}, ${details.State}`, "success");
+        } else {
+            stateInput.placeholder = "";
+        }
+    } catch (e) {
+        console.warn("State detection failed", e);
+    }
+}
+
+function initBackgroundAnimations() {
+    // Already handled via CSS keyframes for .blob, 
+    // but we can add more GSAP magic here if needed.
+    console.log('🎨 Background animations active');
+}
+
+function initCardEffects() {
+    document.addEventListener('mousemove', (e) => {
+        const cards = document.querySelectorAll('.lcard');
+        cards.forEach(card => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            card.style.setProperty('--x', `${x}px`);
+            card.style.setProperty('--y', `${y}px`);
+        });
+    });
 }
 
 async function fetchCompanyData() {
@@ -641,6 +676,51 @@ async function deleteApplicantDoc(assetId, category) {
 
 // --- DASHBOARD RENDERING ---
 
+function applyLetterheadStyles(elementId) {
+    const frame = document.getElementById(elementId);
+    if (!frame || !companyData) return;
+
+    // 1. Configs from Company Data
+    const size = companyData.letterFontSize || 11;
+    const fontType = companyData.letterFontType || 'helvetica';
+    const align = companyData.letterAlignment || 'left';
+    const marginT = companyData.headerHeight || 65;
+    const marginB = companyData.footerHeight || 25;
+
+    let fontStack = "'Plus Jakarta Sans', sans-serif";
+    if (fontType === 'times') fontStack = "'Times New Roman', Times, serif";
+    else if (fontType === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
+    else if (fontType === 'verdana') fontStack = "Verdana, Geneva, sans-serif";
+    else if (fontType === 'courier') fontStack = "'Courier New', monospace";
+    else if (fontType === 'roboto') fontStack = "'Roboto', sans-serif";
+    else if (fontType === 'outfit') fontStack = "'Outfit', sans-serif";
+    else if (fontType === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
+    else if (fontType === 'georgia') fontStack = "Georgia, serif";
+
+    // 2. Apply Styles
+    frame.style.fontSize = `${size}pt`;
+    frame.style.fontFamily = fontStack;
+    frame.style.textAlign = align;
+    frame.style.paddingTop = `${marginT}mm`;
+    frame.style.paddingBottom = `${marginB}mm`;
+    frame.style.lineHeight = "1.5";
+
+    // 3. Apply Letterhead Image
+    if (companyData.letterheadImage && companyData.letterheadImage.length > 0) {
+        const val = companyData.letterheadImage[companyData.letterheadImage.length - 1].data;
+        frame.style.backgroundImage = `url(${val})`;
+        frame.style.backgroundSize = '100% auto';
+        frame.style.backgroundRepeat = 'repeat-y';
+        frame.style.backgroundPosition = 'top center';
+        frame.style.backgroundColor = '#ffffff';
+        frame.style.color = '#000000';
+    } else {
+        frame.style.backgroundImage = 'none';
+        frame.style.backgroundColor = '#ffffff';
+        frame.style.color = '#333333';
+    }
+}
+
 function renderApplicantDashboard() {
     const app = currentApplicant;
     document.getElementById('dash_fullName').innerText = app.fullName;
@@ -713,6 +793,7 @@ function renderApplicantDashboard() {
             previewer.innerHTML = `<iframe src="${app.offerLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
         } else {
             previewer.innerHTML = app.offerLetterData;
+            applyLetterheadStyles('offerPreviewer');
         }
         
         if (app.offerAccepted) {
@@ -733,6 +814,7 @@ function renderApplicantDashboard() {
             previewer.innerHTML = `<iframe src="${app.apptLetterData}" style="width:100%; height:400px; border:none; border-radius:8px;"></iframe>`;
         } else {
             previewer.innerHTML = app.apptLetterData;
+            applyLetterheadStyles('apptPreviewer');
         }
     } else {
         document.getElementById('appointmentLetterSection').classList.add('hidden');
@@ -740,54 +822,84 @@ function renderApplicantDashboard() {
 }
 
 function toggleApptPreview() {
-    const previewer = document.getElementById('apptPreviewer');
-    previewer.classList.toggle('hidden');
+    document.getElementById('apptPreviewer').classList.toggle('hidden');
+}
+
+function toggleOfferPreview() {
+    document.getElementById('offerPreviewer').classList.toggle('hidden');
 }
 
 async function acceptOfferLetter() {
     const adoj = document.getElementById('actualJoiningDateInput').value;
-    if (!adoj) return showToast("Please select your actual joining date.", "warning");
-
-    if (!confirm(`Are you sure you want to accept the offer with Joining Date: ${formatDatePretty(adoj)}?`)) return;
+    if (!adoj) { showToast("Select joining date", "warning"); return; }
+    if (!confirm("Confirm acceptance?")) return;
 
     try {
-        lockUI("Processing Acceptance...");
+        lockUI("Accepting...");
         const res = await fetch('/api/applicant/accept-offer', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: currentApplicant.email, actualJoiningDate: adoj })
         });
-        const result = await res.json();
-        if (result.success) {
-            currentApplicant = result.applicant;
+        if ((await res.json()).success) {
+            currentApplicant.offerAccepted = true;
+            currentApplicant.actualJoiningDate = adoj;
             renderApplicantDashboard();
-            showToast("Congratulations! Offer Accepted. 🎉");
-        } else {
-            showToast(result.message, "error");
+            showToast("Welcome aboard!");
         }
     } catch (e) {
-        showToast("Acceptance failed.", "error");
+        showToast("Error accepting offer.", "error");
     } finally {
         unlockUI();
     }
 }
 
-function toggleOfferPreview() {
-    const previewer = document.getElementById('offerPreviewer');
-    previewer.classList.toggle('hidden');
-}
-
 async function downloadMyLetter(type) {
-    if (!currentApplicant) return;
-    const data = type === 'offer' ? currentApplicant.offerLetterData : currentApplicant.apptLetterData;
+    const container = document.getElementById(type === 'offer' ? 'offerPreviewer' : 'apptPreviewer');
+    const app = currentApplicant;
+    if (!app) return;
+
+    const data = type === 'offer' ? app.offerLetterData : app.apptLetterData;
     if (!data) return showToast("Letter not available.", "warning");
 
-    const a = document.createElement('a');
-    a.href = data;
-    a.download = `EMYRIS_${type.toUpperCase()}_${currentApplicant.fullName.replace(/\s+/g, '_')}.pdf`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // If it's already a PDF data URI, just download it
+    if (data.startsWith('data:application/pdf')) {
+        const a = document.createElement('a');
+        a.href = data;
+        a.download = `EMYRIS_${type.toUpperCase()}_${app.fullName.replace(/\s+/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+    }
+
+    // Otherwise, generate PDF from the styled HTML container
+    showToast("Generating PDF...");
+    try {
+        const isHidden = container.classList.contains('hidden');
+        if (isHidden) container.classList.remove('hidden');
+
+        const canvas = await html2canvas(container, { 
+            scale: 2,
+            useCORS: true,
+            logging: false
+        });
+
+        if (isHidden) container.classList.add('hidden');
+
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`EMYRIS_${type.toUpperCase()}_${app.fullName.replace(/\s+/g, '_')}.pdf`);
+        showToast("PDF Downloaded!", "success");
+    } catch (e) {
+        console.error("PDF Generation Error:", e);
+        showToast("Failed to generate PDF.", "error");
+    }
 }
 
 async function triggerDocResubmit(category) {
@@ -817,58 +929,6 @@ async function triggerDocResubmit(category) {
         }
     };
     input.click();
-}
-
-async function acceptOfferLetter() {
-    const adoj = document.getElementById('actualJoiningDateInput').value;
-    if (!adoj) { showToast("Select joining date", "warning"); return; }
-    if (!confirm("Confirm acceptance?")) return;
-
-    try {
-        lockUI("Accepting...");
-        const res = await fetch('/api/applicant/accept-offer', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: currentApplicant.email, actualJoiningDate: adoj })
-        });
-        if ((await res.json()).success) {
-            currentApplicant.offerAccepted = true;
-            currentApplicant.actualJoiningDate = adoj;
-            renderApplicantDashboard();
-            showToast("Welcome aboard!");
-        }
-    } catch (e) {
-        showToast("Error accepting offer.", "error");
-    } finally {
-        unlockUI();
-    }
-}
-
-function toggleOfferPreview() {
-    document.getElementById('offerPreviewer').classList.toggle('hidden');
-}
-
-async function downloadMyLetter(type) {
-    // Basic implementation using jspdf if needed, or just redirect to API if available
-    showToast("Generating PDF...");
-    try {
-        const container = document.getElementById(type === 'offer' ? 'offerPreviewer' : 'apptPreviewer');
-        container.classList.remove('hidden');
-        
-        const canvas = await html2canvas(container, { scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`${type}_letter_${currentApplicant.email}.pdf`);
-        
-        if (type === 'offer') container.classList.add('hidden');
-    } catch (e) {
-        showToast("PDF generation failed.", "error");
-    }
 }
 
 // --- FINAL SUBMISSION ---
