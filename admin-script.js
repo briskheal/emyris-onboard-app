@@ -1405,7 +1405,7 @@ function renderVerificationProfile(app) {
         { label: 'Gender', val: fd.gender || 'N/A' },
         { label: 'Blood Group', val: fd.bloodGroup || 'N/A' },
         { label: 'Date of Birth', val: `<input type="text" id="v_dob" class="form-input-sm" value="${app.dob || (fd.dob ? formatDateDMY(fd.dob) : '')}" placeholder="DD-MM-YYYY" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
-        { label: 'Current Address', val: `${app.address || fd.address || 'N/A'}, ${fd.city || ''}, ${fd.state || ''} - ${fd.pin || ''}` },
+        { label: 'Current Address', val: `<textarea id="v_address" class="form-input-sm" style="width:100%; min-height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:0.85rem; resize:vertical;">${app.address || fd.address || ''}</textarea>` },
         { label: 'Applied At', val: app.submittedAt ? formatDateDMY(app.submittedAt) : (app.registeredAt ? formatDateDMY(app.registeredAt) : 'N/A') },
         { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
         { label: 'Confirmed ADOJ', val: `<input type="text" id="v_actualJoiningDate" class="form-input-sm" value="${app.actualJoiningDate ? formatDateDMY(app.actualJoiningDate) : ''}" placeholder="DD-MM-YYYY" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
@@ -1630,6 +1630,7 @@ async function saveInternalAssignment(silent = false) {
         hq: document.getElementById('v_hq').value,
         dob: document.getElementById('v_dob').value,
         actualJoiningDate: document.getElementById('v_actualJoiningDate').value,
+        address: document.getElementById('v_address').value,
         salaryBreakup,
         verificationChecks
     };
@@ -1649,6 +1650,7 @@ async function saveInternalAssignment(silent = false) {
             activeV_Applicant.hq = data.hq;
             activeV_Applicant.dob = data.dob;
             activeV_Applicant.actualJoiningDate = data.actualJoiningDate;
+            activeV_Applicant.address = data.address;
             activeV_Applicant.salaryBreakup = data.salaryBreakup;
             return true;
         } else {
