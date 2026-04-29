@@ -3267,13 +3267,12 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         const pdf = new jsPDF('p', 'mm', 'a4');
         const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
 
-        // Slicing logic — Since the capture already includes margins, we place at y=0
-        let remainingHeightMM = totalHeightMM;
-        let currentPage = 0;
-        const imgData = canvas.toDataURL('image/png', 0.95);
+        const pageH_px = (PAGE_H_MM / PAGE_W_MM) * canvasW; 
+        let cursorY = 0;
+        let pageCount = 0;
 
-        while (remainingHeightMM > 5) { // 5mm tolerance
-            if (currentPage > 0) pdf.addPage();
+        while (cursorY < canvasH) {
+            if (pageCount > 0) pdf.addPage();
             
             // Layer 1: Letterhead
             if (lhAsset?.data) {
@@ -3281,16 +3280,25 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 pdf.addImage(lhAsset.data, format, 0, 0, 210, 297, undefined, 'FAST');
             }
 
-            // Layer 2: Content Slice
-            // We shift the image UP by (currentPage * PAGE_H_MM) to show the next slice
-            // This is high-fidelity as it uses the single source image
-            pdf.addImage(imgData, 'PNG', 0, -(currentPage * PAGE_H_MM), PAGE_W_MM, totalHeightMM, undefined, 'FAST');
+            // Layer 2: Content Slice (Per-Page Canvas)
+            const sliceH = Math.min(pageH_px, canvasH - cursorY);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvasW;
+            sliceCanvas.height = sliceH;
             
-            remainingHeightMM -= PAGE_H_MM;
-            currentPage++;
+            const sCtx = sliceCanvas.getContext('2d');
+            sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
+            
+            const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
+            const sliceH_mm = (sliceH / canvasW) * PAGE_W_MM;
+            
+            pdf.addImage(sliceData, 'PNG', 0, 0, PAGE_W_MM, sliceH_mm, undefined, 'FAST');
+            
+            cursorY += pageH_px;
+            pageCount++;
         }
         unlockUI();
-        return { doc: pdf, totalPages };
+        return { doc: pdf, totalPages: pageCount };
 
     } catch (err) {
         console.error("PDF Generation Failed:", err);
