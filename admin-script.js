@@ -3244,8 +3244,8 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         
         const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
 
-        // Tolerance to prevent tiny overflows from creating a 2nd page (5mm buffer)
-        const pageTolerance = 5; 
+        // Tolerance to prevent tiny overflows from creating a 2nd page (12mm buffer)
+        const pageTolerance = 12; 
         const totalPages = Math.ceil((totalHeightMM - pageTolerance) / PAGE_H_MM) || 1;
 
         for (let i = 0; i < totalPages; i++) {
