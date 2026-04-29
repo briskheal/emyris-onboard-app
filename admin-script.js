@@ -2422,6 +2422,11 @@ function syncEditorStyles() {
     const type = document.getElementById('letterFontType')?.value || 'helvetica';
     const align = document.getElementById('letterAlignment')?.value || 'left';
     
+    // Dynamic Margins (mm to px conversion for editor display)
+    const marginT_mm = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
+    const marginB_mm = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
+    const PX_PER_MM = 3.78;
+
     let fontStack = "'Plus Jakarta Sans', sans-serif";
     if (type === 'times') fontStack = "'Times New Roman', Times, serif";
     else if (type === 'helvetica') fontStack = "'Plus Jakarta Sans', Arial, sans-serif";
@@ -2435,9 +2440,20 @@ function syncEditorStyles() {
     const editor = document.getElementById('unifiedEditor');
     if (editor) {
         editor.style.fontSize = `${size}pt`;
-        editor.style.fontFamily = fontStack; // FORCE CHANGE
+        editor.style.fontFamily = fontStack;
         editor.style.setProperty('--current-letter-font', fontStack);
         editor.style.textAlign = align;
+        
+        // Apply Margins visually to editor
+        editor.style.paddingTop = `${marginT_mm * PX_PER_MM}px`;
+        editor.style.paddingBottom = `${marginB_mm * PX_PER_MM}px`;
+        editor.style.paddingLeft = '20mm'; // Standard A4 left margin
+        editor.style.paddingRight = '20mm'; // Standard A4 right margin
+        
+        // Force width to match A4 aspect ratio in editor
+        editor.style.maxWidth = '210mm';
+        editor.style.margin = '0 auto';
+        
         // Match app's dark theme
         editor.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
         editor.style.color = '#f1f5f9';
@@ -3042,14 +3058,22 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
 
     frame.innerHTML = rendered;
     
-    // 2. Apply Dynamic Styles
+    // 2. Apply Dynamic Styles & Margins
     const size = document.getElementById('letterFontSize')?.value || 11;
     const font = document.getElementById('letterFontType')?.value || 'helvetica';
     const align = document.getElementById('letterAlignment')?.value || 'left';
     
+    // Fetch Margin Settings
+    const marginT = parseInt(document.getElementById('headerHeight')?.value || companyData.headerHeight || 65);
+    const marginB = parseInt(document.getElementById('footerHeight')?.value || companyData.footerHeight || 25);
+    
     frame.style.fontSize = `${size}pt`;
     frame.style.fontFamily = font;
     frame.style.textAlign = align;
+    frame.style.paddingTop = `${marginT}mm`;
+    frame.style.paddingBottom = `${marginB}mm`;
+    frame.style.paddingLeft = '20mm';
+    frame.style.paddingRight = '20mm';
 
     // 3. Apply Letterhead Image
     if (!skipLetterhead && companyData.letterheadImage && companyData.letterheadImage.length > 0) {
@@ -3217,9 +3241,9 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
 
         // 3. High-Precision Capture of the ACTUAL preview frame
         const canvas = await html2canvas(previewFrame, {
-            scale: 3, // Even higher for text fidelity
+            scale: 3, // High fidelity for text
             useCORS: true,
-            backgroundColor: null, 
+            backgroundColor: "#ffffff", // Pure white background for capture
             logging: false,
             width: A4_PX_W,
             windowWidth: A4_PX_W
@@ -3238,39 +3262,32 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         const canvasH = canvas.height;
         const totalHeightMM = (canvasH / canvasW) * PAGE_W_MM;
         
-        // 4. PDF Generation (Slicing)
+        // 5. PDF Generation (Slicing)
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
-        
         const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
 
-        // Tolerance to prevent tiny overflows from creating a 2nd page (12mm buffer)
-        const pageTolerance = 12; 
-        const totalPages = Math.ceil((totalHeightMM - pageTolerance) / PAGE_H_MM) || 1;
+        // Slicing logic — Since the capture already includes margins, we place at y=0
+        let remainingHeightMM = totalHeightMM;
+        let currentPage = 0;
+        const imgData = canvas.toDataURL('image/png', 0.95);
 
-        for (let i = 0; i < totalPages; i++) {
-            if (i > 0) pdf.addPage();
-
-            // Layer 1: Letterhead (Background)
+        while (remainingHeightMM > 5) { // 5mm tolerance
+            if (currentPage > 0) pdf.addPage();
+            
+            // Layer 1: Letterhead
             if (lhAsset?.data) {
                 const format = lhAsset.data.toLowerCase().includes('png') ? 'PNG' : 'JPEG';
-                pdf.addImage(lhAsset.data, format, 0, 0, 210, 297, undefined, 'NONE');
+                pdf.addImage(lhAsset.data, format, 0, 0, 210, 297, undefined, 'FAST');
             }
 
             // Layer 2: Content Slice
-            const sourceY = i * (canvasW / PAGE_W_MM) * PAGE_H_MM;
-            const sourceH = (canvasW / PAGE_W_MM) * PAGE_H_MM;
+            // We shift the image UP by (currentPage * PAGE_H_MM) to show the next slice
+            // This is high-fidelity as it uses the single source image
+            pdf.addImage(imgData, 'PNG', 0, -(currentPage * PAGE_H_MM), PAGE_W_MM, totalHeightMM, undefined, 'FAST');
             
-            const sliceCanvas = document.createElement('canvas');
-            sliceCanvas.width = canvasW;
-            sliceCanvas.height = Math.min(sourceH, canvasH - sourceY);
-            
-            if (sliceCanvas.height > 0) {
-                const ctx = sliceCanvas.getContext('2d');
-                ctx.drawImage(canvas, 0, sourceY, canvasW, sliceCanvas.height, 0, 0, canvasW, sliceCanvas.height);
-                const sliceData = sliceCanvas.toDataURL('image/png');
-                pdf.addImage(sliceData, 'PNG', 0, 0, PAGE_W_MM, (sliceCanvas.height / canvasW) * PAGE_W_MM, undefined, 'FAST');
-            }
+            remainingHeightMM -= PAGE_H_MM;
+            currentPage++;
         }
         unlockUI();
         return { doc: pdf, totalPages };

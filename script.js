@@ -116,7 +116,8 @@ function applyCompanyData() {
         if (fallback) fallback.classList.add('hidden');
         if (headerFallback) headerFallback.classList.add('hidden');
     } else {
-        const initials = compName.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).toUpperCase().join('') || 'E';
+        const nameStr = String(compName || "Emyris");
+        const initials = nameStr.split(' ').filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join('') || 'E';
         if (fallback) {
             fallback.innerText = initials;
             fallback.classList.remove('hidden');
