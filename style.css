@@ -154,16 +154,17 @@ body.admin-mode .app-container {
 }
 
 .landing-marquee-bar {
-    position: sticky;
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(10px);
+    right: 0;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--glass-border);
-    padding: 12px 0;
+    padding: 10px 0;
     overflow: hidden;
-    z-index: 1000;
+    z-index: 10000;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
 .marquee-inner {
@@ -341,11 +342,12 @@ body.admin-mode .view-section {
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    z-index: 100;
+    z-index: 500;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: var(--primary) transparent;
     transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    padding-top: 60px; /* Space for the fixed marquee */
 }
 
 .landing-hero {
@@ -450,6 +452,13 @@ body.admin-mode .view-section {
     letter-spacing: 6px;
     text-transform: uppercase;
     opacity: 0.7;
+}
+
+/* Safety: Prevent ghost contact info from obstructing the hero area */
+.landing-hero .footer-contact, 
+.landing-hero-text .footer-contact,
+.landing-logo-wrap + .footer-contact {
+    display: none !important;
 }
 
 .landing-cards {

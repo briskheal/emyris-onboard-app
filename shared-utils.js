@@ -210,8 +210,11 @@ async function compressAndResize(file, maxWidth = 1000) {
         };
     });
 }
-// Global listener to auto-format DD-MM-YYYY inputs
+// Global listener to auto-format DD-MM-YYYY inputs (Only for text inputs)
 document.addEventListener('input', function (e) {
+    // Check if it's a date input - native date pickers handle their own formatting
+    if (e.target.type === 'date') return;
+
     if (e.target.placeholder === 'DD-MM-YYYY' || e.target.id.includes('dob') || e.target.id.includes('Date')) {
         let val = e.target.value.replace(/\D/g, '');
         if (val.length > 8) val = val.substring(0, 8);
