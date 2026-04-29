@@ -2430,11 +2430,11 @@ function syncEditorStyles() {
     else if (type === 'jakarta') fontStack = "'Plus Jakarta Sans', sans-serif";
     else if (type === 'georgia') fontStack = "Georgia, serif";
     
-    // 1. Core Typography (Synchronized with Preview)
+    // 1. Core Typography
     editor.style.fontSize = `${size}pt`;
     editor.style.fontFamily = fontStack;
     editor.style.textAlign = align;
-    editor.style.lineHeight = "1.4"; // STRICT FIDELITY
+    editor.style.lineHeight = "1.4"; 
     
     // 2. A4 Dimensions & Padding
     editor.style.width = '210mm';
@@ -2445,19 +2445,43 @@ function syncEditorStyles() {
     editor.style.paddingRight = '20mm';
     editor.style.boxSizing = 'border-box';
     
-    // 3. Virtual Paper Aesthetics
+    // 3. Background Strategy: Letterhead + Page Break Markers
+    const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+    
+    // Create a background layers:
+    // Layer 1: Page Break Lines (Dashed line every 297mm)
+    // Layer 2: Footer Safety Zone (Slightly tinted area at the bottom of every 297mm segment)
+    // Layer 3: The Letterhead Image itself (Repeated per page)
+    
+    const pageH_px = 297 * PX_PER_MM;
+    const footerH_px = marginB_mm * PX_PER_MM;
+    
+    const breakMarker = `linear-gradient(to bottom, transparent ${pageH_px - 2}px, rgba(99, 102, 241, 0.4) ${pageH_px - 2}px, rgba(99, 102, 241, 0.4) ${pageH_px}px, transparent ${pageH_px}px)`;
+    const footerMarker = `linear-gradient(to top, rgba(239, 68, 68, 0.03) ${footerH_px}px, transparent ${footerH_px}px)`;
+    
+    const bgLayers = [breakMarker, footerMarker];
+    const bgSizes = [`210mm ${pageH_px}px`, `210mm ${pageH_px}px` ];
+    const bgRepeats = ['repeat-y', 'repeat-y'];
+
+    if (lhAsset?.data) {
+        bgLayers.push(`url(${lhAsset.data})`);
+        bgSizes.push('210mm 297mm');
+        bgRepeats.push('repeat-y');
+    }
+
+    editor.style.backgroundImage = bgLayers.join(', ');
+    editor.style.backgroundSize = bgSizes.join(', ');
+    editor.style.backgroundRepeat = bgRepeats.join(', ');
+    editor.style.backgroundPosition = 'top center';
+    
+    // 4. Aesthetics
     editor.style.backgroundColor = '#ffffff';
     editor.style.color = '#1e293b'; 
     editor.style.margin = '0 auto 2rem';
     
-    // 4. Background Letterhead
-    const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
-    if (lhAsset?.data) {
-        editor.style.backgroundImage = `url(${lhAsset.data})`;
-        editor.style.backgroundSize = '100% 100%';
-        editor.style.backgroundRepeat = 'no-repeat';
-    } else {
-        editor.style.backgroundImage = 'none';
+    // 5. Update Preview
+    if (!document.getElementById('livePreviewContainer').classList.contains('hidden')) {
+        updateLivePreviewFrame();
     }
 }
 
@@ -3062,8 +3086,8 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
         const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
         if (lhAsset?.data) {
             frame.style.backgroundImage = `url(${lhAsset.data})`;
-            frame.style.backgroundSize = '100% 100%';
-            frame.style.backgroundRepeat = 'no-repeat';
+            frame.style.backgroundSize = '210mm 297mm';
+            frame.style.backgroundRepeat = 'repeat-y';
         } else {
             frame.style.backgroundImage = 'none';
         }
