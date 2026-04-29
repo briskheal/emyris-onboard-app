@@ -1195,7 +1195,7 @@ function previewIssuedLetter(email, type) {
                 <title>Preview: ${type.toUpperCase()}</title>
                 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
-                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.4; }
+                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.1; }
                     .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: 1000px; }
                 </style>
             </head>
@@ -2462,7 +2462,7 @@ function syncEditorStyles() {
         el.style.fontSize = `${size}pt`;
         el.style.fontFamily = fontStack;
         el.style.textAlign = align;
-        el.style.lineHeight = '1.4'; // Explicit line height for parity
+        el.style.lineHeight = '1.1'; // Explicit line height for parity
         el.style.paddingTop = `${marginT_mm}mm`;
         el.style.paddingBottom = `${marginB_mm}mm`;
         el.style.paddingLeft = '20mm';
