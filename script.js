@@ -257,7 +257,7 @@ async function handleApplicantRegister(e) {
 }
 
 async function handleApplicantLogin(e) {
-    e.preventDefault();
+    if (e) e.preventDefault();
     const email = document.getElementById('loginEmail').value.trim().toLowerCase();
     const pin = document.getElementById('loginPin').value.trim();
 

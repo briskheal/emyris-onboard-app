@@ -451,8 +451,9 @@ app.post('/api/applicant-login', async (req, res) => {
         }
         
         let { email, password } = req.body;
-        email = (email || "").trim();
-        password = (password || "").trim();
+        // Hyper-robust cleaning (removes hidden chars, zero-width spaces, etc.)
+        email = (email || "").toString().toLowerCase().trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+        password = (password || "").toString().trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
         
         // 1. Fetch applicants (Case-Insensitive Search)
         const applicants = await Applicant.find({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
