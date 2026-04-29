@@ -3030,8 +3030,34 @@ function updateLivePreviewFrame(specificHtml, specificRef = "REF/PRV/LIVE", skip
     
     frame.innerHTML = rendered;
     
-    // Note: Styles (A4 width, fonts, margins, letterhead) are now aggressively 
-    // managed by syncEditorStyles() to ensure absolute parity.
+    // 3. Robust Letterhead Injection (Using <img> for html2canvas reliability)
+    if (!skipLetterhead) {
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+        if (lhAsset?.data) {
+            // Clean old branding
+            const old = frame.querySelectorAll('.a4-branding-layer');
+            old.forEach(o => o.remove());
+            
+            // Calculate pages needed based on content height
+            const pageH_px = 297 * 3.7795275591;
+            const totalH_px = frame.scrollHeight;
+            const pages = Math.max(1, Math.ceil(totalH_px / pageH_px));
+            
+            for (let i = 0; i < pages; i++) {
+                const img = document.createElement('img');
+                img.src = lhAsset.data;
+                img.className = 'a4-branding-layer';
+                img.style.position = 'absolute';
+                img.style.top = `${i * 297}mm`;
+                img.style.left = '0';
+                img.style.width = '210mm';
+                img.style.height = '297mm';
+                img.style.zIndex = '-1';
+                img.style.pointerEvents = 'none';
+                frame.appendChild(img);
+            }
+        }
+    }
 }
 
 async function sendTaskUpdate(taskKey, completed) {
@@ -3655,43 +3681,6 @@ async function populateHubApplicantSelect() {
     // Preserve previously selected value if still valid
     if (currentVal && Array.from(sel.options).some(o => o.value === currentVal)) {
         sel.value = currentVal;
-    }
-}
-
-async function quickExport(action) {
-    const type = document.getElementById('activeTemplateSelect').value;
-    const editorHtml = document.getElementById('unifiedEditor').innerHTML.trim();
-    
-    if (!editorHtml) {
-        showToast("⚠️ Editor is empty", "warning");
-        return;
-    }
-
-    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
-    if (!targetEmail) {
-        showToast("⚠️ Select a Target Applicant first", "warning");
-        return;
-    }
-
-    lockUI(`⏳ Preparing ${action === 'download' ? 'Professional PDF' : 'Print View'}...`);
-    
-    try {
-        const res = await generateLetterPDF(targetEmail, type, editorHtml);
-        if (res && res.doc) {
-            if (action === 'download') {
-                const filename = `${type.toUpperCase()}_${targetEmail.split('@')[0]}_${Date.now()}.pdf`;
-                res.doc.save(filename);
-            } else {
-                res.doc.autoPrint();
-                window.open(res.doc.output('bloburl'), '_blank');
-            }
-            showToast(`✅ ${action === 'download' ? 'PDF Generated' : 'Print View Ready'}`, "success");
-        }
-    } catch (e) {
-        console.error("Quick Export Failed:", e);
-        showToast("❌ Export Failed", "error");
-    } finally {
-        unlockUI();
     }
 }
 
