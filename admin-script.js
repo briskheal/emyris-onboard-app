@@ -2981,6 +2981,7 @@ function toggleLivePreviewUI(show) {
     if (!container || !editor) return;
     
     if (show) {
+        window.scrollTo(0, 0); // Ensure header is visible
         container.classList.remove('hidden');
         editor.classList.add('hidden');
         if (toolbar) toolbar.style.display = 'none';
