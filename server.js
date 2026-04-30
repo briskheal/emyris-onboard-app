@@ -94,13 +94,6 @@ if (MONGODB_URI) {
             console.log('✅ [SYSTEM] Unified DB Connected: ' + (MONGODB_URI.split('/').pop().split('?')[0] || 'Default'));
             connMain = mongoose.connection;
             connAssets = mongoose.connection;
-            
-            // Critical: Update local variables so routes use the active connection
-            Company = mongoose.model('Company');
-            Division = mongoose.model('Division');
-            HQ = mongoose.model('HQ');
-            Applicant = mongoose.model('Applicant');
-            Asset = mongoose.model('Asset');
         })
         .catch(err => console.error('❌ [SYSTEM] DB Connection Error:', err));
 } else {
@@ -233,32 +226,22 @@ const hqSchema = new mongoose.Schema({
     active: { type: Boolean, default: true }
 });
 
-// High-Resilience Model Proxy System
-const getModel = (name) => {
-    try {
-        return mongoose.connection.model(name);
-    } catch (e) {
-        switch (name) {
-            case 'Company': return mongoose.model('Company', companySchema);
-            case 'Applicant': return mongoose.model('Applicant', applicantSchema);
-            case 'Division': return mongoose.model('Division', divisionSchema);
-            case 'HQ': return mongoose.model('HQ', hqSchema);
-            case 'Asset': return connAssets ? (connAssets.models.Asset || connAssets.model('Asset', assetSchema)) : mongoose.model('Asset', assetSchema);
-            default: throw new Error(`Model ${name} not found`);
-        }
-    }
-};
+// Robust Model Singleton Pattern
+function getModel(name, schema) {
+    if (mongoose.models[name]) return mongoose.models[name];
+    return mongoose.model(name, schema);
+}
 
-// Proxies ensure legacy routes always use the latest model from the active connection
-const Company = new Proxy({}, { get: (t, p) => getModel('Company')[p] });
-const Applicant = new Proxy({}, { get: (t, p) => getModel('Applicant')[p] });
-const Division = new Proxy({}, { get: (t, p) => getModel('Division')[p] });
-const HQ = new Proxy({}, { get: (t, p) => getModel('HQ')[p] });
-const Asset = new Proxy({}, { get: (t, p) => getModel('Asset')[p] });
+// Bind models (Safe for production use)
+const Company = getModel('Company', companySchema);
+const Applicant = getModel('Applicant', applicantSchema);
+const Division = getModel('Division', divisionSchema);
+const HQ = getModel('HQ', hqSchema);
+const Asset = connAssets ? (connAssets.models.Asset || connAssets.model('Asset', assetSchema)) : getModel('Asset', assetSchema);
 
 // Startup logic
 async function initializeApp() {
-    console.log('🚀 Server starting - Clean Slate protocol active.');
+    console.log('🚀 [SYSTEM] Initializing Services...');
     await seedData();
 }
 
