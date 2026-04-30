@@ -3413,13 +3413,31 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         `;
         
         // Finalize branding for capture
-        const capturePage = captureContainer.querySelector('#capturePage');
-        if (typeof applyBrandingLayers === 'function') {
-            applyBrandingLayers(capturePage);
+        const capturePage = document.getElementById('capturePage');
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1] || 
+                        (companyData.letterhead && companyData.letterhead[companyData.letterhead.length-1]);
+        
+        if (lhAsset?.data) {
+            const totalH = capturePage.scrollHeight;
+            const pageH = 297 * 3.78; // Approx px for 297mm
+            const pagesNeeded = Math.max(1, Math.ceil(totalH / pageH));
+            
+            for (let i = 0; i < pagesNeeded; i++) {
+                const img = document.createElement('img');
+                img.src = lhAsset.data;
+                img.style.position = 'absolute';
+                img.style.top = `${i * 297}mm`;
+                img.style.left = '0';
+                img.style.width = '210mm';
+                img.style.height = '297mm';
+                img.style.zIndex = '-1';
+                img.style.pointerEvents = 'none';
+                capturePage.appendChild(img);
+            }
         }
 
         // Wait for rendering and fonts
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 1000));
 
         const canvas = await html2canvas(captureContainer, {
             scale: 2, 
