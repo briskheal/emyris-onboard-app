@@ -387,6 +387,13 @@ function applyCompanyData() {
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) {
         headerTitle.innerText = (companyData.name || "Emyris Biolifesciences").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
+        
+        // REGRESSION FIX: Explicitly purge any contact details that might have leaked into the header branding
+        const logoText = headerTitle.parentElement;
+        if (logoText && logoText.classList.contains('logo-text')) {
+            const ghosts = logoText.querySelectorAll('p, span:not(#headerCompName)');
+            ghosts.forEach(g => g.remove());
+        }
         console.log('✅ Updated Header Name:', headerTitle.innerText);
     }
 
@@ -3339,30 +3346,48 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         let cursorY = 0;
         let pageCount = 0;
 
+        const headerH_mm = 65;
+        const footerH_mm = 25;
+        const availableH_mm = PAGE_H_MM - headerH_mm - footerH_mm;
+        const availableH_px = (availableH_mm * (actualPageH_px / 297)) * 2;
+
         while (cursorY < canvasH - tolerance_px) {
             if (pageCount > 0) pdf.addPage();
             
-            // A. Manually add branding to every page (Fixed position - NO drift)
+            // A. Always add branding to every page
             if (lhAsset?.data) {
                 pdf.addImage(lhAsset.data, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
             }
 
-            // B. Add content slice on top
-            const sliceH = Math.min(finalSliceH, canvasH - cursorY);
-            const sliceCanvas = document.createElement('canvas');
-            sliceCanvas.width = canvasW;
-            sliceCanvas.height = sliceH;
-            
-            const sCtx = sliceCanvas.getContext('2d');
-            sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
-            
-            const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
-            const sliceH_mm = (sliceH / canvasW) * 210;
-            
-            // Overlay content
-            pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
-            
-            cursorY += finalSliceH;
+            // B. Content Slicing Logic
+            if (pageCount === 0) {
+                // Page 1: Capture from 0 (includes the 65mm CSS padding already)
+                const sliceH = Math.min(finalSliceH, canvasH - cursorY);
+                const sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width = canvasW; sliceCanvas.height = sliceH;
+                const sCtx = sliceCanvas.getContext('2d');
+                sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
+                
+                const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
+                const sliceH_mm = (sliceH / canvasW) * 210;
+                pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
+                
+                cursorY += finalSliceH;
+            } else {
+                // Page 2+: Capture a SHORTER slice and offset it by the header height
+                const sliceH = Math.min(availableH_px, canvasH - cursorY);
+                const sliceCanvas = document.createElement('canvas');
+                sliceCanvas.width = canvasW; sliceCanvas.height = sliceH;
+                const sCtx = sliceCanvas.getContext('2d');
+                sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
+                
+                const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
+                const sliceH_mm = (sliceH / canvasW) * 210;
+                // Place content BELOW the 65mm header
+                pdf.addImage(sliceData, 'PNG', 0, headerH_mm, 210, sliceH_mm, undefined, 'FAST');
+                
+                cursorY += availableH_px;
+            }
             pageCount++;
         }
         unlockUI();
