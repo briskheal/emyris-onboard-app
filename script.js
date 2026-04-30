@@ -306,6 +306,12 @@ async function handleApplicantRegister(e) {
         if (result.success || result.needsRecovery) {
             document.getElementById('securePinDisplay').innerText = result.pin;
             updateView('pinDisplay');
+        } else if (result.isReturning) {
+            // Intelligent Recovery: Pre-fill login and switch
+            showToast(result.message, "success");
+            const loginEmail = document.getElementById('loginEmail');
+            if (loginEmail) loginEmail.value = data.email;
+            setTimeout(() => updateView('applicantLogin'), 1500);
         } else {
             showToast(result.message, "error");
         }

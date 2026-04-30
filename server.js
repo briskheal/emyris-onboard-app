@@ -366,9 +366,15 @@ app.post('/api/register-applicant', async (req, res) => {
     let pin = Math.floor(100000 + Math.random() * 900000).toString();
 
     try {
-        // 1. Uniqueness Guard
+        // 1. Uniqueness Guard & Recovery Detection
         const existingEmail = await Applicant.findOne({ email });
-        if (existingEmail) return res.status(400).json({ success: false, message: 'Email already registered.' });
+        if (existingEmail) {
+            return res.json({ 
+                success: false, 
+                isReturning: true,
+                message: 'Welcome back! This email is already registered. Please log in to continue your journey.' 
+            });
+        }
 
         const existingPhone = await Applicant.findOne({ phone });
         if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
