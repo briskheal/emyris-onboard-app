@@ -386,9 +386,9 @@ function logoutApplicant() {
 
 function resumeApplication() {
     const app = currentApplicant;
-    // Candidates can resume the form if they are in draft, rejected, or onboarding status 
+    // Candidates can resume the form if they are in draft, registered, rejected, or onboarding status 
     // (unless an offer has already been issued/accepted)
-    const canResumeForm = ['registered', 'rejected', 'onboarding'].includes(app.status);
+    const canResumeForm = ['draft', 'registered', 'rejected', 'onboarding'].includes(app.status);
     const hasOffer = !!(app.offerAccepted || app.offerLetterData);
 
     if (!canResumeForm || hasOffer) {

@@ -11,34 +11,6 @@
 
     <!-- Toast Notification -->
     <style>
-        #toastNotif { 
-            position:fixed; 
-            top: 2rem; 
-            left: 50%; 
-            transform: translateX(-50%) translateY(-100px); 
-            background:#0f172a; 
-            color:#fff; 
-            padding:1rem 2rem; 
-            border-radius:100px; 
-            font-weight:700; 
-            font-size:0.95rem; 
-            box-shadow: 0 20px 40px rgba(0,0,0,0.4); 
-            z-index:10000; 
-            opacity:0; 
-            transition:all 0.5s cubic-bezier(0.16,1,0.3,1); 
-            max-width: 500px; 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-            border: 1px solid rgba(255,255,255,0.1);
-            backdrop-filter: blur(20px);
-        }
-        #toastNotif.show { transform: translateX(-50%) translateY(0); opacity:1; }
-        #toastNotif.success { background: linear-gradient(135deg,#064e3b,#10b981); border-color: rgba(16, 185, 129, 0.3); }
-        #toastNotif.error { background: linear-gradient(135deg,#7f1d1d,#ef4444); border-color: rgba(239, 68, 68, 0.3); }
-        #toastNotif.warning { background: linear-gradient(135deg,#78350f,#f59e0b); border-color: rgba(245, 158, 11, 0.3); }
-        #toastNotif.secondary { background: linear-gradient(135deg,#1e3a5f,#3b82f6); border-color: rgba(59, 130, 246, 0.3); }
-
         /* Full Component Width Overrides for Admin Tools */
         .admin-wide-container { width: 100% !important; max-width: 100% !important; margin: 0; }
         .setup-main-content { width: 100%; display: flex; flex-direction: column; gap: 2.5rem; align-items: stretch; }

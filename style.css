@@ -3171,3 +3171,33 @@ body.onboarding-inactive .header-logo img { height: 28px !important; }
     justify-content: center;
     align-items: flex-start;
 }
+/* Global System Toasts */
+#toastNotif { 
+    position: fixed; 
+    bottom: 2rem; 
+    left: 50%; 
+    transform: translateX(-50%) translateY(100px); 
+    background: rgba(15, 23, 42, 0.9); 
+    color: #fff; 
+    padding: 0.75rem 1.5rem; 
+    border-radius: 50px; 
+    font-weight: 600; 
+    font-size: 0.85rem; 
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5); 
+    z-index: 10001; 
+    opacity: 0; 
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); 
+    max-width: 90%; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    gap: 10px; 
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(20px);
+    pointer-events: none;
+}
+#toastNotif.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+#toastNotif.success { background: linear-gradient(135deg, #064e3b, #10b981); border-color: rgba(16, 185, 129, 0.3); }
+#toastNotif.error { background: linear-gradient(135deg, #7f1d1d, #ef4444); border-color: rgba(239, 68, 68, 0.3); }
+#toastNotif.warning { background: linear-gradient(135deg, #78350f, #f59e0b); border-color: rgba(245, 158, 11, 0.3); }
+#toastNotif.secondary { background: linear-gradient(135deg, #1e3a5f, #3b82f6); border-color: rgba(59, 130, 246, 0.3); }
