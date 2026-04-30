@@ -220,6 +220,11 @@ const divisionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+const hqSchema = new mongoose.Schema({
+    name: { type: String, required: true, unique: true },
+    active: { type: Boolean, default: true }
+});
+
 // Unified Global Model Definitions
 const Company = mongoose.models.Company || mongoose.model('Company', companySchema);
 const Applicant = mongoose.models.Applicant || mongoose.model('Applicant', applicantSchema);
