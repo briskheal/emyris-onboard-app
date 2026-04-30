@@ -92,7 +92,8 @@ if (MONGODB_URI) {
     mongoose.connect(MONGODB_URI, dbOptions)
         .then(() => {
             console.log('✅ [SYSTEM] Unified DB Connected (Main + Assets)');
-            // For backward compatibility, point connAssets to the main connection
+            // Restore legacy references for structural stability
+            connMain = mongoose.connection;
             connAssets = mongoose.connection;
         })
         .catch(err => console.error('❌ [SYSTEM] DB Connection Error:', err));
@@ -264,8 +265,11 @@ async function seedData() {
         console.error('❌ Seeding failed', e);
     }
 }
-if (connMain) connMain.once('open', initializeApp);
-else initializeApp();
+// Startup Trigger
+mongoose.connection.once('open', () => {
+    console.log('✅ [SYSTEM] Database Ready. Initializing Application...');
+    initializeApp();
+});
 
 // Global Error Handlers (Fix for 502/Crashes)
 process.on('unhandledRejection', (reason, promise) => {
