@@ -372,21 +372,25 @@ function applyCompanyData() {
         if (headerImg) headerImg.classList.add('hidden');
         console.log('ℹ️ Using Initials:', initials);
     }
-    /* 
-    DISABLED FOR TROUBLESHOOTING: Footer contact was leaking into header
-    const quickContact = document.getElementById('dynamicDashboardContact');
-    const landingQuickContact = document.getElementById('dynamicLandingContact');
+    // RESTORED WITH UNIQUE IDS TO PREVENT HEADER LEAKS
+    const quickContact = document.getElementById('u_dashboard_contact_v4');
+    const landingQuickContact = document.getElementById('u_landing_contact_v4');
     
     const contactHTML = `
-        ${companyData.phone ? `<span class="footer-contact-item">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
-        ${companyData.tollFree ? `<span class="footer-contact-item">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
-        ${companyData.website ? `<span class="footer-contact-item">🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
-        ${companyData.email ? `<span class="footer-contact-item">✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
+        ${companyData.phone ? `<span class="f-contact-node">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
+        ${companyData.tollFree ? `<span class="f-contact-node">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
+        ${companyData.website ? `<span class="f-contact-node">🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
+        ${companyData.email ? `<span class="f-contact-node">✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
     `;
 
-    if (quickContact) quickContact.innerHTML = contactHTML;
-    if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
-    */
+    if (quickContact) {
+        quickContact.innerHTML = contactHTML;
+        console.log('✅ Injected Dashboard Footer');
+    }
+    if (landingQuickContact) {
+        landingQuickContact.innerHTML = contactHTML;
+        console.log('✅ Injected Landing Footer');
+    }
     
     // Safety Cleanup: Ensure no footer items leaked into the logo container
     const brandingLayer = document.getElementById('headerBrandingLayer');
