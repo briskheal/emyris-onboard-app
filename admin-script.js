@@ -3390,18 +3390,24 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     position: relative !important;
                     word-wrap: break-word !important;
                     background: transparent !important;
+                    background-color: transparent !important;
                     box-shadow: none !important;
                 }
+                /* Ensure NO branding layers or backgrounds are captured */
+                .pdf-capture-page .a4-branding-layer { display: none !important; }
+                
                 .pdf-capture-page p, .pdf-capture-page div {
                     margin: 0 !important;
                     padding: 0 !important;
                     line-height: 1.1 !important;
+                    background: transparent !important;
+                    background-color: transparent !important;
                 }
                 .pdf-capture-page table { width: 100%; border-collapse: collapse; margin: 1em 0; table-layout: fixed; }
                 .pdf-capture-page th, .pdf-capture-page td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt); line-height: 1.1; }
                 .pdf-capture-page br { line-height: 1.1; }
             </style>
-            <div id="capturePage" class="letter-editor a4-page-standard pdf-capture-page">
+            <div id="capturePage" class="pdf-capture-page">
                 ${editorHtml}
             </div>
         `;
