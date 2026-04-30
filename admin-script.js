@@ -3025,10 +3025,9 @@ async function printPreviewDocument() {
         return;
     }
 
-    lockUI("⏳ Preparing High-Fidelity Print View...");
+    lockUI("⏳ Preparing Pixel-Perfect Print View...");
     
     try {
-        // Create a hidden print container
         const printFrame = document.createElement('iframe');
         printFrame.style.position = 'fixed';
         printFrame.style.right = '0';
@@ -3040,41 +3039,33 @@ async function printPreviewDocument() {
 
         const doc = printFrame.contentWindow.document;
         
-        // Copy Styles from Main Document
-        const styles = Array.from(document.styleSheets);
-        let styleHtml = '';
-        try {
-            styles.forEach(sheet => {
-                if (sheet.href) {
-                    styleHtml += `<link rel="stylesheet" href="${sheet.href}">`;
-                } else {
-                    const rules = Array.from(sheet.cssRules).map(r => r.cssText).join('\n');
-                    styleHtml += `<style>${rules}</style>`;
-                }
-            });
-        } catch(e) { console.warn("Some styles skipped due to CORS", e); }
-
         // Get Letterhead
         const letterhead = companyData.letterhead && companyData.letterhead.length > 0 
             ? (Array.isArray(companyData.letterhead) ? companyData.letterhead[companyData.letterhead.length-1].data : companyData.letterhead)
             : null;
 
         const contentHtml = editor.innerHTML;
+        const headHeight = document.getElementById('headerHeight')?.value || 65;
+        const footHeight = document.getElementById('footerHeight')?.value || 25;
         
         doc.open();
         doc.write(`
             <html>
             <head>
-                <title>Emyris Onboard - Document Print</title>
-                ${styleHtml}
+                <title>Emyris Onboard - Official Document</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
                     @page { margin: 0; size: A4; }
-                    body { margin: 0; padding: 0; background: white !important; }
+                    body { 
+                        margin: 0; padding: 0; 
+                        background: white !important; 
+                        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+                    }
                     .print-page {
                         position: relative;
                         width: 210mm;
                         min-height: 297mm;
-                        padding: 25mm 20mm;
+                        padding: ${headHeight}mm 20mm ${footHeight}mm;
                         margin: 0 auto;
                         box-sizing: border-box;
                         background: white;
@@ -3093,14 +3084,16 @@ async function printPreviewDocument() {
                     .print-content {
                         position: relative;
                         z-index: 10;
-                        font-family: 'Inter', sans-serif;
                         line-height: 1.6;
-                        font-size: 11pt;
+                        font-size: 11.5pt;
+                        text-align: justify;
                     }
-                    /* Ensure WYSIWYG parity */
-                    p { margin-bottom: 1em; }
-                    table { width: 100%; border-collapse: collapse; margin: 1em 0; }
-                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    p { margin: 0 0 1.2em 0; }
+                    table { width: 100%; border-collapse: collapse; margin: 1.5em 0; table-layout: fixed; }
+                    th, td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 10.5pt; }
+                    .text-center { text-align: center; }
+                    .text-right { text-align: right; }
+                    strong { font-weight: 700; }
                 </style>
             </head>
             <body>
@@ -3112,8 +3105,10 @@ async function printPreviewDocument() {
                 </div>
                 <script>
                     window.onload = () => {
-                        window.print();
-                        setTimeout(() => { window.frameElement.remove(); }, 1000);
+                        setTimeout(() => {
+                            window.print();
+                            setTimeout(() => { window.frameElement.remove(); }, 1000);
+                        }, 500);
                     };
                 </script>
             </body>
@@ -3121,14 +3116,15 @@ async function printPreviewDocument() {
         `);
         doc.close();
         
-        showToast("✅ Native Print Dialog Opened", "success");
+        showToast("✅ Native Print Interface Ready", "success");
     } catch (e) {
-        console.error("Native Print Error:", e);
+        console.error("Print Error:", e);
         showToast("❌ Print Failed", "error");
     } finally {
         unlockUI();
     }
 }
+
 
 
 function toggleLivePreviewUI(show) {
