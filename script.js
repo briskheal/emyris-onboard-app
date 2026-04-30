@@ -15,8 +15,8 @@ const POST_SUBMISSION_STATUSES = ['submitted', 'approved', 'onboarding', 'joined
 const OPTIONAL_DOCS = ["Last Month Salary Slip", "Previous Company Appointment Letter"];
 
 // Override shared-utils handlers to include portal-specific logic
-function showApplicantRegister() {
-    populateDropdowns();
+async function showApplicantRegister() {
+    await populateDropdowns();
     updateView('applicantRegister');
 }
 
@@ -194,58 +194,75 @@ function applyBrandingLayers(el) {
     }
 }
 
-function populateDropdowns() {
+async function populateDropdowns() {
     const divSel = document.getElementById('regDivision');
     const desSel = document.getElementById('regDesignation');
     const hqSel = document.getElementById('hq');
 
-    if (divSel) {
-        divSel.innerHTML = '<option value="">-- Select Division --</option>' +
-            (companyData.divisions || []).map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-            
-        divSel.onchange = (e) => {
-            const divName = e.target.value;
-            const div = (companyData.divisions || []).find(d => d.name === divName);
-            const picker = document.getElementById('regDesignationPicker');
-            const hiddenIn = document.getElementById('regDesignation');
-            
-            // Logic: If division has specific designations, show them. 
-            // Otherwise, show all designations defined in company profile.
-            let desgs = (div && div.designations && div.designations.length > 0) ? div.designations : (companyData.designations || []);
-            
-            if (desgs.length > 0 && picker) {
-                // Group by Department for the visual strip
-                const groups = {};
-                desgs.forEach(ds => {
-                    const dept = (typeof ds === 'object' ? ds.department : 'SALES') || 'SALES';
-                    if (!groups[dept]) groups[dept] = [];
-                    groups[dept].push(typeof ds === 'string' ? ds : ds.title);
-                });
+    if (!divSel) return;
 
-                picker.innerHTML = Object.keys(groups).map(dept => `
-                    <div class="dept-strip" style="background: var(--accent); color: #000; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; margin: 5px 0 2px 0; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;">${dept}</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-                        ${groups[dept].map(title => {
-                            const safeTitle = String(title || 'Unknown');
-                            return `
-                                <div class="picker-chip" onclick="selectRegDesignation('${safeTitle.replace(/'/g, "\\'")}', this)" 
-                                     style="background: rgba(255,255,255,0.05); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">
-                                    ${safeTitle}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                `).join('');
-                hiddenIn.value = ""; // Reset
-            } else if (divName && picker) {
-                picker.innerHTML = '<p style="font-size: 0.75rem; color: #ef4444; text-align: center; margin: 10px 0;">⚠️ No designations available</p>';
-                hiddenIn.value = "";
-            } else if (picker) {
-                picker.innerHTML = '<p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 10px 0;">-- Select Division First --</p>';
-                hiddenIn.value = "";
+    let divs = companyData.divisions || [];
+    
+    // Fallback: If companyData doesn't have divisions, try to fetch fresh data
+    if (divs.length === 0) {
+        try {
+            const res = await fetch(`/api/company-data?t=${Date.now()}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data && Array.isArray(data.divisions)) {
+                    companyData = data;
+                    divs = data.divisions;
+                    applyCompanyData(); // Refresh other global UI pointers
+                }
             }
-        };
+        } catch(e) { console.warn("Fallback fetch failed"); }
     }
+
+    divSel.innerHTML = '<option value="">-- Select Division --</option>' +
+        divs.map(d => {
+            const name = typeof d === 'string' ? d : (d.name || "Unknown");
+            return `<option value="${name}">${name}</option>`;
+        }).join('');
+            
+    divSel.onchange = (e) => {
+        const divName = e.target.value;
+        const div = (companyData.divisions || []).find(d => d.name === divName);
+        const picker = document.getElementById('regDesignationPicker');
+        const hiddenIn = document.getElementById('regDesignation');
+        
+        let desgs = (div && div.designations && div.designations.length > 0) ? div.designations : (companyData.designations || []);
+        
+        if (desgs.length > 0 && picker) {
+            const groups = {};
+            desgs.forEach(ds => {
+                const dept = (typeof ds === 'object' ? ds.department : 'SALES') || 'SALES';
+                if (!groups[dept]) groups[dept] = [];
+                groups[dept].push(typeof ds === 'string' ? ds : ds.title);
+            });
+
+            picker.innerHTML = Object.keys(groups).map(dept => `
+                <div class="dept-strip" style="background: var(--accent); color: #000; font-size: 0.65rem; font-weight: 800; padding: 2px 8px; margin: 5px 0 2px 0; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;">${dept}</div>
+                <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    ${groups[dept].map(title => {
+                        const safeTitle = String(title || 'Unknown');
+                        return `
+                            <div class="picker-chip" onclick="selectRegDesignation('${safeTitle.replace(/'/g, "\\'")}', this)" 
+                                 style="background: rgba(255,255,255,0.05); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">
+                                ${safeTitle}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `).join('');
+            hiddenIn.value = ""; 
+        } else if (divName && picker) {
+            picker.innerHTML = '<p style="font-size: 0.75rem; color: #ef4444; text-align: center; margin: 10px 0;">⚠️ No designations available</p>';
+            hiddenIn.value = "";
+        } else if (picker) {
+            picker.innerHTML = '<p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin: 10px 0;">-- Select Division First --</p>';
+            hiddenIn.value = "";
+        }
+    };
 
     if (hqSel) {
         hqSel.innerHTML = '<option value="">-- Select HQ --</option>' +
@@ -370,16 +387,18 @@ const POST_SUBMISSION_STATUSES = ['submitted', 'approved', 'onboarding', 'joined
 
 function resumeApplication() {
     const app = currentApplicant;
-    const isPostSubmission = POST_SUBMISSION_STATUSES.includes(app.status);
+    // Candidates can resume the form if they are in draft, rejected, or onboarding status 
+    // (unless an offer has already been issued/accepted)
+    const canResumeForm = ['registered', 'rejected', 'onboarding'].includes(app.status);
     const hasOffer = !!(app.offerAccepted || app.offerLetterData);
 
-    if (isPostSubmission || hasOffer) {
+    if (!canResumeForm || hasOffer) {
         renderApplicantDashboard();
         updateView('applicantDashboard');
         return;
     }
 
-    // Still in draft — show the multi-step form
+    // Show the multi-step form for drafts or re-submissions
     updateView('onboardingForm');
     currentStep = 1;
     populateDropdowns();
