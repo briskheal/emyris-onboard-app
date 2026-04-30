@@ -1656,10 +1656,15 @@ app.get('/api/company-data', async (req, res) => {
 
         // Enrich divisions with their respective designations from company profile
         const enrichedDivisions = divisions.map(div => {
-            const desgs = (company.designations || []).filter(d => {
+            let desgs = (company.designations || []).filter(d => {
                 const dept = (typeof d === 'object' ? d.department : 'SALES') || 'SALES';
                 return dept.toUpperCase().trim() === div.name.toUpperCase().trim();
             });
+
+            // FALLBACK: If no designations match this division name, provide all designations
+            // This prevents "Empty Selection" issues when division names don't exactly match department keys
+            if (desgs.length === 0) desgs = (company.designations || []);
+
             return {
                 ...div,
                 designations: desgs
