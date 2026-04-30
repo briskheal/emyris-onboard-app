@@ -146,8 +146,7 @@ function applyCompanyData() {
     }
 
     // Populate Footer Contact (Sync with Admin Portal)
-    const landingQuickContact = document.getElementById('landingQuickContact');
-    const mainAppFooterContact = document.getElementById('mainAppFooterContact');
+    const landingQuickContact = document.getElementById('dynamicLandingContact');
     const contactHTML = `
         ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
         ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
@@ -156,7 +155,6 @@ function applyCompanyData() {
     `;
 
     if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
-    if (mainAppFooterContact) mainAppFooterContact.innerHTML = contactHTML;
 
     if (companyData.marqueeColor) {
         document.documentElement.style.setProperty('--accent-marquee', companyData.marqueeColor);

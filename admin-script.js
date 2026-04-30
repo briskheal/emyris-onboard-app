@@ -372,22 +372,31 @@ function applyCompanyData() {
         if (headerImg) headerImg.classList.add('hidden');
         console.log('ℹ️ Using Initials:', initials);
     }
-    const quickContact = document.getElementById('dashboardFooterContact');
-    const landingQuickContact = document.getElementById('landingPageFooterContact');
+    const quickContact = document.getElementById('dynamicDashboardContact');
+    const landingQuickContact = document.getElementById('dynamicLandingContact');
+    
     // Modern Footer Contact HTML
     const contactHTML = `
-        ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
-        ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
-        ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
-        ${companyData.email ? `<span>✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
+        ${companyData.phone ? `<span class="footer-contact-item">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
+        ${companyData.tollFree ? `<span class="footer-contact-item">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
+        ${companyData.website ? `<span class="footer-contact-item">🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
+        ${companyData.email ? `<span class="footer-contact-item">✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
     `;
 
     if (quickContact) quickContact.innerHTML = contactHTML;
     if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
+    
+    // Safety Cleanup: Ensure no footer items leaked into the logo container
+    const brandingLayer = document.getElementById('headerBrandingLayer');
+    if (brandingLayer) {
+        const leakedItems = brandingLayer.querySelectorAll('.footer-contact-item');
+        leakedItems.forEach(item => item.remove());
+    }
+
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) {
         headerTitle.innerText = (companyData.name || "Emyris Biolifesciences").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
-        console.log('✅ Updated Header Name:', headerTitle.innerText);
+        console.log('✅ Updated Header Name (innerText):', headerTitle.innerText);
     }
 
     try {
@@ -3299,131 +3308,98 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             return null;
         }
 
-        const template = htmlOverride || companyData[`${type}LetterTemplate`] || (type === 'offer' ? companyData.offerLetterTemplate : companyData.appointmentLetterTemplate);
-        if (!template) {
-            showToast("⚠️ Letter template is missing in Setup.", "error");
+        const editor = document.getElementById('unifiedEditor');
+        const editorHtml = htmlOverride || (editor ? editor.innerHTML : null);
+        if (!editorHtml) {
+            showToast("⚠️ Letter content is missing.", "error");
             return null;
         }
 
-        // 1. A4 Constants (210x297mm)
+        // 1. A4 Constants (210x297mm) at 96 DPI
         const PAGE_W_MM = 210;
         const PAGE_H_MM = 297;
-        const A4_PX_W = 794; // 210mm at 96 DPI
+        const A4_PX_W = 794; 
+        const A4_PX_H = 1123; 
 
-        const previewFrame = document.getElementById('livePreviewFrame');
-        const previewContainer = document.getElementById('livePreviewContainer');
-        if (!previewFrame || !previewContainer) { unlockUI(); return; }
+        // Get Letterhead & Styling
+        const letterhead = companyData.letterhead && companyData.letterhead.length > 0 
+            ? (Array.isArray(companyData.letterhead) ? companyData.letterhead[companyData.letterhead.length-1].data : companyData.letterhead)
+            : null;
+            
+        const headHeight = document.getElementById('headerHeight')?.value || 65;
+        const footHeight = document.getElementById('footerHeight')?.value || 25;
 
-        // 2. Measure actual A4 height in pixels for high-fidelity slicing
-        const measureEl = document.createElement('div');
-        measureEl.style.height = '297mm';
-        measureEl.style.width = '210mm';
-        measureEl.style.position = 'absolute';
-        measureEl.style.visibility = 'hidden';
-        document.body.appendChild(measureEl);
-        const actualPageH_px = measureEl.offsetHeight;
-        document.body.removeChild(measureEl);
+        // 2. Create high-fidelity container for capture
+        const captureContainer = document.createElement('div');
+        captureContainer.style.position = 'fixed';
+        captureContainer.style.left = '-9999px';
+        captureContainer.style.top = '0';
+        captureContainer.style.width = '210mm';
+        captureContainer.style.background = 'white';
+        captureContainer.style.color = 'black';
+        captureContainer.style.padding = '0';
+        captureContainer.style.margin = '0';
+        document.body.appendChild(captureContainer);
 
-        // Prepare branding for manual injection to avoid drift
-        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+        // Inject content with EXACT same styles as editor
+        captureContainer.innerHTML = `
+            <div id="capturePage" style="
+                width: 210mm;
+                min-height: 297mm;
+                padding: ${headHeight}mm 20mm ${footHeight}mm;
+                box-sizing: border-box;
+                font-family: 'Inter', -apple-system, sans-serif;
+                line-height: 1.6;
+                font-size: 11.5pt;
+                text-align: justify;
+                position: relative;
+                word-wrap: break-word;
+            ">
+                ${editorHtml}
+            </div>
+            <style>
+                #capturePage p { margin: 0 0 1.2em 0; }
+                #capturePage table { width: 100%; border-collapse: collapse; margin: 1.5em 0; table-layout: fixed; }
+                #capturePage th, #capturePage td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 10.5pt; }
+                #capturePage .text-center { text-align: center; }
+                #capturePage .text-right { text-align: right; }
+                #capturePage strong { font-weight: 700; }
+            </style>
+        `;
 
-        // 3. Prepare Frame for Capture (CLEAN - No letterhead layers)
-        const isInitiallyHidden = previewContainer.classList.contains('hidden');
-        
-        // Explicitly remove any existing branding layers before capture
-        const oldBranding = previewFrame.querySelectorAll('.a4-branding-layer');
-        oldBranding.forEach(b => b.remove());
+        // Wait for rendering
+        await new Promise(r => setTimeout(r, 500));
 
-        // Set skipLetterhead = true (4th param) for clean content capture
-        updateLivePreviewFrame(htmlOverride, null, true, true); 
-
-        if (isInitiallyHidden) {
-            previewContainer.classList.remove('hidden');
-            previewContainer.style.position = 'fixed';
-            previewContainer.style.left = '0';
-            previewContainer.style.top = '0';
-            previewContainer.style.zIndex = '-9999';
-            previewContainer.style.opacity = '0';
-            previewContainer.style.display = 'block';
-            previewContainer.style.visibility = 'visible';
-        }
-
-        // Wait for fonts to settle
-        await new Promise(r => setTimeout(r, 800)); 
-
-        // 4. High-Precision Capture
-        const currentZoom = document.getElementById('editorZoom')?.value || "1.0";
-        applyFidelityZoom(1.0);
-
-        // FORCE height to auto to ensure we capture EVERYTHING
-        const originalH = previewFrame.style.height;
-        const originalMinH = previewFrame.style.minHeight;
-        previewFrame.style.height = 'auto';
-        previewFrame.style.minHeight = 'auto';
-
-        const canvas = await html2canvas(previewFrame, {
+        const canvas = await html2canvas(captureContainer, {
             scale: 2, 
             useCORS: true,
-            allowTaint: true,
             logging: false,
-            backgroundColor: null, // CRITICAL: Keep transparent to see branding through holes
-            width: A4_PX_W, 
+            width: A4_PX_W,
             windowWidth: A4_PX_W,
-            onclone: (clonedDoc) => {
-                const clonedFrame = clonedDoc.getElementById('livePreviewFrame');
-                if (clonedFrame) {
-                    clonedFrame.style.width = '794px';
-                    clonedFrame.style.height = 'auto'; // Ensure it expands
-                    clonedFrame.style.minHeight = '297mm';
-                    clonedFrame.style.margin = '0';
-                    clonedFrame.style.transform = 'none';
-                    clonedFrame.style.boxShadow = 'none';
-                    clonedFrame.style.borderRadius = '0';
-                    clonedFrame.style.border = 'none';
-                    clonedFrame.style.background = 'transparent'; // CRITICAL: Transparency
-                    
-                    // CRITICAL: Remove the page break boundary lines (::before) for PDF
-                    const style = clonedDoc.createElement('style');
-                    style.innerHTML = '#livePreviewFrame::before { display: none !important; } .hard-page-break { border-color: transparent !important; }';
-                    clonedDoc.head.appendChild(style);
-                }
-            }
+            backgroundColor: '#ffffff'
         });
 
-        // Restore height
-        previewFrame.style.height = originalH;
-        previewFrame.style.minHeight = originalMinH;
-
-        // 5. Restore original state
-        if (isInitiallyHidden) {
-            previewContainer.classList.add('hidden');
-            updateLivePreviewFrame(htmlOverride, null, false);
-        }
-        applyFidelityZoom(currentZoom);
+        document.body.removeChild(captureContainer);
 
         const canvasW = canvas.width;
         const canvasH = canvas.height;
-        
-        // Calculate slicing height based on the measured browser scale * canvas scale
-        const finalSliceH = actualPageH_px * 2; // Since scale: 2
-        const tolerance_px = (10 * (actualPageH_px / 297)) * 2; // 10mm tolerance converted to scaled pixels
+        const finalSliceH = A4_PX_H * 2; 
 
-        // 6. PDF Generation (Slicing)
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
 
         let cursorY = 0;
         let pageCount = 0;
 
-        while (cursorY < canvasH - tolerance_px) {
+        while (cursorY < canvasH - 50) { // 50px tolerance
             if (pageCount > 0) pdf.addPage();
             
-            // A. Manually add branding to every page (Fixed position - NO drift)
-            if (lhAsset?.data) {
-                pdf.addImage(lhAsset.data, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+            // Add Letterhead to every page
+            if (letterhead) {
+                pdf.addImage(letterhead, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
             }
 
-            // B. Add content slice on top
+            // Slice content
             const sliceH = Math.min(finalSliceH, canvasH - cursorY);
             const sliceCanvas = document.createElement('canvas');
             sliceCanvas.width = canvasW;
@@ -3435,12 +3411,12 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
             const sliceH_mm = (sliceH / canvasW) * 210;
             
-            // Overlay content
             pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
             
             cursorY += finalSliceH;
             pageCount++;
         }
+        
         unlockUI();
         return { doc: pdf, totalPages: pageCount };
 
@@ -3451,6 +3427,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         return null;
     }
 }
+
 
 function fillLetterPlaceholders(text, app, forPDF = false) {
     const fd = app.formData || {};

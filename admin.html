@@ -284,7 +284,8 @@
 
 
         <footer class="landing-footer" style="margin-top: auto; order: 100;">
-            <div id="landingPageFooterContact" class="footer-contact" style="margin-bottom: 1.5rem;"></div>
+            <!-- Contact info will be dynamically injected here via ensureFooterContact() -->
+            <div id="dynamicLandingContact" class="footer-contact" style="margin-bottom: 1.5rem;"></div>
             <div style="opacity: 0.6; font-size: 0.75rem; letter-spacing: 0.5px;">&copy; 2026 Emyris Biolifesciences
                 Pvt. Ltd. | Secure Onboarding Infrastructure</div>
         </footer>
@@ -309,7 +310,7 @@
                     </div>
                     <a id="headerLogoLink" href="javascript:void(0)" onclick="backToLanding()" class="logo-link">
                         <div class="logo-text">
-                            <h2 id="headerCompName"></h2>
+                            <h2 id="headerCompName" style="pointer-events: none;"></h2>
                         </div>
                     </a>
                 </div>
@@ -1322,9 +1323,9 @@
                                                 <button class="btn btn-sm" onclick="trimDocument()"
                                                     style="padding: 0.3rem 0.8rem; background: rgba(255,255,255,0.1); font-size: 0.7rem; color: white; border: 1px solid rgba(255,255,255,0.2);">🧹
                                                     Trim White-space</button>
-                                                <button class="btn btn-sm btn-primary" onclick="printPreviewDocument()"
-                                                    style="padding: 0.4rem 1.5rem; background: #6366f1; border-color: #6366f1; font-weight: 700; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);">
-                                                    🖨️ Print Final Letter</button>
+                                                <button class="btn btn-sm btn-primary" onclick="previewActiveTemplate()"
+                                                    style="padding: 0.4rem 1.5rem; background: #10b981; border-color: #10b981; font-weight: 700; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                                                    ⬇️ Download Dossier PDF</button>
                                             </div>
                                             <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(false)"
                                                 style="color: #ef4444; border-color: #ef4444; padding: 0.4rem 1rem; font-size: 0.75rem;">Return
@@ -1931,7 +1932,8 @@
 
         <footer class="app-footer"
             style="padding: 2rem 1rem; text-align: center; border-top: 1px solid var(--glass-border);">
-            <div id="dashboardFooterContact"
+            <!-- Contact info will be dynamically injected here via ensureFooterContact() -->
+            <div id="dynamicDashboardContact"
                 style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); flex-wrap: wrap;">
             </div>
             <div>&copy; 2026 Emyris Biolifesciences Pvt. Ltd. | Secure Onboarding Portal</div>
