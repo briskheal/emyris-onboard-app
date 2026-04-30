@@ -3233,6 +3233,10 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         // 3. Prepare Frame for Capture (CLEAN - No letterhead layers)
         const isInitiallyHidden = previewContainer.classList.contains('hidden');
         
+        // Explicitly remove any existing branding layers before capture
+        const oldBranding = previewFrame.querySelectorAll('.a4-branding-layer');
+        oldBranding.forEach(b => b.remove());
+
         // Set skipLetterhead = true (4th param) for clean content capture
         updateLivePreviewFrame(htmlOverride, null, true, true); 
 
@@ -3258,7 +3262,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             scale: 2, 
             useCORS: true,
             allowTaint: true,
-            backgroundColor: "#ffffff",
+            backgroundColor: null, // CRITICAL: Keep transparent to see branding through holes
             width: A4_PX_W, 
             windowWidth: A4_PX_W,
             onclone: (clonedDoc) => {
@@ -3270,6 +3274,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     clonedFrame.style.boxShadow = 'none';
                     clonedFrame.style.borderRadius = '0';
                     clonedFrame.style.border = 'none';
+                    clonedFrame.style.background = 'transparent'; // CRITICAL: Transparency
                     
                     // CRITICAL: Remove the page break boundary lines (::before) for PDF
                     const style = clonedDoc.createElement('style');

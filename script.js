@@ -1009,15 +1009,16 @@ async function downloadMyLetter(type) {
             logging: false,
             width: A4_PX_W,
             windowWidth: A4_PX_W,
-            backgroundColor: "#ffffff",
+            backgroundColor: null, // CRITICAL: Transparency for multi-page branding
             onclone: (clonedDoc) => {
                 const clonedFrame = clonedDoc.getElementById(container.id);
                 if (clonedFrame) {
                     clonedFrame.style.width = '794px';
-                    clonedFrame.style.padding = '65mm 20mm 25mm'; // Ensure standard margins
+                    clonedFrame.style.padding = '65mm 20mm 25mm'; 
                     clonedFrame.style.margin = '0';
                     clonedFrame.style.boxShadow = 'none';
                     clonedFrame.style.borderRadius = '0';
+                    clonedFrame.style.background = 'transparent'; // CRITICAL: Transparency
                 }
             }
         });
