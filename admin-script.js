@@ -3411,9 +3411,15 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 ${editorHtml}
             </div>
         `;
+        
+        // Finalize branding for capture
+        const capturePage = captureContainer.querySelector('#capturePage');
+        if (typeof applyBrandingLayers === 'function') {
+            applyBrandingLayers(capturePage);
+        }
 
         // Wait for rendering and fonts
-        await new Promise(r => setTimeout(r, 600));
+        await new Promise(r => setTimeout(r, 800));
 
         const canvas = await html2canvas(captureContainer, {
             scale: 2, 
@@ -3421,7 +3427,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             logging: false,
             width: A4_PX_W,
             windowWidth: A4_PX_W,
-            backgroundColor: null // Important: Transparent background for letterhead visibility
+            backgroundColor: '#ffffff' // Solid background since letterhead is now part of the capture
         });
 
         document.body.removeChild(captureContainer);
@@ -3439,12 +3445,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         while (cursorY < canvasH - 50) { 
             if (pageCount > 0) pdf.addPage();
             
-            // Add Letterhead
-            if (letterhead) {
-                pdf.addImage(letterhead, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
-            }
-
-            // Slice content
+            // Slice content (Includes Letterhead from html2canvas)
             const sliceH = Math.min(finalSliceH, canvasH - cursorY);
             const sliceCanvas = document.createElement('canvas');
             sliceCanvas.width = canvasW;
