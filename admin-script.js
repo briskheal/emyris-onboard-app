@@ -3361,14 +3361,12 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
 
         // 3. Create high-fidelity container for capture
         const captureContainer = document.createElement('div');
+        captureContainer.id = 'pdfCaptureContainer';
         captureContainer.style.position = 'fixed';
         captureContainer.style.left = '-9999px';
         captureContainer.style.top = '0';
         captureContainer.style.width = '210mm';
         captureContainer.style.background = 'white';
-        captureContainer.style.color = 'black';
-        captureContainer.style.padding = '0';
-        captureContainer.style.margin = '0';
         captureContainer.style.zIndex = '-1000';
         document.body.appendChild(captureContainer);
 
@@ -3388,10 +3386,10 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     font-size: ${size}pt !important;
                     text-align: ${align} !important;
                     position: relative !important;
+                    z-index: 1 !important;
                     word-wrap: break-word !important;
-                    background: white !important;
+                    background: transparent !important;
                     color: #1e293b !important;
-                    box-shadow: none !important;
                 }
                 
                 /* Match Editor's Strict Inheritance */
@@ -3411,8 +3409,14 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 .pdf-capture-page th, .pdf-capture-page td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt) !important; line-height: 1.1 !important; }
                 .pdf-capture-page br { line-height: 1.1 !important; }
                 
-                /* Ensure NO branding layers are captured twice */
-                .pdf-capture-page .a4-branding-layer { z-index: -1 !important; }
+                .pdf-letterhead-layer {
+                    position: absolute !important;
+                    left: 0 !important;
+                    width: 210mm !important;
+                    height: 297mm !important;
+                    z-index: 0 !important;
+                    pointer-events: none !important;
+                }
             </style>
             <div id="capturePage" class="pdf-capture-page">
                 ${editorHtml}
@@ -3426,17 +3430,14 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         
         if (lhAsset?.data) {
             const totalH = capturePage.scrollHeight;
-            const pageH = 297 * 3.78; // Approx px for 297mm
+            const pageH = 297 * 3.78; 
             const pagesNeeded = Math.max(1, Math.ceil(totalH / pageH));
             
             for (let i = 0; i < pagesNeeded; i++) {
                 const img = document.createElement('img');
                 img.src = lhAsset.data;
-                img.style.position = 'absolute';
+                img.className = 'pdf-letterhead-layer';
                 img.style.top = `${i * 297}mm`;
-                img.style.left = '0';
-                img.style.width = '210mm';
-                img.style.height = '297mm';
                 img.style.zIndex = '-1';
                 img.style.pointerEvents = 'none';
                 capturePage.appendChild(img);
