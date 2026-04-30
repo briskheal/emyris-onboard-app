@@ -89,11 +89,12 @@ const dbOptions = {
 };
 
 if (MONGODB_URI) {
-    connMain = mongoose.createConnection(MONGODB_URI, dbOptions);
-    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI, dbOptions);
+    mongoose.connect(MONGODB_URI, dbOptions)
+        .then(() => console.log('✅ [SYSTEM] Global DB Connected via mongoose.connect'))
+        .catch(err => console.error('❌ [SYSTEM] DB Connection Error:', err));
 
-    connMain.on('connected', () => console.log('✅ Main DB Connected'));
-    connAssets.on('connected', () => console.log('💎 Asset DB Connected'));
+    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI, dbOptions);
+    connAssets.on('connected', () => console.log('💎 [SYSTEM] Asset Storage Connected'));
 } else {
     console.warn('MONGODB_URI not found. Running in ephemeral mode.');
 }
@@ -219,17 +220,12 @@ const divisionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-// Bind models to connections
-const Company = connMain ? connMain.model('Company', companySchema) : mongoose.model('Company', companySchema);
-const Applicant = connMain ? connMain.model('Applicant', applicantSchema) : mongoose.model('Applicant', applicantSchema);
-const Division = connMain ? connMain.model('Division', divisionSchema) : mongoose.model('Division', divisionSchema);
-
-const hqSchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true },
-    active: { type: Boolean, default: true }
-});
-const HQ = connMain ? connMain.model('HQ', hqSchema) : mongoose.model('HQ', hqSchema);
-const Asset = connAssets ? connAssets.model('Asset', assetSchema) : mongoose.model('Asset', assetSchema);
+// Unified Global Model Definitions
+const Company = mongoose.models.Company || mongoose.model('Company', companySchema);
+const Applicant = mongoose.models.Applicant || mongoose.model('Applicant', applicantSchema);
+const Division = mongoose.models.Division || mongoose.model('Division', divisionSchema);
+const HQ = mongoose.models.HQ || mongoose.model('HQ', hqSchema);
+const Asset = connAssets ? (connAssets.models.Asset || connAssets.model('Asset', assetSchema)) : (mongoose.models.Asset || mongoose.model('Asset', assetSchema));
 
 // Startup logic
 async function initializeApp() {
@@ -1637,7 +1633,7 @@ app.get('/api/company-profile', async (req, res) => {
         }
 
         // Hydrate with latest active divisions
-        const divisions = await mongoose.model('Division').find({ active: true }).sort({ name: 1 }).lean();
+        const divisions = await Division.find({ active: true }).sort({ name: 1 }).lean();
         profile.divisions = divisions;
 
         res.status(200).json(profile);
@@ -1675,22 +1671,26 @@ app.get('/api/company-data', async (req, res) => {
             };
         });
 
-        const data = {
-            ...company,
-            divisions: enrichedDivisions,
-            hqs: hqs,
-            logo: "" // Logo logic handled by asset hydration if needed
+        // Hydrate assets (Logo, Letterhead, etc.)
+        const assetMap = {
+            activeLogoId: 'logo',
+            activeStampId: 'stamp',
+            activeSignatureId: 'digitalSignature',
+            activeLetterheadId: 'letterheadImage'
         };
 
-        // Hydrate logo and letterhead
-        if (company.activeLogoId) {
-            const asset = await Asset.findById(company.activeLogoId).lean();
-            if (asset) data.logo = asset.data;
+        const data = { ...company };
+        for (const [key, field] of Object.entries(assetMap)) {
+            if (company[key]) {
+                const asset = await Asset.findById(company[key]).lean();
+                data[field] = asset ? [asset] : [];
+            } else {
+                data[field] = [];
+            }
         }
-        if (company.activeLetterheadId) {
-            const asset = await Asset.findById(company.activeLetterheadId).lean();
-            if (asset) data.letterheadImage = [asset];
-        }
+
+        data.divisions = enrichedDivisions;
+        data.hqs = hqs;
 
         res.json(data);
     } catch (e) {
