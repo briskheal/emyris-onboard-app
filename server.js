@@ -91,16 +91,16 @@ const dbOptions = {
 if (MONGODB_URI) {
     mongoose.connect(MONGODB_URI, dbOptions)
         .then(() => {
-            console.log('✅ [SYSTEM] Unified DB Connected: ' + MONGODB_URI.split('/').pop().split('?')[0]);
+            console.log('✅ [SYSTEM] Unified DB Connected: ' + (MONGODB_URI.split('/').pop().split('?')[0] || 'Default'));
             connMain = mongoose.connection;
             connAssets = mongoose.connection;
             
-            // Re-bind models to the active connection to be absolutely certain
-            module.exports.Company = mongoose.model('Company');
-            module.exports.Division = mongoose.model('Division');
-            module.exports.HQ = mongoose.model('HQ');
-            module.exports.Applicant = mongoose.model('Applicant');
-            module.exports.Asset = mongoose.model('Asset');
+            // Critical: Update local variables so routes use the active connection
+            Company = mongoose.model('Company');
+            Division = mongoose.model('Division');
+            HQ = mongoose.model('HQ');
+            Applicant = mongoose.model('Applicant');
+            Asset = mongoose.model('Asset');
         })
         .catch(err => console.error('❌ [SYSTEM] DB Connection Error:', err));
 } else {
