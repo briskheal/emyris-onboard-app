@@ -338,6 +338,28 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 }
 
 // --- APPLICANT REGISTRATION MODULE (RESTART) ---
+// Draft Save Endpoint (Partial Progress)
+app.post('/api/applicant/save-draft', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Not found' });
+
+        // Update root fields from form data if they exist
+        if (formData.firstName || formData.lastName) {
+            applicant.fullName = `${formData.firstName || ""} ${formData.middleName || ""} ${formData.lastName || ""}`.trim();
+        }
+        if (formData.phone) applicant.phone = formData.phone;
+        
+        applicant.formData = { ...applicant.formData, ...formData };
+        applicant.markModified('formData');
+        await applicant.save();
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to save draft' });
+    }
+});
+
 app.post('/api/register-applicant', async (req, res) => {
     let { title, fullName, email, phone, division, designation } = req.body;
     email = email.trim().toLowerCase();
