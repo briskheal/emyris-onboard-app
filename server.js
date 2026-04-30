@@ -20,6 +20,7 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || 'https://emyonboard.com';
 
 
 
@@ -1120,7 +1121,7 @@ app.post('/api/admin/reject-document', async (req, res) => {
                         <p style="margin: 0; color: #991b1b;"><strong>Reason for Rejection:</strong><br>${reason || 'The document was either unclear, incorrect, or expired.'}</p>
                     </div>
                     <p>Your portal has been <strong>unlocked</strong>. Please log in using your registered email and PIN to re-upload the correct document.</p>
-                    <a href="https://emyris-onboard-app.onrender.com" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Login to Portal</a>
+                    <a href="${BASE_URL}" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Login to Portal</a>
                 </div>
             `
         });
@@ -1552,7 +1553,7 @@ app.post('/api/admin/save-letter-snapshot', async (req, res) => {
                             </div>
                             <p>Please log in to the portal to view, download, or accept the document.</p>
                             <div style="text-align: center; margin-top: 30px;">
-                                <a href="https://emyris-onboard-app.onrender.com" style="display: inline-block; padding: 12px 24px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Access Portal</a>
+                                <a href="${BASE_URL}" style="display: inline-block; padding: 12px 24px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Access Portal</a>
                             </div>
                         </div>
                         <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">

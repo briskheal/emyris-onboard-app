@@ -111,15 +111,7 @@ function applyCompanyData() {
     const headerCompName = document.getElementById('headerCompName');
     
     if (dpName) dpName.innerText = compName;
-    if (headerCompName) {
-        headerCompName.innerText = compName;
-        // REGRESSION FIX: Purge any contact info leakage from the header logo-text
-        const logoText = headerCompName.parentElement;
-        if (logoText && logoText.classList.contains('logo-text')) {
-            const ghosts = logoText.querySelectorAll('p, span:not(#headerCompName)');
-            ghosts.forEach(g => g.remove());
-        }
-    }
+    if (headerCompName) headerCompName.innerText = compName;
     
     const logoImg = document.getElementById('displayLogo');
     const headerLogoImg = document.getElementById('headerLogoImg');

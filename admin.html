@@ -283,7 +283,7 @@
         </div>
 
         <footer class="landing-footer">
-            <div id="landingQuickContact" class="footer-contact" style="margin-bottom: 1.5rem;"></div>
+            <div id="landingPageFooterContact" class="footer-contact" style="margin-bottom: 1.5rem;"></div>
             <div style="opacity: 0.6; font-size: 0.75rem; letter-spacing: 0.5px;">&copy; 2026 Emyris Biolifesciences
                 Pvt. Ltd. | Secure Onboarding Infrastructure</div>
         </footer>
@@ -876,7 +876,19 @@
                                                 Library</span>
                                             <span style="font-size: 0.85rem;">Export JSON</span>
                                         </button>
+                                        <!-- System Vacuum Button -->
+                                        <button type="button" onclick="vacuumAssets()"
+                                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 1rem; border-radius: 12px; border: 1px solid rgba(16,185,129,0.35); background: rgba(16,185,129,0.07); color: #6ee7b7; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; line-height: 1.2; min-height: 100px;"
+                                            onmouseover="this.style.background='rgba(16,185,129,0.15)'; this.style.transform='translateY(-2px)'"
+                                            onmouseout="this.style.background='rgba(16,185,129,0.07)'; this.style.transform='translateY(0)'">
+                                            <span style="font-size: 1.4rem;">🧹</span>
+                                            <span
+                                                style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; opacity: 0.8;">Asset
+                                                Vacuum</span>
+                                            <span style="font-size: 0.85rem;">Prune Unused</span>
+                                        </button>
                                         <!-- Nuclear Reset Button -->
+
                                         <button type="button" onclick="nukeDatabase()"
                                             style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 1rem; border-radius: 12px; border: 1px solid rgba(239,68,68,0.35); background: rgba(239,68,68,0.07); color: #fca5a5; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; line-height: 1.2; min-height: 100px;"
                                             onmouseover="this.style.background='rgba(239,68,68,0.15)'; this.style.transform='translateY(-2px)'"
@@ -1093,80 +1105,87 @@
                                     </div>
                                 </div>
 
-                                <div class="editor-admin-bar">
-                                    <!-- Group 1: Identity & Stationery (Setup) -->
-                                    <div class="admin-bar-group">
-                                        <div class="pill-container" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); height: 40px; padding: 0 10px;">
-                                            <div style="display: flex; align-items: center; gap: 8px;">
-                                                <i class="fas fa-user-tie" style="color: var(--accent); font-size: 0.8rem;"></i>
-                                                <input type="text" id="signatoryName" placeholder="Signatory..."
-                                                    style="font-size: 0.8rem; background: transparent; border: none; color: white; width: 100px; outline: none; font-weight: 600;">
+                                <div class="editor-admin-bar"
+                                    style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; padding: 1.25rem 2rem; background: rgba(15, 23, 42, 0.4); border-bottom: 1px solid var(--glass-border);">
+                                    
+                                    <!-- Left Group: Signatory & Context -->
+                                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                                        <div class="pill-container" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); height: 42px; padding: 0 12px;">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
+                                                <i class="fas fa-user-tie" style="color: var(--accent); font-size: 0.9rem;"></i>
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <label style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; margin: 0; line-height: 1;">Signatory Name</label>
+                                                    <input type="text" id="signatoryName" placeholder="Enter Name..."
+                                                        style="font-size: 0.8rem; background: transparent; border: none; color: white; width: 130px; padding: 0; outline: none; font-weight: 600;">
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="pill-container" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); height: 40px; padding: 0 10px;">
-                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div class="pill-container" style="background: rgba(255,255,255,0.03); border-color: rgba(255,255,255,0.1); height: 42px; padding: 0 12px;">
+                                            <div style="display: flex; align-items: center; gap: 10px;">
                                                 <i class="fas fa-briefcase" style="color: var(--accent); font-size: 0.8rem;"></i>
-                                                <input type="text" id="signatoryDesg" placeholder="Role..."
-                                                    style="font-size: 0.8rem; background: transparent; border: none; color: white; width: 100px; outline: none; font-weight: 600;">
+                                                <div style="display: flex; flex-direction: column;">
+                                                    <label style="font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; margin: 0; line-height: 1;">Designation</label>
+                                                    <input type="text" id="signatoryDesg" placeholder="Enter Role..."
+                                                        style="font-size: 0.8rem; background: transparent; border: none; color: white; width: 130px; padding: 0; outline: none; font-weight: 600;">
+                                                </div>
                                             </div>
                                         </div>
-                                        <button class="btn btn-sm btn-outline" id="toggleStationeryBtn" onclick="toggleTruePrintMode()" 
-                                            style="padding: 0 0.8rem; height: 40px; font-weight: 600; border-radius: 8px; font-size: 0.75rem;">
-                                            <i class="fas fa-print"></i> Stationery
-                                        </button>
                                     </div>
 
-                                    <div class="admin-bar-divider"></div>
-
-                                    <!-- Group 2: Drafting Aids -->
-                                    <div class="admin-bar-group">
-                                        <button class="btn btn-sm btn-outline" onclick="toggleEditorSidebar()" 
-                                            title="Tokens & Tags" style="padding: 0; width: 40px; height: 40px; border-radius: 8px;">
-                                            <i class="fas fa-tags"></i>
+                                    <!-- Right Group: Target & Primary Actions -->
+                                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                                        <button class="btn btn-sm btn-outline" id="toggleSidebarBtn" onclick="toggleEditorSidebar()" 
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-tags"></i> Tags
                                         </button>
-                                        <button class="btn btn-sm btn-outline" onclick="showTemplateHistory()" 
-                                            title="Version History" style="padding: 0; width: 40px; height: 40px; border-radius: 8px;">
-                                            <i class="fas fa-history"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)"
-                                            style="padding: 0 0.8rem; height: 40px; font-weight: 600; border-radius: 8px; font-size: 0.75rem;">
-                                            <i class="fas fa-eye"></i> Preview
-                                        </button>
-                                    </div>
 
-                                    <div class="admin-bar-divider"></div>
-
-                                    <!-- Group 3: Target & Issuance -->
-                                    <div class="admin-bar-group" style="flex: 1; justify-content: flex-end;">
                                         <div class="pill-container"
-                                            style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); height: 40px; padding: 0 10px; display: flex; align-items: center;">
-                                            <i class="fas fa-user-circle" style="color: var(--primary-light); margin-right: 6px; font-size: 0.9rem;"></i>
+                                            style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); height: 42px; padding: 0 12px; display: flex; align-items: center;">
+                                            <i class="fas fa-user-circle" style="color: var(--primary-light); margin-right: 8px;"></i>
+                                            <label style="font-size: 0.65rem; color: var(--primary-light); margin:0; text-transform: uppercase; font-weight: 800;">Target:</label>
                                             <select id="hubTargetApplicant" onchange="fillEditorWithRealData()"
-                                                style="background:transparent; border:none; color:white; font-size:0.8rem; width:130px; cursor: pointer; outline: none; font-weight: 600;">
-                                                <option value="">-- Target --</option>
+                                                style="background:transparent; border:none; color:white; font-size:0.85rem; width:140px; margin-left: 5px; cursor: pointer; outline: none; font-weight: 600;">
+                                                <option value="">-- Select Applicant --</option>
                                             </select>
                                         </div>
+
+                                        <button class="btn btn-sm btn-primary" id="issueLetterBtn"
+                                            onclick="publishLetterToHub()"
+                                            style="padding: 0 1.25rem; font-size: 0.85rem; background: linear-gradient(135deg, var(--accent), #4f46e5); border: none; height: 42px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-paper-plane"></i> Issue to Hub
+                                        </button>
+                                        
                                         <button class="btn btn-sm btn-outline" onclick="runPreFlightCheck()" 
-                                            title="Pre-flight Check" style="padding: 0; width: 40px; height: 40px; border-radius: 8px; border-color: var(--primary);">
-                                            <i class="fas fa-stethoscope"></i>
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px; border-color: var(--primary);">
+                                            <i class="fas fa-stethoscope"></i> Pre-flight
                                         </button>
-                                        <button class="btn btn-sm btn-primary" onclick="publishLetterToHub()"
-                                            style="padding: 0 1rem; background: linear-gradient(135deg, var(--accent), #4f46e5); border: none; height: 40px; font-weight: 700; border-radius: 8px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
-                                            <i class="fas fa-paper-plane"></i> Issue
-                                        </button>
-                                    </div>
 
-                                    <div class="admin-bar-divider"></div>
-
-                                    <!-- Group 4: Master Control -->
-                                    <div class="admin-bar-group">
-                                        <button class="btn btn-sm btn-primary" onclick="saveActiveTemplate()"
-                                            title="Save as Master" style="padding: 0; width: 40px; height: 40px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; border-radius: 8px;">
-                                            <i class="fas fa-save"></i>
+                                        <button class="btn btn-sm btn-outline" id="toggleStationeryBtn" onclick="toggleTruePrintMode()" 
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-print"></i> Stationery: ON
                                         </button>
+                                        
+                                        <button class="btn btn-sm btn-outline" onclick="showTemplateHistory()" 
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-history"></i> History
+                                        </button>
+                                        
+                                        <div class="v-divider" style="height: 30px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
+                                        
+                                        <button class="btn btn-sm btn-outline" onclick="toggleLivePreviewUI(true)"
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-file-invoice"></i> Preview
+                                        </button>
+                                        
+                                        <button class="btn btn-sm btn-primary" id="saveTemplateBtn"
+                                            onclick="saveActiveTemplate()"
+                                            style="padding: 0 1.25rem; height: 42px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-save"></i> Save Master
+                                        </button>
+                                        
                                         <button class="btn btn-sm btn-outline" onclick="resetEditorToMaster()"
-                                            title="Reset to Master" style="padding: 0; width: 40px; height: 40px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 8px;">
-                                            <i class="fas fa-sync-alt"></i>
+                                            style="padding: 0 1rem; height: 42px; border-color: rgba(239, 68, 68, 0.3); color: #ef4444; border-radius: 10px; font-weight: 600;">
+                                            <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -1906,7 +1925,7 @@
 
         <footer class="app-footer"
             style="padding: 2rem 1rem; text-align: center; border-top: 1px solid var(--glass-border);">
-            <div id="mainAppFooterContact"
+            <div id="dashboardFooterContact"
                 style="display: flex; justify-content: center; gap: 2rem; margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); flex-wrap: wrap;">
             </div>
             <div>&copy; 2026 Emyris Biolifesciences Pvt. Ltd. | Secure Onboarding Portal</div>

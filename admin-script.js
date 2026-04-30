@@ -372,8 +372,8 @@ function applyCompanyData() {
         if (headerImg) headerImg.classList.add('hidden');
         console.log('ℹ️ Using Initials:', initials);
     }
-    const quickContact = document.getElementById('mainAppFooterContact');
-    const landingQuickContact = document.getElementById('landingQuickContact');
+    const quickContact = document.getElementById('dashboardFooterContact');
+    const landingQuickContact = document.getElementById('landingPageFooterContact');
     // Modern Footer Contact HTML
     const contactHTML = `
         ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
@@ -387,13 +387,6 @@ function applyCompanyData() {
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) {
         headerTitle.innerText = (companyData.name || "Emyris Biolifesciences").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
-        
-        // REGRESSION FIX: Explicitly purge any contact details that might have leaked into the header branding
-        const logoText = headerTitle.parentElement;
-        if (logoText && logoText.classList.contains('logo-text')) {
-            const ghosts = logoText.querySelectorAll('p, span:not(#headerCompName)');
-            ghosts.forEach(g => g.remove());
-        }
         console.log('✅ Updated Header Name:', headerTitle.innerText);
     }
 
@@ -3026,37 +3019,117 @@ async function previewActiveTemplate() {
 }
 
 async function printPreviewDocument() {
-    const type = document.getElementById('activeTemplateSelect').value;
-    const editorHtml = document.getElementById('unifiedEditor').innerHTML.trim();
-    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
-    
-    if (!editorHtml || editorHtml === '<br>') {
+    const editor = document.getElementById('unifiedEditor');
+    if (!editor || !editor.innerHTML.trim() || editor.innerHTML === '<br>') {
         showToast("⚠️ Editor is empty", "warning");
         return;
     }
 
-    lockUI("⏳ Preparing Print View...");
+    lockUI("⏳ Preparing High-Fidelity Print View...");
     
     try {
-        const mockEmail = "preview_" + Date.now() + "@emyris.test";
-        const finalEmail = targetEmail || mockEmail;
+        // Create a hidden print container
+        const printFrame = document.createElement('iframe');
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        document.body.appendChild(printFrame);
+
+        const doc = printFrame.contentWindow.document;
         
-        const pdfData = await generateLetterPDF(finalEmail, type, editorHtml);
+        // Copy Styles from Main Document
+        const styles = Array.from(document.styleSheets);
+        let styleHtml = '';
+        try {
+            styles.forEach(sheet => {
+                if (sheet.href) {
+                    styleHtml += `<link rel="stylesheet" href="${sheet.href}">`;
+                } else {
+                    const rules = Array.from(sheet.cssRules).map(r => r.cssText).join('\n');
+                    styleHtml += `<style>${rules}</style>`;
+                }
+            });
+        } catch(e) { console.warn("Some styles skipped due to CORS", e); }
+
+        // Get Letterhead
+        const letterhead = companyData.letterhead && companyData.letterhead.length > 0 
+            ? (Array.isArray(companyData.letterhead) ? companyData.letterhead[companyData.letterhead.length-1].data : companyData.letterhead)
+            : null;
+
+        const contentHtml = editor.innerHTML;
         
-        if (pdfData && pdfData.doc) {
-            pdfData.doc.autoPrint();
-            window.open(pdfData.doc.output('bloburl'), '_blank');
-            showToast("✅ Print Dialog Opened", "success");
-        } else {
-            showToast("❌ Generation failed", "error");
-        }
+        doc.open();
+        doc.write(`
+            <html>
+            <head>
+                <title>Emyris Onboard - Document Print</title>
+                ${styleHtml}
+                <style>
+                    @page { margin: 0; size: A4; }
+                    body { margin: 0; padding: 0; background: white !important; }
+                    .print-page {
+                        position: relative;
+                        width: 210mm;
+                        min-height: 297mm;
+                        padding: 25mm 20mm;
+                        margin: 0 auto;
+                        box-sizing: border-box;
+                        background: white;
+                        color: black !important;
+                    }
+                    .print-letterhead {
+                        position: absolute;
+                        top: 0; left: 0; width: 100%; height: 100%;
+                        z-index: 0;
+                        pointer-events: none;
+                        background-image: url('${letterhead}');
+                        background-size: contain;
+                        background-repeat: no-repeat;
+                        background-position: center;
+                    }
+                    .print-content {
+                        position: relative;
+                        z-index: 10;
+                        font-family: 'Inter', sans-serif;
+                        line-height: 1.6;
+                        font-size: 11pt;
+                    }
+                    /* Ensure WYSIWYG parity */
+                    p { margin-bottom: 1em; }
+                    table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                </style>
+            </head>
+            <body>
+                <div class="print-page">
+                    ${letterhead ? `<div class="print-letterhead"></div>` : ''}
+                    <div class="print-content">
+                        ${contentHtml}
+                    </div>
+                </div>
+                <script>
+                    window.onload = () => {
+                        window.print();
+                        setTimeout(() => { window.frameElement.remove(); }, 1000);
+                    };
+                </script>
+            </body>
+            </html>
+        `);
+        doc.close();
+        
+        showToast("✅ Native Print Dialog Opened", "success");
     } catch (e) {
-        console.error("Print Error:", e);
-        showToast("❌ Print Generation Failed", "error");
+        console.error("Native Print Error:", e);
+        showToast("❌ Print Failed", "error");
     } finally {
         unlockUI();
     }
 }
+
 
 function toggleLivePreviewUI(show) {
     const container = document.getElementById('livePreviewContainer');
@@ -3346,48 +3419,30 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         let cursorY = 0;
         let pageCount = 0;
 
-        const headerH_mm = 65;
-        const footerH_mm = 25;
-        const availableH_mm = PAGE_H_MM - headerH_mm - footerH_mm;
-        const availableH_px = (availableH_mm * (actualPageH_px / 297)) * 2;
-
         while (cursorY < canvasH - tolerance_px) {
             if (pageCount > 0) pdf.addPage();
             
-            // A. Always add branding to every page
+            // A. Manually add branding to every page (Fixed position - NO drift)
             if (lhAsset?.data) {
                 pdf.addImage(lhAsset.data, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
             }
 
-            // B. Content Slicing Logic
-            if (pageCount === 0) {
-                // Page 1: Capture from 0 (includes the 65mm CSS padding already)
-                const sliceH = Math.min(finalSliceH, canvasH - cursorY);
-                const sliceCanvas = document.createElement('canvas');
-                sliceCanvas.width = canvasW; sliceCanvas.height = sliceH;
-                const sCtx = sliceCanvas.getContext('2d');
-                sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
-                
-                const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
-                const sliceH_mm = (sliceH / canvasW) * 210;
-                pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
-                
-                cursorY += finalSliceH;
-            } else {
-                // Page 2+: Capture a SHORTER slice and offset it by the header height
-                const sliceH = Math.min(availableH_px, canvasH - cursorY);
-                const sliceCanvas = document.createElement('canvas');
-                sliceCanvas.width = canvasW; sliceCanvas.height = sliceH;
-                const sCtx = sliceCanvas.getContext('2d');
-                sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
-                
-                const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
-                const sliceH_mm = (sliceH / canvasW) * 210;
-                // Place content BELOW the 65mm header
-                pdf.addImage(sliceData, 'PNG', 0, headerH_mm, 210, sliceH_mm, undefined, 'FAST');
-                
-                cursorY += availableH_px;
-            }
+            // B. Add content slice on top
+            const sliceH = Math.min(finalSliceH, canvasH - cursorY);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvasW;
+            sliceCanvas.height = sliceH;
+            
+            const sCtx = sliceCanvas.getContext('2d');
+            sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
+            
+            const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
+            const sliceH_mm = (sliceH / canvasW) * 210;
+            
+            // Overlay content
+            pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
+            
+            cursorY += finalSliceH;
             pageCount++;
         }
         unlockUI();
