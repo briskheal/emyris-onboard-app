@@ -1636,6 +1636,10 @@ app.get('/api/company-profile', async (req, res) => {
             }
         }
 
+        // Hydrate with latest active divisions
+        const divisions = await mongoose.model('Division').find({ active: true }).sort({ name: 1 }).lean();
+        profile.divisions = divisions;
+
         res.status(200).json(profile);
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
 });
