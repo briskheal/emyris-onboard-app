@@ -11,6 +11,9 @@ let activeUploads = 0;
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', initializeApp);
 
+const POST_SUBMISSION_STATUSES = ['submitted', 'approved', 'onboarding', 'joined', 'confirmed', 'rejected'];
+const OPTIONAL_DOCS = ["Last Month Salary Slip", "Previous Company Appointment Letter"];
+
 async function initializeApp() {
     console.log('🚀 Applicant Portal initializing...');
     initBackgroundAnimations();
@@ -383,20 +386,39 @@ function prefillForm() {
     if (!form) return;
 
     // 1. Prefill from root properties
-    if (currentApplicant.title) document.getElementById('onboardingTitle').value = currentApplicant.title;
+    if (currentApplicant.title) {
+        const el = document.getElementById('onboardingTitle');
+        if (el) el.value = currentApplicant.title;
+    }
     
     const fullName = currentApplicant.fullName || "";
     const nameParts = fullName.split(' ');
-    if (nameParts.length >= 1) document.getElementById('firstName').value = nameParts[0];
+    if (nameParts.length >= 1) {
+        const el = document.getElementById('firstName');
+        if (el) el.value = nameParts[0];
+    }
     if (nameParts.length >= 3) {
-        document.getElementById('lastName').value = nameParts.pop();
-        document.getElementById('middleName').value = nameParts.slice(1).join(' ');
+        const ln = document.getElementById('lastName');
+        const mn = document.getElementById('middleName');
+        if (ln) ln.value = nameParts.pop();
+        if (mn) mn.value = nameParts.slice(1).join(' ');
     } else if (nameParts.length === 2) {
-        document.getElementById('lastName').value = nameParts[1];
+        const ln = document.getElementById('lastName');
+        if (ln) ln.value = nameParts[1];
     }
 
-    if (currentApplicant.phone) document.getElementById('phone').value = currentApplicant.phone;
-    if (currentApplicant.hq) document.getElementById('hq').value = currentApplicant.hq;
+    if (currentApplicant.phone) {
+        const el = document.getElementById('phone');
+        if (el) el.value = currentApplicant.phone;
+    }
+    if (currentApplicant.email) {
+        const el = document.getElementById('email');
+        if (el) el.value = currentApplicant.email;
+    }
+    if (currentApplicant.hq) {
+        const el = document.getElementById('hq');
+        if (el) el.value = currentApplicant.hq;
+    }
     
     // 2. Prefill from formData
     if (currentApplicant.formData) {
@@ -573,11 +595,16 @@ function showReview() {
     const docItems = reqDocs.map(dName => {
         const catDocs = docs.filter(u => u.category === dName);
         const has = catDocs.length > 0;
+        const isOptional = OPTIONAL_DOCS.includes(dName);
+
+        let statusText = has ? `✅ ${catDocs.length} FILES` : '⚠️ MISSING';
+        if (isOptional && !has) statusText = '💡 OPTIONAL';
+
         return `
-            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid ${has ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};">
-                <span style="font-size: 0.85rem; color: white; font-weight: 500;">${dName}</span>
-                <span style="font-size: 0.75rem; font-weight: bold; color: ${has ? 'var(--success)' : '#ef4444'}">
-                    ${has ? `✅ ${catDocs.length} ${catDocs.length > 1 ? 'FILES' : 'FILE'}` : '⚠️ MISSING'}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid ${has ? 'rgba(16, 185, 129, 0.1)' : (isOptional ? 'rgba(99, 102, 241, 0.1)' : 'rgba(239, 68, 68, 0.1)')};">
+                <span style="font-size: 0.85rem; color: white; font-weight: 500;">${dName}${isOptional ? ' (Opt)' : ''}</span>
+                <span style="font-size: 0.75rem; font-weight: bold; color: ${has ? 'var(--success)' : (isOptional ? 'var(--accent)' : '#ef4444')}">
+                    ${statusText}
                 </span>
             </div>
         `;
@@ -629,6 +656,7 @@ function renderApplicantDocuments() {
         const safeId = docName.replace(/[^a-z0-9]/gi, '_');
         const categoryDocs = existing.filter(d => d.category === docName);
         const hasFiles = categoryDocs.length > 0;
+        const isOptional = OPTIONAL_DOCS.includes(docName);
 
         const box = document.createElement('div');
         box.className = 'upload-box';
@@ -648,7 +676,7 @@ function renderApplicantDocuments() {
         }
 
         box.innerHTML = `
-            <label>${docName}${hasFiles ? '' : '*'}</label>
+            <label>${docName}${isOptional ? ' <small>(Optional)</small>' : (hasFiles ? '' : '*')}</label>
             <div class="drop-zone ${hasFiles ? 'has-files' : ''}" onclick="document.getElementById('file_${safeId}').click()">
                 <div class="progress-ribbon" id="ribbon_file_${safeId}" style="width: 0%"></div>
                 <span class="drop-icon">${hasFiles ? '📁' : '➕'}</span>
@@ -1110,6 +1138,24 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
     e.preventDefault();
     if (!document.getElementById('agree').checked) {
         showToast("Please agree to the declaration.", "warning");
+        return;
+    }
+
+    // 1. Mandatory Document Validation
+    const docs = currentApplicant.documents || [];
+    const reqDocs = companyData.requiredDocs || [];
+    const missingMandatory = reqDocs.filter(d => !OPTIONAL_DOCS.includes(d) && !docs.find(u => u.category === d));
+    
+    if (missingMandatory.length > 0) {
+        showToast(`⚠️ Mandatory documents missing: ${missingMandatory.join(', ')}`, "error");
+        renderStep(5);
+        return;
+    }
+
+    const hasSig = docs.find(u => u.category === 'Digital Signature');
+    if (!hasSig) {
+        showToast("⚠️ Digital Signature is required.", "error");
+        renderStep(5);
         return;
     }
 
