@@ -3363,11 +3363,13 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         const captureContainer = document.createElement('div');
         captureContainer.id = 'pdfCaptureContainer';
         captureContainer.style.position = 'fixed';
-        captureContainer.style.left = '-9999px';
+        captureContainer.style.left = '0';
         captureContainer.style.top = '0';
         captureContainer.style.width = '210mm';
         captureContainer.style.background = 'white';
-        captureContainer.style.zIndex = '-1000';
+        captureContainer.style.zIndex = '-9999';
+        captureContainer.style.opacity = '0'; // Hidden but rendered
+        captureContainer.style.pointerEvents = 'none';
         document.body.appendChild(captureContainer);
 
         // Inject content with EXACT same styles as editor
@@ -3386,7 +3388,6 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     font-size: ${size}pt !important;
                     text-align: ${align} !important;
                     position: relative !important;
-                    z-index: 1 !important;
                     word-wrap: break-word !important;
                     background: transparent !important;
                     color: #1e293b !important;
@@ -3407,14 +3408,14 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 }
                 .pdf-capture-page table { width: 100%; border-collapse: collapse; margin: 1em 0; table-layout: fixed; }
                 .pdf-capture-page th, .pdf-capture-page td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt) !important; line-height: 1.1 !important; }
-                .pdf-capture-page br { line-height: 1.1 !important; }
                 
                 .pdf-letterhead-layer {
                     position: absolute !important;
+                    top: 0;
                     left: 0 !important;
                     width: 210mm !important;
                     height: 297mm !important;
-                    z-index: 0 !important;
+                    z-index: -1 !important;
                     pointer-events: none !important;
                 }
             </style>
@@ -3438,8 +3439,6 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 img.src = lhAsset.data;
                 img.className = 'pdf-letterhead-layer';
                 img.style.top = `${i * 297}mm`;
-                img.style.zIndex = '-1';
-                img.style.pointerEvents = 'none';
                 capturePage.appendChild(img);
             }
         }
