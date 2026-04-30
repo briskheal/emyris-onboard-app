@@ -395,14 +395,15 @@ function applyCompanyData() {
     // Safety Cleanup: Ensure no footer items leaked into the logo container
     const brandingLayer = document.getElementById('headerBrandingLayer');
     if (brandingLayer) {
-        const leakedItems = brandingLayer.querySelectorAll('.footer-contact-item');
+        const leakedItems = brandingLayer.querySelectorAll('.f-contact-node');
         leakedItems.forEach(item => item.remove());
     }
 
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) {
-        headerTitle.innerText = (companyData.name || "Emyris Biolifesciences").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
-        console.log('✅ Updated Header Name (innerText):', headerTitle.innerText);
+        headerTitle.innerHTML = ""; // Clear any ghost HTML
+        headerTitle.textContent = (companyData.name || "Emyris Biolifesciences").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
+        console.log('✅ Updated Header Name (textContent):', headerTitle.textContent);
     }
 
     try {
