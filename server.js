@@ -91,10 +91,16 @@ const dbOptions = {
 if (MONGODB_URI) {
     mongoose.connect(MONGODB_URI, dbOptions)
         .then(() => {
-            console.log('✅ [SYSTEM] Unified DB Connected (Main + Assets)');
-            // Restore legacy references for structural stability
+            console.log('✅ [SYSTEM] Unified DB Connected: ' + MONGODB_URI.split('/').pop().split('?')[0]);
             connMain = mongoose.connection;
             connAssets = mongoose.connection;
+            
+            // Re-bind models to the active connection to be absolutely certain
+            module.exports.Company = mongoose.model('Company');
+            module.exports.Division = mongoose.model('Division');
+            module.exports.HQ = mongoose.model('HQ');
+            module.exports.Applicant = mongoose.model('Applicant');
+            module.exports.Asset = mongoose.model('Asset');
         })
         .catch(err => console.error('❌ [SYSTEM] DB Connection Error:', err));
 } else {
@@ -228,11 +234,20 @@ const hqSchema = new mongoose.Schema({
 });
 
 // Unified Global Model Definitions
-const Company = mongoose.models.Company || mongoose.model('Company', companySchema);
-const Applicant = mongoose.models.Applicant || mongoose.model('Applicant', applicantSchema);
-const Division = mongoose.models.Division || mongoose.model('Division', divisionSchema);
-const HQ = mongoose.models.HQ || mongoose.model('HQ', hqSchema);
-const Asset = connAssets ? (connAssets.models.Asset || connAssets.model('Asset', assetSchema)) : (mongoose.models.Asset || mongoose.model('Asset', assetSchema));
+let Company, Applicant, Division, HQ, Asset;
+try {
+    Company = mongoose.model('Company', companySchema);
+    Applicant = mongoose.model('Applicant', applicantSchema);
+    Division = mongoose.model('Division', divisionSchema);
+    HQ = mongoose.model('HQ', hqSchema);
+    Asset = mongoose.model('Asset', assetSchema);
+} catch (e) {
+    Company = mongoose.model('Company');
+    Applicant = mongoose.model('Applicant');
+    Division = mongoose.model('Division');
+    HQ = mongoose.model('HQ');
+    Asset = mongoose.model('Asset');
+}
 
 // Startup logic
 async function initializeApp() {
