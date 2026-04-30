@@ -3389,23 +3389,30 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     text-align: ${align} !important;
                     position: relative !important;
                     word-wrap: break-word !important;
-                    background: transparent !important;
-                    background-color: transparent !important;
+                    background: white !important;
+                    color: #1e293b !important;
                     box-shadow: none !important;
                 }
-                /* Ensure NO branding layers or backgrounds are captured */
-                .pdf-capture-page .a4-branding-layer { display: none !important; }
+                
+                /* Match Editor's Strict Inheritance */
+                .pdf-capture-page * {
+                    font-family: inherit !important;
+                    font-size: inherit !important;
+                    line-height: inherit !important;
+                    color: inherit !important;
+                }
                 
                 .pdf-capture-page p, .pdf-capture-page div {
                     margin: 0 !important;
                     padding: 0 !important;
                     line-height: 1.1 !important;
-                    background: transparent !important;
-                    background-color: transparent !important;
                 }
                 .pdf-capture-page table { width: 100%; border-collapse: collapse; margin: 1em 0; table-layout: fixed; }
-                .pdf-capture-page th, .pdf-capture-page td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt); line-height: 1.1; }
-                .pdf-capture-page br { line-height: 1.1; }
+                .pdf-capture-page th, .pdf-capture-page td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt) !important; line-height: 1.1 !important; }
+                .pdf-capture-page br { line-height: 1.1 !important; }
+                
+                /* Ensure NO branding layers are captured twice */
+                .pdf-capture-page .a4-branding-layer { z-index: -1 !important; }
             </style>
             <div id="capturePage" class="pdf-capture-page">
                 ${editorHtml}
