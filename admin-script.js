@@ -377,6 +377,7 @@ function applyCompanyData() {
     const landingQuickContact = document.getElementById('u_landing_contact_v4');
     
     // Using an extremely obscure class to avoid any rogue CSS/JS targeting
+    /* DISABLED TO PREVENT LEAKS
     const contactHTML = `
         ${companyData.phone ? `<span class="emy-isolated-contact-node-v6">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
         ${companyData.tollFree ? `<span class="emy-isolated-contact-node-v6">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
@@ -390,6 +391,7 @@ function applyCompanyData() {
     if (landingQuickContact) {
         landingQuickContact.innerHTML = contactHTML;
     }
+    */
     
     // Safety Cleanup: Aggressive removal of any rogue branding leaks
     const brandingArea = document.getElementById('headerBrandingLayer');
