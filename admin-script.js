@@ -376,10 +376,11 @@ function applyCompanyData() {
     /* Minimal & Secure Contact Restore */
     const safetyBar = document.getElementById('emy-safety-contact-bar');
     if (safetyBar && companyData) {
+        const accent = companyData.primaryColor || '#6366f1';
         safetyBar.innerHTML = `
-            ${companyData.phone ? `<span>Phone: ${companyData.phone}</span>` : ''}
-            ${companyData.tollFree ? `<span>Toll-Free: ${companyData.tollFree}</span>` : ''}
-            ${companyData.website ? `<span>Website: ${companyData.website.replace('https://', '')}</span>` : ''}
+            ${companyData.phone ? `<span><strong style="color:${accent};">Phone:</strong> ${companyData.phone}</span>` : ''}
+            ${companyData.tollFree ? `<span><strong style="color:${accent};">Toll-Free:</strong> ${companyData.tollFree}</span>` : ''}
+            ${companyData.website ? `<span><strong style="color:${accent};">Website:</strong> ${companyData.website.replace('https://', '')}</span>` : ''}
         `;
     }
     

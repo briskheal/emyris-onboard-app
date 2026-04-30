@@ -145,18 +145,16 @@ function applyCompanyData() {
         if (headerLogoImg) headerLogoImg.classList.add('hidden');
     }
 
-    /* 
-    DISABLED FOR TROUBLESHOOTING
-    const landingQuickContact = document.getElementById('dynamicLandingContact');
-    const contactHTML = `
-        ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
-        ${companyData.tollFree ? `<span>☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
-        ${companyData.website ? `<span>🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
-        ${companyData.email ? `<span>✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
-    `;
-
-    if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
-    */
+    /* Minimal & Secure Contact Restore with Color */
+    const safetyBar = document.getElementById('emy-safety-contact-bar');
+    if (safetyBar && companyData) {
+        const accent = companyData.primaryColor || '#6366f1';
+        safetyBar.innerHTML = `
+            ${companyData.phone ? `<span><strong style="color:${accent};">Phone:</strong> ${companyData.phone}</span>` : ''}
+            ${companyData.tollFree ? `<span><strong style="color:${accent};">Toll-Free:</strong> ${companyData.tollFree}</span>` : ''}
+            ${companyData.website ? `<span><strong style="color:${accent};">Website:</strong> ${companyData.website.replace('https://', '')}</span>` : ''}
+        `;
+    }
 
     if (companyData.marqueeColor) {
         document.documentElement.style.setProperty('--accent-marquee', companyData.marqueeColor);
