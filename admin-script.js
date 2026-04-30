@@ -2433,9 +2433,22 @@ function execCmd(command, value = null) {
         if (command === 'justifyRight') align = 'right';
         if (command === 'justifyFull') align = 'justify';
         
-        document.getElementById('letterAlignment').value = align;
+        const alignInput = document.getElementById('letterAlignment');
+        if (alignInput) alignInput.value = align;
         syncEditorStyles();
     }
+}
+
+function insertPageBreak() {
+    // Inserts a physical gap to force content to the next page in our slicing engine
+    // We use a specific height to push content exactly to the next A4 boundary if possible, 
+    // but a simple marker is safer for now.
+    const editor = document.getElementById('unifiedEditor');
+    if (!editor) return;
+    editor.focus();
+    
+    const pbHtml = '<div class="hard-page-break" style="height: 20px; border-top: 2px dashed rgba(99,102,241,0.3); margin: 20px 0; pointer-events: none;" contenteditable="false"></div>';
+    document.execCommand('insertHTML', false, pbHtml);
 }
 
 function syncEditorStyles() {
@@ -3266,10 +3279,17 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         const currentZoom = document.getElementById('editorZoom')?.value || "1.0";
         applyFidelityZoom(1.0);
 
+        // FORCE height to auto to ensure we capture EVERYTHING
+        const originalH = previewFrame.style.height;
+        const originalMinH = previewFrame.style.minHeight;
+        previewFrame.style.height = 'auto';
+        previewFrame.style.minHeight = 'auto';
+
         const canvas = await html2canvas(previewFrame, {
             scale: 2, 
             useCORS: true,
             allowTaint: true,
+            logging: false,
             backgroundColor: null, // CRITICAL: Keep transparent to see branding through holes
             width: A4_PX_W, 
             windowWidth: A4_PX_W,
@@ -3277,6 +3297,8 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 const clonedFrame = clonedDoc.getElementById('livePreviewFrame');
                 if (clonedFrame) {
                     clonedFrame.style.width = '794px';
+                    clonedFrame.style.height = 'auto'; // Ensure it expands
+                    clonedFrame.style.minHeight = '297mm';
                     clonedFrame.style.margin = '0';
                     clonedFrame.style.transform = 'none';
                     clonedFrame.style.boxShadow = 'none';
@@ -3286,11 +3308,15 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     
                     // CRITICAL: Remove the page break boundary lines (::before) for PDF
                     const style = clonedDoc.createElement('style');
-                    style.innerHTML = '#livePreviewFrame::before { display: none !important; }';
+                    style.innerHTML = '#livePreviewFrame::before { display: none !important; } .hard-page-break { border-color: transparent !important; }';
                     clonedDoc.head.appendChild(style);
                 }
             }
         });
+
+        // Restore height
+        previewFrame.style.height = originalH;
+        previewFrame.style.minHeight = originalMinH;
 
         // 5. Restore original state
         if (isInitiallyHidden) {

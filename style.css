@@ -2520,6 +2520,60 @@ body.admin-mode .admin-header {
     margin: 0 4px;
 }
 
+/* Master Editor Cluster Styles */
+.toolbar-cluster {
+    display: flex;
+    align-items: center;
+}
+
+.toolbar-cluster .btn-tool {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 6px;
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+}
+
+.toolbar-cluster .btn-tool:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+    transform: none !important;
+    box-shadow: none !important;
+    color: white;
+}
+
+.toolbar-cluster .v-divider {
+    height: 18px;
+    margin: 0 6px;
+}
+
+/* Page Break UI */
+.hard-page-break {
+    position: relative;
+    user-select: none;
+    border-top: 2px dashed rgba(99, 102, 241, 0.3);
+    margin: 30px 0;
+    height: 20px;
+}
+
+.hard-page-break::after {
+    content: "✂️ PAGE BREAK (FORCE NEXT PAGE)";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.6rem;
+    font-weight: 800;
+    color: var(--accent);
+    background: #ffffff;
+    padding: 2px 10px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    border: 1px solid rgba(99, 102, 241, 0.2);
+}
+
 .color-picker-wrapper {
     position: relative;
     display: flex;
