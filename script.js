@@ -81,7 +81,7 @@ function initCardEffects() {
 
 async function fetchCompanyData() {
     try {
-        const res = await fetch('/api/company-data');
+        const res = await fetch('/api/public-company-data');
         const data = await res.json();
         if (data) {
             companyData = data;
