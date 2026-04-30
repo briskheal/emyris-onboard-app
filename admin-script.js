@@ -372,38 +372,47 @@ function applyCompanyData() {
         if (headerImg) headerImg.classList.add('hidden');
         console.log('ℹ️ Using Initials:', initials);
     }
-    // RESTORED WITH UNIQUE IDS TO PREVENT HEADER LEAKS
+    // RESTORED WITH UNIQUE IDS AND OBSCURE CLASSES TO PREVENT HEADER LEAKS
     const quickContact = document.getElementById('u_dashboard_contact_v4');
     const landingQuickContact = document.getElementById('u_landing_contact_v4');
     
+    // Using an extremely obscure class to avoid any rogue CSS/JS targeting
     const contactHTML = `
-        ${companyData.phone ? `<span class="f-contact-node">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
-        ${companyData.tollFree ? `<span class="f-contact-node">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
-        ${companyData.website ? `<span class="f-contact-node">🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
-        ${companyData.email ? `<span class="f-contact-node">✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
+        ${companyData.phone ? `<span class="emy-isolated-contact-node-v6">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
+        ${companyData.tollFree ? `<span class="emy-isolated-contact-node-v6">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
+        ${companyData.website ? `<span class="emy-isolated-contact-node-v6">🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
+        ${companyData.email ? `<span class="emy-isolated-contact-node-v6">✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
     `;
 
     if (quickContact) {
         quickContact.innerHTML = contactHTML;
-        console.log('✅ Injected Dashboard Footer');
     }
     if (landingQuickContact) {
         landingQuickContact.innerHTML = contactHTML;
-        console.log('✅ Injected Landing Footer');
     }
     
-    // Safety Cleanup: Ensure no footer items leaked into the logo container
-    const brandingLayer = document.getElementById('headerBrandingLayer');
-    if (brandingLayer) {
-        const leakedItems = brandingLayer.querySelectorAll('.f-contact-node');
-        leakedItems.forEach(item => item.remove());
-    }
+    // Safety Cleanup: Aggressive removal of any rogue branding leaks
+    const brandingArea = document.getElementById('headerBrandingLayer');
+    const heroArea = document.querySelector('.landing-hero-text');
+    
+    [brandingArea, heroArea].forEach(area => {
+        if (area) {
+            const leaked = area.querySelectorAll('.emy-isolated-contact-node-v6, span, a:not(.logo-link)');
+            leaked.forEach(node => {
+                // Only remove if it contains contact-like content or the obscure class
+                if (node.classList.contains('emy-isolated-contact-node-v6') || 
+                    node.textContent.includes('📞') || node.textContent.includes('✉️') || 
+                    node.textContent.includes('🌐') || node.textContent.includes('☎️')) {
+                    node.remove();
+                }
+            });
+        }
+    });
 
     const headerTitle = document.getElementById('headerCompName');
     if (headerTitle) {
-        headerTitle.innerHTML = ""; // Clear any ghost HTML
+        headerTitle.innerHTML = ""; 
         headerTitle.textContent = (companyData.name || "Emyris Biolifesciences").replace(/\s*PVT\s*LTD\.?\s*/gi, "").trim();
-        console.log('✅ Updated Header Name (textContent):', headerTitle.textContent);
     }
 
     try {
@@ -3322,9 +3331,26 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             return null;
         }
 
-        // 1. A4 Constants (210x297mm) at 96 DPI
-        const PAGE_W_MM = 210;
-        const PAGE_H_MM = 297;
+        // 1. Pull EXACT styles from Editor Controls
+        const size = document.getElementById('letterFontSize')?.value || 11;
+        const fontKey = document.getElementById('letterFontType')?.value || 'helvetica';
+        const align = document.getElementById('letterAlignment')?.value || 'left';
+        const headHeight = document.getElementById('headerHeight')?.value || 65;
+        const footHeight = document.getElementById('footerHeight')?.value || 25;
+
+        const fontMap = {
+            'times': "'Times New Roman', Times, serif",
+            'helvetica': "'Plus Jakarta Sans', Arial, sans-serif",
+            'verdana': "Verdana, Geneva, sans-serif",
+            'courier': "'Courier New', monospace",
+            'roboto': "'Roboto', sans-serif",
+            'outfit': "'Outfit', sans-serif",
+            'jakarta': "'Plus Jakarta Sans', sans-serif",
+            'georgia': "Georgia, serif"
+        };
+        const fontStack = fontMap[fontKey] || "'Plus Jakarta Sans', sans-serif";
+
+        // 2. A4 Constants (210x297mm) at 96 DPI
         const A4_PX_W = 794; 
         const A4_PX_H = 1123; 
 
@@ -3332,11 +3358,8 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         const letterhead = companyData.letterhead && companyData.letterhead.length > 0 
             ? (Array.isArray(companyData.letterhead) ? companyData.letterhead[companyData.letterhead.length-1].data : companyData.letterhead)
             : null;
-            
-        const headHeight = document.getElementById('headerHeight')?.value || 65;
-        const footHeight = document.getElementById('footerHeight')?.value || 25;
 
-        // 2. Create high-fidelity container for capture
+        // 3. Create high-fidelity container for capture
         const captureContainer = document.createElement('div');
         captureContainer.style.position = 'fixed';
         captureContainer.style.left = '-9999px';
@@ -3346,6 +3369,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         captureContainer.style.color = 'black';
         captureContainer.style.padding = '0';
         captureContainer.style.margin = '0';
+        captureContainer.style.zIndex = '-1000';
         document.body.appendChild(captureContainer);
 
         // Inject content with EXACT same styles as editor
@@ -3355,27 +3379,28 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 min-height: 297mm;
                 padding: ${headHeight}mm 20mm ${footHeight}mm;
                 box-sizing: border-box;
-                font-family: 'Inter', -apple-system, sans-serif;
-                line-height: 1.6;
-                font-size: 11.5pt;
-                text-align: justify;
+                font-family: ${fontStack};
+                line-height: 1.1; 
+                font-size: ${size}pt;
+                text-align: ${align};
                 position: relative;
                 word-wrap: break-word;
             ">
                 ${editorHtml}
             </div>
             <style>
-                #capturePage p { margin: 0 0 1.2em 0; }
-                #capturePage table { width: 100%; border-collapse: collapse; margin: 1.5em 0; table-layout: fixed; }
-                #capturePage th, #capturePage td { border: 1px solid #000; padding: 10px; text-align: left; font-size: 10.5pt; }
+                #capturePage p { margin: 0; padding: 0; line-height: 1.1; }
+                #capturePage table { width: 100%; border-collapse: collapse; margin: 1em 0; table-layout: fixed; }
+                #capturePage th, #capturePage td { border: 1px solid #000; padding: 8px; text-align: left; font-size: calc(${size}pt - 1pt); line-height: 1.1; }
                 #capturePage .text-center { text-align: center; }
                 #capturePage .text-right { text-align: right; }
                 #capturePage strong { font-weight: 700; }
+                #capturePage br { line-height: 1.1; }
             </style>
         `;
 
-        // Wait for rendering
-        await new Promise(r => setTimeout(r, 500));
+        // Wait for rendering and fonts
+        await new Promise(r => setTimeout(r, 600));
 
         const canvas = await html2canvas(captureContainer, {
             scale: 2, 
@@ -3398,10 +3423,10 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         let cursorY = 0;
         let pageCount = 0;
 
-        while (cursorY < canvasH - 50) { // 50px tolerance
+        while (cursorY < canvasH - 50) { 
             if (pageCount > 0) pdf.addPage();
             
-            // Add Letterhead to every page
+            // Add Letterhead
             if (letterhead) {
                 pdf.addImage(letterhead, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
             }
