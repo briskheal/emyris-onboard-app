@@ -42,11 +42,11 @@ function showToast(message, type = 'success') {
     toast.className = `show ${type}`;
     
     if (toast._timer) clearTimeout(toast._timer);
+    const duration = type === 'success' || type === 'error' ? 10000 : 5000; // 10s for key messages
     toast._timer = setTimeout(() => { 
         toast.classList.remove('show');
-        // Final cleanup after fade out
         setTimeout(() => { if (!toast.classList.contains('show')) toast.className = ''; }, 500);
-    }, 4000);
+    }, duration);
 }
 
 // --- DATA FORMATTING ---

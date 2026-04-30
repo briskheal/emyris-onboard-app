@@ -505,6 +505,18 @@ async function saveProgress() {
     } catch (e) { console.warn('Draft save failed'); }
 }
 
+async function saveProgressManual() {
+    try {
+        lockUI("💾 Saving Draft...");
+        await saveProgress();
+        showToast("✅ Progress saved successfully!", "success");
+    } catch (e) {
+        showToast("❌ Failed to save draft", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
 function prevStep(step) {
     renderStep(step);
 }
@@ -544,6 +556,10 @@ function showReview() {
 
     // Header with Profile Preview
     const headerHtml = `
+        <div class="form-header-actions">
+            <button class="btn-action-small" onclick="saveProgressManual()"><span>💾</span> Save Draft</button>
+            <button class="btn-action-small btn-logout-danger" onclick="logoutApplicant()"><span>🚪</span> Logout</button>
+        </div>
         <div class="review-section-group" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(6, 182, 212, 0.05)); border: 1px solid var(--primary); margin-bottom: 2rem;">
             <div style="display: flex; gap: 20px; align-items: center;">
                 <div style="width: 60px; height: 60px; background: var(--primary); border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: white; box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);">👤</div>

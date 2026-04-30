@@ -341,6 +341,14 @@
 
             <!-- Multi-Step Onboarding Form -->
             <form id="onboardingForm" class="view-section hidden">
+                <div class="form-header-actions">
+                    <button type="button" class="btn-action-small" onclick="saveProgressManual()">
+                        <span>💾</span> Save Progress
+                    </button>
+                    <button type="button" class="btn-action-small btn-logout-danger" onclick="logoutApplicant()">
+                        <span>🚪</span> Secure Logout
+                    </button>
+                </div>
                 <div class="form-progress-container">
                     <div class="form-progress-bar" id="formProgress" style="width: 16.66%;"></div>
                 </div>
