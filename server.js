@@ -233,21 +233,28 @@ const hqSchema = new mongoose.Schema({
     active: { type: Boolean, default: true }
 });
 
-// Unified Global Model Definitions
-let Company, Applicant, Division, HQ, Asset;
-try {
-    Company = mongoose.model('Company', companySchema);
-    Applicant = mongoose.model('Applicant', applicantSchema);
-    Division = mongoose.model('Division', divisionSchema);
-    HQ = mongoose.model('HQ', hqSchema);
-    Asset = mongoose.model('Asset', assetSchema);
-} catch (e) {
-    Company = mongoose.model('Company');
-    Applicant = mongoose.model('Applicant');
-    Division = mongoose.model('Division');
-    HQ = mongoose.model('HQ');
-    Asset = mongoose.model('Asset');
-}
+// High-Resilience Model Proxy System
+const getModel = (name) => {
+    try {
+        return mongoose.connection.model(name);
+    } catch (e) {
+        switch (name) {
+            case 'Company': return mongoose.model('Company', companySchema);
+            case 'Applicant': return mongoose.model('Applicant', applicantSchema);
+            case 'Division': return mongoose.model('Division', divisionSchema);
+            case 'HQ': return mongoose.model('HQ', hqSchema);
+            case 'Asset': return connAssets ? (connAssets.models.Asset || connAssets.model('Asset', assetSchema)) : mongoose.model('Asset', assetSchema);
+            default: throw new Error(`Model ${name} not found`);
+        }
+    }
+};
+
+// Proxies ensure legacy routes always use the latest model from the active connection
+const Company = new Proxy({}, { get: (t, p) => getModel('Company')[p] });
+const Applicant = new Proxy({}, { get: (t, p) => getModel('Applicant')[p] });
+const Division = new Proxy({}, { get: (t, p) => getModel('Division')[p] });
+const HQ = new Proxy({}, { get: (t, p) => getModel('HQ')[p] });
+const Asset = new Proxy({}, { get: (t, p) => getModel('Asset')[p] });
 
 // Startup logic
 async function initializeApp() {
