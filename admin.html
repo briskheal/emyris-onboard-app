@@ -1083,10 +1083,22 @@
                                     <option value="">-- Select HQ --</option>
                                 </select>
                             </div>
-                            <div class="form-group" style="margin-bottom:1rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+                            <div class="form-group" style="margin-bottom:1.5rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem;">
+                                <label style="font-size:0.75rem;color:var(--accent);display:block;margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Approved Annual CTC (Master Override)</label>
+                                <div style="display:flex; gap:10px; align-items:center;">
+                                    <div style="position:relative; flex:1;">
+                                        <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:0.9rem;">₹</span>
+                                        <input type="number" id="v_approvedCtc" class="form-input-sm" style="width:100%; padding-left:25px; border-color:var(--accent); background:rgba(99,102,241,0.05); font-weight:700; color:white;" placeholder="Override Applicant's CTC">
+                                    </div>
+                                    <button class="btn btn-sm btn-primary" onclick="autoDistributeSalary()" style="padding:10px 15px; font-size:0.75rem; white-space:nowrap; height:42px; background:var(--accent); border-color:var(--accent);">🔄 Recalculate Breakup</button>
+                                </div>
+                                <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 5px;">* Enter the correct approved CTC here to override the value mentioned by the applicant.</p>
+                            </div>
+
+                            <div class="form-group" style="margin-bottom:1rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1rem;">
                                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                                     <label style="font-size:0.85rem;color:var(--text-main);font-weight:700;margin:0;">💰 Salary Breakup (Monthly)</label>
-                                    <button class="btn btn-sm" onclick="autoDistributeSalary()" style="font-size:0.65rem; padding:4px 10px; background:rgba(99,102,241,0.15); border-color:var(--primary); color:white;">🔄 Auto-Calculate</button>
+                                    <button class="btn btn-sm" onclick="autoDistributeSalary()" style="font-size:0.65rem; padding:4px 10px; background:rgba(255,255,255,0.05); border-color:rgba(255,255,255,0.1); color:white;">🔄 Reset to CTC</button>
                                 </div>
                                 <div class="input-grid" style="grid-template-columns: 1fr 1fr; gap:0.75rem;">
                                     <div>

@@ -1296,10 +1296,17 @@ async function openVerificationView(email) {
     document.getElementById('v_salSpecial').value = sal.special || '';
     document.getElementById('v_salEdu').value = sal.edu || '';
     document.getElementById('v_salFixed').value = sal.fixed || '';
+    
+    // Approved CTC Override pre-population
+    const approvedCtcEl = document.getElementById('v_approvedCtc');
+    if (approvedCtcEl) {
+        approvedCtcEl.value = app.salary || app.formData?.salary || "";
+    }
+
     if(typeof calcSalaryTotal === 'function') calcSalaryTotal();
     
     // Auto-prefill salary breakup if it was never set (saves admin manual click)
-    if (!sal.basic && app.formData?.salary && parseFloat(app.formData.salary) > 0) {
+    if (!sal.basic && (approvedCtcEl?.value || app.formData?.salary)) {
         console.log("⚡ Auto-calculating initial salary breakup for admin...");
         autoDistributeSalary();
     }
@@ -1623,10 +1630,11 @@ async function saveInternalAssignment(silent = false) {
     // Strict Match Check for 4L/Annual consistency
     const monthlyTotal = Object.values(salaryBreakup).reduce((a, b) => a + b, 0);
     const calculatedAnnual = monthlyTotal * 12;
-    const targetAnnual = parseFloat(activeV_Applicant.formData?.salary) || 0;
+    const overrideCtc = parseFloat(document.getElementById('v_approvedCtc')?.value);
+    const targetAnnual = !isNaN(overrideCtc) ? overrideCtc : (parseFloat(activeV_Applicant.formData?.salary) || 0);
 
-    if (Math.abs(calculatedAnnual - targetAnnual) > 100) {
-        if (!confirm(`⚠️ SALARY MISMATCH ALERT:\n\nThe current breakup totals ₹${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Applicant's registered salary is ₹${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
+    if (Math.abs(calculatedAnnual - targetAnnual) > 500) {
+        if (!confirm(`⚠️ SALARY MISMATCH ALERT:\n\nThe current breakup totals ₹${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Approved/Target CTC is ₹${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
             return false;
         }
     }
@@ -1639,6 +1647,7 @@ async function saveInternalAssignment(silent = false) {
         dob: document.getElementById('v_dob').value,
         actualJoiningDate: document.getElementById('v_actualJoiningDate').value,
         address: document.getElementById('v_address').value,
+        salary: targetAnnual,
         salaryBreakup,
         verificationChecks
     };
@@ -1659,6 +1668,7 @@ async function saveInternalAssignment(silent = false) {
             activeV_Applicant.dob = data.dob;
             activeV_Applicant.actualJoiningDate = data.actualJoiningDate;
             activeV_Applicant.address = data.address;
+            activeV_Applicant.salary = data.salary;
             activeV_Applicant.salaryBreakup = data.salaryBreakup;
             return true;
         } else {
@@ -1820,9 +1830,11 @@ function autoCalcHRA() {
 }
 
 function autoDistributeSalary() {
-    const targetSal = activeV_Applicant.salary || activeV_Applicant.formData?.salary;
+    const override = document.getElementById('v_approvedCtc')?.value;
+    const targetSal = (override && parseFloat(override) > 0) ? override : (activeV_Applicant.salary || activeV_Applicant.formData?.salary);
+    
     if (!targetSal) {
-        showToast("No target salary found for this applicant", "error");
+        showToast("No target salary found. Please enter an Approved CTC first.", "warning");
         return;
     }
     
@@ -3089,6 +3101,7 @@ function applyBrandingLayers(el) {
         const tolerance_px = 10 * 3.7795275591; 
         const totalH_px = el.scrollHeight;
         
+        // Ensure we always have at least one page
         const pages = Math.max(1, Math.ceil((totalH_px - tolerance_px) / pageH_px));
         
         for (let i = 0; i < pages; i++) {
@@ -3204,19 +3217,24 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         const previewContainer = document.getElementById('livePreviewContainer');
         if (!previewFrame || !previewContainer) { unlockUI(); return; }
 
-        // 2. Prepare Frame for Capture
-        const isInitiallyHidden = previewContainer.classList.contains('hidden');
-        const originalStyles = {
-            position: previewContainer.style.position,
-            left: previewContainer.style.left,
-            top: previewContainer.style.top,
-            zIndex: previewContainer.style.zIndex,
-            opacity: previewContainer.style.opacity,
-            display: previewContainer.style.display,
-            visibility: previewContainer.style.visibility
-        };
+        // 2. Measure actual A4 height in pixels for high-fidelity slicing
+        const measureEl = document.createElement('div');
+        measureEl.style.height = '297mm';
+        measureEl.style.width = '210mm';
+        measureEl.style.position = 'absolute';
+        measureEl.style.visibility = 'hidden';
+        document.body.appendChild(measureEl);
+        const actualPageH_px = measureEl.offsetHeight;
+        document.body.removeChild(measureEl);
 
-        updateLivePreviewFrame(htmlOverride, null, true, false); 
+        // Prepare branding for manual injection to avoid drift
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+
+        // 3. Prepare Frame for Capture (CLEAN - No letterhead layers)
+        const isInitiallyHidden = previewContainer.classList.contains('hidden');
+        
+        // Set skipLetterhead = true (4th param) for clean content capture
+        updateLivePreviewFrame(htmlOverride, null, true, true); 
 
         if (isInitiallyHidden) {
             previewContainer.classList.remove('hidden');
@@ -3229,10 +3247,10 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             previewContainer.style.visibility = 'visible';
         }
 
-        // Wait for fonts and letterhead image to render
+        // Wait for fonts to settle
         await new Promise(r => setTimeout(r, 800)); 
 
-        // 3. High-Precision Capture (Reset zoom to 1.0 for fidelity capture)
+        // 4. High-Precision Capture
         const currentZoom = document.getElementById('editorZoom')?.value || "1.0";
         applyFidelityZoom(1.0);
 
@@ -3252,35 +3270,46 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     clonedFrame.style.boxShadow = 'none';
                     clonedFrame.style.borderRadius = '0';
                     clonedFrame.style.border = 'none';
+                    
+                    // CRITICAL: Remove the page break boundary lines (::before) for PDF
+                    const style = clonedDoc.createElement('style');
+                    style.innerHTML = '#livePreviewFrame::before { display: none !important; }';
+                    clonedDoc.head.appendChild(style);
                 }
             }
         });
 
-        // 4. Restore original state
+        // 5. Restore original state
         if (isInitiallyHidden) {
             previewContainer.classList.add('hidden');
             updateLivePreviewFrame(htmlOverride, null, false);
         }
-
-        // Restore user zoom level
         applyFidelityZoom(currentZoom);
 
         const canvasW = canvas.width;
         const canvasH = canvas.height;
         
-        // 5. PDF Generation (Slicing)
+        // Calculate slicing height based on the measured browser scale * canvas scale
+        const finalSliceH = actualPageH_px * 2; // Since scale: 2
+        const tolerance_px = (10 * (actualPageH_px / 297)) * 2; // 10mm tolerance converted to scaled pixels
+
+        // 6. PDF Generation (Slicing)
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
 
-        const pageH_px = (297 / 210) * canvasW; 
         let cursorY = 0;
         let pageCount = 0;
 
-        // Use a 10px threshold to avoid creating a blank page for tiny overflows
-        while (cursorY < canvasH - 10) {
+        while (cursorY < canvasH - tolerance_px) {
             if (pageCount > 0) pdf.addPage();
             
-            const sliceH = Math.min(pageH_px, canvasH - cursorY);
+            // A. Manually add branding to every page (Fixed position - NO drift)
+            if (lhAsset?.data) {
+                pdf.addImage(lhAsset.data, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+            }
+
+            // B. Add content slice on top
+            const sliceH = Math.min(finalSliceH, canvasH - cursorY);
             const sliceCanvas = document.createElement('canvas');
             sliceCanvas.width = canvasW;
             sliceCanvas.height = sliceH;
@@ -3291,9 +3320,10 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
             const sliceH_mm = (sliceH / canvasW) * 210;
             
+            // Overlay content
             pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
             
-            cursorY += pageH_px;
+            cursorY += finalSliceH;
             pageCount++;
         }
         unlockUI();

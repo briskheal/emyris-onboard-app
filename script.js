@@ -145,6 +145,43 @@ function applyCompanyData() {
 
     syncMarquee(companyData.marqueeText, companyData.marqueeColor, companyData.marqueeSpeed);
     populateDropdowns();
+
+    // Apply branding to previewers if they are visible or when they open
+    const offerFrame = document.getElementById('offerPreviewer');
+    if (offerFrame) applyBrandingLayers(offerFrame);
+}
+
+function applyBrandingLayers(el) {
+    if (!el) return;
+    const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+    
+    // Clean old branding
+    const old = el.querySelectorAll('.a4-branding-layer');
+    old.forEach(o => o.remove());
+    
+    if (lhAsset?.data) {
+        // Calculate pages needed based on content height
+        // Use a 10mm tolerance to prevent "ghost" pages from tiny overflows
+        const pageH_px = 297 * 3.7795275591;
+        const tolerance_px = 10 * 3.7795275591; 
+        const totalH_px = el.scrollHeight;
+        
+        const pages = Math.max(1, Math.ceil((totalH_px - tolerance_px) / pageH_px));
+        
+        for (let i = 0; i < pages; i++) {
+            const img = document.createElement('img');
+            img.src = lhAsset.data;
+            img.className = 'a4-branding-layer';
+            img.style.position = 'absolute';
+            img.style.top = `${i * 297}mm`;
+            img.style.left = '0';
+            img.style.width = '210mm';
+            img.style.height = '297mm';
+            img.style.zIndex = '-1';
+            img.style.pointerEvents = 'none';
+            el.appendChild(img);
+        }
+    }
 }
 
 function populateDropdowns() {
@@ -886,7 +923,11 @@ function toggleApptPreview() {
 }
 
 function toggleOfferPreview() {
-    document.getElementById('offerPreviewer').classList.toggle('hidden');
+    const el = document.getElementById('offerPreviewer');
+    el.classList.toggle('hidden');
+    if (!el.classList.contains('hidden')) {
+        applyBrandingLayers(el);
+    }
 }
 
 async function acceptOfferLetter() {
@@ -934,31 +975,102 @@ async function downloadMyLetter(type) {
     }
 
     // Otherwise, generate PDF from the styled HTML container
-    showToast("Generating PDF...");
+    showToast("Generating Multi-page PDF...");
+    lockUI("⏳ Synthesizing PDF Document...");
     try {
         const isHidden = container.classList.contains('hidden');
-        if (isHidden) container.classList.remove('hidden');
+        if (isHidden) {
+            container.classList.remove('hidden');
+            container.style.position = 'fixed';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+        }
+
+        // 1. Measure actual A4 height in pixels for high-fidelity slicing
+        const measureEl = document.createElement('div');
+        measureEl.style.height = '297mm';
+        measureEl.style.width = '210mm';
+        measureEl.style.position = 'absolute';
+        measureEl.style.visibility = 'hidden';
+        document.body.appendChild(measureEl);
+        const actualPageH_px = measureEl.offsetHeight;
+        document.body.removeChild(measureEl);
+
+        const A4_PX_W = 794; 
+        const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1];
+
+        // Clean capture: Ensure branding layers are removed from the capture itself
+        const oldBranding = container.querySelectorAll('.a4-branding-layer');
+        oldBranding.forEach(b => b.remove());
 
         const canvas = await html2canvas(container, { 
             scale: 2,
             useCORS: true,
-            logging: false
+            logging: false,
+            width: A4_PX_W,
+            windowWidth: A4_PX_W,
+            backgroundColor: "#ffffff",
+            onclone: (clonedDoc) => {
+                const clonedFrame = clonedDoc.getElementById(container.id);
+                if (clonedFrame) {
+                    clonedFrame.style.width = '794px';
+                    clonedFrame.style.padding = '65mm 20mm 25mm'; // Ensure standard margins
+                    clonedFrame.style.margin = '0';
+                    clonedFrame.style.boxShadow = 'none';
+                    clonedFrame.style.borderRadius = '0';
+                }
+            }
         });
 
-        if (isHidden) container.classList.add('hidden');
+        // Restore branding for UI preview
+        applyBrandingLayers(container);
+        if (isHidden) {
+            container.classList.add('hidden');
+            container.style.position = '';
+            container.style.left = '';
+        }
 
-        const imgData = canvas.toDataURL('image/png');
+        const canvasW = canvas.width;
+        const canvasH = canvas.height;
+        const finalSliceH = actualPageH_px * 2; 
+        const tolerance_px = (10 * (actualPageH_px / 297)) * 2; 
+
         const { jsPDF } = window.jspdf;
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
         
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        let cursorY = 0;
+        let pageCount = 0;
+
+        while (cursorY < canvasH - tolerance_px) {
+            if (pageCount > 0) pdf.addPage();
+            
+            // Add branding manually
+            if (lhAsset?.data) {
+                pdf.addImage(lhAsset.data, 'PNG', 0, 0, 210, 297, undefined, 'FAST');
+            }
+
+            const sliceH = Math.min(finalSliceH, canvasH - cursorY);
+            const sliceCanvas = document.createElement('canvas');
+            sliceCanvas.width = canvasW;
+            sliceCanvas.height = sliceH;
+            
+            const sCtx = sliceCanvas.getContext('2d');
+            sCtx.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
+            
+            const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
+            pdf.addImage(sliceData, 'PNG', 0, 0, 210, (sliceH / canvasW) * 210, undefined, 'FAST');
+            
+            cursorY += finalSliceH;
+            pageCount++;
+        }
+
         pdf.save(`EMYRIS_${type.toUpperCase()}_${app.fullName.replace(/\s+/g, '_')}.pdf`);
         showToast("PDF Downloaded!", "success");
     } catch (e) {
         console.error("PDF Generation Error:", e);
         showToast("Failed to generate PDF.", "error");
+    } finally {
+        unlockUI();
     }
 }
 
