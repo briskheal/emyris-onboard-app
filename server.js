@@ -20,7 +20,7 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_URL = process.env.BASE_URL || 'https://emyonboard.com';
+const BASE_URL = process.env.BASE_URL || 'https://emyris-onboard-app.onrender.com';
 
 
 

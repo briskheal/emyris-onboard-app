@@ -255,7 +255,10 @@ body.at-landing #headerBrandingLayer {
 }
 
 /* Safeguard: Prevent contact info links/spans from appearing in header logo area */
-.logo-text span, .logo-text a:not(.logo-link) {
+.logo-container span:not(#headerLogoLetter), 
+.logo-container a:not(.logo-link),
+.logo-text span, 
+.logo-text a:not(.logo-link) {
     display: none !important;
 }
 
