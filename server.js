@@ -90,11 +90,12 @@ const dbOptions = {
 
 if (MONGODB_URI) {
     mongoose.connect(MONGODB_URI, dbOptions)
-        .then(() => console.log('✅ [SYSTEM] Global DB Connected via mongoose.connect'))
+        .then(() => {
+            console.log('✅ [SYSTEM] Unified DB Connected (Main + Assets)');
+            // For backward compatibility, point connAssets to the main connection
+            connAssets = mongoose.connection;
+        })
         .catch(err => console.error('❌ [SYSTEM] DB Connection Error:', err));
-
-    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI, dbOptions);
-    connAssets.on('connected', () => console.log('💎 [SYSTEM] Asset Storage Connected'));
 } else {
     console.warn('MONGODB_URI not found. Running in ephemeral mode.');
 }
@@ -1676,21 +1677,25 @@ app.get('/api/company-data', async (req, res) => {
             };
         });
 
-        // Hydrate assets (Logo, Letterhead, etc.)
-        const assetMap = {
+        // Unified Asset Hydration
+        const data = { ...company };
+        const assetFields = {
             activeLogoId: 'logo',
             activeStampId: 'stamp',
             activeSignatureId: 'digitalSignature',
             activeLetterheadId: 'letterheadImage'
         };
 
-        const data = { ...company };
-        for (const [key, field] of Object.entries(assetMap)) {
-            if (company[key]) {
-                const asset = await Asset.findById(company[key]).lean();
-                data[field] = asset ? [asset] : [];
+        for (const [idField, dataField] of Object.entries(assetFields)) {
+            if (company[idField]) {
+                try {
+                    const asset = await Asset.findById(company[idField]).lean();
+                    data[dataField] = asset ? (dataField === 'logo' ? asset.data : [asset]) : (dataField === 'logo' ? "" : []);
+                } catch (e) {
+                    data[dataField] = (dataField === 'logo' ? "" : []);
+                }
             } else {
-                data[field] = [];
+                data[dataField] = (dataField === 'logo' ? "" : []);
             }
         }
 
