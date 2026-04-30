@@ -3380,7 +3380,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 padding: ${headHeight}mm 20mm ${footHeight}mm;
                 box-sizing: border-box;
                 font-family: ${fontStack};
-                line-height: 1.1; 
+                line-height: 1.1 !important; 
                 font-size: ${size}pt;
                 text-align: ${align};
                 position: relative;
@@ -3389,13 +3389,19 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                 ${editorHtml}
             </div>
             <style>
-                #capturePage p { margin: 0; padding: 0; line-height: 1.1; }
+                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;700&family=Roboto:wght@400;700&display=swap');
+                
+                #capturePage, #capturePage p, #capturePage div, #capturePage span, #capturePage li { 
+                    line-height: 1.1 !important; 
+                    margin: 0 !important; 
+                    padding: 0 !important;
+                }
                 #capturePage table { width: 100%; border-collapse: collapse; margin: 1em 0; table-layout: fixed; }
-                #capturePage th, #capturePage td { border: 1px solid #000; padding: 8px; text-align: left; font-size: calc(${size}pt - 1pt); line-height: 1.1; }
+                #capturePage th, #capturePage td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt); line-height: 1.1 !important; }
                 #capturePage .text-center { text-align: center; }
                 #capturePage .text-right { text-align: right; }
                 #capturePage strong { font-weight: 700; }
-                #capturePage br { line-height: 1.1; }
+                #capturePage br { line-height: 1.1 !important; display: block; content: ""; margin-top: 0 !important; }
             </style>
         `;
 
