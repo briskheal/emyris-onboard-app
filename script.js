@@ -377,7 +377,6 @@ function logoutApplicant() {
 // --- ONBOARDING FLOW ---
 
 // Statuses that mean "beyond the onboarding form" — show the hub dashboard
-const POST_SUBMISSION_STATUSES = ['submitted', 'approved', 'onboarding', 'joined', 'confirmed', 'rejected'];
 
 function resumeApplication() {
     const app = currentApplicant;
