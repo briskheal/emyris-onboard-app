@@ -3424,7 +3424,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         `;
         
         // Finalize branding for capture
-        const capturePage = document.getElementById('capturePage');
+        const capturePage = captureContainer.querySelector('#capturePage');
         const lhAsset = companyData.letterheadImage?.[companyData.letterheadImage.length - 1] || 
                         (companyData.letterhead && companyData.letterhead[companyData.letterhead.length-1]);
         
