@@ -14,6 +14,12 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 const POST_SUBMISSION_STATUSES = ['submitted', 'approved', 'onboarding', 'joined', 'confirmed', 'rejected'];
 const OPTIONAL_DOCS = ["Last Month Salary Slip", "Previous Company Appointment Letter"];
 
+// Override shared-utils handlers to include portal-specific logic
+function showApplicantRegister() {
+    populateDropdowns();
+    updateView('applicantRegister');
+}
+
 async function initializeApp() {
     console.log('🚀 Applicant Portal initializing...');
     initBackgroundAnimations();
@@ -81,7 +87,8 @@ function initCardEffects() {
 
 async function fetchCompanyData() {
     try {
-        const res = await fetch('/api/public-company-data');
+        const res = await fetch('/api/company-data');
+        if (!res.ok) throw new Error('Fetch failed');
         const data = await res.json();
         if (data) {
             companyData = data;
