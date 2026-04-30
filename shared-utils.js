@@ -179,14 +179,9 @@ function showApplicantLogin() { updateView('applicantLogin'); }
 
 function syncMarquee(text, color, speed) {
     const marquees = document.querySelectorAll('.marquee-inner');
-    const displayColor = color || "var(--text-soft)";
-    
-    // Set global CSS variable for other components to inherit
-    document.documentElement.style.setProperty('--marquee-color', displayColor);
-
     marquees.forEach(m => {
         m.innerText = text || "Enhancing Life and Excelling in Care";
-        m.style.color = displayColor;
+        m.style.color = color || "var(--text-soft)";
         if (speed) m.style.animationDuration = `${speed}s`;
         m.style.opacity = 1;
     });

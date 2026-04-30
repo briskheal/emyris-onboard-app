@@ -2568,22 +2568,24 @@ async function populateDivisions(force = false) {
                 sel.value = currentVal;
             }
         });
-        // Sync Designation Management Dept Selection
-        const deptPicker = document.getElementById('profileDeptPicker');
-        if (deptPicker) {
-            const currentDept = document.getElementById('profileNewDeptInput')?.value || "";
-            deptPicker.innerHTML = uniqueDivs.map(d => `
-                <button type="button" class="chip-btn ${currentDept === d.name ? 'active' : ''}" 
-                        onclick="setProfileDept('${d.name}', this)">
-                    ${d.name}
-                </button>
-            `).join('');
-        }
-
-        if (typeof populateManagers === 'function') populateManagers();
     } catch (e) {
         console.error("Failed to populate divisions:", e);
     }
+}
+
+    // Sync Designation Management Dept Selection
+    const deptPicker = document.getElementById('profileDeptPicker');
+    if (deptPicker) {
+        const currentDept = document.getElementById('profileNewDeptInput').value;
+        deptPicker.innerHTML = uniqueDivs.map(d => `
+            <button type="button" class="chip-btn ${currentDept === d.name ? 'active' : ''}" 
+                    onclick="setProfileDept('${d.name}', this)">
+                ${d.name}
+            </button>
+        `).join('');
+    }
+
+    if (typeof populateManagers === 'function') populateManagers();
 }
 
 function setProfileDept(name, btn) {

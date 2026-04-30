@@ -153,11 +153,9 @@ function applyCompanyData() {
     if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
     if (mainAppFooterContact) mainAppFooterContact.innerHTML = contactHTML;
 
-    // Apply Design Tokens globally
     if (companyData.marqueeColor) {
         document.documentElement.style.setProperty('--accent-marquee', companyData.marqueeColor);
     }
-
     syncMarquee(companyData.marqueeText, companyData.marqueeColor, companyData.marqueeSpeed);
     populateDropdowns();
 

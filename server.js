@@ -89,13 +89,11 @@ const dbOptions = {
 };
 
 if (MONGODB_URI) {
-    mongoose.connect(MONGODB_URI, dbOptions)
-        .then(() => {
-            console.log('✅ [SYSTEM] Unified DB Connected: ' + (MONGODB_URI.split('/').pop().split('?')[0] || 'Default'));
-            connMain = mongoose.connection;
-            connAssets = mongoose.connection;
-        })
-        .catch(err => console.error('❌ [SYSTEM] DB Connection Error:', err));
+    connMain = mongoose.createConnection(MONGODB_URI, dbOptions);
+    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI, dbOptions);
+
+    connMain.on('connected', () => console.log('✅ Main DB Connected'));
+    connAssets.on('connected', () => console.log('💎 Asset DB Connected'));
 } else {
     console.warn('MONGODB_URI not found. Running in ephemeral mode.');
 }
@@ -221,27 +219,21 @@ const divisionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+// Bind models to connections
+const Company = connMain ? connMain.model('Company', companySchema) : mongoose.model('Company', companySchema);
+const Applicant = connMain ? connMain.model('Applicant', applicantSchema) : mongoose.model('Applicant', applicantSchema);
+const Division = connMain ? connMain.model('Division', divisionSchema) : mongoose.model('Division', divisionSchema);
+
 const hqSchema = new mongoose.Schema({
     name: { type: String, required: true, unique: true },
     active: { type: Boolean, default: true }
 });
-
-// Robust Model Singleton Pattern
-function getModel(name, schema) {
-    if (mongoose.models[name]) return mongoose.models[name];
-    return mongoose.model(name, schema);
-}
-
-// Bind models (Safe for production use)
-const Company = getModel('Company', companySchema);
-const Applicant = getModel('Applicant', applicantSchema);
-const Division = getModel('Division', divisionSchema);
-const HQ = getModel('HQ', hqSchema);
-const Asset = connAssets ? (connAssets.models.Asset || connAssets.model('Asset', assetSchema)) : getModel('Asset', assetSchema);
+const HQ = connMain ? connMain.model('HQ', hqSchema) : mongoose.model('HQ', hqSchema);
+const Asset = connAssets ? connAssets.model('Asset', assetSchema) : mongoose.model('Asset', assetSchema);
 
 // Startup logic
 async function initializeApp() {
-    console.log('🚀 [SYSTEM] Initializing Services...');
+    console.log('🚀 Server starting - Clean Slate protocol active.');
     await seedData();
 }
 
@@ -270,11 +262,8 @@ async function seedData() {
         console.error('❌ Seeding failed', e);
     }
 }
-// Startup Trigger
-mongoose.connection.once('open', () => {
-    console.log('✅ [SYSTEM] Database Ready. Initializing Application...');
-    initializeApp();
-});
+if (connMain) connMain.once('open', initializeApp);
+else initializeApp();
 
 // Global Error Handlers (Fix for 502/Crashes)
 process.on('unhandledRejection', (reason, promise) => {
@@ -1686,30 +1675,22 @@ app.get('/api/company-data', async (req, res) => {
             };
         });
 
-        // Unified Asset Hydration
-        const data = { ...company };
-        const assetFields = {
-            activeLogoId: 'logo',
-            activeStampId: 'stamp',
-            activeSignatureId: 'digitalSignature',
-            activeLetterheadId: 'letterheadImage'
+        const data = {
+            ...company,
+            divisions: enrichedDivisions,
+            hqs: hqs,
+            logo: "" // Logo logic handled by asset hydration if needed
         };
 
-        for (const [idField, dataField] of Object.entries(assetFields)) {
-            if (company[idField]) {
-                try {
-                    const asset = await Asset.findById(company[idField]).lean();
-                    data[dataField] = asset ? (dataField === 'logo' ? asset.data : [asset]) : (dataField === 'logo' ? "" : []);
-                } catch (e) {
-                    data[dataField] = (dataField === 'logo' ? "" : []);
-                }
-            } else {
-                data[dataField] = (dataField === 'logo' ? "" : []);
-            }
+        // Hydrate logo and letterhead
+        if (company.activeLogoId) {
+            const asset = await Asset.findById(company.activeLogoId).lean();
+            if (asset) data.logo = asset.data;
         }
-
-        data.divisions = enrichedDivisions;
-        data.hqs = hqs;
+        if (company.activeLetterheadId) {
+            const asset = await Asset.findById(company.activeLetterheadId).lean();
+            if (asset) data.letterheadImage = [asset];
+        }
 
         res.json(data);
     } catch (e) {
