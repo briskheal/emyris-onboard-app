@@ -967,9 +967,9 @@ select optgroup, select option {
 }
 
 .btn {
-    padding: 1rem 2rem;
+    padding: 0.8rem 1.5rem;
     border-radius: var(--radius-sm);
-    font-weight: 700;
+    font-size: 0.95rem;
     cursor: pointer;
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     border: none;
@@ -1006,14 +1006,14 @@ select optgroup, select option {
 .nav-buttons {
     display: flex;
     justify-content: flex-end;
-    gap: 1.25rem;
-    margin-top: 3rem;
+    gap: 1rem;
+    margin-top: 1.5rem;
     border-top: 1px solid var(--glass-border);
-    padding-top: 2rem;
+    padding-top: 1rem;
 }
 
 .section-header {
-    margin-bottom: 3rem;
+    margin-bottom: 1.5rem;
 }
 
 .section-header h3 {
