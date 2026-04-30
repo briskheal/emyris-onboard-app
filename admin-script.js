@@ -3389,7 +3389,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
                     text-align: ${align} !important;
                     position: relative !important;
                     word-wrap: break-word !important;
-                    background: white !important;
+                    background: transparent !important;
                     box-shadow: none !important;
                 }
                 .pdf-capture-page p, .pdf-capture-page div {
@@ -3415,7 +3415,7 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
             logging: false,
             width: A4_PX_W,
             windowWidth: A4_PX_W,
-            backgroundColor: '#ffffff'
+            backgroundColor: null // Important: Transparent background for letterhead visibility
         });
 
         document.body.removeChild(captureContainer);
