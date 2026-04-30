@@ -3374,35 +3374,36 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
 
         // Inject content with EXACT same styles as editor
         captureContainer.innerHTML = `
-            <div id="capturePage" style="
-                width: 210mm;
-                min-height: 297mm;
-                padding: ${headHeight}mm 20mm ${footHeight}mm;
-                box-sizing: border-box;
-                font-family: ${fontStack};
-                line-height: 1.1 !important; 
-                font-size: ${size}pt;
-                text-align: ${align};
-                position: relative;
-                word-wrap: break-word;
-            ">
+            <style>
+                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+                
+                .pdf-capture-page {
+                    width: 210mm !important;
+                    min-height: 297mm !important;
+                    padding: ${headHeight}mm 20mm ${footHeight}mm !important;
+                    margin: 0 !important;
+                    box-sizing: border-box !important;
+                    font-family: ${fontStack} !important;
+                    line-height: 1.1 !important; 
+                    font-size: ${size}pt !important;
+                    text-align: ${align} !important;
+                    position: relative !important;
+                    word-wrap: break-word !important;
+                    background: white !important;
+                    box-shadow: none !important;
+                }
+                .pdf-capture-page p, .pdf-capture-page div {
+                    margin: 0 !important;
+                    padding: 0 !important;
+                    line-height: 1.1 !important;
+                }
+                .pdf-capture-page table { width: 100%; border-collapse: collapse; margin: 1em 0; table-layout: fixed; }
+                .pdf-capture-page th, .pdf-capture-page td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt); line-height: 1.1; }
+                .pdf-capture-page br { line-height: 1.1; }
+            </style>
+            <div id="capturePage" class="letter-editor a4-page-standard pdf-capture-page">
                 ${editorHtml}
             </div>
-            <style>
-                @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Outfit:wght@400;700&family=Roboto:wght@400;700&display=swap');
-                
-                #capturePage, #capturePage p, #capturePage div, #capturePage span, #capturePage li { 
-                    line-height: 1.1 !important; 
-                    margin: 0 !important; 
-                    padding: 0 !important;
-                }
-                #capturePage table { width: 100%; border-collapse: collapse; margin: 1em 0; table-layout: fixed; }
-                #capturePage th, #capturePage td { border: 1px solid #000; padding: 6px; text-align: left; font-size: calc(${size}pt - 1pt); line-height: 1.1 !important; }
-                #capturePage .text-center { text-align: center; }
-                #capturePage .text-right { text-align: right; }
-                #capturePage strong { font-weight: 700; }
-                #capturePage br { line-height: 1.1 !important; display: block; content: ""; margin-top: 0 !important; }
-            </style>
         `;
 
         // Wait for rendering and fonts
