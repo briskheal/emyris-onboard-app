@@ -372,10 +372,11 @@ function applyCompanyData() {
         if (headerImg) headerImg.classList.add('hidden');
         console.log('ℹ️ Using Initials:', initials);
     }
+    /* 
+    DISABLED FOR TROUBLESHOOTING: Footer contact was leaking into header
     const quickContact = document.getElementById('dynamicDashboardContact');
     const landingQuickContact = document.getElementById('dynamicLandingContact');
     
-    // Modern Footer Contact HTML
     const contactHTML = `
         ${companyData.phone ? `<span class="footer-contact-item">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
         ${companyData.tollFree ? `<span class="footer-contact-item">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
@@ -385,6 +386,7 @@ function applyCompanyData() {
 
     if (quickContact) quickContact.innerHTML = contactHTML;
     if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
+    */
     
     // Safety Cleanup: Ensure no footer items leaked into the logo container
     const brandingLayer = document.getElementById('headerBrandingLayer');

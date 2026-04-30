@@ -145,7 +145,8 @@ function applyCompanyData() {
         if (headerLogoImg) headerLogoImg.classList.add('hidden');
     }
 
-    // Populate Footer Contact (Sync with Admin Portal)
+    /* 
+    DISABLED FOR TROUBLESHOOTING
     const landingQuickContact = document.getElementById('dynamicLandingContact');
     const contactHTML = `
         ${companyData.phone ? `<span>📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
@@ -155,6 +156,7 @@ function applyCompanyData() {
     `;
 
     if (landingQuickContact) landingQuickContact.innerHTML = contactHTML;
+    */
 
     if (companyData.marqueeColor) {
         document.documentElement.style.setProperty('--accent-marquee', companyData.marqueeColor);
@@ -738,6 +740,7 @@ function renderApplicantDocuments() {
         <div class="drop-zone ${hasSig ? 'has-files' : ''}" onclick="document.getElementById('file_Sig').click()">
             <div class="progress-ribbon" id="ribbon_file_Sig" style="width: 0%"></div>
             <span class="drop-icon">${hasSig ? '🖋️' : '➕'}</span>
+            <!-- FOOTER DELETED FOR TROUBLESHOOTING -->
             <span id="status_Sig" class="drop-label">${hasSig ? 'Change Signature' : 'Upload Sign'}</span>
             <input type="file" id="file_Sig" class="hidden" accept="image/*">
         </div>
