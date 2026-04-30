@@ -2527,42 +2527,51 @@ function applyFidelityZoom(val) {
 }
 
 async function populateDivisions(force = false) {
-    // Add cache-busting timestamp to prevent "vanishing" due to browser cache
-    const res = await fetch(`/api/admin/divisions?t=${Date.now()}`);
-    const divisions = await res.json();
-    
-    const list = document.getElementById('divisionList');
-    const profileList = document.getElementById('profileDivisionList');
-    
-    // Deduplicate in memory for safety
-    const uniqueNames = new Set();
-    const uniqueDivs = divisions.filter(d => {
-        if (uniqueNames.has(d.name)) return false;
-        uniqueNames.add(d.name);
-        return true;
-    });
-
-    const html = uniqueDivs.map(d => `
-        <div class="division-chip">
-            ${d.name}
-            <button onclick="deleteDivision('${d._id}')">&times;</button>
-        </div>
-    `).join('');
-
-    if (list) list.innerHTML = html;
-    if (profileList) profileList.innerHTML = html;
-
-    // Update all division dropdowns globally
-    const selects = ['v_division', 'ex_division'];
-    selects.forEach(id => {
-        const sel = document.getElementById(id);
-        if (sel) {
-            const currentVal = sel.value;
-            sel.innerHTML = '<option value="">-- Select Division --</option>' + 
-                uniqueDivs.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
-            sel.value = currentVal;
+    try {
+        const res = await fetch(`/api/admin/divisions?t=${Date.now()}`);
+        if (!res.ok) throw new Error('Fetch failed');
+        const divisions = await res.json();
+        
+        if (!Array.isArray(divisions)) {
+            console.warn("Divisions data is not an array:", divisions);
+            return;
         }
-    });
+
+        const list = document.getElementById('divisionList');
+        const profileList = document.getElementById('profileDivisionList');
+        
+        const uniqueNames = new Set();
+        const uniqueDivs = divisions.filter(d => {
+            if (uniqueNames.has(d.name)) return false;
+            uniqueNames.add(d.name);
+            return true;
+        });
+
+        const html = uniqueDivs.map(d => `
+            <div class="division-chip">
+                ${d.name}
+                <button onclick="deleteDivision('${d._id}')">&times;</button>
+            </div>
+        `).join('');
+
+        if (list) list.innerHTML = html;
+        if (profileList) profileList.innerHTML = html;
+
+        // Update dropdowns
+        const selects = ['v_division', 'ex_division'];
+        selects.forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) {
+                const currentVal = sel.value;
+                sel.innerHTML = '<option value="">Select Division</option>' + 
+                    uniqueDivs.map(d => `<option value="${d.name}">${d.name}</option>`).join('');
+                sel.value = currentVal;
+            }
+        });
+    } catch (e) {
+        console.error("Failed to populate divisions:", e);
+    }
+}
 
     // Sync Designation Management Dept Selection
     const deptPicker = document.getElementById('profileDeptPicker');
