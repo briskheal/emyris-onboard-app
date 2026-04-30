@@ -4028,4 +4028,272 @@ async function handleBulkUpload(input) {
     }
 }
 
+// --- PHASE 1: ENTERPRISE EDITOR UPGRADE ---
+
+function toggleEditorSidebar() {
+    const sb = document.getElementById('editorSidebar');
+    if (sb) {
+        sb.classList.toggle('hidden');
+        if (!sb.classList.contains('hidden')) {
+            renderSidebarTags();
+        }
+    }
+}
+
+function renderSidebarTags() {
+    const list = document.getElementById('sidebarTagList');
+    if (!list) return;
+
+    const tagGroups = [
+        {
+            title: '👤 Personal',
+            tags: ['{{FULL_NAME}}', '{{FIRST_NAME}}', '{{PHONE}}', '{{EMAIL}}', '{{ADDRESS}}', '{{DOB}}']
+        },
+        {
+            title: '💼 Professional',
+            tags: ['{{EMP_CODE}}', '{{DESIGNATION}}', '{{DIVISION}}', '{{HQ}}', '{{JOIN_DATE}}', '{{REPORTING_TO}}']
+        },
+        {
+            title: '💰 Financial',
+            tags: ['{{ANNUAL_CTC}}', '{{MONTHLY_GROSS}}', '{{BASIC}}', '{{HRA}}', '{{CONVEYANCE}}', '{{SPECIAL_ALLOWANCE}}']
+        },
+        {
+            title: '🏢 Company',
+            tags: ['{{COMPANY_NAME}}', '{{SIGNATORY_NAME}}', '{{SIGNATORY_DESIGNATION}}', '{{CURRENT_DATE}}']
+        }
+    ];
+
+    list.innerHTML = tagGroups.map(group => `
+        <div class="tag-group">
+            <div class="tag-group-title">${group.title}</div>
+            ${group.tags.map(tag => `
+                <div class="tag-item" onclick="insertTagAtCursor('${tag}')">
+                    <span>${tag.replace('{{', '').replace('}}', '')}</span>
+                </div>
+            `).join('')}
+        </div>
+    `).join('');
+}
+
+function filterSidebarTags(query) {
+    const q = query.toLowerCase();
+    const items = document.querySelectorAll('.tag-item');
+    items.forEach(item => {
+        const text = item.innerText.toLowerCase();
+        item.style.display = text.includes(q) ? 'flex' : 'none';
+    });
+    
+    // Hide empty groups
+    document.querySelectorAll('.tag-group').forEach(group => {
+        const visibleItems = group.querySelectorAll('.tag-item[style="display: flex;"]');
+        group.style.display = visibleItems.length === 0 && q !== '' ? 'none' : 'block';
+    });
+}
+
+function insertTagAtCursor(tag) {
+    const editor = document.getElementById('unifiedEditor');
+    editor.focus();
+    document.execCommand('insertHTML', false, `<span class="preview-highlight">${tag}</span>&nbsp;`);
+    showToast(`Inserted ${tag}`, "success");
+}
+
+// --- Floating Toolbar Logic ---
+document.addEventListener('selectionchange', handleEditorSelection);
+
+function handleEditorSelection() {
+    const selection = window.getSelection();
+    const toolbar = document.getElementById('floatingToolbar');
+    const editor = document.getElementById('unifiedEditor');
+    
+    if (!toolbar || !editor) return;
+
+    if (selection.rangeCount > 0 && !selection.isCollapsed) {
+        const range = selection.getRangeAt(0);
+        
+        // Check if selection is inside the editor
+        if (editor.contains(range.commonAncestorContainer)) {
+            const rect = range.getBoundingClientRect();
+            
+            toolbar.classList.remove('hidden');
+            toolbar.style.left = `${rect.left + (rect.width / 2) - (toolbar.offsetWidth / 2)}px`;
+            toolbar.style.top = `${rect.top + window.scrollY - toolbar.offsetHeight - 15}px`;
+            return;
+        }
+    }
+    
+    toolbar.classList.add('hidden');
+}
+
+// --- PHASE 2: INTELLIGENCE & VALIDATION ---
+
+function runPreFlightCheck() {
+    const editor = document.getElementById('unifiedEditor');
+    const content = editor.innerHTML;
+    const targetEmail = document.getElementById('hubTargetApplicant')?.value;
+    const applicant = allApplicants.find(a => a.email === targetEmail);
+    
+    const tags = content.match(/\{\{([^}]+)\}\}/g) || [];
+    const uniqueTags = [...new Set(tags)];
+    
+    let issues = [];
+    let warnings = [];
+    
+    if (uniqueTags.length === 0) {
+        warnings.push("No dynamic tags detected. This document will be static.");
+    }
+    
+    if (targetEmail && applicant) {
+        uniqueTags.forEach(tag => {
+            const val = fillLetterPlaceholders(tag, applicant);
+            if (val === tag) {
+                issues.push(`Data missing for ${tag}`);
+            }
+        });
+    } else {
+        warnings.push("No target applicant selected. Cannot verify data parity.");
+    }
+    
+    // Check for "naked" brackets which might be broken tags
+    const brokenTags = content.match(/\{[^{}]+\}/g);
+    if (brokenTags) {
+        brokenTags.forEach(t => {
+            if (!t.startsWith('{{')) issues.push(`Potential broken tag: ${t}`);
+        });
+    }
+
+    if (issues.length === 0 && warnings.length === 0) {
+        showToast("✅ Pre-flight Complete: Document is healthy!", "success");
+    } else {
+        const msg = [...issues, ...warnings].join('\n');
+        alert(`🔍 Pre-Flight Results:\n\n${msg}`);
+        if (issues.length > 0) showToast("⚠️ Issues found during pre-flight", "warning");
+    }
+}
+
+window.isStationeryHidden = false;
+function toggleTruePrintMode() {
+    window.isStationeryHidden = !window.isStationeryHidden;
+    const btn = document.getElementById('toggleStationeryBtn');
+    const preview = document.getElementById('livePreviewFrame');
+    
+    if (window.isStationeryHidden) {
+        btn.innerHTML = '<i class="fas fa-print"></i> Stationery: OFF';
+        btn.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+        btn.style.color = '#ef4444';
+        if (preview) {
+            preview.querySelectorAll('.a4-branding-layer').forEach(l => l.style.display = 'none');
+        }
+    } else {
+        btn.innerHTML = '<i class="fas fa-print"></i> Stationery: ON';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        if (preview) {
+            preview.querySelectorAll('.a4-branding-layer').forEach(l => l.style.display = 'block');
+        }
+    }
+    showToast(`Stationery ${window.isStationeryHidden ? 'Hidden' : 'Visible'}`, "secondary");
+}
+
+// --- PHASE 3 & 4: OPERATIONAL CONTROL ---
+
+function insertProfessionalTable() {
+    const editor = document.getElementById('unifiedEditor');
+    editor.focus();
+    
+    const tableHtml = `
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0; font-family: inherit; font-size: 0.95rem;">
+            <thead>
+                <tr style="background: #f8fafc;">
+                    <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: left; color: #64748b;">PARTICULARS</th>
+                    <th style="border: 1px solid #e2e8f0; padding: 12px; text-align: right; color: #64748b;">AMOUNT (Rs.)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="border: 1px solid #e2e8f0; padding: 10px;">Basic Salary</td>
+                    <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: right;">0.00</td>
+                </tr>
+                <tr>
+                    <td style="border: 1px solid #e2e8f0; padding: 10px;">House Rent Allowance (HRA)</td>
+                    <td style="border: 1px solid #e2e8f0; padding: 10px; text-align: right;">0.00</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr style="font-weight: bold; background: #f1f5f9;">
+                    <td style="border: 1px solid #e2e8f0; padding: 12px;">TOTAL CTC (MONTHLY)</td>
+                    <td style="border: 1px solid #e2e8f0; padding: 12px; text-align: right;">0.00</td>
+                </tr>
+            </tfoot>
+        </table>
+        <p>&nbsp;</p>
+    `;
+    document.execCommand('insertHTML', false, tableHtml);
+    showToast("Professional Table Inserted", "success");
+}
+
+async function showTemplateHistory() {
+    const type = document.getElementById('letterType')?.value || 'offer';
+    lockUI(`🕒 Fetching ${type} template history...`);
+    
+    try {
+        const res = await fetch(`/api/admin/template-history/${type}`);
+        const history = await res.json();
+        
+        if (!history || history.length === 0) {
+            alert("No version history found for this template.");
+            return;
+        }
+
+        const modalHtml = `
+            <div id="historyModal" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px); z-index: 10000; display: flex; align-items: center; justify-content: center;">
+                <div style="background: #1e293b; width: 90%; max-width: 800px; max-height: 80vh; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+                    <div style="padding: 1.5rem 2rem; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="color: white; margin: 0;">🕒 Template History: ${type.toUpperCase()}</h3>
+                        <button onclick="document.getElementById('historyModal').remove()" style="background: transparent; border: none; color: white; font-size: 1.5rem; cursor: pointer;">&times;</button>
+                    </div>
+                    <div style="padding: 1.5rem; overflow-y: auto; flex: 1;">
+                        ${history.map((h, i) => `
+                            <div class="history-row" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.25rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="color: var(--accent); font-weight: 700; font-size: 0.9rem;">Version ${h.version || (history.length - i)}</div>
+                                    <div style="color: var(--text-muted); font-size: 0.8rem;">Saved on ${new Date(h.savedAt).toLocaleString()} by ${h.savedBy}</div>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="btn btn-sm btn-outline" onclick="previewHistoryVersion('${btoa(unescape(encodeURIComponent(h.content)))}')" style="padding: 0 1rem; height: 32px; font-size: 0.75rem;">Preview</button>
+                                    <button class="btn btn-sm" onclick="restoreHistoryVersion('${btoa(unescape(encodeURIComponent(h.content)))}')" style="padding: 0 1rem; height: 32px; font-size: 0.75rem; background: var(--primary);">Restore</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        const div = document.createElement('div');
+        div.innerHTML = modalHtml;
+        document.body.appendChild(div.firstElementChild);
+        
+    } catch (e) {
+        console.error("History error:", e);
+        showToast("Failed to load history", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+function previewHistoryVersion(base64) {
+    const content = decodeURIComponent(escape(atob(base64)));
+    const win = window.open('', '_blank');
+    win.document.write(`<html><head><title>Version Preview</title></head><body style="padding: 40px; font-family: sans-serif;">${content}</body></html>`);
+}
+
+function restoreHistoryVersion(base64) {
+    if (!confirm("Are you sure you want to restore this version? This will overwrite the current editor content.")) return;
+    const content = decodeURIComponent(escape(atob(base64)));
+    document.getElementById('unifiedEditor').innerHTML = content;
+    document.getElementById('historyModal').remove();
+    showToast("Template Restored Successfully", "success");
+    syncEditorStyles();
+}
+
 window.addEventListener('DOMContentLoaded', initializeApp);

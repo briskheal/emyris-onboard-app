@@ -219,6 +219,14 @@ const divisionSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+const templateHistorySchema = new mongoose.Schema({
+    type: String, // 'offer', 'appt', etc.
+    content: String,
+    savedBy: String, // Admin user ID or name
+    savedAt: { type: Date, default: Date.now },
+    version: Number
+});
+
 // Bind models to connections
 const Company = connMain ? connMain.model('Company', companySchema) : mongoose.model('Company', companySchema);
 const Applicant = connMain ? connMain.model('Applicant', applicantSchema) : mongoose.model('Applicant', applicantSchema);
@@ -230,6 +238,7 @@ const hqSchema = new mongoose.Schema({
 });
 const HQ = connMain ? connMain.model('HQ', hqSchema) : mongoose.model('HQ', hqSchema);
 const Asset = connAssets ? connAssets.model('Asset', assetSchema) : mongoose.model('Asset', assetSchema);
+const TemplateHistory = connMain ? connMain.model('TemplateHistory', templateHistorySchema) : mongoose.model('TemplateHistory', templateHistorySchema);
 
 // Startup logic
 async function initializeApp() {
@@ -1306,9 +1315,33 @@ app.post('/api/admin/save-template', async (req, res) => {
         }
 
         res.json({ success: true, message: 'Template saved successfully' });
+
+        // Save to History
+        try {
+            const versionCount = await TemplateHistory.countDocuments({ type });
+            await TemplateHistory.create({
+                type,
+                content: body,
+                savedBy: 'Admin', // In a real app, use the session user
+                version: versionCount + 1
+            });
+        } catch (histErr) {
+            console.warn('⚠️ Failed to save history entry:', histErr.message);
+        }
     } catch (e) {
         console.error('Save template error:', e);
         res.status(500).json({ success: false, error: 'Database save failed' });
+    }
+});
+
+app.get('/api/admin/template-history/:type', async (req, res) => {
+    try {
+        const history = await TemplateHistory.find({ type: req.params.type })
+            .sort({ savedAt: -1 })
+            .limit(10);
+        res.json(history);
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch history' });
     }
 });
 

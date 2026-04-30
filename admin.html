@@ -1122,6 +1122,11 @@
 
                                     <!-- Right Group: Target & Primary Actions -->
                                     <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                                        <button class="btn btn-sm btn-outline" id="toggleSidebarBtn" onclick="toggleEditorSidebar()" 
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-tags"></i> Tags
+                                        </button>
+
                                         <div class="pill-container"
                                             style="background: rgba(99, 102, 241, 0.1); border-color: rgba(99, 102, 241, 0.3); height: 42px; padding: 0 12px; display: flex; align-items: center;">
                                             <i class="fas fa-user-circle" style="color: var(--primary-light); margin-right: 8px;"></i>
@@ -1136,6 +1141,21 @@
                                             onclick="publishLetterToHub()"
                                             style="padding: 0 1.25rem; font-size: 0.85rem; background: linear-gradient(135deg, var(--accent), #4f46e5); border: none; height: 42px; font-weight: 700; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
                                             <i class="fas fa-paper-plane"></i> Issue to Hub
+                                        </button>
+                                        
+                                        <button class="btn btn-sm btn-outline" onclick="runPreFlightCheck()" 
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px; border-color: var(--primary);">
+                                            <i class="fas fa-stethoscope"></i> Pre-flight
+                                        </button>
+
+                                        <button class="btn btn-sm btn-outline" id="toggleStationeryBtn" onclick="toggleTruePrintMode()" 
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-print"></i> Stationery: ON
+                                        </button>
+                                        
+                                        <button class="btn btn-sm btn-outline" onclick="showTemplateHistory()" 
+                                            style="padding: 0 1rem; height: 42px; font-weight: 600; border-radius: 10px; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fas fa-history"></i> History
                                         </button>
                                         
                                         <div class="v-divider" style="height: 30px; background: rgba(255,255,255,0.1); margin: 0 4px;"></div>
@@ -1187,6 +1207,7 @@
                                         <div class="toolbar-cluster" style="display: flex; background: rgba(255,255,255,0.03); border-radius: 10px; padding: 3px; border: 1px solid rgba(255,255,255,0.05);">
                                             <button class="btn-tool" title="Numbered List" onclick="execCmd('insertOrderedList')"><i class="fas fa-list-ol"></i></button>
                                             <button class="btn-tool" title="Bullet List" onclick="execCmd('insertUnorderedList')"><i class="fas fa-list-ul"></i></button>
+                                            <button class="btn-tool" title="Insert Table" onclick="insertProfessionalTable()"><i class="fas fa-table"></i></button>
                                             <div class="v-divider" style="background: rgba(255,255,255,0.1);"></div>
                                             <button class="btn-tool" title="Insert Page Break" onclick="insertPageBreak()" style="width: auto; padding: 0 12px; font-size: 0.75rem; font-weight: 700; color: var(--accent);">
                                                 <i class="fas fa-scissors" style="margin-right: 6px;"></i> BREAK
@@ -1241,11 +1262,40 @@
                                     <input type="hidden" id="letterAlignment" value="left">
                                 </div>
 
-                                <div class="fidelity-desk">
-                                    <div id="unifiedEditor" class="letter-editor a4-page-standard"
-                                        contenteditable="true" spellcheck="false"></div>
+                                <div class="editor-main-layout" style="display: flex; position: relative; background: rgba(15, 23, 42, 0.2);">
+                                    <!-- Placeholder Sidebar -->
+                                    <div id="editorSidebar" class="editor-sidebar hidden">
+                                        <div class="sidebar-header">
+                                            <span>Available Tags</span>
+                                            <button onclick="toggleEditorSidebar()">&times;</button>
+                                        </div>
+                                        <div class="sidebar-search">
+                                            <input type="text" placeholder="Search tags..." onkeyup="filterSidebarTags(this.value)">
+                                        </div>
+                                        <div id="sidebarTagList" class="sidebar-tag-list">
+                                            <!-- Grouped tags injected via JS -->
+                                        </div>
+                                    </div>
 
-                                    <div id="livePreviewContainer" class="hidden"
+                                    <div class="fidelity-desk" style="flex: 1;">
+                                        <div id="unifiedEditor" class="letter-editor a4-page-standard"
+                                            contenteditable="true" spellcheck="false"></div>
+
+                                        <!-- Floating Contextual Toolbar -->
+                                        <div id="floatingToolbar" class="floating-toolbar hidden">
+                                            <button onclick="execCmd('bold')"><b>B</b></button>
+                                            <button onclick="execCmd('italic')"><i>I</i></button>
+                                            <button onclick="execCmd('underline')"><u>U</u></button>
+                                            <div class="v-divider" style="height: 15px;"></div>
+                                            <button onclick="execCmd('justifyLeft')"><i class="fas fa-align-left"></i></button>
+                                            <button onclick="execCmd('justifyCenter')"><i class="fas fa-align-center"></i></button>
+                                            <div class="v-divider" style="height: 15px;"></div>
+                                            <button onclick="execCmd('removeFormat')" title="Clear Style"><i class="fas fa-eraser"></i></button>
+                                        </div>
+
+                                    </div>
+                                </div>
+                                <div id="livePreviewContainer" class="hidden"
                                         style="margin-top: 0; position: relative;">
                                         <div class="preview-control-overlay">
                                             <div style="display: flex; align-items: center; gap: 0.5rem;">
