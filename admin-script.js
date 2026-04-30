@@ -373,25 +373,15 @@ function applyCompanyData() {
         console.log('ℹ️ Using Initials:', initials);
     }
     // RESTORED WITH UNIQUE IDS AND OBSCURE CLASSES TO PREVENT HEADER LEAKS
-    const quickContact = document.getElementById('u_dashboard_contact_v4');
-    const landingQuickContact = document.getElementById('u_landing_contact_v4');
-    
-    // Using an extremely obscure class to avoid any rogue CSS/JS targeting
-    /* DISABLED TO PREVENT LEAKS
-    const contactHTML = `
-        ${companyData.phone ? `<span class="emy-isolated-contact-node-v6">📞 <a href="tel:${companyData.phone}">${companyData.phone}</a></span>` : ''}
-        ${companyData.tollFree ? `<span class="emy-isolated-contact-node-v6">☎️ <a href="tel:${companyData.tollFree}">${companyData.tollFree}</a></span>` : ''}
-        ${companyData.website ? `<span class="emy-isolated-contact-node-v6">🌐 <a href="${companyData.website}" target="_blank">${companyData.website.replace('https://', '')}</a></span>` : ''}
-        ${companyData.email ? `<span class="emy-isolated-contact-node-v6">✉️ <a href="mailto:${companyData.email}">${companyData.email}</a></span>` : ''}
-    `;
-
-    if (quickContact) {
-        quickContact.innerHTML = contactHTML;
+    /* Minimal & Secure Contact Restore */
+    const safetyBar = document.getElementById('emy-safety-contact-bar');
+    if (safetyBar && companyData) {
+        safetyBar.innerHTML = `
+            ${companyData.phone ? `<span>Phone: ${companyData.phone}</span>` : ''}
+            ${companyData.tollFree ? `<span>Toll-Free: ${companyData.tollFree}</span>` : ''}
+            ${companyData.website ? `<span>Website: ${companyData.website.replace('https://', '')}</span>` : ''}
+        `;
     }
-    if (landingQuickContact) {
-        landingQuickContact.innerHTML = contactHTML;
-    }
-    */
     
     // Safety Cleanup: Aggressive removal of any rogue branding leaks
     const brandingArea = document.getElementById('headerBrandingLayer');
