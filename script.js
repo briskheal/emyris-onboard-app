@@ -16,7 +16,12 @@ const OPTIONAL_DOCS = ["Last Month Salary Slip", "Previous Company Appointment L
 
 // Override shared-utils handlers to include portal-specific logic
 async function showApplicantRegister() {
-    await populateDropdowns();
+    console.log('🔄 Opening registration: Forcing real-time sync with Admin panel...');
+    const divSel = document.getElementById('regDivision');
+    if (divSel) divSel.innerHTML = '<option value="">⏳ Loading Divisions...</option>';
+    
+    await fetchCompanyData(); // Ensure global state is fresh
+    await populateDropdowns(); // Populate UI
     updateView('applicantRegister');
 }
 
@@ -204,22 +209,8 @@ async function populateDropdowns() {
 
     if (!divSel) return;
 
-    let divs = companyData.divisions || [];
-    
-    // Fallback: If companyData doesn't have divisions, try to fetch fresh data
-    if (divs.length === 0) {
-        try {
-            const res = await fetch(`/api/company-data?t=${Date.now()}`);
-            if (res.ok) {
-                const data = await res.json();
-                if (data && Array.isArray(data.divisions)) {
-                    companyData = data;
-                    divs = data.divisions;
-                    applyCompanyData(); // Refresh other global UI pointers
-                }
-            }
-        } catch(e) { console.warn("Fallback fetch failed"); }
-    }
+    const divs = companyData.divisions || [];
+    console.log('📊 Synchronized Divisions found:', divs.length);
 
     divSel.innerHTML = '<option value="">-- Select Division --</option>' +
         divs.map(d => {
