@@ -3362,13 +3362,13 @@ async function generateLetterPDF(emailOrApp, type, htmlOverride = null) {
         // 3. Create high-fidelity container for capture
         const captureContainer = document.createElement('div');
         captureContainer.id = 'pdfCaptureContainer';
-        captureContainer.style.position = 'fixed';
+        captureContainer.style.position = 'absolute';
         captureContainer.style.left = '0';
-        captureContainer.style.top = '0';
+        captureContainer.style.top = '-9999px'; 
         captureContainer.style.width = '210mm';
         captureContainer.style.background = 'white';
         captureContainer.style.zIndex = '-9999';
-        captureContainer.style.opacity = '0'; // Hidden but rendered
+        captureContainer.style.opacity = '1'; 
         captureContainer.style.pointerEvents = 'none';
         document.body.appendChild(captureContainer);
 
