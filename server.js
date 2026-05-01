@@ -62,7 +62,7 @@ function numberToWords(num) {
         if (words !== '') words += 'and ';
         words += count(num);
     }
-    return words.toUpperCase() + ' ONLY';
+    return words.trim().toLowerCase();
 }
 
 function resolveTemplate(template, data) {
@@ -1380,7 +1380,7 @@ app.post('/api/admin/render-template', async (req, res) => {
             'REPORTING_TO': applicant.reportingTo || '',
             'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
             'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
-            'SALARY_WORDS': numberToWords(annualCTC),
+            'SALARY_WORDS': (numberToWords(annualCTC) + ' ONLY').toUpperCase(),
             'COMPANY_NAME': company.name,
             'SIGNATORY_NAME': company.signatoryName || '',
             'SIGNATORY_DESG': company.signatoryDesignation || '',
