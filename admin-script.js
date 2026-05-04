@@ -1745,7 +1745,10 @@ async function updatePipelineTask(taskName, isChecked) {
     } catch (e) { showToast('Pipeline save failed', 'error'); }
 }
 
-async function saveInternalAssignment(silent = false) {
+async function saveAllVerificationData(silent = false) {
+    if (!activeV_Applicant) return false;
+    
+    // 1. Collect Salary Breakup
     const salaryBreakup = {
         basic: parseFloat(document.getElementById('v_salBasic').value) || 0,
         hra: parseFloat(document.getElementById('v_salHra').value) || 0,
@@ -1757,17 +1760,24 @@ async function saveInternalAssignment(silent = false) {
         fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
     };
 
-    // Strict Match Check for 4L/Annual consistency
+    // 2. Validate Salary vs Target CTC
     const monthlyTotal = Object.values(salaryBreakup).reduce((a, b) => a + b, 0);
     const calculatedAnnual = monthlyTotal * 12;
     const overrideCtc = parseFloat(document.getElementById('v_approvedCtc')?.value);
     const targetAnnual = !isNaN(overrideCtc) ? overrideCtc : (parseFloat(activeV_Applicant.formData?.salary) || 0);
 
-    if (Math.abs(calculatedAnnual - targetAnnual) > 500) {
+    if (!silent && Math.abs(calculatedAnnual - targetAnnual) > 500) {
         if (!confirm(`⚠️ SALARY MISMATCH ALERT:\n\nThe current breakup totals ₹${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Approved/Target CTC is ₹${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
             return false;
         }
     }
+
+    // 3. Collect Increment Data
+    const incrementData = {
+        enabled: document.getElementById('v_incrementEnabled').checked,
+        currentSalary: parseFloat(document.getElementById('v_currentSalary').value) || 0,
+        revisedSalary: parseFloat(document.getElementById('v_revisedSalary').value) || 0
+    };
 
     const data = {
         email: activeV_Applicant.email,
@@ -1779,11 +1789,13 @@ async function saveInternalAssignment(silent = false) {
         address: document.getElementById('v_address').value,
         salary: targetAnnual,
         salaryBreakup,
+        incrementData,
+        tasks: activeV_Applicant.tasks,
         verificationChecks
     };
 
     try {
-        lockUI("🏗️ Updating Assignment...");
+        if (!silent) lockUI("💾 Saving All Progress...");
         const res = await fetch('/api/admin/update-workflow-data', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -1791,26 +1803,21 @@ async function saveInternalAssignment(silent = false) {
         });
         const result = await res.json();
         if (result.success) {
-            if (!silent) showToast("✅ Core Assignment & Salary Updated!", "success");
-            activeV_Applicant.division = data.division;
-            activeV_Applicant.reportingTo = data.reportingTo;
-            activeV_Applicant.hq = data.hq;
-            activeV_Applicant.dob = data.dob;
-            activeV_Applicant.actualJoiningDate = data.actualJoiningDate;
-            activeV_Applicant.address = data.address;
-            activeV_Applicant.salary = data.salary;
-            activeV_Applicant.salaryBreakup = data.salaryBreakup;
+            if (!silent) showToast("✅ All changes saved successfully!", "success");
+            // Sync local state
+            Object.assign(activeV_Applicant, data);
             return true;
         } else {
             if (!silent) showToast(result.error || "Save failed", "error");
             return false;
         }
-    } catch (e) { 
-        console.error("Save assignment error:", e);
+    } catch (e) {
+        console.error("Save error:", e);
         if (!silent) showToast("Network error: Save failed", "error");
         return false;
+    } finally {
+        if (!silent) unlockUI();
     }
-    finally { unlockUI(); }
 }
 
 // --- SALARY INCREMENT & REVISION LOGIC ---
@@ -1881,36 +1888,6 @@ function applyRevisedSalary() {
     showToast("✅ Revised salary applied to structure. Don't forget to SAVE.", "success");
 }
 
-async function saveIncrementData() {
-    if (!activeV_Applicant) return;
-
-    if (!confirm(`Save this salary increment data to ${activeV_Applicant.fullName}'s internal record?\n\nNOTE: This is for administrative tracking only and does NOT send any notification to the applicant.`)) {
-        return;
-    }
-    
-    const data = {
-        email: activeV_Applicant.email,
-        incrementData: {
-            enabled: document.getElementById('v_incrementEnabled').checked,
-            currentSalary: parseFloat(document.getElementById('v_currentSalary').value) || 0,
-            revisedSalary: parseFloat(document.getElementById('v_revisedSalary').value) || 0
-        }
-    };
-
-    try {
-        lockUI("💾 Saving Increment Record...");
-        const res = await fetch('/api/admin/update-workflow-data', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if ((await res.json()).success) {
-            showToast("✅ Salary increment data saved to internal record.", "success");
-            activeV_Applicant.incrementData = data.incrementData;
-        }
-    } catch (e) { showToast("Save failed", "error"); }
-    finally { unlockUI(); }
-}
 
 function calcSalaryTotal() {
     const sal = {
@@ -2035,7 +2012,7 @@ async function commitMasterVerification() {
     // AUTO-SAVE ASSIGNMENT & SALARY BEFORE PROCEEDING
     // This solves the bug where users approve without saving the salary first.
     // The true parameter makes the toast silent so we don't spam them with notifications.
-    const assignSuccess = await saveInternalAssignment(true);
+    const assignSuccess = await saveAllVerificationData(true);
     if (!assignSuccess) return; // Halt if the salary mismatched and they cancelled the prompt, or validation failed.
 
     try {

@@ -1407,7 +1407,7 @@ function calculateMonthlyGross(sal) {
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address } = req.body;
+        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
@@ -1418,6 +1418,8 @@ app.post('/api/admin/update-workflow-data', async (req, res) => {
         if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
         if (address !== undefined) update.address = address;
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
+        if (tasks !== undefined) update.tasks = tasks;
+        if (incrementData !== undefined) update.incrementData = incrementData;
         if (salaryBreakup !== undefined) {
             // Enhanced Validation: Ensure components are numeric and Basic is present
             const s = salaryBreakup;

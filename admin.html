@@ -1837,8 +1837,7 @@
                                     style="font-size:0.65rem; color:var(--text-muted); margin-top:4px; text-align:right;">
                                 </div>
                             </div>
-                            <button class="btn btn-primary btn-sm" onclick="saveInternalAssignment()"
-                                style="width:100%; padding:10px;">💾 Save Assignment & Salary</button>
+
                         </div>
 
                         <!-- 📈 Salary Increment Revision -->
@@ -1892,8 +1891,6 @@
                                 <div style="margin-top: 1rem; display: flex; gap: 8px;">
                                     <button class="btn btn-sm btn-outline" onclick="applyRevisedSalary()"
                                         style="flex: 1; font-size: 0.7rem; padding: 8px;">🔄 Apply to Structure</button>
-                                    <button class="btn btn-sm btn-primary" onclick="saveIncrementData()"
-                                        style="flex: 1; font-size: 0.7rem; padding: 8px;">💾 Save Revision</button>
                                 </div>
                                 <p
                                     style="font-size: 0.65rem; color: var(--text-muted); margin-top: 8px; line-height: 1.4; text-align: center;">
@@ -1954,6 +1951,10 @@
                         <button id="v_reject_btn" class="btn btn-sm" onclick="rejectApplicantFlow()"
                             style="padding:10px 24px; border: 1px solid rgba(239,68,68,0.4); color: #ef4444; background: rgba(239,68,68,0.05); font-weight:700; border-radius: 12px;">
                             &#x1F6AB; REJECT APPLICATION
+                        </button>
+                        <button class="btn btn-outline" onclick="saveAllVerificationData()"
+                            style="padding:10px 24px; border-color:var(--primary); color:var(--primary-light); font-weight:700;">
+                            💾 SAVE PROGRESS
                         </button>
                         <button id="v_approve_btn_bottom" class="btn btn-primary" onclick="commitMasterVerification()"
                             style="padding:10px 24px;background:linear-gradient(135deg,#6366f1,#10b981);border:none;font-weight:700;">
