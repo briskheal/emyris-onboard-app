@@ -1492,7 +1492,7 @@ function renderVerificationChecklist(app) {
         return;
     }
 
-    const allDocNames = [...new Set([...docs, ...uploads.map(u => u.category)])];
+    const allDocNames = [...new Set([...docs, ...uploads.map(u => u.category)])].filter(n => n && n.trim() !== "");
     
     container.innerHTML = allDocNames.map(dName => {
         const categoryFiles = uploads.filter(d => d.category === dName);
@@ -1532,14 +1532,13 @@ function renderVerificationChecklist(app) {
         `;
     }).join('');
     
-    updateVerificationProgress(allDocNames.length);
+    updateVerificationProgress(allDocNames);
 }
 
 function toggleDocCheck(docName, isChecked) {
     verificationChecks[docName] = isChecked;
-    // Recalculate total from checklist items
-    const total = document.querySelectorAll('.v-check-item').length;
-    updateVerificationProgress(total);
+    const allDocNames = [...new Set([...(companyData.requiredDocs || []), ...(activeV_Applicant.documents || []).map(u => u.category)])].filter(n => n && n.trim() !== "");
+    updateVerificationProgress(allDocNames);
 }
 
 async function rejectDocument(docCategory) {
@@ -1573,8 +1572,9 @@ async function rejectDocument(docCategory) {
     }
 }
 
-function updateVerificationProgress(total) {
-    const checked = Object.values(verificationChecks).filter(v => v === true).length;
+function updateVerificationProgress(allDocNames) {
+    const total = allDocNames.length;
+    const checked = allDocNames.filter(name => verificationChecks[name] === true).length;
     
     const progressEl = document.getElementById('v_progress_ratio');
     if (progressEl) progressEl.innerText = `${checked}/${total} VERIFIED`;

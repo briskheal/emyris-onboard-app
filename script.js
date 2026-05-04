@@ -717,7 +717,7 @@ function renderApplicantDocuments() {
         container.appendChild(note);
     }
 
-    required.forEach(docName => {
+    required.filter(d => d !== "Digital Signature").forEach(docName => {
         const safeId = docName.replace(/[^a-z0-9]/gi, '_');
         const categoryDocs = existing.filter(d => d.category === docName);
         const hasFiles = categoryDocs.length > 0;
@@ -761,24 +761,25 @@ function renderApplicantDocuments() {
         attachApplicantFileListener(`file_${safeId}`, docName);
     });
 
-    // Signature
-    const sigDocs = existing.filter(d => d.category === 'Digital Signature');
-    const hasSig = sigDocs.length > 0;
-    const sigBox = document.createElement('div');
-    sigBox.className = 'upload-box';
-    sigBox.innerHTML = `
-        <label>Digital Signature*</label>
-        <div class="drop-zone ${hasSig ? 'has-files' : ''}" onclick="document.getElementById('file_Sig').click()">
-            <div class="progress-ribbon" id="ribbon_file_Sig" style="width: 0%"></div>
-            <span class="drop-icon">${hasSig ? '🖋️' : '➕'}</span>
-            <!-- FOOTER DELETED FOR TROUBLESHOOTING -->
-            <span id="status_Sig" class="drop-label">${hasSig ? 'Change Signature' : 'Upload Sign'}</span>
-            <input type="file" id="file_Sig" class="hidden" accept="image/*">
-        </div>
-        ${hasSig ? `<div class="uploaded-files-list"><div class="file-item-pill"><span>🖋️ Signature Saved</span><button type="button" class="btn-remove-file" onclick="deleteApplicantDoc('${sigDocs[0].assetId}', 'Digital Signature')">&times;</button></div></div>` : ''}
-    `;
-    container.appendChild(sigBox);
-    attachApplicantFileListener('file_Sig', 'Digital Signature');
+    // Signature - ONLY if required by Admin
+    if (required.includes("Digital Signature")) {
+        const sigDocs = existing.filter(d => d.category === 'Digital Signature');
+        const hasSig = sigDocs.length > 0;
+        const sigBox = document.createElement('div');
+        sigBox.className = 'upload-box';
+        sigBox.innerHTML = `
+            <label>Digital Signature*</label>
+            <div class="drop-zone ${hasSig ? 'has-files' : ''}" onclick="document.getElementById('file_Sig').click()">
+                <div class="progress-ribbon" id="ribbon_file_Sig" style="width: 0%"></div>
+                <span class="drop-icon">${hasSig ? '🖋️' : '➕'}</span>
+                <span id="status_Sig" class="drop-label">${hasSig ? 'Change Signature' : 'Upload Sign'}</span>
+                <input type="file" id="file_Sig" class="hidden" accept="image/*">
+            </div>
+            ${hasSig ? `<div class="uploaded-files-list"><div class="file-item-pill"><span>🖋️ Signature Saved</span><button type="button" class="btn-remove-file" onclick="deleteApplicantDoc('${sigDocs[0].assetId}', 'Digital Signature')">&times;</button></div></div>` : ''}
+        `;
+        container.appendChild(sigBox);
+        attachApplicantFileListener('file_Sig', 'Digital Signature');
+    }
 }
 
 function attachApplicantFileListener(inputId, category) {
