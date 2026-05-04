@@ -1502,11 +1502,23 @@ function renderVerificationChecklist(app) {
         const isVerified = verificationChecks[dName] === true;
         
         return `
-            <div id="v_row_${safeId}" class="v-check-item ${isVerified ? 'verified' : (hasFiles ? 'waiting' : 'missing')}">
-                <div class="v-check-info">
+            <div id="v_row_${safeId}" class="v-check-item ${isVerified ? 'verified' : (hasFiles ? 'waiting' : 'missing')}" style="cursor: default;">
+                <div class="v-check-actions" style="display:flex; align-items:center; gap:0.5rem; flex-shrink: 0;">
+                    <label class="switch-premium">
+                        <input type="checkbox" ${isVerified ? 'checked' : ''} 
+                            data-docname="${dName}" 
+                            data-rowid="v_row_${safeId}"
+                            onchange="toggleDocCheck(this)">
+                        <span class="slider-premium"></span>
+                    </label>
+                </div>
+                <div class="v-check-info" style="flex: 1; min-width: 0;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight: 700;">${dName}</span>
-                        <button class="btn btn-tool" onclick="triggerProxyUpload(this)" data-category="${dName}" title="Upload on behalf of candidate" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(99, 102, 241, 0.1); color: var(--accent); border: 1px solid rgba(99, 102, 241, 0.2);">📎 Upload</button>
+                        <span style="font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${dName}</span>
+                        <div style="display:flex; gap: 6px;">
+                            ${hasFiles ? `<button class="btn btn-tool btn-tool-danger" onclick="rejectDocument(this)" data-category="${dName}" title="Reject Category" style="padding: 2px 6px;">🚩</button>` : ''}
+                            <button class="btn btn-tool" onclick="triggerProxyUpload(this)" data-category="${dName}" title="Upload on behalf of candidate" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(99, 102, 241, 0.1); color: var(--accent); border: 1px solid rgba(99, 102, 241, 0.2);">📎 Upload</button>
+                        </div>
                     </div>
                     <label style="font-size:0.7rem; color:${hasFiles ? 'var(--success)' : '#ef4444'}">
                         ${hasFiles ? `✅ ${categoryFiles.length} File(s)` : '❌ Missing File'}
@@ -1514,24 +1526,14 @@ function renderVerificationChecklist(app) {
                     <div class="v-check-file-list" style="margin-top: 5px;">
                         ${categoryFiles.map(f => `
                             <div style="font-size: 0.7rem; color: var(--text-soft); display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
-                                <span>📄 ${f.name}</span>
-                                <div style="display:flex; gap: 4px;">
+                                <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📄 ${f.name}</span>
+                                <div style="display:flex; gap: 4px; flex-shrink: 0;">
                                     <button class="btn btn-tool" onclick="viewDocument('${f.assetId || ''}')" style="padding: 2px 5px; font-size: 0.65rem;">👁️</button>
                                     <button class="btn btn-tool" onclick="downloadAsset('${f.assetId || ''}', this)" data-category="${dName}" style="padding: 2px 5px; font-size: 0.65rem;">📥</button>
                                 </div>
                             </div>
                         `).join('')}
                     </div>
-                </div>
-                <div class="v-check-actions" style="display:flex; align-items:center; gap:0.5rem;">
-                    ${hasFiles ? `<button class="btn btn-tool btn-tool-danger" onclick="rejectDocument(this)" data-category="${dName}" title="Reject Category">🚩</button>` : ''}
-                    <label class="switch-premium" style="margin-left:0.5rem;">
-                        <input type="checkbox" ${isVerified ? 'checked' : ''} 
-                            data-docname="${dName}" 
-                            data-rowid="v_row_${safeId}"
-                            onchange="toggleDocCheck(this)">
-                        <span class="slider-premium"></span>
-                    </label>
                 </div>
             </div>
         `;

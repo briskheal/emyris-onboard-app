@@ -1226,12 +1226,7 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
         return;
     }
 
-    const hasSig = docs.find(u => u.category === 'Digital Signature');
-    if (!hasSig) {
-        showToast("⚠️ Digital Signature is required.", "error");
-        renderStep(5);
-        return;
-    }
+
 
     const formData = Object.fromEntries(new FormData(e.target).entries());
     
