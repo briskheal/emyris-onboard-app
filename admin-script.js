@@ -1461,7 +1461,8 @@ function renderVerificationProfile(app) {
         { label: 'Current Address', val: `<textarea id="v_address" class="form-input-sm" style="width:100%; min-height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:0.85rem; resize:vertical;">${app.address || fd.address || ''}</textarea>` },
         { label: 'Applied At', val: app.submittedAt ? formatDateDMY(app.submittedAt) : (app.registeredAt ? formatDateDMY(app.registeredAt) : 'N/A') },
         { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
-        { label: 'Confirmed ADOJ', val: `<input type="text" id="v_actualJoiningDate" class="form-input-sm" value="${app.actualJoiningDate ? formatDateDMY(app.actualJoiningDate) : ''}" placeholder="DD-MM-YYYY" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Expected DOJ', val: app.joiningDate ? formatDateDMY(app.joiningDate) : (fd.joiningDate ? formatDateDMY(fd.joiningDate) : 'N/A') },
+        { label: 'Confirmed ADOJ', val: `<input type="text" id="v_actualJoiningDate" class="form-input-sm" value="${app.actualJoiningDate ? formatDateDMY(app.actualJoiningDate) : (app.joiningDate ? formatDateDMY(app.joiningDate) : (fd.joiningDate ? formatDateDMY(fd.joiningDate) : ''))}" placeholder="DD-MM-YYYY" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
         { 
             label: 'Published Letters', 
             val: `
@@ -1495,16 +1496,17 @@ function renderVerificationChecklist(app) {
     const allDocNames = [...new Set([...docs, ...uploads.map(u => u.category)])].filter(n => n && n.trim() !== "");
     
     container.innerHTML = allDocNames.map(dName => {
+        const safeId = dName.replace(/[^a-z0-9]/gi, '_');
         const categoryFiles = uploads.filter(d => d.category === dName);
         const hasFiles = categoryFiles.length > 0;
         const isVerified = verificationChecks[dName] === true;
         
         return `
-            <div class="v-check-item ${isVerified ? 'verified' : (hasFiles ? 'waiting' : 'missing')}">
+            <div id="v_row_${safeId}" class="v-check-item ${isVerified ? 'verified' : (hasFiles ? 'waiting' : 'missing')}">
                 <div class="v-check-info">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="font-weight: 700;">${dName}</span>
-                        <button class="btn btn-tool" onclick="triggerProxyUpload('${dName}')" title="Upload on behalf of candidate" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(99, 102, 241, 0.1); color: var(--accent); border: 1px solid rgba(99, 102, 241, 0.2);">📎 Upload</button>
+                        <button class="btn btn-tool" onclick="triggerProxyUpload(this)" data-category="${dName}" title="Upload on behalf of candidate" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(99, 102, 241, 0.1); color: var(--accent); border: 1px solid rgba(99, 102, 241, 0.2);">📎 Upload</button>
                     </div>
                     <label style="font-size:0.7rem; color:${hasFiles ? 'var(--success)' : '#ef4444'}">
                         ${hasFiles ? `✅ ${categoryFiles.length} File(s)` : '❌ Missing File'}
@@ -1515,16 +1517,19 @@ function renderVerificationChecklist(app) {
                                 <span>📄 ${f.name}</span>
                                 <div style="display:flex; gap: 4px;">
                                     <button class="btn btn-tool" onclick="viewDocument('${f.assetId || ''}')" style="padding: 2px 5px; font-size: 0.65rem;">👁️</button>
-                                    <button class="btn btn-tool" onclick="downloadAsset('${f.assetId || ''}', '${dName}')" style="padding: 2px 5px; font-size: 0.65rem;">📥</button>
+                                    <button class="btn btn-tool" onclick="downloadAsset('${f.assetId || ''}', this)" data-category="${dName}" style="padding: 2px 5px; font-size: 0.65rem;">📥</button>
                                 </div>
                             </div>
                         `).join('')}
                     </div>
                 </div>
                 <div class="v-check-actions" style="display:flex; align-items:center; gap:0.5rem;">
-                    ${hasFiles ? `<button class="btn btn-tool btn-tool-danger" onclick="rejectDocument('${dName}')" title="Reject Category">🚩</button>` : ''}
+                    ${hasFiles ? `<button class="btn btn-tool btn-tool-danger" onclick="rejectDocument(this)" data-category="${dName}" title="Reject Category">🚩</button>` : ''}
                     <label class="switch-premium" style="margin-left:0.5rem;">
-                        <input type="checkbox" ${isVerified ? 'checked' : ''} onchange="toggleDocCheck('${dName}', this.checked)">
+                        <input type="checkbox" ${isVerified ? 'checked' : ''} 
+                            data-docname="${dName}" 
+                            data-rowid="v_row_${safeId}"
+                            onchange="toggleDocCheck(this)">
                         <span class="slider-premium"></span>
                     </label>
                 </div>
@@ -1535,13 +1540,33 @@ function renderVerificationChecklist(app) {
     updateVerificationProgress(allDocNames);
 }
 
-function toggleDocCheck(docName, isChecked) {
+function toggleDocCheck(el) {
+    const docName = el.dataset.docname;
+    const isChecked = el.checked;
+    const rowId = el.dataset.rowid;
+    
     verificationChecks[docName] = isChecked;
+    
+    // Visual Feedback: Update row class
+    const row = document.getElementById(rowId);
+    if (row) {
+        if (isChecked) {
+            row.classList.add('verified');
+            row.classList.remove('waiting', 'missing');
+        } else {
+            row.classList.remove('verified');
+            const hasFiles = row.querySelector('.v-check-file-list').children.length > 0;
+            row.classList.add(hasFiles ? 'waiting' : 'missing');
+        }
+    }
+
     const allDocNames = [...new Set([...(companyData.requiredDocs || []), ...(activeV_Applicant.documents || []).map(u => u.category)])].filter(n => n && n.trim() !== "");
     updateVerificationProgress(allDocNames);
 }
 
-async function rejectDocument(docCategory) {
+async function rejectDocument(el) {
+    const docCategory = (typeof el === 'string') ? el : el.dataset.category;
+    if (!docCategory || !activeV_Applicant) return;
     const reason = prompt(`Reason for rejecting ${docCategory}:`, "The document is unclear or incorrect.");
     if (reason === null) return; // Cancelled
 
@@ -1597,7 +1622,8 @@ function updateVerificationProgress(allDocNames) {
     }
 }
 
-function triggerProxyUpload(category) {
+function triggerProxyUpload(el) {
+    const category = el.dataset.category;
     let input = document.getElementById('adminProxyUploadInput');
     if (!input) {
         input = document.createElement('input');
@@ -2075,8 +2101,9 @@ async function commitMasterVerification() {
     finally { unlockUI(); }
 }
 
-async function rejectApplicantFlow() {
-    if (!activeV_Applicant) return;
+async function rejectDocument(el) {
+    const docCategory = el.dataset.category;
+    if (!docCategory || !activeV_Applicant) return;
     const reason = prompt("⚠️ ATTENTION: Please specify the reason for rejection (this will be logged for audit purposes):");
     if (reason === null) return; // Cancelled
     
@@ -3838,7 +3865,8 @@ async function viewDocument(idOrData) {
     win.document.close();
 }
 
-async function downloadAsset(idOrData, name) {
+async function downloadAsset(idOrData, elOrName) {
+    const name = (typeof elOrName === 'object' && elOrName !== null) ? elOrName.dataset.category : elOrName;
     if (!idOrData) return;
     let finalData = idOrData;
     
