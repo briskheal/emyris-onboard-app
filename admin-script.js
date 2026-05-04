@@ -461,7 +461,8 @@ function applyMarqueePreview() {
 const STANDARD_DOCS = [
     "Aadhar Card - Front", "Aadhar Card - Back", "PAN Card", "Degree/Provisional Certificate",
     "Experience Letter - Previous Company", "Relieving Letter - Previous Company",
-    "3 Months Pay Slips", "Bank Statement", "Passport Photo", "Medical Fitness Certificate"
+    "Last Month Salary Slip", "Bank Statement", "Passport Photo", "Medical Fitness Certificate",
+    "Digital Signature"
 ];
 
 function renderRequiredDocsChips() {
@@ -747,10 +748,29 @@ function attachAssetUploadListener(id, info) {
 
                 if (ribbon) ribbon.style.width = `${Math.round(((i + 1) / files.length) * 100)}%`;
 
-                await uploadSingleAsset(category, f.name, base64);
+                const uploadRes = await uploadSingleAsset(category, f.name, base64);
+                
+                // CRITICAL FIX: Update local memory only. Do NOT call fetchCompanyData()
+                // which overwrites unsaved changes in other fields.
+                if (uploadRes && uploadRes.asset) {
+                    const asset = uploadRes.asset;
+                    const map = {
+                        'logo': 'activeLogoId',
+                        'stamp': 'activeStampId',
+                        'digitalSignature': 'activeSignatureId',
+                        'letterheadImage': 'activeLetterheadId'
+                    };
+                    const field = map[category];
+                    if (field) {
+                        companyData[field] = asset._id;
+                        // Local hydration of the field for immediate UI update
+                        companyData[category] = [asset]; 
+                    }
+                }
             }
             showToast(`✅ ${files.length} file(s) uploaded!`);
-            await fetchCompanyData();
+            // await fetchCompanyData(); // REMOVED to prevent memory erasure
+            applyCompanyData(); // Re-apply local data to UI without fetching from server
             renderAssetLists();
         } catch (err) {
             showToast("❌ Upload failed", "error");
@@ -1482,7 +1502,10 @@ function renderVerificationChecklist(app) {
         return `
             <div class="v-check-item ${isVerified ? 'verified' : (hasFiles ? 'waiting' : 'missing')}">
                 <div class="v-check-info">
-                    <span style="font-weight: 700;">${dName}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight: 700;">${dName}</span>
+                        <button class="btn btn-tool" onclick="triggerProxyUpload('${dName}')" title="Upload on behalf of candidate" style="padding: 2px 6px; font-size: 0.75rem; background: rgba(99, 102, 241, 0.1); color: var(--accent); border: 1px solid rgba(99, 102, 241, 0.2);">📎 Upload</button>
+                    </div>
                     <label style="font-size:0.7rem; color:${hasFiles ? 'var(--success)' : '#ef4444'}">
                         ${hasFiles ? `✅ ${categoryFiles.length} File(s)` : '❌ Missing File'}
                     </label>
@@ -1571,6 +1594,67 @@ function updateVerificationProgress(total) {
             masterBtn.classList.remove('btn-primary');
             masterBtn.style.background = 'transparent';
         }
+    }
+}
+
+function triggerProxyUpload(category) {
+    let input = document.getElementById('adminProxyUploadInput');
+    if (!input) {
+        input = document.createElement('input');
+        input.type = 'file';
+        input.id = 'adminProxyUploadInput';
+        input.className = 'hidden';
+        document.body.appendChild(input);
+    }
+    input.onchange = (e) => handleProxyUpload(e, category);
+    input.click();
+}
+
+async function handleProxyUpload(e, category) {
+    const file = e.target.files[0];
+    if (!file || !activeV_Applicant) return;
+
+    try {
+        lockUI(`🚀 Proxy Uploading ${category}...`);
+        const reader = new FileReader();
+        const fileData = await new Promise((resolve, reject) => {
+            reader.onload = (ev) => resolve(ev.target.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+
+        const res = await fetch('/api/applicant/upload-document', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                email: activeV_Applicant.email, 
+                category, 
+                fileName: file.name, 
+                fileData,
+                isProxy: true // Metadata for admin upload
+            })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast(`✅ Successfully uploaded ${category} for ${activeV_Applicant.fullName}`);
+            // Update local state and re-render
+            if (!activeV_Applicant.documents) activeV_Applicant.documents = [];
+            activeV_Applicant.documents.push({
+                category,
+                name: file.name,
+                assetId: result.assetId,
+                uploadedAt: new Date()
+            });
+            renderVerificationChecklist(activeV_Applicant);
+            renderDocGallery(activeV_Applicant);
+        } else {
+            showToast(result.message, "error");
+        }
+    } catch (err) {
+        showToast("Proxy upload failed", "error");
+    } finally {
+        unlockUI();
+        e.target.value = ''; // Reset input
     }
 }
 

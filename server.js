@@ -153,12 +153,14 @@ const companySchema = new mongoose.Schema({
     },
     requiredDocs: {
         type: [String], default: [
-            "Aadhar Card",
+            "Aadhar Card - Front",
+            "Aadhar Card - Back",
             "PAN Card",
-            "Educational Certificates",
-            "Experience Certificate",
-            "Previous Company Appointment Letter",
-            "Last Three Months Pay Slip"
+            "Degree/Provisional Certificate",
+            "Experience Letter - Previous Company",
+            "Relieving Letter - Previous Company",
+            "Last Month Salary Slip",
+            "Digital Signature"
         ]
     }
 });

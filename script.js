@@ -12,7 +12,7 @@ let activeUploads = 0;
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 const POST_SUBMISSION_STATUSES = ['submitted', 'approved', 'onboarding', 'joined', 'confirmed', 'rejected'];
-const OPTIONAL_DOCS = ["Last Month Salary Slip", "Previous Company Appointment Letter"];
+const OPTIONAL_DOCS = ["Medical Fitness Certificate", "Passport Photo"];
 
 // Override shared-utils handlers to include portal-specific logic
 async function showApplicantRegister() {
@@ -465,6 +465,12 @@ function prefillForm() {
         }
         // Sync salary words if prefilled
         if (currentApplicant.formData.salary) updateSalaryWords('salary', 'salary_words');
+        
+        // Prefill Experience
+        if (currentApplicant.formData.totalExperience !== undefined) {
+            const el = document.getElementById('totalExperience');
+            if (el) el.value = currentApplicant.formData.totalExperience;
+        }
     }
 }
 
@@ -691,11 +697,38 @@ function renderApplicantDocuments() {
     const required = companyData.requiredDocs || [];
     const existing = currentApplicant.documents || [];
 
+    // Experience-based logic
+    const expInput = document.getElementById('totalExperience');
+    const totalExp = expInput ? parseFloat(expInput.value) || 0 : 0;
+    const isExperienced = totalExp > 0;
+
+    // Show warning note for experienced
+    if (isExperienced) {
+        const note = document.createElement('div');
+        note.className = 'dash-alert warning';
+        note.style.marginBottom = '1.5rem';
+        note.innerHTML = `🛡️ <strong>Note for Experienced Candidate:</strong> Since you have ${totalExp} years of experience, uploading your <strong>Last Month Salary Slip</strong> and <strong>Previous Company Appointment/Experience letters</strong> is mandatory.`;
+        container.appendChild(note);
+    } else {
+        const note = document.createElement('div');
+        note.className = 'dash-alert success';
+        note.style.marginBottom = '1.5rem';
+        note.innerHTML = `✨ <strong>Note for Fresher:</strong> Since you are a fresher, previous employment documents (Salary slips, Experience letters) are optional for you.`;
+        container.appendChild(note);
+    }
+
     required.forEach(docName => {
         const safeId = docName.replace(/[^a-z0-9]/gi, '_');
         const categoryDocs = existing.filter(d => d.category === docName);
         const hasFiles = categoryDocs.length > 0;
-        const isOptional = OPTIONAL_DOCS.includes(docName);
+        
+        // DYNAMIC MANDATORY LOGIC
+        const expDocs = ["Last Month Salary Slip", "Previous Company Appointment Letter", "Experience Letter - Previous Company", "Relieving Letter - Previous Company"];
+        let isOptional = OPTIONAL_DOCS.includes(docName);
+        
+        if (expDocs.includes(docName)) {
+            isOptional = !isExperienced;
+        }
 
         const box = document.createElement('div');
         box.className = 'upload-box';
