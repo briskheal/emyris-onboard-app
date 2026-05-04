@@ -1506,9 +1506,9 @@ function renderVerificationChecklist(app) {
                 <div class="v-check-actions" style="display:flex; align-items:center; gap:0.5rem; flex-shrink: 0;">
                     <label class="switch-premium">
                         <input type="checkbox" ${isVerified ? 'checked' : ''} 
+                            data-action="toggle-doc-verify"
                             data-docname="${dName}" 
-                            data-rowid="v_row_${safeId}"
-                            onchange="toggleDocCheck(this)">
+                            data-rowid="v_row_${safeId}">
                         <span class="slider-premium"></span>
                     </label>
                 </div>
@@ -1542,11 +1542,25 @@ function renderVerificationChecklist(app) {
     updateVerificationProgress(allDocNames);
 }
 
+// Event Delegation for Verification Toggles
+document.addEventListener('change', (e) => {
+    if (e.target && e.target.dataset.action === 'toggle-doc-verify') {
+        toggleDocCheck(e.target);
+    }
+});
+
 function toggleDocCheck(el) {
     const docName = el.dataset.docname;
     const isChecked = el.checked;
     const rowId = el.dataset.rowid;
     
+    console.log(`[VERIFICATION] Toggle Triggered: ${docName} | Checked: ${isChecked} | Target: ${rowId}`);
+
+    if (!docName) {
+        console.error("[VERIFICATION] Missing docName on toggle element!", el);
+        return;
+    }
+
     verificationChecks[docName] = isChecked;
     
     // Visual Feedback: Update row class
