@@ -1360,8 +1360,15 @@
 
                     .v-grid {
                         display: grid;
-                        grid-template-columns: 1fr 1fr;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
                         gap: 1.5rem;
+                        align-items: start;
+                    }
+
+                    @media (max-width: 992px) {
+                        .v-grid {
+                            grid-template-columns: 1fr;
+                        }
                     }
 
                     .v-card {
@@ -1369,6 +1376,13 @@
                         border: 1px solid var(--glass-border);
                         border-radius: 16px;
                         padding: 1.5rem;
+                        min-width: 0; 
+                        position: relative;
+                        z-index: 1;
+                    }
+
+                    .v-grid .v-card:nth-child(2) {
+                        z-index: 2; /* Ensure checklist is above dossier if they overlap */
                     }
 
                     .v-card h4 {
@@ -1417,7 +1431,7 @@
                         height: 22px;
                         flex-shrink: 0;
                         cursor: pointer;
-                        z-index: 5;
+                        z-index: 50; /* Higher z-index to ensure it stays on top */
                     }
 
                     .switch-premium input {

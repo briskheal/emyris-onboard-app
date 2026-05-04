@@ -96,6 +96,7 @@ body.admin-mode .app-container {
     border-radius: 50%;
     opacity: 0.4;
     animation: blob-float 20s infinite alternate;
+    pointer-events: none;
 }
 
 .blob-1 {
