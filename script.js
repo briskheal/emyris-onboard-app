@@ -738,8 +738,8 @@ function renderApplicantDocuments() {
             filesHtml = `
                 <div class="uploaded-files-list">
                     ${categoryDocs.map(d => `
-                        <div class="file-item-pill">
-                            <span>📄 ${d.name}</span>
+                        <div class="file-item-pill" title="${d.name}">
+                            <span>📄 ${truncateFilename(d.name, 25)}</span>
                             <button type="button" class="btn-remove-file" onclick="deleteApplicantDoc('${d.assetId}', '${docName}')">&times;</button>
                         </div>
                     `).join('')}

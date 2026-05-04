@@ -97,6 +97,17 @@ function formatDatePretty(dateStr) {
     return `${day}${suffix} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+function truncateFilename(name, limit = 20) {
+    if (!name || name.length <= limit) return name;
+    const parts = name.split('.');
+    if (parts.length > 1) {
+        const ext = parts.pop();
+        const base = parts.join('.');
+        return base.substring(0, limit - 5) + '...' + ext;
+    }
+    return name.substring(0, limit - 3) + '...';
+}
+
 // --- ANIMATIONS & GLOBAL HANDLERS ---
 function initBackgroundAnimations() {
     if (typeof gsap !== 'undefined') {
