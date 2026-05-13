@@ -199,6 +199,11 @@ const applicantSchema = new mongoose.Schema({
     refNo: String,
     salaryBreakup: { type: Object, default: {} },
     actualJoiningDate: String, // Stored as DD-MM-YYYY
+    maritalStatus: String,
+    anniversaryDate: String, // Stored as DD-MM
+    epfNumber: String,
+    uanNumber: String,
+    esiNumber: String,
     offerAccepted: { type: Boolean, default: false },
     offerAcceptedAt: Date,
     offerLetterData: String, // Stores the snapshot of the generated letter
@@ -603,7 +608,12 @@ app.post('/api/submit-onboarding', async (req, res) => {
                 address: formData.address || "",
                 pin: formData.pin || "",
                 state: formData.state || "",
-                salary: formData.salary || ""
+                salary: formData.salary || "",
+                maritalStatus: formData.maritalStatus || "Unmarried",
+                anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
+                epfNumber: formData.epfNumber || "",
+                uanNumber: formData.uanNumber || "",
+                esiNumber: formData.esiNumber || ""
             },
             { new: true }
         );
@@ -668,7 +678,12 @@ app.post('/api/applicant/save-draft', async (req, res) => {
                 address: formData.address || "",
                 pin: formData.pin || "",
                 state: formData.state || "",
-                salary: formData.salary || ""
+                salary: formData.salary || "",
+                maritalStatus: formData.maritalStatus || "",
+                anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
+                epfNumber: formData.epfNumber || "",
+                uanNumber: formData.uanNumber || "",
+                esiNumber: formData.esiNumber || ""
             }
         );
         res.json({ success: true });

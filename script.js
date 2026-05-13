@@ -42,7 +42,39 @@ async function initializeApp() {
 
     // Check for existing session (optional, for now we just show landing)
     await fetchCompanyData();
+    populateAnniversaryDays();
     updateView('landingPage');
+}
+
+function populateAnniversaryDays() {
+    const daySel = document.getElementById('anniversaryDay');
+    if (!daySel) return;
+    for (let i = 1; i <= 31; i++) {
+        const val = i.toString().padStart(2, '0');
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.innerText = val;
+        daySel.appendChild(opt);
+    }
+}
+
+function toggleAnniversaryField() {
+    const status = document.getElementById('maritalStatus').value;
+    const group = document.getElementById('anniversaryGroup');
+    const dayIn = document.getElementById('anniversaryDay');
+    const monthIn = document.getElementById('anniversaryMonth');
+    
+    if (status === 'Married') {
+        group.classList.remove('hidden');
+        dayIn.required = true;
+        monthIn.required = true;
+    } else {
+        group.classList.add('hidden');
+        dayIn.required = false;
+        monthIn.required = false;
+        dayIn.value = '';
+        monthIn.value = '';
+    }
 }
 
 async function fetchStateFromPin(pin) {
@@ -471,6 +503,11 @@ function prefillForm() {
             const el = document.getElementById('totalExperience');
             if (el) el.value = currentApplicant.formData.totalExperience;
         }
+
+        // Toggle anniversary based on prefilled marital status
+        if (currentApplicant.formData.maritalStatus) {
+            toggleAnniversaryField();
+        }
     }
 }
 
@@ -588,12 +625,18 @@ function showReview() {
             { id: 'fatherName', label: "Father's Name" },
             { id: 'dob', label: 'Date of Birth', isDate: true },
             { id: 'gender', label: 'Gender' },
-            { id: 'bloodGroup', label: 'Blood Group' }
+            { id: 'bloodGroup', label: 'Blood Group' },
+            { id: 'maritalStatus', label: 'Marital Status' },
+            { id: 'anniversaryDay', label: 'Anniversary Day', dependsOn: 'maritalStatus', dependsVal: 'Married' },
+            { id: 'anniversaryMonth', label: 'Anniversary Month', dependsOn: 'maritalStatus', dependsVal: 'Married' }
         ],
         "💼 Employment & Location": [
             { id: 'joiningDate', label: 'Expected DOJ', isDate: true },
             { id: 'salary', label: 'Negotiated CTC', isMoney: true },
-            { id: 'hq', label: 'HQ Preference' }
+            { id: 'hq', label: 'HQ Preference' },
+            { id: 'epfNumber', label: 'EPF Number' },
+            { id: 'uanNumber', label: 'UAN Number' },
+            { id: 'esiNumber', label: 'ESI Number' }
         ],
         "📍 Contact Details": [
             { id: 'phone', label: 'Contact Phone' },
@@ -613,7 +656,14 @@ function showReview() {
     let groupsHtml = '';
     for (const [name, fields] of Object.entries(groups)) {
         const items = fields.map(f => {
-            let val = fd.get(f.id) || currentApplicant[f.id] || "N/A";
+            let val = fd.get(f.id) || currentApplicant[f.id] || (currentApplicant.formData ? currentApplicant.formData[f.id] : null) || "N/A";
+            
+            // Handle conditional visibility in review
+            if (f.dependsOn) {
+                const parentVal = fd.get(f.dependsOn) || currentApplicant[f.dependsOn] || (currentApplicant.formData ? currentApplicant.formData[f.dependsOn] : null);
+                if (parentVal !== f.dependsVal) return '';
+            }
+
             if (f.isDate && val !== "N/A") val = formatDatePretty(val);
             if (f.isMoney && val !== "N/A") val = `₹${parseFloat(val).toLocaleString('en-IN')}`;
             
@@ -1207,6 +1257,93 @@ async function triggerDocResubmit(category) {
 }
 
 // --- FINAL SUBMISSION ---
+
+async function downloadCandidateDossier() {
+    if (!currentApplicant) return;
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const app = currentApplicant;
+    const fd = app.formData || {};
+
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(99, 102, 241);
+    doc.text("CANDIDATE ONBOARDING PROFILE", 105, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Generated on: ${new Date().toLocaleString()}`, 105, 27, { align: 'center' });
+
+    // Personal Details Section
+    doc.setFontSize(14);
+    doc.setTextColor(0);
+    doc.text("1. PERSONAL INFORMATION", 14, 40);
+    
+    const personalRows = [
+        ["Full Name", app.fullName || "N/A"],
+        ["Father's Name", fd.fatherName || "N/A"],
+        ["Date of Birth", fd.dob ? formatDatePretty(fd.dob) : "N/A"],
+        ["Gender", fd.gender || "N/A"],
+        ["Blood Group", fd.bloodGroup || "N/A"],
+        ["Marital Status", app.maritalStatus || fd.maritalStatus || "N/A"],
+        ["Anniversary Date", app.anniversaryDate || (fd.maritalStatus === 'Married' ? `${fd.anniversaryDay || '??'}-${fd.anniversaryMonth || '??'}` : "N/A")],
+        ["Current Address", app.address || fd.address || "N/A"],
+        ["PIN Code", app.pin || fd.pin || "N/A"],
+        ["State", app.state || fd.state || "N/A"],
+        ["Email", app.email || "N/A"],
+        ["Phone", app.phone || "N/A"]
+    ];
+
+    doc.autoTable({
+        startY: 45,
+        body: personalRows,
+        theme: 'striped',
+        styles: { fontSize: 10, cellPadding: 3 },
+        columnStyles: { 0: { fontStyle: 'bold', width: 60 } }
+    });
+
+    // Professional & Bank Details
+    doc.text("2. PROFESSIONAL & BANKING DETAILS", 14, doc.lastAutoTable.finalY + 15);
+    const profRows = [
+        ["Proposed Designation", app.designation || fd.designation || "N/A"],
+        ["Expected DOJ", fd.joiningDate ? formatDatePretty(fd.joiningDate) : "N/A"],
+        ["Negotiated CTC", fd.salary ? `Rs. ${parseFloat(fd.salary).toLocaleString('en-IN')}` : "N/A"],
+        ["HQ Preference", fd.hq || "N/A"],
+        ["EPF Number", app.epfNumber || fd.epfNumber || "N/A"],
+        ["UAN Number", app.uanNumber || fd.uanNumber || "N/A"],
+        ["ESI Number", app.esiNumber || fd.esiNumber || "N/A"],
+        ["Bank Name", fd.bankName || "N/A"],
+        ["Account Number", fd.accNo || "N/A"],
+        ["IFSC Code", fd.ifsc || "N/A"]
+    ];
+
+    doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 20,
+        body: profRows,
+        theme: 'striped',
+        styles: { fontSize: 10, cellPadding: 3 },
+        columnStyles: { 0: { fontStyle: 'bold', width: 60 } }
+    });
+
+    // Testimonials List
+    doc.text("3. UPLOADED TESTIMONIALS", 14, doc.lastAutoTable.finalY + 15);
+    const docs = app.documents || [];
+    const docRows = docs.map(d => [d.category, d.name, new Date(d.uploadedAt).toLocaleDateString()]);
+    if (docRows.length === 0) docRows.push(["No documents uploaded", "", ""]);
+
+    doc.autoTable({
+        startY: doc.lastAutoTable.finalY + 20,
+        head: [["Category", "Filename", "Date"]],
+        body: docRows,
+        theme: 'grid',
+        styles: { fontSize: 9 },
+        headStyles: { fillStyle: 'f', fillColor: [99, 102, 241] }
+    });
+
+    // Save
+    doc.save(`EMYRIS_PROFILE_${app.fullName.replace(/\s+/g, '_')}.pdf`);
+    showToast("Profile Downloaded successfully!");
+}
 
 document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
     e.preventDefault();
