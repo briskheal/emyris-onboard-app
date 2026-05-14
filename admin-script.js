@@ -1322,6 +1322,7 @@ async function openVerificationView(email) {
     divSel.value = app.division || "";
     document.getElementById('v_reportingTo').value = app.reportingTo || "";
     document.getElementById('v_hq').value = app.hq || app.formData?.hq || "";
+    document.getElementById('v_empCode').value = app.empCode || app.formData?.empCode || "";
     document.getElementById('v_proposed_desg').innerText = app.designation || app.formData?.designation || "NOT SPECIFIED";
 
     // 4.5 Salary Breakup
@@ -1803,6 +1804,7 @@ async function saveAllVerificationData(silent = false) {
         division: document.getElementById('v_division').value,
         reportingTo: document.getElementById('v_reportingTo').value,
         hq: document.getElementById('v_hq').value,
+        empCode: document.getElementById('v_empCode').value,
         dob: document.getElementById('v_dob').value,
         actualJoiningDate: document.getElementById('v_actualJoiningDate').value,
         address: document.getElementById('v_address').value,
