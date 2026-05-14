@@ -3661,7 +3661,7 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{BANK_NAME}}": (fd.bankName || "").toUpperCase(),
         "{{BANK_ACC}}": fd.accNo || "",
         "{{IFSC}}": (fd.ifsc || "").toUpperCase(),
-        "{{JOINING_DATE}}": formatDateDMY(fd.joiningDate || app.actualJoiningDate),
+        "{{JOINING_DATE}}": formatDateDMY(app.actualJoiningDate || fd.joiningDate),
         "{{COMPANY_NAME}}": companyData.name,
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
         "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || "",
