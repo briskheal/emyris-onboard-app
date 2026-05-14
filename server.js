@@ -117,6 +117,9 @@ const companySchema = new mongoose.Schema({
     offerLetterBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
     apptLetterBody: String,
     confirmLetterBody: String,
+    emyfeLetterBody: String,
+    emyhoLetterBody: String,
+    emyhrLetterBody: String,
     revisedSalaryBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: REVISED SALARY LETTER\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nPursuant to your performance review, your revised gross monthly CTC is Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}), effective from {{TODAY_DATE}}.\n\n{{SALARY_REVISION_BOX}}\n\n{{SALARY_BREAKUP}}\n\nWe look forward to your continued contribution to the organization.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
     incentiveCircularBody: String,
     miscLetters: { type: Array, default: [] },
@@ -131,11 +134,11 @@ const companySchema = new mongoose.Schema({
     marqueeText: { type: String, default: "Enhancing Life and Excelling in Care" },
     marqueeColor: { type: String, default: "#94a3b8" },
     marqueeSpeed: { type: Number, default: 20 },
-    offerCounter: { type: Number, default: 1001 },
-    apptCounter: { type: Number, default: 1001 },
-    miscCounter: { type: Number, default: 1001 },
-    empCodeCounter: { type: Number, default: 1001 },
-    revisedSalaryCounter: { type: Number, default: 1001 },
+    offerCounter: { type: Number, default: 0 },
+    apptCounter: { type: Number, default: 0 },
+    miscCounter: { type: Number, default: 0 },
+    empCodeCounter: { type: Number, default: 0 },
+    revisedSalaryCounter: { type: Number, default: 0 },
     customAssetCategories: { type: [String], default: [] },
     designations: { 
         type: [mongoose.Schema.Types.Mixed], 
@@ -1285,14 +1288,25 @@ app.post('/api/admin/next-ref', async (req, res) => {
         } else if (type === 'revised_salary') {
             counterKey = 'revisedSalaryCounter';
             prefix = "EMY/RSV";
+        } else if (type === 'emyfe') {
+            counterKey = 'empCodeCounter';
+            prefix = "EMYFE";
+        } else if (type === 'emyho') {
+            counterKey = 'empCodeCounter';
+            prefix = "EMYHO";
+        } else if (type === 'emyhr') {
+            counterKey = 'empCodeCounter';
+            prefix = "EMYHR";
         }
 
-        const counter = company[counterKey] || 1001;
+        const counter = company[counterKey] || 0;
         const fyFrom = company.fyFrom ? new Date(company.fyFrom) : new Date();
         const fyTo = company.fyTo ? new Date(company.fyTo) : new Date();
         const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
 
-        const refNo = `${prefix}/${counter}/${fyShort}`;
+        const refNo = (['EMYFE', 'EMYHO', 'EMYHR'].includes(prefix)) 
+            ? `${prefix}${counter}` 
+            : `${prefix}/${counter}/${fyShort}`;
 
         const updateObj = {};
         updateObj[counterKey] = counter + 1;
@@ -1319,6 +1333,12 @@ app.post('/api/admin/save-template', async (req, res) => {
 
         if (type === 'offer') update.offerLetterBody = body;
         else if (type === 'appt') update.apptLetterBody = body;
+        else if (type === 'confirm') update.confirmLetterBody = body;
+        else if (type === 'revised_salary') update.revisedSalaryBody = body;
+        else if (type === 'emyfe') update.emyfeLetterBody = body;
+        else if (type === 'emyho') update.emyhoLetterBody = body;
+        else if (type === 'emyhr') update.emyhrLetterBody = body;
+        else if (type === 'incentive') update.incentiveCircularBody = body;
         else if (type.startsWith('misc_')) {
             const id = type.split('_')[1];
             // We'll need specialized logic for misc if it's an array
@@ -1958,10 +1978,10 @@ app.post('/api/admin/system/clear', async (req, res) => {
         
         const company = await Company.findOne();
         if (company) {
-            company.offerCounter = 1001;
-            company.apptCounter = 1001;
-            company.miscCounter = 1001;
-            company.empCodeCounter = 1001;
+            company.offerCounter = 0;
+            company.apptCounter = 0;
+            company.miscCounter = 0;
+            company.empCodeCounter = 0;
             await company.save();
         }
         res.json({ success: true, message: 'Database cleared. ' + (includeSetup ? 'Divisions and HQs were also removed.' : '') });

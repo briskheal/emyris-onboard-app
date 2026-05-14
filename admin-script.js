@@ -824,11 +824,11 @@ function switchAdminTab(tab) {
         
         f.fyFrom.value = companyData.fyFrom || '';
         f.fyTo.value = companyData.fyTo || '';
-        f.offerCounter.value = companyData.offerCounter || 1001;
-        f.apptCounter.value = companyData.apptCounter || 1001;
-        f.miscCounter.value = companyData.miscCounter || 1001;
-        f.empCodeCounter.value = companyData.empCodeCounter || 1001;
-        f.revisedSalaryCounter.value = companyData.revisedSalaryCounter || 1001;
+        f.offerCounter.value = companyData.offerCounter || "";
+        f.apptCounter.value = companyData.apptCounter || "";
+        f.miscCounter.value = companyData.miscCounter || "";
+        f.empCodeCounter.value = companyData.empCodeCounter || "";
+        f.revisedSalaryCounter.value = companyData.revisedSalaryCounter || "";
 
         f.marqueeText.value = companyData.marqueeText || "Enhancing Life and Excelling in Care";
         f.marqueeColor.value = companyData.marqueeColor || "#fbbf24";
@@ -877,11 +877,11 @@ async function saveCompanyProfile(e) {
         address: rawData.compAddress,
         fyFrom: rawData.fyFrom,
         fyTo: rawData.fyTo,
-        offerCounter: parseInt(rawData.offerCounter) || 1001,
-        apptCounter: parseInt(rawData.apptCounter) || 1001,
-        miscCounter: parseInt(rawData.miscCounter) || 1001,
-        empCodeCounter: parseInt(rawData.empCodeCounter) || 1001,
-        revisedSalaryCounter: parseInt(rawData.revisedSalaryCounter) || 1001,
+        offerCounter: parseInt(rawData.offerCounter) || 0,
+        apptCounter: parseInt(rawData.apptCounter) || 0,
+        miscCounter: parseInt(rawData.miscCounter) || 0,
+        empCodeCounter: parseInt(rawData.empCodeCounter) || 0,
+        revisedSalaryCounter: parseInt(rawData.revisedSalaryCounter) || 0,
         marqueeText: rawData.marqueeText,
         marqueeColor: rawData.marqueeColor,
         marqueeSpeed: parseInt(rawData.marqueeSpeed) || 20,
@@ -2307,6 +2307,9 @@ async function loadSetupData() {
         offer: companyData.offerLetterBody || "",
         appt: companyData.apptLetterBody || "",
         confirm: companyData.confirmLetterBody || "",
+        emyfe: companyData.emyfeLetterBody || "",
+        emyho: companyData.emyhoLetterBody || "",
+        emyhr: companyData.emyhrLetterBody || "",
         revised_salary: companyData.revisedSalaryBody || "",
         incentive: companyData.incentiveCircularBody || ""
     };
@@ -2373,6 +2376,9 @@ function populateTemplateSelect(forceSelectVal) {
             <option value="offer">📄 Offer Letter</option>
             <option value="appt">📋 Appointment Letter</option>
             <option value="confirm">✅ Confirmation Letter</option>
+            <option value="emyfe">👨‍💼 EMYFE (Field Exec)</option>
+            <option value="emyho">🏢 EMYHO (HO Exec)</option>
+            <option value="emyhr">⚖️ EMYHR (HR Dept)</option>
             <option value="revised_salary">💰 Revised Salary Letter</option>
             <option value="incentive">🎯 Incentive Circular</option>
         </optgroup>
@@ -3635,7 +3641,15 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{CITY_STATE}}": `${fd.city || ""}, ${fd.state || ""}`.toUpperCase(),
         "{{PIN}}": fd.pin || "",
         "{{DESIGNATION}}": (app.designation || fd.designation || "").toUpperCase(),
-        "{{EMP_CODE}}": app.empCode || `EMY/EMPC/${companyData.empCodeCounter || 1001}`,
+        "{{EMP_CODE}}": (() => {
+            if (app.empCode) return app.empCode;
+            const type = document.getElementById('activeTemplateSelect')?.value;
+            const counter = companyData.empCodeCounter || 0;
+            if (type === 'emyfe') return `EMYFE${counter}`;
+            if (type === 'emyho') return `EMYHO${counter}`;
+            if (type === 'emyhr') return `EMYHR${counter}`;
+            return `EMY/EMPC/${counter}`;
+        })(),
         "{{DIVISION}}": (app.division || "").toUpperCase(),
         "{{HQ}}": (app.hq || fd.hq || "").toUpperCase(),
         "{{REPORTING_TO}}": (app.reportingTo || "").toUpperCase(),
@@ -3649,11 +3663,11 @@ function fillLetterPlaceholders(text, app, forPDF = false) {
         "{{COMPANY_NAME}}": companyData.name,
         "{{SIGNATORY_NAME}}": companyData.signatoryName || "",
         "{{SIGNATORY_DESG}}": companyData.signatoryDesignation || "",
-        "{{OFFER_COUNTER}}": companyData.offerCounter || 1001,
-        "{{APPT_COUNTER}}": companyData.apptCounter || 1001,
-        "{{MISC_COUNTER}}": companyData.miscCounter || 1001,
-        "{{EMP_CODE_COUNTER}}": companyData.empCodeCounter || 1001,
-        "{{REV_SAL_COUNTER}}": companyData.revisedSalaryCounter || 1001,
+        "{{OFFER_COUNTER}}": companyData.offerCounter || 0,
+        "{{APPT_COUNTER}}": companyData.apptCounter || 0,
+        "{{MISC_COUNTER}}": companyData.miscCounter || 0,
+        "{{EMP_CODE_COUNTER}}": companyData.empCodeCounter || 0,
+        "{{REV_SAL_COUNTER}}": companyData.revisedSalaryCounter || 0,
         // Individual Salary Components
         "{{SAL_BASIC}}": (Number(sal.basic) || 0).toLocaleString('en-IN'),
         "{{SAL_HRA}}": (Number(sal.hra) || 0).toLocaleString('en-IN'),
@@ -3811,6 +3825,20 @@ function getDefaultTemplate(type) {
 <p>{{SALARY_BREAKUP}}</p><p>&nbsp;</p>
 <p>Yours sincerely,</p><p>&nbsp;</p>
 <p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
+
+    if (type === 'emyfe' || type === 'emyho' || type === 'emyhr') {
+        const sub = type === 'emyfe' ? 'FIELD EXECUTIVE' : (type === 'emyho' ? 'HO EXECUTIVE' : 'HR DEPARTMENT');
+        return `${header}
+<p><strong>Sub: APPOINTMENT LETTER - ${sub}</strong></p><p>&nbsp;</p>
+<p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p>
+<p>We are pleased to appoint you as <strong>{{DESIGNATION}}</strong> in our organization <strong>${co}</strong>.</p><p>&nbsp;</p>
+<p>Your Employee Code is <strong>{{EMP_CODE}}</strong>. Your appointment is effective from <strong>{{JOINING_DATE}}</strong>.</p><p>&nbsp;</p>
+<p>You will be headquartered at <strong>{{HQ}}</strong> and will report to <strong>{{REPORTING_TO}}</strong>.</p><p>&nbsp;</p>
+<p>Your monthly CTC will be <strong>Rs. {{SALARY_MONTHLY}}/-</strong>.</p><p>&nbsp;</p>
+<p>{{SALARY_BREAKUP}}</p><p>&nbsp;</p>
+<p>Yours sincerely,</p><p>&nbsp;</p>
+<p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
+    }
 
     return `${header}<p>Dear {{TITLE_SHORT}} {{FULL_NAME}},</p><p>&nbsp;</p><p>[Letter content here]</p><p>&nbsp;</p><p>Yours sincerely,</p><p><strong>{{SIGNATORY_NAME}}</strong><br>{{SIGNATORY_DESG}}<br>${co}</p>`;
 }
@@ -4063,6 +4091,7 @@ async function publishLetterToHub() {
             if (type === 'offer') counterKey = 'offerCounter';
             else if (type === 'appt') counterKey = 'apptCounter';
             else if (type === 'revised_salary') counterKey = 'revisedSalaryCounter';
+            else if (['emyfe', 'emyho', 'emyhr'].includes(type)) counterKey = 'empCodeCounter';
             else if (type.startsWith('misc_')) counterKey = 'miscCounter';
 
             if (counterKey) {
