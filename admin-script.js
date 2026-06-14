@@ -1206,7 +1206,7 @@ function renderApplicantsTable(applicants) {
                 </td>
                 <td style="text-align: right; white-space: nowrap;">
                     ${(() => {
-                        if (app.status === 'approved') {
+                        if (app.status === 'approved' || app.status === 'onboarding' || app.status === 'joined') {
                             return `<button class="btn btn-sm" onclick="openVerificationView('${app.email}')" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #10b981; padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">📂 DATABASE</button>`;
                         } else if (app.status === 'rejected') {
                             return `<button class="btn btn-sm" onclick="openVerificationView('${app.email}')" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); color: #ef4444; padding: 6px 12px; font-weight: 700; border-radius: 8px; font-size: 0.75rem;">🕵️‍♂️ AUDIT</button>`;
