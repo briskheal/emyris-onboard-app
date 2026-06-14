@@ -1611,6 +1611,16 @@ app.post('/api/admin/save-letter-snapshot', async (req, res) => {
 });
 
 // --- NEW: APPLICANT ACCEPT OFFER ---
+function safeParseDateServer(dateStr) {
+    if (!dateStr) return null;
+    if (typeof dateStr === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split('-');
+        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    }
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? null : d;
+}
+
 app.post('/api/applicant/accept-offer', async (req, res) => {
     try {
         const { email, actualJoiningDate } = req.body;
@@ -1631,7 +1641,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
                     <h2 style="color:#6366f1">Welcome Aboard, ${applicant.fullName}!</h2>
                     <p>We are thrilled to officially welcome you to <strong>${company.name}</strong>.</p>
-                    <p>Your acceptance of the Offer of Employment has been recorded. Your confirmed <strong>Actual Date of Joining (ADOJ)</strong> is: <strong>${actualJoiningDate}</strong>.</p>
+                    <p>Your acceptance of the Offer of Employment has been recorded. Your confirmed <strong>Actual Date of Joining (ADOJ)</strong> is: <strong>${safeParseDateServer(actualJoiningDate) ? safeParseDateServer(actualJoiningDate).toDateString() : actualJoiningDate}</strong>.</p>
                     <p>Your official Appointment Order and further orientation details will be shared within 30 days of your joining.</p>
                     <br>
                     <p>Best Regards,</p>
@@ -1647,7 +1657,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
                     <h2 style="color:#10b981">Great News! Offer Accepted</h2>
                     <p>Applicant <strong>${applicant.fullName}</strong> has officially accepted their Offer of Employment.</p>
-                    <p><strong>Actual Date of Joining (ADOJ):</strong> ${new Date(actualJoiningDate).toDateString()}</p>
+                    <p><strong>Actual Date of Joining (ADOJ):</strong> ${safeParseDateServer(actualJoiningDate) ? safeParseDateServer(actualJoiningDate).toDateString() : 'Pending/Invalid'}</p>
                     <p>You can now proceed with their <strong>Appointment Order</strong> issuance logic.</p>
                     <br>
                     <p>---<br>Emyris Onboard automated notification</p>
