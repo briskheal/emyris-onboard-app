@@ -273,9 +273,9 @@
                                 <div class="icon-bubble">✉️</div>
                             </div>
                             <div class="dash-card-body">
-                                <div style="display: flex; gap: 1rem; margin-bottom: 1.5rem;">
-                                    <button class="btn btn-primary btn-sm" onclick="toggleOfferPreview()">👁️ View Offer Letter</button>
-                                    <button class="btn btn-outline btn-sm" onclick="downloadMyLetter('offer')">📥 Download PDF</button>
+                                <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem;">
+                                    <button class="btn btn-primary btn-sm" style="align-self: flex-start;" onclick="toggleOfferPreview()">👁️ View Offer Letter</button>
+                                    <span style="font-size: 0.8rem; color: #64748b;">* A formal PDF copy will be mailed to you shortly after acceptance.</span>
                                 </div>
                                 <!-- Offer Preview is now a modal injected at end of body -->
                                 <div id="acceptanceForm" class="acceptance-panel" style="margin-top: 2rem;">
@@ -309,7 +309,7 @@
                             </div>
                             <div class="dash-card-body">
                                 <div style="margin-top: 1.5rem; text-align: center;">
-                                    <button class="btn btn-outline" onclick="downloadMyLetter('appointment')">📥 Download Official Copy</button>
+                                    <span style="font-size: 0.85rem; color: #64748b; font-style: italic;">Your formal appointment order has been generated and will be securely mailed to your registered email.</span>
                                 </div>
                             </div>
                         </div>
