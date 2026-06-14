@@ -1075,11 +1075,14 @@ function toggleApptPreview() {
 }
 
 function toggleOfferPreview() {
+    const modal = document.getElementById('offerModal');
+    modal.classList.remove('hidden');
     const el = document.getElementById('offerPreviewer');
-    el.classList.toggle('hidden');
-    if (!el.classList.contains('hidden')) {
-        applyBrandingLayers(el);
-    }
+    applyBrandingLayers(el);
+}
+
+function closeOfferModal() {
+    document.getElementById('offerModal').classList.add('hidden');
 }
 
 async function acceptOfferLetter() {

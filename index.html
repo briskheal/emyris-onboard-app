@@ -277,11 +277,7 @@
                                     <button class="btn btn-primary btn-sm" onclick="toggleOfferPreview()">👁️ View Offer Letter</button>
                                     <button class="btn btn-outline btn-sm" onclick="downloadMyLetter('offer')">📥 Download PDF</button>
                                 </div>
-                                
-                                <div id="offerPreviewer" class="letter-preview-box hidden" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #ffffff; color: #333;">
-                                    <!-- Offer Content -->
-                                </div>
-                                
+                                <!-- Offer Preview is now a modal injected at end of body -->
                                 <div id="acceptanceForm" class="acceptance-panel" style="margin-top: 2rem;">
                                     <h4 style="color: var(--accent); margin-bottom: 1rem;">Finalize Your Onboarding</h4>
                                     <div class="input-grid" style="grid-template-columns: 1fr auto;">
@@ -611,6 +607,23 @@
             </div>
 
 
+            <!-- Offer Letter Modal -->
+            <div id="offerModal" class="modal-overlay hidden" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px);">
+                <div class="modal-card" style="background: var(--surface); border-radius: 12px; width: 95%; max-width: 900px; max-height: 95vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+                    <div class="modal-header" style="padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--surface-hover);">
+                        <h3 style="margin: 0; color: var(--text-main); font-size: 1.25rem;">Official Offer of Employment</h3>
+                        <button class="btn btn-outline btn-sm" onclick="closeOfferModal()" style="padding: 0.4rem 0.8rem;">❌ Close</button>
+                    </div>
+                    <div class="modal-body" style="padding: 2rem; overflow-y: auto; background: #e2e8f0; display: flex; justify-content: center;">
+                        <style>
+                            #offerPreviewer p { margin-bottom: 0.2rem !important; }
+                        </style>
+                        <div id="offerPreviewer" class="letter-preview-box" style="width: 210mm; min-height: 297mm; padding: 65mm 20mm 25mm 20mm; background: #ffffff; color: #000; position: relative; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); font-size: 11pt; line-height: 1.15; box-sizing: border-box;">
+                            <!-- Offer Content -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
     <script src="script.js"></script>
