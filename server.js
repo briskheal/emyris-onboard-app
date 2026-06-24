@@ -124,9 +124,13 @@ const companySchema = new mongoose.Schema({
     incentiveCircularBody: String,
     experienceLetterBody: String,
     relievingLetterBody: String,
-    warningLetterBody: String,
     showCauseLetterBody: String,
+    
+    // Custom miscellaneous templates
     miscLetters: { type: Array, default: [] },
+    
+    // Per-template settings for fonts and sizes
+    templateSettings: { type: Object, default: {} },
     fyFrom: String,
     fyTo: String,
     letterFontSize: { type: Number, default: 11 },

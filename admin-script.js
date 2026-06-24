@@ -2435,6 +2435,24 @@ async function switchEditorTemplate() {
     const delBtn = document.getElementById('deleteTemplateBtn');
     if (delBtn) delBtn.style.display = type.startsWith('misc_') ? 'inline-block' : 'none';
 
+    // Restore per-template settings if they exist, else fallback to global
+    const settings = (companyData.templateSettings && companyData.templateSettings[type]) ? companyData.templateSettings[type] : {};
+    
+    const elHH = document.getElementById('headerHeight');
+    if (elHH) elHH.value = settings.headerHeight || companyData.headerHeight || 65;
+    
+    const elFH = document.getElementById('footerHeight');
+    if (elFH) elFH.value = settings.footerHeight || companyData.footerHeight || 25;
+    
+    const elFS = document.getElementById('letterFontSize');
+    if (elFS) elFS.value = settings.letterFontSize || companyData.letterFontSize || 11;
+    
+    const elFT = document.getElementById('letterFontType');
+    if (elFT) elFT.value = settings.letterFontType || companyData.letterFontType || 'helvetica';
+    
+    const elLA = document.getElementById('letterAlignment');
+    if (elLA) elLA.value = settings.letterAlignment || companyData.letterAlignment || 'left';
+
     syncEditorStyles();
     await populateHubApplicantSelect(); // Refresh target applicants based on the active template
 }
@@ -2536,7 +2554,18 @@ async function saveActiveTemplate() {
             data.miscLetters = companyData.miscLetters; 
         }
         
-        // Also save the typography and margins that are now part of the editor UI
+        if (!companyData.templateSettings) companyData.templateSettings = {};
+        
+        companyData.templateSettings[type] = {
+            headerHeight: document.getElementById('headerHeight').value,
+            footerHeight: document.getElementById('footerHeight').value,
+            letterFontSize: document.getElementById('letterFontSize').value,
+            letterFontType: document.getElementById('letterFontType').value,
+            letterAlignment: document.getElementById('letterAlignment').value
+        };
+        data.templateSettings = companyData.templateSettings;
+        
+        // Keep global fallback update as well
         data.headerHeight = document.getElementById('headerHeight').value;
         data.footerHeight = document.getElementById('footerHeight').value;
         data.letterFontSize = document.getElementById('letterFontSize').value;
@@ -4087,8 +4116,28 @@ async function populateHubApplicantSelect() {
 async function publishLetterToHub() {
     const email = document.getElementById('hubTargetApplicant').value;
     const type = document.getElementById('activeTemplateSelect').value;
-    const content = document.getElementById('unifiedEditor').innerHTML.trim();
+    let content = document.getElementById('unifiedEditor').innerHTML.trim();
     
+    // Inject current font and typography settings directly into the snapshot wrapper
+    const settings = (companyData.templateSettings && companyData.templateSettings[type]) ? companyData.templateSettings[type] : {};
+    const size = settings.letterFontSize || companyData.letterFontSize || 11;
+    const fontType = settings.letterFontType || companyData.letterFontType || 'helvetica';
+    const align = settings.letterAlignment || companyData.letterAlignment || 'left';
+    
+    const fontMap = {
+        'times': "'Times New Roman', Times, serif",
+        'helvetica': "'Plus Jakarta Sans', Arial, sans-serif",
+        'verdana': "Verdana, Geneva, sans-serif",
+        'courier': "'Courier New', monospace",
+        'roboto': "'Roboto', sans-serif",
+        'outfit': "'Outfit', sans-serif",
+        'jakarta': "'Plus Jakarta Sans', sans-serif",
+        'georgia': "Georgia, serif"
+    };
+    const fontStack = fontMap[fontType] || "'Plus Jakarta Sans', sans-serif";
+    
+    content = `<div style="font-family: ${fontStack}; font-size: ${size}pt; text-align: ${align}; line-height: 1.1;">${content}</div>`;
+
     if (!email) return showToast("?? Please select a target applicant first.", "warning");
     if (!content || content === '<br>') return showToast("?? Letter content is empty.", "warning");
 
