@@ -711,15 +711,19 @@ function showReview() {
         `;
     }).join('');
 
-    const sig = docs.find(u => u.category === 'Digital Signature');
-    const sigHtml = `
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid ${sig ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};">
-            <span style="font-size: 0.85rem; color: white; font-weight: 500;">Digital Signature</span>
-            <span style="font-size: 0.75rem; font-weight: bold; color: ${sig ? 'var(--success)' : '#ef4444'}">
-                ${sig ? '✅ UPLOADED' : '⚠️ MISSING'}
-            </span>
-        </div>
-    `;
+    const isSigRequired = reqDocs.includes("Digital Signature");
+    let sigHtml = '';
+    if (isSigRequired) {
+        const sig = docs.find(u => u.category === 'Digital Signature');
+        sigHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid ${sig ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'};">
+                <span style="font-size: 0.85rem; color: white; font-weight: 500;">Digital Signature</span>
+                <span style="font-size: 0.75rem; font-weight: bold; color: ${sig ? 'var(--success)' : '#ef4444'}">
+                    ${sig ? '✅ UPLOADED' : '⚠️ MISSING'}
+                </span>
+            </div>
+        `;
+    }
 
     const docGroupHtml = `
         <div class="review-section-group">

@@ -3359,10 +3359,13 @@ function applyBrandingLayers(el) {
     old.forEach(o => o.remove());
     
     if (lhAsset?.data) {
+        // Force browser reflow to get accurate scrollHeight without old branding
+        void el.offsetHeight;
+        
         // Calculate pages needed based on content height
-        // Use a 10mm tolerance to prevent "ghost" pages from tiny overflows
+        // Use a 20mm tolerance to prevent "ghost" pages from tiny overflows (e.g. contenteditable caret)
         const pageH_px = 297 * 3.7795275591;
-        const tolerance_px = 10 * 3.7795275591; 
+        const tolerance_px = 20 * 3.7795275591; 
         const totalH_px = el.scrollHeight;
         
         // Ensure we always have at least one page
