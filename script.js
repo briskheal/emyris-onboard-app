@@ -973,6 +973,16 @@ function renderApplicantDashboard() {
                     <div class="timeline-label-premium">${s.label}</div>
                 </div>
             `).join('');
+            
+            // Global Progress Animation
+            let completedSteps = steps.filter(s => s.done).length;
+            let pct = Math.round((completedSteps / steps.length) * 100);
+            setTimeout(() => {
+                const gbar = document.getElementById('hubGlobalProgressBar');
+                if (gbar) gbar.style.width = pct + '%';
+                const gtext = document.getElementById('hubGlobalProgressText');
+                if (gtext) gtext.innerText = pct + '% Completed';
+            }, 100);
         }
 
         // Verification Deep Dive
@@ -1065,6 +1075,32 @@ function renderApplicantDashboard() {
             const als = document.getElementById('appointmentLetterSection');
             if (als) als.classList.add('hidden');
         }
+
+        // Issued Letters Section
+        if (app.issuedLetters && app.issuedLetters.length > 0) {
+            const issuedSection = document.getElementById('issuedLettersSection');
+            if (issuedSection) issuedSection.classList.remove('hidden');
+            
+            const issuedList = document.getElementById('issuedLettersList');
+            if (issuedList) {
+                issuedList.innerHTML = app.issuedLetters.map((letter, idx) => {
+                    const letterLabel = (letter.type || 'Document').replace('_', ' ').toUpperCase();
+                    const date = new Date(letter.issuedAt).toLocaleDateString();
+                    return `
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;">
+                            <div>
+                                <h4 style="margin: 0; color: var(--text-main); font-size: 0.95rem;">${letterLabel}</h4>
+                                <p style="margin: 4px 0 0; font-size: 0.75rem; color: var(--text-muted);">Issued on: ${date}</p>
+                            </div>
+                            <button class="btn btn-sm btn-outline" onclick="previewApplicantIssuedLetter(${idx})">👁️ View PDF</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } else {
+            const issuedSection = document.getElementById('issuedLettersSection');
+            if (issuedSection) issuedSection.classList.add('hidden');
+        }
     } catch (err) {
         console.error('❌ Dashboard Render Error:', err);
     }
@@ -1084,6 +1120,30 @@ function toggleOfferPreview() {
 function closeOfferModal() {
     document.getElementById('offerModal').classList.add('hidden');
 }
+
+window.previewApplicantIssuedLetter = function(idx) {
+    const app = currentApplicant;
+    if (!app || !app.issuedLetters || !app.issuedLetters[idx]) return;
+    
+    const letter = app.issuedLetters[idx];
+    const win = window.open('', '_blank');
+    win.document.write(`
+        <html>
+            <head>
+                <title>Document Preview: ${letter.type.toUpperCase()}</title>
+                <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+                <style>
+                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.1; }
+                    .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: 1000px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">${letter.data}</div>
+            </body>
+        </html>
+    `);
+    win.document.close();
+};
 
 async function acceptOfferLetter() {
     const adoj = document.getElementById('actualJoiningDateInput').value;

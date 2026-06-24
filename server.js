@@ -122,6 +122,10 @@ const companySchema = new mongoose.Schema({
     emyhrLetterBody: String,
     revisedSalaryBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: REVISED SALARY LETTER\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nPursuant to your performance review, your revised gross monthly CTC is Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}), effective from {{TODAY_DATE}}.\n\n{{SALARY_REVISION_BOX}}\n\n{{SALARY_BREAKUP}}\n\nWe look forward to your continued contribution to the organization.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
     incentiveCircularBody: String,
+    experienceLetterBody: String,
+    relievingLetterBody: String,
+    warningLetterBody: String,
+    showCauseLetterBody: String,
     miscLetters: { type: Array, default: [] },
     fyFrom: String,
     fyTo: String,
@@ -211,6 +215,7 @@ const applicantSchema = new mongoose.Schema({
     offerAcceptedAt: Date,
     offerLetterData: String, // Stores the snapshot of the generated letter
     apptLetterData: String,  // Stores the snapshot of the appt letter
+    issuedLetters: { type: Array, default: [] }, // Array of { type, data, issuedAt }
     probationReminderSent: { type: Boolean, default: false },
     tasks: {
         offerLetter: { type: Boolean, default: false },
@@ -357,28 +362,7 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
     }
 }
 
-// --- APPLICANT REGISTRATION MODULE (RESTART) ---
-// Draft Save Endpoint (Partial Progress)
-app.post('/api/applicant/save-draft', async (req, res) => {
-    try {
-        const { email, formData } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        if (!applicant) return res.status(404).json({ error: 'Not found' });
-
-        // Update root fields from form data if they exist
-        if (formData.firstName || formData.lastName) {
-            applicant.fullName = `${formData.firstName || ""} ${formData.middleName || ""} ${formData.lastName || ""}`.trim();
-        }
-        if (formData.phone) applicant.phone = formData.phone;
-        
-        applicant.formData = { ...applicant.formData, ...formData };
-        applicant.markModified('formData');
-        await applicant.save();
-        res.json({ success: true });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to save draft' });
-    }
-});
+// Removed duplicate save-draft endpoint. Handled below.
 
 app.post('/api/register-applicant', async (req, res) => {
     let { title, fullName, email, phone, division, designation } = req.body;
@@ -671,23 +655,32 @@ app.post('/api/applicant/save-draft', async (req, res) => {
             return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
         };
 
+        const updateData = {
+            formData,
+            hq: formData.hq,
+            actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
+            dob: formData.dob, // Store as string DD-MM-YYYY
+            address: formData.address || "",
+            pin: formData.pin || "",
+            state: formData.state || "",
+            salary: formData.salary || "",
+            maritalStatus: formData.maritalStatus || "",
+            anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
+            epfNumber: formData.epfNumber || "",
+            uanNumber: formData.uanNumber || "",
+            esiNumber: formData.esiNumber || ""
+        };
+
+        if (formData.firstName || formData.lastName) {
+            updateData.fullName = `${formData.firstName || ""} ${formData.middleName || ""} ${formData.lastName || ""}`.trim();
+        }
+        if (formData.phone) {
+            updateData.phone = formData.phone;
+        }
+
         await Applicant.findOneAndUpdate(
             { email },
-            { 
-                formData,
-                hq: formData.hq,
-                actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
-                dob: formData.dob, // Store as string DD-MM-YYYY
-                address: formData.address || "",
-                pin: formData.pin || "",
-                state: formData.state || "",
-                salary: formData.salary || "",
-                maritalStatus: formData.maritalStatus || "",
-                anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
-                epfNumber: formData.epfNumber || "",
-                uanNumber: formData.uanNumber || "",
-                esiNumber: formData.esiNumber || ""
-            }
+            updateData
         );
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1335,6 +1328,10 @@ app.post('/api/admin/save-template', async (req, res) => {
         else if (type === 'appt') update.apptLetterBody = body;
         else if (type === 'confirm') update.confirmLetterBody = body;
         else if (type === 'revised_salary') update.revisedSalaryBody = body;
+        else if (type === 'experience') update.experienceLetterBody = body;
+        else if (type === 'relieving') update.relievingLetterBody = body;
+        else if (type === 'warning') update.warningLetterBody = body;
+        else if (type === 'show_cause') update.showCauseLetterBody = body;
         else if (type === 'emyfe') update.emyfeLetterBody = body;
         else if (type === 'emyho') update.emyhoLetterBody = body;
         else if (type === 'emyhr') update.emyhrLetterBody = body;
@@ -1391,7 +1388,23 @@ app.post('/api/admin/render-template', async (req, res) => {
         
         if (!applicant || !company) return res.status(404).json({ error: 'Data missing' });
 
-        let template = customBody || (type === 'offer' ? company.offerLetterBody : company.apptLetterBody);
+        const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
+        const signatureHtml = sigAsset && sigAsset.data ? `<img src="${sigAsset.data}" style="max-width: 150px; max-height: 80px; mix-blend-mode: multiply;" alt="Signature" />` : '<br><br><br>';
+
+        let template = customBody;
+        if (!template) {
+            switch(type) {
+                case 'offer': template = company.offerLetterBody; break;
+                case 'appt': template = company.apptLetterBody; break;
+                case 'confirm': template = company.confirmLetterBody; break;
+                case 'revised_salary': template = company.revisedSalaryBody; break;
+                case 'experience': template = company.experienceLetterBody; break;
+                case 'relieving': template = company.relievingLetterBody; break;
+                case 'warning': template = company.warningLetterBody; break;
+                case 'show_cause': template = company.showCauseLetterBody; break;
+                default: template = company.apptLetterBody;
+            }
+        }
         
         const fd = applicant.formData || {};
         const sal = applicant.salaryBreakup || {};
@@ -1421,6 +1434,7 @@ app.post('/api/admin/render-template', async (req, res) => {
             'COMPANY_NAME': company.name,
             'SIGNATORY_NAME': company.signatoryName || '',
             'SIGNATORY_DESG': company.signatoryDesignation || '',
+            'COMPANY_SIGNATURE': signatureHtml,
             'REF_NO': applicant.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? company.apptCounter : company.offerCounter) || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`,
             'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             'EMP_CODE': applicant.empCode || applicant.formData?.empCode || 'TBD'
@@ -1568,7 +1582,16 @@ app.post('/api/admin/save-letter-snapshot', async (req, res) => {
         if (letterType === 'offer') update.offerLetterData = letterData;
         else if (letterType === 'appt') update.apptLetterData = letterData;
 
-        await Applicant.findOneAndUpdate({ email }, { $set: update });
+        const letterObj = {
+            type: letterType,
+            data: letterData,
+            issuedAt: new Date()
+        };
+
+        await Applicant.findOneAndUpdate({ email }, { 
+            $set: update,
+            $push: { issuedLetters: letterObj }
+        });
 
         if (notifyByEmail) {
             const applicant = await Applicant.findOne({ email });
