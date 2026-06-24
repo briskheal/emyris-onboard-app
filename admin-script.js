@@ -507,6 +507,7 @@ function toggleDocRequirement(docName) {
     else companyData.requiredDocs.push(docName);
     renderRequiredDocsChips();
     renderRequiredDocsSuggestions();
+    submitProfileUpdate({ requiredDocs: companyData.requiredDocs }, true);
 }
 
 function addCustomRequiredDoc() {
@@ -519,6 +520,7 @@ function addCustomRequiredDoc() {
             input.value = '';
             renderRequiredDocsChips();
             renderRequiredDocsSuggestions();
+            submitProfileUpdate({ requiredDocs: companyData.requiredDocs }, true);
         }
     }
 }
@@ -894,9 +896,10 @@ async function saveCompanyProfile(e) {
     await submitProfileUpdate(data);
 }
 
-async function fetchApplicants() {
+async function fetchApplicants(filterParam = null) {
     try {
-        const res = await fetch('/api/admin/applicants');
+        const tf = filterParam || document.getElementById('applicantTimeframe')?.value || 'current_month';
+        const res = await fetch(`/api/admin/applicants?filter=${tf}`);
         const data = await res.json();
         
         if (Array.isArray(data)) {

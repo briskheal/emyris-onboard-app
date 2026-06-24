@@ -1027,8 +1027,17 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
 
 app.get('/api/admin/applicants', async (req, res) => {
     try {
+        const { filter } = req.query;
+        let query = {};
+        if (filter === 'current_month') {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0,0,0,0);
+            query = { registeredAt: { $gte: startOfMonth } };
+        }
+
         // Optimization: Exclude Large Document Data from the Main List
-        const applicants = await Applicant.find()
+        const applicants = await Applicant.find(query)
             .select('-documents.data') // Strip any legacy embedded data
             .sort({ registeredAt: -1 });
         

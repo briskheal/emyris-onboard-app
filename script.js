@@ -664,7 +664,13 @@ function showReview() {
                 if (parentVal !== f.dependsVal) return '';
             }
 
-            if (f.isDate && val !== "N/A") val = formatDatePretty(val);
+            if (f.isDate && val !== "N/A") {
+                if (f.id === 'joiningDate') {
+                    val = val.split('-').reverse().join('/');
+                } else {
+                    val = formatDatePretty(val);
+                }
+            }
             if (f.isMoney && val !== "N/A") val = `₹${parseFloat(val).toLocaleString('en-IN')}`;
             
             return `
@@ -960,7 +966,7 @@ function renderApplicantDashboard() {
         if (timeline) {
             const steps = [
                 { label: 'Register', done: true },
-                { label: 'Submit', done: !!app.submittedAt || ['submitted', 'approved'].includes(app.status) },
+                { label: 'Submit', done: !!app.submittedAt || ['submitted', 'approved', 'onboarding', 'joined', 'confirmed', 'rejected'].includes(app.status) },
                 { label: 'Verify', done: app.status === 'approved' || app.offerLetterData },
                 { label: 'Offer', done: !!app.offerLetterData },
                 { label: 'Joined', done: !!app.actualJoiningDate },
@@ -1049,7 +1055,7 @@ function renderApplicantDashboard() {
                 const cjd = document.getElementById('confirmedJoiningDateText');
                 if (af) af.classList.add('hidden');
                 if (oas) oas.classList.remove('hidden');
-                if (cjd) cjd.innerText = formatDatePretty(app.actualJoiningDate);
+                if (cjd) cjd.innerText = app.actualJoiningDate.split('-').reverse().join('/');
             }
         } else {
             const ols = document.getElementById('offerLetterSection');
@@ -1134,7 +1140,7 @@ window.previewApplicantIssuedLetter = function(idx) {
                 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
                     body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.1; }
-                    .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: 1000px; }
+                    .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: auto; }
                 </style>
             </head>
             <body>
@@ -1234,6 +1240,7 @@ async function downloadMyLetter(type) {
                     clonedFrame.style.boxShadow = 'none';
                     clonedFrame.style.borderRadius = '0';
                     clonedFrame.style.background = 'transparent'; // CRITICAL: Transparency
+                    clonedFrame.style.minHeight = 'auto'; // Prevent 2nd page blank overflow
                 }
             }
         });
@@ -1369,7 +1376,7 @@ async function downloadCandidateDossier() {
     doc.text("2. PROFESSIONAL & BANKING DETAILS", 14, doc.lastAutoTable.finalY + 15);
     const profRows = [
         ["Proposed Designation", app.designation || fd.designation || "N/A"],
-        ["Expected DOJ", fd.joiningDate ? formatDatePretty(fd.joiningDate) : "N/A"],
+        ["Expected DOJ", fd.joiningDate ? fd.joiningDate.split('-').reverse().join('/') : "N/A"],
         ["Negotiated CTC", fd.salary ? `Rs. ${parseFloat(fd.salary).toLocaleString('en-IN')}` : "N/A"],
         ["HQ Preference", fd.hq || "N/A"],
         ["EPF Number", app.epfNumber || fd.epfNumber || "N/A"],
