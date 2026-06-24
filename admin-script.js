@@ -3359,14 +3359,31 @@ function applyBrandingLayers(el) {
     old.forEach(o => o.remove());
     
     if (lhAsset?.data) {
-        // Force browser reflow to get accurate scrollHeight without old branding
-        void el.offsetHeight;
+        let totalH_px = 0;
+        
+        if (el.isContentEditable) {
+            // contenteditable forces weird padding/caret heights. Measure a clean clone.
+            const clone = el.cloneNode(true);
+            clone.contentEditable = "false";
+            clone.style.position = 'absolute';
+            clone.style.visibility = 'hidden';
+            clone.style.pointerEvents = 'none';
+            clone.style.zIndex = '-9999';
+            clone.style.transform = 'none'; // ensure scale doesn't mess with width calculations if any
+            clone.style.width = el.offsetWidth + 'px';
+            
+            document.body.appendChild(clone);
+            totalH_px = clone.scrollHeight;
+            document.body.removeChild(clone);
+        } else {
+            void el.offsetHeight;
+            totalH_px = el.scrollHeight;
+        }
         
         // Calculate pages needed based on content height
-        // Use a 20mm tolerance to prevent "ghost" pages from tiny overflows (e.g. contenteditable caret)
+        // Use a 20mm tolerance to prevent "ghost" pages from tiny overflows
         const pageH_px = 297 * 3.7795275591;
-        const tolerance_px = 20 * 3.7795275591; 
-        const totalH_px = el.scrollHeight;
+        const tolerance_px = 20 * 3.7795275591;
         
         // Ensure we always have at least one page
         const pages = Math.max(1, Math.ceil((totalH_px - tolerance_px) / pageH_px));
