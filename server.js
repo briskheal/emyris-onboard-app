@@ -4,7 +4,7 @@ const { Resend } = require('resend');
 const axios = require('axios');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const mongoose = require('mongoose');
+const { syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory } = require('./db');
 const fs = require('fs');
 
 dotenv.config();
@@ -20,7 +20,7 @@ try {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const BASE_URL = process.env.BASE_URL || 'https://emyris-onboard-app.onrender.com';
+const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
 
 
@@ -76,193 +76,10 @@ function resolveTemplate(template, data) {
 }
 
 
-// MongoDB Connection Strings
-const MONGODB_URI = process.env.MONGODB_URI;
-// Fallback to same cluster but different DB if ASSET_URI isn't provided
-const MONGODB_ASSETS_URI = process.env.MONGODB_ASSETS_URI || (MONGODB_URI ? MONGODB_URI.split('?')[0] + '_assets?' + (MONGODB_URI.split('?')[1] || '') : null);
-
-let connMain, connAssets;
-
-const dbOptions = { 
-    family: 4,               // Force IPv4
-    serverSelectionTimeoutMS: 15000,
-    connectTimeoutMS: 10000 
-};
-
-if (MONGODB_URI) {
-    connMain = mongoose.createConnection(MONGODB_URI, dbOptions);
-    connAssets = mongoose.createConnection(MONGODB_ASSETS_URI, dbOptions);
-
-    connMain.on('connected', () => console.log('✅ Main DB Connected'));
-    connAssets.on('connected', () => console.log('💎 Asset DB Connected'));
-} else {
-    console.warn('MONGODB_URI not found. Running in ephemeral mode.');
-}
-
-// Schemas & Models
-const companySchema = new mongoose.Schema({
-    name: { type: String, default: "" },
-    address: String,
-    phone: String,
-    tollFree: String,
-    website: String,
-    email: String,
-    // Latest active IDs (pointers)
-    activeLogoId: String,
-    activeStampId: String,
-    activeSignatureId: String,
-    activeLetterheadId: String,
-    signatoryName: String,
-    signatoryDesignation: String,
-    offerLetterBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
-    apptLetterBody: String,
-    confirmLetterBody: String,
-    emyfeLetterBody: String,
-    emyhoLetterBody: String,
-    emyhrLetterBody: String,
-    revisedSalaryBody: { type: String, default: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: REVISED SALARY LETTER\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nPursuant to your performance review, your revised gross monthly CTC is Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}), effective from {{TODAY_DATE}}.\n\n{{SALARY_REVISION_BOX}}\n\n{{SALARY_BREAKUP}}\n\nWe look forward to your continued contribution to the organization.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
-    incentiveCircularBody: String,
-    experienceLetterBody: String,
-    relievingLetterBody: String,
-    showCauseLetterBody: String,
-    
-    // Custom miscellaneous templates
-    miscLetters: { type: Array, default: [] },
-    
-    // Per-template settings for fonts and sizes
-    templateSettings: { type: Object, default: {} },
-    fyFrom: String,
-    fyTo: String,
-    letterFontSize: { type: Number, default: 11 },
-    letterFontType: { type: String, default: 'helvetica' },
-    letterAlignment: { type: String, default: 'left' },
-    updatedAt: { type: Date, default: Date.now },
-    headerHeight: { type: Number, default: 65 },
-    footerHeight: { type: Number, default: 25 },
-    marqueeText: { type: String, default: "Enhancing Life and Excelling in Care" },
-    marqueeColor: { type: String, default: "#94a3b8" },
-    marqueeSpeed: { type: Number, default: 20 },
-    offerCounter: { type: Number, default: 0 },
-    apptCounter: { type: Number, default: 0 },
-    miscCounter: { type: Number, default: 0 },
-    empCodeCounter: { type: Number, default: 0 },
-    revisedSalaryCounter: { type: Number, default: 0 },
-    customAssetCategories: { type: [String], default: [] },
-    designations: { 
-        type: [mongoose.Schema.Types.Mixed], 
-        default: [
-            { title: "Territory Business Manager", department: "SALES" },
-            { title: "Area Sales Manager", department: "SALES" },
-            { title: "Regional Sales Manager", department: "SALES" },
-            { title: "Sr. Regional Sales Manager", department: "SALES" },
-            { title: "Zonal Sales Manager", department: "SALES" },
-            { title: "Sr. Zonal Sales Manager", department: "SALES" },
-            { title: "Sales Manager", department: "SALES" },
-            { title: "National Sales Manager", department: "SALES" },
-            { title: "General Manager (Sales & Mktng)", department: "SALES" }
-        ] 
-    },
-    requiredDocs: {
-        type: [String], default: [
-            "Aadhar Card - Front",
-            "Aadhar Card - Back",
-            "PAN Card",
-            "Degree/Provisional Certificate",
-            "Experience Letter - Previous Company",
-            "Relieving Letter - Previous Company",
-            "Last Month Salary Slip",
-            "Digital Signature"
-        ]
-    }
-});
-
-const assetSchema = new mongoose.Schema({
-    category: String, // 'logo', 'stamp', 'signature', 'letterhead'
-    name: String,
-    data: String,    // Base64 logic
-    active: { type: Boolean, default: true },
-    uploadedAt: { type: Date, default: Date.now }
-});
-
-const applicantSchema = new mongoose.Schema({
-    email: { type: String, unique: true, required: true },
-    title: { type: String, default: "Mr." },
-    fullName: { type: String, required: true },
-    phone: { type: String, required: true },
-    password: { type: String, required: true },
-    status: { type: String, default: 'draft' },
-    canLogin: { type: Boolean, default: true },
-    formData: { type: Object, default: {} },
-    registeredAt: { type: Date, default: Date.now },
-    submittedAt: Date,
-    approvedAt: Date,
-    documents: { type: [mongoose.Schema.Types.Mixed], default: [] },
-    designation: String,
-    division: String,
-    reportingTo: String,
-    hq: String,
-    salary: String,
-    dob: String, // Stored as DD-MM-YYYY
-    address: String,
-    pin: String,
-    state: String,
-    empCode: String,
-    refNo: String,
-    salaryBreakup: { type: Object, default: {} },
-    actualJoiningDate: String, // Stored as DD-MM-YYYY
-    maritalStatus: String,
-    anniversaryDate: String, // Stored as DD-MM
-    epfNumber: String,
-    uanNumber: String,
-    esiNumber: String,
-    offerAccepted: { type: Boolean, default: false },
-    offerAcceptedAt: Date,
-    offerLetterData: String, // Stores the snapshot of the generated letter
-    apptLetterData: String,  // Stores the snapshot of the appt letter
-    issuedLetters: { type: Array, default: [] }, // Array of { type, data, issuedAt }
-    probationReminderSent: { type: Boolean, default: false },
-    tasks: {
-        offerLetter: { type: Boolean, default: false },
-        appointmentLetter: { type: Boolean, default: false },
-        appLinkSent: { type: Boolean, default: false },
-        loginDetailsSent: { type: Boolean, default: false }
-    },
-    verificationChecks: { type: Object, default: {} },
-    rejectionReason: String,
-    rejectedAt: Date,
-    isExistingStaff: { type: Boolean, default: false }
-});
-
-const divisionSchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true },
-    active: { type: Boolean, default: true },
-    createdAt: { type: Date, default: Date.now }
-});
-
-const templateHistorySchema = new mongoose.Schema({
-    type: String, // 'offer', 'appt', etc.
-    content: String,
-    savedBy: String, // Admin user ID or name
-    savedAt: { type: Date, default: Date.now },
-    version: Number
-});
-
-// Bind models to connections
-const Company = connMain ? connMain.model('Company', companySchema) : mongoose.model('Company', companySchema);
-const Applicant = connMain ? connMain.model('Applicant', applicantSchema) : mongoose.model('Applicant', applicantSchema);
-const Division = connMain ? connMain.model('Division', divisionSchema) : mongoose.model('Division', divisionSchema);
-
-const hqSchema = new mongoose.Schema({
-    name: { type: String, required: true, unique: true },
-    active: { type: Boolean, default: true }
-});
-const HQ = connMain ? connMain.model('HQ', hqSchema) : mongoose.model('HQ', hqSchema);
-const Asset = connAssets ? connAssets.model('Asset', assetSchema) : mongoose.model('Asset', assetSchema);
-const TemplateHistory = connMain ? connMain.model('TemplateHistory', templateHistorySchema) : mongoose.model('TemplateHistory', templateHistorySchema);
-
 // Startup logic
 async function initializeApp() {
-    console.log('🚀 Server starting - Clean Slate protocol active.');
+    console.log('🚀 Server starting - Shared PostgreSQL Clean Slate protocol active.');
+    await syncDatabase();
     await seedData();
 }
 
