@@ -1775,6 +1775,44 @@ app.get('/api/admin/asset-library', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed to fetch library' }); }
 });
 
+// --- ASSET MIGRATION TRIGGER (From MongoDB to PostgreSQL) ---
+app.get('/api/admin/trigger-migration', async (req, res) => {
+    try {
+        const { MongoClient } = require('mongodb');
+        const MONGODB_URI = "mongodb+srv://impdaysaap:RPykhDyaiPDFwSJi@cluster0.cquys3i.mongodb.net/emyris_db_assets?appName=Cluster0";
+        
+        let mongoClient = new MongoClient(MONGODB_URI);
+        await mongoClient.connect();
+        
+        const db = mongoClient.db('emyris_db_assets');
+        const assetsCollection = db.collection('assets');
+        
+        const cursor = assetsCollection.find({});
+        let migratedCount = 0;
+        
+        for await (const asset of cursor) {
+            const assetId = asset._id.toString();
+            const existing = await Asset.findById(assetId);
+            if (!existing) {
+                await Asset.create({
+                    _id: assetId,
+                    category: asset.category,
+                    name: asset.name,
+                    data: asset.data,
+                    active: asset.active,
+                    uploadedAt: asset.uploadedAt ? new Date(asset.uploadedAt) : new Date()
+                });
+                migratedCount++;
+            }
+        }
+        await mongoClient.close();
+        res.json({ success: true, migratedCount });
+    } catch (err) {
+        console.error("Migration Route Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- INDIVIDUAL ASSET UPLOAD (REAL-TIME) ---
 app.post('/api/admin/upload-asset', async (req, res) => {
     try {
