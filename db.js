@@ -269,12 +269,17 @@ function buildWhere(query) {
             if (value.$regex !== undefined) {
                 let pattern = value.$regex;
                 if (pattern instanceof RegExp) pattern = pattern.source;
-                if (typeof pattern === 'string' && pattern.startsWith('^')) {
-                    pattern = pattern.slice(1) + '%';
-                } else if (typeof pattern === 'string') {
-                    pattern = '%' + pattern + '%';
+                let isIgnoreCase = (value.$options && typeof value.$options === 'string' && value.$options.includes('i'));
+                if (typeof pattern === 'string') {
+                    let hasStart = pattern.startsWith('^');
+                    let hasEnd = pattern.endsWith('$');
+                    if (hasStart) pattern = pattern.slice(1);
+                    if (hasEnd) pattern = pattern.slice(0, -1);
+                    pattern = pattern.replace(/\\([.*+?^${}()|[\]\\])/g, '$1');
+                    if (!hasStart) pattern = '%' + pattern;
+                    if (!hasEnd) pattern = pattern + '%';
                 }
-                where[key] = { [Op.like]: pattern };
+                where[key] = isIgnoreCase ? { [Op.iLike]: pattern } : { [Op.like]: pattern };
             } else if (value.$gte !== undefined) {
                 where[key] = { [Op.gte]: value.$gte };
             } else if (value.$in !== undefined) {

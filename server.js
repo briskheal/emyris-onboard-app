@@ -401,18 +401,26 @@ app.post('/api/applicant-login', async (req, res) => {
             console.warn('⚠️ Log write failed:', logErr.message);
         }
         
-        let { email, password } = req.body;
+        let { email, password, pin } = req.body;
+        password = password || pin;
         // Hyper-robust cleaning (removes hidden chars, zero-width spaces, etc.)
         email = (email || "").toString().toLowerCase().trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
         password = (password || "").toString().trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
         
-        // 1. Fetch applicants (Case-Insensitive Search)
-        const applicants = await Applicant.find({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+        // 1. Fetch applicant (try exact email or regex)
+        let applicants = await Applicant.find({ email: email });
+        if (!applicants || applicants.length === 0) {
+            applicants = await Applicant.find({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+        }
+        if (!applicants || applicants.length === 0) {
+            // Ultimate fallback if query builder missed case
+            applicants = await Applicant.find({});
+        }
         
         // 2. Manual match to avoid regex/index quirks
         const applicant = applicants.find(a => {
             const dbPin = String(a.password || a.pin || "").trim();
-            return a.email.toLowerCase() === email.toLowerCase() && dbPin === password;
+            return a.email && a.email.toLowerCase().trim() === email && dbPin === password;
         });
 
         if (!applicant) {
