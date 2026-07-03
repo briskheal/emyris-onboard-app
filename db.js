@@ -304,6 +304,9 @@ function createModelAdapter(Model) {
             const inst = await Model.create(data);
             return wrapInstance(inst);
         },
+        count: async (query = {}) => {
+            return await Model.count({ where: buildWhere(query) });
+        },
         countDocuments: async (query = {}) => {
             return await Model.count({ where: buildWhere(query) });
         },

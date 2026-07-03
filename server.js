@@ -85,7 +85,7 @@ async function initializeApp() {
     await syncDatabase();
     await seedData();
     try {
-        const count = await Applicant.count();
+        const count = await Applicant.countDocuments();
         if (count === 0 && fs.existsSync('./mongodb_backup_full.json')) {
             console.log('📦 Empty PostgreSQL database detected! Automatically restoring 19 applicants from MongoDB backup...');
             const raw = fs.readFileSync('./mongodb_backup_full.json', 'utf8');
