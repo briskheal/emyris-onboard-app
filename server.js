@@ -24,6 +24,9 @@ const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
 
 
+const connMain = null;
+const connAssets = null;
+
 // Try to use system DNS, but force IPv4 on connection
 // Mongoose 8/Node 18+ can fail resolving IPv6 mappings on some SRV clusters.
 
@@ -108,8 +111,7 @@ async function seedData() {
         console.error('❌ Seeding failed', e);
     }
 }
-if (connMain) connMain.once('open', initializeApp);
-else initializeApp();
+initializeApp();
 
 // Global Error Handlers (Fix for 502/Crashes)
 process.on('unhandledRejection', (reason, promise) => {
