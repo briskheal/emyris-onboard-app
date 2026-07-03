@@ -84,6 +84,47 @@ async function initializeApp() {
     console.log('🚀 Server starting - Shared PostgreSQL Clean Slate protocol active.');
     await syncDatabase();
     await seedData();
+    try {
+        const count = await Applicant.count();
+        if (count === 0 && fs.existsSync('./mongodb_backup_full.json')) {
+            console.log('📦 Empty PostgreSQL database detected! Automatically restoring 19 applicants from MongoDB backup...');
+            const raw = fs.readFileSync('./mongodb_backup_full.json', 'utf8');
+            const data = JSON.parse(raw);
+            const apps = data.applicants || [];
+            for (const app of apps) {
+                delete app.__v;
+                if (app._id && typeof app._id === 'object') app._id = app._id.$oid || app._id.toString();
+                const existing = await Applicant.findOne({ email: app.email });
+                if (!existing) await Applicant.create(app);
+            }
+            if (data.companies && data.companies.length > 0) {
+                const comp = data.companies[0];
+                delete comp.__v;
+                if (comp._id && typeof comp._id === 'object') comp._id = comp._id.$oid || comp._id.toString();
+                const existingComp = await Company.findOne({});
+                if (!existingComp) await Company.create(comp);
+            }
+            if (data.divisions && data.divisions.length > 0) {
+                for (const d of data.divisions) {
+                    delete d.__v;
+                    if (d._id && typeof d._id === 'object') d._id = d._id.$oid || d._id.toString();
+                    const exist = await Division.findOne({ name: d.name });
+                    if (!exist && d.name) await Division.create(d);
+                }
+            }
+            if (data.hqs && data.hqs.length > 0) {
+                for (const h of data.hqs) {
+                    delete h.__v;
+                    if (h._id && typeof h._id === 'object') h._id = h._id.$oid || h._id.toString();
+                    const exist = await HQ.findOne({ name: h.name });
+                    if (!exist && h.name) await HQ.create(h);
+                }
+            }
+            console.log('🎉 Successfully auto-restored all 19 old applicants into Hostycare PostgreSQL!');
+        }
+    } catch (e) {
+        console.error('Auto-restore warning:', e.message);
+    }
 }
 
 async function seedData() {
@@ -1836,6 +1877,62 @@ app.get('/api/admin/system/export', async (req, res) => {
         res.setHeader('Content-Disposition', 'attachment; filename=emyris_backup.json');
         res.send(JSON.stringify(backup, null, 2));
     } catch (e) { res.status(500).json({ error: 'Export failed' }); }
+});
+
+app.post('/api/admin/system/import', async (req, res) => {
+    try {
+        const data = req.body;
+        if (!data) return res.status(400).json({ error: 'No backup data provided' });
+
+        let importedApps = 0;
+        const apps = data.applicants || [];
+        for (const app of apps) {
+            delete app.__v;
+            if (app._id && typeof app._id === 'object') app._id = app._id.$oid || app._id.toString();
+            const existing = await Applicant.findOne({ email: app.email });
+            if (existing) {
+                await existing.update(app);
+            } else {
+                await Applicant.create(app);
+            }
+            importedApps++;
+        }
+
+        if (data.company || (data.companies && data.companies.length > 0)) {
+            const comp = data.company || data.companies[0];
+            delete comp.__v;
+            if (comp._id && typeof comp._id === 'object') comp._id = comp._id.$oid || comp._id.toString();
+            const existComp = await Company.findOne({});
+            if (existComp) {
+                await existComp.update(comp);
+            } else {
+                await Company.create(comp);
+            }
+        }
+
+        if (data.divisions && Array.isArray(data.divisions)) {
+            for (const d of data.divisions) {
+                delete d.__v;
+                if (d._id && typeof d._id === 'object') d._id = d._id.$oid || d._id.toString();
+                const exist = await Division.findOne({ name: d.name });
+                if (!exist && d.name) await Division.create(d);
+            }
+        }
+
+        if (data.hqs && Array.isArray(data.hqs)) {
+            for (const h of data.hqs) {
+                delete h.__v;
+                if (h._id && typeof h._id === 'object') h._id = h._id.$oid || h._id.toString();
+                const exist = await HQ.findOne({ name: h.name });
+                if (!exist && h.name) await HQ.create(h);
+            }
+        }
+
+        res.json({ success: true, message: `Successfully restored ${importedApps} applicants and system configuration.` });
+    } catch (e) {
+        console.error('Import failed:', e);
+        res.status(500).json({ error: 'Import failed: ' + e.message });
+    }
 });
 
 app.post('/api/admin/system/clear', async (req, res) => {

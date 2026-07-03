@@ -899,7 +899,18 @@
                                             <span
                                                 style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; opacity: 0.8;">Backup
                                                 Library</span>
-                                            <span style="font-size: 0.85rem;">Export JSON</span>
+                                        </button>
+                                        <!-- Import Backup Button -->
+                                        <input type="file" id="importBackupFileInput" class="hidden" accept=".json" onchange="uploadBackupFile(event)" style="display: none;">
+                                        <button type="button" onclick="document.getElementById('importBackupFileInput').click()"
+                                            style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 1rem; border-radius: 12px; border: 1px solid rgba(245,158,11,0.35); background: rgba(245,158,11,0.08); color: #fbbf24; font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s; line-height: 1.2; min-height: 100px;"
+                                            onmouseover="this.style.background='rgba(245,158,11,0.18)'; this.style.transform='translateY(-2px)'"
+                                            onmouseout="this.style.background='rgba(245,158,11,0.08)'; this.style.transform='translateY(0)'">
+                                            <span style="font-size: 1.4rem;">📤</span>
+                                            <span
+                                                style="text-transform: uppercase; letter-spacing: 0.05em; font-size: 0.7rem; opacity: 0.8;">Restore
+                                                Library</span>
+                                            <span style="font-size: 0.85rem;">Import JSON</span>
                                         </button>
                                         <!-- System Vacuum Button -->
                                         <button type="button" onclick="vacuumAssets()"

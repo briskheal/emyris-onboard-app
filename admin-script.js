@@ -29,6 +29,34 @@ async function downloadDatabase() {
     finally { unlockUI(); }
 }
 
+async function uploadBackupFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (!confirm("Are you sure you want to restore this system backup? This will update existing records and import new applicants.")) return;
+    try {
+        lockUI("⏳ Restoring System Data...");
+        const text = await file.text();
+        const json = JSON.parse(text);
+        const res = await fetch('/api/admin/system/import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(json)
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast(result.message, "success");
+            await fetchApplicants();
+        } else {
+            showToast(result.error || "Import failed", "error");
+        }
+    } catch (e) {
+        showToast("❌ Restore failed: Invalid JSON or server error", "error");
+    } finally {
+        unlockUI();
+        event.target.value = '';
+    }
+}
+
 async function fetchDatabaseStats() {
     try {
         const res = await fetch('/api/admin/db-stats');
