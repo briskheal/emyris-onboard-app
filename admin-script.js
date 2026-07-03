@@ -770,11 +770,14 @@ function attachAssetUploadListener(id, info) {
         try {
             for (let i = 0; i < files.length; i++) {
                 const f = files[i];
-                const base64 = await new Promise((res) => {
-                    const reader = new FileReader();
-                    reader.onload = (event) => res(event.target.result);
-                    reader.readAsDataURL(f);
-                });
+                const isImage = f.type.startsWith('image/');
+                const base64 = isImage && typeof compressAndResize === 'function' 
+                    ? await compressAndResize(f) 
+                    : await new Promise((res) => {
+                        const reader = new FileReader();
+                        reader.onload = (event) => res(event.target.result);
+                        reader.readAsDataURL(f);
+                    });
 
                 if (ribbon) ribbon.style.width = `${Math.round(((i + 1) / files.length) * 100)}%`;
 
