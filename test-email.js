@@ -8,11 +8,18 @@ const resendSecret = process.env.RESEND_API_KEY;
 const resend = resendSecret ? new Resend(resendSecret) : null;
 const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
 
+const emailUser = process.env.EMAIL_USER || "hradmin@emyrishr.in";
+const emailPass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
+const host = process.env.EMAIL_HOST || 'smtppro.zoho.in';
+const port = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : 465;
+
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host,
+    port,
+    secure: port === 465,
     auth: {
-        user: "emy.onboardapp@gmail.com",
-        pass: "hemmawdqwyeijksv"
+        user: emailUser,
+        pass: emailPass
     }
 });
 

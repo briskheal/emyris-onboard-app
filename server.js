@@ -133,14 +133,49 @@ app.use(express.static(__dirname));
 async function sendEmail({ to, subject, html, attachments = [] }) {
     const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
     const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
-    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject}`);
+    const emailUser = process.env.EMAIL_USER || "hradmin@emyrishr.in";
+    const emailPass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
+    const isZoho = emailUser.includes('zoho') || emailUser.includes('emyrishr.in') || process.env.EMAIL_HOST;
 
-    // STRATEGY 1: Google Apps Script Bridge (HTTPS - The only way to send on Render Free)
+    const host = process.env.EMAIL_HOST || (isZoho ? 'smtppro.zoho.in' : 'smtp.gmail.com');
+    const port = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : (isZoho ? 465 : 587);
+    const secure = process.env.EMAIL_SECURE !== undefined ? (process.env.EMAIL_SECURE === 'true') : (port === 465);
+    const fromAddr = process.env.EMAIL_FROM || `"Emyris HR" <${emailUser}>`;
+
+    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject} | Via: ${host}`);
+
+    // STRATEGY 1: SMTP Delivery (Zoho / Gmail / Custom Host)
+    if (isZoho || !bridgeUrl) {
+        const transporter = nodemailer.createTransport(isZoho || process.env.EMAIL_HOST ? {
+            host,
+            port,
+            secure,
+            auth: { user: emailUser, pass: emailPass }
+        } : {
+            service: 'gmail',
+            auth: { user: emailUser, pass: emailPass }
+        });
+
+        try {
+            console.log(`📧 [INFO] Attempting SMTP delivery via ${host}...`);
+            const info = await transporter.sendMail({
+                from: fromAddr,
+                to, subject, html,
+                attachments
+            });
+            console.log(`✅ [SUCCESS] SMTP delivery confirmed: ${info.messageId}`);
+            return info;
+        } catch (smtpErr) {
+            console.warn(`⚠️ [WARN] SMTP delivery failed (${smtpErr.message}).`);
+            if (!bridgeUrl) throw smtpErr;
+            console.log('☁️ [INFO] Falling back to Google Apps Script Bridge...');
+        }
+    }
+
+    // STRATEGY 2: Google Apps Script Bridge (HTTPS fallback for restricted network environments)
     if (bridgeUrl) {
         try {
             console.log('☁️ [INFO] Sending via Google Apps Script Bridge...');
-
-            // Convert Buffer attachments to base64 strings for the bridge
             const bridgeAttachments = attachments.map(att => ({
                 filename: att.filename,
                 content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
@@ -150,36 +185,14 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
             const response = await axios.post(bridgeUrl, {
                 to, subject, html,
                 attachments: bridgeAttachments
-            }, { timeout: 25000 }); // Longer timeout for attachments
+            }, { timeout: 25000 });
 
             console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
             return response.data;
         } catch (bridgeErr) {
-            console.error(`⚠️ [WARN] Bridge failed: ${bridgeErr.message}. Falling back...`);
+            console.error(`❌ [FAILURE] Bridge failed: ${bridgeErr.message}`);
+            throw bridgeErr;
         }
-    }
-
-    // STRATEGY 2: Local Gmail / SMTP (Only works locally, NOT on Render Free)
-    const transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-            user: process.env.EMAIL_USER || "emy.onboardapp@gmail.com",
-            pass: (process.env.EMAIL_PASS || "").replace(/\s+/g, "")
-        }
-    });
-
-
-    try {
-        console.log('📧 [INFO] Attempting Gmail SMTP (local mode)...');
-        const info = await transporter.sendMail({
-            from: `"Emyris HR" <emy.onboardapp@gmail.com>`,
-            to, subject, html
-        });
-        console.log(`✅ [SUCCESS] Gmail delivery confirmed: ${info.messageId}`);
-        return info;
-    } catch (smtpErr) {
-        console.error(`❌ [FAILURE] All email strategies exhausted: ${smtpErr.message}`);
-        throw smtpErr;
     }
 }
 
@@ -1504,7 +1517,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
 
         // 2. Notify Admin
         await sendEmail({
-            to: (process.env.ADMIN_USER || 'hr@emyrisbio.com').toLowerCase(),
+            to: (process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in').toLowerCase(),
             subject: `🔥 Offer Accepted: ${applicant.fullName}`,
             html: `
                 <div style="font-family:Arial,sans-serif;padding:30px;line-height:1.6;color:#334155;">
