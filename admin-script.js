@@ -3138,7 +3138,7 @@ function compressAndResize(file, maxWidth = 1000) {
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL(file.type || 'image/jpeg', 0.7); 
+                const dataUrl = canvas.toDataURL('image/webp', 0.75); 
                 resolve(dataUrl);
             };
             img.onerror = (err) => reject(err);
