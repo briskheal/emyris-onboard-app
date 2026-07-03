@@ -319,6 +319,46 @@ app.get('/api/health', (req, res) => {
     res.json(status);
 });
 
+// EMAIL DIAGNOSTIC ENDPOINT (Admin only - temporary debug)
+app.get('/api/test-email', async (req, res) => {
+    const emailUser = process.env.EMAIL_USER || 'NOT SET';
+    const emailPass = process.env.EMAIL_PASS ? '✅ SET (' + process.env.EMAIL_PASS.length + ' chars)' : '❌ NOT SET';
+    const emailHost = process.env.EMAIL_HOST || 'NOT SET';
+    const emailPort = process.env.EMAIL_PORT || 'NOT SET';
+
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || 'smtppro.zoho.in',
+        port: parseInt(process.env.EMAIL_PORT || '465'),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: { user: emailUser, pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '') }
+    });
+
+    try {
+        await transporter.verify();
+        const info = await transporter.sendMail({
+            from: `"Emyris HR" <${emailUser}>`,
+            to: emailUser,
+            subject: 'Live SMTP Test - ' + new Date().toISOString(),
+            html: '<p>✅ Zoho SMTP is working correctly on the live Hostycare server!</p>'
+        });
+        res.json({ 
+            success: true, 
+            message: 'Email sent successfully!',
+            messageId: info.messageId,
+            config: { emailUser, emailPass, emailHost, emailPort }
+        });
+    } catch (e) {
+        res.json({ 
+            success: false, 
+            error: e.message, 
+            code: e.code,
+            config: { emailUser, emailPass, emailHost, emailPort }
+        });
+    }
+});
+
+
 // PIN RECOVERY MODULE
 app.post('/api/resend-pin', async (req, res) => {
     let { email } = req.body;
