@@ -300,57 +300,73 @@ function buildWhere(query) {
 
 // Model Adapter Factory
 function createModelAdapter(Model) {
-    return {
-        findOne: (query) => makeQueryBuilder(Model, query, true),
-        find: (query = {}) => makeQueryBuilder(Model, query, false),
-        findById: (id) => makeFindByIdQuery(Model, id),
-        create: async (data) => {
-            if (!data._id) data._id = generateId();
-            const inst = await Model.create(data);
-            return wrapInstance(inst);
-        },
-        count: async (query = {}) => {
-            return await Model.count({ where: buildWhere(query) });
-        },
-        countDocuments: async (query = {}) => {
-            return await Model.count({ where: buildWhere(query) });
-        },
-        findOneAndUpdate: async (query, updateObj, options = {}) => {
-            const inst = await Model.findOne({ where: buildWhere(query) });
-            if (!inst) return null;
-            applyUpdate(inst, updateObj);
-            await inst.save();
-            return wrapInstance(inst);
-        },
-        findByIdAndUpdate: async (id, updateObj, options = {}) => {
-            const inst = await Model.findByPk(id);
-            if (!inst) return null;
-            applyUpdate(inst, updateObj);
-            await inst.save();
-            return wrapInstance(inst);
-        },
-        updateOne: async (query, updateObj) => {
-            const inst = await Model.findOne({ where: buildWhere(query) });
-            if (inst) {
-                applyUpdate(inst, updateObj);
-                await inst.save();
+    function Adapter(data = {}) {
+        Object.assign(this, data);
+        if (!this._id) this._id = generateId();
+        this.save = async () => {
+            const exists = await Model.findByPk(this._id);
+            if (exists) {
+                applyUpdate(exists, this);
+                await exists.save();
+                return wrapInstance(exists);
+            } else {
+                const inst = await Model.create(this);
+                return wrapInstance(inst);
             }
-            return { acknowledged: true };
-        },
-        deleteOne: async (query) => {
-            const count = await Model.destroy({ where: buildWhere(query), limit: 1 });
-            return { deletedCount: count };
-        },
-        deleteMany: async (query = {}) => {
-            const count = await Model.destroy({ where: buildWhere(query) });
-            return { deletedCount: count };
-        },
-        findByIdAndDelete: async (id) => {
-            const inst = await Model.findByPk(id);
-            if (inst) await inst.destroy();
-            return wrapInstance(inst);
-        }
+        };
+    }
+
+    Adapter.findOne = (query) => makeQueryBuilder(Model, query, true);
+    Adapter.find = (query = {}) => makeQueryBuilder(Model, query, false);
+    Adapter.findById = (id) => makeFindByIdQuery(Model, id);
+    Adapter.create = async (data) => {
+        if (!data._id) data._id = generateId();
+        const inst = await Model.create(data);
+        return wrapInstance(inst);
     };
+    Adapter.count = async (query = {}) => {
+        return await Model.count({ where: buildWhere(query) });
+    };
+    Adapter.countDocuments = async (query = {}) => {
+        return await Model.count({ where: buildWhere(query) });
+    };
+    Adapter.findOneAndUpdate = async (query, updateObj, options = {}) => {
+        const inst = await Model.findOne({ where: buildWhere(query) });
+        if (!inst) return null;
+        applyUpdate(inst, updateObj);
+        await inst.save();
+        return wrapInstance(inst);
+    };
+    Adapter.findByIdAndUpdate = async (id, updateObj, options = {}) => {
+        const inst = await Model.findByPk(id);
+        if (!inst) return null;
+        applyUpdate(inst, updateObj);
+        await inst.save();
+        return wrapInstance(inst);
+    };
+    Adapter.updateOne = async (query, updateObj) => {
+        const inst = await Model.findOne({ where: buildWhere(query) });
+        if (inst) {
+            applyUpdate(inst, updateObj);
+            await inst.save();
+        }
+        return { acknowledged: true };
+    };
+    Adapter.deleteOne = async (query) => {
+        const count = await Model.destroy({ where: buildWhere(query), limit: 1 });
+        return { deletedCount: count };
+    };
+    Adapter.deleteMany = async (query = {}) => {
+        const count = await Model.destroy({ where: buildWhere(query) });
+        return { deletedCount: count };
+    };
+    Adapter.findByIdAndDelete = async (id) => {
+        const inst = await Model.findByPk(id);
+        if (inst) await inst.destroy();
+        return wrapInstance(inst);
+    };
+
+    return Adapter;
 }
 
 function applyUpdate(instance, updateObj) {
