@@ -869,6 +869,9 @@ function switchAdminTab(tab) {
         const speedLabel = document.getElementById('speedValueLabel');
         if (speedLabel) speedLabel.innerText = f.marqueeSpeed.value + 's';
         renderAssetLists();
+        populateDivisions(true);
+        fetchHQs();
+        renderDesignationList();
 
         // Attach listeners for profile tab file inputs
         attachAssetUploadListener('compLogoInput', { status: 'logoStatus' });
