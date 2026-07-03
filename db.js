@@ -178,12 +178,77 @@ const OnboardTemplateHistory = sequelize.define('onboard_template_history', {
 
 // Helper to decorate instance with Mongoose methods
 function wrapInstance(instance) {
-    if (!instance) return instance;
-    instance.markModified = (prop) => {
-        instance.changed(prop, true);
-    };
-    instance.toObject = () => instance.get({ plain: true });
+    if (!instance || typeof instance !== 'object') return instance;
+    if (typeof instance.get === 'function') {
+        const plain = instance.get({ plain: true });
+        instance.markModified = (prop) => {
+            instance.changed(prop, true);
+        };
+        instance.toObject = () => plain;
+    }
     return instance;
+}
+
+// Helper query builder to support Mongoose chaining (.lean(), .sort(), .limit(), etc.)
+function makeQueryBuilder(Model, query, isSingle = false) {
+    let order = [];
+    let limitVal = null;
+    let skipVal = null;
+    let isLean = false;
+
+    const chain = {
+        sort: function(sortObj) {
+            if (sortObj && typeof sortObj === 'object') {
+                for (const [k, v] of Object.entries(sortObj)) {
+                    order.push([k, (v === 1 || v === 'asc' || v === 'ASC') ? 'ASC' : 'DESC']);
+                }
+            }
+            return chain;
+        },
+        select: function() { return chain; },
+        limit: function(n) { limitVal = n; return chain; },
+        skip: function(n) { skipVal = n; return chain; },
+        lean: function() { isLean = true; return chain; },
+        then: function(resolve, reject) {
+            const opts = { where: buildWhere(query) };
+            if (order.length > 0) opts.order = order;
+            if (limitVal !== null) opts.limit = limitVal;
+            if (skipVal !== null) opts.offset = skipVal;
+
+            if (isSingle) {
+                return Model.findOne(opts).then(inst => {
+                    if (!inst) return null;
+                    return isLean ? inst.get({ plain: true }) : wrapInstance(inst);
+                }).then(resolve, reject);
+            } else {
+                return Model.findAll(opts).then(list => {
+                    return list.map(inst => isLean ? inst.get({ plain: true }) : wrapInstance(inst));
+                }).then(resolve, reject);
+            }
+        },
+        catch: function(reject) {
+            return chain.then(res => res, reject);
+        }
+    };
+    return chain;
+}
+
+function makeFindByIdQuery(Model, id) {
+    let isLean = false;
+    const chain = {
+        select: function() { return chain; },
+        lean: function() { isLean = true; return chain; },
+        then: function(resolve, reject) {
+            return Model.findByPk(id).then(inst => {
+                if (!inst) return null;
+                return isLean ? inst.get({ plain: true }) : wrapInstance(inst);
+            }).then(resolve, reject);
+        },
+        catch: function(reject) {
+            return chain.then(res => res, reject);
+        }
+    };
+    return chain;
 }
 
 // Helper to build Sequelize where clause from Mongoose query
@@ -231,18 +296,9 @@ function buildWhere(query) {
 // Model Adapter Factory
 function createModelAdapter(Model) {
     return {
-        findOne: async (query) => {
-            const inst = await Model.findOne({ where: buildWhere(query) });
-            return wrapInstance(inst);
-        },
-        find: async (query = {}) => {
-            const list = await Model.findAll({ where: buildWhere(query) });
-            return list.map(wrapInstance);
-        },
-        findById: async (id) => {
-            const inst = await Model.findByPk(id);
-            return wrapInstance(inst);
-        },
+        findOne: (query) => makeQueryBuilder(Model, query, true),
+        find: (query = {}) => makeQueryBuilder(Model, query, false),
+        findById: (id) => makeFindByIdQuery(Model, id),
         create: async (data) => {
             if (!data._id) data._id = generateId();
             const inst = await Model.create(data);
