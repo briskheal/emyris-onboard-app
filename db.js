@@ -408,10 +408,14 @@ function applyUpdate(instance, updateObj) {
     delete data.$set;
     delete data.$push;
     delete data.$pull;
+    delete data._id; // Never mutate primary key
 
     for (const [key, val] of Object.entries(data)) {
         if (key.startsWith('$')) continue;
         instance[key] = val;
+        if (typeof instance.changed === 'function') {
+            instance.changed(key, true);
+        }
     }
 
     if (updateObj.$push) {

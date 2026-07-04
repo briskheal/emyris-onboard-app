@@ -2149,13 +2149,17 @@ app.post('/api/admin/upload-asset', async (req, res) => {
 // --- UPDATE COMPANY PROFILE METADATA ---
 app.post('/api/company-profile', async (req, res) => {
     try {
-        const updateData = req.body;
+        const updateData = { ...req.body };
+        delete updateData._id;
+        delete updateData.__v;
+        
         let profile = await Company.findOne();
-        if (!profile) profile = await Company.create({});
-
-        Object.assign(profile, updateData);
-        profile.updatedAt = new Date();
-        await profile.save();
+        if (!profile) {
+            profile = await Company.create(updateData);
+        } else {
+            await Company.updateOne({ _id: profile._id }, { $set: updateData });
+            profile = await Company.findOne();
+        }
 
         res.status(200).json({ success: true, profile });
     } catch (error) {
