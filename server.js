@@ -1009,6 +1009,26 @@ app.get('/api/admin/applicant/:email', async (req, res) => {
     }
 });
 
+// Public Endpoint to Serve Static Assets (Logos, Signatures, Stamps)
+app.get('/api/public/asset/:assetId', async (req, res) => {
+    try {
+        const asset = await Asset.findById(req.params.assetId);
+        if (!asset || !asset.data) return res.status(404).send('Asset not found');
+
+        const matches = asset.data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches || matches.length !== 3) return res.status(400).send('Invalid asset format');
+
+        const mimeType = matches[1];
+        const buffer = Buffer.from(matches[2], 'base64');
+
+        res.set('Content-Type', mimeType);
+        res.set('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year (Static Provision)
+        res.send(buffer);
+    } catch (error) {
+        res.status(500).send('Failed to fetch static asset');
+    }
+});
+
 // New Endpoint for Lazy Loading Document Data
 app.get('/api/admin/document/:assetId', async (req, res) => {
     try {
@@ -1386,7 +1406,8 @@ app.post('/api/admin/render-template', async (req, res) => {
         if (!applicant || !company) return res.status(404).json({ error: 'Data missing' });
 
         const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
-        const signatureHtml = sigAsset && sigAsset.data ? `<img src="${sigAsset.data}" style="max-width: 150px; max-height: 80px; mix-blend-mode: multiply;" alt="Signature" />` : '<br><br><br>';
+        // STATIC ASSET PROVISION: Use lightweight URL instead of heavy base64
+        const signatureHtml = company.activeSignatureId ? `<img src="https://emyrishr.in/api/public/asset/${company.activeSignatureId}" style="max-width: 150px; max-height: 80px; mix-blend-mode: multiply;" alt="Signature" />` : '<br><br><br>';
 
         let template = customBody;
         if (!template) {
