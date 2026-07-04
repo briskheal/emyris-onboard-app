@@ -1262,7 +1262,7 @@ app.post('/api/admin/delete-document', async (req, res) => {
         const applicant = await Applicant.findOne({ email });
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
         
-        applicant.documents = applicant.documents.filter(d => d.assetId !== assetId);
+        applicant.documents = applicant.documents.filter(d => String(d.assetId) !== String(assetId));
         if (typeof applicant.markModified === 'function') applicant.markModified('documents');
         await applicant.save();
 
