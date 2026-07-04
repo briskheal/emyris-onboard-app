@@ -387,7 +387,7 @@ function applyCompanyData() {
         if (landingLogoFallback) landingLogoFallback.style.display = 'none';
         console.log('✅ Updated Logos from Profile');
     } else {
-        const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0]).toUpperCase().join('') : 'E';
+        const initials = companyData.name ? companyData.name.split(' ').filter(Boolean).slice(0,2).map(w => w[0] ? w[0].toUpperCase() : '').join('') : 'E';
         if (headerLogoLetter) {
             headerLogoLetter.innerText = initials;
             headerLogoLetter.style.display = 'inline';

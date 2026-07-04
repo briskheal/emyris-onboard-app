@@ -17,7 +17,7 @@ const { Resend } = require('resend');
 const axios = require('axios');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory, Question } = require('./db');
+const { sequelize, syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory, Question } = require('./db');
 const fs = require('fs');
 const path = require('path');
 
