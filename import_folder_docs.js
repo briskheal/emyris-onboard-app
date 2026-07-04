@@ -87,15 +87,16 @@ async function run() {
 
             console.log(`? Matched ${file} -> ${category}`);
 
-            // Find existing document in the same category if any
-            const existing = applicant.documents.find(d => d.category === category);
+            // Find existing document with the EXACT SAME FILE NAME in this category
+            // This allows multiple files per category (e.g. Degree (1), Degree (2))
+            const existing = applicant.documents.find(d => d.category === category && d.name === file);
             if (existing && existing.assetId) {
-                // Delete orphaned asset from PostgreSQL database
+                // Delete the old overwritten asset from PostgreSQL database
                 await Asset.deleteMany({ _id: existing.assetId });
             }
 
-            // Remove existing from array
-            applicant.documents = applicant.documents.filter(d => d.category !== category);
+            // Remove only the exact matching file from array so we don't duplicate it
+            applicant.documents = applicant.documents.filter(d => !(d.category === category && d.name === file));
 
             // Read file
             const filePath = path.join(docsDir, file);
@@ -110,7 +111,8 @@ async function run() {
                 file = file.replace(/\.[^/.]+$/, "") + ".webp";
             }
 
-            const base64Data = fileBuffer.toString('base64');
+            const base64String = fileBuffer.toString('base64');
+            const dataUrl = `data:${mimeType};base64,${base64String}`;
             const assetId = uuidv4();
 
             // Create Asset
@@ -118,7 +120,7 @@ async function run() {
                 _id: assetId,
                 category: category,
                 mimeType: mimeType,
-                data: base64Data,
+                data: dataUrl,
                 name: file,
                 uploadedAt: new Date()
             });
