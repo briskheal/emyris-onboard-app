@@ -393,6 +393,7 @@
                         <button class="tab-btn" onclick="switchAdminTab('applicants')">👥 Applicants</button>
                         <button class="tab-btn" onclick="switchAdminTab('setup')">⚙️ Setup & Letters</button>
                         <button class="tab-btn" onclick="switchAdminTab('gallery')">📂 Asset Library</button>
+                        <button class="tab-btn" onclick="switchAdminTab('testbank')">🧠 Test Bank</button>
                     </div>
 
                     <div id="adminProfileTab" class="admin-tab-content">
@@ -2067,6 +2068,35 @@
 
 
 
+                    <div id="adminTestbankTab" class="admin-tab-content hidden">
+                        <div class="setup-section">
+                            <div class="setup-section-head" style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <h4>🧠 Rapid Test Bank</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Manage the 20-question randomized aptitude test.</p>
+                                </div>
+                                <button class="btn btn-primary btn-sm" onclick="showAddQuestionModal()">+ Add Question</button>
+                            </div>
+                            
+                            <!-- Question List -->
+                            <div class="table-responsive" style="margin-top: 1rem; border: 1px solid var(--glass-border); border-radius: 12px; background: rgba(0,0,0,0.2);">
+                                <table class="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Category</th>
+                                            <th>Question</th>
+                                            <th>Options</th>
+                                            <th style="width: 80px;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="testbankTableBody">
+                                        <tr><td colspan="4" style="text-align: center; color: var(--text-muted);">Loading questions...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
         </main>
 
     </div>
@@ -2081,6 +2111,61 @@
     <script src="shared-utils.js"></script>
     <script src="admin-script.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- Add Question Modal -->
+    <div id="addQuestionModal" class="hidden"
+        style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 10000; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; pointer-events: none;">
+        <div style="background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 20px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s ease; overflow: hidden;"
+            id="addQuestionModalBody">
+            <div style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);">
+                <h3 style="color: white; margin: 0;">➕ Add New Question</h3>
+            </div>
+            <form id="addQuestionForm" onsubmit="submitNewQuestion(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                <div class="form-group">
+                    <label>Category</label>
+                    <select id="q_category" required style="width: 100%;">
+                        <option value="math">Mathematics</option>
+                        <option value="english">English</option>
+                        <option value="current_affairs">Current Affairs</option>
+                        <option value="gk">General Knowledge</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Question Text</label>
+                    <textarea id="q_text" required rows="3" style="width: 100%; background: rgba(0,0,0,0.2); color: white; border: 1px solid var(--glass-border); border-radius: 8px; padding: 0.75rem;"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Option 1 (Index 0)</label>
+                    <input type="text" id="q_opt0" required style="width: 100%;">
+                </div>
+                <div class="form-group">
+                    <label>Option 2 (Index 1)</label>
+                    <input type="text" id="q_opt1" required style="width: 100%;">
+                </div>
+                <div class="form-group">
+                    <label>Option 3 (Index 2)</label>
+                    <input type="text" id="q_opt2" required style="width: 100%;">
+                </div>
+                <div class="form-group">
+                    <label>Option 4 (Index 3)</label>
+                    <input type="text" id="q_opt3" required style="width: 100%;">
+                </div>
+                <div class="form-group">
+                    <label>Correct Answer (Choose 0, 1, 2, or 3)</label>
+                    <select id="q_correct" required style="width: 100%;">
+                        <option value="0">Option 1</option>
+                        <option value="1">Option 2</option>
+                        <option value="2">Option 3</option>
+                        <option value="3">Option 4</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1rem;">
+                    <button type="button" class="btn btn-outline" onclick="closeAddQuestionModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Question</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </body>
 
 </html>

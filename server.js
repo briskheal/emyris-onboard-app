@@ -17,7 +17,7 @@ const { Resend } = require('resend');
 const axios = require('axios');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory } = require('./db');
+const { syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory, Question } = require('./db');
 const fs = require('fs');
 
 dotenv.config();
@@ -591,6 +591,89 @@ app.post('/api/submit-onboarding', async (req, res) => {
         console.error("Submission Error:", error);
         res.status(500).json({ success: false, message: 'Submission failed: ' + error.message });
     }
+});
+
+// --- RAPID TEST APIs ---
+app.get('/api/applicant/test-questions', async (req, res) => {
+    try {
+        const questions = await Question.find({ active: true });
+        const cats = ['math', 'english', 'current_affairs', 'gk'];
+        let selected = [];
+        cats.forEach(c => {
+            const catQs = questions.filter(q => q.category === c);
+            const shuffled = catQs.sort(() => 0.5 - Math.random());
+            selected.push(...shuffled.slice(0, 5));
+        });
+        
+        // Strip correct answer before sending
+        const safeQuestions = selected.map(q => ({
+            _id: q._id,
+            category: q.category,
+            text: q.text,
+            options: q.options
+        }));
+        
+        // Shuffle the final 20 questions so they aren't grouped by category
+        res.json({ success: true, questions: safeQuestions.sort(() => 0.5 - Math.random()) });
+    } catch (e) {
+        console.error('Fetch Test Error:', e);
+        res.status(500).json({ error: 'Failed to fetch test' });
+    }
+});
+
+app.post('/api/applicant/submit-test', async (req, res) => {
+    try {
+        const { email, answers } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+        
+        if (applicant.rapidTestCompleted) {
+            return res.status(400).json({ error: 'Test already completed' });
+        }
+
+        let score = 0;
+        const questions = await Question.find({ active: true });
+        
+        for (const [qId, selectedIdx] of Object.entries(answers || {})) {
+            const q = questions.find(qu => qu._id === qId);
+            if (q && q.correctAnswerIndex === Number(selectedIdx)) {
+                score++;
+            }
+        }
+        
+        applicant.rapidTestScore = score;
+        applicant.rapidTestCompleted = true;
+        await applicant.save();
+        
+        res.json({ success: true, score });
+    } catch (e) {
+        console.error('Submit Test Error:', e);
+        res.status(500).json({ error: 'Failed to submit test' });
+    }
+});
+
+// Admin Question Bank
+app.get('/api/admin/questions', async (req, res) => {
+    try {
+        const questions = await Question.find();
+        res.json({ success: true, questions });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/admin/questions', async (req, res) => {
+    try {
+        await Question.create(req.body);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.delete('/api/admin/questions/:id', async (req, res) => {
+    try {
+        await Question.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
 // --- APPLICANT DOCUMENT UPLOAD ---

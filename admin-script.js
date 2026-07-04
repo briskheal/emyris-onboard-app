@@ -891,6 +891,9 @@ function switchAdminTab(tab) {
     } else if (tab === 'gallery') {
         document.getElementById('adminGalleryTab').classList.remove('hidden');
         renderGallery();
+    } else if (tab === 'testbank') {
+        document.getElementById('adminTestbankTab').classList.remove('hidden');
+        fetchTestBankQuestions();
     } else {
         document.getElementById('adminApplicantsTab').classList.remove('hidden');
         fetchApplicants();
@@ -1541,6 +1544,7 @@ function renderVerificationProfile(app) {
         { label: 'UAN Number', val: app.uanNumber || fd.uanNumber || 'N/A' },
         { label: 'ESI Number', val: app.esiNumber || fd.esiNumber || 'N/A' },
         { label: 'Date of Birth', val: `<input type="text" id="v_dob" class="form-input-sm" value="${app.dob ? formatDateDMY(app.dob) : (fd.dob ? formatDateDMY(fd.dob) : '')}" placeholder="DD-MM-YYYY" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Rapid Test Score', val: app.rapidTestCompleted ? `<span style="color:var(--success); font-weight:bold; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:12px;">${app.rapidTestScore} / 20</span>` : '<span style="color:var(--text-muted);">Not Completed</span>' },
         { label: 'Current Address', val: `<textarea id="v_address" class="form-input-sm" style="width:100%; min-height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:0.85rem; resize:vertical;">${app.address || fd.address || ''}</textarea>` },
         { label: 'Applied At', val: app.submittedAt ? formatDateDMY(app.submittedAt) : (app.registeredAt ? formatDateDMY(app.registeredAt) : 'N/A') },
         { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
@@ -4830,4 +4834,102 @@ async function downloadApplicantPDF(email) {
     showToast("Applicant Dossier Downloaded!");
 }
 
+// --- RAPID TEST BANK LOGIC ---
+
+async function fetchTestBankQuestions() {
+    try {
+        const res = await fetch('/api/admin/questions');
+        const data = await res.json();
+        const tbody = document.getElementById('testbankTableBody');
+        if (!tbody) return;
+        
+        if (data.success && data.questions.length > 0) {
+            let html = '';
+            data.questions.forEach(q => {
+                let optionsHtml = q.options.map((opt, i) => 
+                    `<span style="display:inline-block; margin-right:5px; padding:2px 6px; background:rgba(255,255,255,0.05); border-radius:4px; font-size:0.75rem; color:${i === q.correctAnswerIndex ? 'var(--success)' : 'inherit'}">${i+1}. ${opt}</span>`
+                ).join('');
+                
+                html += `
+                <tr>
+                    <td style="text-transform: capitalize;">${q.category.replace('_', ' ')}</td>
+                    <td style="max-width: 250px; white-space: normal;">${q.text}</td>
+                    <td style="max-width: 300px; white-space: normal;">${optionsHtml}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline" style="color:var(--error); border-color:var(--error);" onclick="deleteQuestion('${q._id}')">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        } else {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No questions found.</td></tr>';
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function showAddQuestionModal() {
+    document.getElementById('addQuestionForm').reset();
+    document.getElementById('addQuestionModal').classList.remove('hidden');
+    document.getElementById('addQuestionModal').style.opacity = '1';
+    document.getElementById('addQuestionModal').style.pointerEvents = 'auto';
+    document.getElementById('addQuestionModalBody').style.transform = 'translateY(0)';
+}
+
+function closeAddQuestionModal() {
+    document.getElementById('addQuestionModal').style.opacity = '0';
+    document.getElementById('addQuestionModal').style.pointerEvents = 'none';
+    document.getElementById('addQuestionModalBody').style.transform = 'translateY(20px)';
+    setTimeout(() => {
+        document.getElementById('addQuestionModal').classList.add('hidden');
+    }, 300);
+}
+
+async function submitNewQuestion(e) {
+    e.preventDefault();
+    const payload = {
+        category: document.getElementById('q_category').value,
+        text: document.getElementById('q_text').value,
+        options: [
+            document.getElementById('q_opt0').value,
+            document.getElementById('q_opt1').value,
+            document.getElementById('q_opt2').value,
+            document.getElementById('q_opt3').value
+        ],
+        correctAnswerIndex: parseInt(document.getElementById('q_correct').value, 10)
+    };
+    
+    try {
+        const res = await fetch('/api/admin/questions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+            closeAddQuestionModal();
+            fetchTestBankQuestions();
+        } else {
+            alert('Failed to save question.');
+        }
+    } catch (err) {
+        alert('Error saving question.');
+    }
+}
+
+async function deleteQuestion(id) {
+    if (!confirm('Are you sure you want to delete this question?')) return;
+    try {
+        const res = await fetch('/api/admin/questions/' + id, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            fetchTestBankQuestions();
+        }
+    } catch (err) {
+        alert('Error deleting question.');
+    }
+}
+
 window.addEventListener('DOMContentLoaded', initializeApp);
+

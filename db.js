@@ -148,7 +148,9 @@ const OnboardApplicant = sequelize.define('onboard_applicant', {
     verificationChecks: { type: DataTypes.JSON, defaultValue: {} },
     rejectionReason: DataTypes.TEXT,
     rejectedAt: DataTypes.DATE,
-    isExistingStaff: { type: DataTypes.BOOLEAN, defaultValue: false }
+    isExistingStaff: { type: DataTypes.BOOLEAN, defaultValue: false },
+    rapidTestScore: { type: DataTypes.INTEGER, defaultValue: 0 },
+    rapidTestCompleted: { type: DataTypes.BOOLEAN, defaultValue: false }
 });
 
 // 4. Division Model
@@ -174,6 +176,16 @@ const OnboardTemplateHistory = sequelize.define('onboard_template_history', {
     savedBy: DataTypes.STRING,
     savedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     version: DataTypes.INTEGER
+});
+
+// 7. Question Model (For Rapid Test)
+const OnboardQuestion = sequelize.define('onboard_question', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    category: { type: DataTypes.STRING, allowNull: false },
+    text: { type: DataTypes.TEXT, allowNull: false },
+    options: { type: DataTypes.JSON, defaultValue: [] },
+    correctAnswerIndex: { type: DataTypes.INTEGER, allowNull: false },
+    active: { type: DataTypes.BOOLEAN, defaultValue: true }
 });
 
 // Helper to decorate instance with Mongoose methods
@@ -432,6 +444,7 @@ const Division = createModelAdapter(OnboardDivision);
 const HQ = createModelAdapter(OnboardHQ);
 const Asset = createModelAdapter(OnboardAsset);
 const TemplateHistory = createModelAdapter(OnboardTemplateHistory);
+const Question = createModelAdapter(OnboardQuestion);
 
 async function syncDatabase() {
     try {
@@ -439,6 +452,53 @@ async function syncDatabase() {
         console.log('✅ Connected to Shared PostgreSQL Database via Sequelize.');
         await sequelize.sync({ alter: true });
         console.log('✅ Synchronized onboard_* tables in database.');
+        
+        // Seed Questions if empty
+        const questionCount = await OnboardQuestion.count();
+        if (questionCount === 0) {
+            console.log('🌱 Seeding initial Rapid Test questions...');
+            const seedQuestions = [
+                // Math
+                { category: 'math', text: 'What is 15% of 200?', options: ['20', '30', '40', '50'], correctAnswerIndex: 1 },
+                { category: 'math', text: 'If a train travels 60 miles in 1.5 hours, what is its average speed in mph?', options: ['30', '40', '45', '50'], correctAnswerIndex: 1 },
+                { category: 'math', text: 'Solve for x: 3x + 12 = 27', options: ['3', '4', '5', '6'], correctAnswerIndex: 2 },
+                { category: 'math', text: 'What is the square root of 144?', options: ['10', '12', '14', '16'], correctAnswerIndex: 1 },
+                { category: 'math', text: 'A shirt costs $40. It is on sale for 25% off. What is the sale price?', options: ['$25', '$30', '$32', '$35'], correctAnswerIndex: 1 },
+                { category: 'math', text: 'What is the next number in the sequence: 2, 6, 12, 20, __?', options: ['28', '30', '32', '36'], correctAnswerIndex: 1 },
+                { category: 'math', text: 'Evaluate: (8 + 4) * 2 / 4', options: ['4', '6', '8', '12'], correctAnswerIndex: 1 },
+                { category: 'math', text: 'How many degrees are in a right angle?', options: ['45', '90', '180', '360'], correctAnswerIndex: 1 },
+                
+                // English
+                { category: 'english', text: 'Which word is a synonym for "Abundant"?', options: ['Scarce', 'Plentiful', 'Empty', 'Brief'], correctAnswerIndex: 1 },
+                { category: 'english', text: 'Identify the verb in the following sentence: "The quick brown fox jumps over the lazy dog."', options: ['quick', 'brown', 'jumps', 'lazy'], correctAnswerIndex: 2 },
+                { category: 'english', text: 'Choose the correct spelling:', options: ['Accomodate', 'Accommodate', 'Acommodate', 'Acomodate'], correctAnswerIndex: 1 },
+                { category: 'english', text: 'What is the antonym of "Expand"?', options: ['Grow', 'Increase', 'Shrink', 'Extend'], correctAnswerIndex: 2 },
+                { category: 'english', text: 'Which is the correct sentence?', options: ['Their going to the store.', 'There going to the store.', 'They\'re going to the store.', 'They going to the store.'], correctAnswerIndex: 2 },
+                { category: 'english', text: 'What does the idiom "Bite the bullet" mean?', options: ['To be angry', 'To endure a painful situation', 'To eat something hard', 'To shoot a gun'], correctAnswerIndex: 1 },
+                { category: 'english', text: 'Complete the sentence: "He is looking forward ___ you."', options: ['to see', 'to seeing', 'seeing', 'see'], correctAnswerIndex: 1 },
+                
+                // Current Affairs (General placeholders)
+                { category: 'current_affairs', text: 'Which organization is responsible for global health issues?', options: ['IMF', 'WTO', 'WHO', 'UNICEF'], correctAnswerIndex: 2 },
+                { category: 'current_affairs', text: 'What is the primary currency used in the European Union?', options: ['Dollar', 'Pound', 'Euro', 'Franc'], correctAnswerIndex: 2 },
+                { category: 'current_affairs', text: 'Which country is the largest emitter of carbon dioxide globally?', options: ['USA', 'India', 'China', 'Russia'], correctAnswerIndex: 2 },
+                { category: 'current_affairs', text: 'What is the capital of Ukraine?', options: ['Moscow', 'Minsk', 'Kyiv', 'Warsaw'], correctAnswerIndex: 2 },
+                { category: 'current_affairs', text: 'Which tech company produces the iPhone?', options: ['Microsoft', 'Google', 'Samsung', 'Apple'], correctAnswerIndex: 3 },
+                { category: 'current_affairs', text: 'What is the name of the central bank of India?', options: ['SBI', 'RBI', 'HDFC', 'ICICI'], correctAnswerIndex: 1 },
+                { category: 'current_affairs', text: 'BRICS is an intergovernmental organization comprising Brazil, Russia, India, China, and which other country?', options: ['South Korea', 'Saudi Arabia', 'South Africa', 'Spain'], correctAnswerIndex: 2 },
+                
+                // General Knowledge
+                { category: 'gk', text: 'What is the chemical symbol for Gold?', options: ['Go', 'Gd', 'Au', 'Ag'], correctAnswerIndex: 2 },
+                { category: 'gk', text: 'Who wrote the play "Romeo and Juliet"?', options: ['Charles Dickens', 'William Shakespeare', 'Mark Twain', 'Jane Austen'], correctAnswerIndex: 1 },
+                { category: 'gk', text: 'Which planet is known as the Red Planet?', options: ['Venus', 'Mars', 'Jupiter', 'Saturn'], correctAnswerIndex: 1 },
+                { category: 'gk', text: 'What is the largest ocean on Earth?', options: ['Atlantic Ocean', 'Indian Ocean', 'Arctic Ocean', 'Pacific Ocean'], correctAnswerIndex: 3 },
+                { category: 'gk', text: 'How many continents are there in the world?', options: ['5', '6', '7', '8'], correctAnswerIndex: 2 },
+                { category: 'gk', text: 'Who is known as the Father of the Indian Constitution?', options: ['Mahatma Gandhi', 'Jawaharlal Nehru', 'Dr. B.R. Ambedkar', 'Sardar Patel'], correctAnswerIndex: 2 },
+                { category: 'gk', text: 'What is the tallest mountain in the world?', options: ['K2', 'Mount Everest', 'Kangchenjunga', 'Lhotse'], correctAnswerIndex: 1 }
+            ];
+            await OnboardQuestion.bulkCreate(seedQuestions.map(q => ({ _id: generateId(), ...q })));
+            console.log('✅ Seeded questions successfully.');
+        }
+
     } catch (err) {
         console.error('❌ Database connection error:', err.message);
     }
@@ -452,5 +512,6 @@ module.exports = {
     Division,
     HQ,
     Asset,
-    TemplateHistory
+    TemplateHistory,
+    Question
 };

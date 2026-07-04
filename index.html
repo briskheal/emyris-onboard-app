@@ -217,6 +217,31 @@
                 </div>
             </div>
 
+            <!-- Rapid Test View -->
+            <div id="rapidTestView" class="view-section hidden">
+                <div class="dash-card" style="max-width: 800px; margin: 0 auto; width: 100%;">
+                    <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; background: var(--surface); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 15px;">
+                        <div>
+                            <h3 style="color: var(--primary-light); display: flex; align-items: center; gap: 8px;">🧠 Rapid Aptitude Assessment</h3>
+                            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Complete this assessment to unlock your onboarding profile.</p>
+                        </div>
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 15px; border-radius: 8px;">
+                            <span style="color: #ef4444; font-weight: bold; font-family: monospace; font-size: 1.2rem; letter-spacing: 2px;" id="rapidTestTimerDisplay">25:00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="dash-card-body">
+                        <div id="rapidTestQuestionsContainer" style="margin-bottom: 2rem;">
+                            <!-- Dynamically injected questions -->
+                        </div>
+                        
+                        <div style="text-align: right;">
+                            <button class="btn btn-primary" onclick="submitRapidTest()">Submit Assessment ✅</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- ===========================
                  APPLICANT ONBOARDING HUB
                  =========================== -->

@@ -416,6 +416,12 @@ function logoutApplicant() {
 
 function resumeApplication() {
     const app = currentApplicant;
+
+    if (!app.rapidTestCompleted) {
+        startRapidTest();
+        return;
+    }
+
     // Candidates can resume the form if they are in draft, registered, rejected, or onboarding status 
     // (unless an offer has already been issued/accepted)
     const canResumeForm = ['draft', 'registered', 'rejected', 'onboarding'].includes(app.status);
@@ -1507,4 +1513,101 @@ function openDisclaimerModal(e) {
 }
 function closeDisclaimerModal() {
     document.getElementById('disclaimerModal').classList.add('hidden');
+}
+
+// --- RAPID TEST LOGIC ---
+let rapidTestTimer;
+let rapidTestQuestions = [];
+let rapidTestAnswers = {};
+
+async function startRapidTest() {
+    try {
+        lockUI("Loading Rapid Assessment...");
+        const res = await fetch('/api/applicant/test-questions');
+        const data = await res.json();
+        if (data.success) {
+            rapidTestQuestions = data.questions;
+            rapidTestAnswers = {};
+            renderRapidTestUI();
+            updateView('rapidTestView');
+            startRapidTestTimer(25 * 60); // 25 minutes
+        } else {
+            showToast("Failed to load test.", "error");
+        }
+    } catch (e) {
+        showToast("Error loading test.", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+function startRapidTestTimer(seconds) {
+    const display = document.getElementById('rapidTestTimerDisplay');
+    if (!display) return;
+    
+    let timeLeft = seconds;
+    if (rapidTestTimer) clearInterval(rapidTestTimer);
+    rapidTestTimer = setInterval(() => {
+        timeLeft--;
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        display.innerText = `${m}:${s}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(rapidTestTimer);
+            showToast("Time's up! Auto-submitting...", "warning");
+            submitRapidTest();
+        }
+    }, 1000);
+}
+
+function renderRapidTestUI() {
+    const container = document.getElementById('rapidTestQuestionsContainer');
+    if (!container) return;
+    
+    let html = '';
+    rapidTestQuestions.forEach((q, idx) => {
+        html += `<div class="question-card" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">`;
+        html += `<h4 style="margin-bottom: 10px; color: #fff; font-size: 1rem;">Q${idx + 1}. ${q.text}</h4>`;
+        q.options.forEach((opt, optIdx) => {
+            html += `
+                <div style="margin-bottom: 8px;">
+                    <label style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
+                        <input type="radio" name="qt_${q._id}" value="${optIdx}" onchange="rapidTestAnswers['${q._id}'] = ${optIdx}">
+                        ${opt}
+                    </label>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    });
+    container.innerHTML = html;
+}
+
+async function submitRapidTest() {
+    if (rapidTestTimer) clearInterval(rapidTestTimer);
+    try {
+        lockUI("Evaluating answers...");
+        const res = await fetch('/api/applicant/submit-test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentApplicant.email, answers: rapidTestAnswers })
+        });
+        const data = await res.json();
+        unlockUI();
+        
+        if (data.success) {
+            currentApplicant.rapidTestCompleted = true;
+            currentApplicant.rapidTestScore = data.score;
+            
+            // Show score explicitly using native alert for simplicity, then route
+            alert(`Assessment Complete!\n\nYour Score: ${data.score} / 20\n\nThank you. You will now be forwarded to your onboarding dashboard.`);
+            resumeApplication(); 
+        } else {
+            showToast(data.error || "Failed to submit", "error");
+        }
+    } catch (e) {
+        showToast("Error submitting test", "error");
+        unlockUI();
+    }
 }
