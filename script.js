@@ -1419,12 +1419,43 @@ async function downloadCandidateDossier() {
     showToast("Profile Downloaded successfully!");
 }
 
+let consentGiven = false;
+
+function showConsentModal() {
+    const form = document.getElementById('onboardingForm');
+    if (!form.reportValidity()) return;
+    
+    if (!document.getElementById('agree').checked) {
+        showToast("Please agree to the initial declaration first.", "warning");
+        return;
+    }
+    document.getElementById('consentModal').classList.remove('hidden');
+}
+
+function closeConsentModal() {
+    document.getElementById('consentModal').classList.add('hidden');
+}
+
+function acceptConsentAndSubmit() {
+    consentGiven = true;
+    closeConsentModal();
+    document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+}
+
 document.getElementById('onboardingForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!document.getElementById('agree').checked) {
         showToast("Please agree to the declaration.", "warning");
         return;
     }
+    if (!consentGiven) {
+        showToast("Security Check: You must accept the Data Privacy Consent before submitting.", "error");
+        showConsentModal();
+        return;
+    }
+    
+    // Clear flag for future re-submissions if necessary
+    consentGiven = false;
 
     // 1. Mandatory Document Validation
     const docs = currentApplicant.documents || [];

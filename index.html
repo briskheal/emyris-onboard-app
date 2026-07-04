@@ -627,7 +627,7 @@
                     </div>
                     <div class="nav-buttons">
                         <button type="button" class="btn btn-secondary" onclick="prevStep(5)">Edit Data</button>
-                        <button type="submit" class="btn btn-primary">Finalize Submission 🚀</button>
+                        <button type="button" class="btn btn-primary" onclick="showConsentModal()">Finalize Submission 🚀</button>
                     </div>
                 </section>
             </form>
@@ -723,6 +723,41 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- Mandatory Consent Modal -->
+    <div id="consentModal" class="modal-overlay hidden" style="z-index: 9999;">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Data Privacy & Security Consent</h3>
+                <button type="button" class="close-btn" onclick="closeConsentModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="line-height: 1.6; color: var(--text-secondary); max-height: 60vh; overflow-y: auto;">
+                <p>Before finalizing your submission, you must read and explicitly consent to our data handling practices.</p>
+                
+                <h4 style="color: white; margin-top: 1rem;">1. Purpose of Collection</h4>
+                <p>Your highly sensitive information (PAN, Aadhaar, Cheque details) is collected strictly for legitimate employment record creation, EPF/ESI statutory compliance, salary processing, and mandatory background verification.</p>
+
+                <h4 style="color: white; margin-top: 1rem;">2. Enterprise-Grade Protection</h4>
+                <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
+                    <li style="margin-bottom: 0.5rem;"><strong>End-to-End Encryption:</strong> All uploaded documents are strictly encrypted in transit and securely preserved within the private Emyris Server architecture.</li>
+                    <li style="margin-bottom: 0.5rem;"><strong>Role-Based Access Control (RBAC):</strong> Access to your sensitive documents is strictly restricted to fully authorized internal HR administrators.</li>
+                </ul>
+
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 1rem; border-radius: 8px; margin: 1.5rem 0;">
+                    <h4 style="color: #10b981; margin: 0 0 0.5rem 0;">🛡️ Zero Third-Party Misuse Guarantee</h4>
+                    <p style="margin: 0; font-size: 0.95rem;">We guarantee that your sensitive identity documents will <strong>never</strong> be sold, rented, or shared with any unauthorized third-party agencies.</p>
+                </div>
+
+                <p style="margin-top: 1rem; font-weight: bold; color: var(--accent);">By clicking "I Accept & Submit" below, you explicitly consent to the processing of your data under these strict security protocols.</p>
+            </div>
+            <div class="modal-footer" style="justify-content: flex-end; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeConsentModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="acceptConsentAndSubmit()">I Accept & Submit</button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
