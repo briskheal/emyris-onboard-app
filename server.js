@@ -95,64 +95,8 @@ function resolveTemplate(template, data) {
 
 // Startup logic
 async function initializeApp() {
-    console.log('🚀 Server starting - Shared PostgreSQL Clean Slate protocol active.');
+    console.log('🚀 Server starting - Shared PostgreSQL Clean Slate protocol active (NO MONGODB IMPORT).');
     await syncDatabase();
-    async function autoRestoreData() {
-        try {
-            const count = await Applicant.countDocuments();
-            if (count === 0 && fs.existsSync('./initial_hostycare_seed.json')) {
-                console.log('📦 Empty PostgreSQL database detected! Automatically restoring all 26 applicants and their assets...');
-                const raw = fs.readFileSync('./initial_hostycare_seed.json', 'utf8');
-                const data = JSON.parse(raw);
-                
-                // Restore Assets first so references work
-                if (data.assets && data.assets.length > 0) {
-                    console.log(`Restoring ${data.assets.length} assets...`);
-                    for (const a of data.assets) {
-                        delete a.__v;
-                        if (a._id && typeof a._id === 'object') a._id = a._id.$oid || a._id.toString();
-                        const existingAsset = await Asset.findById(a._id);
-                        if (!existingAsset) await Asset.create(a);
-                    }
-                }
-
-                const apps = data.applicants || [];
-                for (const app of apps) {
-                    delete app.__v;
-                    if (app._id && typeof app._id === 'object') app._id = app._id.$oid || app._id.toString();
-                    const existing = await Applicant.findOne({ email: app.email });
-                    if (!existing) await Applicant.create(app);
-                }
-                if (data.companies && data.companies.length > 0) {
-                    const comp = data.companies[0];
-                    delete comp.__v;
-                    if (comp._id && typeof comp._id === 'object') comp._id = comp._id.$oid || comp._id.toString();
-                    const existingComp = await Company.findOne({});
-                    if (!existingComp) await Company.create(comp);
-                }
-                if (data.divisions && data.divisions.length > 0) {
-                    for (const d of data.divisions) {
-                        delete d.__v;
-                        if (d._id && typeof d._id === 'object') d._id = d._id.$oid || d._id.toString();
-                        const exist = await Division.findOne({ name: d.name });
-                        if (!exist && d.name) await Division.create(d);
-                    }
-                }
-                if (data.hqs && data.hqs.length > 0) {
-                    for (const h of data.hqs) {
-                        delete h.__v;
-                        if (h._id && typeof h._id === 'object') h._id = h._id.$oid || h._id.toString();
-                        const exist = await HQ.findOne({ name: h.name });
-                        if (!exist && h.name) await HQ.create(h);
-                    }
-                }
-                console.log('🎉 Successfully auto-restored all applicants and assets into Hostycare PostgreSQL!');
-            }
-        } catch (e) {
-            console.error('Auto-restore warning:', e.message);
-        }
-    }
-    await autoRestoreData();
     await seedData();
 }
 
@@ -2051,6 +1995,37 @@ app.post('/api/admin/clean-duplicates', async (req, res) => {
         res.json({ success: true, cleanedCount });
     } catch (e) {
         console.error("Clean duplicates error:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.post('/api/admin/wipe-database', async (req, res) => {
+    try {
+        console.log("💥 [WIPE-DB] Wiping 100% of applicants, assets, and uploaded files for a fresh start...");
+        if (Applicant.destroy) {
+            await Applicant.destroy({ where: {}, truncate: true }).catch(() => {});
+            await Asset.destroy({ where: {}, truncate: true }).catch(() => {});
+            await TemplateHistory.destroy({ where: {}, truncate: true }).catch(() => {});
+        } else {
+            await Applicant.deleteMany({});
+            await Asset.deleteMany({});
+            await TemplateHistory.deleteMany({});
+        }
+
+        // Wipe /uploads/ folder
+        const uploadsDir = path.join(__dirname, 'uploads');
+        if (fs.existsSync(uploadsDir)) {
+            const files = fs.readdirSync(uploadsDir);
+            for (const file of files) {
+                if (file !== '.gitkeep' && file !== 'README.md') {
+                    try { fs.unlinkSync(path.join(uploadsDir, file)); } catch (e) {}
+                }
+            }
+        }
+        console.log("✅ [WIPE-DB] Database and uploads directory 100% wiped!");
+        res.json({ success: true, message: "Entire database and uploaded files 100% wiped! Starting fresh!" });
+    } catch (e) {
+        console.error("Wipe DB Error:", e);
         res.status(500).json({ success: false, error: e.message });
     }
 });

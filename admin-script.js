@@ -687,6 +687,26 @@ async function restoreLegacyVpsDb() {
     }
 }
 
+async function wipeEntireDatabase() {
+    if (!confirm("⚠️ WARNING: This will delete 100% of applicants, uploaded documents, and stored files from your live VPS database to start completely fresh! Are you absolutely sure?")) return;
+    if (!confirm("💥 FINAL CONFIRMATION: Wipe all applicant data and start 100% fresh with NO MongoDB imports?")) return;
+    try {
+        lockUI("💥 Wiping entire database and cleaning file system... Please wait...");
+        const res = await fetch('/api/admin/wipe-database', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+            showToast(`🎉 ${data.message}`);
+            setTimeout(() => location.reload(), 2000);
+        } else {
+            showToast(data.error || "Failed to wipe database", "error");
+        }
+    } catch (e) {
+        showToast("Error wiping database", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
 async function initializeApp() {
     console.log('🚀 Emyris App initialized v1.3');
     await fetchCompanyData();

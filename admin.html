@@ -369,7 +369,8 @@
                             <h3>Company Profile Management</h3>
                             <p>Global branding settings for the onboarding portal</p>
                         </div>
-                        <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-outline btn-sm" style="border-color: #ef4444; color: #ef4444; font-weight: 700; background: rgba(239, 68, 68, 0.1);" onclick="wipeEntireDatabase()">💥 Wipe Database (100% Fresh)</button>
                             <button class="btn btn-outline btn-sm" style="border-color: #f59e0b; color: #f59e0b; font-weight: 600;" onclick="cleanAllDuplicates()">🧹 Clean Duplicates</button>
                             <button class="btn btn-outline btn-sm" style="border-color: #10b981; color: #10b981; font-weight: 600;" onclick="restoreLegacyVpsDb()">🚀 Restore Old DB to VPS</button>
                             <button class="btn btn-outline btn-sm logout-btn" onclick="logoutAdmin()">Logout</button>
