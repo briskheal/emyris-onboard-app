@@ -582,12 +582,13 @@ app.get('/api/applicant/test-questions', async (req, res) => {
             selected.push(...shuffled.slice(0, 5));
         });
         
-        // Strip correct answer before sending
+        // Send correctAnswerIndex for educational real-time feedback
         const safeQuestions = selected.map(q => ({
             _id: q._id,
             category: q.category,
             text: q.text,
-            options: q.options
+            options: q.options,
+            correctAnswerIndex: q.correctAnswerIndex
         }));
         
         // Shuffle the final 20 questions so they aren't grouped by category

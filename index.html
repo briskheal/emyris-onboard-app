@@ -219,14 +219,16 @@
 
             <!-- Rapid Test View -->
             <div id="rapidTestView" class="view-section hidden">
-                <div class="dash-card" style="max-width: 800px; margin: 0 auto; width: 100%;">
-                    <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; background: var(--surface); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 15px;">
+                <!-- Sticky / Floating Timer Badge -->
+                <div id="floatingRapidTimer" style="position: fixed; top: 20px; right: 25px; z-index: 99999; background: rgba(15, 23, 42, 0.95); border: 2px solid #ef4444; padding: 10px 22px; border-radius: 50px; box-shadow: 0 8px 30px rgba(239, 68, 68, 0.45); backdrop-filter: blur(12px); display: flex; align-items: center; gap: 10px; pointer-events: none; transition: all 0.3s ease;">
+                    <span style="font-size: 1.3rem;">⏱️</span>
+                    <span style="color: #ef4444; font-weight: 800; font-family: monospace; font-size: 1.4rem; letter-spacing: 2px;" id="rapidTestTimerDisplay">25:00</span>
+                </div>
+                <div class="dash-card" style="max-width: 800px; margin: 0 auto; width: 100%; position: relative;">
+                    <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; background: var(--surface); border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; margin-bottom: 15px;">
                         <div>
                             <h3 style="color: var(--primary-light); display: flex; align-items: center; gap: 8px;">🧠 Rapid Aptitude Assessment</h3>
                             <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0;">Complete this assessment to unlock your onboarding profile.</p>
-                        </div>
-                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 15px; border-radius: 8px;">
-                            <span style="color: #ef4444; font-weight: bold; font-family: monospace; font-size: 1.2rem; letter-spacing: 2px;" id="rapidTestTimerDisplay">25:00</span>
                         </div>
                     </div>
                     

@@ -1567,21 +1567,63 @@ function renderRapidTestUI() {
     
     let html = '';
     rapidTestQuestions.forEach((q, idx) => {
-        html += `<div class="question-card" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">`;
-        html += `<h4 style="margin-bottom: 10px; color: #fff; font-size: 1rem;">Q${idx + 1}. ${q.text}</h4>`;
+        html += `<div class="question-card" id="qcard_${q._id}" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.25); padding: 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s ease;">`;
+        html += `<h4 style="margin-bottom: 12px; color: #fff; font-size: 1.05rem; line-height: 1.4;">Q${idx + 1}. ${q.text}</h4>`;
+        html += `<div id="qoptions_${q._id}">`;
         q.options.forEach((opt, optIdx) => {
             html += `
-                <div style="margin-bottom: 8px;">
-                    <label style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; font-size: 0.95rem;">
-                        <input type="radio" name="qt_${q._id}" value="${optIdx}" onchange="rapidTestAnswers['${q._id}'] = ${optIdx}">
-                        ${opt}
+                <div id="optbox_${q._id}_${optIdx}" style="margin-bottom: 8px; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); transition: all 0.2s ease;">
+                    <label style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 0.95rem; margin: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="radio" name="qt_${q._id}" value="${optIdx}" style="accent-color: var(--primary);" onchange="selectRapidAnswer('${q._id}', ${optIdx}, ${q.correctAnswerIndex})">
+                            <span>${opt}</span>
+                        </div>
+                        <span id="optbadge_${q._id}_${optIdx}" style="font-weight: 700; font-size: 0.85rem;"></span>
                     </label>
                 </div>
             `;
         });
-        html += `</div>`;
+        html += `</div></div>`;
     });
     container.innerHTML = html;
+}
+
+function selectRapidAnswer(qId, selectedIdx, correctIdx) {
+    rapidTestAnswers[qId] = selectedIdx;
+    
+    // Provide immediate educational feedback
+    const card = document.getElementById(`qcard_${qId}`);
+    if (card) {
+        card.style.borderColor = selectedIdx === correctIdx ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+    }
+
+    const optionsContainer = document.getElementById(`qoptions_${qId}`);
+    if (!optionsContainer) return;
+
+    // Reset and style options
+    const optionBoxes = optionsContainer.querySelectorAll('[id^="optbox_"]');
+    optionBoxes.forEach((box, idx) => {
+        const badge = document.getElementById(`optbadge_${qId}_${idx}`);
+        if (idx === correctIdx) {
+            // Correct answer
+            box.style.background = 'rgba(34, 197, 94, 0.15)';
+            box.style.borderColor = 'rgba(34, 197, 94, 0.6)';
+            box.style.color = '#4ade80';
+            if (badge) badge.innerHTML = '✅ Correct Answer';
+        } else if (idx === selectedIdx && selectedIdx !== correctIdx) {
+            // Selected wrong answer
+            box.style.background = 'rgba(239, 68, 68, 0.15)';
+            box.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+            box.style.color = '#f87171';
+            if (badge) badge.innerHTML = '❌ Incorrect';
+        } else {
+            // Unselected wrong answer
+            box.style.background = 'rgba(255,255,255,0.02)';
+            box.style.borderColor = 'rgba(255,255,255,0.06)';
+            box.style.color = 'var(--text-secondary)';
+            if (badge) badge.innerHTML = '';
+        }
+    });
 }
 
 async function submitRapidTest() {
