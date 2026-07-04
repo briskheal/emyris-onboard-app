@@ -269,6 +269,10 @@ function buildWhere(query) {
     if (!query || typeof query !== 'object') return {};
     const where = {};
     for (const [key, value] of Object.entries(query)) {
+        if (key === '$or') {
+            where[Op.or] = value.map(cond => buildWhere(cond));
+            continue;
+        }
         if (value === undefined) continue;
         if (key === '_id') {
             if (value && typeof value === 'object') {

@@ -984,12 +984,22 @@ app.get('/api/admin/applicants', async (req, res) => {
             const m = parseInt(month);
             const startDate = new Date(y, m, 1);
             const endDate = new Date(y, m + 1, 1);
-            query = { registeredAt: { $gte: startDate, $lt: endDate } };
+            query = { 
+                $or: [
+                    { submittedAt: { $gte: startDate, $lt: endDate } },
+                    { registeredAt: { $gte: startDate, $lt: endDate }, submittedAt: null }
+                ] 
+            };
         } else if (year && year !== 'all') {
             const y = parseInt(year);
             const startDate = new Date(y, 0, 1);
             const endDate = new Date(y + 1, 0, 1);
-            query = { registeredAt: { $gte: startDate, $lt: endDate } };
+            query = { 
+                $or: [
+                    { submittedAt: { $gte: startDate, $lt: endDate } },
+                    { registeredAt: { $gte: startDate, $lt: endDate }, submittedAt: null }
+                ] 
+            };
         }
 
         // Optimization: Exclude Large Document Data from the Main List
