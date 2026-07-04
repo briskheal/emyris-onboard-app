@@ -1262,7 +1262,11 @@ app.post('/api/admin/delete-document', async (req, res) => {
         const applicant = await Applicant.findOne({ email });
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
         
-        applicant.documents = applicant.documents.filter(d => String(d.assetId) !== String(assetId));
+        const targetId = String(assetId).trim();
+        applicant.documents = (applicant.documents || []).filter(d => {
+            const dId = String(d.assetId || d._id || d.id || '').trim();
+            return dId !== targetId;
+        });
         if (typeof applicant.markModified === 'function') applicant.markModified('documents');
         await applicant.save();
 
@@ -2020,41 +2024,118 @@ app.get('/api/admin/asset-library', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Failed to fetch library' }); }
 });
 
-// --- ASSET MIGRATION TRIGGER (From MongoDB to PostgreSQL) ---
-app.get('/api/admin/trigger-migration', async (req, res) => {
+// --- DEDUPLICATION & LEGACY VPS RESTORATION ENDPOINTS ---
+app.post('/api/admin/clean-duplicates', async (req, res) => {
     try {
-        const { MongoClient } = require('mongodb');
-        const MONGODB_URI = "mongodb+srv://impdaysaap:RPykhDyaiPDFwSJi@cluster0.cquys3i.mongodb.net/emyris_db_assets?appName=Cluster0";
-        
-        let mongoClient = new MongoClient(MONGODB_URI);
-        await mongoClient.connect();
-        
-        const db = mongoClient.db('emyris_db_assets');
-        const assetsCollection = db.collection('assets');
-        
-        const cursor = assetsCollection.find({});
-        let migratedCount = 0;
-        
-        for await (const asset of cursor) {
-            const assetId = asset._id.toString();
-            const existing = await Asset.findById(assetId);
-            if (!existing) {
-                await Asset.create({
-                    _id: assetId,
-                    category: asset.category,
-                    name: asset.name,
-                    data: asset.data,
-                    active: asset.active,
-                    uploadedAt: asset.uploadedAt ? new Date(asset.uploadedAt) : new Date()
-                });
-                migratedCount++;
+        const apps = await Applicant.find({});
+        let cleanedCount = 0;
+        for (const a of apps) {
+            if (!a.documents || !Array.isArray(a.documents)) continue;
+            const seenCategories = new Set();
+            const uniqueDocs = [];
+            let modified = false;
+            for (const doc of a.documents) {
+                if (!seenCategories.has(doc.category)) {
+                    seenCategories.add(doc.category);
+                    uniqueDocs.push(doc);
+                } else {
+                    modified = true;
+                }
+            }
+            if (modified) {
+                a.documents = uniqueDocs;
+                await a.save();
+                cleanedCount++;
             }
         }
-        await mongoClient.close();
-        res.json({ success: true, migratedCount });
+        res.json({ success: true, cleanedCount });
+    } catch (e) {
+        console.error("Clean duplicates error:", e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
+app.post('/api/admin/restore-legacy-db', async (req, res) => {
+    try {
+        console.log("🚀 [VPS-RESTORE] Starting full legacy restoration on live VPS database...");
+        let restoredApps = 0;
+        let restoredAssets = 0;
+
+        // 1. Restore metadata from mongodb_backup_full.json
+        const backupPath = path.join(__dirname, 'mongodb_backup_full.json');
+        if (fs.existsSync(backupPath)) {
+            const raw = fs.readFileSync(backupPath, 'utf8');
+            const data = JSON.parse(raw);
+            const apps = data.applicants || [];
+            for (const app of apps) {
+                delete app.__v;
+                if (app._id && typeof app._id === 'object') app._id = app._id.$oid || app._id.toString();
+                const existing = await Applicant.findOne({ email: app.email });
+                if (existing) {
+                    await existing.update(app);
+                } else {
+                    await Applicant.create(app);
+                }
+                restoredApps++;
+            }
+            if (data.companies && data.companies.length > 0) {
+                const comp = data.companies[0];
+                delete comp.__v;
+                if (comp._id && typeof comp._id === 'object') comp._id = comp._id.$oid || comp._id.toString();
+                const existing = await Company.findOne({});
+                if (existing) await existing.update(comp);
+                else await Company.create(comp);
+            }
+            if (data.divisions && data.divisions.length > 0) {
+                for (const d of data.divisions) {
+                    delete d.__v;
+                    if (d._id && typeof d._id === 'object') d._id = d._id.$oid || d._id.toString();
+                    const existing = await Division.findOne({ name: d.name });
+                    if (!existing && d.name) await Division.create(d);
+                }
+            }
+            if (data.hqs && data.hqs.length > 0) {
+                for (const h of data.hqs) {
+                    delete h.__v;
+                    if (h._id && typeof h._id === 'object') h._id = h._id.$oid || h._id.toString();
+                    const existing = await HQ.findOne({ name: h.name });
+                    if (!existing && h.name) await HQ.create(h);
+                }
+            }
+        }
+
+        // 2. Restore heavy assets from MongoDB
+        try {
+            const { MongoClient } = require('mongodb');
+            const MONGODB_URI = "mongodb://impdaysaap:RPykhDyaiPDFwSJi@ac-4mjmqyy-shard-00-00.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-01.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-02.cquys3i.mongodb.net:27017/emyris_db_assets?ssl=true&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
+            let mongoClient = new MongoClient(MONGODB_URI);
+            await mongoClient.connect();
+            const db = mongoClient.db('emyris_db_assets');
+            const cursor = db.collection('assets').find({});
+            for await (const asset of cursor) {
+                const assetId = asset._id.toString();
+                const existing = await Asset.findById(assetId);
+                if (!existing) {
+                    await Asset.create({
+                        _id: assetId,
+                        category: asset.category,
+                        name: asset.name,
+                        data: asset.data,
+                        active: asset.active,
+                        uploadedAt: asset.uploadedAt ? new Date(asset.uploadedAt) : new Date()
+                    });
+                    restoredAssets++;
+                }
+            }
+            await mongoClient.close();
+        } catch (mongoErr) {
+            console.error("Mongo Asset Restore Error:", mongoErr.message);
+        }
+
+        res.json({ success: true, message: `Restored ${restoredApps} applicants and ${restoredAssets} assets!` });
     } catch (err) {
-        console.error("Migration Route Error:", err);
-        res.status(500).json({ error: err.message });
+        console.error("Restore Legacy DB Error:", err);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -2329,9 +2410,11 @@ app.post('/api/applicant/delete-document', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Not found' });
 
         // 1. Remove from Document Array
-        applicant.documents = applicant.documents.filter(d => 
-            d.assetId.toString() !== assetId
-        );
+        const targetId = String(assetId || '').trim();
+        applicant.documents = (applicant.documents || []).filter(d => {
+            const dId = String(d.assetId || d._id || d.id || '').trim();
+            return dId !== targetId;
+        });
 
         // 2. Delete from Asset DB or Local File System
         if (assetId.startsWith('/uploads/') || assetId.startsWith('/api/admin/uploads/')) {
