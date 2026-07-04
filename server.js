@@ -1266,10 +1266,18 @@ app.post('/api/admin/delete-document', async (req, res) => {
         if (typeof applicant.markModified === 'function') applicant.markModified('documents');
         await applicant.save();
 
-        if (Asset.findByIdAndDelete) {
-            await Asset.findByIdAndDelete(assetId);
+        if (assetId.startsWith('/uploads/') || assetId.startsWith('/api/admin/uploads/')) {
+            const filename = assetId.split('/').pop();
+            const filePath = path.join(__dirname, 'uploads', filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
         } else {
-            await Asset.destroy({ where: { _id: assetId } });
+            if (Asset.findByIdAndDelete) {
+                await Asset.findByIdAndDelete(assetId).catch(() => {});
+            } else {
+                await Asset.destroy({ where: { _id: assetId } }).catch(() => {});
+            }
         }
 
         res.json({ success: true });
@@ -2325,9 +2333,15 @@ app.post('/api/applicant/delete-document', async (req, res) => {
             d.assetId.toString() !== assetId
         );
 
-        // 2. Delete from Asset DB
-        if (connAssets) {
-            await Asset.findByIdAndDelete(assetId);
+        // 2. Delete from Asset DB or Local File System
+        if (assetId.startsWith('/uploads/') || assetId.startsWith('/api/admin/uploads/')) {
+            const filename = assetId.split('/').pop();
+            const filePath = path.join(__dirname, 'uploads', filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        } else if (connAssets) {
+            await Asset.findByIdAndDelete(assetId).catch(() => {});
         }
 
         // 3. Reset verification for this category if it was the last file? 
