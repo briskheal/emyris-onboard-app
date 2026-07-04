@@ -4083,8 +4083,10 @@ async function viewDocument(idOrData) {
     
     // Clear and write final content
     win.document.open();
-    if (finalData.startsWith('data:image')) {
-        win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${finalData}" style="max-width:100%; height:auto;"></body></html>`);
+    if (finalData.startsWith('data:image') || finalData.startsWith('data:application/octet-stream')) {
+        // Force octet-stream to be treated as a jpeg image so the browser will render it instead of trying to download it in an iframe
+        const safeData = finalData.replace('data:application/octet-stream', 'data:image/jpeg');
+        win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${safeData}" style="max-width:100%; height:auto;"></body></html>`);
     } else {
         win.document.write(`<html><head><title>View Document</title></head><body style="margin:0;"><iframe src="${finalData}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe></body></html>`);
     }
