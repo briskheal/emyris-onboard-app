@@ -180,6 +180,12 @@ function updateView(viewId) {
         } else {
             document.body.classList.remove('admin-mode');
         }
+
+        // Toggle root-level floating rapid timer
+        const rapidTimer = document.getElementById('floatingRapidTimer');
+        if (rapidTimer) {
+            rapidTimer.style.display = (viewId === 'rapidTestView') ? 'flex' : 'none';
+        }
     }
 }
 
