@@ -1284,24 +1284,49 @@ app.get('/api/admin/hqs', async (req, res) => {
 // Admin - DB Statistics
 app.get('/api/admin/db-stats', async (req, res) => {
     try {
-        // Calculate database size by summing all tables in the public schema (bypasses restrictive superuser permissions on hosted DBs)
+        // Calculate database size by summing all tables in the public schema
         const [results] = await sequelize.query("SELECT sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::bigint as size FROM pg_tables WHERE schemaname = 'public'");
         const totalUsed = parseInt(results[0].size || '0', 10);
-        const totalStorageUsed = totalUsed;
+        
+        // Calculate size of uploaded files in /uploads directory
+        let uploadsSize = 0;
+        try {
+            const uploadsDir = path.join(__dirname, 'uploads');
+            if (fs.existsSync(uploadsDir)) {
+                const files = fs.readdirSync(uploadsDir);
+                for (const file of files) {
+                    try {
+                        const st = fs.statSync(path.join(uploadsDir, file));
+                        uploadsSize += st.size;
+                    } catch (e) {}
+                }
+            }
+        } catch (e) {}
 
-        // PostgreSQL standard deployment baseline for UI visualization (1GB)
-        const LIMIT = 1024 * 1024 * 1024;
+        const totalStorageUsed = totalUsed + uploadsSize;
+
+        // Query real server hard drive capacity using Node.js fs.statfsSync
+        let diskTotal = 1024 * 1024 * 1024; // fallback 1GB
+        let diskFree = 0;
+        try {
+            if (typeof fs.statfsSync === 'function') {
+                const st = fs.statfsSync(__dirname);
+                diskTotal = st.blocks * st.bsize;
+                diskFree = st.bavail * st.bsize;
+            }
+        } catch (e) {}
 
         res.json({
             success: true,
             main: { used: totalUsed, storage: totalStorageUsed, objects: 0 },
-            assets: { used: 0, storage: 0, objects: 0 },
+            assets: { used: uploadsSize, storage: uploadsSize, objects: 0 },
             summary: {
-                totalUsedBytes: totalUsed,
+                totalUsedBytes: totalStorageUsed,
                 totalStorageUsedBytes: totalStorageUsed,
-                limitBytes: LIMIT,
-                usedPercentage: ((totalStorageUsed / LIMIT) * 100).toFixed(2),
-                leftPercentage: (100 - (totalStorageUsed / LIMIT) * 100).toFixed(2)
+                limitBytes: diskTotal,
+                diskFreeBytes: diskFree,
+                usedPercentage: ((totalStorageUsed / diskTotal) * 100).toFixed(2),
+                leftPercentage: ((diskFree / diskTotal) * 100).toFixed(2)
             }
         });
     } catch (error) {

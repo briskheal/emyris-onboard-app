@@ -67,9 +67,22 @@ async function fetchDatabaseStats() {
             const bar = document.getElementById('storage_perc_bar');
             const percText = document.getElementById('storage_perc_text');
             const usedText = document.getElementById('storage_used_text');
-            if (bar) bar.style.width = summary.usedPercentage + '%';
+            const totalText = document.getElementById('storage_total_text');
+            
+            if (bar) bar.style.width = Math.min(summary.usedPercentage, 100) + '%';
             if (percText) percText.innerText = summary.usedPercentage + '% Used';
             if (usedText) usedText.innerText = usedMB + ' MB';
+            
+            if (totalText) {
+                if (summary.limitBytes && summary.diskFreeBytes !== undefined) {
+                    const totalGB = (summary.limitBytes / (1024 * 1024 * 1024)).toFixed(1);
+                    const freeGB = (summary.diskFreeBytes / (1024 * 1024 * 1024)).toFixed(1);
+                    totalText.innerText = 'Total Server Disk: ' + totalGB + ' GB (' + freeGB + ' GB Free)';
+                } else {
+                    totalText.innerText = 'Total Baseline: 1.0 GB';
+                }
+            }
+
             if (summary.usedPercentage > 85) bar.style.background = 'linear-gradient(90deg, #ef4444, #b91c1c)';
             else if (summary.usedPercentage > 60) bar.style.background = 'linear-gradient(90deg, #f59e0b, #d97706)';
         }
