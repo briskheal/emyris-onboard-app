@@ -865,7 +865,7 @@ function attachApplicantFileListener(inputId, category) {
             activeUploads++;
             document.getElementById('globalUploadStatus').classList.add('show');
 
-            const isImage = file.type.startsWith('image/');
+            const isImage = file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.jfif');
             const fileData = isImage ? await compressAndResize(file) : await new Promise(r => {
                 const reader = new FileReader();
                 reader.onload = (ev) => r(ev.target.result);
