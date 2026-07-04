@@ -618,9 +618,7 @@ app.post('/api/applicant/submit-test', async (req, res) => {
             }
         }
         
-        applicant.rapidTestScore = score;
-        applicant.rapidTestCompleted = true;
-        await applicant.save();
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { rapidTestScore: score, rapidTestCompleted: true } });
         
         res.json({ success: true, score });
     } catch (e) {
@@ -658,8 +656,7 @@ app.put('/api/admin/questions/:id', async (req, res) => {
         const question = await Question.findById(req.params.id);
         if (!question) return res.status(404).json({ error: 'Not found' });
         
-        Object.assign(question, req.body);
-        await question.save();
+        await Question.updateOne({ _id: question._id }, { $set: req.body });
         res.json({ success: true });
     } catch (e) {
         console.error('Update Question Error:', e);
@@ -882,7 +879,7 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
         const dobObj = parseDMY(dob);
 
         // Construct the fast-tracked profile directly into 'approved' state
-        const newStaff = new Applicant({
+        await Applicant.create({
             fullName,
             email,
             phone,
@@ -917,7 +914,6 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             }
         });
 
-        await newStaff.save();
         console.log(`Γ£à [FAST-TRACK] Added existing staff member: ${email} (${fullName})`);
         res.status(200).json({ success: true, message: 'Existing staff added successfully.' });
 
@@ -1001,7 +997,7 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
                 const joinDateObj = parseDMY(joinDate) || new Date(joinDate);
                 const dobObj = parseDMY(dob) || new Date(dob);
 
-                const newStaff = new Applicant({
+                await Applicant.create({
                     fullName, email, phone,
                     password: 'EXISTING_STAFF_NO_PIN',
                     status: 'approved',
@@ -1026,7 +1022,6 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
                     tasks: { offerLetter: true, appointmentLetter: false, appLinkSent: false, loginDetailsSent: false }
                 });
 
-                await newStaff.save();
                 results.success++;
             } catch (err) {
                 results.failed++;
@@ -1207,12 +1202,11 @@ app.post('/api/admin/delete-document', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
         
         const targetId = String(assetId).trim();
-        applicant.documents = (applicant.documents || []).filter(d => {
+        const updatedDocs = (applicant.documents || []).filter(d => {
             const dId = String(d.assetId || d._id || d.id || '').trim();
             return dId !== targetId;
         });
-        if (typeof applicant.markModified === 'function') applicant.markModified('documents');
-        await applicant.save();
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
         if (assetId.startsWith('/uploads/') || assetId.startsWith('/api/admin/uploads/')) {
             const filename = assetId.split('/').pop();
@@ -1244,10 +1238,9 @@ app.post('/api/admin/reject-document', async (req, res) => {
         // Unlock login so they can fix it
         applicant.canLogin = true;
         // Optionally mark the specific doc as rejected in verificationChecks
-        if (!applicant.verificationChecks) applicant.verificationChecks = {};
-        applicant.verificationChecks[docCategory] = 'rejected';
-        applicant.markModified('verificationChecks');
-        await applicant.save();
+        const checks = { ...(applicant.verificationChecks || {}) };
+        checks[docCategory] = 'rejected';
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { canLogin: true, verificationChecks: checks } });
 
         // Notify Applicant
         await sendEmail({
@@ -1334,8 +1327,7 @@ app.post('/api/admin/divisions', async (req, res) => {
         const existing = await Division.findOne({ name: cleanName });
         
         if (existing) {
-            existing.active = true;
-            await existing.save();
+            await Division.updateOne({ _id: existing._id }, { $set: { active: true } });
         } else {
             await Division.create({ name: cleanName });
         }
@@ -1351,8 +1343,7 @@ app.post('/api/admin/hqs', async (req, res) => {
         const { name } = req.body;
         const existing = await HQ.findOne({ name: name.toUpperCase().trim() });
         if (existing) {
-            existing.active = true;
-            await existing.save();
+            await HQ.updateOne({ _id: existing._id }, { $set: { active: true } });
         } else {
             await HQ.create({ name: name.toUpperCase().trim() });
         }
@@ -1461,8 +1452,7 @@ app.post('/api/admin/save-template', async (req, res) => {
         let company = await Company.findOne();
         if (!company) company = await Company.create(update);
         else {
-            Object.assign(company, update);
-            await company.save();
+            await Company.updateOne({ _id: company._id }, { $set: update });
         }
 
         res.json({ success: true, message: 'Template saved successfully' });
@@ -1637,11 +1627,7 @@ app.post('/api/admin/verify-and-activate', async (req, res) => {
             return res.status(400).json({ error: 'Incomplete Assignment. Please set Division, Reporting Manager and Salary Breakup before activating.' });
         }
 
-        applicant.status = 'approved';
-        applicant.approvedAt = new Date();
-        applicant.verificationChecks = verificationChecks;
-        applicant.canLogin = true; // Automatically grant access upon verification/activation
-        await applicant.save();
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { status: 'approved', approvedAt: new Date(), verificationChecks, canLogin: true } });
 
         // Trigger Congratulation Message
         await sendEmail({
@@ -1778,10 +1764,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
         const company = await Company.findOne() || { name: 'Company' };
         if (!applicant) return res.status(404).json({ error: 'Not found' });
 
-        applicant.offerAccepted = true;
-        applicant.offerAcceptedAt = new Date();
-        applicant.actualJoiningDate = actualJoiningDate; // Store as string
-        await applicant.save();
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, offerAcceptedAt: new Date(), actualJoiningDate } });
 
         // 1. Congratulate Applicant
         await sendEmail({
@@ -1987,8 +1970,7 @@ app.post('/api/admin/clean-duplicates', async (req, res) => {
                 }
             }
             if (modified) {
-                a.documents = uniqueDocs;
-                await a.save();
+                await Applicant.updateOne({ _id: a._id }, { $set: { documents: uniqueDocs } });
                 cleanedCount++;
             }
         }
@@ -2047,7 +2029,7 @@ app.post('/api/admin/restore-legacy-db', async (req, res) => {
                 if (app._id && typeof app._id === 'object') app._id = app._id.$oid || app._id.toString();
                 const existing = await Applicant.findOne({ email: app.email });
                 if (existing) {
-                    await existing.update(app);
+                    await Applicant.updateOne({ _id: existing._id }, { $set: app });
                 } else {
                     await Applicant.create(app);
                 }
@@ -2058,7 +2040,7 @@ app.post('/api/admin/restore-legacy-db', async (req, res) => {
                 delete comp.__v;
                 if (comp._id && typeof comp._id === 'object') comp._id = comp._id.$oid || comp._id.toString();
                 const existing = await Company.findOne({});
-                if (existing) await existing.update(comp);
+                if (existing) await Company.updateOne({ _id: existing._id }, { $set: comp });
                 else await Company.create(comp);
             }
             if (data.divisions && data.divisions.length > 0) {
@@ -2290,7 +2272,7 @@ app.post('/api/admin/system/import', async (req, res) => {
             if (app._id && typeof app._id === 'object') app._id = app._id.$oid || app._id.toString();
             const existing = await Applicant.findOne({ email: app.email });
             if (existing) {
-                await existing.update(app);
+                await Applicant.updateOne({ _id: existing._id }, { $set: app });
             } else {
                 await Applicant.create(app);
             }
@@ -2303,7 +2285,7 @@ app.post('/api/admin/system/import', async (req, res) => {
             if (comp._id && typeof comp._id === 'object') comp._id = comp._id.$oid || comp._id.toString();
             const existComp = await Company.findOne({});
             if (existComp) {
-                await existComp.update(comp);
+                await Company.updateOne({ _id: existComp._id }, { $set: comp });
             } else {
                 await Company.create(comp);
             }
@@ -2350,11 +2332,7 @@ app.post('/api/admin/system/clear', async (req, res) => {
         
         const company = await Company.findOne();
         if (company) {
-            company.offerCounter = 0;
-            company.apptCounter = 0;
-            company.miscCounter = 0;
-            company.empCodeCounter = 0;
-            await company.save();
+            await Company.updateOne({ _id: company._id }, { $set: { offerCounter: 0, apptCounter: 0, miscCounter: 0, empCodeCounter: 0 } });
         }
         res.json({ success: true, message: 'Database cleared. ' + (includeSetup ? 'Divisions and HQs were also removed.' : '') });
     } catch (e) { 
@@ -2416,12 +2394,11 @@ app.post('/api/applicant/delete-document', async (req, res) => {
 
         // 3. Reset verification for this category if it was the last file? 
         // Or just reset always to be safe.
-        if (applicant.verificationChecks && applicant.verificationChecks[category]) {
-            delete applicant.verificationChecks[category];
-            applicant.markModified('verificationChecks');
+        const checks = { ...(applicant.verificationChecks || {}) };
+        if (checks[category]) {
+            delete checks[category];
         }
-
-        await applicant.save();
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { verificationChecks: checks } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
@@ -2485,8 +2462,8 @@ async function migrateAssets() {
             }
         });
         if (changed) {
-            await profile.save();
-            console.log('Γ£à Asset migration completed.');
+            await Company.updateOne({ _id: profile._id }, { $set: { logo: profile.logo, stamp: profile.stamp, digitalSignature: profile.digitalSignature, letterheadImage: profile.letterheadImage, mobileAppTemplate: profile.mobileAppTemplate, tadaTemplate: profile.tadaTemplate } });
+            console.log('✅ Asset migration completed.');
         }
     } catch (e) {
         console.error('Migration error:', e);
@@ -2511,18 +2488,18 @@ app.post('/api/applicant/resubmit-document', async (req, res) => {
         const fileUrl = saveBase64ToFile(email, category, data);
 
         // Remove old document of same category
-        applicant.documents = applicant.documents.filter(d => d.category !== category);
+        const newDocs = (applicant.documents || []).filter(d => d.category !== category);
         
         // Add new, storing the URL instead of base64
-        applicant.documents.push({ category, assetId: fileUrl, name, uploadedAt: new Date() });
+        newDocs.push({ category, assetId: fileUrl, name, uploadedAt: new Date() });
         
         // Reset verification status
-        if (applicant.verificationChecks) {
-            delete applicant.verificationChecks[category];
-            applicant.markModified('verificationChecks');
+        const checks = { ...(applicant.verificationChecks || {}) };
+        if (checks[category]) {
+            delete checks[category];
         }
         
-        await applicant.save();
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: newDocs, verificationChecks: checks } });
         res.json({ success: true, message: 'Document resubmitted successfully.' });
     } catch (e) {
         console.error('Resubmit error:', e);
