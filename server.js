@@ -987,7 +987,7 @@ app.get('/api/admin/applicants', async (req, res) => {
 
         // Optimization: Exclude Large Document Data from the Main List
         const applicants = await Applicant.find(query)
-            .select('-documents.data') // Strip any legacy embedded data
+            .select('-documents.data -offerLetterData -apptLetterData') // Strip heavy embedded HTML/base64 data
             .sort({ registeredAt: -1 });
         
         res.status(200).json(applicants);

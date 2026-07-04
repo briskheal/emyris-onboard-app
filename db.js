@@ -195,6 +195,7 @@ function makeQueryBuilder(Model, query, isSingle = false) {
     let limitVal = null;
     let skipVal = null;
     let isLean = false;
+    let selectExcludes = [];
 
     const chain = {
         sort: function(sortObj) {
@@ -205,7 +206,12 @@ function makeQueryBuilder(Model, query, isSingle = false) {
             }
             return chain;
         },
-        select: function() { return chain; },
+        select: function(fields) { 
+            if (fields && typeof fields === 'string') {
+                selectExcludes = fields.split(' ').filter(f => f.startsWith('-')).map(f => f.substring(1));
+            }
+            return chain; 
+        },
         limit: function(n) { limitVal = n; return chain; },
         skip: function(n) { skipVal = n; return chain; },
         lean: function() { isLean = true; return chain; },
@@ -214,6 +220,11 @@ function makeQueryBuilder(Model, query, isSingle = false) {
             if (order.length > 0) opts.order = order;
             if (limitVal !== null) opts.limit = limitVal;
             if (skipVal !== null) opts.offset = skipVal;
+            if (selectExcludes.length > 0) {
+                // Remove nested dot notation for Sequelize (e.g. documents.data -> just ignore or handle top level)
+                const validExcludes = selectExcludes.map(f => f.split('.')[0]);
+                opts.attributes = { exclude: validExcludes };
+            }
 
             if (isSingle) {
                 return Model.findOne(opts).then(inst => {
