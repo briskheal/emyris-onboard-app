@@ -1461,3 +1461,19 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
         unlockUI();
     }
 });
+
+// --- Privacy & Disclaimer Modals ---
+function openPrivacyModal(e) {
+    if (e) e.preventDefault();
+    document.getElementById('privacyModal').classList.remove('hidden');
+}
+function closePrivacyModal() {
+    document.getElementById('privacyModal').classList.add('hidden');
+}
+function openDisclaimerModal(e) {
+    if (e) e.preventDefault();
+    document.getElementById('disclaimerModal').classList.remove('hidden');
+}
+function closeDisclaimerModal() {
+    document.getElementById('disclaimerModal').classList.add('hidden');
+}
