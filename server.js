@@ -2104,27 +2104,31 @@ app.post('/api/admin/restore-legacy-db', async (req, res) => {
             }
         }
 
-        // 2. Restore heavy assets from MongoDB
+        // 2. Restore heavy assets from MongoDB (both applicant files in emyris_assets and logos in emyris_db_assets)
         try {
             const { MongoClient } = require('mongodb');
-            const MONGODB_URI = "mongodb://impdaysaap:RPykhDyaiPDFwSJi@ac-4mjmqyy-shard-00-00.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-01.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-02.cquys3i.mongodb.net:27017/emyris_db_assets?ssl=true&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
+            const MONGODB_URI = "mongodb://impdaysaap:RPykhDyaiPDFwSJi@ac-4mjmqyy-shard-00-00.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-01.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-02.cquys3i.mongodb.net:27017/?ssl=true&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
             let mongoClient = new MongoClient(MONGODB_URI);
             await mongoClient.connect();
-            const db = mongoClient.db('emyris_db_assets');
-            const cursor = db.collection('assets').find({});
-            for await (const asset of cursor) {
-                const assetId = asset._id.toString();
-                const existing = await Asset.findById(assetId);
-                if (!existing) {
-                    await Asset.create({
-                        _id: assetId,
-                        category: asset.category,
-                        name: asset.name,
-                        data: asset.data,
-                        active: asset.active,
-                        uploadedAt: asset.uploadedAt ? new Date(asset.uploadedAt) : new Date()
-                    });
-                    restoredAssets++;
+            
+            const dbNames = ['emyris_assets', 'emyris_db_assets'];
+            for (const dbName of dbNames) {
+                const db = mongoClient.db(dbName);
+                const cursor = db.collection('assets').find({});
+                for await (const asset of cursor) {
+                    const assetId = asset._id.toString();
+                    const existing = await Asset.findById(assetId);
+                    if (!existing) {
+                        await Asset.create({
+                            _id: assetId,
+                            category: asset.category,
+                            name: asset.name,
+                            data: asset.data,
+                            active: asset.active !== false,
+                            uploadedAt: asset.uploadedAt ? new Date(asset.uploadedAt) : new Date()
+                        });
+                        restoredAssets++;
+                    }
                 }
             }
             await mongoClient.close();
