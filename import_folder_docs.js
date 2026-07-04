@@ -138,8 +138,9 @@ async function run() {
         }
 
         // Save applicant
+        if (typeof applicant.markModified === 'function') applicant.markModified('documents');
         await applicant.save();
-        console.log(`? Successfully updated documents for ${email}`);
+        console.log(`✅ Successfully updated documents for ${email}`);
     }
 
     console.log("\n? Bulk upload completed successfully!");
