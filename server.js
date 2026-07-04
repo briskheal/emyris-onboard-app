@@ -19,6 +19,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory, Question } = require('./db');
 const fs = require('fs');
+const path = require('path');
 
 dotenv.config();
 const dns = require('dns');
@@ -193,6 +194,33 @@ process.on('uncaughtException', (err) => {
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
 app.use(express.static(__dirname));
+
+// Local File Storage Helper
+function saveBase64ToFile(email, category, base64Data) {
+    if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
+        return base64Data; // Already a URL or missing
+    }
+    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) return base64Data;
+    
+    let ext = 'png';
+    if (matches[1].includes('pdf')) ext = 'pdf';
+    else if (matches[1].includes('webp')) ext = 'webp';
+    else if (matches[1].includes('jpeg')) ext = 'jpg';
+
+    const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
+    const safeCategory = category.replace(/[^a-z0-9]/gi, '_');
+    const filename = `${safeEmail}_${safeCategory}_${Date.now()}.${ext}`;
+    
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+    
+    const buffer = Buffer.from(matches[2], 'base64');
+    fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+    return `/uploads/${filename}`;
+}
 
 // ------------------------- EMAIL DELIVERY ENGINE -------------------------
 // WHY BRIDGE INSTEAD OF ZOHO SMTP?
@@ -783,21 +811,14 @@ app.post('/api/applicant/upload-document', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Applicant not found' });
         }
 
-        // 1. Store in Asset Collection (Asset DB)
-        const newAsset = new Asset({
-            category: `doc_${category}`,
-            name: fileName,
-            data: fileData,
-            active: true,
-            uploadedAt: new Date()
-        });
-        const savedAsset = await newAsset.save();
+        // 1. Save to Local File System instead of Asset DB
+        const fileUrl = saveBase64ToFile(email, category, fileData);
 
         // 2. Link metadata in Applicant (WITHOUT the heavy data)
         const docMetadata = {
             category,
             name: fileName,
-            assetId: savedAsset._id,
+            assetId: fileUrl, // Save the path string in assetId for legacy compatibility
             sizeKB,
             uploadedAt: new Date()
         };
@@ -818,12 +839,12 @@ app.post('/api/applicant/upload-document', async (req, res) => {
             { $push: { documents: docMetadata } }
         );
 
-        console.log(`Γ£à [DOC] Atomic Upload: ${category} for ${email} (Asset: ${savedAsset._id})`);
+        console.log(`Γ£à [DOC] Local Upload: ${category} for ${email} saved to ${fileUrl}`);
 
         res.status(200).json({ 
             success: true, 
             message: `${category} uploaded successfully`,
-            assetId: savedAsset._id 
+            assetId: fileUrl 
         });
     } catch (error) {
         console.error('Γ¥î Document upload error:', error);
@@ -2397,10 +2418,15 @@ app.post('/api/applicant/resubmit-document', async (req, res) => {
         const applicant = await Applicant.findOne({ email });
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
 
+        // Save Base64 to disk
+        const fileUrl = saveBase64ToFile(email, category, data);
+
         // Remove old document of same category
         applicant.documents = applicant.documents.filter(d => d.category !== category);
-        // Add new
-        applicant.documents.push({ category, data, name, uploadedAt: new Date() });
+        
+        // Add new, storing the URL instead of base64
+        applicant.documents.push({ category, assetId: fileUrl, name, uploadedAt: new Date() });
+        
         // Reset verification status
         if (applicant.verificationChecks) {
             delete applicant.verificationChecks[category];

@@ -4053,7 +4053,19 @@ async function viewDocument(idOrData) {
     
     // Open window immediately to avoid popup blockers
     const win = window.open("", "_blank");
-    win.document.write("<html><head><title>Loading Document...</title></head><body style='background:#0f172a; color:white; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><div>Γî¢ Loading Document Data... Please wait.</div></body></html>");
+    win.document.write("<html><head><title>Loading Document...</title></head><body style='background:#0f172a; color:white; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><div>⌛ Loading Document Data... Please wait.</div></body></html>");
+
+    // NEW: Handle Local File System URLs directly
+    if (idOrData.startsWith('/uploads/')) {
+        win.document.open();
+        if (idOrData.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${idOrData}" style="max-width:100%; height:auto;"></body></html>`);
+        } else {
+            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0;"><iframe src="${idOrData}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe></body></html>`);
+        }
+        win.document.close();
+        return;
+    }
 
     let finalData = idOrData;
     if (!idOrData.startsWith('data:')) {
@@ -4082,11 +4094,25 @@ async function viewDocument(idOrData) {
 async function downloadAsset(idOrData, elOrName) {
     const name = (typeof elOrName === 'object' && elOrName !== null) ? elOrName.dataset.category : elOrName;
     if (!idOrData) return;
+    
+    // NEW: Handle Local File System URLs directly
+    if (idOrData.startsWith('/uploads/')) {
+        const a = document.createElement('a');
+        a.href = idOrData;
+        const extMatch = idOrData.match(/\.[0-9a-z]+$/i);
+        const ext = extMatch ? extMatch[0] : '';
+        a.download = (name || 'document').replace(/[^a-z0-9]/gi, '_') + ext;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+    }
+
     let finalData = idOrData;
     
     if (!idOrData.startsWith('data:')) {
         try {
-            showToast("Γî¢ Preparing Download...", "secondary");
+            showToast("⌛ Preparing Download...", "secondary");
             const res = await fetch(`/api/admin/document/${idOrData}`);
             const result = await res.json();
             if (result.data) finalData = result.data;
