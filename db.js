@@ -221,9 +221,11 @@ function makeQueryBuilder(Model, query, isSingle = false) {
             if (limitVal !== null) opts.limit = limitVal;
             if (skipVal !== null) opts.offset = skipVal;
             if (selectExcludes.length > 0) {
-                // Remove nested dot notation for Sequelize (e.g. documents.data -> just ignore or handle top level)
-                const validExcludes = selectExcludes.map(f => f.split('.')[0]);
-                opts.attributes = { exclude: validExcludes };
+                // Ignore nested dot notation entirely (like 'documents.data') since Sequelize doesn't support it this way and documents is just metadata now
+                const validExcludes = selectExcludes.filter(f => !f.includes('.'));
+                if (validExcludes.length > 0) {
+                    opts.attributes = { exclude: validExcludes };
+                }
             }
 
             if (isSingle) {
