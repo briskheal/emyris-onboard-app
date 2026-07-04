@@ -4055,13 +4055,16 @@ async function viewDocument(idOrData) {
     const win = window.open("", "_blank");
     win.document.write("<html><head><title>Loading Document...</title></head><body style='background:#0f172a; color:white; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><div>⌛ Loading Document Data... Please wait.</div></body></html>");
 
-    // NEW: Handle Local File System URLs directly
-    if (idOrData.startsWith('/uploads/')) {
+    // NEW: Handle Local File System URLs directly (both old and new paths)
+    if (idOrData.startsWith('/api/admin/uploads/') || idOrData.startsWith('/uploads/')) {
+        // Upgrade legacy /uploads/ paths to the secure Nginx bypass path
+        const safeUrl = idOrData.startsWith('/uploads/') ? `/api/admin/uploads/${idOrData.split('/').pop()}` : idOrData;
+        
         win.document.open();
-        if (idOrData.match(/\.(jpg|jpeg|png|webp|gif|jfif)$/i)) {
-            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${idOrData}" style="max-width:100%; height:auto;"></body></html>`);
+        if (safeUrl.match(/\.(jpg|jpeg|png|webp|gif|jfif)$/i)) {
+            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${safeUrl}" style="max-width:100%; height:auto;"></body></html>`);
         } else {
-            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0;"><iframe src="${idOrData}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe></body></html>`);
+            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0;"><iframe src="${safeUrl}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe></body></html>`);
         }
         win.document.close();
         return;
