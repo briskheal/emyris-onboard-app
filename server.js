@@ -206,7 +206,7 @@ function saveBase64ToFile(email, category, base64Data) {
     let ext = 'png';
     if (matches[1].includes('pdf')) ext = 'pdf';
     else if (matches[1].includes('webp')) ext = 'webp';
-    else if (matches[1].includes('jpeg')) ext = 'jpg';
+    else if (matches[1].includes('jpeg') || matches[1].includes('jpg') || matches[1].includes('jfif')) ext = 'jpg';
 
     const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
     const safeCategory = category.replace(/[^a-z0-9]/gi, '_');

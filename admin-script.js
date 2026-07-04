@@ -4058,7 +4058,7 @@ async function viewDocument(idOrData) {
     // NEW: Handle Local File System URLs directly
     if (idOrData.startsWith('/uploads/')) {
         win.document.open();
-        if (idOrData.match(/\.(jpg|jpeg|png|webp|gif)$/i)) {
+        if (idOrData.match(/\.(jpg|jpeg|png|webp|gif|jfif)$/i)) {
             win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${idOrData}" style="max-width:100%; height:auto;"></body></html>`);
         } else {
             win.document.write(`<html><head><title>View Document</title></head><body style="margin:0;"><iframe src="${idOrData}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe></body></html>`);
