@@ -219,8 +219,13 @@ function saveBase64ToFile(email, category, base64Data) {
     
     const buffer = Buffer.from(matches[2], 'base64');
     fs.writeFileSync(path.join(uploadsDir, filename), buffer);
-    return `/uploads/${filename}`;
+    return `/api/admin/uploads/${filename}`;
 }
+
+// Explicit route to bypass Nginx static file interception
+app.get('/api/admin/uploads/:filename', (req, res) => {
+    res.sendFile(path.join(__dirname, 'uploads', req.params.filename));
+});
 
 // ------------------------- EMAIL DELIVERY ENGINE -------------------------
 // WHY BRIDGE INSTEAD OF ZOHO SMTP?
@@ -1449,7 +1454,7 @@ app.post('/api/admin/next-ref', async (req, res) => {
 
         const counter = company[counterKey] || 0;
         const fyFrom = company.fyFrom ? new Date(company.fyFrom) : new Date();
-        const fyTo = company.fyTo ? new Date(company.fyTo) : new Date();
+        const fyTo = company.fyTo ? new Date(fyTo.fyTo) : new Date();
         const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
 
         const refNo = (['EMYFE', 'EMYHO', 'EMYHR'].includes(prefix)) 
