@@ -2137,13 +2137,15 @@ app.post('/api/admin/upload-asset', async (req, res) => {
                 };
                 const field = map[category];
                 if (field) {
-                    company[field] = asset._id;
-                    await company.save();
+                    await Company.updateOne({ _id: company._id }, { $set: { [field]: asset._id } });
                 }
             }
         }
         res.json({ success: true, asset });
-    } catch (e) { res.status(500).json({ error: 'Upload failed' }); }
+    } catch (e) {
+        console.error('Asset upload error:', e);
+        res.status(500).json({ error: 'Upload failed: ' + e.message });
+    }
 });
 
 // --- UPDATE COMPANY PROFILE METADATA ---
@@ -2178,14 +2180,17 @@ app.post('/api/admin/delete-asset', async (req, res) => {
         const company = await Company.findOne();
         if (company) {
             const keys = ['activeLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'];
+            const updates = {};
             let changed = false;
             keys.forEach(k => {
                 if (company[k] === assetId) {
-                    company[k] = null;
+                    updates[k] = null;
                     changed = true;
                 }
             });
-            if (changed) await company.save();
+            if (changed) {
+                await Company.updateOne({ _id: company._id }, { $set: updates });
+            }
         }
 
         res.json({ success: true });
@@ -2209,8 +2214,7 @@ app.post('/api/admin/set-active-asset', async (req, res) => {
         const field = map[category];
         if (!field) return res.status(400).json({ error: 'Invalid category' });
 
-        company[field] = assetId;
-        await company.save();
+        await Company.updateOne({ _id: company._id }, { $set: { [field]: assetId } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed to set active asset' }); }
 });
@@ -2225,8 +2229,8 @@ app.post('/api/admin/add-category', async (req, res) => {
         if (!company) return res.status(404).json({ error: 'Company not found' });
 
         if (!company.customAssetCategories.includes(categoryName)) {
-            company.customAssetCategories.push(categoryName);
-            await company.save();
+            const newCats = [...company.customAssetCategories, categoryName];
+            await Company.updateOne({ _id: company._id }, { $set: { customAssetCategories: newCats } });
         }
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed to add category' }); }
@@ -2254,8 +2258,8 @@ app.post('/api/admin/delete-category', async (req, res) => {
 
         const company = await Company.findOne();
         if (company) {
-            company.customAssetCategories = company.customAssetCategories.filter(c => c !== categoryName);
-            await company.save();
+            const newCats = company.customAssetCategories.filter(c => c !== categoryName);
+            await Company.updateOne({ _id: company._id }, { $set: { customAssetCategories: newCats } });
         }
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed to delete category' }); }
