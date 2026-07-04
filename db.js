@@ -412,9 +412,25 @@ function applyUpdate(instance, updateObj) {
 
     for (const [key, val] of Object.entries(data)) {
         if (key.startsWith('$')) continue;
-        instance[key] = val;
-        if (typeof instance.changed === 'function') {
-            instance.changed(key, true);
+        if (key.includes('.')) {
+            const parts = key.split('.');
+            const topKey = parts[0];
+            let obj = instance[topKey] ? (typeof instance[topKey] === 'object' ? { ...instance[topKey] } : {}) : {};
+            let curr = obj;
+            for (let i = 1; i < parts.length - 1; i++) {
+                if (!curr[parts[i]] || typeof curr[parts[i]] !== 'object') curr[parts[i]] = {};
+                curr = curr[parts[i]];
+            }
+            curr[parts[parts.length - 1]] = val;
+            instance[topKey] = obj;
+            if (typeof instance.changed === 'function') {
+                instance.changed(topKey, true);
+            }
+        } else {
+            instance[key] = val;
+            if (typeof instance.changed === 'function') {
+                instance.changed(key, true);
+            }
         }
     }
 
