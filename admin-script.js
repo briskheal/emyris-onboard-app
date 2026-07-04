@@ -649,63 +649,7 @@ function logoutAdmin() {
     window.location.href = 'admin.html';
 }
 
-async function cleanAllDuplicates() {
-    if (!confirm("Are you sure you want to clean up all duplicate documents across all applicant records in your live VPS database?")) return;
-    try {
-        lockUI("🧹 Cleaning up duplicate documents in VPS database...");
-        const res = await fetch('/api/admin/clean-duplicates', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            showToast(`✅ Successfully cleaned ${data.cleanedCount} applicant records!`);
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            showToast(data.error || "Failed to clean duplicates", "error");
-        }
-    } catch (e) {
-        showToast("Error cleaning duplicates", "error");
-    } finally {
-        unlockUI();
-    }
-}
 
-async function restoreLegacyVpsDb() {
-    if (!confirm("🚀 This will restore all your legacy MongoDB data (applicants, companies, divisions, HQs, and heavy assets) directly into your live VPS database! Proceed?")) return;
-    try {
-        lockUI("🚀 Restoring legacy database to VPS... Please wait...");
-        const res = await fetch('/api/admin/restore-legacy-db', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            showToast(`🎉 ${data.message}`);
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            showToast(data.error || "Failed to restore legacy database", "error");
-        }
-    } catch (e) {
-        showToast("Error restoring legacy database", "error");
-    } finally {
-        unlockUI();
-    }
-}
-
-async function wipeEntireDatabase() {
-    if (!confirm("⚠️ WARNING: This will delete 100% of applicants, uploaded documents, and stored files from your live VPS database to start completely fresh! Are you absolutely sure?")) return;
-    if (!confirm("💥 FINAL CONFIRMATION: Wipe all applicant data and start 100% fresh with NO MongoDB imports?")) return;
-    try {
-        lockUI("💥 Wiping entire database and cleaning file system... Please wait...");
-        const res = await fetch('/api/admin/wipe-database', { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-            showToast(`🎉 ${data.message}`);
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            showToast(data.error || "Failed to wipe database", "error");
-        }
-    } catch (e) {
-        showToast("Error wiping database", "error");
-    } finally {
-        unlockUI();
-    }
-}
 
 async function initializeApp() {
     console.log('🚀 Emyris App initialized v1.3');
