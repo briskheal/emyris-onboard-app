@@ -1101,10 +1101,24 @@ app.get('/api/admin/applicants', async (req, res) => {
 
         // Optimization: Exclude Large Document Data from the Main List
         const applicants = await Applicant.find(query)
-            .select('-documents.data -offerLetterData -apptLetterData') // Strip heavy embedded HTML/base64 data
-            .sort({ registeredAt: -1 });
+            .select('-offerLetterData -apptLetterData') // Strip heavy embedded HTML/base64 data
+            .sort({ registeredAt: -1 })
+            .lean(); // Fetch as plain objects to easily mutate
         
-        res.status(200).json(applicants);
+        // Manually strip nested base64 data from documents since Sequelize doesn't support dot notation excludes natively
+        const optimizedApplicants = applicants.map(app => {
+            if (app.documents && Array.isArray(app.documents)) {
+                app.documents = app.documents.map(d => ({
+                    category: d.category,
+                    name: d.name,
+                    uploadedAt: d.uploadedAt
+                    // Intentionally omitting 'data' (the heavy base64 string)
+                }));
+            }
+            return app;
+        });
+
+        res.status(200).json(optimizedApplicants);
     } catch (error) {
         console.error("List Fetch Error:", error);
         res.status(500).json({ error: 'Failed' });
