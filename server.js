@@ -2148,7 +2148,7 @@ app.post('/api/company-profile', async (req, res) => {
         res.status(200).json({ success: true, profile });
     } catch (error) {
         console.error('Update error:', error);
-        res.status(500).json({ error: 'Failed' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to save company profile' });
     }
 });
 

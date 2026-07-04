@@ -714,11 +714,11 @@ async function submitProfileUpdate(data, silent = false) {
             // Re-populate this tab to show status
             await loadSetupData(); 
         } else {
-            showToast('❌ Save failed. Please try again.', 'error');
+            showToast('❌ Save failed: ' + (result.error || 'Please try again.'), 'error');
         }
     } catch (err) { 
         console.error("Save error:", err);
-        showToast('❌ Connection error. Save failed.', 'error'); 
+        showToast('❌ Save failed: ' + (err.message || 'Connection error'), 'error'); 
     } finally { 
         if (typeof isSaving !== 'undefined') isSaving = false;
         if (!silent) unlockUI(); 

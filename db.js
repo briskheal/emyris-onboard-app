@@ -339,9 +339,12 @@ function createModelAdapter(Model) {
         this.save = async () => {
             const exists = await Model.findByPk(this._id);
             if (exists) {
+                const id = (typeof exists.get === 'function' ? exists.get('_id') : null) || exists.dataValues?._id || exists._id || this._id;
                 applyUpdate(exists, this);
-                await exists.save();
-                return wrapInstance(exists);
+                const plainData = typeof exists.get === 'function' ? exists.get({ plain: true }) : { ...exists };
+                delete plainData._id;
+                await Model.update(plainData, { where: { _id: id } });
+                return wrapInstance(await Model.findByPk(id));
             } else {
                 const inst = await Model.create(this);
                 return wrapInstance(inst);
@@ -366,22 +369,30 @@ function createModelAdapter(Model) {
     Adapter.findOneAndUpdate = async (query, updateObj, options = {}) => {
         const inst = await Model.findOne({ where: buildWhere(query) });
         if (!inst) return null;
+        const id = (typeof inst.get === 'function' ? inst.get('_id') : null) || inst.dataValues?._id || inst._id;
         applyUpdate(inst, updateObj);
-        await inst.save();
-        return wrapInstance(inst);
+        const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
+        delete plainData._id;
+        await Model.update(plainData, { where: { _id: id } });
+        return wrapInstance(await Model.findByPk(id));
     };
     Adapter.findByIdAndUpdate = async (id, updateObj, options = {}) => {
         const inst = await Model.findByPk(id);
         if (!inst) return null;
         applyUpdate(inst, updateObj);
-        await inst.save();
-        return wrapInstance(inst);
+        const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
+        delete plainData._id;
+        await Model.update(plainData, { where: { _id: id } });
+        return wrapInstance(await Model.findByPk(id));
     };
     Adapter.updateOne = async (query, updateObj) => {
         const inst = await Model.findOne({ where: buildWhere(query) });
         if (inst) {
+            const id = (typeof inst.get === 'function' ? inst.get('_id') : null) || inst.dataValues?._id || inst._id;
             applyUpdate(inst, updateObj);
-            await inst.save();
+            const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
+            delete plainData._id;
+            await Model.update(plainData, { where: { _id: id } });
         }
         return { acknowledged: true };
     };
