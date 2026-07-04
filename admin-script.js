@@ -930,10 +930,23 @@ async function saveCompanyProfile(e) {
     await submitProfileUpdate(data);
 }
 
-async function fetchApplicants(filterParam = null) {
+async function fetchApplicants() {
     try {
-        const tf = filterParam || document.getElementById('applicantTimeframe')?.value || 'current_month';
-        const res = await fetch(`/api/admin/applicants?filter=${tf}`);
+        const mNode = document.getElementById('filterMonth');
+        const yNode = document.getElementById('filterYear');
+        
+        // Auto-initialize to current month/year on first load
+        if (mNode && yNode && mNode.getAttribute('data-init') !== 'true') {
+            const now = new Date();
+            mNode.value = now.getMonth().toString();
+            yNode.value = now.getFullYear().toString();
+            mNode.setAttribute('data-init', 'true');
+        }
+
+        let month = mNode ? mNode.value : 'all';
+        let year = yNode ? yNode.value : 'all';
+
+        const res = await fetch(`/api/admin/applicants?month=${month}&year=${year}`);
         const data = await res.json();
         
         if (Array.isArray(data)) {

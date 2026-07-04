@@ -293,8 +293,12 @@ function buildWhere(query) {
                     if (!hasEnd) pattern = pattern + '%';
                 }
                 where[key] = isIgnoreCase ? { [Op.iLike]: pattern } : { [Op.like]: pattern };
-            } else if (value.$gte !== undefined) {
-                where[key] = { [Op.gte]: value.$gte };
+            } else if (value.$gte !== undefined || value.$gt !== undefined || value.$lte !== undefined || value.$lt !== undefined) {
+                where[key] = {};
+                if (value.$gte !== undefined) where[key][Op.gte] = value.$gte;
+                if (value.$gt !== undefined) where[key][Op.gt] = value.$gt;
+                if (value.$lte !== undefined) where[key][Op.lte] = value.$lte;
+                if (value.$lt !== undefined) where[key][Op.lt] = value.$lt;
             } else if (value.$in !== undefined) {
                 where[key] = { [Op.in]: value.$in };
             } else if (value.$nin !== undefined) {

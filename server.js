@@ -976,13 +976,20 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
 
 app.get('/api/admin/applicants', async (req, res) => {
     try {
-        const { filter } = req.query;
+        const { month, year } = req.query;
         let query = {};
-        if (filter === 'current_month') {
-            const startOfMonth = new Date();
-            startOfMonth.setDate(1);
-            startOfMonth.setHours(0,0,0,0);
-            query = { registeredAt: { $gte: startOfMonth } };
+        
+        if (year && year !== 'all' && month && month !== 'all') {
+            const y = parseInt(year);
+            const m = parseInt(month);
+            const startDate = new Date(y, m, 1);
+            const endDate = new Date(y, m + 1, 1);
+            query = { registeredAt: { $gte: startDate, $lt: endDate } };
+        } else if (year && year !== 'all') {
+            const y = parseInt(year);
+            const startDate = new Date(y, 0, 1);
+            const endDate = new Date(y + 1, 0, 1);
+            query = { registeredAt: { $gte: startDate, $lt: endDate } };
         }
 
         // Optimization: Exclude Large Document Data from the Main List
