@@ -1242,23 +1242,15 @@ app.post('/api/admin/delete-document', async (req, res) => {
         });
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
-        if (assetId.startsWith('/uploads/') || assetId.startsWith('/api/admin/uploads/')) {
-            const filename = assetId.split('/').pop();
-            const filePath = path.join(__dirname, 'uploads', filename);
-            if (fs.existsSync(filePath)) {
-                try { fs.unlinkSync(filePath); } catch (e) {}
-            }
-            if (Asset.findByIdAndDelete) {
-                await Asset.findByIdAndDelete(filename).catch(() => {});
-            } else {
-                await Asset.destroy({ where: { _id: filename } }).catch(() => {});
-            }
+        const cleanFilename = String(assetId).split('/').pop().trim();
+        const filePath = path.join(__dirname, 'uploads', cleanFilename);
+        if (fs.existsSync(filePath)) {
+            try { fs.unlinkSync(filePath); } catch (e) {}
+        }
+        if (Asset.findByIdAndDelete) {
+            await Asset.findByIdAndDelete(cleanFilename).catch(() => {});
         } else {
-            if (Asset.findByIdAndDelete) {
-                await Asset.findByIdAndDelete(assetId).catch(() => {});
-            } else {
-                await Asset.destroy({ where: { _id: assetId } }).catch(() => {});
-            }
+            await Asset.destroy({ where: { _id: cleanFilename } }).catch(() => {});
         }
 
         res.json({ success: true });
@@ -2412,13 +2404,19 @@ app.post('/api/admin/delete-applicant', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
 
         // Collect all assets linked to this applicant
-        const assetIds = (applicant.documents || [])
+        const filenames = (applicant.documents || [])
             .filter(d => d.assetId)
-            .map(d => d.assetId);
+            .map(d => String(d.assetId).split('/').pop().trim());
 
-        // 1. Delete Assets from Assets DB
-        if (assetIds.length > 0) {
-            await Asset.deleteMany({ _id: { $in: assetIds } });
+        // 1. Delete Assets from Assets DB and physical files
+        if (filenames.length > 0) {
+            await Asset.deleteMany({ _id: { $in: filenames } });
+            for (const fname of filenames) {
+                const filePath = path.join(__dirname, 'uploads', fname);
+                if (fs.existsSync(filePath)) {
+                    try { fs.unlinkSync(filePath); } catch (e) {}
+                }
+            }
         }
 
         // 2. Delete Applicant from Main DB
@@ -2445,23 +2443,17 @@ app.post('/api/applicant/delete-document', async (req, res) => {
             return dId !== targetId;
         });
 
-        // 2. Delete from Asset DB or Local File System
-        if (assetId.startsWith('/uploads/') || assetId.startsWith('/api/admin/uploads/')) {
-            const filename = assetId.split('/').pop();
-            const filePath = path.join(__dirname, 'uploads', filename);
+        // 2. Delete from Asset DB and Local File System
+        const cleanFilename = String(assetId || '').split('/').pop().trim();
+        if (cleanFilename) {
+            const filePath = path.join(__dirname, 'uploads', cleanFilename);
             if (fs.existsSync(filePath)) {
                 try { fs.unlinkSync(filePath); } catch (e) {}
             }
             if (Asset.findByIdAndDelete) {
-                await Asset.findByIdAndDelete(filename).catch(() => {});
+                await Asset.findByIdAndDelete(cleanFilename).catch(() => {});
             } else {
-                await Asset.destroy({ where: { _id: filename } }).catch(() => {});
-            }
-        } else {
-            if (Asset.findByIdAndDelete) {
-                await Asset.findByIdAndDelete(assetId).catch(() => {});
-            } else {
-                await Asset.destroy({ where: { _id: assetId } }).catch(() => {});
+                await Asset.destroy({ where: { _id: cleanFilename } }).catch(() => {});
             }
         }
 
