@@ -409,6 +409,9 @@ function createModelAdapter(Model) {
         if (inst) await inst.destroy();
         return wrapInstance(inst);
     };
+    Adapter.destroy = async (options) => {
+        return await Model.destroy(options);
+    };
 
     return Adapter;
 }
