@@ -1181,29 +1181,18 @@ app.get('/api/admin/hqs', async (req, res) => {
 // Admin - DB Statistics
 app.get('/api/admin/db-stats', async (req, res) => {
     try {
-        if (!connMain || !connAssets) return res.status(500).json({ success: false, message: 'DB not connected' });
+        // Calculate database size using native PostgreSQL command
+        const [results] = await sequelize.query("SELECT pg_database_size(current_database()) as size");
+        const totalUsed = parseInt(results[0].size, 10);
+        const totalStorageUsed = totalUsed;
 
-        const mainStats = await connMain.db.stats();
-        const assetStats = await connAssets.db.stats();
-
-        // Atlas M0 limit is 512MB = 536,870,912 bytes
-        const LIMIT = 512 * 1024 * 1024; 
-
-        const totalUsed = mainStats.dataSize + assetStats.dataSize;
-        const totalStorageUsed = mainStats.storageSize + assetStats.storageSize; // Physical disk usage
+        // PostgreSQL standard deployment baseline for UI visualization (1GB)
+        const LIMIT = 1024 * 1024 * 1024;
 
         res.json({
             success: true,
-            main: {
-                used: mainStats.dataSize,
-                storage: mainStats.storageSize,
-                objects: mainStats.objects
-            },
-            assets: {
-                used: assetStats.dataSize,
-                storage: assetStats.storageSize,
-                objects: assetStats.objects
-            },
+            main: { used: totalUsed, storage: totalStorageUsed, objects: 0 },
+            assets: { used: 0, storage: 0, objects: 0 },
             summary: {
                 totalUsedBytes: totalUsed,
                 totalStorageUsedBytes: totalStorageUsed,
@@ -2111,9 +2100,7 @@ app.post('/api/admin/system/clear', async (req, res) => {
         
         await Applicant.deleteMany({});
         // CASCADING DELETE: Remove all applicant documents from Asset DB
-        if (connAssets) {
-            await Asset.deleteMany({ category: { $regex: /^doc_/ } });
-        }
+        await Asset.deleteMany({ category: { $regex: /^doc_/ } });
         
         if (includeSetup) {
             console.log("🧹 Total Wipeout: Clearing Divisions and HQs...");
@@ -2148,7 +2135,7 @@ app.post('/api/admin/delete-applicant', async (req, res) => {
             .map(d => d.assetId);
 
         // 1. Delete Assets from Assets DB
-        if (assetIds.length > 0 && connAssets) {
+        if (assetIds.length > 0) {
             await Asset.deleteMany({ _id: { $in: assetIds } });
         }
 
@@ -2193,7 +2180,6 @@ app.post('/api/applicant/delete-document', async (req, res) => {
 
 app.post('/api/admin/system/vacuum', async (req, res) => {
     try {
-        if (!connAssets) return res.status(503).json({ error: 'Asset database not connected' });
 
         const company = await Company.findOne();
         const applicants = await Applicant.find();
