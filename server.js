@@ -1198,9 +1198,9 @@ app.get('/api/admin/hqs', async (req, res) => {
 // Admin - DB Statistics
 app.get('/api/admin/db-stats', async (req, res) => {
     try {
-        // Calculate database size using native PostgreSQL command
-        const [results] = await sequelize.query("SELECT pg_database_size(current_database()) as size");
-        const totalUsed = parseInt(results[0].size, 10);
+        // Calculate database size by summing all tables in the public schema (bypasses restrictive superuser permissions on hosted DBs)
+        const [results] = await sequelize.query("SELECT sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::bigint as size FROM pg_tables WHERE schemaname = 'public'");
+        const totalUsed = parseInt(results[0].size || '0', 10);
         const totalStorageUsed = totalUsed;
 
         // PostgreSQL standard deployment baseline for UI visualization (1GB)
