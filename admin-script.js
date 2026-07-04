@@ -1506,15 +1506,23 @@ function renderVerificationProfile(app) {
     const fd = app.formData || {};
     
     const rows = [
-        { label: 'Full Name', val: app.fullName },
+        { label: 'Full Name', val: `<input type="text" id="v_fullName" class="form-input-sm" value="${app.fullName || ''}" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
         { label: 'Primary Email', val: app.email },
-        { label: 'Contact Phone', val: app.phone },
-        { label: 'Designation', val: app.designation || fd.designation || 'N/A' },
-        { label: 'Joining HQ', val: app.hq || fd.hq || 'N/A' },
-        { label: 'Father\'s Name', val: fd.fatherName || 'N/A' },
-        { label: 'Gender', val: fd.gender || 'N/A' },
-        { label: 'Blood Group', val: fd.bloodGroup || 'N/A' },
-        { label: 'Marital Status', val: app.maritalStatus || fd.maritalStatus || 'N/A' },
+        { label: 'Contact Phone', val: `<input type="text" id="v_phone" class="form-input-sm" value="${app.phone || ''}" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Designation', val: `<input type="text" id="v_detail_designation" class="form-input-sm" value="${app.designation || fd.designation || ''}" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Joining HQ', val: `<input type="text" id="v_detail_hq" class="form-input-sm" value="${app.hq || fd.hq || ''}" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Father\'s Name', val: `<input type="text" id="v_fatherName" class="form-input-sm" value="${fd.fatherName || ''}" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Gender', val: `<select id="v_gender" class="form-input-sm" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">
+            <option value="M" ${(fd.gender === 'M' || fd.gender === 'Male') ? 'selected' : ''}>Male</option>
+            <option value="F" ${(fd.gender === 'F' || fd.gender === 'Female') ? 'selected' : ''}>Female</option>
+            <option value="Other" ${(fd.gender === 'Other') ? 'selected' : ''}>Other</option>
+        </select>` },
+        { label: 'Blood Group', val: `<input type="text" id="v_bloodGroup" class="form-input-sm" value="${fd.bloodGroup || ''}" style="width:100%; max-width:100px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Marital Status', val: `<select id="v_maritalStatus" class="form-input-sm" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">
+            <option value="Unmarried" ${(app.maritalStatus === 'Unmarried' || fd.maritalStatus === 'Unmarried') ? 'selected' : ''}>Unmarried</option>
+            <option value="Married" ${(app.maritalStatus === 'Married' || fd.maritalStatus === 'Married') ? 'selected' : ''}>Married</option>
+            <option value="Divorced" ${(app.maritalStatus === 'Divorced' || fd.maritalStatus === 'Divorced') ? 'selected' : ''}>Divorced</option>
+        </select>` },
         { label: 'Anniversary Date', val: app.anniversaryDate || (fd.maritalStatus === 'Married' ? `${fd.anniversaryDay || '??'}-${fd.anniversaryMonth || '??'}` : 'N/A') },
         { label: 'EPF Number', val: app.epfNumber || fd.epfNumber || 'N/A' },
         { label: 'UAN Number', val: app.uanNumber || fd.uanNumber || 'N/A' },
@@ -1893,6 +1901,14 @@ async function saveAllVerificationData(silent = false) {
         dob: document.getElementById('v_dob').value,
         actualJoiningDate: document.getElementById('v_actualJoiningDate').value,
         address: document.getElementById('v_address').value,
+        fullName: document.getElementById('v_fullName') ? document.getElementById('v_fullName').value : undefined,
+        phone: document.getElementById('v_phone') ? document.getElementById('v_phone').value : undefined,
+        detailDesignation: document.getElementById('v_detail_designation') ? document.getElementById('v_detail_designation').value : undefined,
+        detailHq: document.getElementById('v_detail_hq') ? document.getElementById('v_detail_hq').value : undefined,
+        fatherName: document.getElementById('v_fatherName') ? document.getElementById('v_fatherName').value : undefined,
+        gender: document.getElementById('v_gender') ? document.getElementById('v_gender').value : undefined,
+        bloodGroup: document.getElementById('v_bloodGroup') ? document.getElementById('v_bloodGroup').value : undefined,
+        maritalStatus: document.getElementById('v_maritalStatus') ? document.getElementById('v_maritalStatus').value : undefined,
         salary: targetAnnual,
         salaryBreakup,
         incrementData,

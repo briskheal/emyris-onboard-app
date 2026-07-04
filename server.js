@@ -1463,11 +1463,12 @@ function calculateMonthlyGross(sal) {
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData } = req.body;
+        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
         if (hq !== undefined) update.hq = hq;
+        if (detailHq !== undefined) update.hq = detailHq;
         if (empCode !== undefined) update.empCode = empCode;
         if (refNo !== undefined) update.refNo = refNo;
         if (dob !== undefined) update.dob = dob;
@@ -1476,6 +1477,15 @@ app.post('/api/admin/update-workflow-data', async (req, res) => {
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
+        
+        // New Editable Fields
+        if (fullName !== undefined) update.fullName = fullName;
+        if (phone !== undefined) update.phone = phone;
+        if (detailDesignation !== undefined) update.designation = detailDesignation;
+        if (maritalStatus !== undefined) update.maritalStatus = maritalStatus;
+        if (fatherName !== undefined) update['formData.fatherName'] = fatherName;
+        if (gender !== undefined) update['formData.gender'] = gender;
+        if (bloodGroup !== undefined) update['formData.bloodGroup'] = bloodGroup;
         if (salaryBreakup !== undefined) {
             // Enhanced Validation: Ensure components are numeric and Basic is present
             const s = salaryBreakup;
