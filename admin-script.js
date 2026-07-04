@@ -4067,14 +4067,13 @@ async function viewDocument(idOrData) {
     const win = window.open("", "_blank");
     win.document.write("<html><head><title>Loading Document...</title></head><body style='background:#0f172a; color:white; font-family:sans-serif; display:flex; align-items:center; justify-content:center; height:100vh;'><div>⌛ Loading Document Data... Please wait.</div></body></html>");
 
-    // NEW: Handle Local File System URLs directly (both old and new paths)
-    if (idOrData.startsWith('/api/admin/uploads/') || idOrData.startsWith('/uploads/')) {
-        // Upgrade legacy /uploads/ paths to the secure Nginx bypass path
-        const safeUrl = idOrData.startsWith('/uploads/') ? `/api/admin/uploads/${idOrData.split('/').pop()}` : idOrData;
+    // Handle Local File System URLs directly (both old and new paths)
+    if (idOrData.startsWith('/api/admin/uploads/') || idOrData.startsWith('/uploads/') || idOrData.startsWith('uploads/')) {
+        let safeUrl = idOrData.startsWith('/uploads/') ? `/api/admin/uploads/${idOrData.split('/').pop()}` : (idOrData.startsWith('uploads/') ? `/api/admin/${idOrData}` : idOrData);
         
         win.document.open();
         if (safeUrl.match(/\.(jpg|jpeg|png|webp|gif|jfif)$/i)) {
-            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${safeUrl}" style="max-width:100%; height:auto;"></body></html>`);
+            win.document.write(`<html><head><title>View Document</title></head><body style="margin:0; background:#000; display:flex; justify-content:center;"><img src="${safeUrl}" style="max-width:100%; height:auto;" onerror="this.onerror=null; this.parentElement.innerHTML='<div style=\\\'color:#ef4444;padding:20px;font-family:sans-serif;text-align:center;\\\'><h3>❌ Document Not Found</h3><p>This file is no longer on the server disk (it may have been uploaded prior to a server redeployment without persistent volume). Please ask the applicant to resubmit.</p></div>';"></body></html>`);
         } else {
             win.document.write(`<html><head><title>View Document</title></head><body style="margin:0;"><iframe src="${safeUrl}" frameborder="0" style="border:0; width:100%; height:100%;" allowfullscreen></iframe></body></html>`);
         }
@@ -4112,13 +4111,18 @@ async function downloadAsset(idOrData, elOrName) {
     const name = (typeof elOrName === 'object' && elOrName !== null) ? elOrName.dataset.category : elOrName;
     if (!idOrData) return;
     
-    // NEW: Handle Local File System URLs directly
-    if (idOrData.startsWith('/uploads/')) {
+    // Handle Local File System URLs directly
+    if (idOrData.startsWith('/uploads/') || idOrData.startsWith('/api/admin/uploads/') || idOrData.startsWith('uploads/')) {
+        let safeUrl = idOrData.startsWith('/uploads/') ? `/api/admin/uploads/${idOrData.split('/').pop()}` : (idOrData.startsWith('uploads/') ? `/api/admin/${idOrData}` : idOrData);
+        const separator = safeUrl.includes('?') ? '&' : '?';
+        const cleanName = (name || 'document').replace(/[^a-z0-9.]/gi, '_');
+        safeUrl += `${separator}download=true&name=${encodeURIComponent(cleanName)}`;
+        
         const a = document.createElement('a');
-        a.href = idOrData;
-        const extMatch = idOrData.match(/\.[0-9a-z]+$/i);
+        a.href = safeUrl;
+        const extMatch = safeUrl.match(/\.[0-9a-z]+$/i);
         const ext = extMatch ? extMatch[0] : '';
-        a.download = (name || 'document').replace(/[^a-z0-9]/gi, '_') + ext;
+        a.download = cleanName + ext;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

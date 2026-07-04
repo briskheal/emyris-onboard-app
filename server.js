@@ -166,9 +166,34 @@ function saveBase64ToFile(email, category, base64Data) {
     return `/api/admin/uploads/${filename}`;
 }
 
-// Explicit route to bypass Nginx static file interception
-app.get('/api/admin/uploads/:filename', (req, res) => {
-    res.sendFile(path.join(__dirname, 'uploads', req.params.filename));
+// Explicit route to bypass Nginx static file interception & support direct downloads
+app.get('/api/admin/uploads/:filename', async (req, res) => {
+    try {
+        const filename = decodeURIComponent(req.params.filename);
+        const filePath = path.join(__dirname, 'uploads', filename);
+        if (fs.existsSync(filePath)) {
+            if (req.query.download === 'true') {
+                return res.download(filePath, req.query.name || filename);
+            }
+            return res.sendFile(filePath);
+        }
+        // Fallback: Check if stored in Asset database
+        const asset = await Asset.findById(filename) || await Asset.findOne({ where: { name: filename } });
+        if (asset && asset.data) {
+            const matches = asset.data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+            if (matches && matches.length === 3) {
+                const buffer = Buffer.from(matches[2], 'base64');
+                res.set('Content-Type', matches[1]);
+                if (req.query.download === 'true') {
+                    res.set('Content-Disposition', `attachment; filename="${req.query.name || filename}"`);
+                }
+                return res.send(buffer);
+            }
+        }
+        res.status(404).send('Document file not found on server or database.');
+    } catch (e) {
+        res.status(500).send('Error retrieving document.');
+    }
 });
 
 // ------------------------- EMAIL DELIVERY ENGINE -------------------------
