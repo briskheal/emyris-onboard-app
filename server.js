@@ -997,6 +997,18 @@ app.get('/api/admin/applicants', async (req, res) => {
     }
 });
 
+// GET single applicant (Lazy loading heavy data on demand)
+app.get('/api/admin/applicant/:email', async (req, res) => {
+    try {
+        const applicant = await Applicant.findOne({ email: req.params.email });
+        if (!applicant) return res.status(404).json({ error: 'Not found' });
+        res.status(200).json(applicant);
+    } catch (error) {
+        console.error("Fetch Single Error:", error);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
 // New Endpoint for Lazy Loading Document Data
 app.get('/api/admin/document/:assetId', async (req, res) => {
     try {

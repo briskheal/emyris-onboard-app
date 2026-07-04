@@ -1257,12 +1257,7 @@ function renderApplicantsTable(applicants) {
     }).join('');
 }
 
-function previewIssuedLetter(email, type) {
-    const app = allApplicants.find(a => a.email === email);
-    if (!app) return;
-    const content = type === 'offer' ? app.offerLetterData : app.apptLetterData;
-    if (!content) return showToast("No saved letter found.", "warning");
-
+async function previewIssuedLetter(email, type) {
     const win = window.open('', '_blank');
     win.document.write(`
         <html>
@@ -1270,16 +1265,40 @@ function previewIssuedLetter(email, type) {
                 <title>Preview: ${type.toUpperCase()}</title>
                 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
                 <style>
-                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.1; }
-                    .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: 1000px; }
+                    body { font-family: 'Plus Jakarta Sans', sans-serif; padding: 40px; background: #f1f5f9; color: #1e293b; line-height: 1.1; text-align: center; }
+                    .container { background: white; padding: 50px; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; min-height: 1000px; text-align: left; }
+                    .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 50px auto; }
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
                 </style>
             </head>
             <body>
-                <div class="container">${content}</div>
+                <div id="loader" class="loader"></div>
+                <h3 id="loadingText">Loading document from database...</h3>
+                <div id="content" class="container" style="display:none;"></div>
             </body>
         </html>
     `);
-    win.document.close();
+
+    try {
+        const res = await fetch(`/api/admin/applicant/${email}`);
+        const app = await res.json();
+        const content = type === 'offer' ? app.offerLetterData : app.apptLetterData;
+        
+        if (!content) {
+            win.document.getElementById('loader').style.display = 'none';
+            win.document.getElementById('loadingText').innerText = 'No saved letter found.';
+            return;
+        }
+
+        win.document.getElementById('loader').style.display = 'none';
+        win.document.getElementById('loadingText').style.display = 'none';
+        win.document.getElementById('content').style.display = 'block';
+        win.document.getElementById('content').innerHTML = content;
+    } catch (e) {
+        win.document.getElementById('loader').style.display = 'none';
+        win.document.getElementById('loadingText').innerText = 'Error loading document. Please try again.';
+        console.error("Preview error:", e);
+    }
 }
 
 function filterApplicants() {
@@ -1510,9 +1529,9 @@ function renderVerificationProfile(app) {
             label: 'Published Letters', 
             val: `
                 <div style="display:flex; gap:0.5rem; margin-top:5px; flex-wrap:wrap;">
-                    ${app.offerLetterData ? `<button class="btn btn-sm btn-outline" onclick="previewIssuedLetter('${app.email}', 'offer')" style="padding:4px 8px; font-size:0.7rem; color:var(--accent); border-color:var(--accent);">📄 OFFER</button>` : ''}
-                    ${app.apptLetterData ? `<button class="btn btn-sm btn-outline" onclick="previewIssuedLetter('${app.email}', 'appt')" style="padding:4px 8px; font-size:0.7rem; color:var(--primary-light); border-color:var(--primary-light);">📜 APPT</button>` : ''}
-                    ${(!app.offerLetterData && !app.apptLetterData) ? '<span style="color:var(--text-muted); font-size:0.75rem;">None</span>' : ''}
+                    ${(app.tasks && app.tasks.offerLetter) ? `<button class="btn btn-sm btn-outline" onclick="previewIssuedLetter('${app.email}', 'offer')" style="padding:4px 8px; font-size:0.7rem; color:var(--accent); border-color:var(--accent);">📄 OFFER</button>` : ''}
+                    ${(app.tasks && app.tasks.appointmentLetter) ? `<button class="btn btn-sm btn-outline" onclick="previewIssuedLetter('${app.email}', 'appt')" style="padding:4px 8px; font-size:0.7rem; color:var(--primary-light); border-color:var(--primary-light);">📜 APPT</button>` : ''}
+                    ${(!app.tasks || (!app.tasks.offerLetter && !app.tasks.appointmentLetter)) ? '<span style="color:var(--text-muted); font-size:0.75rem;">None</span>' : ''}
                 </div>
             `
         }
