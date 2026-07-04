@@ -1246,7 +1246,12 @@ app.post('/api/admin/delete-document', async (req, res) => {
             const filename = assetId.split('/').pop();
             const filePath = path.join(__dirname, 'uploads', filename);
             if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+                try { fs.unlinkSync(filePath); } catch (e) {}
+            }
+            if (Asset.findByIdAndDelete) {
+                await Asset.findByIdAndDelete(filename).catch(() => {});
+            } else {
+                await Asset.destroy({ where: { _id: filename } }).catch(() => {});
             }
         } else {
             if (Asset.findByIdAndDelete) {
@@ -2445,10 +2450,19 @@ app.post('/api/applicant/delete-document', async (req, res) => {
             const filename = assetId.split('/').pop();
             const filePath = path.join(__dirname, 'uploads', filename);
             if (fs.existsSync(filePath)) {
-                fs.unlinkSync(filePath);
+                try { fs.unlinkSync(filePath); } catch (e) {}
             }
-        } else if (connAssets) {
-            await Asset.findByIdAndDelete(assetId).catch(() => {});
+            if (Asset.findByIdAndDelete) {
+                await Asset.findByIdAndDelete(filename).catch(() => {});
+            } else {
+                await Asset.destroy({ where: { _id: filename } }).catch(() => {});
+            }
+        } else {
+            if (Asset.findByIdAndDelete) {
+                await Asset.findByIdAndDelete(assetId).catch(() => {});
+            } else {
+                await Asset.destroy({ where: { _id: assetId } }).catch(() => {});
+            }
         }
 
         // 3. Reset verification for this category if it was the last file? 
@@ -2457,7 +2471,7 @@ app.post('/api/applicant/delete-document', async (req, res) => {
         if (checks[category]) {
             delete checks[category];
         }
-        await Applicant.updateOne({ _id: applicant._id }, { $set: { verificationChecks: checks } });
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: applicant.documents, verificationChecks: checks } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
@@ -2559,7 +2573,8 @@ app.post('/api/applicant/resubmit-document', async (req, res) => {
         }
         
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: newDocs, verificationChecks: checks } });
-        res.json({ success: true, message: 'Document resubmitted successfully.' });
+        const updatedApp = await Applicant.findOne({ email });
+        res.json({ success: true, message: 'Document resubmitted successfully.', assetId: fileUrl, applicant: updatedApp });
     } catch (e) {
         console.error('Resubmit error:', e);
         res.status(500).json({ error: 'Resubmission failed' });

@@ -1780,13 +1780,20 @@ async function handleProxyUpload(e, category) {
         if (result.success) {
             showToast(`✅ Successfully uploaded ${category} for ${activeV_Applicant.fullName}`);
             // Update local state and re-render
-            if (!activeV_Applicant.documents) activeV_Applicant.documents = [];
-            activeV_Applicant.documents.push({
-                category,
-                name: file.name,
-                assetId: result.assetId,
-                uploadedAt: new Date()
-            });
+            if (result.applicant) {
+                activeV_Applicant = result.applicant;
+                const idx = allApplicants.findIndex(a => a.email === activeV_Applicant.email);
+                if (idx !== -1) allApplicants[idx] = activeV_Applicant;
+            } else {
+                if (!activeV_Applicant.documents) activeV_Applicant.documents = [];
+                activeV_Applicant.documents = activeV_Applicant.documents.filter(d => d.category !== category);
+                activeV_Applicant.documents.push({
+                    category,
+                    name: file.name,
+                    assetId: result.assetId,
+                    uploadedAt: new Date()
+                });
+            }
             renderVerificationChecklist(activeV_Applicant);
             renderDocGallery(activeV_Applicant);
         } else {
@@ -1816,6 +1823,8 @@ async function deleteDocument(assetId, categoryName) {
             showToast(`✅ Successfully deleted ${categoryName}`);
             // Remove from local state
             activeV_Applicant.documents = activeV_Applicant.documents.filter(d => d.assetId !== assetId);
+            const idx = allApplicants.findIndex(a => a.email === activeV_Applicant.email);
+            if (idx !== -1) allApplicants[idx] = activeV_Applicant;
             renderVerificationChecklist(activeV_Applicant);
             renderDocGallery(activeV_Applicant);
         } else {
@@ -1863,6 +1872,7 @@ function renderDocGallery(app) {
                         <div class="doc-actions-row">
                             <button class="btn-tool" onclick="viewDocument('${f.assetId || ''}')" title="View">👁️</button> 
                             <button class="btn-tool" onclick="downloadAsset('${f.assetId || ''}', '${f.name}')" title="Download">📥</button>
+                            <button class="btn-tool" style="color:#ef4444;" onclick="deleteDocument('${f.assetId || ''}', '${dName}')" title="Delete">🗑️</button>
                         </div>
                     </div>
                 `);
