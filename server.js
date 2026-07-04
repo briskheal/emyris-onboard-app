@@ -1,4 +1,17 @@
 const express = require('express');
+const { execSync } = require('child_process');
+
+// --- AUTO-INSTALL DEPENDENCIES ON BOOT ---
+try {
+    require('sequelize');
+    require('pg');
+} catch (e) {
+    console.log("Installing missing database packages...");
+    execSync('npm install sequelize pg', { stdio: 'inherit' });
+    console.log("Installation complete!");
+}
+// ------------------------------------------
+
 const nodemailer = require('nodemailer');
 const { Resend } = require('resend');
 const axios = require('axios');
