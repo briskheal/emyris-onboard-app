@@ -2117,9 +2117,10 @@
         <div style="background: var(--card-bg); width: 100%; max-width: 500px; border-radius: 20px; border: 1px solid var(--glass-border); display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); transform: translateY(20px); transition: transform 0.3s ease; overflow: hidden;"
             id="addQuestionModalBody">
             <div style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);">
-                <h3 style="color: white; margin: 0;">➕ Add New Question</h3>
+                <h3 id="questionModalTitle" style="color: white; margin: 0;">➕ Add New Question</h3>
             </div>
             <form id="addQuestionForm" onsubmit="submitNewQuestion(event)" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                <input type="hidden" id="q_id" value="">
                 <div class="form-group">
                     <label>Category</label>
                     <select id="q_category" required style="width: 100%;">

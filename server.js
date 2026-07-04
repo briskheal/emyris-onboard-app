@@ -676,6 +676,20 @@ app.delete('/api/admin/questions/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+app.put('/api/admin/questions/:id', async (req, res) => {
+    try {
+        const question = await Question.findById(req.params.id);
+        if (!question) return res.status(404).json({ error: 'Not found' });
+        
+        Object.assign(question, req.body);
+        await question.save();
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Update Question Error:', e);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
 // --- APPLICANT DOCUMENT UPLOAD ---
 // Save Progress (Draft)
 app.post('/api/applicant/save-draft', async (req, res) => {

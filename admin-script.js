@@ -4835,6 +4835,7 @@ async function downloadApplicantPDF(email) {
 }
 
 // --- RAPID TEST BANK LOGIC ---
+let testBankQuestions = [];
 
 async function fetchTestBankQuestions() {
     try {
@@ -4844,6 +4845,7 @@ async function fetchTestBankQuestions() {
         if (!tbody) return;
         
         if (data.success && data.questions.length > 0) {
+            testBankQuestions = data.questions;
             let html = '';
             data.questions.forEach(q => {
                 let optionsHtml = q.options.map((opt, i) => 
@@ -4856,12 +4858,16 @@ async function fetchTestBankQuestions() {
                     <td style="max-width: 250px; white-space: normal;">${q.text}</td>
                     <td style="max-width: 300px; white-space: normal;">${optionsHtml}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline" style="color:var(--error); border-color:var(--error);" onclick="deleteQuestion('${q._id}')">Delete</button>
+                        <div style="display:flex; gap:0.5rem;">
+                            <button class="btn btn-sm btn-outline" style="color:var(--primary); border-color:var(--primary);" onclick="editQuestion('${q._id}')">Edit</button>
+                            <button class="btn btn-sm btn-outline" style="color:var(--error); border-color:var(--error);" onclick="deleteQuestion('${q._id}')">Delete</button>
+                        </div>
                     </td>
                 </tr>`;
             });
             tbody.innerHTML = html;
         } else {
+            testBankQuestions = [];
             tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No questions found.</td></tr>';
         }
     } catch (e) {
@@ -4871,6 +4877,28 @@ async function fetchTestBankQuestions() {
 
 function showAddQuestionModal() {
     document.getElementById('addQuestionForm').reset();
+    document.getElementById('q_id').value = '';
+    document.getElementById('questionModalTitle').innerText = '➕ Add New Question';
+    document.getElementById('addQuestionModal').classList.remove('hidden');
+    document.getElementById('addQuestionModal').style.opacity = '1';
+    document.getElementById('addQuestionModal').style.pointerEvents = 'auto';
+    document.getElementById('addQuestionModalBody').style.transform = 'translateY(0)';
+}
+
+function editQuestion(id) {
+    const q = testBankQuestions.find(x => x._id === id);
+    if (!q) return;
+    
+    document.getElementById('q_id').value = q._id;
+    document.getElementById('q_category').value = q.category;
+    document.getElementById('q_text').value = q.text;
+    document.getElementById('q_opt0').value = q.options[0];
+    document.getElementById('q_opt1').value = q.options[1];
+    document.getElementById('q_opt2').value = q.options[2];
+    document.getElementById('q_opt3').value = q.options[3];
+    document.getElementById('q_correct').value = q.correctAnswerIndex.toString();
+    
+    document.getElementById('questionModalTitle').innerText = '✏️ Edit Question';
     document.getElementById('addQuestionModal').classList.remove('hidden');
     document.getElementById('addQuestionModal').style.opacity = '1';
     document.getElementById('addQuestionModal').style.pointerEvents = 'auto';
@@ -4888,6 +4916,7 @@ function closeAddQuestionModal() {
 
 async function submitNewQuestion(e) {
     e.preventDefault();
+    const qId = document.getElementById('q_id').value;
     const payload = {
         category: document.getElementById('q_category').value,
         text: document.getElementById('q_text').value,
@@ -4901,8 +4930,11 @@ async function submitNewQuestion(e) {
     };
     
     try {
-        const res = await fetch('/api/admin/questions', {
-            method: 'POST',
+        const url = qId ? '/api/admin/questions/' + qId : '/api/admin/questions';
+        const method = qId ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+            method: method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
