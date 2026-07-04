@@ -971,9 +971,9 @@ function renderApplicantDashboard() {
             const steps = [
                 { label: 'Register', done: true },
                 { label: 'Submit', done: !!app.submittedAt || ['submitted', 'approved', 'onboarding', 'joined', 'confirmed', 'rejected'].includes(app.status) },
-                { label: 'Verify', done: app.status === 'approved' || app.offerLetterData },
+                { label: 'Verify', done: app.status === 'approved' || !!app.offerLetterData },
                 { label: 'Offer', done: !!app.offerLetterData },
-                { label: 'Joined', done: !!app.actualJoiningDate },
+                { label: 'Joined', done: !!app.offerAccepted && !!app.actualJoiningDate },
                 { label: 'Appointed', done: !!app.apptLetterData },
                 { label: 'Confirmed', done: app.status === 'confirmed' }
             ];
