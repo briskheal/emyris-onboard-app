@@ -2470,17 +2470,19 @@ app.post('/api/applicant/delete-document', async (req, res) => {
 
 app.post('/api/admin/system/vacuum', async (req, res) => {
     try {
-
         const company = await Company.findOne();
         const applicants = await Applicant.find();
 
-        // 1. Collect all "In-Use" Asset IDs
+        // 1. Collect all "In-Use" Asset IDs (clean filenames)
         const inUseIds = new Set();
         
         // From Company Branding
         if (company) {
             ['activeLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'].forEach(key => {
-                if (company[key]) inUseIds.add(company[key]);
+                if (company[key]) {
+                    const cleanId = String(company[key]).split('/').pop().trim();
+                    if (cleanId) inUseIds.add(cleanId);
+                }
             });
         }
 
@@ -2488,22 +2490,38 @@ app.post('/api/admin/system/vacuum', async (req, res) => {
         applicants.forEach(app => {
             if (app.documents) {
                 app.documents.forEach(doc => {
-                    if (doc.assetId) inUseIds.add(doc.assetId.toString());
+                    if (doc.assetId) {
+                        const cleanId = String(doc.assetId).split('/').pop().trim();
+                        if (cleanId) inUseIds.add(cleanId);
+                    }
                 });
             }
         });
 
         // 2. Delete Assets that are NOT in the inUse list
-        // Note: Only target categories that are "managed" (branding or applicant docs)
-        // to avoid accidental deletion of other potential data.
         const result = await Asset.deleteMany({
             _id: { $nin: Array.from(inUseIds) }
         });
 
+        // 3. Clean up orphaned physical files from /uploads/ on disk
+        let diskPruned = 0;
+        const uploadsDir = path.join(__dirname, 'uploads');
+        if (fs.existsSync(uploadsDir)) {
+            const files = fs.readdirSync(uploadsDir);
+            for (const file of files) {
+                if (file !== '.gitkeep' && file !== 'README.md' && !inUseIds.has(file)) {
+                    try {
+                        fs.unlinkSync(path.join(uploadsDir, file));
+                        diskPruned++;
+                    } catch (e) {}
+                }
+            }
+        }
+
         res.json({ 
             success: true, 
-            message: `Vacuum complete. Pruned ${result.deletedCount} unused assets.`,
-            stats: { pruned: result.deletedCount, kept: inUseIds.size }
+            message: `Vacuum complete. Pruned ${result.deletedCount || 0} unused database assets and ${diskPruned} orphaned disk files.`,
+            stats: { prunedDB: result.deletedCount || 0, prunedDisk: diskPruned, kept: inUseIds.size }
         });
     } catch (e) { 
         console.error('Vacuum failure:', e);
