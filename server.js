@@ -163,6 +163,14 @@ function saveBase64ToFile(email, category, base64Data) {
     
     const buffer = Buffer.from(matches[2], 'base64');
     fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+    // Asynchronously save to PostgreSQL Asset database as backup against Docker volume wipes
+    Asset.create({
+        _id: filename,
+        category: `doc_${safeCategory}`,
+        name: filename,
+        data: base64Data,
+        active: true
+    }).catch(e => console.error("Asset DB backup error:", e.message));
     return `/api/admin/uploads/${filename}`;
 }
 
