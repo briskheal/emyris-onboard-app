@@ -1055,6 +1055,29 @@ app.post('/api/admin/update-task', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Update failed' }); }
 });
 
+app.post('/api/admin/delete-document', async (req, res) => {
+    try {
+        const { email, assetId } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+        
+        applicant.documents = applicant.documents.filter(d => d.assetId !== assetId);
+        if (typeof applicant.markModified === 'function') applicant.markModified('documents');
+        await applicant.save();
+
+        if (Asset.findByIdAndDelete) {
+            await Asset.findByIdAndDelete(assetId);
+        } else {
+            await Asset.destroy({ where: { _id: assetId } });
+        }
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Delete doc error:', e);
+        res.status(500).json({ error: 'Failed to delete document' });
+    }
+});
+
 app.post('/api/admin/reject-document', async (req, res) => {
     try {
         const { email, docCategory, reason } = req.body;

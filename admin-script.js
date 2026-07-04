@@ -1573,6 +1573,7 @@ function renderVerificationChecklist(app) {
                                 <div style="display:flex; gap: 4px; flex-shrink: 0;">
                                     <button class="btn btn-tool" onclick="viewDocument('${f.assetId || ''}')" style="padding: 2px 5px; font-size: 0.65rem;">👁️</button>
                                     <button class="btn btn-tool" onclick="downloadAsset('${f.assetId || ''}', this)" data-category="${dName}" style="padding: 2px 5px; font-size: 0.65rem;">📥</button>
+                                    <button class="btn btn-tool btn-tool-danger" onclick="deleteDocument('${f.assetId || ''}', '${dName}')" title="Delete this document" style="padding: 2px 5px; font-size: 0.65rem; color:#ef4444; border-color:rgba(239,68,68,0.2); background:rgba(239,68,68,0.1);">🗑️</button>
                                 </div>
                             </div>
                         `).join('')}
@@ -1740,6 +1741,34 @@ async function handleProxyUpload(e, category) {
     } finally {
         unlockUI();
         e.target.value = ''; // Reset input
+    }
+}
+
+async function deleteDocument(assetId, categoryName) {
+    if (!activeV_Applicant) return;
+    if (!confirm(`Are you sure you want to completely delete this file for ${categoryName}?`)) return;
+
+    try {
+        lockUI(`🗑️ Deleting ${categoryName}...`);
+        const res = await fetch('/api/admin/delete-document', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: activeV_Applicant.email, assetId })
+        });
+        const result = await res.json();
+        if (result.success) {
+            showToast(`✅ Successfully deleted ${categoryName}`);
+            // Remove from local state
+            activeV_Applicant.documents = activeV_Applicant.documents.filter(d => d.assetId !== assetId);
+            renderVerificationChecklist(activeV_Applicant);
+            renderDocGallery(activeV_Applicant);
+        } else {
+            showToast(result.error || "Failed to delete document", "error");
+        }
+    } catch (err) {
+        showToast("Network error deleting document", "error");
+    } finally {
+        unlockUI();
     }
 }
 
