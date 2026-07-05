@@ -1432,7 +1432,16 @@ async function openVerificationView(email) {
     document.getElementById('v_reportingTo').value = app.reportingTo || "";
     document.getElementById('v_hq').value = app.hq || app.formData?.hq || "";
     document.getElementById('v_empCode').value = app.empCode || app.formData?.empCode || "";
-    document.getElementById('v_proposed_desg').innerText = app.designation || app.formData?.designation || "NOT SPECIFIED";
+    const desgSel = document.getElementById('v_proposed_desg');
+    desgSel.innerHTML = '<option value="">-- Select Designation --</option>';
+    if (companyData && companyData.designations) {
+        Object.values(companyData.designations).forEach(list => {
+            list.forEach(d => {
+                desgSel.innerHTML += `<option value="${d}">${d}</option>`;
+            });
+        });
+    }
+    desgSel.value = app.designation || app.formData?.designation || "";
 
     // 4.5 Salary Breakup
     const sal = app.salaryBreakup || {};
@@ -1971,7 +1980,7 @@ async function saveAllVerificationData(silent = false) {
         address: document.getElementById('v_address').value,
         fullName: document.getElementById('v_fullName') ? document.getElementById('v_fullName').value : undefined,
         phone: document.getElementById('v_phone') ? document.getElementById('v_phone').value : undefined,
-        detailDesignation: document.getElementById('v_detail_designation') ? document.getElementById('v_detail_designation').value : undefined,
+        detailDesignation: document.getElementById('v_proposed_desg') ? document.getElementById('v_proposed_desg').value : undefined,
         detailHq: document.getElementById('v_detail_hq') ? document.getElementById('v_detail_hq').value : undefined,
         fatherName: document.getElementById('v_fatherName') ? document.getElementById('v_fatherName').value : undefined,
         gender: document.getElementById('v_gender') ? document.getElementById('v_gender').value : undefined,
