@@ -507,7 +507,9 @@ app.post('/api/applicant-login', async (req, res) => {
                 actualJoiningDate: applicant.actualJoiningDate,
                 offerAccepted: applicant.offerAccepted,
                 offerLetterData: applicant.offerLetterData,
-                apptLetterData: applicant.apptLetterData
+                apptLetterData: applicant.apptLetterData,
+                isExistingStaff: applicant.isExistingStaff,
+                rapidTestCompleted: applicant.rapidTestCompleted
             }
         });
     } catch (error) {
