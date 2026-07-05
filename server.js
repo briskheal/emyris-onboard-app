@@ -862,9 +862,9 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
         const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo, pin, state,
                 customPin, epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc } = req.body;
 
-        // Validation: Core fields mandatory, statutory/bank fields are optional
-        if (!fullName || !email || !phone || !empCode || !designation || !targetSalary || !division || !hq || !joinDate || !dob || !address || !reportingTo || !pin || !state) {
-            return res.status(400).json({ success: false, message: 'All fields (Name, Email, Phone, Code, Desg, Div, HQ, Reporting, Dates, Salary, Address, Pincode, State) are mandatory.' });
+        // Validation: Only Name, Email, and Phone are strictly mandatory for rapid account creation
+        if (!fullName || !email || !phone) {
+            return res.status(400).json({ success: false, message: 'Name, Email, and Phone are mandatory.' });
         }
         // customPin is the portal login PIN. Fall back to pin (pincode) if not set.
         const portalPin = (customPin && customPin.toString().length === 6) ? customPin.toString() : Math.floor(100000 + Math.random() * 900000).toString();
