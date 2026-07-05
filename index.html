@@ -193,74 +193,31 @@
                     <p class="pin-hint">Please save this PIN. You will need it to resume your application. We've also sent it to your email.</p>
                     <button class="btn btn-primary" onclick="showApplicantLogin()">Proceed to Login</button>
                 </div>
-            </div>
-
-            <!-- Applicant Login Screen -->
+              <!-- Applicant Login Modal -->
             <div id="applicantLogin" class="view-section hidden">
-                <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem; background:radial-gradient(ellipse at 60% 20%, rgba(99,102,241,0.12) 0%, transparent 60%), radial-gradient(ellipse at 20% 80%, rgba(16,185,129,0.08) 0%, transparent 50%);">
-                    <div style="width:100%; max-width:440px;">
-
-                        <!-- Logo / Brand -->
-                        <div style="text-align:center; margin-bottom:2rem;">
-                            <div id="loginLogoArea" style="margin-bottom:1rem;"></div>
-                            <p style="color:rgba(255,255,255,0.4); font-size:0.8rem; letter-spacing:0.05em; text-transform:uppercase;">Emyris Biolifesciences — Staff Portal</p>
-                        </div>
-
-                        <!-- Card -->
-                        <div style="background:linear-gradient(145deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02)); border:1px solid rgba(255,255,255,0.1); border-radius:24px; padding:1.75rem 2rem; box-shadow:0 25px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.1) inset;">
-
-                            <!-- Icon + Title -->
-                            <div style="text-align:center; margin-bottom:1.25rem;">
-                                <div style="width:56px; height:56px; background:linear-gradient(135deg,rgba(99,102,241,0.25),rgba(99,102,241,0.1)); border:1px solid rgba(99,102,241,0.3); border-radius:16px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; margin:0 auto 0.8rem; box-shadow:0 8px 32px rgba(99,102,241,0.2);">🔐</div>
-                                <h2 style="font-size:1.25rem; font-weight:700; background:linear-gradient(135deg,#a5b4fc,#818cf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin:0 0 0.2rem;">Resume Your Journey</h2>
-                                <p style="color:rgba(255,255,255,0.45); font-size:0.8rem; margin:0; line-height:1.4;">Enter your registered email and 6-digit PIN<br>provided by HR to continue.</p>
-                            </div>
-
-                            <!-- Form -->
-                            <form onsubmit="return false;" style="display:flex; flex-direction:column; gap:0.9rem;">
-                                <div>
-                                    <label style="display:block; font-size:0.75rem; font-weight:600; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem;">Email Address</label>
-                                    <input type="email" id="loginEmail" required placeholder="your.email@example.com"
-                                        style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:0.65rem 1rem; color:#fff; font-size:0.9rem; outline:none; transition:border-color 0.2s, box-shadow 0.2s; box-sizing:border-box;"
-                                        onfocus="this.style.borderColor='rgba(99,102,241,0.6)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,0.15)'"
-                                        onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'">
-                                </div>
-
-                                <div>
-                                    <label style="display:block; font-size:0.75rem; font-weight:600; color:rgba(255,255,255,0.5); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:0.4rem;">6-Digit PIN</label>
-                                    <input type="password" id="loginPin" required placeholder="••••••" maxlength="6" inputmode="numeric"
-                                        style="width:100%; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:0.65rem 1rem; color:#fff; font-size:1.4rem; letter-spacing:0.4em; outline:none; transition:border-color 0.2s, box-shadow 0.2s; box-sizing:border-box; text-align:center; font-family:monospace;"
-                                        onfocus="this.style.borderColor='rgba(99,102,241,0.6)';this.style.boxShadow='0 0 0 3px rgba(99,102,241,0.15)'"
-                                        onblur="this.style.borderColor='rgba(255,255,255,0.1)';this.style.boxShadow='none'">
-                                    <div style="text-align:right; margin-top:0.4rem;">
-                                        <a href="javascript:void(0)" onclick="handleForgotPin()" style="font-size:0.75rem; color:rgba(99,102,241,0.8); text-decoration:none; font-weight:500; transition:color 0.2s;"
-                                            onmouseover="this.style.color='#a5b4fc'" onmouseout="this.style.color='rgba(99,102,241,0.8)'">Forgot PIN? / Resend to Email</a>
-                                    </div>
-                                </div>
-
-                                <!-- Login Button -->
-                                <button type="button" onclick="handleApplicantLogin()"
-                                    style="width:100%; padding:0.85rem; background:linear-gradient(135deg,#6366f1,#4f46e5); border:none; border-radius:10px; color:#fff; font-size:0.95rem; font-weight:700; cursor:pointer; box-shadow:0 4px 20px rgba(99,102,241,0.4); transition:all 0.2s; letter-spacing:0.02em; margin-top:0.3rem;"
-                                    onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 8px 28px rgba(99,102,241,0.5)'"
-                                    onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 4px 20px rgba(99,102,241,0.4)'">
-                                    🚀 Login &amp; Resume
-                                </button>
-
-                                <!-- Back -->
-                                <button type="button" onclick="backToLanding()"
-                                    style="width:100%; padding:0.65rem; background:transparent; border:1px solid rgba(255,255,255,0.08); border-radius:10px; color:rgba(255,255,255,0.4); font-size:0.85rem; cursor:pointer; transition:all 0.2s;"
-                                    onmouseover="this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='rgba(255,255,255,0.7)'"
-                                    onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='rgba(255,255,255,0.4)'">
-                                    ← Back to Home
-                                </button>
-                            </form>
-                        </div>
-
-                        <!-- Footer hint -->
-                        <p style="text-align:center; color:rgba(255,255,255,0.25); font-size:0.75rem; margin-top:1.5rem; line-height:1.6;">
-                            New applicant? <a href="javascript:void(0)" onclick="showApplicantRegister()" style="color:rgba(99,102,241,0.7); text-decoration:none;">Start your journey here</a>
-                        </p>
+                <div class="login-card">
+                    <div class="login-header">
+                        <div class="login-icon">🔐</div>
+                        <h2 class="premium-title">Resume Application</h2>
+                        <p>Welcome back! Please enter your Email and Login PIN.</p>
                     </div>
+                    <form onsubmit="return false;">
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" id="loginEmail" required placeholder="Enter your email">
+                        </div>
+                        <div class="form-group">
+                            <label>6-Digit PIN</label>
+                            <input type="password" id="loginPin" required placeholder="Enter PIN" maxlength="6">
+                            <div style="text-align: right; margin-top: 5px;">
+                                <a href="javascript:void(0)" onclick="handleForgotPin()" style="font-size: 0.8rem; color: var(--accent); text-decoration: none; font-weight: 500;">Forgot PIN? / Resend</a>
+                            </div>
+                        </div>
+                        <div class="login-actions" style="margin-top: 1.5rem;">
+                            <button type="button" class="btn btn-outline" onclick="backToLanding()">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="handleApplicantLogin()">Login to Resume</button>
+                        </div>
+                    </form>
                 </div>
             </div>
 
