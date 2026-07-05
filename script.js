@@ -1473,7 +1473,7 @@ function showConsentModal() {
         return;
     }
 
-    if (localStorage.getItem('finalConsentAccepted') === 'true') {
+    if (localStorage.getItem('finalConsentAccepted_' + currentApplicant.email) === 'true') {
         consentGiven = true;
         document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
         return;
@@ -1488,7 +1488,7 @@ function closeConsentModal() {
 
 function acceptConsentAndSubmit() {
     consentGiven = true;
-    localStorage.setItem('finalConsentAccepted', 'true');
+    localStorage.setItem('finalConsentAccepted_' + currentApplicant.email, 'true');
     closeConsentModal();
     document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 }
