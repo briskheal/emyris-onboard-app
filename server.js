@@ -774,6 +774,9 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+// In-memory mutex for preventing race conditions during simultaneous document uploads
+const documentUploadLocks = {};
+
 app.post('/api/applicant/upload-document', async (req, res) => {
     try {
         const { email, category, fileName, fileData } = req.body;
@@ -805,21 +808,39 @@ app.post('/api/applicant/upload-document', async (req, res) => {
             uploadedAt: new Date()
         };
 
-        // Logic: Replace for IDs, Append for academic/financial docs
-        const multiAllowed = ['Degree Certificate', 'Provisional Certificate', 'Salary Slip', 'Experience Letter', 'Testimonial'];
-        const isMulti = multiAllowed.some(m => category.includes(m));
-
-        if (!isMulti) {
-            await Applicant.updateOne(
-                { email },
-                { $pull: { documents: { category: category } } }
-            );
+        // Acquire Mutex Lock for this email to prevent simultaneous upload race conditions
+        while (documentUploadLocks[email]) {
+            await new Promise(resolve => setTimeout(resolve, 50));
         }
-        
-        await Applicant.updateOne(
-            { email },
-            { $push: { documents: docMetadata } }
-        );
+        documentUploadLocks[email] = true;
+
+        try {
+            // Fresh read inside the lock to ensure we have the absolute latest array
+            const currentApplicant = await Applicant.findOne({ email });
+            let docs = currentApplicant.documents || [];
+            
+            // Convert to array if it's somehow a string (Sequelize JSON fallback)
+            if (typeof docs === 'string') {
+                try { docs = JSON.parse(docs); } catch (e) { docs = []; }
+            }
+
+            const multiAllowed = ['Degree Certificate', 'Provisional Certificate', 'Salary Slip', 'Experience Letter', 'Testimonial'];
+            const isMulti = multiAllowed.some(m => category.includes(m));
+
+            if (!isMulti) {
+                // Remove existing document of the same category
+                docs = docs.filter(d => d.category !== category);
+            }
+            
+            // Append the new document
+            docs.push(docMetadata);
+
+            // Save back to DB atomically
+            await Applicant.updateOne({ email }, { $set: { documents: docs } });
+        } finally {
+            // Release Mutex Lock
+            delete documentUploadLocks[email];
+        }
 
         console.log(`Γ£à [DOC] Local Upload: ${category} for ${email} saved to ${fileUrl}`);
 
