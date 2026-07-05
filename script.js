@@ -44,6 +44,14 @@ async function initializeApp() {
     await fetchCompanyData();
     populateAnniversaryDays();
     updateView('landingPage');
+
+    // Show Global Welcome Consent if not accepted
+    if (localStorage.getItem('emyGlobalConsent') !== 'true') {
+        const globalModal = document.getElementById('globalWelcomeConsentModal');
+        if (globalModal) {
+            globalModal.classList.remove('hidden');
+        }
+    }
 }
 
 function populateAnniversaryDays() {
@@ -1525,20 +1533,13 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
     }
 });
 
-// --- Privacy & Disclaimer Modals ---
-function openPrivacyModal(e) {
-    if (e) e.preventDefault();
-    document.getElementById('privacyModal').classList.remove('hidden');
-}
-function closePrivacyModal() {
-    document.getElementById('privacyModal').classList.add('hidden');
-}
-function openDisclaimerModal(e) {
-    if (e) e.preventDefault();
-    document.getElementById('disclaimerModal').classList.remove('hidden');
-}
-function closeDisclaimerModal() {
-    document.getElementById('disclaimerModal').classList.add('hidden');
+// --- Global Welcome Consent ---
+function acceptGlobalConsent() {
+    localStorage.setItem('emyGlobalConsent', 'true');
+    const modal = document.getElementById('globalWelcomeConsentModal');
+    if (modal) {
+        modal.classList.add('hidden');
+    }
 }
 
 // --- RAPID TEST LOGIC ---

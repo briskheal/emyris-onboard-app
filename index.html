@@ -691,65 +691,42 @@
             <!-- Footer -->
             <footer style="margin-top: auto; padding: 2rem 0; text-align: center; border-top: 1px solid var(--glass-border); color: var(--text-secondary); font-size: 0.9rem;">
                 <p>&copy; 2026 Emyris HRMS. All rights reserved.</p>
-                <div style="margin-top: 0.5rem; display: flex; justify-content: center; gap: 1.5rem;">
-                    <a href="#" onclick="openPrivacyModal(event)" style="color: var(--primary-light); text-decoration: underline; cursor: pointer;">Privacy Policy</a>
-                    <a href="#" onclick="openDisclaimerModal(event)" style="color: var(--primary-light); text-decoration: underline; cursor: pointer;">Data Security & Disclaimer</a>
-                </div>
             </footer>
         </main>
     </div>
 
-    <!-- Privacy Policy Modal -->
-    <div id="privacyModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Privacy Policy</h3>
-                <button type="button" class="close-btn" onclick="closePrivacyModal()">&times;</button>
+    <!-- Global Welcome Consent Modal -->
+    <div id="globalWelcomeConsentModal" class="modal-overlay hidden" style="z-index: 10000; backdrop-filter: blur(10px); background: rgba(0,0,0,0.85);">
+        <div class="modal-content" style="max-width: 650px; background: linear-gradient(145deg, #0f172a, #1e293b); border: 1px solid rgba(16, 185, 129, 0.3); box-shadow: 0 0 60px rgba(16, 185, 129, 0.15), 0 25px 50px rgba(0,0,0,0.6);">
+            <div class="modal-header" style="border-bottom: 1px solid rgba(16, 185, 129, 0.2); background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);">
+                <h3 class="modal-title" style="color: #10b981; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.5rem;">🛡️</span> Privacy & Data Security Consent
+                </h3>
             </div>
-            <div class="modal-body" style="line-height: 1.6; color: var(--text-secondary); max-height: 70vh; overflow-y: auto;">
-                <p>At Emyris, your privacy is our top priority. This Privacy Policy outlines how we collect, process, and store your personal information during the onboarding process.</p>
+            <div class="modal-body" style="line-height: 1.6; color: rgba(255,255,255,0.8); max-height: 65vh; overflow-y: auto; padding: 1.5rem;">
+                <p style="font-size: 0.95rem; margin-bottom: 1.5rem;">Welcome to the Emyris Staff Portal. We understand that submitting highly sensitive information requires absolute trust. Please read our unified Privacy & Data Security Policy below.</p>
                 
-                <h4 style="color: white; margin-top: 1rem;">1. Information We Collect</h4>
-                <p>We only collect information essential for employment, payroll setup, and statutory compliance. This includes your name, contact details, educational background, and government-issued identifiers.</p>
+                <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1.05rem;">1. Information We Collect & Purpose</h4>
+                <p style="font-size: 0.9rem; margin-bottom: 1.25rem;">Your highly sensitive information (PAN, Aadhaar, Cheque details) is collected strictly for legitimate employment record creation, EPF/ESI statutory compliance, salary processing, and mandatory background verification under Indian labor laws.</p>
 
-                <h4 style="color: white; margin-top: 1rem;">2. Purpose of Collection</h4>
-                <p>Your data is strictly utilized for employment record creation, EPF/ESI statutory compliance, salary processing, and mandatory background verification.</p>
+                <h4 style="color: white; margin-bottom: 0.5rem; font-size: 1.05rem;">2. Enterprise-Grade Protection</h4>
+                <ul style="margin-left: 1.25rem; font-size: 0.9rem; margin-bottom: 1.25rem; color: rgba(255,255,255,0.7);">
+                    <li style="margin-bottom: 0.5rem;"><strong style="color: rgba(255,255,255,0.9);">End-to-End Encryption:</strong> All uploaded documents are strictly encrypted in transit and securely preserved within the private Emyris Server architecture.</li>
+                    <li><strong style="color: rgba(255,255,255,0.9);">Role-Based Access Control (RBAC):</strong> Access to your sensitive documents is strictly restricted to fully authorized internal HR and Payroll administrators.</li>
+                </ul>
 
-                <h4 style="color: white; margin-top: 1rem;">3. Your Rights</h4>
-                <p>You have the right to request access to or correction of your personal data. If you notice any inaccuracies in your submitted profile, please contact the HR department immediately to rectify your records.</p>
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 1rem; border-radius: 8px; margin: 1.5rem 0;">
+                    <h4 style="color: #10b981; margin: 0 0 0.5rem 0; font-size: 1rem;">Zero Third-Party Misuse Guarantee</h4>
+                    <p style="margin: 0; font-size: 0.9rem;">We guarantee that your sensitive identity documents will <strong>never</strong> be sold, rented, or shared with any unauthorized third-party agencies.</p>
+                </div>
+
+                <p style="margin-top: 1rem; font-weight: 600; color: #60a5fa; font-size: 0.9rem; text-align: center;">By clicking "I Accept" below, you explicitly consent to the processing of your data under these strict security protocols. This message will not be shown again once accepted.</p>
             </div>
-            <div class="modal-footer" style="justify-content: flex-end;">
-                <button type="button" class="btn btn-secondary" onclick="closePrivacyModal()">Close</button>
+            <div class="modal-footer" style="justify-content: center; border-top: 1px solid rgba(255,255,255,0.1); padding: 1.25rem;">
+                <button type="button" class="btn btn-primary" onclick="acceptGlobalConsent()" style="width: 100%; max-width: 300px; padding: 0.85rem; font-weight: 700; font-size: 1rem; background: linear-gradient(135deg, #10b981, #059669); border: none; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);">I Accept & Continue</button>
             </div>
         </div>
     </div>
-
-    <!-- Data Security & Disclaimer Modal -->
-    <div id="disclaimerModal" class="modal-overlay hidden">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <h3 class="modal-title">Data Security & Disclaimer</h3>
-                <button type="button" class="close-btn" onclick="closeDisclaimerModal()">&times;</button>
-            </div>
-            <div class="modal-body" style="line-height: 1.6; color: var(--text-secondary); max-height: 70vh; overflow-y: auto;">
-                <p>We understand that submitting highly sensitive information—such as your PAN Card, Aadhaar Card, and Bank/Cheque details—requires absolute trust.</p>
-                
-                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); padding: 1rem; border-radius: 8px; margin: 1rem 0;">
-                    <h4 style="color: #10b981; margin: 0 0 0.5rem 0;">🛡️ Zero Third-Party Misuse Guarantee</h4>
-                    <p style="margin: 0; font-size: 0.95rem;">We guarantee that your sensitive identity documents will <strong>never</strong> be sold, rented, or shared with any unauthorized third-party agencies.</p>
-                </div>
-
-                <h4 style="color: white; margin-top: 1rem;">Enterprise-Grade Protection</h4>
-                <ul style="margin-left: 1.5rem; margin-top: 0.5rem;">
-                    <li style="margin-bottom: 0.5rem;"><strong>End-to-End Encryption:</strong> All uploaded documents are strictly encrypted in transit and securely preserved within the private Emyris Server architecture.</li>
-                    <li style="margin-bottom: 0.5rem;"><strong>Role-Based Access Control (RBAC):</strong> Access to your sensitive documents is strictly restricted. Only fully authorized internal HR and Payroll administrators possess the clearance to view your files for statutory compliance purposes.</li>
-                </ul>
-
-                <p style="margin-top: 1rem;">By submitting your documents through this highly secured portal, you consent to the processing of your data strictly for legitimate employment and statutory requirements under Indian labor laws.</p>
-            </div>
-            <div class="modal-footer" style="justify-content: flex-end;">
-                <button type="button" class="btn btn-primary" onclick="closeDisclaimerModal()">I Understand</button>
-            </div>
         </div>
     </div>
     </div>
