@@ -824,14 +824,8 @@ app.post('/api/applicant/upload-document', async (req, res) => {
                 try { docs = JSON.parse(docs); } catch (e) { docs = []; }
             }
 
-            const multiAllowed = ['Degree Certificate', 'Provisional Certificate', 'Salary Slip', 'Experience Letter', 'Testimonial'];
-            const isMulti = multiAllowed.some(m => category.includes(m));
-
-            if (!isMulti) {
-                // Remove existing document of the same category
-                docs = docs.filter(d => d.category !== category);
-            }
-            
+            // The isMulti restriction has been removed. 
+            // All categories now support multiple files (e.g. Front & Back uploads for Aadhar/PAN).
             // Append the new document
             docs.push(docMetadata);
 
