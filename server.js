@@ -960,6 +960,47 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             }
         });
 
+        // Send email to existing staff with their login PIN
+        const portalUrl = req.headers.origin || process.env.APP_URL || 'https://onboard.emyrisbio.com';
+        
+        // Wrap in try-catch to not block the success response if email fails
+        try {
+            await sendEmail({
+                to: email,
+                subject: `Welcome to Emyris Staff Portal - Your Login Credentials`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+                        <h2 style="color: #10b981;">Emyris Biolifesciences Staff Portal</h2>
+                        <p>Dear ${fullName},</p>
+                        <p>Your employee record has been created in the Emyris Staff Portal. Please log in to complete your profile and upload any required documents.</p>
+                        
+                        <div style="background-color: #f3f4f6; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                            <p style="margin: 0 0 10px 0;"><strong>Portal URL:</strong> <a href="${portalUrl}" style="color: #3b82f6;">${portalUrl}</a></p>
+                            <p style="margin: 0 0 10px 0;"><strong>Login Email:</strong> ${email}</p>
+                            <p style="margin: 0;"><strong>Secure PIN:</strong> <span style="font-size: 1.2em; font-weight: bold; letter-spacing: 2px; color: #10b981;">${portalPin}</span></p>
+                        </div>
+    
+                        <p><strong>Instructions:</strong></p>
+                        <ol>
+                            <li>Click the portal link above.</li>
+                            <li>Click on <strong>"Resume Journey"</strong>.</li>
+                            <li>Enter your email and the 6-digit PIN provided above.</li>
+                            <li>Review and update your personal, statutory, and bank details.</li>
+                            <li>Upload your required documents (Aadhar, PAN, etc.) and submit.</li>
+                        </ol>
+    
+                        <p style="margin-top: 30px; font-size: 0.9em; color: #666;">
+                            If you have any issues logging in, please contact the HR team.<br>
+                            — Emyris HR Team
+                        </p>
+                    </div>
+                `
+            });
+            console.log(`📧 [EMAIL SENT] Credentials sent to ${email}`);
+        } catch (emailErr) {
+            console.error(`❌ [EMAIL ERROR] Failed to send credentials to ${email}:`, emailErr);
+        }
+
         console.log(`✅ [FAST-TRACK] Added existing staff member: ${email} (${fullName}) | Portal PIN: ${portalPin}`);
         res.status(200).json({ success: true, message: 'Existing staff added successfully.', portalPin, email });
 
