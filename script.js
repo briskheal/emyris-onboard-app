@@ -1626,6 +1626,12 @@ function selectRapidAnswer(qId, selectedIdx, correctIdx) {
     const optionsContainer = document.getElementById(`qoptions_${qId}`);
     if (!optionsContainer) return;
 
+    // Block re-attempts: disable all radio buttons for this question
+    const allRadios = optionsContainer.querySelectorAll('input[type="radio"]');
+    allRadios.forEach(radio => radio.disabled = true);
+    // Also disable pointer events on the container so they can't click labels
+    optionsContainer.style.pointerEvents = 'none';
+
     // Reset and style options
     const optionBoxes = optionsContainer.querySelectorAll('[id^="optbox_"]');
     optionBoxes.forEach((box, idx) => {
