@@ -1664,8 +1664,8 @@ function renderVerificationChecklist(app) {
                             <div style="font-size: 0.7rem; color: var(--text-soft); display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
                                 <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${f.name}">📄 ${truncateFilename(f.name, 25)}</span>
                                 <div style="display:flex; gap: 4px; flex-shrink: 0;">
-                                    <button class="btn btn-tool" onclick="viewDocument('${f.assetId || ''}')" style="padding: 2px 5px; font-size: 0.65rem;">👁️</button>
-                                    <button class="btn btn-tool" onclick="downloadAsset('${f.assetId || ''}', this)" data-category="${dName}" style="padding: 2px 5px; font-size: 0.65rem;">📥</button>
+                                    <button class="btn btn-tool" onclick="viewDocument('${f.path || f.assetId || ''}')" style="padding: 2px 5px; font-size: 0.65rem;">👁️</button>
+                                    <button class="btn btn-tool" onclick="downloadAsset('${f.path || f.assetId || ''}', this)" data-category="${dName}" style="padding: 2px 5px; font-size: 0.65rem;">📥</button>
                                     <button class="btn btn-tool btn-tool-danger" onclick="deleteDocument('${f.assetId || ''}', '${dName}')" title="Delete this document" style="padding: 2px 5px; font-size: 0.65rem; color:#ef4444; border-color:rgba(239,68,68,0.2); background:rgba(239,68,68,0.1);">🗑️</button>
                                 </div>
                             </div>
@@ -1907,8 +1907,8 @@ function renderDocGallery(app) {
                             ✅ ${f.name}
                         </div>
                         <div class="doc-actions-row">
-                            <button class="btn-tool" onclick="viewDocument('${f.assetId || ''}')" title="View">👁️</button> 
-                            <button class="btn-tool" onclick="downloadAsset('${f.assetId || ''}', '${f.name}')" title="Download">📥</button>
+                            <button class="btn-tool" onclick="viewDocument('${f.path || f.assetId || ''}')" title="View">👁️</button> 
+                            <button class="btn-tool" onclick="downloadAsset('${f.path || f.assetId || ''}', '${f.name}')" title="Download">📥</button>
                             <button class="btn-tool" style="color:#ef4444;" onclick="deleteDocument('${f.assetId || ''}', '${dName}')" title="Delete">🗑️</button>
                         </div>
                     </div>
