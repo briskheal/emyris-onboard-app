@@ -417,6 +417,31 @@ function logoutApplicant() {
 function resumeApplication() {
     const app = currentApplicant;
 
+    // ── EXISTING STAFF BYPASS ──────────────────────────────────────────────
+    // If this is an existing employee fast-tracked by admin:
+    //  • Skip rapid test (rapidTestCompleted is pre-set to true)
+    //  • Skip offer/appointment letter flow (already completed)
+    //  • Go directly to 6-step onboarding form to collect personal/bank/doc records
+    if (app.isExistingStaff) {
+        console.log('👤 [EXISTING STAFF] Bypassing rapid test and offer flow. Loading record update form...');
+        // Update form heading to reflect this is a record update, not new onboarding
+        const formHeader = document.getElementById('formTitle');
+        if (formHeader) formHeader.innerText = '📋 Update Your Employee Records';
+        const formSubtitle = document.getElementById('formSubtitle');
+        if (formSubtitle) formSubtitle.innerText = 'Please fill in your personal details, bank information, and upload required documents.';
+        // Hide offer/appointment pipeline steps in the sidebar if present
+        document.querySelectorAll('[data-step-label="Offer Letter"], [data-step-label="Appointment"]').forEach(el => el.style.display = 'none');
+        // Go directly to onboarding form
+        updateView('onboardingForm');
+        currentStep = 1;
+        populateDropdowns();
+        renderStep(1);
+        prefillForm();
+        renderApplicantDocuments();
+        return;
+    }
+    // ── END EXISTING STAFF BYPASS ──────────────────────────────────────────
+
     if (!app.rapidTestCompleted) {
         startRapidTest();
         return;
@@ -441,6 +466,7 @@ function resumeApplication() {
     prefillForm();
     renderApplicantDocuments();
 }
+
 
 function prefillForm() {
     const form = document.getElementById('onboardingForm');

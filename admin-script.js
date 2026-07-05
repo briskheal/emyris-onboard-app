@@ -211,10 +211,22 @@ function closeExistingStaffModal() {
 }
 
 
+function generateExistingStaffPin() {
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    const pinEl = document.getElementById('ex_customPin');
+    if (pinEl) { pinEl.value = pin; }
+}
+
 async function submitExistingStaff(event) {
     event.preventDefault();
     lockUI("⚡ Fast-Tracking Existing Staff...");
-    
+
+    const customPin = document.getElementById('ex_customPin')?.value?.trim();
+    if (!customPin || customPin.length !== 6 || !/^\d{6}$/.test(customPin)) {
+        unlockUI();
+        return showToast("⚠️ Please enter or generate a valid 6-digit Portal PIN.", "warning");
+    }
+
     const data = {
         fullName: document.getElementById('ex_fullName').value,
         email: document.getElementById('ex_email').value.trim().toLowerCase(),
@@ -229,14 +241,23 @@ async function submitExistingStaff(event) {
         joinDate: document.getElementById('ex_joinDate').value,
         division: document.getElementById('ex_division').value,
         reportingTo: document.getElementById('ex_reportingTo').value,
-        hq: document.getElementById('ex_hq').value
+        hq: document.getElementById('ex_hq').value,
+        customPin,
+        // Optional fields — no validation if blank
+        epfNumber: document.getElementById('ex_epfNumber')?.value?.trim() || '',
+        uanNumber: document.getElementById('ex_uanNumber')?.value?.trim() || '',
+        esiNumber: document.getElementById('ex_esiNumber')?.value?.trim() || '',
+        bankName: document.getElementById('ex_bankName')?.value?.trim() || '',
+        accNo: document.getElementById('ex_accNo')?.value?.trim() || '',
+        ifsc: document.getElementById('ex_ifsc')?.value?.trim() || ''
     };
 
-    // Validation: All fields are mandatory
-    const missing = Object.entries(data).filter(([key, val]) => !val).map(([key]) => key);
+    // Validate only core mandatory fields (optional fields excluded)
+    const coreFields = ['fullName','email','phone','dob','pin','state','address','empCode','designation','targetSalary','joinDate','division','reportingTo','hq'];
+    const missing = coreFields.filter(key => !data[key]);
     if (missing.length > 0) {
         unlockUI();
-        return showToast("⚠️ All fields are mandatory. Please complete the form.", "warning");
+        return showToast(`⚠️ Missing required fields: ${missing.join(', ')}`, "warning");
     }
 
     try {
@@ -245,30 +266,33 @@ async function submitExistingStaff(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        
+
         const result = await res.json();
         if (result.success) {
-            showToast("🎊 Existing staff member fast-tracked successfully!", "success");
             closeExistingStaffModal();
-            await fetchApplicants(); // Refresh main table
-            
-            // Switch to Letters tab and set up the newly added person directly into Appointment
-            updateView('adminDashboard');
-            switchAdminTab('setup');
-            
-            setTimeout(async () => {
-                const targetEmail = data.email;
-                const templateSel = document.getElementById('activeTemplateSelect');
-                if (templateSel) templateSel.value = 'appt'; // Default to appointment for existing staff
-                await switchEditorTemplate();
-                await populateHubApplicantSelect();
-                
-                const targetSel = document.getElementById('hubTargetApplicant');
-                if (targetSel) targetSel.value = targetEmail;
-            
-                fillEditorWithRealData(true);
-            }, 500);
+            await fetchApplicants();
 
+            // Show credentials copy card
+            const portalUrl = window.location.origin;
+            const credMsg = `Dear ${data.fullName},\n\nYour Emyris Staff Portal login credentials:\n🌐 Portal: ${portalUrl}\n📧 Email: ${data.email}\n🔑 PIN: ${result.portalPin || customPin}\n\nPlease log in via "Resume Journey" to complete your employee records. No test or offer letter steps are required.\n\n— HR Team, Emyris Biolifesciences`;
+
+            const confirmed = confirm(
+                `✅ ${data.fullName} added successfully!\n\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━\n` +
+                `📧 Email: ${data.email}\n` +
+                `🔑 Portal PIN: ${result.portalPin || customPin}\n` +
+                `🌐 Portal: ${portalUrl}\n` +
+                `━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+                `Click OK to copy the WhatsApp/Email message to clipboard.`
+            );
+            if (confirmed) {
+                try {
+                    await navigator.clipboard.writeText(credMsg);
+                    showToast("📋 Credentials message copied to clipboard! Ready to paste in WhatsApp.", "success");
+                } catch (e) {
+                    showToast("✅ Staff added! Copy PIN manually: " + (result.portalPin || customPin), "success");
+                }
+            }
         } else {
             showToast(result.message || "Failed to add staff.", "error");
         }
@@ -278,6 +302,7 @@ async function submitExistingStaff(event) {
         unlockUI();
     }
 }
+
 
 // Utility functions now loaded from shared-utils.js
 
@@ -1551,10 +1576,13 @@ function renderVerificationProfile(app) {
             <option value="Married" ${(app.maritalStatus === 'Married' || fd.maritalStatus === 'Married') ? 'selected' : ''}>Married</option>
             <option value="Divorced" ${(app.maritalStatus === 'Divorced' || fd.maritalStatus === 'Divorced') ? 'selected' : ''}>Divorced</option>
         </select>` },
-        { label: 'Anniversary Date', val: app.anniversaryDate || (fd.maritalStatus === 'Married' ? `${fd.anniversaryDay || '??'}-${fd.anniversaryMonth || '??'}` : 'N/A') },
-        { label: 'EPF Number', val: app.epfNumber || fd.epfNumber || 'N/A' },
-        { label: 'UAN Number', val: app.uanNumber || fd.uanNumber || 'N/A' },
-        { label: 'ESI Number', val: app.esiNumber || fd.esiNumber || 'N/A' },
+        { label: 'Anniversary Date', val: `<input type="text" id="v_anniversaryDate" class="form-input-sm" value="${app.anniversaryDate || (fd.maritalStatus === 'Married' ? `${fd.anniversaryDay || ''}-${fd.anniversaryMonth || ''}` : '')}" placeholder="DD-Month" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'EPF Number', val: `<input type="text" id="v_epfNumber" class="form-input-sm" value="${app.epfNumber || fd.epfNumber || ''}" placeholder="e.g. AB/123/456789" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'UAN Number', val: `<input type="text" id="v_uanNumber" class="form-input-sm" value="${app.uanNumber || fd.uanNumber || ''}" placeholder="e.g. 100123456789" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'ESI Number', val: `<input type="text" id="v_esiNumber" class="form-input-sm" value="${app.esiNumber || fd.esiNumber || ''}" placeholder="e.g. 1234567890" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Bank Name', val: `<input type="text" id="v_bankName" class="form-input-sm" value="${fd.bankName || ''}" placeholder="e.g. HDFC Bank" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'Account Number', val: `<input type="text" id="v_accNo" class="form-input-sm" value="${fd.accNo || ''}" placeholder="e.g. 50100123456" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
+        { label: 'IFSC Code', val: `<input type="text" id="v_ifsc" class="form-input-sm" value="${fd.ifsc || ''}" placeholder="e.g. HDFC0001234" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
         { label: 'Date of Birth', val: `<input type="text" id="v_dob" class="form-input-sm" value="${app.dob ? formatDateDMY(app.dob) : (fd.dob ? formatDateDMY(fd.dob) : '')}" placeholder="DD-MM-YYYY" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
         { label: 'Rapid Test Score', val: app.rapidTestCompleted ? `<span style="color:var(--success); font-weight:bold; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:12px;">${app.rapidTestScore} / 20</span>` : '<span style="color:var(--text-muted);">Not Completed</span>' },
         { label: 'Current Address', val: `<textarea id="v_address" class="form-input-sm" style="width:100%; min-height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:0.85rem; resize:vertical;">${app.address || fd.address || ''}</textarea>` },
@@ -1912,13 +1940,14 @@ async function saveAllVerificationData(silent = false) {
         fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
     };
 
-    // 2. Validate Salary vs Target CTC
+    // 2. Validate Salary vs Target CTC — only when both sides are non-zero
     const monthlyTotal = Object.values(salaryBreakup).reduce((a, b) => a + b, 0);
     const calculatedAnnual = monthlyTotal * 12;
     const overrideCtc = parseFloat(document.getElementById('v_approvedCtc')?.value);
     const targetAnnual = !isNaN(overrideCtc) ? overrideCtc : (parseFloat(activeV_Applicant.formData?.salary) || 0);
 
-    if (!silent && Math.abs(calculatedAnnual - targetAnnual) > 500) {
+    // SAFETY: Skip mismatch alert if either side is zero (existing staff with no salary yet)
+    if (!silent && targetAnnual > 0 && calculatedAnnual > 0 && Math.abs(calculatedAnnual - targetAnnual) > 500) {
         if (!confirm(`⚠️ SALARY MISMATCH ALERT:\n\nThe current breakup totals ₹${calculatedAnnual.toLocaleString('en-IN')} annually,\nbut the Approved/Target CTC is ₹${targetAnnual.toLocaleString('en-IN')}.\n\nProceed anyway?`)) {
             return false;
         }
@@ -1948,6 +1977,14 @@ async function saveAllVerificationData(silent = false) {
         gender: document.getElementById('v_gender') ? document.getElementById('v_gender').value : undefined,
         bloodGroup: document.getElementById('v_bloodGroup') ? document.getElementById('v_bloodGroup').value : undefined,
         maritalStatus: document.getElementById('v_maritalStatus') ? document.getElementById('v_maritalStatus').value : undefined,
+        // Statutory & bank fields — safe empty string if not filled
+        epfNumber: document.getElementById('v_epfNumber')?.value || '',
+        uanNumber: document.getElementById('v_uanNumber')?.value || '',
+        esiNumber: document.getElementById('v_esiNumber')?.value || '',
+        anniversaryDate: document.getElementById('v_anniversaryDate')?.value || '',
+        bankName: document.getElementById('v_bankName')?.value || '',
+        accNo: document.getElementById('v_accNo')?.value || '',
+        ifsc: document.getElementById('v_ifsc')?.value || '',
         salary: targetAnnual,
         salaryBreakup,
         incrementData,

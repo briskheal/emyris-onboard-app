@@ -857,12 +857,15 @@ app.get('/api/admin/applicant-pin/:email', async (req, res) => {
 // FAST-TRACK EXISTING STAFF API
 app.post('/api/admin/add-existing-staff', async (req, res) => {
     try {
-        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo, pin, state } = req.body;
+        const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo, pin, state,
+                customPin, epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc } = req.body;
 
-        // Validation: All fields are mandatory
+        // Validation: Core fields mandatory, statutory/bank fields are optional
         if (!fullName || !email || !phone || !empCode || !designation || !targetSalary || !division || !hq || !joinDate || !dob || !address || !reportingTo || !pin || !state) {
             return res.status(400).json({ success: false, message: 'All fields (Name, Email, Phone, Code, Desg, Div, HQ, Reporting, Dates, Salary, Address, Pincode, State) are mandatory.' });
         }
+        // customPin is the portal login PIN. Fall back to pin (pincode) if not set.
+        const portalPin = (customPin && customPin.toString().length === 6) ? customPin.toString() : Math.floor(100000 + Math.random() * 900000).toString();
 
         const existingEmail = await Applicant.findOne({ email });
         if (existingEmail) return res.status(400).json({ success: false, message: 'Email already registered.' });
@@ -917,39 +920,48 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
             fullName,
             email,
             phone,
-            password: 'EXISTING_STAFF_NO_PIN', // Doesn't need a real PIN as they don't log in
-            status: 'approved', // Bypass draft/submitted/verification
-            isExistingStaff: true, // Custom flag to hide offer logic
-            canLogin: false, // Prevents them from needing the portal
+            password: portalPin,          // Admin-assigned 6-digit portal login PIN
+            status: 'approved',           // Bypass draft/submitted/verification
+            isExistingStaff: true,        // Bypass rapid test + offer flow in portal
+            canLogin: true,               // Allow employee to log in via Resume Journey
+            rapidTestCompleted: true,     // Skip rapid test entirely
             approvedAt: new Date(),
             division: division || 'General',
             hq: hq || 'Unassigned',
             empCode: empCode || '',
             actualJoiningDate: joinDate,
+            address: address || '',       // Top-level address field (FIXED from current_address)
             pin,
             state,
+            // Optional statutory fields
+            epfNumber: epfNumber || '',
+            uanNumber: uanNumber || '',
+            esiNumber: esiNumber || '',
             formData: {
                 designation: designation || 'Employee',
                 salary: formattedSalary.toString(),
-                dob: dob, 
+                dob: dob,
                 pin,
                 state,
-                current_address: address || '',
+                address: address || '',   // FIXED: was current_address, now matches what portal reads
+                bankName: bankName || '',
+                accNo: accNo || '',
+                ifsc: ifsc || '',
                 first_name: fullName.split(' ')[0],
                 last_name: fullName.split(' ').slice(1).join(' ') || ''
             },
             dob: dob,
             salaryBreakup: salaryBreakup,
             tasks: {
-                offerLetter: true, // Auto-mark as done
-                appointmentLetter: false,
+                offerLetter: true,        // Auto-flagged as done (no email sent)
+                appointmentLetter: true,  // Auto-flagged as done (no email sent)
                 appLinkSent: false,
                 loginDetailsSent: false
             }
         });
 
-        console.log(`Γ£à [FAST-TRACK] Added existing staff member: ${email} (${fullName})`);
-        res.status(200).json({ success: true, message: 'Existing staff added successfully.' });
+        console.log(`✅ [FAST-TRACK] Added existing staff member: ${email} (${fullName}) | Portal PIN: ${portalPin}`);
+        res.status(200).json({ success: true, message: 'Existing staff added successfully.', portalPin, email });
 
     } catch (error) {
         console.error('Fast-track error:', error);
@@ -1620,7 +1632,8 @@ function calculateMonthlyGross(sal) {
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus } = req.body;
+        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
+                epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
@@ -1634,8 +1647,8 @@ app.post('/api/admin/update-workflow-data', async (req, res) => {
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
-        
-        // New Editable Fields
+
+        // Editable profile fields
         if (fullName !== undefined) update.fullName = fullName;
         if (phone !== undefined) update.phone = phone;
         if (detailDesignation !== undefined) update.designation = detailDesignation;
@@ -1643,25 +1656,34 @@ app.post('/api/admin/update-workflow-data', async (req, res) => {
         if (fatherName !== undefined) update['formData.fatherName'] = fatherName;
         if (gender !== undefined) update['formData.gender'] = gender;
         if (bloodGroup !== undefined) update['formData.bloodGroup'] = bloodGroup;
+
+        // Statutory & bank fields (all optional — never error on blank)
+        if (epfNumber !== undefined) update.epfNumber = epfNumber;
+        if (uanNumber !== undefined) update.uanNumber = uanNumber;
+        if (esiNumber !== undefined) update.esiNumber = esiNumber;
+        if (anniversaryDate !== undefined) update.anniversaryDate = anniversaryDate;
+        if (bankName !== undefined) update['formData.bankName'] = bankName;
+        if (accNo !== undefined) update['formData.accNo'] = accNo;
+        if (ifsc !== undefined) update['formData.ifsc'] = ifsc;
+
         if (salaryBreakup !== undefined) {
-            // Enhanced Validation: Ensure components are numeric and Basic is present
             const s = salaryBreakup;
-            const components = ['basic', 'hra', 'lta', 'conveyance', 'medical', 'special', 'edu', 'fixed'];
-            
-            for (const key of components) {
-                if (s[key] !== undefined && (isNaN(Number(s[key])) || Number(s[key]) < 0)) {
-                    return res.status(400).json({ error: `Invalid value for salary component: ${key}. Must be a non-negative number.` });
+            const basicVal = Number(s.basic || 0);
+
+            // SAFETY: If basic is 0 or empty, skip salary validation entirely.
+            // This happens for existing staff who have no salary set yet.
+            if (basicVal > 0) {
+                const components = ['basic', 'hra', 'lta', 'conveyance', 'medical', 'special', 'edu', 'fixed'];
+                for (const key of components) {
+                    if (s[key] !== undefined && (isNaN(Number(s[key])) || Number(s[key]) < 0)) {
+                        return res.status(400).json({ error: `Invalid value for salary component: ${key}. Must be a non-negative number.` });
+                    }
+                }
+                const monthlyGross = calculateMonthlyGross(s);
+                if (monthlyGross <= 0) {
+                    return res.status(400).json({ error: 'Monthly Gross cannot be zero. Please check the salary breakdown.' });
                 }
             }
-
-            const monthlyGross = calculateMonthlyGross(s);
-            if (monthlyGross <= 0) {
-                return res.status(400).json({ error: 'Monthly Gross cannot be zero. Please check the salary breakdown.' });
-            }
-            if (!s.basic || Number(s.basic) <= 0) {
-                return res.status(400).json({ error: 'Basic salary component is mandatory and must be greater than zero.' });
-            }
-
             update.salaryBreakup = s;
         }
         await Applicant.findOneAndUpdate({ email }, { $set: update });
