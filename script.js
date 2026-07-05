@@ -1469,6 +1469,13 @@ function showConsentModal() {
         showToast("Please agree to the initial declaration first.", "warning");
         return;
     }
+
+    if (localStorage.getItem('emyGlobalConsent') === 'true') {
+        consentGiven = true;
+        document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        return;
+    }
+
     document.getElementById('consentModal').classList.remove('hidden');
 }
 
@@ -1489,9 +1496,13 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
         return;
     }
     if (!consentGiven) {
-        showToast("Security Check: You must accept the Data Privacy Consent before submitting.", "error");
-        showConsentModal();
-        return;
+        if (localStorage.getItem('emyGlobalConsent') === 'true') {
+            consentGiven = true;
+        } else {
+            showToast("Security Check: You must accept the Data Privacy Consent before submitting.", "error");
+            showConsentModal();
+            return;
+        }
     }
     
     // Clear flag for future re-submissions if necessary
