@@ -1110,6 +1110,7 @@ app.get('/api/admin/applicants', async (req, res) => {
                 app.documents = app.documents.map(d => ({
                     category: d.category,
                     name: d.name,
+                    assetId: d.assetId,
                     uploadedAt: d.uploadedAt
                     // Intentionally omitting 'data' (the heavy base64 string)
                 }));
