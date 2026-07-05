@@ -886,6 +886,12 @@ function attachApplicantFileListener(inputId, category) {
         const file = e.target.files[0];
         if (!file) return;
 
+        // Prevent parallel uploads to ensure robust UX and no backend race conditions
+        if (activeUploads > 0) {
+            input.value = ''; // Reset selection
+            return showToast("Please wait for the current upload to finish.", "warning");
+        }
+
         const ribbon = document.getElementById(`ribbon_${inputId}`);
         const label = document.getElementById(`status_${inputId.replace('file_', '')}`);
         
