@@ -45,13 +45,10 @@ async function initializeApp() {
     populateAnniversaryDays();
     updateView('landingPage');
 
-    // Show Global Welcome Consent if not accepted
-    if (localStorage.getItem('emyGlobalConsent') !== 'true') {
-        const globalModal = document.getElementById('globalWelcomeConsentModal');
-        if (globalModal) {
-            globalModal.classList.remove('hidden');
-        }
-    }
+    // Check for existing session (optional, for now we just show landing)
+    await fetchCompanyData();
+    populateAnniversaryDays();
+    updateView('landingPage');
 }
 
 function populateAnniversaryDays() {
@@ -1470,7 +1467,7 @@ function showConsentModal() {
         return;
     }
 
-    if (localStorage.getItem('emyGlobalConsent') === 'true') {
+    if (localStorage.getItem('finalConsentAccepted') === 'true') {
         consentGiven = true;
         document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
         return;
@@ -1485,6 +1482,7 @@ function closeConsentModal() {
 
 function acceptConsentAndSubmit() {
     consentGiven = true;
+    localStorage.setItem('finalConsentAccepted', 'true');
     closeConsentModal();
     document.getElementById('onboardingForm').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
 }
@@ -1496,7 +1494,7 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
         return;
     }
     if (!consentGiven) {
-        if (localStorage.getItem('emyGlobalConsent') === 'true') {
+        if (localStorage.getItem('finalConsentAccepted') === 'true') {
             consentGiven = true;
         } else {
             showToast("Security Check: You must accept the Data Privacy Consent before submitting.", "error");
@@ -1544,14 +1542,7 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
     }
 });
 
-// --- Global Welcome Consent ---
-function acceptGlobalConsent() {
-    localStorage.setItem('emyGlobalConsent', 'true');
-    const modal = document.getElementById('globalWelcomeConsentModal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-}
+
 
 // --- RAPID TEST LOGIC ---
 let rapidTestTimer;
