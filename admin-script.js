@@ -252,8 +252,8 @@ async function submitExistingStaff(event) {
         ifsc: document.getElementById('ex_ifsc')?.value?.trim() || ''
     };
 
-    // Validate only core mandatory fields (optional fields excluded)
-    const coreFields = ['fullName','email','phone','dob','pin','state','address','empCode','designation','targetSalary','joinDate','division','reportingTo','hq'];
+    // Validate only core mandatory fields for rapid creation
+    const coreFields = ['fullName','email','phone'];
     const missing = coreFields.filter(key => !data[key]);
     if (missing.length > 0) {
         unlockUI();
