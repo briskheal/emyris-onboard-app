@@ -4978,9 +4978,21 @@ async function fetchTestBankQuestions() {
     }
 }
 
+function toggleQuestionTypeFields() {
+    const type = document.getElementById('q_type') ? document.getElementById('q_type').value : 'mcq';
+    const mcqFields = document.getElementById('q_mcq_fields');
+    const descFields = document.getElementById('q_desc_fields');
+    if (mcqFields) mcqFields.classList.toggle('hidden', type !== 'mcq');
+    if (descFields) descFields.classList.toggle('hidden', type !== 'descriptive');
+}
+
 function showAddQuestionModal() {
     document.getElementById('addQuestionForm').reset();
     document.getElementById('q_id').value = '';
+    const qTypeEl = document.getElementById('q_type');
+    if (qTypeEl) qTypeEl.value = 'mcq';
+    toggleQuestionTypeFields();
+    
     document.getElementById('questionModalTitle').innerText = '➕ Add New Question';
     document.getElementById('addQuestionModal').classList.remove('hidden');
     document.getElementById('addQuestionModal').style.opacity = '1';
@@ -4995,11 +5007,21 @@ function editQuestion(id) {
     document.getElementById('q_id').value = q._id;
     document.getElementById('q_category').value = q.category;
     document.getElementById('q_text').value = q.text;
-    document.getElementById('q_opt0').value = q.options[0];
-    document.getElementById('q_opt1').value = q.options[1];
-    document.getElementById('q_opt2').value = q.options[2];
-    document.getElementById('q_opt3').value = q.options[3];
-    document.getElementById('q_correct').value = q.correctAnswerIndex.toString();
+    
+    const qTypeEl = document.getElementById('q_type');
+    if (qTypeEl) qTypeEl.value = q.questionType || 'mcq';
+    toggleQuestionTypeFields();
+    
+    if (q.questionType === 'descriptive') {
+        const qInputsEl = document.getElementById('q_inputs');
+        if (qInputsEl) qInputsEl.value = q.inputFields ? q.inputFields.join(', ') : '';
+    } else {
+        document.getElementById('q_opt0').value = q.options && q.options[0] ? q.options[0] : '';
+        document.getElementById('q_opt1').value = q.options && q.options[1] ? q.options[1] : '';
+        document.getElementById('q_opt2').value = q.options && q.options[2] ? q.options[2] : '';
+        document.getElementById('q_opt3').value = q.options && q.options[3] ? q.options[3] : '';
+        document.getElementById('q_correct').value = (q.correctAnswerIndex || 0).toString();
+    }
     
     document.getElementById('questionModalTitle').innerText = '✏️ Edit Question';
     document.getElementById('addQuestionModal').classList.remove('hidden');
@@ -5020,18 +5042,30 @@ function closeAddQuestionModal() {
 async function submitNewQuestion(e) {
     e.preventDefault();
     const qId = document.getElementById('q_id').value;
-    const payload = {
+    const qType = document.getElementById('q_type') ? document.getElementById('q_type').value : 'mcq';
+    
+    let payload = {
         category: document.getElementById('q_category').value,
+        questionType: qType,
         text: document.getElementById('q_text').value,
-        options: [
+        active: true
+    };
+    
+    if (qType === 'mcq') {
+        payload.options = [
             document.getElementById('q_opt0').value,
             document.getElementById('q_opt1').value,
             document.getElementById('q_opt2').value,
             document.getElementById('q_opt3').value
-        ],
-        correctAnswerIndex: parseInt(document.getElementById('q_correct').value, 10)
-    };
-    
+        ];
+        payload.correctAnswerIndex = parseInt(document.getElementById('q_correct').value, 10);
+        payload.inputFields = [];
+    } else {
+        const rawInputs = document.getElementById('q_inputs') ? document.getElementById('q_inputs').value : '';
+        payload.inputFields = rawInputs ? rawInputs.split(',').map(s => s.trim()).filter(s => s) : [];
+        payload.options = [];
+        payload.correctAnswerIndex = 0;
+    }
     try {
         const url = qId ? '/api/admin/questions/' + qId : '/api/admin/questions';
         const method = qId ? 'PUT' : 'POST';

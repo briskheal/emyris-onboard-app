@@ -538,6 +538,17 @@ async function syncDatabase() {
                 
                 // Emystein Specific Questions
                 { category: 'emystein', text: 'Who will be the focused doctor for Emystein 3miu?', questionType: 'mcq', options: ['GP', 'Dentist', 'Intensivist', 'Gynaecologist'], correctAnswerIndex: 2 },
+
+                { category: 'emystein', text: 'What is the active molecule in Emystein?', questionType: 'mcq', options: ['Amoxicillin', 'Colistimethate Sodium', 'Ceftriaxone', 'Meropenem'], correctAnswerIndex: 1 },
+                { category: 'emystein', text: 'What is the primary indication for Emystein 3miu?', questionType: 'mcq', options: ['Viral Infections', 'Fungal Infections', 'Multi-drug resistant Gram-negative infections', 'Parasitic Infections'], correctAnswerIndex: 2 },
+                { category: 'emystein', text: 'How is Emystein 3miu typically administered?', questionType: 'mcq', options: ['Oral tablet', 'Intravenous or Intramuscular injection', 'Topical cream', 'Subcutaneous injection'], correctAnswerIndex: 1 },
+                { category: 'emystein', text: 'Which of the following is a known potential side effect of colistimethate sodium?', questionType: 'mcq', options: ['Nephrotoxicity', 'Hepatotoxicity', 'Cardiotoxicity', 'Retinopathy'], correctAnswerIndex: 0 },
+                { category: 'emystein', text: 'In which setting is Emystein most commonly prescribed?', questionType: 'mcq', options: ['Outpatient Clinics', 'Intensive Care Units (ICUs)', 'Dental Clinics', 'Dermatology Clinics'], correctAnswerIndex: 1 },
+                { category: 'emystein', text: 'Emystein belongs to which class of antibiotics?', questionType: 'mcq', options: ['Penicillins', 'Cephalosporins', 'Polymyxins', 'Macrolides'], correctAnswerIndex: 2 },
+                { category: 'emystein', text: 'Which pathogen is Emystein particularly effective against?', questionType: 'mcq', options: ['Staphylococcus aureus', 'Streptococcus pneumoniae', 'Pseudomonas aeruginosa', 'Candida albicans'], correctAnswerIndex: 2 },
+                { category: 'emystein', text: 'What is the standard dosage unit for Emystein?', questionType: 'mcq', options: ['Milligrams (mg)', 'Grams (g)', 'Million International Units (MIU)', 'Micrograms (mcg)'], correctAnswerIndex: 2 },
+                { category: 'emystein', text: 'When should the dosage of Emystein be adjusted?', questionType: 'mcq', options: ['In patients with renal impairment', 'In patients with hepatic impairment', 'In patients with hypertension', 'In pregnant patients only'], correctAnswerIndex: 0 },
+
                 { category: 'emystein', text: 'What is the MRP of the product?', questionType: 'descriptive', inputFields: [] },
                 { category: 'emystein', text: 'Write 4 competitors brand names.', questionType: 'descriptive', inputFields: ['Space 1', 'Space 2', 'Space 3', 'Space 4'] },
                 { category: 'emystein', text: 'Write 3 major consuming hospitals in your HQ.', questionType: 'descriptive', inputFields: ['Space 1', 'Space 2', 'Space 3'] },
