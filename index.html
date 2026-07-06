@@ -736,7 +736,7 @@
         <div class="dash-card" style="max-width: 900px; margin: 0 auto; width: 100%; position: relative;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
                 <div>
-                    <h2 style="color: var(--primary-light); margin: 0;">📝 Scheduled Assessment</h2>
+                    <h2 id="examPhaseTitle" style="color: var(--primary-light); margin: 0;">📝 Scheduled Assessment</h2>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin: 5px 0 0 0;">Product Knowledge & Market Intelligence.</p>
                 </div>
             </div>
@@ -760,7 +760,7 @@
                 <div id="examQuestionsList">
                     <!-- Dynamic Questions Here -->
                 </div>
-                <button id="submitExamBtn" class="btn btn-primary hidden" style="width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 2rem;" onclick="submitOngoingExam()">Submit Assessment</button>
+                <button id="submitExamBtn" class="btn btn-primary hidden" style="width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 2rem;" onclick="handlePhaseSubmission()">Submit Assessment</button>
             </div>
         </div>
     </div>
