@@ -1165,8 +1165,14 @@ function renderApplicantDashboard() {
             const issuedSection = document.getElementById('issuedLettersSection');
             if (issuedSection) issuedSection.classList.add('hidden');
         }
+
+        // Fetch user's exam scoreboard history
+        if (typeof fetchMyExamScores === 'function') {
+            fetchMyExamScores();
+        }
+
     } catch (err) {
-        console.error('❌ Dashboard Render Error:', err);
+        console.error("Dashboard render error:", err);
     }
 }
 
