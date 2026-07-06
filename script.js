@@ -1526,7 +1526,19 @@ document.getElementById('onboardingForm').addEventListener('submit', async (e) =
     // 1. Mandatory Document Validation
     const docs = currentApplicant.documents || [];
     const reqDocs = companyData.requiredDocs || [];
-    const missingMandatory = reqDocs.filter(d => !OPTIONAL_DOCS.includes(d) && !docs.find(u => u.category === d));
+    
+    const expEl = document.getElementById('experience');
+    const expVal = expEl ? parseFloat(expEl.value) : (currentApplicant.formData?.experience ? parseFloat(currentApplicant.formData.experience) : 0);
+    const isExperienced = expVal > 0;
+    const expDocs = ["Last Month Salary Slip", "Previous Company Appointment Letter", "Experience Letter - Previous Company", "Relieving Letter - Previous Company"];
+
+    const missingMandatory = reqDocs.filter(d => {
+        let isOptional = OPTIONAL_DOCS.includes(d);
+        if (expDocs.includes(d)) {
+            isOptional = !isExperienced;
+        }
+        return !isOptional && !docs.find(u => u.category === d);
+    });
     
     if (missingMandatory.length > 0) {
         showToast(`⚠️ Mandatory documents missing: ${missingMandatory.join(', ')}`, "error");
