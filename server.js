@@ -707,10 +707,18 @@ app.put('/api/admin/questions/:id', async (req, res) => {
 // --- ONGOING EXAM APIs ---
 app.post('/api/admin/schedule-exam', async (req, res) => {
     try {
-        const { date, product } = req.body;
+        const { date, product, mcqTime, descTime, mcqCount } = req.body;
         const company = await Company.findOne();
         if (company) {
-            await Company.updateOne({ _id: company._id }, { $set: { activeExamDate: date, activeExamProduct: product || '' } });
+            await Company.updateOne({ _id: company._id }, { 
+                $set: { 
+                    activeExamDate: date, 
+                    activeExamProduct: product || '',
+                    examMcqTime: mcqTime || 15,
+                    examDescriptiveTime: descTime || 15,
+                    examMcqCount: mcqCount || 10
+                } 
+            });
             res.json({ success: true });
         } else {
             res.status(404).json({ error: 'Company not found' });
@@ -725,9 +733,13 @@ app.post('/api/applicant/exam-questions', async (req, res) => {
     try {
         const company = await Company.findOne();
         const activeProduct = company && company.activeExamProduct ? company.activeExamProduct : '';
+        const mcqTime = company && company.examMcqTime ? company.examMcqTime : 15;
+        const descTime = company && company.examDescriptiveTime ? company.examDescriptiveTime : 15;
+        const mcqCount = company && company.examMcqCount ? company.examMcqCount : 10;
+        
         const questions = await Question.find({ active: true });
         
-        // 1. Gather all potential product questions
+        // ONLY fetch Product questions
         let allProductQs = questions.filter(q => 
             q.category === 'exam_product' || 
             (activeProduct && q.targetProduct === activeProduct) || 
@@ -735,31 +747,12 @@ app.post('/api/applicant/exam-questions', async (req, res) => {
             q.category.toLowerCase() === 'emystein' // Fallback for legacy DB structure
         );
         
-        // 2. Gather all potential CA/Market Intelligence questions
-        let allCaQs = questions.filter(q => 
-            q.category === 'exam_current_affairs' || 
-            q.category === 'current_affairs' // Fallback
-        );
+        // Strict slice for MCQ based on mcqCount, NO slice for Descriptive
+        let mcqProductQs = allProductQs.filter(q => q.questionType === 'mcq').sort(() => 0.5 - Math.random()).slice(0, mcqCount);
+        let descProductQs = allProductQs.filter(q => q.questionType === 'descriptive');
         
-        // 3. Ensure a mix of MCQ and Descriptive for Phase 1 and Phase 2
-        let mcqProductQs = allProductQs.filter(q => q.questionType === 'mcq').sort(() => 0.5 - Math.random()).slice(0, 7);
-        let descProductQs = allProductQs.filter(q => q.questionType === 'descriptive').sort(() => 0.5 - Math.random()).slice(0, 3);
-        
-        let mcqCaQs = allCaQs.filter(q => q.questionType === 'mcq').sort(() => 0.5 - Math.random()).slice(0, 3);
-        let descCaQs = allCaQs.filter(q => q.questionType === 'descriptive').sort(() => 0.5 - Math.random()).slice(0, 2);
-        
-        // Backfill if not enough descriptive questions exist
-        if (descProductQs.length < 3) {
-            const extraMcq = allProductQs.filter(q => q.questionType === 'mcq' && !mcqProductQs.includes(q)).sort(() => 0.5 - Math.random()).slice(0, 3 - descProductQs.length);
-            mcqProductQs.push(...extraMcq);
-        }
-        if (descCaQs.length < 2) {
-            const extraMcq = allCaQs.filter(q => q.questionType === 'mcq' && !mcqCaQs.includes(q)).sort(() => 0.5 - Math.random()).slice(0, 2 - descCaQs.length);
-            mcqCaQs.push(...extraMcq);
-        }
-        
-        // 4. Combine and shuffle
-        const selected = [...mcqProductQs, ...descProductQs, ...mcqCaQs, ...descCaQs].sort(() => 0.5 - Math.random());
+        // Combine and shuffle
+        const selected = [...mcqProductQs, ...descProductQs].sort(() => 0.5 - Math.random());
         
         const safeQuestions = selected.map(q => ({
             _id: q._id,
@@ -771,7 +764,7 @@ app.post('/api/applicant/exam-questions', async (req, res) => {
             correctAnswerIndex: q.correctAnswerIndex
         }));
         
-        res.json({ success: true, questions: safeQuestions });
+        res.json({ success: true, mcqTime, descTime, questions: safeQuestions });
     } catch (e) {
         console.error('Fetch Exam Error:', e);
         res.status(500).json({ error: 'Failed to fetch exam questions' });

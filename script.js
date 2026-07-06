@@ -1731,6 +1731,9 @@ function launchOngoingExam() {
     document.getElementById('floatingExamTimer').style.display = 'none';
 }
 
+let ongoingExamMcqTime = 15;
+let ongoingExamDescTime = 15;
+
 async function startOngoingExam() {
     lockUI('⏳ Preparing your exam...');
     try {
@@ -1746,6 +1749,9 @@ async function startOngoingExam() {
             ongoingExamAnswers = {};
             ongoingExamPhase = 1;
             
+            ongoingExamMcqTime = data.mcqTime || 15;
+            ongoingExamDescTime = data.descTime || 15;
+            
             renderOngoingExamQuestions();
             
             document.getElementById('examIntroSection').classList.add('hidden');
@@ -1754,12 +1760,11 @@ async function startOngoingExam() {
             const submitBtn = document.getElementById('submitExamBtn');
             submitBtn.classList.remove('hidden');
             submitBtn.innerText = 'Submit MCQ & Continue';
-            // IMPORTANT: Unbind the old inline onclick
             submitBtn.removeAttribute('onclick');
             submitBtn.onclick = submitPhase1;
             
             document.getElementById('floatingExamTimer').style.display = 'flex';
-            startOngoingExamTimer(15 * 60); // 15 mins
+            startOngoingExamTimer(ongoingExamMcqTime * 60); 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
             alert(data.message || 'No questions available for today.');
@@ -1780,7 +1785,7 @@ function submitPhase1() {
     submitBtn.innerText = 'Submit Final Exam';
     submitBtn.onclick = submitOngoingExam;
     
-    startOngoingExamTimer(15 * 60); // Reset timer for 15 mins
+    startOngoingExamTimer(ongoingExamDescTime * 60); // Use custom descriptive time
     window.scrollTo({ top: 0, behavior: 'smooth' });
     alert('Phase 1 Submitted! You now have 15 minutes for the Descriptive section. You cannot return to the previous section.');
 }

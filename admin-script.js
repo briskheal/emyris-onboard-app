@@ -5243,14 +5243,22 @@ window.addEventListener('DOMContentLoaded', initializeApp);
 async function saveExamSchedule() {
     const el = document.getElementById('activeExamDateInput');
     const prodEl = document.getElementById('activeExamProductInput');
+    const mcqTimeEl = document.getElementById('examMcqTimeInput');
+    const descTimeEl = document.getElementById('examDescTimeInput');
+    const mcqCountEl = document.getElementById('examMcqCountInput');
+    
     if (!el) return;
     const dateStr = el.value;
     const prodStr = prodEl ? prodEl.value : '';
+    const mcqTime = mcqTimeEl ? parseInt(mcqTimeEl.value) : 15;
+    const descTime = descTimeEl ? parseInt(descTimeEl.value) : 15;
+    const mcqCount = mcqCountEl ? parseInt(mcqCountEl.value) : 10;
+    
     try {
         const res = await fetch('/api/admin/schedule-exam', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date: dateStr, product: prodStr })
+            body: JSON.stringify({ date: dateStr, product: prodStr, mcqTime, descTime, mcqCount })
         });
         const data = await res.json();
         if(data.success) {
