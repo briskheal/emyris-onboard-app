@@ -717,7 +717,7 @@ app.post('/api/admin/schedule-exam', async (req, res) => {
     }
 });
 
-app.get('/api/applicant/exam-questions', async (req, res) => {
+app.post('/api/applicant/exam-questions', async (req, res) => {
     try {
         const questions = await Question.find({ active: true });
         
