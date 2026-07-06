@@ -282,6 +282,7 @@
                             </div>
 
                             <button class="btn btn-primary" style="width:100%; margin-top: 1.5rem; background: linear-gradient(135deg, var(--primary), var(--accent)); border: none;" onclick="downloadCandidateDossier()">📥 Download My Profile</button>
+                            <button id="applicantExamBtn" class="btn btn-primary hidden" style="width:100%; margin-top: 0.75rem; background: linear-gradient(135deg, #10b981, #3b82f6); border: none;" onclick="launchOngoingExam()">📝 Take Scheduled Exam</button>
                             <button class="btn btn-outline" style="width:100%; margin-top: 0.75rem;" onclick="logoutApplicant()">Logout Securely</button>
                         </div>
                     </div>
@@ -728,6 +729,46 @@
                 <button type="button" class="btn btn-primary" onclick="acceptConsentAndSubmit()">I Accept & Submit</button>
             </div>
         </div>
+    </div>
+
+    <!-- Ongoing Exam View -->
+    <div id="ongoingExamView" class="view-section hidden">
+        <div class="dash-card" style="max-width: 900px; margin: 0 auto; width: 100%; position: relative;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <h2 style="color: var(--primary-light); margin: 0;">?? Scheduled Assessment</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted); margin: 5px 0 0 0;">Product Knowledge & Market Intelligence.</p>
+                </div>
+            </div>
+
+            <!-- Pre-Exam Intro -->
+            <div id="examIntroSection">
+                <div style="background: rgba(99,102,241,0.1); padding: 1.5rem; border-radius: 12px; border: 1px solid rgba(99,102,241,0.2); margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--primary); margin-top: 0;">?? Instructions</h3>
+                    <ul style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 0;">
+                        <li>This assessment contains a mix of Multiple Choice and Descriptive questions.</li>
+                        <li>You have <strong>15 Minutes</strong> to complete the exam.</li>
+                        <li>MCQ responses are final once selected.</li>
+                        <li>For descriptive questions, please type your answers clearly in the provided boxes.</li>
+                    </ul>
+                </div>
+                <button class="btn btn-primary" style="width: 100%; font-size: 1.1rem; padding: 12px;" onclick="startOngoingExam()">Start Assessment Now</button>
+            </div>
+
+            <!-- Exam Questions Container -->
+            <div id="examQuestionsContainer" class="hidden">
+                <div id="examQuestionsList">
+                    <!-- Dynamic Questions Here -->
+                </div>
+                <button id="submitExamBtn" class="btn btn-primary hidden" style="width: 100%; font-size: 1.1rem; padding: 12px; margin-top: 2rem;" onclick="submitOngoingExam()">Submit Assessment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Timer Badge for Exam -->
+    <div id="floatingExamTimer" style="position: fixed; top: 20px; right: 25px; z-index: 9999999; background: rgba(15, 23, 42, 0.95); border: 2px solid #ef4444; padding: 10px 24px; border-radius: 50px; box-shadow: 0 8px 35px rgba(239, 68, 68, 0.5); backdrop-filter: blur(12px); display: none; align-items: center; gap: 10px; pointer-events: none; transition: all 0.3s ease;">
+        <span style="font-size: 1.4rem;">??</span>
+        <span style="color: #ef4444; font-weight: 800; font-family: monospace; font-size: 1.5rem; letter-spacing: 2px;" id="examTimerDisplay">15:00</span>
     </div>
 
     <script src="script.js"></script>

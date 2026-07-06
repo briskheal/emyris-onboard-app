@@ -1027,6 +1027,17 @@ function renderApplicantDashboard() {
                 </div>
             `).join('');
             
+            const examBtn = document.getElementById('applicantExamBtn');
+            if (examBtn) {
+                examBtn.classList.add('hidden');
+                if (companyData && companyData.activeExamDate && app.offerAccepted) {
+                    const today = new Date().toISOString().split('T')[0];
+                    if (companyData.activeExamDate === today) {
+                        examBtn.classList.remove('hidden');
+                    }
+                }
+            }
+            
             // Global Progress Animation
             let completedSteps = steps.filter(s => s.done).length;
             let pct = Math.round((completedSteps / steps.length) * 100);
@@ -1693,4 +1704,231 @@ async function submitRapidTest() {
         showToast("Error submitting test", "error");
         unlockUI();
     }
+}
+
+// --- ONGOING EXAM LOGIC ---
+let ongoingExamQuestions = [];
+let ongoingExamAnswers = {};
+let ongoingExamTimerInterval;
+
+function launchOngoingExam() {
+    updateView('ongoingExamView');
+    document.getElementById('examIntroSection').classList.remove('hidden');
+    document.getElementById('examQuestionsContainer').classList.add('hidden');
+    document.getElementById('floatingExamTimer').style.display = 'none';
+}
+
+async function startOngoingExam() {
+    lockUI(?? Preparing your exam...);
+    try {
+        const res = await fetch('/api/applicant/exam-questions', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentApplicant.email })
+        });
+        const data = await res.json();
+        
+        if (data.success && data.questions && data.questions.length > 0) {
+            ongoingExamQuestions = data.questions;
+            ongoingExamAnswers = {};
+            renderOngoingExamQuestions();
+            
+            document.getElementById('examIntroSection').classList.add('hidden');
+            document.getElementById('examQuestionsContainer').classList.remove('hidden');
+            document.getElementById('submitExamBtn').classList.remove('hidden');
+            
+            document.getElementById('floatingExamTimer').style.display = 'flex';
+            startOngoingExamTimer(15 * 60); // 15 mins
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            alert(data.message || 'No questions available for today.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error loading exam. Please check your connection.');
+    } finally {
+        unlockUI();
+    }
+}
+
+function renderOngoingExamQuestions() {
+    const list = document.getElementById('examQuestionsList');
+    list.innerHTML = '';
+    
+    ongoingExamQuestions.forEach((q, idx) => {
+        const qContainer = document.createElement('div');
+        qContainer.style.background = 'rgba(255,255,255,0.02)';
+        qContainer.style.border = '1px solid var(--glass-border)';
+        qContainer.style.borderRadius = '12px';
+        qContainer.style.padding = '1.5rem';
+        qContainer.style.marginBottom = '1.5rem';
+        
+        let qTypeLabel = q.questionType === 'descriptive' ? '<span style=\'color:#818cf8; font-size:0.75rem; font-weight:bold; margin-right:8px;\'>[DESCRIPTIVE]</span>' : '';
+        
+        let html = 
+            <h4 style=\'margin-top:0; color:var(--text-main); font-size:1.1rem; line-height:1.4;\'>
+                <span style=\'color:var(--primary); font-weight:800; margin-right:8px;\'>Q.</span>
+                
+                
+            </h4>
+        ;
+        
+        if (q.questionType === 'descriptive') {
+            const inputsContainer = document.createElement('div');
+            inputsContainer.style.display = 'flex';
+            inputsContainer.style.flexDirection = 'column';
+            inputsContainer.style.gap = '10px';
+            inputsContainer.style.marginTop = '15px';
+            
+            if (q.inputFields && q.inputFields.length > 0) {
+                // Multiple inputs
+                q.inputFields.forEach(label => {
+                    const wrap = document.createElement('div');
+                    const lbl = document.createElement('label');
+                    lbl.innerText = label;
+                    lbl.style.display = 'block';
+                    lbl.style.fontSize = '0.85rem';
+                    lbl.style.color = 'var(--text-muted)';
+                    lbl.style.marginBottom = '4px';
+                    
+                    const inp = document.createElement('input');
+                    inp.type = 'text';
+                    inp.className = 'form-input';
+                    inp.style.width = '100%';
+                    inp.oninput = (e) => saveOngoingAnswer(q._id, label, e.target.value);
+                    
+                    wrap.appendChild(lbl);
+                    wrap.appendChild(inp);
+                    inputsContainer.appendChild(wrap);
+                });
+            } else {
+                // Single large textarea
+                const txa = document.createElement('textarea');
+                txa.className = 'form-input';
+                txa.style.width = '100%';
+                txa.rows = 4;
+                txa.oninput = (e) => saveOngoingAnswer(q._id, 'default', e.target.value);
+                inputsContainer.appendChild(txa);
+            }
+            
+            qContainer.innerHTML = html;
+            qContainer.appendChild(inputsContainer);
+        } else {
+            // MCQ
+            let optsHtml = <div id=\'examOpts_\' style=\'display:flex; flex-direction:column; gap:10px; margin-top:15px;\'>;
+            (q.options || []).forEach((opt, oIdx) => {
+                optsHtml += 
+                    <label id=\'examOptLbl__\' style=\'display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); border-radius:8px; cursor:pointer; transition:all 0.2s;\'
+                           onmouseenter=\'this.style.background=" rgba 99 102 241 0.1 \\'
+ onmouseleave=\'if(!this.querySelector(\input\).checked) this.style.background=\rgba 0 0 0 0.2 \\'>
+ <input type=\'radio\' name=\'exam_q_\' value=\'\' onclick=\'selectOngoingMcqAnswer(\\, , )\'>
+ <span></span>
+ </label>
+ ;
+ });
+ optsHtml += </div>;
+ qContainer.innerHTML = html + optsHtml;
+ }
+ 
+ list.appendChild(qContainer);
+ });
+}
+
+function selectOngoingMcqAnswer(qId, selectedIdx, correctIdx) {
+ saveOngoingAnswer(qId, 'mcq', selectedIdx);
+ 
+ // Style and freeze
+ const container = document.getElementById(examOpts_);
+ if (!container) return;
+ 
+ // Freeze
+ container.style.pointerEvents = 'none';
+ const radios = container.querySelectorAll('input[type=\radio\]');
+ radios.forEach(r => r.disabled = true);
+ 
+ // Check right/wrong immediately
+ const labels = container.querySelectorAll('label');
+ labels.forEach((lbl, idx) => {
+ if (idx === correctIdx) {
+ lbl.style.background = 'rgba(34, 197, 94, 0.15)';
+ lbl.style.borderColor = 'rgba(34, 197, 94, 0.6)';
+ lbl.style.color = '#4ade80';
+ } else if (idx === selectedIdx && selectedIdx !== correctIdx) {
+ lbl.style.background = 'rgba(239, 68, 68, 0.15)';
+ lbl.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+ lbl.style.color = '#f87171';
+ } else {
+ lbl.style.opacity = '0.5';
+ }
+ });
+}
+
+function saveOngoingAnswer(qId, key, value) {
+ if (!ongoingExamAnswers[qId]) {
+ if (key === 'mcq' || key === 'default') {
+ ongoingExamAnswers[qId] = value;
+ } else {
+ ongoingExamAnswers[qId] = { [key]: value };
+ }
+ } else {
+ if (key === 'mcq' || key === 'default') {
+ ongoingExamAnswers[qId] = value;
+ } else {
+ ongoingExamAnswers[qId][key] = value;
+ }
+ }
+}
+
+function startOngoingExamTimer(seconds) {
+ clearInterval(ongoingExamTimerInterval);
+ const display = document.getElementById('examTimerDisplay');
+ 
+ ongoingExamTimerInterval = setInterval(() => {
+ seconds--;
+ const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+ const s = (seconds % 60).toString().padStart(2, '0');
+ display.innerText = ${m}:;
+ 
+ if (seconds <= 60) {
+ display.style.color = '#ff4444';
+ display.parentElement.style.borderColor = '#ff4444';
+ display.parentElement.style.animation = 'pulseError 1s infinite';
+ }
+ 
+ if (seconds <= 0) {
+ clearInterval(ongoingExamTimerInterval);
+ alert('Time is up! Submitting your exam automatically.');
+ submitOngoingExam();
+ }
+ }, 1000);
+}
+
+async function submitOngoingExam() {
+ clearInterval(ongoingExamTimerInterval);
+ lockUI('?? Submitting your exam...');
+ try {
+ const res = await fetch('/api/applicant/submit-exam', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ email: currentApplicant.email,
+ answers: ongoingExamAnswers
+ })
+ });
+ const data = await res.json();
+ if (data.success) {
+ alert('Your exam has been submitted successfully.');
+ renderApplicantDashboard();
+ updateView('applicantDashboard');
+ document.getElementById('floatingExamTimer').style.display = 'none';
+ document.getElementById('applicantExamBtn').classList.add('hidden'); // Hide it so they can't take it again
+ } else {
+ alert(data.message || 'Failed to submit exam.');
+ }
+ } catch (e) {
+ console.error(e);
+ alert('Error submitting exam.');
+ } finally {
+ unlockUI();
+ }
 }

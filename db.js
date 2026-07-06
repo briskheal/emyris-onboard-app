@@ -58,6 +58,7 @@ const OnboardCompany = sequelize.define('onboard_company', {
     miscCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
     empCodeCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
     revisedSalaryCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
+    activeExamDate: { type: DataTypes.STRING, defaultValue: "" },
     customAssetCategories: { type: DataTypes.JSON, defaultValue: [] },
     designations: { 
         type: DataTypes.JSON, 
@@ -182,10 +183,29 @@ const OnboardTemplateHistory = sequelize.define('onboard_template_history', {
 const OnboardQuestion = sequelize.define('onboard_question', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
     category: { type: DataTypes.STRING, allowNull: false },
+    questionType: { type: DataTypes.STRING, defaultValue: 'mcq' },
     text: { type: DataTypes.TEXT, allowNull: false },
     options: { type: DataTypes.JSON, defaultValue: [] },
-    correctAnswerIndex: { type: DataTypes.INTEGER, allowNull: false },
+    inputFields: { type: DataTypes.JSON, defaultValue: [] },
+    correctAnswerIndex: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     active: { type: DataTypes.BOOLEAN, defaultValue: true }
+});
+
+// 8. Exam Result Model
+const OnboardExamResult = sequelize.define('onboard_exam_result', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    email: { type: DataTypes.STRING, allowNull: false },
+    name: { type: DataTypes.STRING },
+    hq: { type: DataTypes.STRING },
+    division: { type: DataTypes.STRING },
+    examDate: { type: DataTypes.STRING, allowNull: false },
+    totalQuestions: { type: DataTypes.INTEGER, defaultValue: 0 },
+    autoScore: { type: DataTypes.INTEGER, defaultValue: 0 },
+    manualScore: { type: DataTypes.INTEGER, defaultValue: 0 },
+    totalScore: { type: DataTypes.INTEGER, defaultValue: 0 },
+    status: { type: DataTypes.STRING, defaultValue: 'pending_review' },
+    answers: { type: DataTypes.JSON, defaultValue: {} },
+    submittedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 
 // Helper to decorate instance with Mongoose methods
@@ -479,6 +499,7 @@ const HQ = createModelAdapter(OnboardHQ);
 const Asset = createModelAdapter(OnboardAsset);
 const TemplateHistory = createModelAdapter(OnboardTemplateHistory);
 const Question = createModelAdapter(OnboardQuestion);
+const ExamResult = createModelAdapter(OnboardExamResult);
 
 async function syncDatabase() {
     try {
@@ -604,5 +625,6 @@ module.exports = {
     HQ,
     Asset,
     TemplateHistory,
-    Question
+    Question,
+    ExamResult
 };

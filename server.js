@@ -17,7 +17,7 @@ const { Resend } = require('resend');
 const axios = require('axios');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const { sequelize, syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory, Question } = require('./db');
+const { sequelize, syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory, Question, ExamResult } = require('./db');
 const fs = require('fs');
 const path = require('path');
 
@@ -697,6 +697,110 @@ app.put('/api/admin/questions/:id', async (req, res) => {
     } catch (e) {
         console.error('Update Question Error:', e);
         res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// --- ONGOING EXAM APIs ---
+app.post('/api/admin/schedule-exam', async (req, res) => {
+    try {
+        const { date } = req.body;
+        const company = await Company.findOne();
+        if (company) {
+            await Company.updateOne({ _id: company._id }, { $set: { activeExamDate: date } });
+            res.json({ success: true });
+        } else {
+            res.status(404).json({ error: 'Company not found' });
+        }
+    } catch (e) {
+        console.error('Schedule Exam Error:', e);
+        res.status(500).json({ error: 'Failed to schedule exam' });
+    }
+});
+
+app.get('/api/applicant/exam-questions', async (req, res) => {
+    try {
+        const questions = await Question.find({ active: true });
+        
+        const productQs = questions.filter(q => q.category === 'exam_product').sort(() => 0.5 - Math.random()).slice(0, 10);
+        const caQs = questions.filter(q => q.category === 'exam_current_affairs').sort(() => 0.5 - Math.random()).slice(0, 5);
+        
+        const selected = [...productQs, ...caQs].sort(() => 0.5 - Math.random());
+        
+        const safeQuestions = selected.map(q => ({
+            _id: q._id,
+            category: q.category,
+            questionType: q.questionType,
+            text: q.text,
+            options: q.options,
+            inputFields: q.inputFields,
+            correctAnswerIndex: q.correctAnswerIndex
+        }));
+        
+        res.json({ success: true, questions: safeQuestions });
+    } catch (e) {
+        console.error('Fetch Exam Error:', e);
+        res.status(500).json({ error: 'Failed to fetch exam questions' });
+    }
+});
+
+app.post('/api/applicant/submit-exam', async (req, res) => {
+    try {
+        const { email, name, hq, division, examDate, answers, totalQuestions } = req.body;
+        
+        let autoScore = 0;
+        const questions = await Question.find({ active: true });
+        
+        for (const [qId, selectedIdxOrText] of Object.entries(answers || {})) {
+            const q = questions.find(qu => qu._id === qId);
+            if (q && q.questionType === 'mcq' && q.correctAnswerIndex === Number(selectedIdxOrText)) {
+                autoScore++;
+            }
+        }
+        
+        await ExamResult.create({
+            email,
+            name,
+            hq,
+            division,
+            examDate,
+            totalQuestions,
+            autoScore,
+            manualScore: 0,
+            totalScore: autoScore,
+            status: 'pending_review',
+            answers
+        });
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Submit Exam Error:', e);
+        res.status(500).json({ error: 'Failed to submit exam' });
+    }
+});
+
+app.get('/api/admin/exam-reports', async (req, res) => {
+    try {
+        const results = await ExamResult.find();
+        res.json({ success: true, results });
+    } catch (e) {
+        console.error('Fetch Exam Reports Error:', e);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+app.post('/api/admin/grade-exam', async (req, res) => {
+    try {
+        const { id, manualScore } = req.body;
+        const result = await ExamResult.findById(id);
+        if (!result) return res.status(404).json({ error: 'Not found' });
+        
+        const totalScore = (result.autoScore || 0) + Number(manualScore);
+        
+        await ExamResult.updateOne({ _id: result._id }, { $set: { manualScore: Number(manualScore), totalScore, status: 'graded' } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Grade Exam Error:', e);
+        res.status(500).json({ error: 'Failed to grade exam' });
     }
 });
 
