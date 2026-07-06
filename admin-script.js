@@ -933,6 +933,9 @@ function switchAdminTab(tab) {
     } else if (tab === 'testbank') {
         document.getElementById('adminTestbankTab').classList.remove('hidden');
         fetchTestBankQuestions();
+    } else if (tab === 'examsubmissions') {
+        document.getElementById('adminExamSubmissionsTab').classList.remove('hidden');
+        fetchPendingExams();
     } else if (tab === 'examreports') {
         document.getElementById('adminExamreportsTab').classList.remove('hidden');
         fetchExamReports();
