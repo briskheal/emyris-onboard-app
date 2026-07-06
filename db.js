@@ -59,6 +59,8 @@ const OnboardCompany = sequelize.define('onboard_company', {
     empCodeCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
     revisedSalaryCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
     activeExamDate: { type: DataTypes.STRING, defaultValue: "" },
+    activeExamProduct: { type: DataTypes.STRING, defaultValue: "" },
+    targetProductsList: { type: DataTypes.JSON, defaultValue: ["General", "Emystein", "Briskheal"] },
     customAssetCategories: { type: DataTypes.JSON, defaultValue: [] },
     designations: { 
         type: DataTypes.JSON, 
@@ -183,6 +185,7 @@ const OnboardTemplateHistory = sequelize.define('onboard_template_history', {
 const OnboardQuestion = sequelize.define('onboard_question', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
     category: { type: DataTypes.STRING, allowNull: false },
+    targetProduct: { type: DataTypes.STRING, defaultValue: "General" },
     questionType: { type: DataTypes.STRING, defaultValue: 'mcq' },
     text: { type: DataTypes.TEXT, allowNull: false },
     options: { type: DataTypes.JSON, defaultValue: [] },
@@ -199,6 +202,7 @@ const OnboardExamResult = sequelize.define('onboard_exam_result', {
     hq: { type: DataTypes.STRING },
     division: { type: DataTypes.STRING },
     examDate: { type: DataTypes.STRING, allowNull: false },
+    testedProduct: { type: DataTypes.STRING, defaultValue: "" },
     totalQuestions: { type: DataTypes.INTEGER, defaultValue: 0 },
     autoScore: { type: DataTypes.INTEGER, defaultValue: 0 },
     manualScore: { type: DataTypes.INTEGER, defaultValue: 0 },

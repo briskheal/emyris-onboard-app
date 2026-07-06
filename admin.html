@@ -661,6 +661,24 @@
                                 </div>
                             </div>
 
+                            <!-- Card 1.6: Manage Target Products -->
+                            <div class="setup-section">
+                                <div class="setup-section-head">
+                                    <h4>🎯 Manage Target Products</h4>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Add products that can be tested in the Question Bank and Exam Scheduler.</p>
+                                </div>
+                                <div id="targetProductList" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem;">
+                                    <!-- Dynamic chips go here -->
+                                </div>
+                                <div style="display: flex; gap: 10px; align-items: flex-end;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>Product Name</label>
+                                        <input type="text" id="profileNewProductInput" class="form-input-sm" placeholder="e.g. Product X" style="width: 100%;">
+                                    </div>
+                                    <button type="button" class="btn btn-primary" onclick="addTargetProduct()" style="height: 42px; padding: 0 1.5rem;">+ Add Product</button>
+                                </div>
+                            </div>
+                            
                             <!-- Card 1.75: Letter Templates Launcher -->
                             <div class="setup-section">
                                 <div class="setup-section-head">
