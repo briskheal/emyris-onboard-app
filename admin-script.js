@@ -1432,16 +1432,9 @@ async function openVerificationView(email) {
     document.getElementById('v_reportingTo').value = app.reportingTo || "";
     document.getElementById('v_hq').value = app.hq || app.formData?.hq || "";
     document.getElementById('v_empCode').value = app.empCode || app.formData?.empCode || "";
+    populateDesignationSelect('v_proposed_desg');
     const desgSel = document.getElementById('v_proposed_desg');
-    desgSel.innerHTML = '<option value="">-- Select Designation --</option>';
-    if (companyData && companyData.designations) {
-        Object.values(companyData.designations).forEach(list => {
-            list.forEach(d => {
-                desgSel.innerHTML += `<option value="${d}">${d}</option>`;
-            });
-        });
-    }
-    desgSel.value = app.designation || app.formData?.designation || "";
+    if (desgSel) desgSel.value = app.designation || app.formData?.designation || "";
 
     // 4.5 Salary Breakup
     const sal = app.salaryBreakup || {};
