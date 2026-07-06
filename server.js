@@ -851,32 +851,7 @@ app.post('/api/applicant/save-draft', async (req, res) => {
 });
 
 // Accept Offer & Submit ADOJ
-app.post('/api/applicant/accept-offer', async (req, res) => {
-    try {
-        const { email, actualJoiningDate } = req.body;
-        if (!email || !actualJoiningDate) return res.status(400).json({ error: 'Missing data' });
 
-        const parseDMY = (s) => {
-            if (!s || typeof s !== 'string') return null;
-            if (s.includes('T')) return new Date(s); // Already ISO
-            const parts = s.split('-');
-            if (parts.length !== 3) return null;
-            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        };
-
-        const applicant = await Applicant.findOneAndUpdate(
-            { email },
-            { 
-                offerAccepted: true,
-                offerAcceptedAt: new Date(),
-                actualJoiningDate: parseDMY(actualJoiningDate),
-                status: 'onboarding' 
-            },
-            { new: true }
-        );
-        res.json({ success: true, applicant });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
 
 // In-memory mutex for preventing race conditions during simultaneous document uploads
 const documentUploadLocks = {};
