@@ -1722,6 +1722,7 @@ async function submitRapidTest() {
 let ongoingExamQuestions = [];
 let ongoingExamAnswers = {};
 let ongoingExamTimerInterval;
+let ongoingExamPhase = 1;
 
 function launchOngoingExam() {
     updateView('ongoingExamView');
@@ -1743,11 +1744,19 @@ async function startOngoingExam() {
         if (data.success && data.questions && data.questions.length > 0) {
             ongoingExamQuestions = data.questions;
             ongoingExamAnswers = {};
+            ongoingExamPhase = 1;
+            
             renderOngoingExamQuestions();
             
             document.getElementById('examIntroSection').classList.add('hidden');
             document.getElementById('examQuestionsContainer').classList.remove('hidden');
-            document.getElementById('submitExamBtn').classList.remove('hidden');
+            
+            const submitBtn = document.getElementById('submitExamBtn');
+            submitBtn.classList.remove('hidden');
+            submitBtn.innerText = 'Submit MCQ & Continue';
+            // IMPORTANT: Unbind the old inline onclick
+            submitBtn.removeAttribute('onclick');
+            submitBtn.onclick = submitPhase1;
             
             document.getElementById('floatingExamTimer').style.display = 'flex';
             startOngoingExamTimer(15 * 60); // 15 mins
@@ -1763,11 +1772,28 @@ async function startOngoingExam() {
     }
 }
 
+function submitPhase1() {
+    ongoingExamPhase = 2;
+    renderOngoingExamQuestions();
+    
+    const submitBtn = document.getElementById('submitExamBtn');
+    submitBtn.innerText = 'Submit Final Exam';
+    submitBtn.onclick = submitOngoingExam;
+    
+    startOngoingExamTimer(15 * 60); // Reset timer for 15 mins
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    alert('Phase 1 Submitted! You now have 15 minutes for the Descriptive section. You cannot return to the previous section.');
+}
+
 function renderOngoingExamQuestions() {
     const list = document.getElementById('examQuestionsList');
     list.innerHTML = '';
     
-    ongoingExamQuestions.forEach((q, idx) => {
+    let displayedIndex = 0;
+    ongoingExamQuestions.forEach((q) => {
+        if (ongoingExamPhase === 1 && q.questionType !== 'mcq') return;
+        if (ongoingExamPhase === 2 && q.questionType === 'mcq') return;
+        displayedIndex++;
         const qContainer = document.createElement('div');
         qContainer.style.background = 'rgba(255,255,255,0.02)';
         qContainer.style.border = '1px solid var(--glass-border)';
@@ -1779,7 +1805,7 @@ function renderOngoingExamQuestions() {
         
         let html = `
             <h4 style="margin-top:0; color:var(--text-main); font-size:1.1rem; line-height:1.4;">
-                <span style="color:var(--primary); font-weight:800; margin-right:8px;">Q${idx+1}.</span>
+                <span style="color:var(--primary); font-weight:800; margin-right:8px;">Q${displayedIndex}.</span>
                 ${qTypeLabel}
                 ${q.text}
             </h4>
@@ -1889,6 +1915,10 @@ function startOngoingExamTimer(seconds) {
     clearInterval(ongoingExamTimerInterval);
     const display = document.getElementById('examTimerDisplay');
     
+    display.style.color = '';
+    display.parentElement.style.borderColor = '';
+    display.parentElement.style.animation = '';
+    
     ongoingExamTimerInterval = setInterval(() => {
         seconds--;
         const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -1903,8 +1933,13 @@ function startOngoingExamTimer(seconds) {
         
         if (seconds <= 0) {
             clearInterval(ongoingExamTimerInterval);
-            alert('Time is up! Submitting your exam automatically.');
-            submitOngoingExam();
+            if (ongoingExamPhase === 1) {
+                alert("Time Over! Moving to Descriptive Section.");
+                submitPhase1();
+            } else {
+                alert("Time Over, Submit");
+                submitOngoingExam();
+            }
         }
     }, 1000);
 }
@@ -1918,6 +1953,11 @@ async function submitOngoingExam() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 email: currentApplicant.email,
+                name: (currentApplicant.firstName || '') + ' ' + (currentApplicant.lastName || ''),
+                hq: currentApplicant.hq || 'Not Specified',
+                division: currentApplicant.division || 'Not Specified',
+                examDate: new Date().toISOString().split('T')[0],
+                totalQuestions: ongoingExamQuestions.length,
                 answers: ongoingExamAnswers
             })
         });
