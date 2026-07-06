@@ -1778,6 +1778,20 @@ async function startOngoingExam() {
 }
 
 function submitPhase1() {
+    let mcqTotal = 0;
+    let mcqScore = 0;
+    
+    ongoingExamQuestions.forEach(q => {
+        if (q.questionType === 'mcq') {
+            mcqTotal++;
+            if (ongoingExamAnswers[q._id] !== undefined && Number(ongoingExamAnswers[q._id]) === q.correctAnswerIndex) {
+                mcqScore++;
+            }
+        }
+    });
+
+    alert(`Phase 1 Complete!\nYour MCQ Score: ${mcqScore} out of ${mcqTotal}\n\nYou will now proceed to the Descriptive Assessment.`);
+
     ongoingExamPhase = 2;
     renderOngoingExamQuestions();
     
@@ -1968,7 +1982,7 @@ async function submitOngoingExam() {
         });
         const data = await res.json();
         if (data.success) {
-            alert('Your exam has been submitted successfully.');
+            alert('Your exam has been submitted successfully! Your final result will be declared after the Admin reviews your Descriptive Assessment.');
             renderApplicantDashboard();
             updateView('applicantDashboard');
             document.getElementById('floatingExamTimer').style.display = 'none';
@@ -1982,4 +1996,158 @@ async function submitOngoingExam() {
     } finally {
         unlockUI();
     }
+}
+
+
+
+// --- APPLICANT SCOREBOARD & REVIEW LOGIC ---
+let myScoresData = [];
+let myScoresQuestions = [];
+
+async function fetchMyExamScores() {
+    if (!currentApplicant || !currentApplicant.email) return;
+    
+    try {
+        const res = await fetch(`/api/applicant/my-scores/${currentApplicant.email}`);
+        const data = await res.json();
+        
+        if (data.success) {
+            myScoresData = data.exams;
+            myScoresQuestions = data.questions;
+            renderScoreboard();
+        }
+    } catch (e) {
+        console.error("Error fetching scores:", e);
+    }
+}
+
+function renderScoreboard() {
+    const container = document.getElementById('scoreboardContainer');
+    if (!container) return;
+    
+    if (myScoresData.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed var(--glass-border);">No past exams found.</div>';
+        return;
+    }
+    
+    // Group by Year/Month
+    const groups = {};
+    myScoresData.forEach(exam => {
+        const d = new Date(exam.submittedAt);
+        const yyyyMm = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+        if (!groups[yyyyMm]) groups[yyyyMm] = [];
+        groups[yyyyMm].push(exam);
+    });
+    
+    let html = '';
+    
+    for (const [monthGroup, exams] of Object.entries(groups)) {
+        html += `<div style="margin-bottom: 30px;">
+            <h3 style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);">🗓️ ${monthGroup}</h3>
+            <div style="display: grid; gap: 15px;">`;
+            
+        exams.forEach(exam => {
+            const dStr = new Date(exam.submittedAt).toLocaleDateString();
+            const isGraded = exam.status === 'graded';
+            
+            let scoreBlock = '';
+            if (isGraded) {
+                scoreBlock = `<div style="display: flex; gap: 20px; align-items: center;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">MCQ</div>
+                        <div style="font-weight: 700;">${exam.autoScore}</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Desc</div>
+                        <div style="font-weight: 700;">${exam.manualScore}</div>
+                    </div>
+                    <div style="text-align: center; padding: 5px 15px; background: rgba(99,102,241,0.15); border-radius: 20px; border: 1px solid rgba(99,102,241,0.3);">
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">Total</div>
+                        <div style="font-weight: 800; color: #818cf8;">${exam.totalScore} / ${exam.totalQuestions}</div>
+                    </div>
+                </div>`;
+            } else {
+                scoreBlock = `<span style="padding: 4px 10px; background: rgba(234,179,8,0.1); border: 1px solid rgba(234,179,8,0.3); color: #facc15; border-radius: 12px; font-size: 0.8rem;">Pending Review</span>`;
+            }
+            
+            html += `
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;"
+                     onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='var(--primary)'"
+                     onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='var(--glass-border)'">
+                    
+                    <div>
+                        <div style="font-size: 1.1rem; font-weight: 600; color: white; margin-bottom: 4px;">${exam.testedProduct || 'General'}</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted);">Submitted: ${dStr}</div>
+                    </div>
+                    
+                    ${scoreBlock}
+                    
+                    <button class="btn btn-outline btn-sm" style="margin-left: 20px;" onclick="openReviewModal('${exam._id}')">View Details</button>
+                </div>
+            `;
+        });
+        
+        html += `</div></div>`;
+    }
+    
+    container.innerHTML = html;
+}
+
+function openReviewModal(examId) {
+    const exam = myScoresData.find(e => e._id === examId);
+    if (!exam) return;
+    
+    document.getElementById('reviewExamProduct').innerText = exam.testedProduct || 'General';
+    document.getElementById('reviewMcqScore').innerText = exam.autoScore;
+    document.getElementById('reviewDescScore').innerText = exam.status === 'graded' ? exam.manualScore : 'Pending';
+    
+    const list = document.getElementById('reviewExamAnswersList');
+    list.innerHTML = '';
+    
+    // Display all answers (MCQ and Desc)
+    for (const [qId, ans] of Object.entries(exam.answers || {})) {
+        const q = myScoresQuestions.find(qu => qu._id === qId);
+        if (q) {
+            const wrap = document.createElement('div');
+            wrap.style.background = 'rgba(0,0,0,0.2)';
+            wrap.style.padding = '15px';
+            wrap.style.borderRadius = '8px';
+            wrap.style.border = '1px solid var(--glass-border)';
+            
+            let isCorrectHtml = '';
+            let ansText = '';
+            
+            if (q.questionType === 'mcq') {
+                const isCorrect = Number(ans) === q.correctAnswerIndex;
+                isCorrectHtml = isCorrect 
+                    ? '<span style="color: #4ade80; font-size: 0.8rem; font-weight: bold; margin-left: 10px;">[CORRECT]</span>'
+                    : '<span style="color: #f87171; font-size: 0.8rem; font-weight: bold; margin-left: 10px;">[INCORRECT]</span>';
+                
+                ansText = q.options[Number(ans)] || 'Unknown';
+            } else {
+                isCorrectHtml = '<span style="color: #60a5fa; font-size: 0.8rem; font-weight: bold; margin-left: 10px;">[DESCRIPTIVE]</span>';
+                if (typeof ans === 'object') {
+                    ansText = Object.entries(ans).map(([k, v]) => `<strong>${k}:</strong> ${v}`).join('<br>');
+                } else {
+                    ansText = ans;
+                }
+            }
+            
+            wrap.innerHTML = `
+                <div style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 10px;">
+                    <strong>Q: ${q.text}</strong> ${isCorrectHtml}
+                </div>
+                <div style="font-size: 0.9rem; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border-left: 3px solid #6366f1;">
+                    ${ansText || '<em>No answer provided</em>'}
+                </div>
+            `;
+            list.appendChild(wrap);
+        }
+    }
+    
+    document.getElementById('reviewExamModal').classList.remove('hidden');
+}
+
+function closeReviewModal() {
+    document.getElementById('reviewExamModal').classList.add('hidden');
 }

@@ -5466,3 +5466,138 @@ async function deleteTargetProduct(prod) {
     populateTargetProductDropdowns();
     showToast("Product Removed");
 }
+
+
+
+// --- EXAM GRADING LOGIC ---
+let pendingExamsData = [];
+let allExamQuestions = [];
+let currentGradingExamId = null;
+
+async function fetchPendingExams() {
+    try {
+        const res = await fetch('/api/admin/pending-exams');
+        const data = await res.json();
+        if (data.success) {
+            pendingExamsData = data.exams;
+            allExamQuestions = data.questions;
+            renderPendingExams();
+        }
+    } catch (e) {
+        console.error(e);
+        showToast('Error loading exams');
+    }
+}
+
+function renderPendingExams() {
+    const tbody = document.getElementById('examSubmissionsTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    
+    if (pendingExamsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No exams found.</td></tr>';
+        return;
+    }
+    
+    pendingExamsData.forEach(exam => {
+        const tr = document.createElement('tr');
+        const dStr = new Date(exam.submittedAt).toLocaleDateString();
+        
+        let statusBadge = '';
+        if (exam.status === 'pending_review') {
+            statusBadge = '<span class="status-badge bg-warning">Pending</span>';
+        } else {
+            statusBadge = '<span class="status-badge bg-success">Graded</span>';
+        }
+        
+        let actionBtn = exam.status === 'pending_review' 
+            ? `<button class="btn btn-primary btn-sm" onclick="openGradingModal('${exam._id}')">Grade</button>`
+            : `<button class="btn btn-outline btn-sm" onclick="openGradingModal('${exam._id}')">Review</button>`;
+            
+        tr.innerHTML = `
+            <td>${dStr}</td>
+            <td><strong>${exam.name || exam.email}</strong></td>
+            <td>${exam.testedProduct || 'General'}</td>
+            <td>${statusBadge}</td>
+            <td>${exam.autoScore} / ${exam.totalQuestions}</td>
+            <td>${actionBtn}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function openGradingModal(examId) {
+    currentGradingExamId = examId;
+    const exam = pendingExamsData.find(e => e._id === examId);
+    if (!exam) return;
+    
+    document.getElementById('gradingApplicantName').innerText = exam.name || exam.email;
+    document.getElementById('gradingProduct').innerText = exam.testedProduct || 'General';
+    document.getElementById('gradingMcqScore').innerText = exam.autoScore;
+    
+    const list = document.getElementById('gradingAnswersList');
+    list.innerHTML = '';
+    
+    let hasDescriptive = false;
+    
+    // Find all descriptive answers
+    for (const [qId, ans] of Object.entries(exam.answers || {})) {
+        const q = allExamQuestions.find(qu => qu._id === qId);
+        if (q && q.questionType === 'descriptive') {
+            hasDescriptive = true;
+            const wrap = document.createElement('div');
+            wrap.style.background = 'rgba(0,0,0,0.2)';
+            wrap.style.padding = '15px';
+            wrap.style.borderRadius = '8px';
+            wrap.style.border = '1px solid var(--glass-border)';
+            
+            let ansText = '';
+            if (typeof ans === 'object') {
+                ansText = Object.entries(ans).map(([k, v]) => `<strong>${k}:</strong> ${v}`).join('<br>');
+            } else {
+                ansText = ans;
+            }
+            
+            wrap.innerHTML = `
+                <div style="font-size: 0.9rem; color: var(--text-main); margin-bottom: 8px;"><strong>Q: ${q.text}</strong></div>
+                <div style="font-size: 0.9rem; color: #94a3b8; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;">${ansText || '<em>No answer provided</em>'}</div>
+            `;
+            list.appendChild(wrap);
+        }
+    }
+    
+    if (!hasDescriptive) {
+        list.innerHTML = '<div style="color: var(--text-muted);">No descriptive answers found in this exam.</div>';
+    }
+    
+    document.getElementById('gradingManualScoreInput').value = exam.manualScore || 0;
+    document.getElementById('gradingModal').classList.remove('hidden');
+}
+
+function closeGradingModal() {
+    document.getElementById('gradingModal').classList.add('hidden');
+}
+
+async function submitExamGrade() {
+    if (!currentGradingExamId) return;
+    const manualScore = document.getElementById('gradingManualScoreInput').value;
+    
+    try {
+        const res = await fetch('/api/admin/grade-exam', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ examId: currentGradingExamId, manualScore })
+        });
+        const data = await res.json();
+        if (data.success) {
+            showToast('Grade submitted & applicant emailed!');
+            closeGradingModal();
+            fetchPendingExams();
+        } else {
+            alert(data.error || 'Failed to submit grade');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error submitting grade');
+    }
+}
