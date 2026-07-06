@@ -608,7 +608,11 @@ app.post('/api/submit-onboarding', async (req, res) => {
 // --- RAPID TEST APIs ---
 app.get('/api/applicant/test-questions', async (req, res) => {
     try {
-        const questions = await Question.find({ active: true });
+        const company = await Company.findOne();
+        let questions = await Question.find({ active: true });
+        if (company && company.activeExamProduct && company.activeExamProduct !== 'General') {
+            questions = questions.filter(q => q.targetProduct === company.activeExamProduct || q.category !== 'exam_product');
+        }
         const cats = ['math', 'english', 'current_affairs', 'gk'];
         let selected = [];
         cats.forEach(c => {
@@ -703,10 +707,10 @@ app.put('/api/admin/questions/:id', async (req, res) => {
 // --- ONGOING EXAM APIs ---
 app.post('/api/admin/schedule-exam', async (req, res) => {
     try {
-        const { date } = req.body;
+        const { date, product } = req.body;
         const company = await Company.findOne();
         if (company) {
-            await Company.updateOne({ _id: company._id }, { $set: { activeExamDate: date } });
+            await Company.updateOne({ _id: company._id }, { $set: { activeExamDate: date, activeExamProduct: product || '' } });
             res.json({ success: true });
         } else {
             res.status(404).json({ error: 'Company not found' });

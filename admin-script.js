@@ -398,6 +398,8 @@ function initBackgroundAnimations() {
 // Infrastructure Management (Divisions & HQs) moved to bottom for better organization
 
 function applyCompanyData() {
+    if (typeof renderTargetProductsList === 'function') renderTargetProductsList();
+    if (typeof populateTargetProductDropdowns === 'function') populateTargetProductDropdowns();
     console.log('🏗️ Applying Company Data:', companyData);
     const dpName = document.getElementById('displayCompanyName');
     if (dpName) {
@@ -5240,13 +5242,15 @@ window.addEventListener('DOMContentLoaded', initializeApp);
 
 async function saveExamSchedule() {
     const el = document.getElementById('activeExamDateInput');
+    const prodEl = document.getElementById('activeExamProductInput');
     if (!el) return;
     const dateStr = el.value;
+    const prodStr = prodEl ? prodEl.value : '';
     try {
         const res = await fetch('/api/admin/schedule-exam', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ date: dateStr })
+            body: JSON.stringify({ date: dateStr, product: prodStr })
         });
         const data = await res.json();
         if(data.success) {
