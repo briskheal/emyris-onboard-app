@@ -931,9 +931,6 @@ function switchAdminTab(tab) {
     } else if (tab === 'testbank') {
         document.getElementById('adminTestbankTab').classList.remove('hidden');
         fetchTestBankQuestions();
-    } else if (tab === 'examreports') {
-        document.getElementById('adminExamreportsTab').classList.remove('hidden');
-        fetchExamReports();
     } else {
         document.getElementById('adminApplicantsTab').classList.remove('hidden');
         fetchApplicants();
@@ -4954,53 +4951,40 @@ async function fetchTestBankQuestions() {
             testBankQuestions = data.questions;
             let html = '';
             data.questions.forEach(q => {
-                let optionsHtml = '';
-                if (q.questionType === 'descriptive') {
-                    optionsHtml = `<span style="font-size:0.75rem; color:var(--text-muted); font-style:italic;">Descriptive Inputs: ${q.inputFields ? q.inputFields.join(', ') : 'Free Text'}</span>`;
-                } else {
-                    optionsHtml = (q.options || []).map((opt, i) => 
-                        `<span style="display:inline-block; margin-right:5px; padding:2px 6px; background:rgba(255,255,255,0.05); border-radius:4px; font-size:0.75rem; color:${i === q.correctAnswerIndex ? 'var(--success)' : 'inherit'}">${i+1}. ${opt}</span>`
-                    ).join('');
-                }
-                
-                let answerHtml = q.questionType === 'descriptive' ? '<span style="color:var(--text-muted);">Manual Grade</span>' : `<span style="color:var(--success); font-weight:bold;">Opt ${q.correctAnswerIndex + 1}</span>`;
+                let optionsHtml = q.options.map((opt, i) => 
+                    `<span style="display:inline-block; margin-right:5px; padding:2px 6px; background:rgba(255,255,255,0.05); border-radius:4px; font-size:0.75rem; color:${i === q.correctAnswerIndex ? 'var(--success)' : 'inherit'}">${i+1}. ${opt}</span>`
+                ).join('');
                 
                 html += `
                 <tr>
-                    <td><span style="padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; background: ${q.questionType === 'descriptive' ? 'rgba(99,102,241,0.2); color: #818cf8' : 'rgba(16,185,129,0.2); color: #34d399'}">${q.questionType === 'descriptive' ? 'Descriptive' : 'MCQ'}</span></td>
                     <td style="text-transform: capitalize;">${q.category.replace('_', ' ')}</td>
-            tbody.innerHTML = testBankQuestions.map(q => `
-                <tr>
-                    <td><span style="padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; font-weight: bold; background: ${q.questionType === 'descriptive' ? 'rgba(99,102,241,0.2); color: #818cf8' : 'rgba(16,185,129,0.2); color: #34d399'}">${q.questionType?.toUpperCase() || 'MCQ'}</span></td>
-                    <td style="text-transform: capitalize;">${q.category?.replace('_', ' ') || 'General'}</td>
                     <td style="max-width: 250px; white-space: normal;">${q.text}</td>
-                    <td style="max-width: 300px; white-space: normal;">${q.questionType === 'descriptive' ? 'N/A' : (q.options || []).map((o, i) => `<span style="font-size:0.7rem;">${i+1}: ${o}</span>`).join(', ')}</td>
-                    <td>${q.questionType === 'descriptive' ? 'Manual' : (q.correctAnswerIndex + 1)}</td>
+                    <td style="max-width: 300px; white-space: normal;">${optionsHtml}</td>
                     <td>
                         <div style="display:flex; gap:0.5rem;">
-                            <button class="btn btn-sm btn-outline" onclick="editQuestion('${q._id}')">Edit</button>
-                            <button class="btn btn-sm btn-outline" style="color:var(--error);" onclick="deleteQuestion('${q._id}')">Delete</button>
+                            <button class="btn btn-sm btn-outline" style="color:var(--primary); border-color:var(--primary);" onclick="editQuestion('${q._id}')">Edit</button>
+                            <button class="btn btn-sm btn-outline" style="color:var(--error); border-color:var(--error);" onclick="deleteQuestion('${q._id}')">Delete</button>
                         </div>
                     </td>
-                </tr>`).join('');
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        } else {
+            testBankQuestions = [];
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted);">No questions found.</td></tr>';
         }
-    } catch (e) { console.error(e); }
-}
-
-function toggleQuestionTypeFields() {
-    const type = document.getElementById('q_type').value;
-    document.getElementById('mcqFields').style.display = type === 'mcq' ? 'block' : 'none';
-    document.getElementById('descFields').style.display = type === 'descriptive' ? 'block' : 'none';
+    } catch (e) {
+        console.error(e);
+    }
 }
 
 function showAddQuestionModal() {
-    document.getElementById('q_id').value = '';
     document.getElementById('addQuestionForm').reset();
-    document.getElementById('q_type').value = 'mcq';
-    toggleQuestionTypeFields();
-    
-    document.getElementById('questionModalTitle').innerHTML = '➕ Add New Question';
+    document.getElementById('q_id').value = '';
+    document.getElementById('questionModalTitle').innerText = '➕ Add New Question';
     document.getElementById('addQuestionModal').classList.remove('hidden');
+    document.getElementById('addQuestionModal').style.opacity = '1';
+    document.getElementById('addQuestionModal').style.pointerEvents = 'auto';
     document.getElementById('addQuestionModalBody').style.transform = 'translateY(0)';
 }
 
@@ -5010,20 +4994,12 @@ function editQuestion(id) {
     
     document.getElementById('q_id').value = q._id;
     document.getElementById('q_category').value = q.category;
-    document.getElementById('q_type').value = q.questionType || 'mcq';
     document.getElementById('q_text').value = q.text;
-    
-    toggleQuestionTypeFields();
-    
-    if (q.questionType === 'descriptive') {
-        document.getElementById('q_inputs').value = q.inputFields ? q.inputFields.join(', ') : '';
-    } else {
-        document.getElementById('q_opt0').value = (q.options && q.options[0]) ? q.options[0] : '';
-        document.getElementById('q_opt1').value = (q.options && q.options[1]) ? q.options[1] : '';
-        document.getElementById('q_opt2').value = (q.options && q.options[2]) ? q.options[2] : '';
-        document.getElementById('q_opt3').value = (q.options && q.options[3]) ? q.options[3] : '';
-        document.getElementById('q_correct').value = (q.correctAnswerIndex || 0).toString();
-    }
+    document.getElementById('q_opt0').value = q.options[0];
+    document.getElementById('q_opt1').value = q.options[1];
+    document.getElementById('q_opt2').value = q.options[2];
+    document.getElementById('q_opt3').value = q.options[3];
+    document.getElementById('q_correct').value = q.correctAnswerIndex.toString();
     
     document.getElementById('questionModalTitle').innerText = '✏️ Edit Question';
     document.getElementById('addQuestionModal').classList.remove('hidden');
@@ -5044,30 +5020,17 @@ function closeAddQuestionModal() {
 async function submitNewQuestion(e) {
     e.preventDefault();
     const qId = document.getElementById('q_id').value;
-    const qType = document.getElementById('q_type').value;
-    
-    let payload = {
+    const payload = {
         category: document.getElementById('q_category').value,
-        questionType: qType,
         text: document.getElementById('q_text').value,
-        active: true
-    };
-    
-    if (qType === 'mcq') {
-        payload.options = [
+        options: [
             document.getElementById('q_opt0').value,
             document.getElementById('q_opt1').value,
             document.getElementById('q_opt2').value,
             document.getElementById('q_opt3').value
-        ];
-        payload.correctAnswerIndex = parseInt(document.getElementById('q_correct').value, 10);
-        payload.inputFields = [];
-    } else {
-        const rawInputs = document.getElementById('q_inputs').value;
-        payload.inputFields = rawInputs ? rawInputs.split(',').map(s => s.trim()).filter(s => s) : [];
-        payload.options = [];
-        payload.correctAnswerIndex = 0;
-    }
+        ],
+        correctAnswerIndex: parseInt(document.getElementById('q_correct').value, 10)
+    };
     
     try {
         const url = qId ? '/api/admin/questions/' + qId : '/api/admin/questions';
@@ -5249,7 +5212,9 @@ window.addEventListener('DOMContentLoaded', initializeApp);
 // --- EXAM REPORTS & GRADING ---
 
 async function saveExamSchedule() {
-    const dateStr = document.getElementById('activeExamDateInput').value;
+    const el = document.getElementById('activeExamDateInput');
+    if (!el) return;
+    const dateStr = el.value;
     try {
         const res = await fetch('/api/admin/schedule-exam', {
             method: 'POST',
@@ -5275,116 +5240,119 @@ async function fetchExamReports() {
         const res = await fetch('/api/admin/exam-reports');
         const data = await res.json();
         const tbody = document.getElementById('examReportsTableBody');
+        if (!tbody) return;
         
         if(data.success && data.results.length > 0) {
             examReportsData = data.results;
             let html = '';
             data.results.forEach(r => {
-                let badge = r.status === 'graded' ? '<span class=\'badge accepted\'>GRADED</span>' : '<span class=\'badge draft\'>PENDING</span>';
-                html += 
+                let badge = r.status === 'graded' ? '<span class="badge accepted">GRADED</span>' : '<span class="badge draft">PENDING</span>';
+                html += `
                 <tr>
-                    <td></td>
-                    <td><b></b><br><span style=\'font-size:0.75rem;color:var(--text-muted);\'></span></td>
-                    <td><br><span style=\'font-size:0.75rem;color:var(--text-muted);\'></span></td>
-                    <td></td>
-                    <td></td>
-                    <td style=\'font-weight:bold; color:var(--accent);\'></td>
-                    <td></td>
+                    <td>${new Date(r.examDate).toLocaleDateString()}</td>
+                    <td><b>${r.name || 'Unknown'}</b><br><span style="font-size:0.75rem;color:var(--text-muted);">${r.email}</span></td>
+                    <td>${r.hq || 'N/A'}<br><span style="font-size:0.75rem;color:var(--text-muted);">${r.division || 'N/A'}</span></td>
+                    <td>${r.autoScore || 0}</td>
+                    <td>${r.manualScore || 0}</td>
+                    <td style="font-weight:bold; color:var(--accent);">${r.totalScore || 0}</td>
+                    <td>${badge}</td>
                     <td>
-                        <button class=\'btn btn-sm btn-outline\' onclick=\'openGradeExamModal(" \)\'>Review & Grade</button>
- </td>
- </tr>;
- });
- tbody.innerHTML = html;
- } else {
- tbody.innerHTML = '<tr><td colspan=\'8\' style=\'text-align: center; color: var(--text-muted);\'>No exam reports found.</td></tr>';
- }
- } catch(err) {
- console.error(err);
- }
+                        <button class="btn btn-sm btn-outline" onclick="openGradeExamModal('${r._id}')">Review & Grade</button>
+                    </td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        } else {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No exam reports found.</td></tr>';
+        }
+    } catch(err) {
+        console.error(err);
+    }
 }
 
 function openGradeExamModal(id) {
- const r = examReportsData.find(x => x._id === id);
- if(!r) return;
- 
- document.getElementById('gradeExamId').value = r._id;
- document.getElementById('gradeManualScore').value = r.manualScore || 0;
- 
- const container = document.getElementById('gradeExamAnswersContainer');
- let answersHtml = '';
- 
- const answers = r.answers || {};
- 
- // We only want to show descriptive answers ideally, but for now we'll show all answers that are strings (not just indices)
- // To be perfectly accurate, we should join with the questions array, but for a quick review, we can show the key-value pair of answers.
- for (const [qId, ans] of Object.entries(answers)) {
- if(typeof ans === 'object' && !Array.isArray(ans)) {
- // It's a mapped descriptive answer e.g. { Space 1: value }
- let subHtml = Object.entries(ans).map(([k, v]) => <div><span style=\'font-size:0.75rem; color:var(--text-muted);\'>:</span> <b></b></div>).join('');
- answersHtml += <div style=\'padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.2);\'>
- <div style=\'font-size:0.75rem; color:var(--primary); margin-bottom: 5px;\'>QID: </div>
- 
- </div>;
- } else if (typeof ans === 'string' && ans.length > 2) {
- // Free text
- answersHtml += <div style=\'padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.2);\'>
- <div style=\'font-size:0.75rem; color:var(--primary); margin-bottom: 5px;\'>QID: </div>
- <div></div>
- </div>;
- }
- }
- 
- if(!answersHtml) answersHtml = '<p style=\'color:var(--text-muted);\'>No descriptive answers found to grade.</p>';
- container.innerHTML = answersHtml;
- 
- document.getElementById('gradeExamModal').classList.remove('hidden');
- document.getElementById('gradeExamModal').style.opacity = '1';
- document.getElementById('gradeExamModal').style.pointerEvents = 'auto';
+    const r = examReportsData.find(x => x._id === id);
+    if(!r) return;
+    
+    const elId = document.getElementById('gradeExamId');
+    const elScore = document.getElementById('gradeManualScore');
+    const container = document.getElementById('gradeExamAnswersContainer');
+    if (!elId || !elScore || !container) return;
+    
+    elId.value = r._id;
+    elScore.value = r.manualScore || 0;
+    
+    let answersHtml = '';
+    const answers = r.answers || {};
+    
+    for (const [qId, ans] of Object.entries(answers)) {
+        if(typeof ans === 'object' && !Array.isArray(ans)) {
+             let subHtml = Object.entries(ans).map(([k, v]) => `<div><span style="font-size:0.75rem; color:var(--text-muted);">${k}:</span> <b>${v}</b></div>`).join('');
+             answersHtml += `<div style="padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.2); margin-bottom:10px;">
+                <div style="font-size:0.75rem; color:var(--primary); margin-bottom: 5px;">QID: ${qId}</div>
+                ${subHtml}
+             </div>`;
+        } else if (typeof ans === 'string' && ans.length > 2) {
+             answersHtml += `<div style="padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(0,0,0,0.2); margin-bottom:10px;">
+                <div style="font-size:0.75rem; color:var(--primary); margin-bottom: 5px;">QID: ${qId}</div>
+                <div>${ans}</div>
+             </div>`;
+        }
+    }
+    
+    if(!answersHtml) answersHtml = '<p style="color:var(--text-muted);">No descriptive answers found to grade.</p>';
+    container.innerHTML = answersHtml;
+    
+    document.getElementById('gradeExamModal').classList.remove('hidden');
+    document.getElementById('gradeExamModal').style.opacity = '1';
+    document.getElementById('gradeExamModal').style.pointerEvents = 'auto';
 }
 
 function closeGradeExamModal() {
- document.getElementById('gradeExamModal').style.opacity = '0';
- document.getElementById('gradeExamModal').style.pointerEvents = 'none';
- setTimeout(() => {
- document.getElementById('gradeExamModal').classList.add('hidden');
- }, 300);
+    document.getElementById('gradeExamModal').style.opacity = '0';
+    document.getElementById('gradeExamModal').style.pointerEvents = 'none';
+    setTimeout(() => {
+        document.getElementById('gradeExamModal').classList.add('hidden');
+    }, 300);
 }
 
 async function submitExamGrade() {
- const id = document.getElementById('gradeExamId').value;
- const manualScore = document.getElementById('gradeManualScore').value;
- try {
- const res = await fetch('/api/admin/grade-exam', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({ id, manualScore })
- });
- const data = await res.json();
- if(data.success) {
- closeGradeExamModal();
- fetchExamReports();
- } else {
- alert('Failed to save grade.');
- }
- } catch(err) {
- console.error(err);
- alert('Error saving grade.');
- }
+    const elId = document.getElementById('gradeExamId');
+    const elScore = document.getElementById('gradeManualScore');
+    if (!elId || !elScore) return;
+    const id = elId.value;
+    const manualScore = elScore.value;
+    try {
+        const res = await fetch('/api/admin/grade-exam', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id, manualScore })
+        });
+        const data = await res.json();
+        if(data.success) {
+            closeGradeExamModal();
+            fetchExamReports();
+        } else {
+            alert('Failed to save grade.');
+        }
+    } catch(err) {
+        console.error(err);
+        alert('Error saving grade.');
+    }
 }
 
 function downloadExamReports() {
- if(!examReportsData.length) return alert('No data to download');
- 
- let csv = 'Date,Name,Email,HQ,Division,MCQ Score,Manual Score,Total Score,Status\n';
- examReportsData.forEach(r => {
- csv += \\,\\,\\,\\,\\,,,,\\\n;
- });
- 
- const blob = new Blob([csv], { type: 'text/csv' });
- const url = window.URL.createObjectURL(blob);
- const a = document.createElement('a');
- a.href = url;
- a.download = 'exam_reports.csv';
- a.click();
+    if(!examReportsData.length) return alert('No data to download');
+    
+    let csv = 'Date,Name,Email,HQ,Division,MCQ Score,Manual Score,Total Score,Status\n';
+    examReportsData.forEach(r => {
+        csv += `"${r.examDate}","${r.name}","${r.email}","${r.hq}","${r.division}",${r.autoScore},${r.manualScore},${r.totalScore},"${r.status}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'exam_reports.csv';
+    a.click();
 }

@@ -1026,7 +1026,7 @@ function renderApplicantDashboard() {
                     <div class="timeline-label-premium">${s.label}</div>
                 </div>
             `).join('');
-            
+
             const examBtn = document.getElementById('applicantExamBtn');
             if (examBtn) {
                 examBtn.classList.add('hidden');
@@ -1719,7 +1719,7 @@ function launchOngoingExam() {
 }
 
 async function startOngoingExam() {
-    lockUI(?? Preparing your exam...);
+    lockUI('⏳ Preparing your exam...');
     try {
         const res = await fetch('/api/applicant/exam-questions', {
             method: 'POST',
@@ -1763,15 +1763,15 @@ function renderOngoingExamQuestions() {
         qContainer.style.padding = '1.5rem';
         qContainer.style.marginBottom = '1.5rem';
         
-        let qTypeLabel = q.questionType === 'descriptive' ? '<span style=\'color:#818cf8; font-size:0.75rem; font-weight:bold; margin-right:8px;\'>[DESCRIPTIVE]</span>' : '';
+        let qTypeLabel = q.questionType === 'descriptive' ? '<span style="color:#818cf8; font-size:0.75rem; font-weight:bold; margin-right:8px;">[DESCRIPTIVE]</span>' : '';
         
-        let html = 
-            <h4 style=\'margin-top:0; color:var(--text-main); font-size:1.1rem; line-height:1.4;\'>
-                <span style=\'color:var(--primary); font-weight:800; margin-right:8px;\'>Q.</span>
-                
-                
+        let html = `
+            <h4 style="margin-top:0; color:var(--text-main); font-size:1.1rem; line-height:1.4;">
+                <span style="color:var(--primary); font-weight:800; margin-right:8px;">Q${idx+1}.</span>
+                ${qTypeLabel}
+                ${q.text}
             </h4>
-        ;
+        `;
         
         if (q.questionType === 'descriptive') {
             const inputsContainer = document.createElement('div');
@@ -1781,7 +1781,6 @@ function renderOngoingExamQuestions() {
             inputsContainer.style.marginTop = '15px';
             
             if (q.inputFields && q.inputFields.length > 0) {
-                // Multiple inputs
                 q.inputFields.forEach(label => {
                     const wrap = document.createElement('div');
                     const lbl = document.createElement('label');
@@ -1802,7 +1801,6 @@ function renderOngoingExamQuestions() {
                     inputsContainer.appendChild(wrap);
                 });
             } else {
-                // Single large textarea
                 const txa = document.createElement('textarea');
                 txa.className = 'form-input';
                 txa.style.width = '100%';
@@ -1814,121 +1812,117 @@ function renderOngoingExamQuestions() {
             qContainer.innerHTML = html;
             qContainer.appendChild(inputsContainer);
         } else {
-            // MCQ
-            let optsHtml = <div id=\'examOpts_\' style=\'display:flex; flex-direction:column; gap:10px; margin-top:15px;\'>;
+            let optsHtml = `<div id="examOpts_${q._id}" style="display:flex; flex-direction:column; gap:10px; margin-top:15px;">`;
             (q.options || []).forEach((opt, oIdx) => {
-                optsHtml += 
-                    <label id=\'examOptLbl__\' style=\'display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); border-radius:8px; cursor:pointer; transition:all 0.2s;\'
-                           onmouseenter=\'this.style.background=" rgba 99 102 241 0.1 \\'
- onmouseleave=\'if(!this.querySelector(\input\).checked) this.style.background=\rgba 0 0 0 0.2 \\'>
- <input type=\'radio\' name=\'exam_q_\' value=\'\' onclick=\'selectOngoingMcqAnswer(\\, , )\'>
- <span></span>
- </label>
- ;
- });
- optsHtml += </div>;
- qContainer.innerHTML = html + optsHtml;
- }
- 
- list.appendChild(qContainer);
- });
+                optsHtml += `
+                    <label id="examOptLbl_${q._id}_${oIdx}" style="display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.05); border-radius:8px; cursor:pointer; transition:all 0.2s;"
+                           onmouseenter="this.style.background='rgba(99,102,241,0.1)'"
+                           onmouseleave="if(!this.querySelector('input').checked) this.style.background='rgba(0,0,0,0.2)'">
+                        <input type="radio" name="exam_q_${q._id}" value="${oIdx}" onclick="selectOngoingMcqAnswer('${q._id}', ${oIdx}, ${q.correctAnswerIndex})">
+                        <span>${opt}</span>
+                    </label>
+                `;
+            });
+            optsHtml += `</div>`;
+            qContainer.innerHTML = html + optsHtml;
+        }
+        
+        list.appendChild(qContainer);
+    });
 }
 
 function selectOngoingMcqAnswer(qId, selectedIdx, correctIdx) {
- saveOngoingAnswer(qId, 'mcq', selectedIdx);
- 
- // Style and freeze
- const container = document.getElementById(examOpts_);
- if (!container) return;
- 
- // Freeze
- container.style.pointerEvents = 'none';
- const radios = container.querySelectorAll('input[type=\radio\]');
- radios.forEach(r => r.disabled = true);
- 
- // Check right/wrong immediately
- const labels = container.querySelectorAll('label');
- labels.forEach((lbl, idx) => {
- if (idx === correctIdx) {
- lbl.style.background = 'rgba(34, 197, 94, 0.15)';
- lbl.style.borderColor = 'rgba(34, 197, 94, 0.6)';
- lbl.style.color = '#4ade80';
- } else if (idx === selectedIdx && selectedIdx !== correctIdx) {
- lbl.style.background = 'rgba(239, 68, 68, 0.15)';
- lbl.style.borderColor = 'rgba(239, 68, 68, 0.6)';
- lbl.style.color = '#f87171';
- } else {
- lbl.style.opacity = '0.5';
- }
- });
+    saveOngoingAnswer(qId, 'mcq', selectedIdx);
+    
+    const container = document.getElementById(`examOpts_${qId}`);
+    if (!container) return;
+    
+    container.style.pointerEvents = 'none';
+    const radios = container.querySelectorAll('input[type="radio"]');
+    radios.forEach(r => r.disabled = true);
+    
+    const labels = container.querySelectorAll('label');
+    labels.forEach((lbl, idx) => {
+        if (idx === correctIdx) {
+            lbl.style.background = 'rgba(34, 197, 94, 0.15)';
+            lbl.style.borderColor = 'rgba(34, 197, 94, 0.6)';
+            lbl.style.color = '#4ade80';
+        } else if (idx === selectedIdx && selectedIdx !== correctIdx) {
+            lbl.style.background = 'rgba(239, 68, 68, 0.15)';
+            lbl.style.borderColor = 'rgba(239, 68, 68, 0.6)';
+            lbl.style.color = '#f87171';
+        } else {
+            lbl.style.opacity = '0.5';
+        }
+    });
 }
 
 function saveOngoingAnswer(qId, key, value) {
- if (!ongoingExamAnswers[qId]) {
- if (key === 'mcq' || key === 'default') {
- ongoingExamAnswers[qId] = value;
- } else {
- ongoingExamAnswers[qId] = { [key]: value };
- }
- } else {
- if (key === 'mcq' || key === 'default') {
- ongoingExamAnswers[qId] = value;
- } else {
- ongoingExamAnswers[qId][key] = value;
- }
- }
+    if (!ongoingExamAnswers[qId]) {
+        if (key === 'mcq' || key === 'default') {
+            ongoingExamAnswers[qId] = value;
+        } else {
+            ongoingExamAnswers[qId] = { [key]: value };
+        }
+    } else {
+        if (key === 'mcq' || key === 'default') {
+            ongoingExamAnswers[qId] = value;
+        } else {
+            ongoingExamAnswers[qId][key] = value;
+        }
+    }
 }
 
 function startOngoingExamTimer(seconds) {
- clearInterval(ongoingExamTimerInterval);
- const display = document.getElementById('examTimerDisplay');
- 
- ongoingExamTimerInterval = setInterval(() => {
- seconds--;
- const m = Math.floor(seconds / 60).toString().padStart(2, '0');
- const s = (seconds % 60).toString().padStart(2, '0');
- display.innerText = ${m}:;
- 
- if (seconds <= 60) {
- display.style.color = '#ff4444';
- display.parentElement.style.borderColor = '#ff4444';
- display.parentElement.style.animation = 'pulseError 1s infinite';
- }
- 
- if (seconds <= 0) {
- clearInterval(ongoingExamTimerInterval);
- alert('Time is up! Submitting your exam automatically.');
- submitOngoingExam();
- }
- }, 1000);
+    clearInterval(ongoingExamTimerInterval);
+    const display = document.getElementById('examTimerDisplay');
+    
+    ongoingExamTimerInterval = setInterval(() => {
+        seconds--;
+        const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const s = (seconds % 60).toString().padStart(2, '0');
+        display.innerText = `${m}:${s}`;
+        
+        if (seconds <= 60) {
+            display.style.color = '#ff4444';
+            display.parentElement.style.borderColor = '#ff4444';
+            display.parentElement.style.animation = 'pulseError 1s infinite';
+        }
+        
+        if (seconds <= 0) {
+            clearInterval(ongoingExamTimerInterval);
+            alert('Time is up! Submitting your exam automatically.');
+            submitOngoingExam();
+        }
+    }, 1000);
 }
 
 async function submitOngoingExam() {
- clearInterval(ongoingExamTimerInterval);
- lockUI('?? Submitting your exam...');
- try {
- const res = await fetch('/api/applicant/submit-exam', {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify({
- email: currentApplicant.email,
- answers: ongoingExamAnswers
- })
- });
- const data = await res.json();
- if (data.success) {
- alert('Your exam has been submitted successfully.');
- renderApplicantDashboard();
- updateView('applicantDashboard');
- document.getElementById('floatingExamTimer').style.display = 'none';
- document.getElementById('applicantExamBtn').classList.add('hidden'); // Hide it so they can't take it again
- } else {
- alert(data.message || 'Failed to submit exam.');
- }
- } catch (e) {
- console.error(e);
- alert('Error submitting exam.');
- } finally {
- unlockUI();
- }
+    clearInterval(ongoingExamTimerInterval);
+    lockUI('🚀 Submitting your exam...');
+    try {
+        const res = await fetch('/api/applicant/submit-exam', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: currentApplicant.email,
+                answers: ongoingExamAnswers
+            })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert('Your exam has been submitted successfully.');
+            renderApplicantDashboard();
+            updateView('applicantDashboard');
+            document.getElementById('floatingExamTimer').style.display = 'none';
+            document.getElementById('applicantExamBtn').classList.add('hidden');
+        } else {
+            alert(data.message || 'Failed to submit exam.');
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error submitting exam.');
+    } finally {
+        unlockUI();
+    }
 }
