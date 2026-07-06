@@ -1032,7 +1032,7 @@ function renderApplicantDashboard() {
                 examBtn.classList.add('hidden');
                 if (companyData && companyData.activeExamDate && app.offerAccepted) {
                     const today = new Date().toISOString().split('T')[0];
-                    if (companyData.activeExamDate === today) {
+                    if (companyData.activeExamDate.substring(0, 10) === today) {
                         examBtn.classList.remove('hidden');
                     }
                 }

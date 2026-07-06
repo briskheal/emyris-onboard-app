@@ -535,6 +535,17 @@ async function syncDatabase() {
                 { category: 'math', text: 'A product originally priced at $200 is discounted by 15%, then taxed by 10%. What is the final price?', options: ['$185', '$187', '$190', '$195'], correctAnswerIndex: 1 },
                 { category: 'math', text: 'What is the next number in the series: 3, 9, 27, 81, __?', options: ['162', '243', '324', '729'], correctAnswerIndex: 1 },
                 
+                
+                // Emystein Specific Questions
+                { category: 'emystein', text: 'Who will be the focused doctor for Emystein 3miu?', questionType: 'mcq', options: ['GP', 'Dentist', 'Intensivist', 'Gynaecologist'], correctAnswerIndex: 2 },
+                { category: 'emystein', text: 'What is the MRP of the product?', questionType: 'descriptive', inputFields: [] },
+                { category: 'emystein', text: 'Write 4 competitors brand names.', questionType: 'descriptive', inputFields: ['Space 1', 'Space 2', 'Space 3', 'Space 4'] },
+                { category: 'emystein', text: 'Write 3 major consuming hospitals in your HQ.', questionType: 'descriptive', inputFields: ['Space 1', 'Space 2', 'Space 3'] },
+                { category: 'emystein', text: 'Write maximum used by 3 Doctors name.', questionType: 'descriptive', inputFields: ['Space 1', 'Space 2', 'Space 3'] },
+                { category: 'emystein', text: 'What was last month Secondary units?', questionType: 'descriptive', inputFields: [] },
+                { category: 'emystein', text: 'What was last month Primary units?', questionType: 'descriptive', inputFields: [] },
+                { category: 'emystein', text: 'How to improve sales? Your suggestions.', questionType: 'descriptive', inputFields: [] },
+
                 // English (Original + 13 New)
                 { category: 'english', text: 'Which word is a synonym for "Abundant"?', options: ['Scarce', 'Plentiful', 'Empty', 'Brief'], correctAnswerIndex: 1 },
                 { category: 'english', text: 'Identify the verb in the following sentence: "The quick brown fox jumps over the lazy dog."', options: ['quick', 'brown', 'jumps', 'lazy'], correctAnswerIndex: 2 },
