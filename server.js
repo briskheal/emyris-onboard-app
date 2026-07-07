@@ -148,6 +148,17 @@ const adminRouter = require('./routes/admin');
 app.use('/api/applicant', applicantRouter);
 app.use('/api/admin', adminRouter);
 
+// Legacy Route Aliases for original HTML portal (script.js)
+app.get('/api/company-data', (req, res, next) => {
+    req.url = '/company';
+    adminRouter(req, res, next);
+});
+
+app.post('/api/applicant-login', (req, res, next) => {
+    req.url = '/login';
+    applicantRouter(req, res, next);
+});
+
 
 // Local File Storage Helper
 function saveBase64ToFile(email, category, base64Data) {
