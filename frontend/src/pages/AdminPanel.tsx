@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import ApplicantManager from '../components/Admin/ApplicantManager';
 import ExamManager from '../components/Admin/ExamManager';
-import ManualGrading from '../components/Admin/ManualGrading';
 import PendingExams from '../components/Admin/PendingExams';
 import Settings from '../components/Admin/Settings';
-import { Users, FileText, Settings as SettingsIcon, LogOut, ClipboardList, BookOpen } from 'lucide-react';
+import { Users, FileText, Settings as SettingsIcon, LogOut, ClipboardList } from 'lucide-react';
 import api from '../api/client';
 
-type AdminView = 'applicants' | 'exams' | 'grading' | 'pending' | 'settings';
+type AdminView = 'applicants' | 'exams' | 'pending' | 'settings';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -78,7 +77,6 @@ const AdminPanel: React.FC = () => {
           {[
             { id: 'applicants', icon: <Users size={16} />, label: 'Applicant Manager' },
             { id: 'pending', icon: <ClipboardList size={16} />, label: 'Pending Exams' },
-            { id: 'grading', icon: <BookOpen size={16} />, label: 'Manual Grading' },
             { id: 'exams', icon: <FileText size={16} />, label: 'Exam Center' },
             { id: 'settings', icon: <SettingsIcon size={16} />, label: 'Settings' },
           ].map(item => (
@@ -105,7 +103,6 @@ const AdminPanel: React.FC = () => {
       <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
         {activeView === 'applicants' && <ApplicantManager />}
         {activeView === 'pending' && <PendingExams />}
-        {activeView === 'grading' && <ManualGrading />}
         {activeView === 'exams' && <ExamManager />}
         {activeView === 'settings' && <Settings />}
       </main>

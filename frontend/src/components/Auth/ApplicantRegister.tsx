@@ -10,7 +10,7 @@ interface ApplicantRegisterProps {
 const ApplicantRegister: React.FC<ApplicantRegisterProps> = ({ onBack, onSuccess }) => {
   const [formData, setFormData] = useState({
     title: 'Mr.',
-    name: '',
+    fullName: '',
     email: '',
     phone: '',
     hq: '',
@@ -30,10 +30,10 @@ const ApplicantRegister: React.FC<ApplicantRegisterProps> = ({ onBack, onSuccess
         alert(`Registration successful! Your Secure PIN is: ${res.data.pin}`);
         onSuccess(formData.email);
       } else {
-        setError(res.data.error || 'Registration failed');
+        setError(res.data.message || 'Registration failed');
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed. Check server connection.');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Registration failed. Check server connection.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ const ApplicantRegister: React.FC<ApplicantRegisterProps> = ({ onBack, onSuccess
             </div>
             <div className="form-group col-name">
               <label>Full Name</label>
-              <input type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required placeholder="Enter full name" />
+              <input type="text" value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} required placeholder="Enter full name" />
             </div>
           </div>
 
