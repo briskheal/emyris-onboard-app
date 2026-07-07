@@ -4,7 +4,7 @@ const multer = require('multer');
 const { Company, Applicant, Question, ExamResult, Asset, EmailLog } = require('../db');
 const sgMail = require('@sendgrid/mail');
 
-router.post('-login', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
         try {
             const logMsg = `[${new Date().toISOString()}] LOGIN REQ: ${JSON.stringify(req.body)}\n`;

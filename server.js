@@ -139,6 +139,13 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
 app.use(express.static(require("path").join(__dirname, "frontend", "dist")));
 
+// Mount modular routers
+const applicantRouter = require('./routes/applicant');
+const adminRouter = require('./routes/admin');
+app.use('/api/applicant', applicantRouter);
+app.use('/api/admin', adminRouter);
+
+
 // Local File Storage Helper
 function saveBase64ToFile(email, category, base64Data) {
     if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
@@ -251,6 +258,12 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 }
 
 // Removed duplicate save-draft endpoint. Handled below.
+
+// Alias for React frontend compatibility
+app.post('/api/applicant/register', (req, res, next) => {
+    req.url = '/api/register-applicant';
+    next('router');
+});
 
 app.post('/api/register-applicant', async (req, res) => {
     let { title, fullName, email, phone, division, designation } = req.body;

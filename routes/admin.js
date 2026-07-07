@@ -84,7 +84,7 @@ router.get('/exam-reports', async (req, res) => {
     }
 });
 
-router.post('-login', (req, res) => {
+router.post('/login', (req, res) => {
     const { username, password } = req.body;
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
