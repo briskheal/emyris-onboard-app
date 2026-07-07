@@ -973,7 +973,7 @@ function applyLetterheadStyles(elementId) {
     if (fontType === 'times') fontStack = "'Times New Roman', Times, serif";
     
     frame.style.fontSize = `${size}pt`;
-    frame.style.fontFamily = font;
+    frame.style.fontFamily = fontStack;
     frame.style.textAlign = align;
 
     if (companyData.letterheadImage && companyData.letterheadImage.length > 0) {
