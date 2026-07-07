@@ -749,7 +749,7 @@ app.post('/api/applicant/exam-questions', async (req, res) => {
         
         // Strict slice for MCQ based on mcqCount, NO slice for Descriptive
         let mcqProductQs = allProductQs.filter(q => q.questionType === 'mcq').sort(() => 0.5 - Math.random()).slice(0, mcqCount);
-        let descProductQs = allProductQs.filter(q => q.questionType === 'descriptive');
+        let descProductQs = allProductQs.filter(q => q.questionType === 'descriptive').sort(() => 0.5 - Math.random()).slice(0, 5);
         
         // Combine and shuffle
         const selected = [...mcqProductQs, ...descProductQs].sort(() => 0.5 - Math.random());
