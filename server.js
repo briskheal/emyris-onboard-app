@@ -136,8 +136,11 @@ process.on('uncaughtException', (err) => {
 });
 
 app.use(cors());
-app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
-app.use(express.static(require("path").join(__dirname, "frontend", "dist")));
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.static(__dirname));
+
+// Serve React assets for Admin panel
+app.use('/assets', express.static(path.join(__dirname, 'frontend', 'dist', 'assets')));
 
 // Mount modular routers
 const applicantRouter = require('./routes/applicant');
@@ -533,15 +536,15 @@ app.post('/api/submit-onboarding', async (req, res) => {
 
 // --- RAPID TEST APIs ---
 
+// Serve React Admin Portal
+app.get('/admin*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+});
+
+// Serve Original Applicant Portal (Catch-all)
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
-        const indexPath = require('path').join(__dirname, 'frontend', 'dist', 'index.html');
-        res.sendFile(indexPath, err => {
-            if (err) {
-                console.error("Failed to send index.html. Did the React build fail?", err);
-                res.status(500).send("Frontend build not found. Please check deployment logs.");
-            }
-        });
+        res.sendFile(path.join(__dirname, 'index.html'));
     } else {
         res.status(404).json({ success: false, message: 'API route not found' });
     }
