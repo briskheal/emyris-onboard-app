@@ -27,9 +27,9 @@ const ApplicantRegister: React.FC<ApplicantRegisterProps> = ({ onBack, onSuccess
   useEffect(() => {
     const fetchCompanyData = async () => {
       try {
-        const res = await api.get('/admin/company');
-        if (res.data.success && res.data.settings) {
-          setCompanySettings(res.data.settings);
+        const res = await api.get('/company-data'); // hits /api/company-data
+        if (res.data && res.data.divisions) {
+          setCompanySettings(res.data);
         }
       } catch (err) {
         console.error('Failed to load company config', err);
@@ -44,7 +44,8 @@ const ApplicantRegister: React.FC<ApplicantRegisterProps> = ({ onBack, onSuccess
     if (companySettings && companySettings.divisions) {
       const div = companySettings.divisions.find((d: any) => d.name === divisionName);
       if (div && div.designations) {
-        setAvailableDesignations(div.designations);
+        // Map designation objects {name, department} to just their names
+        setAvailableDesignations(div.designations.map((d: any) => typeof d === 'string' ? d : d.name));
       } else {
         setAvailableDesignations([]);
       }

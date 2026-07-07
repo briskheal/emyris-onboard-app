@@ -150,7 +150,7 @@ app.use('/api/admin', adminRouter);
 
 // Legacy Route Aliases for original HTML portal (script.js)
 app.get('/api/company-data', (req, res, next) => {
-    req.url = '/company';
+    req.url = '/api/company-data';
     adminRouter(req, res, next);
 });
 
