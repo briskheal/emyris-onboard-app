@@ -1173,6 +1173,14 @@ function renderApplicantDashboard() {
 
     } catch (err) {
         console.error("Dashboard render error:", err);
+        const container = document.getElementById('scoreboardContainer');
+        if (container) {
+            container.innerHTML = `<div style="text-align: center; color: #ef4444; padding: 30px;">
+                Dashboard render error prevented scores from loading:<br>
+                ${err.message}<br>
+                ${err.stack}
+            </div>`;
+        }
     }
 }
 
@@ -2021,9 +2029,14 @@ async function fetchMyExamScores() {
             myScoresData = data.exams;
             myScoresQuestions = data.questions;
             renderScoreboard();
+        } else {
+            const container = document.getElementById('scoreboardContainer');
+            if (container) container.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 30px;">Failed to load scores: API returned an error.</div>';
         }
     } catch (e) {
         console.error("Error fetching scores:", e);
+        const container = document.getElementById('scoreboardContainer');
+        if (container) container.innerHTML = '<div style="text-align: center; color: #ef4444; padding: 30px;">Connection failed. Is the Node.js backend server running?</div>';
     }
 }
 
