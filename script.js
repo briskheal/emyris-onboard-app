@@ -1113,7 +1113,7 @@ function renderApplicantDashboard() {
                 const cjd = document.getElementById('confirmedJoiningDateText');
                 if (af) af.classList.add('hidden');
                 if (oas) oas.classList.remove('hidden');
-                if (cjd) cjd.innerText = app.actualJoiningDate.split('-').reverse().join('/');
+                if (cjd) cjd.innerText = app.actualJoiningDate ? app.actualJoiningDate.split('-').reverse().join('/') : 'Not recorded';
             }
         } else {
             const ols = document.getElementById('offerLetterSection');
