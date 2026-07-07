@@ -2,7 +2,6 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const { Company, Applicant, Question, ExamResult, Asset, EmailLog } = require('../db');
-const sgMail = require('@sendgrid/mail');
 // You may need to port upload middleware and other shared utilities here.
 
 router.get('/uploads/:filename', async (req, res) => {
