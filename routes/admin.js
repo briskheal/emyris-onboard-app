@@ -34,6 +34,16 @@ router.get('/uploads/:filename', async (req, res) => {
     }
 });
 
+// GET /api/admin/company - for Settings page
+router.get('/company', async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        res.json({ success: true, company: company || {} });
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 router.get('/questions', async (req, res) => {
     try {
         const questions = await Question.find();
