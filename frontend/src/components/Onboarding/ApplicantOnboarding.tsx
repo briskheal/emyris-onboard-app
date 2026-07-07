@@ -63,7 +63,7 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
   };
 
   return (
-    <div className="dash-card" style={{ maxWidth: '900px', margin: '0 auto' }}>
+    <div className="dash-card" style={{ maxWidth: '900px', margin: '0 auto 4rem auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
         <div>
           <h2 style={{ color: 'var(--primary)' }}>Application Wizard</h2>

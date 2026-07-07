@@ -29,7 +29,7 @@ const ApplicantPortal: React.FC = () => {
 
   if (view === 'onboarding') {
     return (
-      <div className="landing-screen" style={{ padding: '2rem' }}>
+      <div className="landing-screen" style={{ padding: '2rem', overflowY: 'auto', display: 'block' }}>
         <ApplicantOnboarding 
           applicant={currentApplicant} 
           onComplete={() => setView('dashboard')} 
