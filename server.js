@@ -137,7 +137,7 @@ process.on('uncaughtException', (err) => {
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
-app.use(express.static(__dirname));
+app.use(express.static(require("path").join(__dirname, "frontend", "dist")));
 
 // Local File Storage Helper
 function saveBase64ToFile(email, category, base64Data) {
@@ -494,5 +494,13 @@ app.post('/api/submit-onboarding', async (req, res) => {
 });
 
 // --- RAPID TEST APIs ---
+
+app.get('*', (req, res) => {
+    if (!req.path.startsWith('/api/')) {
+        res.sendFile(require('path').join(__dirname, 'frontend', 'dist', 'index.html'));
+    } else {
+        res.status(404).json({ success: false, message: 'API route not found' });
+    }
+});
 
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
