@@ -1,7 +1,84 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const { Company, Applicant, Question, ExamResult, Asset } = require('../db');
+const fs = require('fs');
+const path = require('path');
+const nodemailer = require('nodemailer');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, sequelize } = require('../db');
+
+const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
+
+// Shared email helper
+async function sendEmail({ to, subject, html }) {
+    try {
+        const transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || 'smtppro.zoho.in',
+            port: parseInt(process.env.EMAIL_PORT || '465'),
+            secure: process.env.EMAIL_SECURE !== 'false',
+            auth: {
+                user: process.env.EMAIL_USER || '',
+                pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
+            }
+        });
+        await transporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to, subject, html
+        });
+    } catch (e) {
+        console.error('[EMAIL ERROR]', e.message);
+    }
+}
+
+// Shared file helper
+function saveBase64ToFile(email, category, base64Data) {
+    if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
+        return base64Data;
+    }
+    try {
+        const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches) return base64Data;
+        const ext = matches[1].split('/')[1] || 'bin';
+        const dir = path.join(__dirname, '..', 'uploads', email.replace('@', '_'));
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        const filename = `${category}_${Date.now()}.${ext}`;
+        const filepath = path.join(dir, filename);
+        fs.writeFileSync(filepath, Buffer.from(matches[2], 'base64'));
+        return `/uploads/${email.replace('@', '_')}/${filename}`;
+    } catch (e) {
+        console.error('[FILE SAVE ERROR]', e.message);
+        return base64Data;
+    }
+}
+
+// Shared date helper
+function safeParseDateServer(s) {
+    if (!s || typeof s !== 'string') return null;
+    if (s.includes('T')) return new Date(s);
+    const parts = s.split('-');
+    if (parts.length !== 3) return null;
+    if (parts[0].length === 4) return new Date(s);
+    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+}
+
+// Number to words helper
+function numberToWords(n) {
+    const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+        'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    if (n === 0) return 'Zero';
+    if (n < 0) return 'Negative ' + numberToWords(-n);
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' ' + ones[n%10] : '');
+    if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + numberToWords(n%100) : '');
+    if (n < 100000) return numberToWords(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' ' + numberToWords(n%1000) : '');
+    if (n < 10000000) return numberToWords(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' ' + numberToWords(n%100000) : '');
+    return numberToWords(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' ' + numberToWords(n%10000000) : '');
+}
+
+// Template resolver helper
+function resolveTemplate(template, data) {
+    if (!template) return '';
+    return template.replace(/{{(w+)}}/g, (match, key) => data[key] !== undefined ? data[key] : match);
+}
 
 router.post('/login', async (req, res) => {
     try {
@@ -122,7 +199,7 @@ router.get('/test-questions', async (req, res) => {
     }
 });
 
-app.post('/api/applicant/submit-test', async (req, res) => {
+router.post('/submit-test', async (req, res) => {
     try {
         const { email, answers } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -152,7 +229,7 @@ app.post('/api/applicant/submit-test', async (req, res) => {
 });
 
 // Admin Question Bank
-app.get('/api/admin/questions', async (req, res) => {
+router.get('/questions', async (req, res) => {
     try {
         const questions = await Question.find();
         res.json({ success: true, questions });
@@ -161,21 +238,21 @@ app.get('/api/admin/questions', async (req, res) => {
     }
 });
 
-app.post('/api/admin/questions', async (req, res) => {
+router.post('/questions', async (req, res) => {
     try {
         await Question.create(req.body);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.delete('/api/admin/questions/:id', async (req, res) => {
+router.delete('/questions/:id', async (req, res) => {
     try {
         await Question.findByIdAndDelete(req.params.id);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.put('/api/admin/questions/:id', async (req, res) => {
+router.put('/questions/:id', async (req, res) => {
     try {
         const question = await Question.findById(req.params.id);
         if (!question) return res.status(404).json({ error: 'Not found' });
@@ -189,7 +266,7 @@ app.put('/api/admin/questions/:id', async (req, res) => {
 });
 
 // --- ONGOING EXAM APIs ---
-app.post('/api/admin/schedule-exam', async (req, res) => {
+router.post('/schedule-exam', async (req, res) => {
     try {
         const { date, product, mcqTime, descTime, mcqCount } = req.body;
         const company = await Company.findOne();
@@ -213,7 +290,7 @@ app.post('/api/admin/schedule-exam', async (req, res) => {
     }
 });
 
-app.post('/api/applicant/exam-questions', async (req, res) => {
+router.post('/exam-questions', async (req, res) => {
     try {
         const company = await Company.findOne();
         const activeProduct = company && company.activeExamProduct ? company.activeExamProduct : '';
@@ -255,7 +332,7 @@ app.post('/api/applicant/exam-questions', async (req, res) => {
     }
 });
 
-app.post('/api/applicant/submit-exam', async (req, res) => {
+router.post('/submit-exam', async (req, res) => {
     try {
         const { email, name, hq, division, examDate, answers, totalQuestions } = req.body;
         
@@ -290,7 +367,7 @@ app.post('/api/applicant/submit-exam', async (req, res) => {
     }
 });
 
-app.get('/api/admin/exam-reports', async (req, res) => {
+router.get('/exam-reports', async (req, res) => {
     try {
         const results = await ExamResult.find();
         res.json({ success: true, results });
@@ -303,7 +380,7 @@ app.get('/api/admin/exam-reports', async (req, res) => {
 
 // --- APPLICANT DOCUMENT UPLOAD ---
 // Save Progress (Draft)
-app.post('/api/applicant/save-draft', async (req, res) => {
+router.post('/save-draft', async (req, res) => {
     try {
         const { email, formData } = req.body;
         if (!email) return res.status(400).json({ error: 'Missing email' });
@@ -353,7 +430,7 @@ app.post('/api/applicant/save-draft', async (req, res) => {
 // In-memory mutex for preventing race conditions during simultaneous document uploads
 const documentUploadLocks = {};
 
-app.post('/api/applicant/upload-document', async (req, res) => {
+router.post('/upload-document', async (req, res) => {
     try {
         const { email, category, fileName, fileData } = req.body;
         if (!email || !category || !fileData) {
@@ -427,7 +504,7 @@ app.post('/api/applicant/upload-document', async (req, res) => {
 
 // --- ADMIN APIs ---
 
-app.post('/api/admin-login', (req, res) => {
+router.post('/api/admin-login', (req, res) => {
     const { username, password } = req.body;
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
@@ -439,7 +516,7 @@ app.post('/api/admin-login', (req, res) => {
     }
 });
 
-app.get('/api/admin/applicant-pin/:email', async (req, res) => {
+router.get('/applicant-pin/:email', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email: req.params.email }).select('fullName email password status');
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
@@ -448,7 +525,7 @@ app.get('/api/admin/applicant-pin/:email', async (req, res) => {
 });
 
 // FAST-TRACK EXISTING STAFF API
-app.post('/api/admin/add-existing-staff', async (req, res) => {
+router.post('/add-existing-staff', async (req, res) => {
     try {
         const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo, pin, state,
                 customPin, epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc } = req.body;
@@ -604,7 +681,7 @@ app.post('/api/admin/add-existing-staff', async (req, res) => {
 });
 
 // BULK ADD EXISTING STAFF
-app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
+router.post('/bulk-add-existing-staff', async (req, res) => {
     try {
         const { staffList } = req.body;
         if (!staffList || !Array.isArray(staffList)) {
@@ -716,7 +793,7 @@ app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
     }
 });
 
-app.get('/api/admin/applicants', async (req, res) => {
+router.get('/applicants', async (req, res) => {
     try {
         const { month, year } = req.query;
         let query = {};

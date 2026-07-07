@@ -1,7 +1,84 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const { Company, Applicant, Question, ExamResult, Asset } = require('../db');
+const fs = require('fs');
+const path = require('path');
+const nodemailer = require('nodemailer');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, sequelize } = require('../db');
+
+const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
+
+// Shared email helper
+async function sendEmail({ to, subject, html }) {
+    try {
+        const transporter = nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || 'smtppro.zoho.in',
+            port: parseInt(process.env.EMAIL_PORT || '465'),
+            secure: process.env.EMAIL_SECURE !== 'false',
+            auth: {
+                user: process.env.EMAIL_USER || '',
+                pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
+            }
+        });
+        await transporter.sendMail({
+            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+            to, subject, html
+        });
+    } catch (e) {
+        console.error('[EMAIL ERROR]', e.message);
+    }
+}
+
+// Shared file helper
+function saveBase64ToFile(email, category, base64Data) {
+    if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
+        return base64Data;
+    }
+    try {
+        const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (!matches) return base64Data;
+        const ext = matches[1].split('/')[1] || 'bin';
+        const dir = path.join(__dirname, '..', 'uploads', email.replace('@', '_'));
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        const filename = `${category}_${Date.now()}.${ext}`;
+        const filepath = path.join(dir, filename);
+        fs.writeFileSync(filepath, Buffer.from(matches[2], 'base64'));
+        return `/uploads/${email.replace('@', '_')}/${filename}`;
+    } catch (e) {
+        console.error('[FILE SAVE ERROR]', e.message);
+        return base64Data;
+    }
+}
+
+// Shared date helper
+function safeParseDateServer(s) {
+    if (!s || typeof s !== 'string') return null;
+    if (s.includes('T')) return new Date(s);
+    const parts = s.split('-');
+    if (parts.length !== 3) return null;
+    if (parts[0].length === 4) return new Date(s);
+    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+}
+
+// Number to words helper
+function numberToWords(n) {
+    const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
+        'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
+    const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
+    if (n === 0) return 'Zero';
+    if (n < 0) return 'Negative ' + numberToWords(-n);
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' ' + ones[n%10] : '');
+    if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + numberToWords(n%100) : '');
+    if (n < 100000) return numberToWords(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' ' + numberToWords(n%1000) : '');
+    if (n < 10000000) return numberToWords(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' ' + numberToWords(n%100000) : '');
+    return numberToWords(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' ' + numberToWords(n%10000000) : '');
+}
+
+// Template resolver helper
+function resolveTemplate(template, data) {
+    if (!template) return '';
+    return template.replace(/{{(w+)}}/g, (match, key) => data[key] !== undefined ? data[key] : match);
+}
 // You may need to port upload middleware and other shared utilities here.
 
 router.get('/uploads/:filename', async (req, res) => {
@@ -436,7 +513,7 @@ router.get('/applicants', async (req, res) => {
 });
 
 // GET single applicant (Lazy loading heavy data on demand)
-app.get('/api/admin/applicant/:email', async (req, res) => {
+router.get('/applicant/:email', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email: req.params.email });
         if (!applicant) return res.status(404).json({ error: 'Not found' });
@@ -448,7 +525,7 @@ app.get('/api/admin/applicant/:email', async (req, res) => {
 });
 
 // Public Endpoint to Serve Static Assets (Logos, Signatures, Stamps)
-app.get('/api/public/asset/:assetId', async (req, res) => {
+router.get('/api/public/asset/:assetId', async (req, res) => {
     try {
         const asset = await Asset.findById(req.params.assetId);
         if (!asset || !asset.data) return res.status(404).send('Asset not found');
@@ -468,7 +545,7 @@ app.get('/api/public/asset/:assetId', async (req, res) => {
 });
 
 // New Endpoint for Lazy Loading Document Data
-app.get('/api/admin/document/:assetId', async (req, res) => {
+router.get('/document/:assetId', async (req, res) => {
     try {
         const asset = await Asset.findById(req.params.assetId);
         if (!asset) return res.status(404).json({ error: 'Document data not found' });
@@ -478,7 +555,7 @@ app.get('/api/admin/document/:assetId', async (req, res) => {
     }
 });
 
-app.post('/api/admin/toggle-access', async (req, res) => {
+router.post('/toggle-access', async (req, res) => {
     try {
         const { email, canLogin } = req.body;
         await Applicant.findOneAndUpdate({ email }, { canLogin });
@@ -488,7 +565,7 @@ app.post('/api/admin/toggle-access', async (req, res) => {
     }
 });
 
-app.post('/api/admin/update-status', async (req, res) => {
+router.post('/update-status', async (req, res) => {
     try {
         const { email, status } = req.body;
         const update = { status };
@@ -507,7 +584,7 @@ app.post('/api/admin/update-status', async (req, res) => {
     }
 });
 
-app.post('/api/admin/reset-applicant', async (req, res) => {
+router.post('/reset-applicant', async (req, res) => {
     try {
         const { email } = req.body;
         await Applicant.findOneAndUpdate(
@@ -530,7 +607,7 @@ app.post('/api/admin/reset-applicant', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Reset failed' }); }
 });
 
-app.post('/api/admin/update-task', async (req, res) => {
+router.post('/update-task', async (req, res) => {
     try {
         const { email, taskKey, value } = req.body;
         const update = {};
@@ -540,7 +617,7 @@ app.post('/api/admin/update-task', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Update failed' }); }
 });
 
-app.post('/api/admin/delete-document', async (req, res) => {
+router.post('/delete-document', async (req, res) => {
     try {
         const { email, assetId } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -571,7 +648,7 @@ app.post('/api/admin/delete-document', async (req, res) => {
     }
 });
 
-app.post('/api/admin/reject-document', async (req, res) => {
+router.post('/reject-document', async (req, res) => {
     try {
         const { email, docCategory, reason } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -609,14 +686,14 @@ app.post('/api/admin/reject-document', async (req, res) => {
 });
 
 // --- DIVISION APIs ---
-app.get('/api/admin/divisions', async (req, res) => {
+router.get('/divisions', async (req, res) => {
     try {
         const divisions = await Division.find({ active: true }).sort({ name: 1 });
         res.json(divisions);
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.get('/api/admin/hqs', async (req, res) => {
+router.get('/hqs', async (req, res) => {
     try {
         const hqs = await HQ.find({ active: true }).sort({ name: 1 });
         res.json(hqs);
@@ -624,7 +701,7 @@ app.get('/api/admin/hqs', async (req, res) => {
 });
 
 // Admin - DB Statistics
-app.get('/api/admin/db-stats', async (req, res) => {
+router.get('/db-stats', async (req, res) => {
     try {
         // Calculate database size by summing all tables in the public schema
         const [results] = await sequelize.query("SELECT sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::bigint as size FROM pg_tables WHERE schemaname = 'public'");
@@ -676,7 +753,7 @@ app.get('/api/admin/db-stats', async (req, res) => {
     }
 });
 
-app.post('/api/admin/toggle-access', async (req, res) => {
+router.post('/toggle-access', async (req, res) => {
     try {
         const { email, canLogin } = req.body;
         await Applicant.findOneAndUpdate({ email }, { canLogin });
@@ -684,7 +761,7 @@ app.post('/api/admin/toggle-access', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.post('/api/admin/divisions', async (req, res) => {
+router.post('/divisions', async (req, res) => {
     try {
         const { name } = req.body;
         if (!name) return res.status(400).json({ error: 'Name required' });
@@ -705,7 +782,7 @@ app.post('/api/admin/divisions', async (req, res) => {
     }
 });
 
-app.post('/api/admin/hqs', async (req, res) => {
+router.post('/hqs', async (req, res) => {
     try {
         const { name } = req.body;
         const existing = await HQ.findOne({ name: name.toUpperCase().trim() });
@@ -718,14 +795,14 @@ app.post('/api/admin/hqs', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.delete('/api/admin/divisions/:id', async (req, res) => {
+router.delete('/divisions/:id', async (req, res) => {
     try {
         await Division.findByIdAndUpdate(req.params.id, { active: false });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-app.delete('/api/admin/hqs/:id', async (req, res) => {
+router.delete('/hqs/:id', async (req, res) => {
     try {
         await HQ.findByIdAndUpdate(req.params.id, { active: false });
         res.json({ success: true });
@@ -733,7 +810,7 @@ app.delete('/api/admin/hqs/:id', async (req, res) => {
 });
 
 // --- AUTO REF NUMBER ---
-app.post('/api/admin/next-ref', async (req, res) => {
+router.post('/next-ref', async (req, res) => {
     try {
         const company = await Company.findOne();
         if (!company) return res.status(404).json({ error: 'No company profile' });
@@ -784,7 +861,7 @@ app.post('/api/admin/next-ref', async (req, res) => {
 });
 
 // --- TEMPLATE MANAGEMENT ---
-app.post('/api/admin/save-template', async (req, res) => {
+router.post('/save-template', async (req, res) => {
     try {
         const { type, body, fontSize, fontType, headerHeight, footerHeight, signatoryName, signatoryDesg } = req.body;
 
@@ -836,7 +913,11 @@ app.post('/api/admin/save-template', async (req, res) => {
         } catch (histErr) {
             console.warn('⚠️ Failed to save history entry:', histErr.message);
         }
+    } catch (err) {
+        console.error('Save template error:', err);
+        res.status(500).json({ success: false, message: err.message });
     }
+});
 
 router.get('/applicant/:email', async (req, res) => {
     try {
@@ -1205,7 +1286,7 @@ router.post('/save-template', async (req, res) => {
     }
 });
 
-app.get('/api/admin/template-history/:type', async (req, res) => {
+router.get('/template-history/:type', async (req, res) => {
     try {
         const history = await TemplateHistory.find({ type: req.params.type })
             .sort({ savedAt: -1 })
@@ -1216,7 +1297,7 @@ app.get('/api/admin/template-history/:type', async (req, res) => {
     }
 });
 
-app.post('/api/admin/render-template', async (req, res) => {
+router.post('/render-template', async (req, res) => {
     try {
         const { email, type, customBody } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1291,7 +1372,7 @@ function calculateMonthlyGross(sal) {
 }
 
 // --- UPDATE APPLICANT WORKFLOW DATA ---
-app.post('/api/admin/update-workflow-data', async (req, res) => {
+router.post('/update-workflow-data', async (req, res) => {
     try {
         const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
                 epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
@@ -1353,7 +1434,7 @@ app.post('/api/admin/update-workflow-data', async (req, res) => {
 });
 
 // --- VERIFY AND ACTIVATE APPLICANT ---
-app.post('/api/admin/verify-and-activate', async (req, res) => {
+router.post('/verify-and-activate', async (req, res) => {
     try {
         const { email, verificationChecks } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1395,7 +1476,7 @@ app.post('/api/admin/verify-and-activate', async (req, res) => {
 });
 
 // --- SEND LETTER VIA EMAIL ---
-app.post('/api/admin/send-letter', async (req, res) => {
+router.post('/send-letter', async (req, res) => {
     try {
         const { email, letterType, pdfBase64 } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1428,7 +1509,7 @@ app.post('/api/admin/send-letter', async (req, res) => {
 });
 
 // --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
-app.post('/api/admin/save-letter-snapshot', async (req, res) => {
+router.post('/save-letter-snapshot', async (req, res) => {
     try {
         const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
         const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
@@ -1497,7 +1578,7 @@ function safeParseDateServer(dateStr) {
     return isNaN(d.getTime()) ? null : d;
 }
 
-app.post('/api/applicant/accept-offer', async (req, res) => {
+router.post('/accept-offer', async (req, res) => {
     try {
         const { email, actualJoiningDate } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1542,7 +1623,7 @@ app.post('/api/applicant/accept-offer', async (req, res) => {
 });
 
 // --- NEW: LIFECYCLE CHECKS (Admins can poll this or call on load) ---
-app.get('/api/admin/lifecycle-check', async (req, res) => {
+router.get('/lifecycle-check', async (req, res) => {
     try {
         const applicants = await Applicant.find({
             offerAccepted: true,
@@ -1592,7 +1673,7 @@ app.get('/api/admin/lifecycle-check', async (req, res) => {
 });
 
 // Company Profile Fetching (With latest Assets)
-app.get('/api/company-profile', async (req, res) => {
+router.get('/api/company-profile', async (req, res) => {
     try {
         let profile = await Company.findOne().lean();
         if (!profile) {
@@ -1629,7 +1710,7 @@ app.get('/api/company-profile', async (req, res) => {
 });
 
 // Applicant-facing unified company data (Hydrated with Divisions and HQs)
-app.get('/api/company-data', async (req, res) => {
+router.get('/api/company-data', async (req, res) => {
     try {
         const company = await Company.findOne().lean();
         if (!company) return res.status(404).json({ error: 'Not found' });
