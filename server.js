@@ -494,3 +494,6 @@ app.post('/api/submit-onboarding', async (req, res) => {
 });
 
 // --- RAPID TEST APIs ---
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log('Server running on port ' + PORT));
