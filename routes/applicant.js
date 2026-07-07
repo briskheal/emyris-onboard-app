@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { Company, Applicant, Question, ExamResult, Asset, EmailLog } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset } = require('../db');
 
 router.post('/login', async (req, res) => {
     try {
