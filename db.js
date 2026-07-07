@@ -383,9 +383,15 @@ function createModelAdapter(Model) {
     Adapter.find = (query = {}) => makeQueryBuilder(Model, query, false);
     Adapter.findById = (id) => makeFindByIdQuery(Model, id);
     Adapter.create = async (data) => {
-        if (!data._id) data._id = generateId();
-        const inst = await Model.create(data);
-        return wrapInstance(inst);
+        if (Array.isArray(data)) {
+            data.forEach(d => { if (!d._id) d._id = generateId(); });
+            const insts = await Model.bulkCreate(data);
+            return insts.map(inst => wrapInstance(inst));
+        } else {
+            if (!data._id) data._id = generateId();
+            const inst = await Model.create(data);
+            return wrapInstance(inst);
+        }
     };
     Adapter.count = async (query = {}) => {
         return await Model.count({ where: buildWhere(query) });
