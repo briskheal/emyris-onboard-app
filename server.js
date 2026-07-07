@@ -259,11 +259,36 @@ async function sendEmail({ to, subject, html, attachments = [] }) {
 
 // Removed duplicate save-draft endpoint. Handled below.
 
-// Alias for React frontend compatibility
-app.post('/api/applicant/register', (req, res, next) => {
-    req.url = '/api/register-applicant';
-    next('router');
+// Alias for React frontend - directly calls same handler as /api/register-applicant
+app.post('/api/applicant/register', (req, res) => {
+    return handleRegister(req, res);
 });
+
+async function handleRegister(req, res) {
+    let { title, fullName, email, phone, division, designation } = req.body;
+    email = (email || '').trim().toLowerCase();
+    let pin = Math.floor(100000 + Math.random() * 900000).toString();
+    try {
+        const existingEmail = await Applicant.findOne({ email });
+        if (existingEmail) {
+            return res.json({ success: false, isReturning: true, message: 'Welcome back! This email is already registered. Please log in to continue your journey.' });
+        }
+        const existingPhone = await Applicant.findOne({ phone });
+        if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
+        await Applicant.create({ title, fullName, email, phone, division, designation, password: pin });
+        console.log(`[DB] Account Created: ${email}`);
+        await sendEmail({
+            to: email,
+            subject: 'Emyris Onboarding: Your Secure Login PIN',
+            html: `<div style="font-family:'Segoe UI',Arial;padding:30px;border:1px solid #e1e1e1;border-radius:8px;color:#333"><h2 style="color:#003366">Welcome to Emyris Biolifesciences, ${fullName}!</h2><p>Your recruitment profile has been successfully generated.</p><div style="background:#f4f6f8;padding:20px;border-left:5px solid #003366;margin:20px 0"><p style="margin:0;font-size:1.1em"><strong>Your Login PIN:</strong></p><p style="font-size:2em;color:#003366;font-weight:bold;margin:10px 0">${pin}</p></div><p>Please use this PIN and your email to log in and complete your onboarding application.</p></div>`
+        });
+        res.status(200).json({ success: true, message: 'Registration Successful. PIN sent to inbox.', pin });
+    } catch (error) {
+        console.error('[REGISTRATION ERROR]:', error.message);
+        res.status(200).json({ success: false, needsRecovery: true, message: 'Account created, but email delivery failed.', pin });
+    }
+}
+
 
 app.post('/api/register-applicant', async (req, res) => {
     let { title, fullName, email, phone, division, designation } = req.body;
