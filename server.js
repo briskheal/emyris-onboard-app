@@ -2784,11 +2784,11 @@ app.post('/api/admin/grade-exam', async (req, res) => {
         const exam = await ExamResult.findOne({ _id: examId });
         if (!exam) return res.status(404).json({ error: 'Exam not found' });
         
-        const total = exam.autoScore + parseInt(manualScore);
+        const total = (exam.autoScore || 0) + parseInt(manualScore || 0, 10);
         
         await ExamResult.updateOne({ _id: examId }, {
             $set: {
-                manualScore: parseInt(manualScore),
+                manualScore: parseInt(manualScore || 0, 10),
                 totalScore: total,
                 status: 'graded'
             }

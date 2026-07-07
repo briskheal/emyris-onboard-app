@@ -2247,7 +2247,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="testbankTableBody">
-                                        <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading questions...</td></tr>
+                                        <tr><td colspan="8" style="text-align: center; color: var(--text-muted);">Loading questions...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -2380,7 +2380,8 @@
             <div class="setup-section-head">
                 <h4>📝 Pending Exam Submissions</h4>
                 <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Review and manually grade descriptive answers.</p>
-            </div>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="downloadExamReports()">⬇️ Download CSV</button>
             <div class="table-responsive">
                 <table class="admin-table">
                     <thead>
@@ -2389,7 +2390,9 @@
                             <th>Applicant Name</th>
                             <th>Product</th>
                             <th>Status</th>
-                            <th>Auto MCQ Score</th>
+                            <th>MCQ Score</th>
+                            <th>Manual Score</th>
+                            <th>Total Score</th>
                             <th>Action</th>
                         </tr>
                     </thead>

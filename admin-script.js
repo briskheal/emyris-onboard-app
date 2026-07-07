@@ -5501,7 +5501,7 @@ function renderPendingExams() {
     tbody.innerHTML = '';
     
     if (pendingExamsData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted);">No exams found.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; color: var(--text-muted);">No exams found.</td></tr>';
         return;
     }
     
@@ -5522,10 +5522,12 @@ function renderPendingExams() {
             
         tr.innerHTML = `
             <td>${dStr}</td>
-            <td><strong>${exam.name || exam.email}</strong></td>
+            <td><strong>${(exam.name && exam.name.trim()) ? exam.name : exam.email}</strong></td>
             <td>${exam.testedProduct || 'General'}</td>
             <td>${statusBadge}</td>
-            <td>${exam.autoScore} / ${exam.totalQuestions}</td>
+            <td>${exam.autoScore || 0}</td>
+            <td>${exam.manualScore || 0}</td>
+            <td style="font-weight:bold; color:var(--accent);">${exam.totalScore || 0}</td>
             <td>${actionBtn}</td>
         `;
         tbody.appendChild(tr);
