@@ -44,8 +44,11 @@ const ApplicantRegister: React.FC<ApplicantRegisterProps> = ({ onBack, onSuccess
     if (companySettings && companySettings.divisions) {
       const div = companySettings.divisions.find((d: any) => d.name === divisionName);
       if (div && div.designations) {
-        // Map designation objects {name, department} to just their names
-        setAvailableDesignations(div.designations.map((d: any) => typeof d === 'string' ? d : d.name));
+        // Map designation objects to their string names
+        setAvailableDesignations(div.designations.map((d: any) => {
+          if (typeof d === 'string') return d;
+          return d.name || d.title || d.designation || 'Unknown Role';
+        }));
       } else {
         setAvailableDesignations([]);
       }
