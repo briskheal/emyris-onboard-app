@@ -508,7 +508,7 @@
                         <button class="tab-btn" onclick="switchAdminTab('setup')">⚙️ Setup & Letters</button>
                         <button class="tab-btn" onclick="switchAdminTab('gallery')">📂 Asset Library</button>
                         <button class="tab-btn" onclick="switchAdminTab('testbank')">🧠 Test Bank</button>
-                        <button class="tab-btn" onclick="switchAdminTab('examreports')">📊 Exam Reports</button>
+                        <button class="tab-btn" onclick="switchAdminTab('examsubmissions'); fetchPendingExams();">📝 Exam Submissions</button>
                     </div>
 
                     <div id="adminProfileTab" class="admin-tab-content">
@@ -2373,7 +2373,35 @@
         </div>
     </div>
 
-    <!-- Exam Reports Tab -->
+    
+    <!-- Exam Submissions Tab (NEW) -->
+    <div id="adminExamSubmissionsTab" class="admin-tab-content hidden">
+        <div class="setup-section">
+            <div class="setup-section-head">
+                <h4>📝 Pending Exam Submissions</h4>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Review and manually grade descriptive answers.</p>
+            </div>
+            <div class="table-responsive">
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Applicant Name</th>
+                            <th>Product</th>
+                            <th>Status</th>
+                            <th>Auto MCQ Score</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="examSubmissionsTableBody">
+                        <tr><td colspan="6" style="text-align: center; color: var(--text-muted);">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+<!-- Exam Reports Tab -->
     <div id="adminExamreportsTab" class="admin-tab-content hidden">
         <div class="setup-section">
             <div class="setup-section-head" style="display: flex; justify-content: space-between; align-items: center;">

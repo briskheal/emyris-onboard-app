@@ -816,21 +816,6 @@ app.get('/api/admin/exam-reports', async (req, res) => {
     }
 });
 
-app.post('/api/admin/grade-exam', async (req, res) => {
-    try {
-        const { id, manualScore } = req.body;
-        const result = await ExamResult.findById(id);
-        if (!result) return res.status(404).json({ error: 'Not found' });
-        
-        const totalScore = (result.autoScore || 0) + Number(manualScore);
-        
-        await ExamResult.updateOne({ _id: result._id }, { $set: { manualScore: Number(manualScore), totalScore, status: 'graded' } });
-        res.json({ success: true });
-    } catch (e) {
-        console.error('Grade Exam Error:', e);
-        res.status(500).json({ error: 'Failed to grade exam' });
-    }
-});
 
 // --- APPLICANT DOCUMENT UPLOAD ---
 // Save Progress (Draft)
