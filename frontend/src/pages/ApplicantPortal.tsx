@@ -14,7 +14,7 @@ const ApplicantPortal: React.FC = () => {
     setView('dashboard');
   };
 
-  const handleRegisterSuccess = (email: string) => {
+  const handleRegisterSuccess = (_email: string) => {
     setView('login');
   };
 

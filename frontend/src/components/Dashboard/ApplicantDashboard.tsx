@@ -10,7 +10,7 @@ interface ApplicantDashboardProps {
 }
 
 const ApplicantDashboard: React.FC<ApplicantDashboardProps> = ({ applicant, onLogout }) => {
-  const [app, setApp] = useState(applicant);
+  const [app] = useState(applicant);
   const [takingExam, setTakingExam] = useState(false);
 
   if (takingExam) {
