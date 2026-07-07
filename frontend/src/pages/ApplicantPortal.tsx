@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import ApplicantLogin from '../components/Auth/ApplicantLogin';
 import ApplicantRegister from '../components/Auth/ApplicantRegister';
 import ApplicantDashboard from '../components/Dashboard/ApplicantDashboard';
+import ApplicantOnboarding from '../components/Onboarding/ApplicantOnboarding';
 
-type PortalState = 'landing' | 'login' | 'register' | 'dashboard';
+type PortalState = 'landing' | 'login' | 'register' | 'dashboard' | 'onboarding';
 
 const ApplicantPortal: React.FC = () => {
   const [view, setView] = useState<PortalState>('landing');
@@ -11,7 +12,11 @@ const ApplicantPortal: React.FC = () => {
 
   const handleLoginSuccess = (applicant: any) => {
     setCurrentApplicant(applicant);
-    setView('dashboard');
+    if (!applicant.status || applicant.status === 'draft') {
+      setView('onboarding');
+    } else {
+      setView('dashboard');
+    }
   };
 
   const handleRegisterSuccess = (_email: string) => {
@@ -20,6 +25,17 @@ const ApplicantPortal: React.FC = () => {
 
   if (view === 'dashboard') {
     return <ApplicantDashboard applicant={currentApplicant} onLogout={() => setView('landing')} />;
+  }
+
+  if (view === 'onboarding') {
+    return (
+      <div className="landing-screen" style={{ padding: '2rem' }}>
+        <ApplicantOnboarding 
+          applicant={currentApplicant} 
+          onComplete={() => setView('dashboard')} 
+        />
+      </div>
+    );
   }
 
   return (
