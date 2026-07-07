@@ -505,7 +505,7 @@ router.get('/applicants', async (req, res) => {
             return app;
         });
 
-        res.status(200).json(optimizedApplicants);
+        res.status(200).json({ success: true, applicants: optimizedApplicants });
     } catch (error) {
         console.error("List Fetch Error:", error);
         res.status(500).json({ error: 'Failed' });
