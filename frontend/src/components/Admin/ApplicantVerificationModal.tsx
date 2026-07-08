@@ -6,9 +6,10 @@ interface ApplicantVerificationModalProps {
   applicant: any;
   onClose: () => void;
   onSuccess: () => void;
+  onRefresh?: () => void;
 }
 
-export default function ApplicantVerificationModal({ applicant, onClose, onSuccess }: ApplicantVerificationModalProps) {
+export default function ApplicantVerificationModal({ applicant, onClose, onSuccess, onRefresh }: ApplicantVerificationModalProps) {
   const [loading, setLoading] = useState(false);
   
   // Local state for internal assignment
@@ -52,7 +53,8 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
         });
         if (res.data.success) {
           alert('Document uploaded successfully!');
-          onSuccess(); // Refresh the list
+          if (onRefresh) onRefresh();
+          else onSuccess(); // Fallback if onRefresh not provided
         } else {
           alert(res.data.message || 'Upload failed');
         }

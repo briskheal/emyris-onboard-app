@@ -10,13 +10,20 @@ const ApplicantManager: React.FC = () => {
   const [pdfTask, setPdfTask] = useState<{app: any, type: 'offer' | 'appointment'} | null>(null);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [verificationApp, setVerificationApp] = useState<any | null>(null);
+  const [filterMonth, setFilterMonth] = useState<string>(new Date().getMonth().toString());
+  const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
 
   const fetchApplicants = async () => {
     try {
       setLoading(true);
-      const res = await api.get('/admin/applicants');
+      const res = await api.get(`/admin/applicants?month=${filterMonth}&year=${filterYear}`);
       if (res.data.success) {
         setApplicants(res.data.applicants);
+        setVerificationApp((prev: any) => {
+          if (!prev) return prev;
+          const updated = res.data.applicants.find((a: any) => a.email === prev.email);
+          return updated || prev;
+        });
       }
     } catch (err) {
       console.error("Failed to load applicants", err);
@@ -27,7 +34,7 @@ const ApplicantManager: React.FC = () => {
 
   useEffect(() => {
     fetchApplicants();
-  }, []);
+  }, [filterMonth, filterYear]);
 
 
 
@@ -60,10 +67,22 @@ const ApplicantManager: React.FC = () => {
 
   return (
     <div className="dash-card" style={{ height: '100%' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h2>Applicant Management</h2>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <input type="text" placeholder="Search..." className="form-input-sm" style={{ width: '250px' }} />
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <select className="form-input-sm" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ width: 'auto' }}>
+            <option value="all">All Months</option>
+            {Array.from({length: 12}).map((_, i) => (
+              <option key={i} value={i}>{new Date(2000, i, 1).toLocaleString('default', { month: 'short' })}</option>
+            ))}
+          </select>
+          <select className="form-input-sm" value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{ width: 'auto' }}>
+            <option value="all">All Years</option>
+            {[2023, 2024, 2025, 2026, 2027].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+          <input type="text" placeholder="Search..." className="form-input-sm" style={{ width: '200px' }} />
           <button className="btn btn-sm btn-primary" onClick={() => setShowStaffModal(true)}>Add Existing Staff</button>
         </div>
       </div>
@@ -126,6 +145,7 @@ const ApplicantManager: React.FC = () => {
           applicant={verificationApp} 
           onClose={() => setVerificationApp(null)} 
           onSuccess={() => { setVerificationApp(null); fetchApplicants(); }} 
+          onRefresh={() => fetchApplicants()}
         />
       )}
     </div>
