@@ -524,6 +524,18 @@ router.get('/applicant/:email', async (req, res) => {
     }
 });
 
+// DELETE single applicant
+router.delete('/applicant/:email', async (req, res) => {
+    try {
+        const applicant = await Applicant.findOneAndDelete({ email: req.params.email });
+        if (!applicant) return res.status(404).json({ error: 'Not found' });
+        res.status(200).json({ success: true, message: 'Applicant deleted successfully' });
+    } catch (error) {
+        console.error("Delete Applicant Error:", error);
+        res.status(500).json({ error: 'Failed to delete applicant' });
+    }
+});
+
 // Public Endpoint to Serve Static Assets (Logos, Signatures, Stamps)
 router.get('/api/public/asset/:assetId', async (req, res) => {
     try {

@@ -23,6 +23,22 @@ const ApplicantManager: React.FC = () => {
     fetchApplicants();
   }, []);
 
+  const handleDelete = async (email: string) => {
+    if (!window.confirm(`Are you sure you want to permanently delete applicant ${email}?`)) return;
+    try {
+      const res = await api.delete(`/admin/applicant/${email}`);
+      if (res.data.success) {
+        setApplicants(applicants.filter(app => app.email !== email));
+        alert('Applicant deleted successfully');
+      } else {
+        alert(res.data.error || 'Failed to delete applicant');
+      }
+    } catch (err) {
+      console.error('Delete failed:', err);
+      alert('Error deleting applicant');
+    }
+  };
+
   if (pdfTask) {
     return (
       <PDFGenerator 
@@ -69,6 +85,7 @@ const ApplicantManager: React.FC = () => {
                   <td style={{ padding: '15px' }}>
                     <div style={{ display: 'flex', gap: '5px' }}>
                       <button className="btn btn-sm btn-outline">View</button>
+                      <button className="btn btn-sm btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={() => handleDelete(app.email)}>Delete</button>
                       {app.status === 'approved' && !app.offerLetterData && (
                         <button className="btn btn-sm btn-primary" onClick={() => setPdfTask({app, type: 'offer'})}>Offer Letter</button>
                       )}
