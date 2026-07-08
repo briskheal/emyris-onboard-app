@@ -1,4 +1,4 @@
-const { Sequelize, DataTypes, Op } = require('sequelize');
+const { Sequelize, Op } = require('sequelize');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -15,543 +15,68 @@ const sequelize = new Sequelize(dbUrl, {
 
 const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
-// 1. Company Model
-const OnboardCompany = sequelize.define('onboard_company', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    name: { type: DataTypes.STRING, defaultValue: "" },
-    address: DataTypes.TEXT,
-    phone: DataTypes.STRING,
-    tollFree: DataTypes.STRING,
-    website: DataTypes.STRING,
-    email: DataTypes.STRING,
-    activeLogoId: DataTypes.STRING,
-    activeStampId: DataTypes.STRING,
-    activeSignatureId: DataTypes.STRING,
-    activeLetterheadId: DataTypes.STRING,
-    signatoryName: DataTypes.STRING,
-    signatoryDesignation: DataTypes.STRING,
-    offerLetterBody: { type: DataTypes.TEXT, defaultValue: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: Offer of Employment\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nWith reference to your application and subsequent interview you had with us, we are pleased to appoint you as {{DESIGNATION}} in our organization {{COMPANY_NAME}} on the following terms and conditions:\n\n1. DATE OF JOINING: Your date of joining will be {{JOINING_DATE}}.\n\n2. HEADQUARTER: Your headquarter will be {{HQ}}.\n\n3. REPORTING: You will report to {{REPORTING_TO}} or anyone else as decided by the management.\n\n4. REMUNERATION: Your monthly gross salary will be Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}).\n\nWe look forward to a long and mutually beneficial association.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
-    apptLetterBody: DataTypes.TEXT,
-    confirmLetterBody: DataTypes.TEXT,
-    emyfeLetterBody: DataTypes.TEXT,
-    emyhoLetterBody: DataTypes.TEXT,
-    emyhrLetterBody: DataTypes.TEXT,
-    revisedSalaryBody: { type: DataTypes.TEXT, defaultValue: `{{REF_NO}}\nDate: {{TODAY_DATE}}\n\nTo,\n{{TITLE_SHORT}} {{FULL_NAME}}\n{{ADDRESS}}\n{{CITY_STATE}} - {{PIN}}\n\nSubject: REVISED SALARY LETTER\n\nDear {{TITLE_SHORT}} {{FULL_NAME}},\n\nPursuant to your performance review, your revised gross monthly CTC is Rs. {{SALARY_MONTHLY}}/- totaling an Annual CTC of Rs. {{SALARY_ANNUAL}}/- ({{SALARY_WORDS}}), effective from {{TODAY_DATE}}.\n\n{{SALARY_REVISION_BOX}}\n\n{{SALARY_BREAKUP}}\n\nWe look forward to your continued contribution to the organization.\n\nBest Regards,\n\n{{SIGNATORY_NAME}}\n{{SIGNATORY_DESG}}\n{{COMPANY_NAME}}` },
-    incentiveCircularBody: DataTypes.TEXT,
-    experienceLetterBody: DataTypes.TEXT,
-    relievingLetterBody: DataTypes.TEXT,
-    showCauseLetterBody: DataTypes.TEXT,
-    miscLetters: { type: DataTypes.JSON, defaultValue: [] },
-    templateSettings: { type: DataTypes.JSON, defaultValue: {} },
-    fyFrom: DataTypes.STRING,
-    fyTo: DataTypes.STRING,
-    letterFontSize: { type: DataTypes.INTEGER, defaultValue: 11 },
-    letterFontType: { type: DataTypes.STRING, defaultValue: 'helvetica' },
-    letterAlignment: { type: DataTypes.STRING, defaultValue: 'left' },
-    headerHeight: { type: DataTypes.INTEGER, defaultValue: 65 },
-    footerHeight: { type: DataTypes.INTEGER, defaultValue: 25 },
-    marqueeText: { type: DataTypes.STRING, defaultValue: "Enhancing Life and Excelling in Care" },
-    marqueeColor: { type: DataTypes.STRING, defaultValue: "#94a3b8" },
-    marqueeSpeed: { type: DataTypes.INTEGER, defaultValue: 20 },
-    offerCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
-    apptCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
-    miscCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
-    empCodeCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
-    revisedSalaryCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
-    activeExamDate: { type: DataTypes.STRING, defaultValue: "" },
-    activeExamProduct: { type: DataTypes.STRING, defaultValue: "" },
-    examMcqTime: { type: DataTypes.INTEGER, defaultValue: 15 },
-    examDescriptiveTime: { type: DataTypes.INTEGER, defaultValue: 15 },
-    examMcqCount: { type: DataTypes.INTEGER, defaultValue: 10 },
-    targetProductsList: { type: DataTypes.JSON, defaultValue: ["General", "Emystein", "Briskheal"] },
-    customAssetCategories: { type: DataTypes.JSON, defaultValue: [] },
-    designations: { 
-        type: DataTypes.JSON, 
-        defaultValue: [
-            { title: "Territory Business Manager", department: "SALES" },
-            { title: "Area Sales Manager", department: "SALES" },
-            { title: "Regional Sales Manager", department: "SALES" },
-            { title: "Sr. Regional Sales Manager", department: "SALES" },
-            { title: "Zonal Sales Manager", department: "SALES" },
-            { title: "Sr. Zonal Sales Manager", department: "SALES" },
-            { title: "Sales Manager", department: "SALES" },
-            { title: "National Sales Manager", department: "SALES" },
-            { title: "General Manager (Sales & Mktng)", department: "SALES" }
-        ] 
-    },
-    requiredDocs: {
-        type: DataTypes.JSON, defaultValue: [
-            "Aadhar Card - Front",
-            "Aadhar Card - Back",
-            "PAN Card",
-            "Degree/Provisional Certificate",
-            "Experience Letter - Previous Company",
-            "Relieving Letter - Previous Company",
-            "Last Month Salary Slip",
-            "Digital Signature"
-        ]
-    }
-});
+// Import schemas and adapter
+const { MongooseAdapter } = require('./models/adapter');
+const initModels = require('./models/pgModels');
 
-// 2. Asset Model
-const OnboardAsset = sequelize.define('onboard_asset', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    category: DataTypes.STRING,
-    name: DataTypes.STRING,
-    data: DataTypes.TEXT,
-    active: { type: DataTypes.BOOLEAN, defaultValue: true },
-    uploadedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-});
+const {
+    OnboardCompany,
+    OnboardAsset,
+    OnboardApplicant,
+    OnboardDivision,
+    OnboardHQ,
+    OnboardTemplateHistory,
+    OnboardQuestion,
+    OnboardExamResult
+} = initModels(sequelize);
 
-// 3. Applicant Model
-const OnboardApplicant = sequelize.define('onboard_applicant', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    email: { type: DataTypes.STRING, unique: true, allowNull: false },
-    title: { type: DataTypes.STRING, defaultValue: "Mr." },
-    fullName: { type: DataTypes.STRING, allowNull: false },
-    phone: { type: DataTypes.STRING, allowNull: false },
-    password: { type: DataTypes.STRING, allowNull: false },
-    status: { type: DataTypes.STRING, defaultValue: 'draft' },
-    canLogin: { type: DataTypes.BOOLEAN, defaultValue: true },
-    formData: { type: DataTypes.JSON, defaultValue: {} },
-    registeredAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-    submittedAt: DataTypes.DATE,
-    approvedAt: DataTypes.DATE,
-    documents: { type: DataTypes.JSON, defaultValue: [] },
-    designation: DataTypes.STRING,
-    division: DataTypes.STRING,
-    reportingTo: DataTypes.STRING,
-    hq: DataTypes.STRING,
-    salary: DataTypes.STRING,
-    dob: DataTypes.STRING,
-    address: DataTypes.TEXT,
-    pin: DataTypes.STRING,
-    state: DataTypes.STRING,
-    empCode: DataTypes.STRING,
-    refNo: DataTypes.STRING,
-    salaryBreakup: { type: DataTypes.JSON, defaultValue: {} },
-    actualJoiningDate: DataTypes.STRING,
-    maritalStatus: DataTypes.STRING,
-    anniversaryDate: DataTypes.STRING,
-    epfNumber: DataTypes.STRING,
-    uanNumber: DataTypes.STRING,
-    esiNumber: DataTypes.STRING,
-    offerAccepted: { type: DataTypes.BOOLEAN, defaultValue: false },
-    offerAcceptedAt: DataTypes.DATE,
-    offerLetterData: DataTypes.TEXT,
-    apptLetterData: DataTypes.TEXT,
-    issuedLetters: { type: DataTypes.JSON, defaultValue: [] },
-    probationReminderSent: { type: DataTypes.BOOLEAN, defaultValue: false },
-    tasks: {
-        type: DataTypes.JSON,
-        defaultValue: {
-            offerLetter: false,
-            appointmentLetter: false,
-            appLinkSent: false,
-            loginDetailsSent: false
-        }
-    },
-    verificationChecks: { type: DataTypes.JSON, defaultValue: {} },
-    rejectionReason: DataTypes.TEXT,
-    rejectedAt: DataTypes.DATE,
-    isExistingStaff: { type: DataTypes.BOOLEAN, defaultValue: false },
-    rapidTestScore: { type: DataTypes.INTEGER, defaultValue: 0 },
-    rapidTestCompleted: { type: DataTypes.BOOLEAN, defaultValue: false }
-});
+// Initialize Adapters
+const Company = new MongooseAdapter(OnboardCompany);
+const Asset = new MongooseAdapter(OnboardAsset);
+const Applicant = new MongooseAdapter(OnboardApplicant);
+const Division = new MongooseAdapter(OnboardDivision);
+const HQ = new MongooseAdapter(OnboardHQ);
+const TemplateHistory = new MongooseAdapter(OnboardTemplateHistory);
+const Question = new MongooseAdapter(OnboardQuestion);
+const ExamResult = new MongooseAdapter(OnboardExamResult);
 
-// 4. Division Model
-const OnboardDivision = sequelize.define('onboard_division', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    name: { type: DataTypes.STRING, allowNull: false, unique: true },
-    active: { type: DataTypes.BOOLEAN, defaultValue: true },
-    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-});
-
-// 5. HQ Model
-const OnboardHQ = sequelize.define('onboard_hq', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    name: { type: DataTypes.STRING, allowNull: false, unique: true },
-    active: { type: DataTypes.BOOLEAN, defaultValue: true }
-});
-
-// 6. TemplateHistory Model
-const OnboardTemplateHistory = sequelize.define('onboard_template_history', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    type: DataTypes.STRING,
-    content: DataTypes.TEXT,
-    savedBy: DataTypes.STRING,
-    savedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
-    version: DataTypes.INTEGER
-});
-
-// 7. Question Model (For Rapid Test)
-const OnboardQuestion = sequelize.define('onboard_question', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    category: { type: DataTypes.STRING, allowNull: false },
-    targetProduct: { type: DataTypes.STRING, defaultValue: "General" },
-    questionType: { type: DataTypes.STRING, defaultValue: 'mcq' },
-    text: { type: DataTypes.TEXT, allowNull: false },
-    options: { type: DataTypes.JSON, defaultValue: [] },
-    inputFields: { type: DataTypes.JSON, defaultValue: [] },
-    correctAnswerIndex: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
-    active: { type: DataTypes.BOOLEAN, defaultValue: true }
-});
-
-// 8. Exam Result Model
-const OnboardExamResult = sequelize.define('onboard_exam_result', {
-    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    email: { type: DataTypes.STRING, allowNull: false },
-    name: { type: DataTypes.STRING },
-    hq: { type: DataTypes.STRING },
-    division: { type: DataTypes.STRING },
-    examDate: { type: DataTypes.STRING, allowNull: false },
-    testedProduct: { type: DataTypes.STRING, defaultValue: "" },
-    totalQuestions: { type: DataTypes.INTEGER, defaultValue: 0 },
-    autoScore: { type: DataTypes.INTEGER, defaultValue: 0 },
-    manualScore: { type: DataTypes.INTEGER, defaultValue: 0 },
-    totalScore: { type: DataTypes.INTEGER, defaultValue: 0 },
-    status: { type: DataTypes.STRING, defaultValue: 'pending_review' },
-    answers: { type: DataTypes.JSON, defaultValue: {} },
-    submittedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
-});
-
-// Helper to decorate instance with Mongoose methods
-function wrapInstance(instance) {
-    if (!instance || typeof instance !== 'object') return instance;
-    if (typeof instance.get === 'function') {
-        const plain = instance.get({ plain: true });
-        instance.markModified = (prop) => {
-            instance.changed(prop, true);
-        };
-        instance.toObject = () => plain;
-    }
-    return instance;
-}
-
-// Helper query builder to support Mongoose chaining (.lean(), .sort(), .limit(), etc.)
-function makeQueryBuilder(Model, query, isSingle = false) {
-    let order = [];
-    let limitVal = null;
-    let skipVal = null;
-    let isLean = false;
-    let selectExcludes = [];
-
-    const chain = {
-        sort: function(sortObj) {
-            if (sortObj && typeof sortObj === 'object') {
-                for (const [k, v] of Object.entries(sortObj)) {
-                    order.push([k, (v === 1 || v === 'asc' || v === 'ASC') ? 'ASC' : 'DESC']);
-                }
-            }
-            return chain;
-        },
-        select: function(fields) { 
-            if (fields && typeof fields === 'string') {
-                selectExcludes = fields.split(' ').filter(f => f.startsWith('-')).map(f => f.substring(1));
-            }
-            return chain; 
-        },
-        limit: function(n) { limitVal = n; return chain; },
-        skip: function(n) { skipVal = n; return chain; },
-        lean: function() { isLean = true; return chain; },
-        then: function(resolve, reject) {
-            const opts = { where: buildWhere(query) };
-            if (order.length > 0) opts.order = order;
-            if (limitVal !== null) opts.limit = limitVal;
-            if (skipVal !== null) opts.offset = skipVal;
-            if (selectExcludes.length > 0) {
-                // Ignore nested dot notation entirely (like 'documents.data') since Sequelize doesn't support it this way and documents is just metadata now
-                const validExcludes = selectExcludes.filter(f => !f.includes('.'));
-                if (validExcludes.length > 0) {
-                    opts.attributes = { exclude: validExcludes };
-                }
-            }
-
-            if (isSingle) {
-                return Model.findOne(opts).then(inst => {
-                    if (!inst) return null;
-                    return isLean ? inst.get({ plain: true }) : wrapInstance(inst);
-                }).then(resolve, reject);
-            } else {
-                return Model.findAll(opts).then(list => {
-                    return list.map(inst => isLean ? inst.get({ plain: true }) : wrapInstance(inst));
-                }).then(resolve, reject);
-            }
-        },
-        catch: function(reject) {
-            return chain.then(res => res, reject);
-        }
-    };
-    return chain;
-}
-
-function makeFindByIdQuery(Model, id) {
-    let isLean = false;
-    const chain = {
-        select: function() { return chain; },
-        lean: function() { isLean = true; return chain; },
-        then: function(resolve, reject) {
-            return Model.findByPk(id).then(inst => {
-                if (!inst) return null;
-                return isLean ? inst.get({ plain: true }) : wrapInstance(inst);
-            }).then(resolve, reject);
-        },
-        catch: function(reject) {
-            return chain.then(res => res, reject);
-        }
-    };
-    return chain;
-}
-
-// Helper to build Sequelize where clause from Mongoose query
-function buildWhere(query) {
-    if (!query || typeof query !== 'object') return {};
-    const where = {};
-    for (const [key, value] of Object.entries(query)) {
-        if (key === '$or') {
-            where[Op.or] = value.map(cond => buildWhere(cond));
-            continue;
-        }
-        if (value === undefined) continue;
-        if (key === '_id') {
-            if (value && typeof value === 'object') {
-                if (value.$in) where._id = { [Op.in]: value.$in };
-                else if (value.$nin) where._id = { [Op.notIn]: value.$nin };
-                else where._id = value;
-            } else {
-                where._id = value;
-            }
-        } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-            if (value.$regex !== undefined) {
-                let pattern = value.$regex;
-                if (pattern instanceof RegExp) pattern = pattern.source;
-                let isIgnoreCase = (value.$options && typeof value.$options === 'string' && value.$options.includes('i'));
-                if (typeof pattern === 'string') {
-                    let hasStart = pattern.startsWith('^');
-                    let hasEnd = pattern.endsWith('$');
-                    if (hasStart) pattern = pattern.slice(1);
-                    if (hasEnd) pattern = pattern.slice(0, -1);
-                    pattern = pattern.replace(/\\([.*+?^${}()|[\]\\])/g, '$1');
-                    if (!hasStart) pattern = '%' + pattern;
-                    if (!hasEnd) pattern = pattern + '%';
-                }
-                where[key] = isIgnoreCase ? { [Op.iLike]: pattern } : { [Op.like]: pattern };
-            } else if (value.$gte !== undefined || value.$gt !== undefined || value.$lte !== undefined || value.$lt !== undefined) {
-                where[key] = {};
-                if (value.$gte !== undefined) where[key][Op.gte] = value.$gte;
-                if (value.$gt !== undefined) where[key][Op.gt] = value.$gt;
-                if (value.$lte !== undefined) where[key][Op.lte] = value.$lte;
-                if (value.$lt !== undefined) where[key][Op.lt] = value.$lt;
-            } else if (value.$in !== undefined) {
-                where[key] = { [Op.in]: value.$in };
-            } else if (value.$nin !== undefined) {
-                where[key] = { [Op.notIn]: value.$nin };
-            } else if (value.$exists !== undefined) {
-                where[key] = value.$exists ? { [Op.not]: null } : null;
-            } else {
-                where[key] = value;
-            }
-        } else {
-            where[key] = value;
-        }
-    }
-    return where;
-}
-
-// Model Adapter Factory
-function createModelAdapter(Model) {
-    function Adapter(data = {}) {
-        Object.assign(this, data);
-        if (!this._id) this._id = generateId();
-        this.save = async () => {
-            const exists = await Model.findByPk(this._id);
-            if (exists) {
-                const id = (typeof exists.get === 'function' ? exists.get('_id') : null) || exists.dataValues?._id || exists._id || this._id;
-                applyUpdate(exists, this);
-                const plainData = typeof exists.get === 'function' ? exists.get({ plain: true }) : { ...exists };
-                delete plainData._id;
-                await Model.update(plainData, { where: { _id: id } });
-                return wrapInstance(await Model.findByPk(id));
-            } else {
-                const inst = await Model.create(this);
-                return wrapInstance(inst);
-            }
-        };
-    }
-
-    Adapter.findOne = (query) => makeQueryBuilder(Model, query, true);
-    Adapter.find = (query = {}) => makeQueryBuilder(Model, query, false);
-    Adapter.findById = (id) => makeFindByIdQuery(Model, id);
-    Adapter.create = async (data) => {
-        if (Array.isArray(data)) {
-            data.forEach(d => { if (!d._id) d._id = generateId(); });
-            const insts = await Model.bulkCreate(data);
-            return insts.map(inst => wrapInstance(inst));
-        } else {
-            if (!data._id) data._id = generateId();
-            const inst = await Model.create(data);
-            return wrapInstance(inst);
-        }
-    };
-    Adapter.count = async (query = {}) => {
-        return await Model.count({ where: buildWhere(query) });
-    };
-    Adapter.countDocuments = async (query = {}) => {
-        return await Model.count({ where: buildWhere(query) });
-    };
-    Adapter.findOneAndUpdate = async (query, updateObj, options = {}) => {
-        const inst = await Model.findOne({ where: buildWhere(query) });
-        if (!inst) return null;
-        const id = (typeof inst.get === 'function' ? inst.get('_id') : null) || inst.dataValues?._id || inst._id;
-        applyUpdate(inst, updateObj);
-        const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
-        delete plainData._id;
-        await Model.update(plainData, { where: { _id: id } });
-        return wrapInstance(await Model.findByPk(id));
-    };
-    Adapter.findByIdAndUpdate = async (id, updateObj, options = {}) => {
-        const inst = await Model.findByPk(id);
-        if (!inst) return null;
-        applyUpdate(inst, updateObj);
-        const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
-        delete plainData._id;
-        await Model.update(plainData, { where: { _id: id } });
-        return wrapInstance(await Model.findByPk(id));
-    };
-    Adapter.updateOne = async (query, updateObj) => {
-        const inst = await Model.findOne({ where: buildWhere(query) });
-        if (inst) {
-            const id = (typeof inst.get === 'function' ? inst.get('_id') : null) || inst.dataValues?._id || inst._id;
-            applyUpdate(inst, updateObj);
-            const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
-            delete plainData._id;
-            await Model.update(plainData, { where: { _id: id } });
-        }
-        return { acknowledged: true };
-    };
-    Adapter.deleteOne = async (query) => {
-        const count = await Model.destroy({ where: buildWhere(query), limit: 1 });
-        return { deletedCount: count };
-    };
-    Adapter.deleteMany = async (query = {}) => {
-        const count = await Model.destroy({ where: buildWhere(query) });
-        return { deletedCount: count };
-    };
-    Adapter.findByIdAndDelete = async (id) => {
-        const inst = await Model.findByPk(id);
-        if (inst) await inst.destroy();
-        return wrapInstance(inst);
-    };
-    Adapter.destroy = async (options) => {
-        return await Model.destroy(options);
-    };
-
-    return Adapter;
-}
-
-function applyUpdate(instance, updateObj) {
-    if (!updateObj) return;
-    const data = updateObj.$set ? { ...updateObj.$set } : { ...updateObj };
-    delete data.$set;
-    delete data.$push;
-    delete data.$pull;
-    delete data._id; // Never mutate primary key
-
-    for (const [key, val] of Object.entries(data)) {
-        if (key.startsWith('$')) continue;
-        if (key.includes('.')) {
-            const parts = key.split('.');
-            const topKey = parts[0];
-            let obj = instance[topKey] ? (typeof instance[topKey] === 'object' ? { ...instance[topKey] } : {}) : {};
-            let curr = obj;
-            for (let i = 1; i < parts.length - 1; i++) {
-                if (!curr[parts[i]] || typeof curr[parts[i]] !== 'object') curr[parts[i]] = {};
-                curr = curr[parts[i]];
-            }
-            curr[parts[parts.length - 1]] = val;
-            instance[topKey] = obj;
-            if (typeof instance.changed === 'function') {
-                instance.changed(topKey, true);
-            }
-        } else {
-            instance[key] = val;
-            if (typeof instance.changed === 'function') {
-                instance.changed(key, true);
-            }
-        }
-    }
-
-    if (updateObj.$push) {
-        for (const [key, val] of Object.entries(updateObj.$push)) {
-            const arr = Array.isArray(instance[key]) ? [...instance[key]] : [];
-            arr.push(val);
-            instance[key] = arr;
-            instance.changed(key, true);
-        }
-    }
-
-    if (updateObj.$pull) {
-        for (const [key, filter] of Object.entries(updateObj.$pull)) {
-            const arr = Array.isArray(instance[key]) ? [...instance[key]] : [];
-            if (typeof filter === 'object' && filter !== null) {
-                const filterKey = Object.keys(filter)[0];
-                const filterVal = filter[filterKey];
-                instance[key] = arr.filter(item => item && item[filterKey] !== filterVal);
-            } else {
-                instance[key] = arr.filter(item => item !== filter);
-            }
-            instance.changed(key, true);
-        }
-    }
-}
-
-const Company = createModelAdapter(OnboardCompany);
-const Applicant = createModelAdapter(OnboardApplicant);
-const Division = createModelAdapter(OnboardDivision);
-const HQ = createModelAdapter(OnboardHQ);
-const Asset = createModelAdapter(OnboardAsset);
-const TemplateHistory = createModelAdapter(OnboardTemplateHistory);
-const Question = createModelAdapter(OnboardQuestion);
-const ExamResult = createModelAdapter(OnboardExamResult);
-
+// Database Sync and Seed Function
 async function syncDatabase() {
     try {
-        await sequelize.authenticate();
-        console.log('✅ Connected to Shared PostgreSQL Database via Sequelize.');
         await sequelize.sync({ alter: true });
         console.log('✅ Synchronized onboard_* tables in database.');
-        
-        // Seed Questions (Inserts any missing questions to ensure rich permutation/combination)
+
+        // Seed Default Company if missing
+        const c = await Company.findOne();
+        if (!c) {
+            await Company.create({
+                name: 'Emyris Biolifesciences',
+                website: 'www.emyrisbio.com'
+            });
+            console.log('🌱 Seeded default Company profile.');
+        }
+
+        // Seed Rapid Test Questions
         try {
-            console.log('🌱 Checking and seeding Rapid Test question bank...');
             const seedQuestions = [
-                // Math (Original + 13 New)
-                { category: 'math', text: 'What is 15% of 200?', options: ['20', '30', '40', '50'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'If a train travels 60 miles in 1.5 hours, what is its average speed in mph?', options: ['30', '40', '45', '50'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'Solve for x: 3x + 12 = 27', options: ['3', '4', '5', '6'], correctAnswerIndex: 2 },
-                { category: 'math', text: 'What is the square root of 144?', options: ['10', '12', '14', '16'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'A shirt costs $40. It is on sale for 25% off. What is the sale price?', options: ['$25', '$30', '$32', '$35'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'What is the next number in the sequence: 2, 6, 12, 20, __?', options: ['28', '30', '32', '36'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'Evaluate: (8 + 4) * 2 / 4', options: ['4', '6', '8', '12'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'How many degrees are in a right angle?', options: ['45', '90', '180', '360'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'What is 20% of 450?', options: ['80', '90', '100', '110'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'If 5 workers can build a wall in 10 days, how many days will it take 10 workers?', options: ['3', '5', '7', '10'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'What is the value of 3^4?', options: ['27', '64', '81', '243'], correctAnswerIndex: 2 },
-                { category: 'math', text: 'If a rectangle has length 12cm and width 8cm, what is its perimeter?', options: ['20cm', '32cm', '40cm', '96cm'], correctAnswerIndex: 2 },
-                { category: 'math', text: 'A car consumes 8 liters of fuel per 100 km. How much fuel is needed for a 250 km trip?', options: ['15L', '18L', '20L', '22L'], correctAnswerIndex: 2 },
-                { category: 'math', text: 'What is the average of 14, 22, 28, and 36?', options: ['23', '25', '26', '28'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'If 4x - 8 = 16, what is x?', options: ['4', '5', '6', '8'], correctAnswerIndex: 2 },
-                { category: 'math', text: 'What is the probability of rolling an even number on a standard 6-sided die?', options: ['1/6', '1/3', '1/2', '2/3'], correctAnswerIndex: 2 },
-                { category: 'math', text: 'What is the simple interest on $1,000 at 5% per annum for 3 years?', options: ['$100', '$150', '$200', '$250'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'Which of the following is a prime number?', options: ['21', '33', '37', '49'], correctAnswerIndex: 2 },
-                { category: 'math', text: 'If a circle has a radius of 7cm, what is its circumference approximately? (Use pi = 22/7)', options: ['22cm', '44cm', '66cm', '88cm'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'A product originally priced at $200 is discounted by 15%, then taxed by 10%. What is the final price?', options: ['$185', '$187', '$190', '$195'], correctAnswerIndex: 1 },
-                { category: 'math', text: 'What is the next number in the series: 3, 9, 27, 81, __?', options: ['162', '243', '324', '729'], correctAnswerIndex: 1 },
+                // General Emystein Background Questions
+                { category: 'general', text: 'Which component constitutes the active ingredient in Emystein?', options: ['Amoxicillin', 'Colistimethate Sodium', 'Ciprofloxacin', 'Azithromycin'], correctAnswerIndex: 1 },
+                { category: 'general', text: 'In which scenario is Emystein typically indicated?', options: ['Viral upper respiratory infections', 'Mild skin abrasions', 'Severe Gram-negative infections', 'Fungal dermatitis'], correctAnswerIndex: 2 },
+                { category: 'general', text: 'Emystein is primarily effective against which type of bacteria?', options: ['Gram-positive', 'Gram-negative', 'Atypical', 'Anaerobic'], correctAnswerIndex: 1 },
+                { category: 'general', text: 'What is the standard administration route for Emystein 3miu in systemic infections?', options: ['Oral tablet', 'Intravenous injection', 'Topical ointment', 'Inhalation only'], correctAnswerIndex: 1 },
+                { category: 'general', text: 'Which of the following pathogens is Emystein particularly noted for combating?', options: ['Streptococcus pyogenes', 'Pseudomonas aeruginosa', 'Candida albicans', 'Staphylococcus epidermidis'], correctAnswerIndex: 1 },
+                { category: 'general', text: 'In the context of antimicrobial resistance, why is Emystein considered crucial?', options: ['It is a broad-spectrum antiviral.', 'It is often used as a last-resort antibiotic for multidrug-resistant infections.', 'It enhances the immune system directly.', 'It is the only antibiotic available over-the-counter.'], correctAnswerIndex: 1 },
+                { category: 'general', text: 'What is the unit of measurement used for dosing Emystein 3miu?', options: ['Milligrams (mg)', 'Grams (g)', 'Million International Units (MIU)', 'Micrograms (mcg)'], correctAnswerIndex: 2 },
+                { category: 'general', text: 'Which organ system requires careful monitoring when a patient is on Emystein therapy?', options: ['Cardiovascular system', 'Renal system (Kidneys)', 'Gastrointestinal tract', 'Central nervous system'], correctAnswerIndex: 1 },
+                { category: 'general', text: 'Emystein belongs to which class of antimicrobial agents?', options: ['Penicillins', 'Cephalosporins', 'Polymyxins', 'Macrolides'], correctAnswerIndex: 2 },
+                { category: 'general', text: 'Which patient population frequently receives Emystein in an intensive care setting?', options: ['Patients with uncomplicated UTIs', 'Patients with cystic fibrosis and ventilator-associated pneumonia', 'Outpatients with strep throat', 'Patients with seasonal allergies'], correctAnswerIndex: 1 },
                 
+                // Emystein Descriptive General
+                { category: 'general', text: 'What are the main indications of Emystein?', questionType: 'descriptive', inputFields: [] },
+                { category: 'general', text: 'Describe the mechanism of action of colistimethate sodium.', questionType: 'descriptive', inputFields: [] },
                 
                 // Emystein Specific Questions
                 { category: 'emystein', text: 'Who will be the focused doctor for Emystein 3miu?', questionType: 'mcq', options: ['GP', 'Dentist', 'Intensivist', 'Gynaecologist'], correctAnswerIndex: 2 },
-
                 { category: 'emystein', text: 'What is the active molecule in Emystein?', questionType: 'mcq', options: ['Amoxicillin', 'Colistimethate Sodium', 'Ceftriaxone', 'Meropenem'], correctAnswerIndex: 1 },
                 { category: 'emystein', text: 'What is the primary indication for Emystein 3miu?', questionType: 'mcq', options: ['Viral Infections', 'Fungal Infections', 'Multi-drug resistant Gram-negative infections', 'Parasitic Infections'], correctAnswerIndex: 2 },
                 { category: 'emystein', text: 'How is Emystein 3miu typically administered?', questionType: 'mcq', options: ['Oral tablet', 'Intravenous or Intramuscular injection', 'Topical cream', 'Subcutaneous injection'], correctAnswerIndex: 1 },
@@ -570,7 +95,7 @@ async function syncDatabase() {
                 { category: 'emystein', text: 'What was last month Primary units?', questionType: 'descriptive', inputFields: [] },
                 { category: 'emystein', text: 'How to improve sales? Your suggestions.', questionType: 'descriptive', inputFields: [] },
 
-                // English (Original + 13 New)
+                // English
                 { category: 'english', text: 'Which word is a synonym for "Abundant"?', options: ['Scarce', 'Plentiful', 'Empty', 'Brief'], correctAnswerIndex: 1 },
                 { category: 'english', text: 'Identify the verb in the following sentence: "The quick brown fox jumps over the lazy dog."', options: ['quick', 'brown', 'jumps', 'lazy'], correctAnswerIndex: 2 },
                 { category: 'english', text: 'Choose the correct spelling:', options: ['Accomodate', 'Accommodate', 'Acommodate', 'Acomodate'], correctAnswerIndex: 1 },
@@ -592,7 +117,7 @@ async function syncDatabase() {
                 { category: 'english', text: 'What does the word "Lucid" mean?', options: ['Dark and murky', 'Clear and easy to understand', 'Complicated', 'Angry'], correctAnswerIndex: 1 },
                 { category: 'english', text: 'Fill in the blank: "She has been working here ___ 2018."', options: ['since', 'for', 'from', 'in'], correctAnswerIndex: 0 },
                 
-                // Current Affairs (Original + 12 New)
+                // Current Affairs
                 { category: 'current_affairs', text: 'Which organization is responsible for global health issues?', options: ['IMF', 'WTO', 'WHO', 'UNICEF'], correctAnswerIndex: 2 },
                 { category: 'current_affairs', text: 'What is the primary currency used in the European Union?', options: ['Dollar', 'Pound', 'Euro', 'Franc'], correctAnswerIndex: 2 },
                 { category: 'current_affairs', text: 'Which country is the largest emitter of carbon dioxide globally?', options: ['USA', 'India', 'China', 'Russia'], correctAnswerIndex: 2 },
@@ -613,7 +138,7 @@ async function syncDatabase() {
                 { category: 'current_affairs', text: 'Which organization awards the Nobel Peace Prize annually?', options: ['Swedish Academy', 'Norwegian Nobel Committee', 'UN Security Council', 'World Court'], correctAnswerIndex: 1 },
                 { category: 'current_affairs', text: 'In international healthcare, what does "WHO" stand for?', options: ['World Health Organization', 'World Healing Order', 'Western Healthcare Organization', 'Global Health Office'], correctAnswerIndex: 0 },
                 
-                // General Knowledge (Original + 12 New)
+                // General Knowledge
                 { category: 'gk', text: 'What is the chemical symbol for Gold?', options: ['Go', 'Gd', 'Au', 'Ag'], correctAnswerIndex: 2 },
                 { category: 'gk', text: 'Who wrote the play "Romeo and Juliet"?', options: ['Charles Dickens', 'William Shakespeare', 'Mark Twain', 'Jane Austen'], correctAnswerIndex: 1 },
                 { category: 'gk', text: 'Which planet is known as the Red Planet?', options: ['Venus', 'Mars', 'Jupiter', 'Saturn'], correctAnswerIndex: 1 },

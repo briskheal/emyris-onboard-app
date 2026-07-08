@@ -1,27 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/client';
 import PDFGenerator from './PDFGenerator';
+import ExistingStaffModal from './ExistingStaffModal';
+import ApplicantVerificationModal from './ApplicantVerificationModal';
 
 const ApplicantManager: React.FC = () => {
   const [applicants, setApplicants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [pdfTask, setPdfTask] = useState<{app: any, type: 'offer' | 'appointment'} | null>(null);
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [verificationApp, setVerificationApp] = useState<any | null>(null);
+
+  const fetchApplicants = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/admin/applicants');
+      if (res.data.success) {
+        setApplicants(res.data.applicants);
+      }
+    } catch (err) {
+      console.error("Failed to load applicants", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchApplicants = async () => {
-      try {
-        const res = await api.get('/admin/applicants');
-        if (res.data.success) {
-          setApplicants(res.data.applicants);
-        }
-      } catch (err) {
-        console.error("Failed to load applicants", err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchApplicants();
   }, []);
+
+
 
   const handleDelete = async (email: string) => {
     if (!window.confirm(`Are you sure you want to permanently delete applicant ${email}?`)) return;
@@ -56,7 +64,7 @@ const ApplicantManager: React.FC = () => {
         <h2>Applicant Management</h2>
         <div style={{ display: 'flex', gap: '10px' }}>
           <input type="text" placeholder="Search..." className="form-input-sm" style={{ width: '250px' }} />
-          <button className="btn btn-sm btn-primary">Add Applicant</button>
+          <button className="btn btn-sm btn-primary" onClick={() => setShowStaffModal(true)}>Add Existing Staff</button>
         </div>
       </div>
 
@@ -84,7 +92,7 @@ const ApplicantManager: React.FC = () => {
                   </td>
                   <td style={{ padding: '15px' }}>
                     <div style={{ display: 'flex', gap: '5px' }}>
-                      <button className="btn btn-sm btn-outline">View</button>
+                      <button className="btn btn-sm btn-outline" onClick={() => setVerificationApp(app)}>Review / View</button>
                       <button className="btn btn-sm btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={() => handleDelete(app.email)}>Delete</button>
                       {app.status === 'approved' && !app.offerLetterData && (
                         <button className="btn btn-sm btn-primary" onClick={() => setPdfTask({app, type: 'offer'})}>Offer Letter</button>
@@ -104,6 +112,21 @@ const ApplicantManager: React.FC = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {showStaffModal && (
+        <ExistingStaffModal 
+          onClose={() => setShowStaffModal(false)} 
+          onSuccess={() => { setShowStaffModal(false); fetchApplicants(); }} 
+        />
+      )}
+
+      {verificationApp && (
+        <ApplicantVerificationModal 
+          applicant={verificationApp} 
+          onClose={() => setVerificationApp(null)} 
+          onSuccess={() => { setVerificationApp(null); fetchApplicants(); }} 
+        />
       )}
     </div>
   );

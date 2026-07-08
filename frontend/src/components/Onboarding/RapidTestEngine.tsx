@@ -122,56 +122,69 @@ const RapidTestEngine: React.FC<RapidTestEngineProps> = ({ applicant, onComplete
                 Q{idx + 1}. {q.text}
               </h4>
               <div style={{ pointerEvents: answered ? 'none' : 'auto' }}>
-                {q.options.map((opt: string, optIdx: number) => {
-                  const isThisSelected = selectedIdx === optIdx;
-                  const isThisCorrect = q.correctAnswerIndex === optIdx;
-                  
-                  let bg = 'rgba(255,255,255,0.02)';
-                  let borderColor = 'rgba(255,255,255,0.06)';
-                  let color = 'var(--text-secondary)';
-                  let icon = null;
+                {q.questionType === 'descriptive' ? (
+                  <div style={{ padding: '10px' }}>
+                    <textarea 
+                      className="form-input" 
+                      rows={4} 
+                      placeholder="Type your descriptive answer here..."
+                      value={answers[q._id] || ''}
+                      onChange={(e) => setAnswers(prev => ({ ...prev, [q._id]: e.target.value as any }))}
+                    ></textarea>
+                    {answered && <div style={{ marginTop: '10px', color: 'var(--primary)', fontSize: '0.9rem' }}><CheckCircle size={14} style={{ display: 'inline' }} /> Answer recorded for manual grading</div>}
+                  </div>
+                ) : (
+                  q.options.map((opt: string, optIdx: number) => {
+                    const isThisSelected = selectedIdx === optIdx;
+                    const isThisCorrect = q.correctAnswerIndex === optIdx;
+                    
+                    let bg = 'rgba(255,255,255,0.02)';
+                    let borderColor = 'rgba(255,255,255,0.06)';
+                    let color = 'var(--text-secondary)';
+                    let icon = null;
 
-                  if (answered) {
-                    if (isThisCorrect) {
-                      bg = 'rgba(34, 197, 94, 0.15)';
-                      borderColor = 'rgba(34, 197, 94, 0.6)';
-                      color = '#4ade80';
-                      icon = <span style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={14} /> Correct Answer</span>;
-                    } else if (isThisSelected && !isThisCorrect) {
-                      bg = 'rgba(239, 68, 68, 0.15)';
-                      borderColor = 'rgba(239, 68, 68, 0.6)';
-                      color = '#f87171';
-                      icon = <span style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}><XCircle size={14} /> Incorrect</span>;
+                    if (answered) {
+                      if (isThisCorrect) {
+                        bg = 'rgba(34, 197, 94, 0.15)';
+                        borderColor = 'rgba(34, 197, 94, 0.6)';
+                        color = '#4ade80';
+                        icon = <span style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}><CheckCircle size={14} /> Correct Answer</span>;
+                      } else if (isThisSelected && !isThisCorrect) {
+                        bg = 'rgba(239, 68, 68, 0.15)';
+                        borderColor = 'rgba(239, 68, 68, 0.6)';
+                        color = '#f87171';
+                        icon = <span style={{ fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}><XCircle size={14} /> Incorrect</span>;
+                      }
                     }
-                  }
 
-                  return (
-                    <div key={optIdx} style={{ 
-                      marginBottom: '8px', 
-                      padding: '10px 14px', 
-                      borderRadius: '8px', 
-                      border: `1px solid ${borderColor}`, 
-                      background: bg, 
-                      color: color,
-                      transition: 'all 0.2s ease',
-                      cursor: answered ? 'default' : 'pointer'
-                    }} onClick={() => handleSelectAnswer(q._id, optIdx)}>
-                      <label style={{ cursor: answered ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', fontSize: '0.95rem', margin: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <input 
-                            type="radio" 
-                            name={`qt_${q._id}`} 
-                            checked={isThisSelected}
-                            readOnly
-                            style={{ accentColor: 'var(--primary)', cursor: answered ? 'default' : 'pointer' }} 
-                          />
-                          <span>{opt}</span>
-                        </div>
-                        {icon}
-                      </label>
-                    </div>
-                  );
-                })}
+                    return (
+                      <div key={optIdx} style={{ 
+                        marginBottom: '8px', 
+                        padding: '10px 14px', 
+                        borderRadius: '8px', 
+                        border: `1px solid ${borderColor}`, 
+                        background: bg, 
+                        color: color,
+                        transition: 'all 0.2s ease',
+                        cursor: answered ? 'default' : 'pointer'
+                      }} onClick={() => handleSelectAnswer(q._id, optIdx)}>
+                        <label style={{ cursor: answered ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', fontSize: '0.95rem', margin: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <input 
+                              type="radio" 
+                              name={`qt_${q._id}`} 
+                              checked={isThisSelected}
+                              readOnly
+                              style={{ accentColor: 'var(--primary)', cursor: answered ? 'default' : 'pointer' }} 
+                            />
+                            <span>{opt}</span>
+                          </div>
+                          {icon}
+                        </label>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           );

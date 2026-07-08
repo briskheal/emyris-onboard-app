@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
+import CompanyProfile from '../components/Admin/CompanyProfile';
 import ApplicantManager from '../components/Admin/ApplicantManager';
-import ExamManager from '../components/Admin/ExamManager';
+import SetupAndLetters from '../components/Admin/SetupAndLetters';
+import QuestionBank from '../components/Admin/QuestionBank';
 import PendingExams from '../components/Admin/PendingExams';
-import Settings from '../components/Admin/Settings';
-import { Users, FileText, Settings as SettingsIcon, LogOut, ClipboardList } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut } from 'lucide-react';
 import api from '../api/client';
 
-type AdminView = 'applicants' | 'exams' | 'pending' | 'settings';
+type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -75,10 +76,11 @@ const AdminPanel: React.FC = () => {
         <p style={{ paddingLeft: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '2rem' }}>Emyris Biolifesciences</p>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
           {[
+            { id: 'company', icon: <Building2 size={16} />, label: 'Company Profile' },
             { id: 'applicants', icon: <Users size={16} />, label: 'Applicant Manager' },
-            { id: 'pending', icon: <ClipboardList size={16} />, label: 'Pending Exams' },
-            { id: 'exams', icon: <FileText size={16} />, label: 'Exam Center' },
-            { id: 'settings', icon: <SettingsIcon size={16} />, label: 'Settings' },
+            { id: 'setup', icon: <FileSignature size={16} />, label: 'Setup & Letters' },
+            { id: 'questions', icon: <HelpCircle size={16} />, label: 'Question Bank' },
+            { id: 'pending', icon: <ClipboardList size={16} />, label: 'Test Results' },
           ].map(item => (
             <button
               key={item.id}
@@ -101,10 +103,11 @@ const AdminPanel: React.FC = () => {
 
       {/* Main Content */}
       <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
+        {activeView === 'company' && <CompanyProfile />}
         {activeView === 'applicants' && <ApplicantManager />}
+        {activeView === 'setup' && <SetupAndLetters />}
+        {activeView === 'questions' && <QuestionBank />}
         {activeView === 'pending' && <PendingExams />}
-        {activeView === 'exams' && <ExamManager />}
-        {activeView === 'settings' && <Settings />}
       </main>
     </div>
   );

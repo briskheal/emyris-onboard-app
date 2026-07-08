@@ -12,7 +12,7 @@ interface ApplicantOnboardingProps {
 }
 
 const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, onComplete }) => {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(applicant.isExistingStaff ? 4 : 1);
   const [formData, setFormData] = useState<any>({
     ...applicant,
     ...applicant.formData,
@@ -69,7 +69,9 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1rem' }}>
         <div>
           <h2 style={{ color: 'var(--primary)' }}>Application Wizard</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Step {currentStep} of {totalSteps}</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            {applicant.isExistingStaff ? 'Final Step: Upload Testimonials' : `Step ${currentStep} of ${totalSteps}`}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn btn-sm btn-outline" onClick={handleSaveDraft} disabled={isSaving}>
@@ -103,7 +105,7 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
           <button 
             className="btn btn-outline" 
             onClick={handlePrev} 
-            disabled={currentStep === 1}
+            disabled={currentStep === 1 || applicant.isExistingStaff}
             style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
           >
             <ChevronLeft size={18} /> Previous

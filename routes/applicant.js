@@ -7,26 +7,7 @@ const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateH
 
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
-// Shared email helper
-async function sendEmail({ to, subject, html }) {
-    try {
-        const transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST || 'smtppro.zoho.in',
-            port: parseInt(process.env.EMAIL_PORT || '465'),
-            secure: process.env.EMAIL_SECURE !== 'false',
-            auth: {
-                user: process.env.EMAIL_USER || '',
-                pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to, subject, html
-        });
-    } catch (e) {
-        console.error('[EMAIL ERROR]', e.message);
-    }
-}
+const { sendEmail } = require('../utils/mailer');
 
 // Shared file helper
 function saveBase64ToFile(email, category, base64Data) {
@@ -1130,7 +1111,7 @@ router.post('/delete-document', async (req, res) => {
         // 2. Delete from Asset DB and Local File System
         const cleanFilename = String(assetId || '').split('/').pop().trim();
         if (cleanFilename) {
-            const filePath = path.join(__dirname, 'uploads', cleanFilename);
+            const filePath = path.join(__dirname, '..', 'uploads', cleanFilename);
             if (fs.existsSync(filePath)) {
                 try { fs.unlinkSync(filePath); } catch (e) {}
             }
@@ -1190,6 +1171,67 @@ router.get('/my-scores/:email', async (req, res) => {
     } catch (e) {
         console.error('Fetch My Scores Error:', e);
         res.status(500).json({ error: 'Failed to fetch scores' });
+    }
+});
+
+// Submit Onboarding
+router.post('/submit-onboarding', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+
+        const applicant = await Applicant.findOneAndUpdate(
+            { email },
+            {
+                formData,
+                status: 'submitted',
+                canLogin: true,
+                submittedAt: new Date(),
+                hq: formData.hq,
+                actualJoiningDate: formData.joiningDate, 
+                dob: formData.dob, 
+                address: formData.address || "",
+                pin: formData.pin || "",
+                state: formData.state || "",
+                salary: formData.salary || "",
+                maritalStatus: formData.maritalStatus || "Unmarried",
+                anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
+                epfNumber: formData.epfNumber || "",
+                uanNumber: formData.uanNumber || "",
+                esiNumber: formData.esiNumber || ""
+            },
+            { new: true }
+        );
+
+        if (!applicant) {
+            return res.status(404).json({ success: false, message: 'Applicant session not found. Please log in again.' });
+        }
+
+        const emailHtml = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Onboarding Submission</h2>
+                <p><strong>Applicant:</strong> ${applicant.fullName}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <hr>
+                <p>Detailed profile is now available in the Admin Portal for review and PDF download.</p>
+            </div>
+        `;
+
+        sendEmail({
+            to: process.env.EMAIL_USER,
+            subject: `Form Submitted: ${applicant.fullName}`,
+            html: emailHtml
+        }).catch(e => console.error("Admin notification failed:", e.message));
+
+        sendEmail({
+            to: email,
+            subject: 'Application Received - Emyris Biolifesciences',
+            html: `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`
+        }).catch(e => console.error("Applicant confirmation failed:", e.message));
+
+        res.status(200).json({ success: true, message: 'Application submitted!' });
+    } catch (error) {
+        console.error("Submission Error:", error);
+        res.status(500).json({ success: false, message: 'Submission failed: ' + error.message });
     }
 });
 

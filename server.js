@@ -44,55 +44,8 @@ const connAssets = null;
 // Try to use system DNS, but force IPv4 on connection
 // Mongoose 8/Node 18+ can fail resolving IPv6 mappings on some SRV clusters.
 
-// --- TEMPLATE ENGINE UTILITIES ---
-function numberToWords(num) {
-    const a = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-    const b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-    
-    const count = (n) => {
-        if (n < 20) return a[n];
-        let s = b[Math.floor(n / 10)];
-        if (n % 10 > 0) s += ' ' + a[n % 10];
-        return s;
-    };
-
-    if (num === 0) return 'zero';
-    let words = '';
-    
-    if (Math.floor(num / 10000000) > 0) {
-        words += count(Math.floor(num / 10000000)) + ' crore ';
-        num %= 10000000;
-    }
-    if (Math.floor(num / 100000) > 0) {
-        words += count(Math.floor(num / 100000)) + ' lakh ';
-        num %= 100000;
-    }
-    if (Math.floor(num / 1000) > 0) {
-        words += count(Math.floor(num / 1000)) + ' thousand ';
-        num %= 1000;
-    }
-    if (Math.floor(num / 100) > 0) {
-        words += count(Math.floor(num / 100)) + ' hundred ';
-        num %= 100;
-    }
-    if (num > 0) {
-        if (words !== '') words += 'and ';
-        words += count(num);
-    }
-    return words.trim().toLowerCase();
-}
-
-function resolveTemplate(template, data) {
-    let result = template;
-    for (const [key, value] of Object.entries(data)) {
-        const placeholder = `{{${key}}}`;
-        result = result.split(placeholder).join(value || '');
-    }
-    // Handle special cases or nested objects if needed
-    return result;
-}
-
-
+const { sendEmail } = require('./utils/mailer');
+const { numberToWords, resolveTemplate } = require('./utils/templateHelpers');
 // Startup logic
 async function initializeApp() {
     console.log('🚀 Server starting - Shared PostgreSQL Clean Slate protocol active (NO MONGODB IMPORT).');
@@ -145,8 +98,11 @@ app.use('/assets', express.static(path.join(__dirname, 'frontend', 'dist', 'asse
 // Mount modular routers
 const applicantRouter = require('./routes/applicant');
 const adminRouter = require('./routes/admin');
+const authRouter = require('./routes/auth');
+
 app.use('/api/applicant', applicantRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/auth', authRouter);
 
 // Legacy Route Aliases for original HTML portal (script.js)
 app.get('/api/company-data', (req, res, next) => {
@@ -155,7 +111,32 @@ app.get('/api/company-data', (req, res, next) => {
 });
 
 app.post('/api/applicant-login', (req, res, next) => {
-    req.url = '/login';
+    req.url = '/applicant-login';
+    authRouter(req, res, next);
+});
+
+app.post('/api/register-applicant', (req, res, next) => {
+    req.url = '/register-applicant';
+    authRouter(req, res, next);
+});
+
+app.post('/api/applicant/register', (req, res, next) => {
+    req.url = '/applicant/register';
+    authRouter(req, res, next);
+});
+
+app.post('/api/resend-pin', (req, res, next) => {
+    req.url = '/resend-pin';
+    authRouter(req, res, next);
+});
+
+app.post('/api/save-draft', (req, res, next) => {
+    req.url = '/save-draft';
+    applicantRouter(req, res, next);
+});
+
+app.post('/api/submit-onboarding', (req, res, next) => {
+    req.url = '/submit-onboarding';
     applicantRouter(req, res, next);
 });
 
@@ -205,171 +186,8 @@ function saveBase64ToFile(email, category, base64Data) {
 // The Google Apps Script Bridge uses HTTPS (port 443) which is NEVER blocked.
 // It delivers from hr@emyrisbio.com and is the CORRECT solution for this stack.
 // -------------------------------------------------------------------------
-async function sendEmail({ to, subject, html, attachments = [] }) {
-    const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
-    const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
-    const emailUser = process.env.EMAIL_USER || "hradmin@emyrishr.in";
-    const emailPass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
-    const isZoho = emailUser.includes('zoho') || emailUser.includes('emyrishr.in') || process.env.EMAIL_HOST;
-
-    const host = process.env.EMAIL_HOST || (isZoho ? 'smtppro.zoho.in' : 'smtp.gmail.com');
-    const port = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : (isZoho ? 465 : 587);
-    const secure = process.env.EMAIL_SECURE !== undefined ? (process.env.EMAIL_SECURE === 'true') : (port === 465);
-    const fromAddr = process.env.EMAIL_FROM || `"Emyris HR" <${emailUser}>`;
-
-    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject} | Via: ${host}`);
-
-    // STRATEGY 1: SMTP Delivery (Zoho / Gmail / Custom Host)
-    if (isZoho || !bridgeUrl) {
-        const transporter = nodemailer.createTransport(isZoho || process.env.EMAIL_HOST ? {
-            host,
-            port,
-            secure,
-            auth: { user: emailUser, pass: emailPass }
-        } : {
-            service: 'gmail',
-            auth: { user: emailUser, pass: emailPass }
-        });
-
-        try {
-            console.log(`📧 [INFO] Attempting SMTP delivery via ${host}...`);
-            const info = await transporter.sendMail({
-                from: fromAddr,
-                to, subject, html,
-                attachments
-            });
-            console.log(`✅ [SUCCESS] SMTP delivery confirmed: ${info.messageId}`);
-            return info;
-        } catch (smtpErr) {
-            console.warn(`⚠️ [WARN] SMTP delivery failed (${smtpErr.message}).`);
-            if (!bridgeUrl) throw smtpErr;
-            console.log('☁️ [INFO] Falling back to Google Apps Script Bridge...');
-        }
-    }
-
-    // STRATEGY 2: Google Apps Script Bridge (HTTPS fallback for restricted network environments)
-    if (bridgeUrl) {
-        try {
-            console.log('☁️ [INFO] Sending via Google Apps Script Bridge...');
-            const bridgeAttachments = attachments.map(att => ({
-                filename: att.filename,
-                content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
-                contentType: att.contentType
-            }));
-
-            const response = await axios.post(bridgeUrl, {
-                to, subject, html,
-                attachments: bridgeAttachments
-            }, { timeout: 25000 });
-
-            console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
-            return response.data;
-        } catch (bridgeErr) {
-            console.error(`❌ [FAILURE] Bridge failed: ${bridgeErr.message}`);
-            throw bridgeErr;
-        }
-    }
-}
-
-// Removed duplicate save-draft endpoint. Handled below.
-
-// Alias for React frontend - directly calls same handler as /api/register-applicant
-app.post('/api/applicant/register', (req, res) => {
-    return handleRegister(req, res);
-});
-
-async function handleRegister(req, res) {
-    let { title, fullName, email, phone, division, designation } = req.body;
-    email = (email || '').trim().toLowerCase();
-    let pin = Math.floor(100000 + Math.random() * 900000).toString();
-    try {
-        const existingEmail = await Applicant.findOne({ email });
-        if (existingEmail) {
-            return res.json({ success: false, isReturning: true, message: 'Welcome back! This email is already registered. Please log in to continue your journey.' });
-        }
-        const existingPhone = await Applicant.findOne({ phone });
-        if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
-        await Applicant.create({ title, fullName, email, phone, division, designation, password: pin });
-        console.log(`[DB] Account Created: ${email}`);
-        await sendEmail({
-            to: email,
-            subject: 'Emyris Onboarding: Your Secure Login PIN',
-            html: `<div style="font-family:'Segoe UI',Arial;padding:30px;border:1px solid #e1e1e1;border-radius:8px;color:#333"><h2 style="color:#003366">Welcome to Emyris Biolifesciences, ${fullName}!</h2><p>Your recruitment profile has been successfully generated.</p><div style="background:#f4f6f8;padding:20px;border-left:5px solid #003366;margin:20px 0"><p style="margin:0;font-size:1.1em"><strong>Your Login PIN:</strong></p><p style="font-size:2em;color:#003366;font-weight:bold;margin:10px 0">${pin}</p></div><p>Please use this PIN and your email to log in and complete your onboarding application.</p></div>`
-        });
-        res.status(200).json({ success: true, message: 'Registration Successful. PIN sent to inbox.', pin });
-    } catch (error) {
-        console.error('[REGISTRATION ERROR]:', error.message);
-        res.status(200).json({ success: false, needsRecovery: true, message: 'Account created, but email delivery failed.', pin });
-    }
-}
 
 
-app.post('/api/register-applicant', async (req, res) => {
-    let { title, fullName, email, phone, division, designation } = req.body;
-    email = email.trim().toLowerCase();
-    let pin = Math.floor(100000 + Math.random() * 900000).toString();
-
-    try {
-        // 1. Uniqueness Guard & Recovery Detection
-        const existingEmail = await Applicant.findOne({ email });
-        if (existingEmail) {
-            return res.json({ 
-                success: false, 
-                isReturning: true,
-                message: 'Welcome back! This email is already registered. Please log in to continue your journey.' 
-            });
-        }
-
-        const existingPhone = await Applicant.findOne({ phone });
-        if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
-
-        // 2. Database Persistence
-        await Applicant.create({ 
-            title, 
-            fullName, 
-            email, 
-            phone, 
-            division,
-            designation,
-            password: pin 
-        });
-        console.log(`≡ƒÆ╛ [DB] Account Created: ${email}`);
-
-        // 3. Synchronous Email Handover
-        await sendEmail({
-            to: email,
-            subject: 'Emyris Onboarding: Your Secure Login PIN',
-            html: `
-                <div style="font-family: 'Segoe UI', Arial; padding: 30px; border: 1px solid #e1e1e1; border-radius: 8px; color: #333;">
-                    <h2 style="color: #003366;">Welcome to Emyris Biolifesciences, ${fullName}!</h2>
-                    <p>Your recruitment profile has been successfully generated.</p>
-                    <div style="background: #f4f6f8; padding: 20px; border-left: 5px solid #003366; margin: 20px 0;">
-                        <p style="margin: 0; font-size: 1.1em;"><strong>Your Login PIN:</strong></p>
-                        <p style="font-size: 2em; color: #003366; font-weight: bold; margin: 10px 0;">${pin}</p>
-                    </div>
-                    <p>Please use this PIN and your email to log in and complete your onboarding application.</p>
-                </div>
-            `
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Registration Successful. PIN sent to inbox.',
-            pin: pin
-        });
-
-    } catch (error) {
-        console.error('≡ƒ¢æ [REGISTRATION ERROR]:', error.message);
-
-        // --- SMART RECOVERY ---
-        res.status(200).json({
-            success: false,
-            needsRecovery: true, // Tell frontend to show PIN
-            message: 'Account created, but we had trouble delivering the email.',
-            pin: pin
-        });
-    }
-});
 
 // HEALTH CHECK ENDPOINT
 app.get('/api/health', (req, res) => {
@@ -422,128 +240,9 @@ app.get('/api/test-email', async (req, res) => {
 });
 
 
-// PIN RECOVERY MODULE
-app.post('/api/resend-pin', async (req, res) => {
-    let { email } = req.body;
-    email = email.trim().toLowerCase();
-    try {
-        const applicant = await Applicant.findOne({ email });
-        if (!applicant) return res.status(404).json({ success: false, message: 'Email not found.' });
-
-        await sendEmail({
-            to: email,
-            subject: 'Emyris Onboarding: Your Login PIN (Recovery)',
-            html: `
-                <div style="font-family: 'Segoe UI', Arial; padding: 30px; border: 1px solid #e1e1e1; border-radius: 8px; color: #333;">
-                    <h2 style="color: #003366;">PIN Recovery</h2>
-                    <p>Hello ${applicant.fullName},</p>
-                    <p>As requested, here is your login PIN for the Emyris Onboarding portal.</p>
-                    <div style="background: #f4f6f8; padding: 20px; border-left: 5px solid #003366; margin: 20px 0;">
-                        <p style="margin: 0; font-size: 1.1em;"><strong>Your Login PIN:</strong></p>
-                        <p style="font-size: 2em; color: #003366; font-weight: bold; margin: 10px 0;">${applicant.password}</p>
-                    </div>
-                    <p>Please use this PIN to log in and continue your application.</p>
-                </div>
-            `
-        });
-
-        res.status(200).json({ success: true, message: 'PIN sent to your email.' });
-    } catch (error) {
-        console.error('≡ƒ¢æ [RECOVERY ERROR]:', error.message);
-        res.status(500).json({ success: false, message: 'Failed to send PIN. Please contact HR.' });
-    }
-});
-
-// Applicant Login
 
 
-// Save Draft
-app.post('/api/save-draft', async (req, res) => {
-    try {
-        const { email, formData } = req.body;
-        console.log(`≡ƒô¥ [DRAFT] Saving for ${email} (${JSON.stringify(formData).length} bytes)`);
-        const result = await Applicant.findOneAndUpdate({ email }, { formData, updatedAt: new Date() });
-        if (!result) console.error(`Γ¥î [DRAFT] No applicant found for ${email}`);
-        res.status(200).json({ success: true });
-    } catch (error) {
-        console.error(`≡ƒ¢æ [DRAFT ERROR]:`, error.message);
-        res.status(500).json({ success: false });
-    }
-});
 
-// Submit Onboarding
-app.post('/api/submit-onboarding', async (req, res) => {
-    try {
-        const { email, formData } = req.body;
-
-        const parseDMY = (s) => {
-            if (!s || typeof s !== 'string') return null;
-            if (s.includes('T')) return new Date(s); // Already ISO
-            const parts = s.split('-');
-            if (parts.length !== 3) return null;
-            // Handle YYYY-MM-DD (Native Date Picker)
-            if (parts[0].length === 4) return new Date(s);
-            // Handle DD-MM-YYYY (Legacy)
-            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        };
-
-        const applicant = await Applicant.findOneAndUpdate(
-            { email },
-            {
-                formData,
-                status: 'submitted',
-                canLogin: true,
-                submittedAt: new Date(),
-                hq: formData.hq,
-                actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
-                dob: formData.dob, // Store as string DD-MM-YYYY
-                address: formData.address || "",
-                pin: formData.pin || "",
-                state: formData.state || "",
-                salary: formData.salary || "",
-                maritalStatus: formData.maritalStatus || "Unmarried",
-                anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
-                epfNumber: formData.epfNumber || "",
-                uanNumber: formData.uanNumber || "",
-                esiNumber: formData.esiNumber || ""
-            },
-            { new: true }
-        );
-
-        if (!applicant) {
-            return res.status(404).json({ success: false, message: 'Applicant session not found. Please log in again.' });
-        }
-
-        const emailHtml = `
-            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Onboarding Submission</h2>
-                <p><strong>Applicant:</strong> ${applicant.fullName}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <hr>
-                <p>Detailed profile is now available in the Admin Portal for review and PDF download.</p>
-            </div>
-        `;
-
-        // Notify Admin (Non-blocking)
-        sendEmail({
-            to: process.env.EMAIL_USER,
-            subject: `Form Submitted: ${applicant.fullName}`,
-            html: emailHtml
-        }).catch(e => console.error("Admin notification failed:", e.message));
-
-        // Notify Applicant (Non-blocking)
-        sendEmail({
-            to: email,
-            subject: 'Application Received - Emyris Biolifesciences',
-            html: `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`
-        }).catch(e => console.error("Applicant confirmation failed:", e.message));
-
-        res.status(200).json({ success: true, message: 'Application submitted!' });
-    } catch (error) {
-        console.error("Submission Error:", error);
-        res.status(500).json({ success: false, message: 'Submission failed: ' + error.message });
-    }
-});
 
 // --- RAPID TEST APIs ---
 
@@ -555,7 +254,26 @@ app.get(['/admin*', '/beta*'], (req, res) => {
 // Serve Original Applicant Portal (Catch-all)
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
-        res.sendFile(path.join(__dirname, 'index.html'));
+        res.status(503).send(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>System Upgrade - Emyris Biolifesciences</title>
+                <style>
+                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #0f172a; color: #f8fafc; margin: 0; text-align: center; padding: 20px; }
+                    h1 { color: #818cf8; font-size: 2.5rem; margin-bottom: 1rem; }
+                    p { font-size: 1.2rem; color: #cbd5e1; max-width: 600px; line-height: 1.6; }
+                    .loader { border: 4px solid rgba(255,255,255,0.1); border-left-color: #818cf8; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-top: 2rem; }
+                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                </style>
+            </head>
+            <body>
+                <h1>System is in upgradation phase</h1>
+                <p>We are currently upgrading the Emyris HR Portal to a new, ultra-fast React architecture. Please check back later.</p>
+                <div class="loader"></div>
+            </body>
+            </html>
+        `);
     } else {
         res.status(404).json({ success: false, message: 'API route not found' });
     }

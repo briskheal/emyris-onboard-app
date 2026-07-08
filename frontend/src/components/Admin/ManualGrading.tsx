@@ -17,14 +17,11 @@ const ManualGrading: React.FC<ManualGradingProps> = ({ exam, onBack }) => {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const updates = Object.entries(marks).map(([questionId, manualMark]) => ({
-        questionId,
-        manualMark
-      }));
+      const totalManualScore = Object.values(marks).reduce((sum, mark) => sum + mark, 0);
       
-      const res = await api.post('/admin/update-task', {
-        taskId: exam._id,
-        updates
+      const res = await api.post('/admin/grade-exam', {
+        examId: exam._id,
+        manualScore: totalManualScore
       });
       
       if (res.data.success) {

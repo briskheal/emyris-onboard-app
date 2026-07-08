@@ -7,26 +7,8 @@ const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateH
 
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
-// Shared email helper
-async function sendEmail({ to, subject, html }) {
-    try {
-        const transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST || 'smtppro.zoho.in',
-            port: parseInt(process.env.EMAIL_PORT || '465'),
-            secure: process.env.EMAIL_SECURE !== 'false',
-            auth: {
-                user: process.env.EMAIL_USER || '',
-                pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '')
-            }
-        });
-        await transporter.sendMail({
-            from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-            to, subject, html
-        });
-    } catch (e) {
-        console.error('[EMAIL ERROR]', e.message);
-    }
-}
+const { sendEmail } = require('../utils/mailer');
+const { numberToWords, resolveTemplate } = require('../utils/templateHelpers');
 
 // Shared file helper
 function saveBase64ToFile(email, category, base64Data) {
@@ -59,32 +41,13 @@ function safeParseDateServer(s) {
     return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
 }
 
-// Number to words helper
-function numberToWords(n) {
-    const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
-        'Eleven','Twelve','Thirteen','Fourteen','Fifteen','Sixteen','Seventeen','Eighteen','Nineteen'];
-    const tens = ['','','Twenty','Thirty','Forty','Fifty','Sixty','Seventy','Eighty','Ninety'];
-    if (n === 0) return 'Zero';
-    if (n < 0) return 'Negative ' + numberToWords(-n);
-    if (n < 20) return ones[n];
-    if (n < 100) return tens[Math.floor(n/10)] + (n%10 ? ' ' + ones[n%10] : '');
-    if (n < 1000) return ones[Math.floor(n/100)] + ' Hundred' + (n%100 ? ' ' + numberToWords(n%100) : '');
-    if (n < 100000) return numberToWords(Math.floor(n/1000)) + ' Thousand' + (n%1000 ? ' ' + numberToWords(n%1000) : '');
-    if (n < 10000000) return numberToWords(Math.floor(n/100000)) + ' Lakh' + (n%100000 ? ' ' + numberToWords(n%100000) : '');
-    return numberToWords(Math.floor(n/10000000)) + ' Crore' + (n%10000000 ? ' ' + numberToWords(n%10000000) : '');
-}
 
-// Template resolver helper
-function resolveTemplate(template, data) {
-    if (!template) return '';
-    return template.replace(/{{(w+)}}/g, (match, key) => data[key] !== undefined ? data[key] : match);
-}
 // You may need to port upload middleware and other shared utilities here.
 
 router.get('/uploads/:filename', async (req, res) => {
     try {
         const filename = decodeURIComponent(req.params.filename);
-        const filePath = path.join(__dirname, 'uploads', filename);
+        const filePath = path.join(__dirname, '..', 'uploads', filename);
         if (fs.existsSync(filePath)) {
             if (req.query.download === 'true') {
                 return res.download(filePath, req.query.name || filename);
@@ -255,11 +218,11 @@ router.post('/add-existing-staff', async (req, res) => {
             fullName,
             email,
             phone,
-            password: portalPin,          // Admin-assigned 6-digit portal login PIN
-            status: 'approved',           // Bypass draft/submitted/verification
-            isExistingStaff: true,        // Bypass rapid test + offer flow in portal
-            canLogin: true,               // Allow employee to log in via Resume Journey
-            rapidTestCompleted: true,     // Skip rapid test entirely
+            password: portalPin,
+            status: 'approved',
+            isExistingStaff: true,
+            canLogin: true,
+            rapidTestCompleted: false, // Require rapid test as requested
             approvedAt: new Date(),
             division: division || 'General',
             hq: hq || 'Unassigned',
@@ -643,7 +606,7 @@ router.post('/delete-document', async (req, res) => {
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
         const cleanFilename = String(assetId).split('/').pop().trim();
-        const filePath = path.join(__dirname, 'uploads', cleanFilename);
+        const filePath = path.join(__dirname, '..', 'uploads', cleanFilename);
         if (fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (e) {}
         }
@@ -722,7 +685,7 @@ router.get('/db-stats', async (req, res) => {
         // Calculate size of uploaded files in /uploads directory
         let uploadsSize = 0;
         try {
-            const uploadsDir = path.join(__dirname, 'uploads');
+            const uploadsDir = path.join(__dirname, '..', 'uploads');
             if (fs.existsSync(uploadsDir)) {
                 const files = fs.readdirSync(uploadsDir);
                 for (const file of files) {
@@ -741,7 +704,7 @@ router.get('/db-stats', async (req, res) => {
         let diskFree = 0;
         try {
             if (typeof fs.statfsSync === 'function') {
-                const st = fs.statfsSync(__dirname);
+                const st = fs.statfsSync(path.join(__dirname, '..'));
                 diskTotal = st.blocks * st.bsize;
                 diskFree = st.bavail * st.bsize;
             }
@@ -1028,7 +991,7 @@ router.post('/delete-document', async (req, res) => {
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
         const cleanFilename = String(assetId).split('/').pop().trim();
-        const filePath = path.join(__dirname, 'uploads', cleanFilename);
+        const filePath = path.join(__dirname, '..', 'uploads', cleanFilename);
         if (fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (e) {}
         }
@@ -1105,7 +1068,7 @@ router.get('/db-stats', async (req, res) => {
         // Calculate size of uploaded files in /uploads directory
         let uploadsSize = 0;
         try {
-            const uploadsDir = path.join(__dirname, 'uploads');
+            const uploadsDir = path.join(__dirname, '..', 'uploads');
             if (fs.existsSync(uploadsDir)) {
                 const files = fs.readdirSync(uploadsDir);
                 for (const file of files) {
@@ -1124,7 +1087,7 @@ router.get('/db-stats', async (req, res) => {
         let diskFree = 0;
         try {
             if (typeof fs.statfsSync === 'function') {
-                const st = fs.statfsSync(__dirname);
+                const st = fs.statfsSync(path.join(__dirname, '..'));
                 diskTotal = st.blocks * st.bsize;
                 diskFree = st.bavail * st.bsize;
             }
@@ -2146,7 +2109,7 @@ router.post('/wipe-database', async (req, res) => {
         }
 
         // Wipe /uploads/ folder
-        const uploadsDir = path.join(__dirname, 'uploads');
+        const uploadsDir = path.join(__dirname, '..', 'uploads');
         if (fs.existsSync(uploadsDir)) {
             const files = fs.readdirSync(uploadsDir);
             for (const file of files) {
@@ -2170,7 +2133,7 @@ router.post('/restore-legacy-db', async (req, res) => {
         let restoredAssets = 0;
 
         // 1. Restore metadata from mongodb_backup_full.json
-        const backupPath = path.join(__dirname, 'mongodb_backup_full.json');
+        const backupPath = path.join(__dirname, '..', 'mongodb_backup_full.json');
         if (fs.existsSync(backupPath)) {
             const raw = fs.readFileSync(backupPath, 'utf8');
             const data = JSON.parse(raw);
@@ -2473,7 +2436,7 @@ router.post('/delete-applicant', async (req, res) => {
         if (filenames.length > 0) {
             await Asset.deleteMany({ _id: { $in: filenames } });
             for (const fname of filenames) {
-                const filePath = path.join(__dirname, 'uploads', fname);
+                const filePath = path.join(__dirname, '..', 'uploads', fname);
                 if (fs.existsSync(filePath)) {
                     try { fs.unlinkSync(filePath); } catch (e) {}
                 }
@@ -2527,7 +2490,7 @@ router.post('/system/vacuum', async (req, res) => {
 
         // 3. Clean up orphaned physical files from /uploads/ on disk
         let diskPruned = 0;
-        const uploadsDir = path.join(__dirname, 'uploads');
+        const uploadsDir = path.join(__dirname, '..', 'uploads');
         if (fs.existsSync(uploadsDir)) {
             const files = fs.readdirSync(uploadsDir);
             for (const file of files) {
