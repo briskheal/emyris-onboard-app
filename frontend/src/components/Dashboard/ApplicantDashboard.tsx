@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Timeline from './Timeline';
 import ApplicantScoreboard from '../Exam/ApplicantScoreboard';
 import ApplicantExam from '../Exam/ApplicantExam';
+import LetterViewer from './LetterViewer';
 import { LogOut } from 'lucide-react';
 
 interface ApplicantDashboardProps {
@@ -54,6 +55,25 @@ const ApplicantDashboard: React.FC<ApplicantDashboardProps> = ({ applicant, onLo
                 Launch Qualification Exam
               </button>
             </div>
+          )}
+
+          {app.offerLetterData && (
+            <LetterViewer 
+              title="Your Offer Letter"
+              letterData={app.offerLetterData}
+              isOffer={true}
+              isAccepted={app.offerAccepted}
+              applicantEmail={app.email}
+              onAcceptSuccess={() => window.location.reload()}
+            />
+          )}
+
+          {app.apptLetterData && (
+            <LetterViewer 
+              title="Your Appointment Letter"
+              letterData={app.apptLetterData}
+              isOffer={false}
+            />
           )}
 
         </div>
