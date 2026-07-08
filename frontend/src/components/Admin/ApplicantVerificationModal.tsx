@@ -82,20 +82,46 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   };
 
   const handleApprove = async () => {
+    if (!salary || parseFloat(salary) <= 0) return alert('Please enter Approved Annual CTC');
+    if (!division) return alert('Please enter Division');
+    if (!reportingTo) return alert('Please enter Reporting To');
+
     setLoading(true);
     try {
-      const res = await api.post(`/admin/applicant/${applicant.email}/approve`, {
-        empCode, designation, division, reportingTo, hq, salary, actualJoiningDate
+      const annual = parseFloat(salary);
+      const monthly = parseFloat((annual / 12).toFixed(2));
+      const basic = parseFloat((monthly * 0.40).toFixed(2));
+      const hra = parseFloat((basic * 0.40).toFixed(2));
+      const edu = 200.00;
+      const conveyance = 3000.00;
+      const medical = 1250.00;
+      const ltaBase = monthly - (basic + hra);
+      const lta = parseFloat((ltaBase * 0.07).toFixed(2));
+      const fixedAllw = 0.00;
+      const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
+      const special = parseFloat((monthly - used).toFixed(2));
+
+      const salaryBreakup = { basic, hra, lta, conveyance, medical, special, edu, fixed: fixedAllw };
+
+      const updateRes = await api.post('/admin/update-workflow-data', {
+        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup
       });
-      if (res.data.success) {
-        alert('Applicant Approved!');
+      if (!updateRes.data.success) throw new Error(updateRes.data.error || 'Failed to update assignment');
+
+      const res = await api.post('/admin/verify-and-activate', {
+        email: applicant.email,
+        verificationChecks: {}
+      });
+      
+      if (res.data.success || res.data.message === 'Approved') {
+        alert('Applicant Approved & Activated!');
         onSuccess();
       } else {
-        alert(res.data.message || 'Failed to approve');
+        alert(res.data.message || res.data.error || 'Failed to approve');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Error approving applicant');
+      alert('Error approving applicant: ' + (err.response?.data?.error || err.message));
     } finally {
       setLoading(false);
     }
@@ -184,11 +210,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No documents uploaded yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {Object.values((applicant.documents || []).reduce((acc: any, doc: any) => {
-                    const docCat = doc.docType || doc.category || 'Document';
-                    acc[docCat] = doc;
-                    return acc;
-                  }, {})).map((doc: any, i: number) => {
+                  {(applicant.documents || []).map((doc: any, i: number) => {
                     const docCat = doc.docType || doc.category || 'Document';
                     const assetId = doc.assetId || doc.filename || doc.fileName || doc.name || '';
                     const downloadUrl = assetId.startsWith('/') ? assetId : `/api/admin/uploads/${assetId}`;
