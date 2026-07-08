@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle } from 'lucide-react';
+import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, X } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import api from '../../api/client';
 
 export default function SetupAndLetters() {
@@ -164,6 +166,24 @@ export default function SetupAndLetters() {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!editorRef.current) return;
+    try {
+      // Create a temporary clone for printing without any UI bounds
+      const canvas = await html2canvas(editorRef.current, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${activeTemplate}_${Date.now()}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to generate PDF');
+    }
+  };
+
   const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -322,7 +342,30 @@ export default function SetupAndLetters() {
               </div>
 
               {/* Editor Workspace */}
-              <div style={{ background: '#e2e8f0', padding: '2rem', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ background: '#e2e8f0', padding: '2rem', overflowY: 'auto', display: 'flex', justifyContent: 'center', position: 'relative', minHeight: '600px' }}>
+                
+                {livePreview && (
+                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.95)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem', overflowY: 'auto' }}>
+                    
+                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', alignItems: 'center' }}>
+                      <h4 style={{ color: 'var(--accent)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={18} /> Fidelity Preview</h4>
+                      <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)', margin: '0 10px' }}></div>
+                      <button className="btn btn-sm btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981', border: 'none' }}>
+                        <Download size={14} /> Download Dossier PDF
+                      </button>
+                      <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderColor: '#ef4444', color: '#ef4444' }}>
+                        <X size={14} /> Return to Editor
+                      </button>
+                    </div>
+
+                    <div 
+                      className="a4-page-standard"
+                      dangerouslySetInnerHTML={{ __html: templateContent }}
+                      style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', pointerEvents: 'none', background: 'white' }}
+                    />
+                  </div>
+                )}
+
                 <div 
                   ref={editorRef}
                   className="a4-page-standard"
@@ -332,8 +375,7 @@ export default function SetupAndLetters() {
                   style={{ 
                     transform: `scale(${zoom})`, 
                     transformOrigin: 'top center',
-                    opacity: livePreview ? 0.7 : 1,
-                    pointerEvents: livePreview ? 'none' : 'auto'
+                    display: livePreview ? 'none' : 'block'
                   }}
                 />
               </div>
