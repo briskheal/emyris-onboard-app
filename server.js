@@ -254,26 +254,7 @@ app.get(['/admin*', '/beta*'], (req, res) => {
 // Serve Original Applicant Portal (Catch-all)
 app.get('*', (req, res) => {
     if (!req.path.startsWith('/api/')) {
-        res.status(503).send(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>System Upgrade - Emyris Biolifesciences</title>
-                <style>
-                    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #0f172a; color: #f8fafc; margin: 0; text-align: center; padding: 20px; }
-                    h1 { color: #818cf8; font-size: 2.5rem; margin-bottom: 1rem; }
-                    p { font-size: 1.2rem; color: #cbd5e1; max-width: 600px; line-height: 1.6; }
-                    .loader { border: 4px solid rgba(255,255,255,0.1); border-left-color: #818cf8; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-top: 2rem; }
-                    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                </style>
-            </head>
-            <body>
-                <h1>System is in upgradation phase</h1>
-                <p>We are currently upgrading the Emyris HR Portal to a new, ultra-fast React architecture. Please check back later.</p>
-                <div class="loader"></div>
-            </body>
-            </html>
-        `);
+        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
     } else {
         res.status(404).json({ success: false, message: 'API route not found' });
     }

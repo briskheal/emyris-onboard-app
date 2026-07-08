@@ -13,7 +13,7 @@ const PendingExams: React.FC = () => {
         const res = await api.get('/admin/exam-reports');
         if (res.data.success) {
           // Filter out already graded exams
-          const pending = res.data.reports.filter((e: any) => e.status !== 'graded');
+          const pending = (res.data.results || res.data.reports || []).filter((e: any) => e.status !== 'graded');
           setExams(pending);
         }
       } catch (err) {

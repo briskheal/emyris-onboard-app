@@ -1,53 +1,184 @@
 const express = require('express');
-const router = express.Router();
+const { execSync } = require('child_process');
+
+// --- AUTO-INSTALL DEPENDENCIES ON BOOT ---
+try {
+    require('sequelize');
+    require('pg');
+} catch (e) {
+    console.log("Installing missing database packages...");
+    execSync('npm install sequelize pg', { stdio: 'inherit' });
+    console.log("Installation complete!");
+}
+// ------------------------------------------
+
+const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const axios = require('axios');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const { sequelize, syncDatabase, Company, Applicant, Division, HQ, Asset, TemplateHistory, Question, ExamResult } = require('./db');
 const fs = require('fs');
 const path = require('path');
-const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, sequelize } = require('../db');
 
+dotenv.config();
+const dns = require('dns');
+
+// Force Google DNS for SRV resolution (fixes ECONNREFUSED on some environments)
+try {
+    dns.setServers(['8.8.8.8', '8.8.4.4']);
+    console.log('🌐 [DNS] Switched to Google DNS');
+} catch (e) {
+    console.warn('⚠️ [DNS] Failed to set custom DNS servers:', e.message);
+}
+
+const app = express();
+const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
-const { sendEmail } = require('../utils/mailer');
-const { numberToWords, resolveTemplate } = require('../utils/templateHelpers');
 
-// Shared file helper
+
+const connMain = null;
+const connAssets = null;
+
+// Try to use system DNS, but force IPv4 on connection
+// Mongoose 8/Node 18+ can fail resolving IPv6 mappings on some SRV clusters.
+
+// --- TEMPLATE ENGINE UTILITIES ---
+function numberToWords(num) {
+    const a = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+    const b = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+    
+    const count = (n) => {
+        if (n < 20) return a[n];
+        let s = b[Math.floor(n / 10)];
+        if (n % 10 > 0) s += ' ' + a[n % 10];
+        return s;
+    };
+
+    if (num === 0) return 'zero';
+    let words = '';
+    
+    if (Math.floor(num / 10000000) > 0) {
+        words += count(Math.floor(num / 10000000)) + ' crore ';
+        num %= 10000000;
+    }
+    if (Math.floor(num / 100000) > 0) {
+        words += count(Math.floor(num / 100000)) + ' lakh ';
+        num %= 100000;
+    }
+    if (Math.floor(num / 1000) > 0) {
+        words += count(Math.floor(num / 1000)) + ' thousand ';
+        num %= 1000;
+    }
+    if (Math.floor(num / 100) > 0) {
+        words += count(Math.floor(num / 100)) + ' hundred ';
+        num %= 100;
+    }
+    if (num > 0) {
+        if (words !== '') words += 'and ';
+        words += count(num);
+    }
+    return words.trim().toLowerCase();
+}
+
+function resolveTemplate(template, data) {
+    let result = template;
+    for (const [key, value] of Object.entries(data)) {
+        const placeholder = `{{${key}}}`;
+        result = result.split(placeholder).join(value || '');
+    }
+    // Handle special cases or nested objects if needed
+    return result;
+}
+
+
+// Startup logic
+async function initializeApp() {
+    console.log('🚀 Server starting - Shared PostgreSQL Clean Slate protocol active (NO MONGODB IMPORT).');
+    await syncDatabase();
+    await seedData();
+}
+
+async function seedData() {
+    try {
+        const divCount = await Division.countDocuments();
+        if (divCount === 0) {
+            console.log('🌱 Seeding default divisions...');
+            await Division.create([
+                { name: 'SALES', active: true },
+                { name: 'MARKETING', active: true },
+                { name: 'OPERATIONS', active: true }
+            ]);
+        }
+        const hqCount = await HQ.countDocuments();
+        if (hqCount === 0) {
+            console.log('🌱 Seeding default HQs...');
+            await HQ.create([
+                { name: 'DELHI', active: true },
+                { name: 'MUMBAI', active: true },
+                { name: 'KOLKATA', active: true },
+                { name: 'CHENNAI', active: true }
+            ]);
+        }
+    } catch (e) {
+        console.error('❌ Seeding failed', e);
+    }
+}
+initializeApp();
+
+// Global Error Handlers (Fix for 502/Crashes)
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception thrown:', err);
+});
+
+app.use(cors());
+app.use(express.json({ limit: '50mb' })); // Higher limit for Base64 documents
+app.use(express.static(__dirname));
+
+// Local File Storage Helper
 function saveBase64ToFile(email, category, base64Data) {
     if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
-        return base64Data;
+        return base64Data; // Already a URL or missing
     }
-    try {
-        const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (!matches) return base64Data;
-        const ext = matches[1].split('/')[1] || 'bin';
-        const dir = path.join(__dirname, '..', 'uploads', email.replace('@', '_'));
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        const filename = `${category}_${Date.now()}.${ext}`;
-        const filepath = path.join(dir, filename);
-        fs.writeFileSync(filepath, Buffer.from(matches[2], 'base64'));
-        return `/uploads/${email.replace('@', '_')}/${filename}`;
-    } catch (e) {
-        console.error('[FILE SAVE ERROR]', e.message);
-        return base64Data;
+    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) return base64Data;
+    
+    let ext = 'png';
+    if (matches[1].includes('pdf')) ext = 'pdf';
+    else if (matches[1].includes('webp')) ext = 'webp';
+    else if (matches[1].includes('jpeg') || matches[1].includes('jpg') || matches[1].includes('jfif')) ext = 'jpg';
+
+    const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
+    const safeCategory = category.replace(/[^a-z0-9]/gi, '_');
+    const filename = `${safeEmail}_${safeCategory}_${Date.now()}.${ext}`;
+    
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
     }
+    
+    const buffer = Buffer.from(matches[2], 'base64');
+    fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+    // Asynchronously save to PostgreSQL Asset database as backup against Docker volume wipes
+    Asset.create({
+        _id: filename,
+        category: `doc_${safeCategory}`,
+        name: filename,
+        data: base64Data,
+        active: true
+    }).catch(e => console.error("Asset DB backup error:", e.message));
+    return `/api/admin/uploads/${filename}`;
 }
 
-// Shared date helper
-function safeParseDateServer(s) {
-    if (!s || typeof s !== 'string') return null;
-    if (s.includes('T')) return new Date(s);
-    const parts = s.split('-');
-    if (parts.length !== 3) return null;
-    if (parts[0].length === 4) return new Date(s);
-    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-}
-
-
-// You may need to port upload middleware and other shared utilities here.
-
-router.get('/uploads/:filename', async (req, res) => {
+// Explicit route to bypass Nginx static file interception & support direct downloads
+app.get('/api/admin/uploads/:filename', async (req, res) => {
     try {
         const filename = decodeURIComponent(req.params.filename);
-        const filePath = path.join(__dirname, '..', 'uploads', filename);
+        const filePath = path.join(__dirname, 'uploads', filename);
         if (fs.existsSync(filePath)) {
             if (req.query.download === 'true') {
                 return res.download(filePath, req.query.name || filename);
@@ -73,17 +204,471 @@ router.get('/uploads/:filename', async (req, res) => {
     }
 });
 
-// GET /api/admin/company - for Settings page
-router.get('/company', async (req, res) => {
+// ------------------------- EMAIL DELIVERY ENGINE -------------------------
+// WHY BRIDGE INSTEAD OF ZOHO SMTP?
+// Render.com FREE tier BLOCKS outbound SMTP ports (25, 465, 587).
+// Zoho SMTP will always timeout on free Render plans.
+// The Google Apps Script Bridge uses HTTPS (port 443) which is NEVER blocked.
+// It delivers from hr@emyrisbio.com and is the CORRECT solution for this stack.
+// -------------------------------------------------------------------------
+async function sendEmail({ to, subject, html, attachments = [] }) {
+    const resend = process.env.RESEND_API_KEY ? new (require('resend').Resend)(process.env.RESEND_API_KEY) : null;
+    const bridgeUrl = process.env.EMAIL_BRIDGE_URL;
+    const emailUser = process.env.EMAIL_USER || "hradmin@emyrishr.in";
+    const emailPass = (process.env.EMAIL_PASS || "").replace(/\s+/g, "");
+    const isZoho = emailUser.includes('zoho') || emailUser.includes('emyrishr.in') || process.env.EMAIL_HOST;
+
+    const host = process.env.EMAIL_HOST || (isZoho ? 'smtppro.zoho.in' : 'smtp.gmail.com');
+    const port = process.env.EMAIL_PORT ? parseInt(process.env.EMAIL_PORT) : (isZoho ? 465 : 587);
+    const secure = process.env.EMAIL_SECURE !== undefined ? (process.env.EMAIL_SECURE === 'true') : (port === 465);
+    const fromAddr = process.env.EMAIL_FROM || `"Emyris HR" <${emailUser}>`;
+
+    console.log(`📡 [OUTGOING] To: ${to} | Subject: ${subject} | Via: ${host}`);
+
+    // STRATEGY 1: SMTP Delivery (Zoho / Gmail / Custom Host)
+    if (isZoho || !bridgeUrl) {
+        const transporter = nodemailer.createTransport(isZoho || process.env.EMAIL_HOST ? {
+            host,
+            port,
+            secure,
+            auth: { user: emailUser, pass: emailPass }
+        } : {
+            service: 'gmail',
+            auth: { user: emailUser, pass: emailPass }
+        });
+
+        try {
+            console.log(`📧 [INFO] Attempting SMTP delivery via ${host}...`);
+            const info = await transporter.sendMail({
+                from: fromAddr,
+                to, subject, html,
+                attachments
+            });
+            console.log(`✅ [SUCCESS] SMTP delivery confirmed: ${info.messageId}`);
+            return info;
+        } catch (smtpErr) {
+            console.warn(`⚠️ [WARN] SMTP delivery failed (${smtpErr.message}).`);
+            if (!bridgeUrl) throw smtpErr;
+            console.log('☁️ [INFO] Falling back to Google Apps Script Bridge...');
+        }
+    }
+
+    // STRATEGY 2: Google Apps Script Bridge (HTTPS fallback for restricted network environments)
+    if (bridgeUrl) {
+        try {
+            console.log('☁️ [INFO] Sending via Google Apps Script Bridge...');
+            const bridgeAttachments = attachments.map(att => ({
+                filename: att.filename,
+                content: Buffer.isBuffer(att.content) ? att.content.toString('base64') : att.content,
+                contentType: att.contentType
+            }));
+
+            const response = await axios.post(bridgeUrl, {
+                to, subject, html,
+                attachments: bridgeAttachments
+            }, { timeout: 25000 });
+
+            console.log(`✅ [SUCCESS] Bridge delivery confirmed: ${JSON.stringify(response.data)}`);
+            return response.data;
+        } catch (bridgeErr) {
+            console.error(`❌ [FAILURE] Bridge failed: ${bridgeErr.message}`);
+            throw bridgeErr;
+        }
+    }
+}
+
+// Removed duplicate save-draft endpoint. Handled below.
+
+app.post('/api/register-applicant', async (req, res) => {
+    let { title, fullName, email, phone, division, designation } = req.body;
+    email = email.trim().toLowerCase();
+    let pin = Math.floor(100000 + Math.random() * 900000).toString();
+
     try {
-        const company = await Company.findOne();
-        res.json({ success: true, company: company || {} });
-    } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        // 1. Uniqueness Guard & Recovery Detection
+        const existingEmail = await Applicant.findOne({ email });
+        if (existingEmail) {
+            return res.json({ 
+                success: false, 
+                isReturning: true,
+                message: 'Welcome back! This email is already registered. Please log in to continue your journey.' 
+            });
+        }
+
+        const existingPhone = await Applicant.findOne({ phone });
+        if (existingPhone) return res.status(400).json({ success: false, message: 'Phone number already registered.' });
+
+        // 2. Database Persistence
+        await Applicant.create({ 
+            title, 
+            fullName, 
+            email, 
+            phone, 
+            division,
+            designation,
+            password: pin 
+        });
+        console.log(`≡ƒÆ╛ [DB] Account Created: ${email}`);
+
+        // 3. Synchronous Email Handover
+        await sendEmail({
+            to: email,
+            subject: 'Emyris Onboarding: Your Secure Login PIN',
+            html: `
+                <div style="font-family: 'Segoe UI', Arial; padding: 30px; border: 1px solid #e1e1e1; border-radius: 8px; color: #333;">
+                    <h2 style="color: #003366;">Welcome to Emyris Biolifesciences, ${fullName}!</h2>
+                    <p>Your recruitment profile has been successfully generated.</p>
+                    <div style="background: #f4f6f8; padding: 20px; border-left: 5px solid #003366; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 1.1em;"><strong>Your Login PIN:</strong></p>
+                        <p style="font-size: 2em; color: #003366; font-weight: bold; margin: 10px 0;">${pin}</p>
+                    </div>
+                    <p>Please use this PIN and your email to log in and complete your onboarding application.</p>
+                </div>
+            `
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Registration Successful. PIN sent to inbox.',
+            pin: pin
+        });
+
+    } catch (error) {
+        console.error('≡ƒ¢æ [REGISTRATION ERROR]:', error.message);
+
+        // --- SMART RECOVERY ---
+        res.status(200).json({
+            success: false,
+            needsRecovery: true, // Tell frontend to show PIN
+            message: 'Account created, but we had trouble delivering the email.',
+            pin: pin
+        });
     }
 });
 
-router.get('/questions', async (req, res) => {
+// HEALTH CHECK ENDPOINT
+app.get('/api/health', (req, res) => {
+    const status = {
+        server: 'online',
+        mainDB: connMain ? (connMain.readyState === 1 ? 'connected' : 'disconnected (' + connMain.readyState + ')') : 'not initialized',
+        assetDB: connAssets ? (connAssets.readyState === 1 ? 'connected' : 'disconnected (' + connAssets.readyState + ')') : 'not initialized',
+        timestamp: new Date()
+    };
+    res.json(status);
+});
+
+// EMAIL DIAGNOSTIC ENDPOINT (Admin only - temporary debug)
+app.get('/api/test-email', async (req, res) => {
+    const emailUser = process.env.EMAIL_USER || 'NOT SET';
+    const emailPass = process.env.EMAIL_PASS ? '✅ SET (' + process.env.EMAIL_PASS.length + ' chars)' : '❌ NOT SET';
+    const emailHost = process.env.EMAIL_HOST || 'NOT SET';
+    const emailPort = process.env.EMAIL_PORT || 'NOT SET';
+
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || 'smtppro.zoho.in',
+        port: parseInt(process.env.EMAIL_PORT || '465'),
+        secure: process.env.EMAIL_SECURE === 'true',
+        auth: { user: emailUser, pass: (process.env.EMAIL_PASS || '').replace(/\s+/g, '') }
+    });
+
+    try {
+        await transporter.verify();
+        const info = await transporter.sendMail({
+            from: `"Emyris HR" <${emailUser}>`,
+            to: emailUser,
+            subject: 'Live SMTP Test - ' + new Date().toISOString(),
+            html: '<p>✅ Zoho SMTP is working correctly on the live Hostycare server!</p>'
+        });
+        res.json({ 
+            success: true, 
+            message: 'Email sent successfully!',
+            messageId: info.messageId,
+            config: { emailUser, emailPass, emailHost, emailPort }
+        });
+    } catch (e) {
+        res.json({ 
+            success: false, 
+            error: e.message, 
+            code: e.code,
+            config: { emailUser, emailPass, emailHost, emailPort }
+        });
+    }
+});
+
+
+// PIN RECOVERY MODULE
+app.post('/api/resend-pin', async (req, res) => {
+    let { email } = req.body;
+    email = email.trim().toLowerCase();
+    try {
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ success: false, message: 'Email not found.' });
+
+        await sendEmail({
+            to: email,
+            subject: 'Emyris Onboarding: Your Login PIN (Recovery)',
+            html: `
+                <div style="font-family: 'Segoe UI', Arial; padding: 30px; border: 1px solid #e1e1e1; border-radius: 8px; color: #333;">
+                    <h2 style="color: #003366;">PIN Recovery</h2>
+                    <p>Hello ${applicant.fullName},</p>
+                    <p>As requested, here is your login PIN for the Emyris Onboarding portal.</p>
+                    <div style="background: #f4f6f8; padding: 20px; border-left: 5px solid #003366; margin: 20px 0;">
+                        <p style="margin: 0; font-size: 1.1em;"><strong>Your Login PIN:</strong></p>
+                        <p style="font-size: 2em; color: #003366; font-weight: bold; margin: 10px 0;">${applicant.password}</p>
+                    </div>
+                    <p>Please use this PIN to log in and continue your application.</p>
+                </div>
+            `
+        });
+
+        res.status(200).json({ success: true, message: 'PIN sent to your email.' });
+    } catch (error) {
+        console.error('≡ƒ¢æ [RECOVERY ERROR]:', error.message);
+        res.status(500).json({ success: false, message: 'Failed to send PIN. Please contact HR.' });
+    }
+});
+
+// Applicant Login
+app.post('/api/applicant-login', async (req, res) => {
+    try {
+        try {
+            const logMsg = `[${new Date().toISOString()}] LOGIN REQ: ${JSON.stringify(req.body)}\n`;
+            fs.appendFileSync('login_debug.log', logMsg);
+        } catch (logErr) {
+            console.warn('⚠️ Log write failed:', logErr.message);
+        }
+        
+        let { email, password, pin } = req.body;
+        password = password || pin;
+        // Hyper-robust cleaning (removes hidden chars, zero-width spaces, etc.)
+        email = (email || "").toString().toLowerCase().trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+        password = (password || "").toString().trim().replace(/[\u200B-\u200D\uFEFF]/g, "");
+        
+        // 1. Fetch applicant (try exact email or regex)
+        let applicants = await Applicant.find({ email: email });
+        if (!applicants || applicants.length === 0) {
+            applicants = await Applicant.find({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+        }
+        if (!applicants || applicants.length === 0) {
+            // Ultimate fallback if query builder missed case
+            applicants = await Applicant.find({});
+        }
+        
+        // 2. Manual match to avoid regex/index quirks
+        const applicant = applicants.find(a => {
+            const dbPin = String(a.password || a.pin || "").trim();
+            return a.email && a.email.toLowerCase().trim() === email && dbPin === password;
+        });
+
+        if (!applicant) {
+            console.log(`❌ [LOGIN FAIL] ${email} / ${password}`);
+            return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });
+        }
+
+        console.log(`✅ [LOGIN SUCCESS] Email: ${email}`);
+
+        if (!applicant.canLogin) {
+            // Special bypass for submitted/approved applicants so they can see their dashboard
+            const allowedStages = ['submitted', 'approved', 'onboarding', 'joined'];
+            if (!allowedStages.includes(applicant.status)) {
+                let reason = "Your application is in a stage that does not require portal access.";
+                if (applicant.status === 'rejected')   reason = "Your application was not accepted at this time. Please contact HR for details.";
+                if (applicant.status === 'confirmed')  reason = "Your employment has been confirmed. Portal access is no longer required.";
+                return res.status(403).json({ success: false, message: `Portal Notice: ${reason}` });
+            }
+        }
+
+        // 7-Day Auto-Lock Logic for Approved Applicants
+        if (applicant.status === 'approved' && applicant.approvedAt) {
+            const daysSinceApproval = (Date.now() - new Date(applicant.approvedAt)) / (1000 * 60 * 60 * 24);
+            if (daysSinceApproval > 7) {
+                return res.status(403).json({ success: false, message: 'Access Locked: Your approval period (7 days) has expired.' });
+            }
+        }
+
+        res.status(200).json({
+            success: true,
+            applicant: {
+                fullName: applicant.fullName,
+                email: applicant.email,
+                phone: applicant.phone,
+                status: applicant.status,
+                formData: applicant.formData,
+                documents: applicant.documents || [],
+                verificationChecks: applicant.verificationChecks || {},
+                salaryBreakup: applicant.salaryBreakup || {},
+                tasks: applicant.tasks || {},
+                division: applicant.division,
+                designation: applicant.designation,
+                reportingTo: applicant.reportingTo,
+                hq: applicant.hq,
+                refNo: applicant.refNo,
+                actualJoiningDate: applicant.actualJoiningDate,
+                offerAccepted: applicant.offerAccepted,
+                offerLetterData: applicant.offerLetterData,
+                apptLetterData: applicant.apptLetterData,
+                isExistingStaff: applicant.isExistingStaff,
+                rapidTestCompleted: applicant.rapidTestCompleted
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Login error.' });
+    }
+});
+
+// Save Draft
+app.post('/api/save-draft', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+        console.log(`≡ƒô¥ [DRAFT] Saving for ${email} (${JSON.stringify(formData).length} bytes)`);
+        const result = await Applicant.findOneAndUpdate({ email }, { formData, updatedAt: new Date() });
+        if (!result) console.error(`Γ¥î [DRAFT] No applicant found for ${email}`);
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error(`≡ƒ¢æ [DRAFT ERROR]:`, error.message);
+        res.status(500).json({ success: false });
+    }
+});
+
+// Submit Onboarding
+app.post('/api/submit-onboarding', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+
+        const parseDMY = (s) => {
+            if (!s || typeof s !== 'string') return null;
+            if (s.includes('T')) return new Date(s); // Already ISO
+            const parts = s.split('-');
+            if (parts.length !== 3) return null;
+            // Handle YYYY-MM-DD (Native Date Picker)
+            if (parts[0].length === 4) return new Date(s);
+            // Handle DD-MM-YYYY (Legacy)
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        };
+
+        const applicant = await Applicant.findOneAndUpdate(
+            { email },
+            {
+                formData,
+                status: 'submitted',
+                canLogin: true,
+                submittedAt: new Date(),
+                hq: formData.hq,
+                actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
+                dob: formData.dob, // Store as string DD-MM-YYYY
+                address: formData.address || "",
+                pin: formData.pin || "",
+                state: formData.state || "",
+                salary: formData.salary || "",
+                maritalStatus: formData.maritalStatus || "Unmarried",
+                anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
+                epfNumber: formData.epfNumber || "",
+                uanNumber: formData.uanNumber || "",
+                esiNumber: formData.esiNumber || ""
+            },
+            { new: true }
+        );
+
+        if (!applicant) {
+            return res.status(404).json({ success: false, message: 'Applicant session not found. Please log in again.' });
+        }
+
+        const emailHtml = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Onboarding Submission</h2>
+                <p><strong>Applicant:</strong> ${applicant.fullName}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <hr>
+                <p>Detailed profile is now available in the Admin Portal for review and PDF download.</p>
+            </div>
+        `;
+
+        // Notify Admin (Non-blocking)
+        sendEmail({
+            to: process.env.EMAIL_USER,
+            subject: `Form Submitted: ${applicant.fullName}`,
+            html: emailHtml
+        }).catch(e => console.error("Admin notification failed:", e.message));
+
+        // Notify Applicant (Non-blocking)
+        sendEmail({
+            to: email,
+            subject: 'Application Received - Emyris Biolifesciences',
+            html: `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`
+        }).catch(e => console.error("Applicant confirmation failed:", e.message));
+
+        res.status(200).json({ success: true, message: 'Application submitted!' });
+    } catch (error) {
+        console.error("Submission Error:", error);
+        res.status(500).json({ success: false, message: 'Submission failed: ' + error.message });
+    }
+});
+
+// --- RAPID TEST APIs ---
+app.get('/api/applicant/test-questions', async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        let questions = await Question.find({ active: true });
+        if (company && company.activeExamProduct && company.activeExamProduct !== 'General') {
+            questions = questions.filter(q => q.targetProduct === company.activeExamProduct || q.category !== 'exam_product');
+        }
+        const cats = ['math', 'english', 'current_affairs', 'gk'];
+        let selected = [];
+        cats.forEach(c => {
+            const catQs = questions.filter(q => q.category === c);
+            const shuffled = catQs.sort(() => 0.5 - Math.random());
+            selected.push(...shuffled.slice(0, 5));
+        });
+        
+        // Send correctAnswerIndex for educational real-time feedback
+        const safeQuestions = selected.map(q => ({
+            _id: q._id,
+            category: q.category,
+            text: q.text,
+            options: q.options,
+            correctAnswerIndex: q.correctAnswerIndex
+        }));
+        
+        // Shuffle the final 20 questions so they aren't grouped by category
+        res.json({ success: true, questions: safeQuestions.sort(() => 0.5 - Math.random()) });
+    } catch (e) {
+        console.error('Fetch Test Error:', e);
+        res.status(500).json({ error: 'Failed to fetch test' });
+    }
+});
+
+app.post('/api/applicant/submit-test', async (req, res) => {
+    try {
+        const { email, answers } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+        
+        if (applicant.rapidTestCompleted) {
+            return res.status(400).json({ error: 'Test already completed' });
+        }
+
+        let score = 0;
+        const questions = await Question.find({ active: true });
+        
+        for (const [qId, selectedIdx] of Object.entries(answers || {})) {
+            const q = questions.find(qu => qu._id === qId);
+            if (q && q.correctAnswerIndex === Number(selectedIdx)) {
+                score++;
+            }
+        }
+        
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { rapidTestScore: score, rapidTestCompleted: true } });
+        
+        res.json({ success: true, score });
+    } catch (e) {
+        console.error('Submit Test Error:', e);
+        res.status(500).json({ error: 'Failed to submit test' });
+    }
+});
+
+// Admin Question Bank
+app.get('/api/admin/questions', async (req, res) => {
     try {
         const questions = await Question.find();
         res.json({ success: true, questions });
@@ -92,14 +677,35 @@ router.get('/questions', async (req, res) => {
     }
 });
 
-router.post('/questions', async (req, res) => {
+app.post('/api/admin/questions', async (req, res) => {
     try {
         await Question.create(req.body);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-router.post('/schedule-exam', async (req, res) => {
+app.delete('/api/admin/questions/:id', async (req, res) => {
+    try {
+        await Question.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+app.put('/api/admin/questions/:id', async (req, res) => {
+    try {
+        const question = await Question.findById(req.params.id);
+        if (!question) return res.status(404).json({ error: 'Not found' });
+        
+        await Question.updateOne({ _id: question._id }, { $set: req.body });
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Update Question Error:', e);
+        res.status(500).json({ error: 'Failed' });
+    }
+});
+
+// --- ONGOING EXAM APIs ---
+app.post('/api/admin/schedule-exam', async (req, res) => {
     try {
         const { date, product, mcqTime, descTime, mcqCount } = req.body;
         const company = await Company.findOne();
@@ -123,7 +729,84 @@ router.post('/schedule-exam', async (req, res) => {
     }
 });
 
-router.get('/exam-reports', async (req, res) => {
+app.post('/api/applicant/exam-questions', async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        const activeProduct = company && company.activeExamProduct ? company.activeExamProduct : '';
+        const mcqTime = company && company.examMcqTime ? company.examMcqTime : 15;
+        const descTime = company && company.examDescriptiveTime ? company.examDescriptiveTime : 15;
+        const mcqCount = company && company.examMcqCount ? company.examMcqCount : 10;
+        
+        const questions = await Question.find({ active: true });
+        
+        // ONLY fetch Product questions
+        let allProductQs = questions.filter(q => 
+            q.category === 'exam_product' || 
+            (activeProduct && q.targetProduct === activeProduct) || 
+            (activeProduct && q.category.toLowerCase() === activeProduct.toLowerCase()) ||
+            q.category.toLowerCase() === 'emystein' // Fallback for legacy DB structure
+        );
+        
+        // Strict slice for MCQ based on mcqCount, NO slice for Descriptive
+        let mcqProductQs = allProductQs.filter(q => q.questionType === 'mcq').sort(() => 0.5 - Math.random()).slice(0, mcqCount);
+        let descProductQs = allProductQs.filter(q => q.questionType === 'descriptive').sort(() => 0.5 - Math.random()).slice(0, 5);
+        
+        // Combine and shuffle
+        const selected = [...mcqProductQs, ...descProductQs].sort(() => 0.5 - Math.random());
+        
+        const safeQuestions = selected.map(q => ({
+            _id: q._id,
+            category: q.category,
+            questionType: q.questionType,
+            text: q.text,
+            options: q.options,
+            inputFields: q.inputFields,
+            correctAnswerIndex: q.correctAnswerIndex
+        }));
+        
+        res.json({ success: true, mcqTime, descTime, questions: safeQuestions });
+    } catch (e) {
+        console.error('Fetch Exam Error:', e);
+        res.status(500).json({ error: 'Failed to fetch exam questions' });
+    }
+});
+
+app.post('/api/applicant/submit-exam', async (req, res) => {
+    try {
+        const { email, name, hq, division, examDate, answers, totalQuestions } = req.body;
+        
+        let autoScore = 0;
+        const questions = await Question.find({ active: true });
+        
+        for (const [qId, selectedIdxOrText] of Object.entries(answers || {})) {
+            const q = questions.find(qu => qu._id === qId);
+            if (q && q.questionType === 'mcq' && q.correctAnswerIndex === Number(selectedIdxOrText)) {
+                autoScore++;
+            }
+        }
+        
+        await ExamResult.create({
+            email,
+            name,
+            hq,
+            division,
+            examDate,
+            totalQuestions,
+            autoScore,
+            manualScore: 0,
+            totalScore: autoScore,
+            status: 'pending_review',
+            answers
+        });
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Submit Exam Error:', e);
+        res.status(500).json({ error: 'Failed to submit exam' });
+    }
+});
+
+app.get('/api/admin/exam-reports', async (req, res) => {
     try {
         const results = await ExamResult.find();
         res.json({ success: true, results });
@@ -133,7 +816,134 @@ router.get('/exam-reports', async (req, res) => {
     }
 });
 
-router.post('/login', (req, res) => {
+
+// --- APPLICANT DOCUMENT UPLOAD ---
+// Save Progress (Draft)
+app.post('/api/applicant/save-draft', async (req, res) => {
+    try {
+        const { email, formData } = req.body;
+        if (!email) return res.status(400).json({ error: 'Missing email' });
+
+        const parseDMY = (s) => {
+            if (!s || typeof s !== 'string') return null;
+            if (s.includes('T')) return new Date(s); // Already ISO
+            const parts = s.split('-');
+            if (parts.length !== 3) return null;
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        };
+
+        const updateData = {
+            formData,
+            hq: formData.hq,
+            actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
+            dob: formData.dob, // Store as string DD-MM-YYYY
+            address: formData.address || "",
+            pin: formData.pin || "",
+            state: formData.state || "",
+            salary: formData.salary || "",
+            maritalStatus: formData.maritalStatus || "",
+            anniversaryDate: formData.maritalStatus === 'Married' ? `${formData.anniversaryDay}-${formData.anniversaryMonth}` : "",
+            epfNumber: formData.epfNumber || "",
+            uanNumber: formData.uanNumber || "",
+            esiNumber: formData.esiNumber || ""
+        };
+
+        if (formData.firstName || formData.lastName) {
+            updateData.fullName = `${formData.firstName || ""} ${formData.middleName || ""} ${formData.lastName || ""}`.trim();
+        }
+        if (formData.phone) {
+            updateData.phone = formData.phone;
+        }
+
+        await Applicant.findOneAndUpdate(
+            { email },
+            updateData
+        );
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// Accept Offer & Submit ADOJ
+
+
+// In-memory mutex for preventing race conditions during simultaneous document uploads
+const documentUploadLocks = {};
+
+app.post('/api/applicant/upload-document', async (req, res) => {
+    try {
+        const { email, category, fileName, fileData } = req.body;
+        if (!email || !category || !fileData) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+
+        const sizeKB = Math.round(Buffer.byteLength(fileData || '', 'utf8') / 1024);
+        console.log(`≡ƒôÄ [DOC-UPLOAD] ${email} | ${category} | ${fileName} | ${sizeKB}KB`);
+
+        if (sizeKB > 12 * 1024) { // Increased to 12MB as it's now in Asset DB
+            return res.status(413).json({ success: false, message: `File too large (${sizeKB}KB). Maximum 12MB allowed.` });
+        }
+
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) {
+            return res.status(404).json({ success: false, message: 'Applicant not found' });
+        }
+
+        // 1. Save to Local File System instead of Asset DB
+        const fileUrl = saveBase64ToFile(email, category, fileData);
+
+        // 2. Link metadata in Applicant (WITHOUT the heavy data)
+        const docMetadata = {
+            category,
+            name: fileName,
+            assetId: fileUrl, // Save the path string in assetId for legacy compatibility
+            sizeKB,
+            uploadedAt: new Date()
+        };
+
+        // Acquire Mutex Lock for this email to prevent simultaneous upload race conditions
+        while (documentUploadLocks[email]) {
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+        documentUploadLocks[email] = true;
+
+        try {
+            // Fresh read inside the lock to ensure we have the absolute latest array
+            const currentApplicant = await Applicant.findOne({ email });
+            let docs = currentApplicant.documents || [];
+            
+            // Convert to array if it's somehow a string (Sequelize JSON fallback)
+            if (typeof docs === 'string') {
+                try { docs = JSON.parse(docs); } catch (e) { docs = []; }
+            }
+
+            // The isMulti restriction has been removed. 
+            // All categories now support multiple files (e.g. Front & Back uploads for Aadhar/PAN).
+            // Append the new document
+            docs.push(docMetadata);
+
+            // Save back to DB atomically
+            await Applicant.updateOne({ email }, { $set: { documents: docs } });
+        } finally {
+            // Release Mutex Lock
+            delete documentUploadLocks[email];
+        }
+
+        console.log(`Γ£à [DOC] Local Upload: ${category} for ${email} saved to ${fileUrl}`);
+
+        res.status(200).json({ 
+            success: true, 
+            message: `${category} uploaded successfully`,
+            assetId: fileUrl 
+        });
+    } catch (error) {
+        console.error('Γ¥î Document upload error:', error);
+        res.status(500).json({ success: false, message: 'Server error during upload' });
+    }
+});
+
+// --- ADMIN APIs ---
+
+app.post('/api/admin-login', (req, res) => {
     const { username, password } = req.body;
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
@@ -145,7 +955,7 @@ router.post('/login', (req, res) => {
     }
 });
 
-router.get('/applicant-pin/:email', async (req, res) => {
+app.get('/api/admin/applicant-pin/:email', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email: req.params.email }).select('fullName email password status');
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
@@ -153,49 +963,8 @@ router.get('/applicant-pin/:email', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-
-router.post('/upload-applicant-doc', async (req, res) => {
-    try {
-        const { email, category, base64Data, fileName } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        if (!applicant) return res.status(404).json({ success: false, message: 'Applicant not found' });
-
-        // Reuse the server.js saveBase64ToFile helper logic or implement locally
-        const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (!matches || matches.length !== 3) return res.status(400).json({ success: false, message: 'Invalid file data' });
-        
-        let ext = 'png';
-        if (matches[1].includes('pdf')) ext = 'pdf';
-        else if (matches[1].includes('webp')) ext = 'webp';
-        else if (matches[1].includes('jpeg') || matches[1].includes('jpg') || matches[1].includes('jfif')) ext = 'jpg';
-        else if (fileName && fileName.includes('.')) ext = fileName.split('.').pop();
-
-        const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
-        const safeCategory = category.replace(/[^a-z0-9]/gi, '_');
-        const savedFilename = `${safeEmail}_${safeCategory}_${Date.now()}.${ext}`;
-        
-        const uploadsDir = require('path').join(__dirname, '..', 'uploads');
-        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-        
-        const buffer = Buffer.from(matches[2], 'base64');
-        fs.writeFileSync(require('path').join(uploadsDir, savedFilename), buffer);
-
-        // Update applicant DB
-        const newDoc = { docType: category, category, filename: `/api/admin/uploads/${savedFilename}`, uploadedAt: new Date() };
-        await Applicant.updateOne(
-            { email },
-            { $push: { documents: newDoc } }
-        );
-
-        res.json({ success: true, message: 'Uploaded successfully', doc: newDoc });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ success: false, message: e.message });
-    }
-});
-
-
-router.post('/add-existing-staff', async (req, res) => {
+// FAST-TRACK EXISTING STAFF API
+app.post('/api/admin/add-existing-staff', async (req, res) => {
     try {
         const { fullName, email, phone, empCode, designation, targetSalary, division, hq, joinDate, dob, address, reportingTo, pin, state,
                 customPin, epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc } = req.body;
@@ -260,11 +1029,11 @@ router.post('/add-existing-staff', async (req, res) => {
             fullName,
             email,
             phone,
-            password: portalPin,
-            status: 'approved',
-            isExistingStaff: true,
-            canLogin: true,
-            rapidTestCompleted: false, // Require rapid test as requested
+            password: portalPin,          // Admin-assigned 6-digit portal login PIN
+            status: 'approved',           // Bypass draft/submitted/verification
+            isExistingStaff: true,        // Bypass rapid test + offer flow in portal
+            canLogin: true,               // Allow employee to log in via Resume Journey
+            rapidTestCompleted: true,     // Skip rapid test entirely
             approvedAt: new Date(),
             division: division || 'General',
             hq: hq || 'Unassigned',
@@ -350,7 +1119,8 @@ router.post('/add-existing-staff', async (req, res) => {
     }
 });
 
-router.post('/bulk-add-existing-staff', async (req, res) => {
+// BULK ADD EXISTING STAFF
+app.post('/api/admin/bulk-add-existing-staff', async (req, res) => {
     try {
         const { staffList } = req.body;
         if (!staffList || !Array.isArray(staffList)) {
@@ -462,7 +1232,7 @@ router.post('/bulk-add-existing-staff', async (req, res) => {
     }
 });
 
-router.get('/applicants', async (req, res) => {
+app.get('/api/admin/applicants', async (req, res) => {
     try {
         const { month, year } = req.query;
         let query = {};
@@ -510,7 +1280,7 @@ router.get('/applicants', async (req, res) => {
             return app;
         });
 
-        res.status(200).json({ success: true, applicants: optimizedApplicants });
+        res.status(200).json(optimizedApplicants);
     } catch (error) {
         console.error("List Fetch Error:", error);
         res.status(500).json({ error: 'Failed' });
@@ -518,7 +1288,7 @@ router.get('/applicants', async (req, res) => {
 });
 
 // GET single applicant (Lazy loading heavy data on demand)
-router.get('/applicant/:email', async (req, res) => {
+app.get('/api/admin/applicant/:email', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email: req.params.email });
         if (!applicant) return res.status(404).json({ error: 'Not found' });
@@ -529,20 +1299,8 @@ router.get('/applicant/:email', async (req, res) => {
     }
 });
 
-// DELETE single applicant
-router.delete('/applicant/:email', async (req, res) => {
-    try {
-        const applicant = await Applicant.findOneAndDelete({ email: req.params.email });
-        if (!applicant) return res.status(404).json({ error: 'Not found' });
-        res.status(200).json({ success: true, message: 'Applicant deleted successfully' });
-    } catch (error) {
-        console.error("Delete Applicant Error:", error);
-        res.status(500).json({ error: 'Failed to delete applicant' });
-    }
-});
-
 // Public Endpoint to Serve Static Assets (Logos, Signatures, Stamps)
-router.get('/api/public/asset/:assetId', async (req, res) => {
+app.get('/api/public/asset/:assetId', async (req, res) => {
     try {
         const asset = await Asset.findById(req.params.assetId);
         if (!asset || !asset.data) return res.status(404).send('Asset not found');
@@ -562,7 +1320,7 @@ router.get('/api/public/asset/:assetId', async (req, res) => {
 });
 
 // New Endpoint for Lazy Loading Document Data
-router.get('/document/:assetId', async (req, res) => {
+app.get('/api/admin/document/:assetId', async (req, res) => {
     try {
         const asset = await Asset.findById(req.params.assetId);
         if (!asset) return res.status(404).json({ error: 'Document data not found' });
@@ -572,7 +1330,7 @@ router.get('/document/:assetId', async (req, res) => {
     }
 });
 
-router.post('/toggle-access', async (req, res) => {
+app.post('/api/admin/toggle-access', async (req, res) => {
     try {
         const { email, canLogin } = req.body;
         await Applicant.findOneAndUpdate({ email }, { canLogin });
@@ -582,7 +1340,7 @@ router.post('/toggle-access', async (req, res) => {
     }
 });
 
-router.post('/update-status', async (req, res) => {
+app.post('/api/admin/update-status', async (req, res) => {
     try {
         const { email, status } = req.body;
         const update = { status };
@@ -601,7 +1359,7 @@ router.post('/update-status', async (req, res) => {
     }
 });
 
-router.post('/reset-applicant', async (req, res) => {
+app.post('/api/admin/reset-applicant', async (req, res) => {
     try {
         const { email } = req.body;
         await Applicant.findOneAndUpdate(
@@ -624,7 +1382,7 @@ router.post('/reset-applicant', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Reset failed' }); }
 });
 
-router.post('/update-task', async (req, res) => {
+app.post('/api/admin/update-task', async (req, res) => {
     try {
         const { email, taskKey, value } = req.body;
         const update = {};
@@ -634,7 +1392,7 @@ router.post('/update-task', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Update failed' }); }
 });
 
-router.post('/delete-document', async (req, res) => {
+app.post('/api/admin/delete-document', async (req, res) => {
     try {
         const { email, assetId } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -648,7 +1406,7 @@ router.post('/delete-document', async (req, res) => {
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
         const cleanFilename = String(assetId).split('/').pop().trim();
-        const filePath = path.join(__dirname, '..', 'uploads', cleanFilename);
+        const filePath = path.join(__dirname, 'uploads', cleanFilename);
         if (fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (e) {}
         }
@@ -665,7 +1423,7 @@ router.post('/delete-document', async (req, res) => {
     }
 });
 
-router.post('/reject-document', async (req, res) => {
+app.post('/api/admin/reject-document', async (req, res) => {
     try {
         const { email, docCategory, reason } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -703,14 +1461,14 @@ router.post('/reject-document', async (req, res) => {
 });
 
 // --- DIVISION APIs ---
-router.get('/divisions', async (req, res) => {
+app.get('/api/admin/divisions', async (req, res) => {
     try {
         const divisions = await Division.find({ active: true }).sort({ name: 1 });
         res.json(divisions);
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-router.get('/hqs', async (req, res) => {
+app.get('/api/admin/hqs', async (req, res) => {
     try {
         const hqs = await HQ.find({ active: true }).sort({ name: 1 });
         res.json(hqs);
@@ -718,7 +1476,7 @@ router.get('/hqs', async (req, res) => {
 });
 
 // Admin - DB Statistics
-router.get('/db-stats', async (req, res) => {
+app.get('/api/admin/db-stats', async (req, res) => {
     try {
         // Calculate database size by summing all tables in the public schema
         const [results] = await sequelize.query("SELECT sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::bigint as size FROM pg_tables WHERE schemaname = 'public'");
@@ -727,7 +1485,7 @@ router.get('/db-stats', async (req, res) => {
         // Calculate size of uploaded files in /uploads directory
         let uploadsSize = 0;
         try {
-            const uploadsDir = path.join(__dirname, '..', 'uploads');
+            const uploadsDir = path.join(__dirname, 'uploads');
             if (fs.existsSync(uploadsDir)) {
                 const files = fs.readdirSync(uploadsDir);
                 for (const file of files) {
@@ -746,7 +1504,7 @@ router.get('/db-stats', async (req, res) => {
         let diskFree = 0;
         try {
             if (typeof fs.statfsSync === 'function') {
-                const st = fs.statfsSync(path.join(__dirname, '..'));
+                const st = fs.statfsSync(__dirname);
                 diskTotal = st.blocks * st.bsize;
                 diskFree = st.bavail * st.bsize;
             }
@@ -770,7 +1528,7 @@ router.get('/db-stats', async (req, res) => {
     }
 });
 
-router.post('/toggle-access', async (req, res) => {
+app.post('/api/admin/toggle-access', async (req, res) => {
     try {
         const { email, canLogin } = req.body;
         await Applicant.findOneAndUpdate({ email }, { canLogin });
@@ -778,7 +1536,7 @@ router.post('/toggle-access', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-router.post('/divisions', async (req, res) => {
+app.post('/api/admin/divisions', async (req, res) => {
     try {
         const { name } = req.body;
         if (!name) return res.status(400).json({ error: 'Name required' });
@@ -799,7 +1557,7 @@ router.post('/divisions', async (req, res) => {
     }
 });
 
-router.post('/hqs', async (req, res) => {
+app.post('/api/admin/hqs', async (req, res) => {
     try {
         const { name } = req.body;
         const existing = await HQ.findOne({ name: name.toUpperCase().trim() });
@@ -812,14 +1570,14 @@ router.post('/hqs', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-router.delete('/divisions/:id', async (req, res) => {
+app.delete('/api/admin/divisions/:id', async (req, res) => {
     try {
         await Division.findByIdAndUpdate(req.params.id, { active: false });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
-router.delete('/hqs/:id', async (req, res) => {
+app.delete('/api/admin/hqs/:id', async (req, res) => {
     try {
         await HQ.findByIdAndUpdate(req.params.id, { active: false });
         res.json({ success: true });
@@ -827,7 +1585,7 @@ router.delete('/hqs/:id', async (req, res) => {
 });
 
 // --- AUTO REF NUMBER ---
-router.post('/next-ref', async (req, res) => {
+app.post('/api/admin/next-ref', async (req, res) => {
     try {
         const company = await Company.findOne();
         if (!company) return res.status(404).json({ error: 'No company profile' });
@@ -878,374 +1636,7 @@ router.post('/next-ref', async (req, res) => {
 });
 
 // --- TEMPLATE MANAGEMENT ---
-router.post('/save-template', async (req, res) => {
-    try {
-        const { type, body, fontSize, fontType, headerHeight, footerHeight, signatoryName, signatoryDesg } = req.body;
-
-        const update = {
-            letterFontSize: fontSize,
-            letterFontType: fontType,
-            headerHeight: headerHeight,
-            footerHeight: footerHeight,
-            signatoryName: signatoryName,
-            signatoryDesignation: signatoryDesg,
-            updatedAt: new Date()
-        };
-
-        if (type === 'offer') update.offerLetterBody = body;
-        else if (type === 'appt') update.apptLetterBody = body;
-        else if (type === 'confirm') update.confirmLetterBody = body;
-        else if (type === 'revised_salary') update.revisedSalaryBody = body;
-        else if (type === 'experience') update.experienceLetterBody = body;
-        else if (type === 'relieving') update.relievingLetterBody = body;
-        else if (type === 'warning') update.warningLetterBody = body;
-        else if (type === 'show_cause') update.showCauseLetterBody = body;
-        else if (type === 'emyfe') update.emyfeLetterBody = body;
-        else if (type === 'emyho') update.emyhoLetterBody = body;
-        else if (type === 'emyhr') update.emyhrLetterBody = body;
-        else if (type === 'incentive') update.incentiveCircularBody = body;
-        else if (type.startsWith('misc_')) {
-            const id = type.split('_')[1];
-            // We'll need specialized logic for misc if it's an array
-            // For now let's handle offer/appt which are primary
-        }
-
-        let company = await Company.findOne();
-        if (!company) company = await Company.create(update);
-        else {
-            await Company.updateOne({ _id: company._id }, { $set: update });
-        }
-
-        res.json({ success: true, message: 'Template saved successfully' });
-
-        // Save to History
-        try {
-            const versionCount = await TemplateHistory.countDocuments({ type });
-            await TemplateHistory.create({
-                type,
-                content: body,
-                savedBy: 'Admin', // In a real app, use the session user
-                version: versionCount + 1
-            });
-        } catch (histErr) {
-            console.warn('⚠️ Failed to save history entry:', histErr.message);
-        }
-    } catch (err) {
-        console.error('Save template error:', err);
-        res.status(500).json({ success: false, message: err.message });
-    }
-});
-
-router.get('/applicant/:email', async (req, res) => {
-    try {
-        const applicant = await Applicant.findOne({ email: req.params.email });
-        if (!applicant) return res.status(404).json({ error: 'Not found' });
-        res.status(200).json(applicant);
-    } catch (error) {
-        console.error("Fetch Single Error:", error);
-        res.status(500).json({ error: 'Failed' });
-    }
-});
-
-router.get('/document/:assetId', async (req, res) => {
-    try {
-        const asset = await Asset.findById(req.params.assetId);
-        if (!asset) return res.status(404).json({ error: 'Document data not found' });
-        res.json({ data: asset.data });
-    } catch (e) {
-        res.status(500).json({ error: 'Fetch failed' });
-    }
-});
-
-router.post('/toggle-access', async (req, res) => {
-    try {
-        const { email, canLogin } = req.body;
-        await Applicant.findOneAndUpdate({ email }, { canLogin });
-        res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed' });
-    }
-});
-
-router.post('/update-status', async (req, res) => {
-    try {
-        const { email, status } = req.body;
-        const update = { status };
-        if (status === 'approved') {
-            update.canLogin = true; // Kept open after approval
-            update.approvedAt = new Date(); // Start 7-day timer
-        } else if (status === 'rejected') {
-            update.canLogin = false;
-            update.rejectedAt = new Date();
-            update.rejectionReason = req.body.reason || "Application not accepted.";
-        }
-        await Applicant.findOneAndUpdate({ email }, update);
-        res.status(200).json({ success: true });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed' });
-    }
-});
-
-router.post('/reset-applicant', async (req, res) => {
-    try {
-        const { email } = req.body;
-        await Applicant.findOneAndUpdate(
-            { email },
-            {
-                formData: {},
-                status: 'draft',
-                canLogin: true,
-                approvedAt: null, // Reset approval timer
-                tasks: {
-                    offerLetter: false,
-                    appointmentLetter: false,
-                    appLinkSent: false,
-                    loginDetailsSent: false
-                },
-                submittedAt: null
-            }
-        );
-        res.status(200).json({ success: true });
-    } catch (error) { res.status(500).json({ error: 'Reset failed' }); }
-});
-
-router.post('/update-task', async (req, res) => {
-    try {
-        const { email, taskKey, value } = req.body;
-        const update = {};
-        update[`tasks.${taskKey}`] = value;
-        await Applicant.findOneAndUpdate({ email }, { $set: update });
-        res.status(200).json({ success: true });
-    } catch (error) { res.status(500).json({ error: 'Update failed' }); }
-});
-
-router.post('/delete-document', async (req, res) => {
-    try {
-        const { email, assetId } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
-        
-        const targetId = String(assetId).trim();
-        const updatedDocs = (applicant.documents || []).filter(d => {
-            const dId = String(d.assetId || d._id || d.id || '').trim();
-            return dId !== targetId;
-        });
-        await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
-
-        const cleanFilename = String(assetId).split('/').pop().trim();
-        const filePath = path.join(__dirname, '..', 'uploads', cleanFilename);
-        if (fs.existsSync(filePath)) {
-            try { fs.unlinkSync(filePath); } catch (e) {}
-        }
-        if (Asset.findByIdAndDelete) {
-            await Asset.findByIdAndDelete(cleanFilename).catch(() => {});
-        } else {
-            await Asset.destroy({ where: { _id: cleanFilename } }).catch(() => {});
-        }
-
-        res.json({ success: true });
-    } catch (e) {
-        console.error('Delete doc error:', e);
-        res.status(500).json({ error: 'Failed to delete document' });
-    }
-});
-
-router.post('/reject-document', async (req, res) => {
-    try {
-        const { email, docCategory, reason } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
-
-        // Unlock login so they can fix it
-        applicant.canLogin = true;
-        // Optionally mark the specific doc as rejected in verificationChecks
-        const checks = { ...(applicant.verificationChecks || {}) };
-        checks[docCategory] = 'rejected';
-        await Applicant.updateOne({ _id: applicant._id }, { $set: { canLogin: true, verificationChecks: checks } });
-
-        // Notify Applicant
-        await sendEmail({
-            to: email,
-            subject: `Action Required: Document Verification for Emyris Onboarding`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 25px; border: 1px solid #fee2e2; border-radius: 12px; background: #fffcfc;">
-                    <h3 style="color: #b91c1c;">Hi ${applicant.fullName},</h3>
-                    <p>During our review, we found an issue with your <strong>${docCategory}</strong>.</p>
-                    <div style="background: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 15px 0;">
-                        <p style="margin: 0; color: #991b1b;"><strong>Reason for Rejection:</strong><br>${reason || 'The document was either unclear, incorrect, or expired.'}</p>
-                    </div>
-                    <p>Your portal has been <strong>unlocked</strong>. Please log in using your registered email and PIN to re-upload the correct document.</p>
-                    <a href="${BASE_URL}" style="display: inline-block; padding: 10px 20px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 10px;">Login to Portal</a>
-                </div>
-            `
-        });
-
-        res.json({ success: true, message: 'Rejection email sent and login unlocked.' });
-    } catch (e) {
-        console.error('Reject Error:', e);
-        res.status(500).json({ error: 'Failed to process rejection' });
-    }
-});
-
-router.get('/divisions', async (req, res) => {
-    try {
-        const divisions = await Division.find({ active: true }).sort({ name: 1 });
-        res.json(divisions);
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
-
-router.get('/hqs', async (req, res) => {
-    try {
-        const hqs = await HQ.find({ active: true }).sort({ name: 1 });
-        res.json(hqs);
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
-
-router.get('/db-stats', async (req, res) => {
-    try {
-        // Calculate database size by summing all tables in the public schema
-        const [results] = await sequelize.query("SELECT sum(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(tablename)))::bigint as size FROM pg_tables WHERE schemaname = 'public'");
-        const totalUsed = parseInt(results[0].size || '0', 10);
-        
-        // Calculate size of uploaded files in /uploads directory
-        let uploadsSize = 0;
-        try {
-            const uploadsDir = path.join(__dirname, '..', 'uploads');
-            if (fs.existsSync(uploadsDir)) {
-                const files = fs.readdirSync(uploadsDir);
-                for (const file of files) {
-                    try {
-                        const st = fs.statSync(path.join(uploadsDir, file));
-                        uploadsSize += st.size;
-                    } catch (e) {}
-                }
-            }
-        } catch (e) {}
-
-        const totalStorageUsed = totalUsed + uploadsSize;
-
-        // Query real server hard drive capacity using Node.js fs.statfsSync
-        let diskTotal = 1024 * 1024 * 1024; // fallback 1GB
-        let diskFree = 0;
-        try {
-            if (typeof fs.statfsSync === 'function') {
-                const st = fs.statfsSync(path.join(__dirname, '..'));
-                diskTotal = st.blocks * st.bsize;
-                diskFree = st.bavail * st.bsize;
-            }
-        } catch (e) {}
-
-        res.json({
-            success: true,
-            main: { used: totalUsed, storage: totalStorageUsed, objects: 0 },
-            assets: { used: uploadsSize, storage: uploadsSize, objects: 0 },
-            summary: {
-                totalUsedBytes: totalStorageUsed,
-                totalStorageUsedBytes: totalStorageUsed,
-                limitBytes: diskTotal,
-                diskFreeBytes: diskFree,
-                usedPercentage: ((totalStorageUsed / diskTotal) * 100).toFixed(2),
-                leftPercentage: ((diskFree / diskTotal) * 100).toFixed(2)
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-router.post('/toggle-access', async (req, res) => {
-    try {
-        const { email, canLogin } = req.body;
-        await Applicant.findOneAndUpdate({ email }, { canLogin });
-        res.status(200).json({ success: true });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
-
-router.post('/divisions', async (req, res) => {
-    try {
-        const { name } = req.body;
-        if (!name) return res.status(400).json({ error: 'Name required' });
-        
-        const cleanName = name.toUpperCase().trim();
-        // Strict duplicate check across ALL records (including inactive ones)
-        const existing = await Division.findOne({ name: cleanName });
-        
-        if (existing) {
-            await Division.updateOne({ _id: existing._id }, { $set: { active: true } });
-        } else {
-            await Division.create({ name: cleanName });
-        }
-        res.json({ success: true });
-    } catch (e) { 
-        console.error("Division add error:", e);
-        res.status(500).json({ error: 'Failed' }); 
-    }
-});
-
-router.post('/hqs', async (req, res) => {
-    try {
-        const { name } = req.body;
-        const existing = await HQ.findOne({ name: name.toUpperCase().trim() });
-        if (existing) {
-            await HQ.updateOne({ _id: existing._id }, { $set: { active: true } });
-        } else {
-            await HQ.create({ name: name.toUpperCase().trim() });
-        }
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
-
-router.post('/next-ref', async (req, res) => {
-    try {
-        const company = await Company.findOne();
-        if (!company) return res.status(404).json({ error: 'No company profile' });
-
-        const { type } = req.body; // 'offer', 'appt', or 'misc'
-
-        let counterKey = 'offerCounter'; // Default
-        let prefix = "EMY/OFR";
-
-        if (type === 'appt') {
-            counterKey = 'apptCounter';
-            prefix = "EMY/APT";
-        } else if (type === 'misc' || (type && type.startsWith('misc_'))) {
-            counterKey = 'miscCounter';
-            prefix = "EMY/MISC";
-        } else if (type === 'empcode') {
-            counterKey = 'empCodeCounter';
-            prefix = "EMY/EMPC";
-        } else if (type === 'revised_salary') {
-            counterKey = 'revisedSalaryCounter';
-            prefix = "EMY/RSV";
-        } else if (type === 'emyfe') {
-            counterKey = 'empCodeCounter';
-            prefix = "EMYFE";
-        } else if (type === 'emyho') {
-            counterKey = 'empCodeCounter';
-            prefix = "EMYHO";
-        } else if (type === 'emyhr') {
-            counterKey = 'empCodeCounter';
-            prefix = "EMYHR";
-        }
-
-        const counter = company[counterKey] || 0;
-        const fyFrom = company.fyFrom ? new Date(company.fyFrom) : new Date();
-        const fyTo = company.fyTo ? new Date(fyTo.fyTo) : new Date();
-        const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
-
-        const refNo = (['EMYFE', 'EMYHO', 'EMYHR'].includes(prefix)) 
-            ? `${prefix}${counter}` 
-            : `${prefix}/${counter}/${fyShort}`;
-
-        const updateObj = {};
-        updateObj[counterKey] = counter + 1;
-        await Company.findOneAndUpdate({}, updateObj);
-
-        res.json({ success: true, refNo, counter });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
-
-router.post('/save-template', async (req, res) => {
+app.post('/api/admin/save-template', async (req, res) => {
     try {
         const { type, body, fontSize, fontType, headerHeight, footerHeight, signatoryName, signatoryDesg } = req.body;
 
@@ -1303,7 +1694,7 @@ router.post('/save-template', async (req, res) => {
     }
 });
 
-router.get('/template-history/:type', async (req, res) => {
+app.get('/api/admin/template-history/:type', async (req, res) => {
     try {
         const history = await TemplateHistory.find({ type: req.params.type })
             .sort({ savedAt: -1 })
@@ -1314,7 +1705,7 @@ router.get('/template-history/:type', async (req, res) => {
     }
 });
 
-router.post('/render-template', async (req, res) => {
+app.post('/api/admin/render-template', async (req, res) => {
     try {
         const { email, type, customBody } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1389,7 +1780,7 @@ function calculateMonthlyGross(sal) {
 }
 
 // --- UPDATE APPLICANT WORKFLOW DATA ---
-router.post('/update-workflow-data', async (req, res) => {
+app.post('/api/admin/update-workflow-data', async (req, res) => {
     try {
         const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
                 epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
@@ -1451,7 +1842,7 @@ router.post('/update-workflow-data', async (req, res) => {
 });
 
 // --- VERIFY AND ACTIVATE APPLICANT ---
-router.post('/verify-and-activate', async (req, res) => {
+app.post('/api/admin/verify-and-activate', async (req, res) => {
     try {
         const { email, verificationChecks } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1493,7 +1884,7 @@ router.post('/verify-and-activate', async (req, res) => {
 });
 
 // --- SEND LETTER VIA EMAIL ---
-router.post('/send-letter', async (req, res) => {
+app.post('/api/admin/send-letter', async (req, res) => {
     try {
         const { email, letterType, pdfBase64 } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1526,7 +1917,7 @@ router.post('/send-letter', async (req, res) => {
 });
 
 // --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
-router.post('/save-letter-snapshot', async (req, res) => {
+app.post('/api/admin/save-letter-snapshot', async (req, res) => {
     try {
         const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
         const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
@@ -1595,7 +1986,7 @@ function safeParseDateServer(dateStr) {
     return isNaN(d.getTime()) ? null : d;
 }
 
-router.post('/accept-offer', async (req, res) => {
+app.post('/api/applicant/accept-offer', async (req, res) => {
     try {
         const { email, actualJoiningDate } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -1640,7 +2031,7 @@ router.post('/accept-offer', async (req, res) => {
 });
 
 // --- NEW: LIFECYCLE CHECKS (Admins can poll this or call on load) ---
-router.get('/lifecycle-check', async (req, res) => {
+app.get('/api/admin/lifecycle-check', async (req, res) => {
     try {
         const applicants = await Applicant.find({
             offerAccepted: true,
@@ -1690,7 +2081,7 @@ router.get('/lifecycle-check', async (req, res) => {
 });
 
 // Company Profile Fetching (With latest Assets)
-router.get('/company-profile', async (req, res) => {
+app.get('/api/company-profile', async (req, res) => {
     try {
         let profile = await Company.findOne().lean();
         if (!profile) {
@@ -1727,27 +2118,7 @@ router.get('/company-profile', async (req, res) => {
 });
 
 // Applicant-facing unified company data (Hydrated with Divisions and HQs)
-
-router.post('/company-profile', async (req, res) => {
-    try {
-        const updateData = req.body;
-        // Don't allow overwriting _id or active
-        delete updateData._id;
-        
-        let profile = await Company.findOne();
-        if (!profile) {
-            await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD.", ...updateData });
-        } else {
-            await Company.updateOne({ _id: profile._id }, { $set: updateData });
-        }
-        res.json({ success: true, message: 'Profile updated' });
-    } catch (e) {
-        console.error('Company Profile Update Error:', e);
-        res.status(500).json({ success: false, error: e.message });
-    }
-});
-
-router.get('/api/company-data', async (req, res) => {
+app.get('/api/company-data', async (req, res) => {
     try {
         const company = await Company.findOne().lean();
         if (!company) return res.status(404).json({ error: 'Not found' });
@@ -1801,334 +2172,16 @@ router.get('/api/company-data', async (req, res) => {
     }
 });
 
-router.get('/template-history/:type', async (req, res) => {
-    try {
-        const history = await TemplateHistory.find({ type: req.params.type })
-            .sort({ savedAt: -1 })
-            .limit(10);
-        res.json(history);
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch history' });
-    }
-});
-
-router.post('/render-template', async (req, res) => {
-    try {
-        const { email, type, customBody } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        const company = await Company.findOne();
-        
-        if (!applicant || !company) return res.status(404).json({ error: 'Data missing' });
-
-        const sigAsset = company.activeSignatureId ? await Asset.findById(company.activeSignatureId) : null;
-        // STATIC ASSET PROVISION: Use lightweight URL instead of heavy base64
-        const signatureHtml = company.activeSignatureId ? `<img src="https://emyrishr.in/api/public/asset/${company.activeSignatureId}" style="max-width: 150px; max-height: 80px; mix-blend-mode: multiply;" alt="Signature" />` : '<br><br><br>';
-
-        let template = customBody;
-        if (!template) {
-            switch(type) {
-                case 'offer': template = company.offerLetterBody; break;
-                case 'appt': template = company.apptLetterBody; break;
-                case 'confirm': template = company.confirmLetterBody; break;
-                case 'revised_salary': template = company.revisedSalaryBody; break;
-                case 'experience': template = company.experienceLetterBody; break;
-                case 'relieving': template = company.relievingLetterBody; break;
-                case 'warning': template = company.warningLetterBody; break;
-                case 'show_cause': template = company.showCauseLetterBody; break;
-                default: template = company.apptLetterBody;
-            }
-        }
-        
-        const fd = applicant.formData || {};
-        const sal = applicant.salaryBreakup || {};
-        
-        // Calculate Total
-        const monthlyTotal = Object.values(sal).reduce((a, b) => a + (parseFloat(b) || 0), 0);
-        const annualCTC = monthlyTotal * 12;
-
-        const map = {
-            'FULL_NAME': applicant.fullName.toUpperCase(),
-            'FIRST_NAME': applicant.fullName.split(' ')[0],
-            'TITLE': ((fd.gender||'').toLowerCase() === 'female' ? 'Ms.' : 'Mr.'),
-            'TITLE_SHORT': ((fd.gender||'').toLowerCase() === 'female' ? 'Ms.' : 'Mr.'),
-            'PHONE': applicant.phone,
-            'ADDRESS': applicant.address || fd.address || '',
-            'DOB': applicant.dob || fd.dob || '',
-            'CITY_STATE': `${fd.city || ''}, ${fd.state || ''}`,
-            'PIN': fd.pin || '',
-            'DESIGNATION': applicant.designation || fd.designation || '',
-            'DIVISION': applicant.division || '',
-            'HQ': applicant.hq || fd.hq || '',
-            'JOINING_DATE': applicant.actualJoiningDate || (fd.joiningDate ? new Date(fd.joiningDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : ''),
-            'REPORTING_TO': applicant.reportingTo || '',
-            'SALARY_MONTHLY': monthlyTotal.toLocaleString('en-IN'),
-            'SALARY_ANNUAL': annualCTC.toLocaleString('en-IN'),
-            'SALARY_WORDS': (numberToWords(annualCTC) + ' ONLY').toUpperCase(),
-            'COMPANY_NAME': company.name,
-            'SIGNATORY_NAME': company.signatoryName || '',
-            'SIGNATORY_DESG': company.signatoryDesignation || '',
-            'COMPANY_SIGNATURE': signatureHtml,
-            'REF_NO': applicant.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? company.apptCounter : company.offerCounter) || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`,
-            'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-            'EMP_CODE': applicant.empCode || applicant.formData?.empCode || 'TBD'
-        };
-
-        const resolved = resolveTemplate(template, map);
-        res.json({ success: true, resolved });
-    } catch (e) {
-        res.status(500).json({ error: 'Render failed' });
-    }
-});
-
-router.post('/update-workflow-data', async (req, res) => {
-    try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
-                epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
-        const update = {};
-        if (division !== undefined) update.division = division;
-        if (reportingTo !== undefined) update.reportingTo = reportingTo;
-        if (hq !== undefined) update.hq = hq;
-        if (detailHq !== undefined) update.hq = detailHq;
-        if (empCode !== undefined) update.empCode = empCode;
-        if (refNo !== undefined) update.refNo = refNo;
-        if (dob !== undefined) update.dob = dob;
-        if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
-        if (address !== undefined) update.address = address;
-        if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
-        if (tasks !== undefined) update.tasks = tasks;
-        if (incrementData !== undefined) update.incrementData = incrementData;
-
-        // Editable profile fields
-        if (fullName !== undefined) update.fullName = fullName;
-        if (phone !== undefined) update.phone = phone;
-        if (detailDesignation !== undefined) update.designation = detailDesignation;
-        if (maritalStatus !== undefined) update.maritalStatus = maritalStatus;
-        if (fatherName !== undefined) update['formData.fatherName'] = fatherName;
-        if (gender !== undefined) update['formData.gender'] = gender;
-        if (bloodGroup !== undefined) update['formData.bloodGroup'] = bloodGroup;
-
-        // Statutory & bank fields (all optional — never error on blank)
-        if (epfNumber !== undefined) update.epfNumber = epfNumber;
-        if (uanNumber !== undefined) update.uanNumber = uanNumber;
-        if (esiNumber !== undefined) update.esiNumber = esiNumber;
-        if (anniversaryDate !== undefined) update.anniversaryDate = anniversaryDate;
-        if (bankName !== undefined) update['formData.bankName'] = bankName;
-        if (accNo !== undefined) update['formData.accNo'] = accNo;
-        if (ifsc !== undefined) update['formData.ifsc'] = ifsc;
-
-        if (salaryBreakup !== undefined) {
-            const s = salaryBreakup;
-            const basicVal = Number(s.basic || 0);
-
-            // SAFETY: If basic is 0 or empty, skip salary validation entirely.
-            // This happens for existing staff who have no salary set yet.
-            if (basicVal > 0) {
-                const components = ['basic', 'hra', 'lta', 'conveyance', 'medical', 'special', 'edu', 'fixed'];
-                for (const key of components) {
-                    if (s[key] !== undefined && (isNaN(Number(s[key])) || Number(s[key]) < 0)) {
-                        return res.status(400).json({ error: `Invalid value for salary component: ${key}. Must be a non-negative number.` });
-                    }
-                }
-                const monthlyGross = calculateMonthlyGross(s);
-                if (monthlyGross <= 0) {
-                    return res.status(400).json({ error: 'Monthly Gross cannot be zero. Please check the salary breakdown.' });
-                }
-            }
-            update.salaryBreakup = s;
-        }
-        await Applicant.findOneAndUpdate({ email }, { $set: update });
-        res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
-});
-
-router.post('/verify-and-activate', async (req, res) => {
-    try {
-        const { email, verificationChecks } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        const company = await Company.findOne() || { name: 'Emyris Bio' };
-
-        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
-
-        // SUGGESTED DEVELOPMENT: Ensure salary and assignment are set before activation
-        const gross = calculateMonthlyGross(applicant.salaryBreakup);
-        if (gross <= 0 || !applicant.division || !applicant.reportingTo) {
-            return res.status(400).json({ error: 'Incomplete Assignment. Please set Division, Reporting Manager and Salary Breakup before activating.' });
-        }
-
-        await Applicant.updateOne({ _id: applicant._id }, { $set: { status: 'approved', approvedAt: new Date(), verificationChecks, canLogin: true } });
-
-        // Trigger Congratulation Message
-        await sendEmail({
-            to: email,
-            subject: `Registration Verified - Welcome to ${company.name} 🚀`,
-            html: `
-                <div style="font-family:Arial,sans-serif;padding:32px;background:#f8fafc;border-radius:12px;color:#1e293b;line-height:1.6;">
-                    <h2 style="color:#6366f1;margin-top:0;">Congratulations, ${applicant.fullName}!</h2>
-                    <p>We are pleased to inform you that your registration documents have been <strong>successfully verified</strong> by our HR team.</p>
-                    <p>Your record is now <strong>Active</strong> in our system. You can now log in to your portal to view your onboarding milestones and track your Offer Letter status.</p>
-                    <p>Our team will soon initiate the next steps including official email provisioning and mobile app access.</p>
-                    <br>
-                    <div style="border-top:1px solid #e2e8f0;padding-top:20px;margin-top:20px;">
-                        <p style="margin:0;font-weight:700;">HR Department</p>
-                        <p style="margin:0;color:#64748b;font-size:0.9rem;">${company.name}</p>
-                    </div>
-                </div>`
-        });
-
-        res.json({ success: true, message: 'Record activated and mail triggered.' });
-    } catch (e) {
-        console.error('Activation error:', e);
-        res.status(500).json({ error: 'Activation failed' });
-    }
-});
-
-router.post('/send-letter', async (req, res) => {
-    try {
-        const { email, letterType, pdfBase64 } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        const company = await Company.findOne();
-        if (!applicant || !company) return res.status(404).json({ error: 'Not found' });
-
-        const letterLabel = letterType === 'offer' ? 'Offer Letter' : 'Appointment Letter';
-        const fileName = `${letterLabel.replace(/ /g, '_')}_${applicant.fullName.replace(/ /g, '_')}.pdf`;
-        const pdfBuffer = Buffer.from(pdfBase64.split(',')[1], 'base64');
-
-        await sendEmail({
-            to: email,
-            subject: `${letterLabel} ΓÇô ${company.name}`,
-            html: `
-                <div style="font-family:Arial,sans-serif;padding:24px;">
-                    <h2 style="color:#0f172a">Dear ${applicant.fullName},</h2>
-                    <p>Please find your <strong>${letterLabel}</strong> attached to this email.</p>
-                    <p>For any queries, please contact HR.</p>
-                    <br>
-                    <p><strong>${company.signatoryName || 'HR Team'}</strong><br>
-                    ${company.signatoryDesignation || ''}</p>
-                </div>`,
-            attachments: [{ filename: fileName, content: pdfBuffer, contentType: 'application/pdf' }]
-        });
-        res.json({ success: true });
-    } catch (e) {
-        console.error('Send letter error:', e);
-        res.status(500).json({ error: 'Email failed', detail: e.message });
-    }
-});
-
-router.post('/save-letter-snapshot', async (req, res) => {
-    try {
-        const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
-        const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
-        if (letterType === 'offer') update.offerLetterData = letterData;
-        else if (letterType === 'appt') update.apptLetterData = letterData;
-
-        const letterObj = {
-            type: letterType,
-            data: letterData,
-            issuedAt: new Date()
-        };
-
-        await Applicant.findOneAndUpdate({ email }, { 
-            $set: update,
-            $push: { issuedLetters: letterObj }
-        });
-
-        if (notifyByEmail) {
-            const applicant = await Applicant.findOne({ email });
-            const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
-            const label = letterType.toUpperCase().replace('_', ' ');
-
-            await sendEmail({
-                to: email,
-                subject: `Important Document Update: ${label} - ${company.name}`,
-                html: `
-                    <div style="font-family: sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                        <div style="background: #6366f1; padding: 20px; text-align: center;">
-                            <h2 style="color: white; margin: 0;">Document Notification</h2>
-                        </div>
-                        <div style="padding: 30px;">
-                            <p>Dear ${applicant.fullName},</p>
-                            <p>We are pleased to inform you that a new document has been issued and published to your official onboarding hub.</p>
-                            <div style="background: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0;">
-                                <strong>Document Type:</strong> ${label}<br>
-                                <strong>Status:</strong> Published to Hub
-                            </div>
-                            <p>Please log in to the portal to view, download, or accept the document.</p>
-                            <div style="text-align: center; margin-top: 30px;">
-                                <a href="${BASE_URL}" style="display: inline-block; padding: 12px 24px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Access Portal</a>
-                            </div>
-                        </div>
-                        <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">
-                            This is an automated notification from ${company.name}. Please do not reply to this email.
-                        </div>
-                    </div>
-                `
-            });
-        }
-
-        res.json({ success: true, message: `Letter saved to applicant hub${notifyByEmail ? ' and applicant notified' : ''}.` });
-    } catch (e) { 
-        console.error("Save snapshot error:", e);
-        res.status(500).json({ error: 'Save failed' }); 
-    }
-});
-
-router.get('/lifecycle-check', async (req, res) => {
-    try {
-        const applicants = await Applicant.find({
-            offerAccepted: true,
-            actualJoiningDate: { $exists: true }
-        });
-
-        const alerts = [];
-        const now = new Date();
-
-        applicants.forEach(app => {
-            const parseDMY = (s) => {
-                if (!s || typeof s !== 'string') return null;
-                const parts = s.split('-');
-                if (parts.length !== 3) return null;
-                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-            };
-            const adoj = parseDMY(app.actualJoiningDate) || new Date();
-            const diffTime = Math.abs(now - adoj);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
-
-            // 1. Appointment Letter Logic (Send within 30 days of joining)
-            if (diffDays >= 30 && !app.apptLetterData) {
-                alerts.push({
-                    type: 'APPOINTMENT_PENDING',
-                    email: app.email,
-                    name: app.fullName,
-                    days: diffDays,
-                    message: `${app.fullName} has completed 30 days. Appointment Letter should be issued.`
-                });
-            }
-
-            // 2. Probation to Confirmation (Review at 5th month)
-            if (diffMonths >= 5 && !app.probationReminderSent) {
-                alerts.push({
-                    type: 'PROBATION_REVIEW',
-                    email: app.email,
-                    name: app.fullName,
-                    months: diffMonths,
-                    message: `${app.fullName} is approaching 5 months of tenure. Initiate Probation Review.`
-                });
-            }
-        });
-
-        res.json(alerts);
-    } catch (e) { res.status(500).json({ error: 'Check failed' }); }
-});
-
-router.get('/asset-library', async (req, res) => {
+// Full Asset Library (Lazy-loaded)
+app.get('/api/admin/asset-library', async (req, res) => {
     try {
         const assets = await Asset.find({ active: true }).sort({ uploadedAt: -1 }).lean();
         res.status(200).json(assets);
     } catch (error) { res.status(500).json({ error: 'Failed to fetch library' }); }
 });
 
-router.post('/clean-duplicates', async (req, res) => {
+// --- DEDUPLICATION & LEGACY VPS RESTORATION ENDPOINTS ---
+app.post('/api/admin/clean-duplicates', async (req, res) => {
     try {
         const apps = await Applicant.find({});
         let cleanedCount = 0;
@@ -2157,7 +2210,7 @@ router.post('/clean-duplicates', async (req, res) => {
     }
 });
 
-router.post('/wipe-database', async (req, res) => {
+app.post('/api/admin/wipe-database', async (req, res) => {
     try {
         console.log("💥 [WIPE-DB] Wiping 100% of applicants, assets, and uploaded files for a fresh start...");
         if (Applicant.destroy) {
@@ -2171,7 +2224,7 @@ router.post('/wipe-database', async (req, res) => {
         }
 
         // Wipe /uploads/ folder
-        const uploadsDir = path.join(__dirname, '..', 'uploads');
+        const uploadsDir = path.join(__dirname, 'uploads');
         if (fs.existsSync(uploadsDir)) {
             const files = fs.readdirSync(uploadsDir);
             for (const file of files) {
@@ -2188,14 +2241,14 @@ router.post('/wipe-database', async (req, res) => {
     }
 });
 
-router.post('/restore-legacy-db', async (req, res) => {
+app.post('/api/admin/restore-legacy-db', async (req, res) => {
     try {
         console.log("🚀 [VPS-RESTORE] Starting full legacy restoration on live VPS database...");
         let restoredApps = 0;
         let restoredAssets = 0;
 
         // 1. Restore metadata from mongodb_backup_full.json
-        const backupPath = path.join(__dirname, '..', 'mongodb_backup_full.json');
+        const backupPath = path.join(__dirname, 'mongodb_backup_full.json');
         if (fs.existsSync(backupPath)) {
             const raw = fs.readFileSync(backupPath, 'utf8');
             const data = JSON.parse(raw);
@@ -2276,7 +2329,8 @@ router.post('/restore-legacy-db', async (req, res) => {
     }
 });
 
-router.post('/upload-asset', async (req, res) => {
+// --- INDIVIDUAL ASSET UPLOAD (REAL-TIME) ---
+app.post('/api/admin/upload-asset', async (req, res) => {
     try {
         const { category, name, data, setActive } = req.body;
         if (!category || !data) return res.status(400).json({ error: 'Missing data' });
@@ -2305,7 +2359,30 @@ router.post('/upload-asset', async (req, res) => {
     }
 });
 
-router.post('/delete-asset', async (req, res) => {
+// --- UPDATE COMPANY PROFILE METADATA ---
+app.post('/api/company-profile', async (req, res) => {
+    try {
+        const updateData = { ...req.body };
+        delete updateData._id;
+        delete updateData.__v;
+        
+        let profile = await Company.findOne();
+        if (!profile) {
+            profile = await Company.create(updateData);
+        } else {
+            await Company.updateOne({ _id: profile._id }, { $set: updateData });
+            profile = await Company.findOne();
+        }
+
+        res.status(200).json({ success: true, profile });
+    } catch (error) {
+        console.error('Update error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Failed to save company profile' });
+    }
+});
+
+// --- DELETE ASSET ---
+app.post('/api/admin/delete-asset', async (req, res) => {
     try {
         const { assetId } = req.body;
         await Asset.findByIdAndUpdate(assetId, { active: false });
@@ -2331,7 +2408,8 @@ router.post('/delete-asset', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
 
-router.post('/set-active-asset', async (req, res) => {
+// --- SET ACTIVE ASSET ---
+app.post('/api/admin/set-active-asset', async (req, res) => {
     try {
         const { assetId, category } = req.body;
         const company = await Company.findOne();
@@ -2352,7 +2430,8 @@ router.post('/set-active-asset', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to set active asset' }); }
 });
 
-router.post('/add-category', async (req, res) => {
+// --- ADD CUSTOM CATEGORY ---
+app.post('/api/admin/add-category', async (req, res) => {
     try {
         const { categoryName } = req.body;
         if (!categoryName) return res.status(400).json({ error: 'Name required' });
@@ -2368,7 +2447,14 @@ router.post('/add-category', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to add category' }); }
 });
 
-router.post('/delete-category', async (req, res) => {
+app.delete('/api/admin/divisions/:id', async (req, res) => {
+    try {
+        await Division.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed to delete division' }); }
+});
+
+app.post('/api/admin/delete-category', async (req, res) => {
     try {
         const { categoryName } = req.body;
 
@@ -2390,7 +2476,8 @@ router.post('/delete-category', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed to delete category' }); }
 });
 
-router.get('/system/export', async (req, res) => {
+// --- SYSTEM MAINTENANCE ---
+app.get('/api/admin/system/export', async (req, res) => {
     try {
         const company = await Company.findOne();
         const applicants = await Applicant.find();
@@ -2402,7 +2489,7 @@ router.get('/system/export', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Export failed' }); }
 });
 
-router.post('/system/import', async (req, res) => {
+app.post('/api/admin/system/import', async (req, res) => {
     try {
         const data = req.body;
         if (!data) return res.status(400).json({ error: 'No backup data provided' });
@@ -2458,7 +2545,7 @@ router.post('/system/import', async (req, res) => {
     }
 });
 
-router.post('/system/clear', async (req, res) => {
+app.post('/api/admin/system/clear', async (req, res) => {
     try {
         const { includeSetup } = req.body;
         
@@ -2483,7 +2570,7 @@ router.post('/system/clear', async (req, res) => {
     }
 });
 
-router.post('/delete-applicant', async (req, res) => {
+app.post('/api/admin/delete-applicant', async (req, res) => {
     try {
         const { email } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -2498,7 +2585,7 @@ router.post('/delete-applicant', async (req, res) => {
         if (filenames.length > 0) {
             await Asset.deleteMany({ _id: { $in: filenames } });
             for (const fname of filenames) {
-                const filePath = path.join(__dirname, '..', 'uploads', fname);
+                const filePath = path.join(__dirname, 'uploads', fname);
                 if (fs.existsSync(filePath)) {
                     try { fs.unlinkSync(filePath); } catch (e) {}
                 }
@@ -2515,7 +2602,46 @@ router.post('/delete-applicant', async (req, res) => {
     }
 });
 
-router.post('/system/vacuum', async (req, res) => {
+// --- APPLICANT DATA MANAGEMENT ---
+app.post('/api/applicant/delete-document', async (req, res) => {
+    try {
+        const { email, assetId, category } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Not found' });
+
+        // 1. Remove from Document Array
+        const targetId = String(assetId || '').trim();
+        applicant.documents = (applicant.documents || []).filter(d => {
+            const dId = String(d.assetId || d._id || d.id || '').trim();
+            return dId !== targetId;
+        });
+
+        // 2. Delete from Asset DB and Local File System
+        const cleanFilename = String(assetId || '').split('/').pop().trim();
+        if (cleanFilename) {
+            const filePath = path.join(__dirname, 'uploads', cleanFilename);
+            if (fs.existsSync(filePath)) {
+                try { fs.unlinkSync(filePath); } catch (e) {}
+            }
+            if (Asset.findByIdAndDelete) {
+                await Asset.findByIdAndDelete(cleanFilename).catch(() => {});
+            } else {
+                await Asset.destroy({ where: { _id: cleanFilename } }).catch(() => {});
+            }
+        }
+
+        // 3. Reset verification for this category if it was the last file? 
+        // Or just reset always to be safe.
+        const checks = { ...(applicant.verificationChecks || {}) };
+        if (checks[category]) {
+            delete checks[category];
+        }
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: applicant.documents, verificationChecks: checks } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
+});
+
+app.post('/api/admin/system/vacuum', async (req, res) => {
     try {
         const company = await Company.findOne();
         const applicants = await Applicant.find();
@@ -2552,7 +2678,7 @@ router.post('/system/vacuum', async (req, res) => {
 
         // 3. Clean up orphaned physical files from /uploads/ on disk
         let diskPruned = 0;
-        const uploadsDir = path.join(__dirname, '..', 'uploads');
+        const uploadsDir = path.join(__dirname, 'uploads');
         if (fs.existsSync(uploadsDir)) {
             const files = fs.readdirSync(uploadsDir);
             for (const file of files) {
@@ -2576,7 +2702,31 @@ router.post('/system/vacuum', async (req, res) => {
     }
 });
 
-router.get('/applicants/:email', async (req, res) => {
+// Helper for existing data migration
+async function migrateAssets() {
+    try {
+        const profile = await Company.findOne();
+        if (!profile) return;
+        const categories = ['logo', 'stamp', 'digitalSignature', 'letterheadImage', 'mobileAppTemplate', 'tadaTemplate'];
+        let changed = false;
+        categories.forEach(cat => {
+            if (profile[cat] && profile[cat].length > 0) {
+                if (typeof profile[cat][0] === 'string') {
+                    profile[cat] = profile[cat].map((s, i) => ({ name: `Legacy_${i + 1}`, data: s }));
+                    changed = true;
+                }
+            }
+        });
+        if (changed) {
+            await Company.updateOne({ _id: profile._id }, { $set: { logo: profile.logo, stamp: profile.stamp, digitalSignature: profile.digitalSignature, letterheadImage: profile.letterheadImage, mobileAppTemplate: profile.mobileAppTemplate, tadaTemplate: profile.tadaTemplate } });
+            console.log('✅ Asset migration completed.');
+        }
+    } catch (e) {
+        console.error('Migration error:', e);
+    }
+}
+
+app.get('/api/admin/applicants/:email', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email: req.params.email });
         if (!applicant) return res.status(404).json({ success: false, message: 'Not found' });
@@ -2584,7 +2734,40 @@ router.get('/applicants/:email', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false }); }
 });
 
-router.get('/pending-exams', async (req, res) => {
+app.post('/api/applicant/resubmit-document', async (req, res) => {
+    try {
+        const { email, category, data, name } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+
+        // Save Base64 to disk
+        const fileUrl = saveBase64ToFile(email, category, data);
+
+        // Remove old document of same category
+        const newDocs = (applicant.documents || []).filter(d => d.category !== category);
+        
+        // Add new, storing the URL instead of base64
+        newDocs.push({ category, assetId: fileUrl, name, uploadedAt: new Date() });
+        
+        // Reset verification status
+        const checks = { ...(applicant.verificationChecks || {}) };
+        if (checks[category]) {
+            delete checks[category];
+        }
+        
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: newDocs, verificationChecks: checks } });
+        const updatedApp = await Applicant.findOne({ email });
+        res.json({ success: true, message: 'Document resubmitted successfully.', assetId: fileUrl, applicant: updatedApp });
+    } catch (e) {
+        console.error('Resubmit error:', e);
+        res.status(500).json({ error: 'Resubmission failed' });
+    }
+});
+
+
+// --- EXAM SUBMISSIONS & GRADING ---
+
+app.get('/api/admin/pending-exams', async (req, res) => {
     try {
         const exams = await ExamResult.find().sort({ submittedAt: -1 });
         const questions = await Question.find();
@@ -2595,7 +2778,7 @@ router.get('/pending-exams', async (req, res) => {
     }
 });
 
-router.post('/grade-exam', async (req, res) => {
+app.post('/api/admin/grade-exam', async (req, res) => {
     try {
         const { examId, manualScore } = req.body;
         const exam = await ExamResult.findOne({ _id: examId });
@@ -2641,4 +2824,17 @@ router.post('/grade-exam', async (req, res) => {
     }
 });
 
-module.exports = router;
+app.get('/api/applicant/my-scores/:email', async (req, res) => {
+    try {
+        const exams = await ExamResult.find({ email: req.params.email }).sort({ submittedAt: -1 });
+        const questions = await Question.find();
+        res.json({ success: true, exams, questions });
+    } catch (e) {
+        console.error('Fetch My Scores Error:', e);
+        res.status(500).json({ error: 'Failed to fetch scores' });
+    }
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
