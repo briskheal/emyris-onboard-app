@@ -1648,7 +1648,7 @@ router.get('/lifecycle-check', async (req, res) => {
 });
 
 // Company Profile Fetching (With latest Assets)
-router.get('/api/company-profile', async (req, res) => {
+router.get('/company-profile', async (req, res) => {
     try {
         let profile = await Company.findOne().lean();
         if (!profile) {
@@ -1685,6 +1685,26 @@ router.get('/api/company-profile', async (req, res) => {
 });
 
 // Applicant-facing unified company data (Hydrated with Divisions and HQs)
+
+router.post('/company-profile', async (req, res) => {
+    try {
+        const updateData = req.body;
+        // Don't allow overwriting _id or active
+        delete updateData._id;
+        
+        let profile = await Company.findOne();
+        if (!profile) {
+            await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD.", ...updateData });
+        } else {
+            await Company.updateOne({ _id: profile._id }, { $set: updateData });
+        }
+        res.json({ success: true, message: 'Profile updated' });
+    } catch (e) {
+        console.error('Company Profile Update Error:', e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 router.get('/api/company-data', async (req, res) => {
     try {
         const company = await Company.findOne().lean();
