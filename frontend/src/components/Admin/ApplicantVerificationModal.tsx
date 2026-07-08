@@ -18,7 +18,13 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   const [reportingTo, setReportingTo] = useState(applicant.reportingTo || '');
   const [hq, setHq] = useState(applicant.hq || '');
   const [salary, setSalary] = useState(applicant.salary || '');
-  const [actualJoiningDate, setActualJoiningDate] = useState(applicant.actualJoiningDate ? new Date(applicant.actualJoiningDate).toISOString().split('T')[0] : '');
+  const [actualJoiningDate, setActualJoiningDate] = useState(() => {
+    try {
+      return applicant.actualJoiningDate && !isNaN(new Date(applicant.actualJoiningDate).getTime()) 
+        ? new Date(applicant.actualJoiningDate).toISOString().split('T')[0] 
+        : '';
+    } catch { return ''; }
+  });
 
   const handleUploadMissingDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -127,7 +133,8 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {applicant.documents.map((doc: any, i: number) => {
-                    const downloadUrl = doc.filename.includes('/api/admin/uploads/') ? doc.filename : `/api/admin/uploads/${doc.filename}`;
+                    const safeFilename = doc.filename || doc.fileName || '';
+                    const downloadUrl = safeFilename.includes('/api/admin/uploads/') ? safeFilename : `/api/admin/uploads/${safeFilename}`;
                     return (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
