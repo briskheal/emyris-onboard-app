@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronRight, ChevronLeft, Save, CheckCircle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Save } from 'lucide-react';
 import api from '../../api/client';
 import StepPersonalInfo from './StepPersonalInfo';
 import StepBanking from './StepBanking';
 import StepExperience from './StepExperience';
+import DocumentUploader from './DocumentUploader';
+import RapidTestEngine from './RapidTestEngine';
 
 interface ApplicantOnboardingProps {
   applicant: any;
@@ -14,13 +16,14 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<any>({
     ...applicant,
-    experience: applicant.experience || [],
-    family: applicant.family || [],
-    education: applicant.education || []
+    ...applicant.formData,
+    experience: applicant.formData?.experience || applicant.experience || [],
+    family: applicant.formData?.family || applicant.family || [],
+    education: applicant.formData?.education || applicant.education || []
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  const totalSteps = 3;
+  const totalSteps = 5;
 
   const handleNext = () => {
     if (currentStep < totalSteps) setCurrentStep(currentStep + 1);
@@ -45,14 +48,14 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
     }
   };
 
-  const handleSubmitFinal = async () => {
-    if (!window.confirm("Are you sure you want to submit your application? You won't be able to edit it later.")) return;
+  const handleSubmitFinalAndProceed = async () => {
+    if (!window.confirm("Are you sure you want to submit your application? You won't be able to edit your details or documents later.")) return;
     setIsSaving(true);
     try {
       const res = await api.post('/submit-onboarding', { email: applicant.email, formData });
       if (res.data.success) {
-        alert('Application submitted successfully!');
-        onComplete(); // Triggers refresh to Dashboard view
+        alert('Application submitted successfully! Now taking you to the Rapid Assessment.');
+        setCurrentStep(5); // Advance to Rapid Test
       }
     } catch (err) {
       console.error('Submit failed', err);
@@ -61,6 +64,18 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
       setIsSaving(false);
     }
   };
+
+  // Skip the standard header for Rapid Test (Step 5) as it has its own UI
+  if (currentStep === 5) {
+    return (
+      <div className="dash-card" style={{ maxWidth: '900px', margin: '0 auto 4rem auto' }}>
+        <RapidTestEngine 
+          applicant={applicant} 
+          onComplete={onComplete} 
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="dash-card" style={{ maxWidth: '900px', margin: '0 auto 4rem auto' }}>
@@ -86,19 +101,27 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
         {currentStep === 3 && (
           <StepBanking data={formData} updateData={(d: any) => setFormData({ ...formData, ...d })} />
         )}
+        {currentStep === 4 && (
+          <DocumentUploader 
+            applicant={applicant} 
+            formData={formData}
+            onNext={handleSubmitFinalAndProceed}
+            onBack={handlePrev}
+          />
+        )}
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-        <button 
-          className="btn btn-outline" 
-          onClick={handlePrev} 
-          disabled={currentStep === 1}
-          style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
-        >
-          <ChevronLeft size={18} /> Previous
-        </button>
-        
-        {currentStep < totalSteps ? (
+      {currentStep < 4 && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <button 
+            className="btn btn-outline" 
+            onClick={handlePrev} 
+            disabled={currentStep === 1}
+            style={{ display: 'flex', alignItems: 'center', gap: '5px' }}
+          >
+            <ChevronLeft size={18} /> Previous
+          </button>
+          
           <button 
             className="btn btn-primary" 
             onClick={handleNext}
@@ -106,17 +129,8 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
           >
             Next <ChevronRight size={18} />
           </button>
-        ) : (
-          <button 
-            className="btn btn-primary" 
-            onClick={handleSubmitFinal}
-            disabled={isSaving}
-            style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#10b981' }}
-          >
-            <CheckCircle size={18} /> Submit Application
-          </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
