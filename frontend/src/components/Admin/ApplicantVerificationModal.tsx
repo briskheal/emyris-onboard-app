@@ -184,10 +184,14 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No documents uploaded yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {applicant.documents.map((doc: any, i: number) => {
+                  {Object.values((applicant.documents || []).reduce((acc: any, doc: any) => {
                     const docCat = doc.docType || doc.category || 'Document';
-                    const safeFilename = doc.filename || doc.fileName || '';
-                    const downloadUrl = safeFilename.includes('/api/admin/uploads/') ? safeFilename : `/api/admin/uploads/${safeFilename}`;
+                    acc[docCat] = doc;
+                    return acc;
+                  }, {})).map((doc: any, i: number) => {
+                    const docCat = doc.docType || doc.category || 'Document';
+                    const assetId = doc.assetId || doc.filename || doc.fileName || doc.name || '';
+                    const downloadUrl = assetId.startsWith('/') ? assetId : `/api/admin/uploads/${assetId}`;
                     return (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '4px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', flex: 1 }}>
