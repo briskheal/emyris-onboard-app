@@ -5,7 +5,6 @@ import StepPersonalInfo from './StepPersonalInfo';
 import StepBanking from './StepBanking';
 import StepExperience from './StepExperience';
 import DocumentUploader from './DocumentUploader';
-import RapidTestEngine from './RapidTestEngine';
 
 interface ApplicantOnboardingProps {
   applicant: any;
@@ -23,7 +22,7 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  const totalSteps = 5;
+  const totalSteps = 4;
 
   const handleNext = () => {
     if (currentStep < totalSteps) setCurrentStep(currentStep + 1);
@@ -54,8 +53,8 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
     try {
       const res = await api.post('/submit-onboarding', { email: applicant.email, formData });
       if (res.data.success) {
-        alert('Application submitted successfully! Now taking you to the Rapid Assessment.');
-        setCurrentStep(5); // Advance to Rapid Test
+        alert('Application submitted successfully!');
+        onComplete(); // Advance to Dashboard
       }
     } catch (err) {
       console.error('Submit failed', err);
@@ -64,18 +63,6 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
       setIsSaving(false);
     }
   };
-
-  // Skip the standard header for Rapid Test (Step 5) as it has its own UI
-  if (currentStep === 5) {
-    return (
-      <div className="dash-card" style={{ maxWidth: '900px', margin: '0 auto 4rem auto' }}>
-        <RapidTestEngine 
-          applicant={applicant} 
-          onComplete={onComplete} 
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="dash-card" style={{ maxWidth: '900px', margin: '0 auto 4rem auto' }}>
