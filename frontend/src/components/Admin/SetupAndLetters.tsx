@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, X } from 'lucide-react';
+import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, X, Trash2 } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '../../api/client';
@@ -20,6 +20,8 @@ export default function SetupAndLetters() {
   const [targetApplicant, setTargetApplicant] = useState('');
   const [livePreview, setLivePreview] = useState(false);
   const [zoom, setZoom] = useState('1.0');
+  const [fontFamily, setFontFamily] = useState('Plus Jakarta Sans');
+  const [fontSize, setFontSize] = useState(11);
 
   // System & Assets State
   const [dbStats, setDbStats] = useState<any>(null);
@@ -79,6 +81,12 @@ export default function SetupAndLetters() {
       }
     } catch (e) {
       console.error('Failed to load templates');
+    }
+  };
+
+  const handleResetTemplate = () => {
+    if (window.confirm('Are you sure you want to revert to the last saved version? All unsaved changes will be lost.')) {
+      fetchCompanyTemplates();
     }
   };
 
@@ -270,6 +278,10 @@ export default function SetupAndLetters() {
               <button className="btn btn-sm btn-outline" onClick={saveTemplate} disabled={savingTemplate} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#10b981', color: '#10b981' }}>
                 <Save size={14} /> Save Master
               </button>
+
+              <button className="btn btn-sm btn-outline" onClick={handleResetTemplate} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444' }} title="Reset to Saved Master">
+                <Trash2 size={14} />
+              </button>
             </div>
           </div>
 
@@ -323,11 +335,17 @@ export default function SetupAndLetters() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
                   <Type size={14} color="var(--text-muted)" />
-                  <select className="form-input" style={{ padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none' }} onChange={(e) => execCommand('fontName', e.target.value)}>
-                    <option value="Arial">Arial</option>
+                  <select className="form-input" style={{ padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none', maxWidth: '140px' }} value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+                    <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
+                    <option value="Roboto">Roboto</option>
+                    <option value="Outfit">Outfit</option>
                     <option value="Times New Roman">Times New Roman</option>
                     <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
                   </select>
+                  <div style={{ width: '1px', height: '15px', background: 'rgba(255,255,255,0.2)', margin: '0 4px' }}></div>
+                  <input type="number" className="form-input" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} style={{ width: '50px', padding: '2px 4px', fontSize: '0.8rem', background: 'transparent', border: 'none', textAlign: 'center' }} step="0.5" />
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>pt</span>
                 </div>
 
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -361,7 +379,14 @@ export default function SetupAndLetters() {
                     <div 
                       className="a4-page-standard"
                       dangerouslySetInnerHTML={{ __html: templateContent }}
-                      style={{ transform: `scale(${zoom})`, transformOrigin: 'top center', pointerEvents: 'none', background: 'white' }}
+                      style={{ 
+                        transform: `scale(${zoom})`, 
+                        transformOrigin: 'top center', 
+                        pointerEvents: 'none', 
+                        background: 'white',
+                        fontFamily: fontFamily,
+                        fontSize: `${fontSize}pt`
+                      }}
                     />
                   </div>
                 )}
@@ -375,7 +400,9 @@ export default function SetupAndLetters() {
                   style={{ 
                     transform: `scale(${zoom})`, 
                     transformOrigin: 'top center',
-                    display: livePreview ? 'none' : 'block'
+                    display: livePreview ? 'none' : 'block',
+                    fontFamily: fontFamily,
+                    fontSize: `${fontSize}pt`
                   }}
                 />
               </div>
