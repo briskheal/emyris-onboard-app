@@ -1,4 +1,5 @@
 const express = require('express');
+const compression = require('compression');
 const { execSync } = require('child_process');
 
 // --- AUTO-INSTALL DEPENDENCIES ON BOOT ---
@@ -33,6 +34,7 @@ try {
 }
 
 const app = express();
+app.use(compression());
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
@@ -103,6 +105,7 @@ const authRouter = require('./routes/auth');
 app.use('/api/applicant', applicantRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/auth', authRouter);
+app.all('/api/company-profile', (req, res, next) => { req.url = '/company-profile'; adminRouter(req, res, next); });
 
 // Legacy Route Aliases for original HTML portal (script.js)
 app.get('/api/company-data', (req, res, next) => {
