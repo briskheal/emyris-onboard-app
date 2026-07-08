@@ -74,7 +74,7 @@ async function handleRegister(req, res) {
             html: emailHtml
         });
 
-        res.json({ success: true, applicant: newApplicant });
+        res.json({ success: true, applicant: newApplicant, pin: pin });
     } catch (err) {
         console.error('Registration error:', err);
         res.json({ success: false, message: 'Failed to register applicant. Ensure database is connected.' });

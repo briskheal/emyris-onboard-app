@@ -367,7 +367,7 @@ async function handleApplicantLogin(e) {
         const res = await fetch('/api/applicant-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password: pin })
+            body: JSON.stringify({ email, pin })
         });
         const result = await res.json();
         if (result.success && result.applicant) {
