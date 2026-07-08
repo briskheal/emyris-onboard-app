@@ -14,6 +14,9 @@ export default function SetupAndLetters() {
   // System State
   const [dbStats, setDbStats] = useState<any>(null);
 
+  // Assets State
+  const [assets, setAssets] = useState<any[]>([]);
+
   const templateOptions = [
     { id: 'offerLetterBody', label: 'Offer Letter' },
     { id: 'apptLetterBody', label: 'Appointment Letter' },
@@ -28,15 +31,26 @@ export default function SetupAndLetters() {
   useEffect(() => {
     fetchCompanyTemplates();
     fetchDbStats();
+    fetchAssets();
   }, []);
+
+  const fetchAssets = async () => {
+    try {
+      const res = await api.get('/admin/assets');
+      setAssets(res.data || []);
+    } catch (e) {
+      console.error('Failed to load assets');
+    }
+  };
 
   const fetchCompanyTemplates = async () => {
     try {
       const res = await api.get('/company-profile');
-      if (res.data.company) {
-        setTemplateContent(res.data.company[activeTemplate] || '');
+      const comp = res.data.company || res.data;
+      if (comp && comp[activeTemplate] !== undefined) {
+        setTemplateContent(comp[activeTemplate] || '');
         if (editorRef.current) {
-          editorRef.current.innerHTML = res.data.company[activeTemplate] || '';
+          editorRef.current.innerHTML = comp[activeTemplate] || '';
         }
       }
     } catch (e) {
@@ -99,9 +113,16 @@ export default function SetupAndLetters() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert('Asset uploaded successfully!');
+      fetchAssets(); // Refresh assets
     } catch (err) {
       alert('Upload failed');
     }
+  };
+
+  const getAssetPreviewUrl = (category: string) => {
+    const asset = assets.find(a => a.category === category);
+    if (!asset) return null;
+    return asset.filename.includes('/api/admin/uploads/') ? asset.filename : `/api/admin/uploads/${asset.filename}`;
   };
 
   const wipeDatabase = async () => {
@@ -192,16 +213,23 @@ export default function SetupAndLetters() {
         <div className="dash-card">
           <h2 style={{ marginBottom: '2rem' }}>Brand Asset Uploader</h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-            {['Company Logo', 'Company Stamp', 'Authorized Signature', 'Letterhead Base'].map(cat => (
-              <div key={cat} style={{ border: '1px dashed var(--glass-border)', padding: '2rem', borderRadius: '8px', textAlign: 'center', background: 'rgba(255,255,255,0.02)' }}>
-                <ImageIcon size={32} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
-                <h4 style={{ marginBottom: '1rem' }}>{cat}</h4>
-                <label className="btn btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', gap: '8px' }}>
-                  <Upload size={16} /> Upload New
-                  <input type="file" style={{ display: 'none' }} onChange={(e) => handleAssetUpload(e, cat)} />
-                </label>
-              </div>
-            ))}
+            {['Company Logo', 'Company Stamp', 'Authorized Signature', 'Letterhead Base'].map(cat => {
+              const previewUrl = getAssetPreviewUrl(cat);
+              return (
+                <div key={cat} style={{ border: '1px dashed var(--glass-border)', padding: '2rem', borderRadius: '8px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', position: 'relative' }}>
+                  {previewUrl ? (
+                    <img src={previewUrl} alt={cat} style={{ maxWidth: '100%', maxHeight: '120px', objectFit: 'contain', marginBottom: '1rem', borderRadius: '4px' }} />
+                  ) : (
+                    <ImageIcon size={32} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
+                  )}
+                  <h4 style={{ marginBottom: '1rem' }}>{cat}</h4>
+                  <label className="btn btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', gap: '8px' }}>
+                    <Upload size={16} /> {previewUrl ? 'Replace Asset' : 'Upload Asset'}
+                    <input type="file" style={{ display: 'none' }} onChange={(e) => handleAssetUpload(e, cat)} accept="image/*" />
+                  </label>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

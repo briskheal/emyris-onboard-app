@@ -9,6 +9,9 @@ export default function QuestionBank() {
   const [showSimulator, setShowSimulator] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<any>(null);
 
+  // Tab State for questions
+  const [activeCategoryTab, setActiveCategoryTab] = useState<string>('All');
+
   // Exam Schedule Config
   const [examDate, setExamDate] = useState('');
   const [targetProduct, setTargetProduct] = useState('General');
@@ -38,13 +41,14 @@ export default function QuestionBank() {
         api.get('/company-profile')
       ]);
       setQuestions(qRes.data.questions || []);
-      if (cRes.data.company) {
-        setExamDate(cRes.data.company.activeExamDate || '');
-        setTargetProduct(cRes.data.company.activeExamProduct || 'General');
-        setMcqTime(cRes.data.company.examMcqTime || 15);
-        setDescTime(cRes.data.company.examDescriptiveTime || 15);
-        setMcqCount(cRes.data.company.examMcqCount || 10);
-        setAvailableProducts(cRes.data.company.targetProductsList || []);
+      if (cRes.data) {
+        const comp = cRes.data.company || cRes.data;
+        setExamDate(comp.activeExamDate || '');
+        setTargetProduct(comp.activeExamProduct || 'General');
+        setMcqTime(comp.examMcqTime || 15);
+        setDescTime(comp.examDescriptiveTime || 15);
+        setMcqCount(comp.examMcqCount || 10);
+        setAvailableProducts(comp.targetProductsList || []);
       }
     } catch (e) {
       console.error('Failed to load data', e);
@@ -70,7 +74,7 @@ export default function QuestionBank() {
   const openAddModal = () => {
     setEditingQuestion(null);
     setQType('mcq');
-    setCategory('');
+    setCategory(activeCategoryTab !== 'All' ? activeCategoryTab : '');
     setQText('');
     setOptions(['', '', '', '']);
     setCorrectAnswerIndex(0);
@@ -125,6 +129,9 @@ export default function QuestionBank() {
     }
   };
 
+  const uniqueCategories = Array.from(new Set(questions.map(q => q.category))).sort();
+  const filteredQuestions = activeCategoryTab === 'All' ? questions : questions.filter(q => q.category === activeCategoryTab);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
@@ -147,8 +154,27 @@ export default function QuestionBank() {
       {/* Questions Table */}
       <div className="dash-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.2rem' }}>Question Bank</h3>
+          <h3 style={{ fontSize: '1.2rem' }}>Test & Exam Bank</h3>
           <button className="btn btn-primary" onClick={openAddModal}><Plus size={16} /> Add Question</button>
+        </div>
+
+        {/* Categories Tabs */}
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
+          <button 
+            className={`btn ${activeCategoryTab === 'All' ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => setActiveCategoryTab('All')}
+          >
+            All Questions
+          </button>
+          {uniqueCategories.map(cat => (
+            <button 
+              key={cat}
+              className={`btn ${activeCategoryTab === cat ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setActiveCategoryTab(cat)}
+            >
+              {cat.toUpperCase()}
+            </button>
+          ))}
         </div>
 
         {loading ? (
@@ -165,7 +191,7 @@ export default function QuestionBank() {
                 </tr>
               </thead>
               <tbody>
-                {questions.map((q) => (
+                {filteredQuestions.map((q) => (
                   <tr key={q._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                     <td style={{ padding: '15px' }}><span className={`badge ${q.questionType === 'mcq' ? 'approved' : 'pending'}`}>{q.questionType.toUpperCase()}</span></td>
                     <td style={{ padding: '15px' }}>{q.category}</td>

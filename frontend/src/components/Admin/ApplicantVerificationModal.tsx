@@ -26,10 +26,17 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     } catch { return ''; }
   });
 
-  const handleUploadMissingDoc = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [tasks, setTasks] = useState({
+    offerLetter: applicant.tasks?.offerLetter || false,
+    appointmentLetter: applicant.tasks?.appointmentLetter || false,
+    appLinkSent: applicant.tasks?.appLinkSent || false,
+    loginDetailsSent: applicant.tasks?.loginDetailsSent || false
+  });
+
+  const handleUploadMissingDoc = async (e: React.ChangeEvent<HTMLInputElement>, categoryName?: string) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    const category = prompt("Enter the document category (e.g. Aadhar, Resume):", "Testimonial");
+    const category = categoryName || prompt("Enter the document category (e.g. Aadhar, Resume):", "Testimonial");
     if (!category) return;
 
     setLoading(true);
@@ -56,6 +63,21 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       console.error(err);
       alert('Error uploading document');
       setLoading(false);
+    }
+  };
+
+  const handleTaskToggle = async (taskKey: string, value: boolean) => {
+    setTasks(prev => ({ ...prev, [taskKey]: value }));
+    try {
+      await api.post('/admin/update-task', {
+        email: applicant.email,
+        taskKey,
+        value
+      });
+    } catch (err) {
+      console.error("Failed to update task", err);
+      // Revert if failed
+      setTasks(prev => ({ ...prev, [taskKey]: !value }));
     }
   };
 
@@ -99,20 +121,40 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     }
   };
 
+  const Switch = ({ checked, onChange, label }: { checked: boolean, onChange: (val: boolean) => void, label: string }) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.03)', padding: '10px 15px', borderRadius: '6px' }}>
+      <span style={{ fontSize: '0.9rem' }}>{label}</span>
+      <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '22px' }}>
+        <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} style={{ opacity: 0, width: 0, height: 0 }} />
+        <span style={{
+          position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: checked ? 'var(--accent)' : '#ccc',
+          transition: '.4s', borderRadius: '34px'
+        }}>
+          <span style={{
+            position: 'absolute', content: '""', height: '14px', width: '14px',
+            left: '4px', bottom: '4px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%',
+            transform: checked ? 'translateX(18px)' : 'translateX(0)'
+          }} />
+        </span>
+      </label>
+    </div>
+  );
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
-      <div className="dash-card" style={{ width: '100%', maxWidth: '1000px', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
+      <div className="dash-card" style={{ width: '100%', maxWidth: '1100px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '2rem' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <X size={24} />
         </button>
         
         <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <CheckCircle size={24} /> Applicant Verification
+          <CheckCircle size={24} /> Applicant Verification View
         </h2>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
           
-          {/* Left Column: Dossier & Documents */}
+          {/* Left Column: Dossier, Pipeline, & Documents */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
@@ -127,26 +169,41 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Pipeline Tracking</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <Switch label="📨 Offer Letter Sent" checked={tasks.offerLetter} onChange={(v) => handleTaskToggle('offerLetter', v)} />
+                <Switch label="📝 Appointment Letter Sent" checked={tasks.appointmentLetter} onChange={(v) => handleTaskToggle('appointmentLetter', v)} />
+                <Switch label="📱 App Link Sent to Applicant" checked={tasks.appLinkSent} onChange={(v) => handleTaskToggle('appLinkSent', v)} />
+                <Switch label="🔑 Login Details Sent" checked={tasks.loginDetailsSent} onChange={(v) => handleTaskToggle('loginDetailsSent', v)} />
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Uploaded Documents (Testimonials)</h3>
               {(!applicant.documents || applicant.documents.length === 0) ? (
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No documents uploaded yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {applicant.documents.map((doc: any, i: number) => {
+                    const docCat = doc.docType || doc.category || 'Document';
                     const safeFilename = doc.filename || doc.fileName || '';
                     const downloadUrl = safeFilename.includes('/api/admin/uploads/') ? safeFilename : `/api/admin/uploads/${safeFilename}`;
                     return (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem' }}>
-                          <FileText size={16} /> {doc.docType || doc.category || 'Document'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', flex: 1 }}>
+                          <FileText size={16} /> {docCat}
                         </div>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <a href={downloadUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontSize: '0.85rem' }}>
-                            <Eye size={16} /> View
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <a href={downloadUrl} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                            <Eye size={14} /> View
                           </a>
-                          <a href={`${downloadUrl}?download=true`} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none', fontSize: '0.85rem' }}>
-                            <Download size={16} /> Download
+                          <a href={`${downloadUrl}?download=true`} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
+                            <Download size={14} /> Download
                           </a>
+                          <label className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', margin: 0 }}>
+                            <Upload size={14} /> Override
+                            <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e, docCat)} />
+                          </label>
                         </div>
                       </div>
                     );
@@ -156,8 +213,8 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
               
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                 <label className="btn btn-sm btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                  <Upload size={14} /> Upload Additional Document
-                  <input type="file" style={{ display: 'none' }} onChange={handleUploadMissingDoc} />
+                  <Upload size={14} /> Upload Missing Document Category
+                  <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e)} />
                 </label>
               </div>
             </div>
@@ -184,7 +241,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 <Ban size={16} /> Reject
               </button>
               <button className="btn btn-primary" onClick={handleApprove} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Save size={16} /> Approve & Activate
+                <Save size={16} /> Approve & Generate
               </button>
             </div>
           </div>

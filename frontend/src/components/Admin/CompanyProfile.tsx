@@ -38,13 +38,14 @@ export default function CompanyProfile() {
       setLoading(true);
       const res = await api.get('/company-profile');
       if (res.data) {
+        const comp = res.data.company || res.data;
         setProfile({
-          ...res.data.company,
-          designations: res.data.company.designations || [],
-          targetProductsList: res.data.company.targetProductsList || []
+          ...comp,
+          designations: comp.designations || [],
+          targetProductsList: comp.targetProductsList || []
         });
-        setDivisions(res.data.divisions || []);
-        setHQs(res.data.hqs || []);
+        setDivisions(res.data.divisions || comp.divisions || []);
+        setHQs(res.data.hqs || comp.hqs || []);
       }
     } catch (e) {
       console.error('Failed to load profile', e);
