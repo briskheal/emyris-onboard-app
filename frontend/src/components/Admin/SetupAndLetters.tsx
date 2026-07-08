@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Database, FileText, Image as ImageIcon, History, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, Paperclip, SearchZoomIn } from 'lucide-react';
+import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle } from 'lucide-react';
 import api from '../../api/client';
 
 export default function SetupAndLetters() {
@@ -311,7 +311,7 @@ export default function SetupAndLetters() {
                 </div>
 
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                  <SearchZoomIn size={14} color="var(--text-muted)" />
+                  <ZoomIn size={14} color="var(--text-muted)" />
                   <select className="form-input" style={{ padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none' }} value={zoom} onChange={(e) => setZoom(e.target.value)}>
                     <option value="0.75">75%</option>
                     <option value="1.0">100%</option>
