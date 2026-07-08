@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Database, AlertTriangle, FileText, Image as ImageIcon, History } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Save, Upload, Database, FileText, Image as ImageIcon, History, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, Paperclip, SearchZoomIn } from 'lucide-react';
 import api from '../../api/client';
 
 export default function SetupAndLetters() {
@@ -10,20 +10,26 @@ export default function SetupAndLetters() {
   const [templateContent, setTemplateContent] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  
+  // Admin Bar State
+  const [signatoryName, setSignatoryName] = useState('');
+  const [signatoryDesg, setSignatoryDesg] = useState('');
+  const [applicants, setApplicants] = useState<any[]>([]);
+  const [targetApplicant, setTargetApplicant] = useState('');
+  const [livePreview, setLivePreview] = useState(false);
+  const [zoom, setZoom] = useState('1.0');
 
-  // System State
+  // System & Assets State
   const [dbStats, setDbStats] = useState<any>(null);
-
-  // Assets State
   const [assets, setAssets] = useState<any[]>([]);
 
   const templateOptions = [
-    { id: 'offerLetterBody', label: 'Offer Letter' },
-    { id: 'apptLetterBody', label: 'Appointment Letter' },
-    { id: 'confirmLetterBody', label: 'Confirmation Letter' },
-    { id: 'revisedSalaryBody', label: 'Salary Revision Letter' },
-    { id: 'experienceLetterBody', label: 'Experience Letter' },
-    { id: 'relievingLetterBody', label: 'Relieving Letter' }
+    { id: 'offerLetterBody', label: 'Offer Letter', type: 'offer' },
+    { id: 'apptLetterBody', label: 'Appointment Letter', type: 'appt' },
+    { id: 'confirmLetterBody', label: 'Confirmation Letter', type: 'confirm' },
+    { id: 'revisedSalaryBody', label: 'Salary Revision Letter', type: 'revised' },
+    { id: 'experienceLetterBody', label: 'Experience Letter', type: 'experience' },
+    { id: 'relievingLetterBody', label: 'Relieving Letter', type: 'relieving' }
   ];
 
   const placeholders = ['{{FULL_NAME}}', '{{ADDRESS}}', '{{CITY_STATE}}', '{{PIN}}', '{{DESIGNATION}}', '{{JOINING_DATE}}', '{{HQ}}', '{{REPORTING_TO}}', '{{SALARY_MONTHLY}}', '{{SALARY_ANNUAL}}', '{{COMPANY_NAME}}', '{{TODAY_DATE}}'];
@@ -32,7 +38,19 @@ export default function SetupAndLetters() {
     fetchCompanyTemplates();
     fetchDbStats();
     fetchAssets();
+    fetchApplicants();
   }, []);
+
+  const fetchApplicants = async () => {
+    try {
+      const res = await api.get('/admin/applicants');
+      if (res.data.success) {
+        setApplicants(res.data.applicants);
+      }
+    } catch (e) {
+      console.error('Failed to load applicants');
+    }
+  };
 
   const fetchAssets = async () => {
     try {
@@ -52,6 +70,10 @@ export default function SetupAndLetters() {
         if (editorRef.current) {
           editorRef.current.innerHTML = comp[activeTemplate] || '';
         }
+      }
+      if (comp) {
+        setSignatoryName(comp.signatoryName || '');
+        setSignatoryDesg(comp.signatoryDesignation || '');
       }
     } catch (e) {
       console.error('Failed to load templates');
@@ -90,13 +112,55 @@ export default function SetupAndLetters() {
     setSavingTemplate(true);
     try {
       await api.post('/company-profile', {
-        [activeTemplate]: templateContent
+        [activeTemplate]: templateContent,
+        signatoryName,
+        signatoryDesignation: signatoryDesg
       });
-      alert('Template saved successfully!');
+      alert('Template Master saved successfully!');
     } catch (e) {
       alert('Error saving template');
     } finally {
       setSavingTemplate(false);
+    }
+  };
+
+  const handleHubpush = async () => {
+    if (!targetApplicant) {
+      alert("Please select a Target Applicant first.");
+      return;
+    }
+    
+    // Attempt to parse out the applicant data and replace placeholders before sending
+    const applicant = applicants.find(a => a.email === targetApplicant);
+    if (!applicant) return;
+
+    let finalContent = templateContent;
+    finalContent = finalContent.replace(/{{FULL_NAME}}/g, applicant.fullName || '');
+    finalContent = finalContent.replace(/{{ADDRESS}}/g, applicant.address || '');
+    finalContent = finalContent.replace(/{{CITY_STATE}}/g, `${applicant.city || ''} ${applicant.state || ''}`);
+    finalContent = finalContent.replace(/{{PIN}}/g, applicant.pin || '');
+    finalContent = finalContent.replace(/{{DESIGNATION}}/g, applicant.designation || '');
+    finalContent = finalContent.replace(/{{HQ}}/g, applicant.hq || '');
+    finalContent = finalContent.replace(/{{REPORTING_TO}}/g, applicant.reportingTo || '');
+    finalContent = finalContent.replace(/{{TODAY_DATE}}/g, new Date().toLocaleDateString());
+
+    const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
+
+    try {
+      const res = await api.post('/admin/save-letter-snapshot', {
+        email: targetApplicant,
+        letterType: activeLetterType,
+        letterData: finalContent,
+        notifyByEmail: true
+      });
+      if (res.data.success) {
+        alert(res.data.message || 'Letter Hubpushed Successfully!');
+      } else {
+        alert('Failed to publish letter.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Failed to publish letter to hub.');
     }
   };
 
@@ -113,7 +177,7 @@ export default function SetupAndLetters() {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       alert('Asset uploaded successfully!');
-      fetchAssets(); // Refresh assets
+      fetchAssets();
     } catch (err) {
       alert('Upload failed');
     }
@@ -148,62 +212,132 @@ export default function SetupAndLetters() {
       </div>
 
       {activeTab === 'templates' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '2rem', minHeight: '600px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           
-          <div className="dash-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <select className="form-input" value={activeTemplate} onChange={e => setActiveTemplate(e.target.value)} style={{ width: '300px' }}>
-                {templateOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
-              </select>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button className="btn btn-outline"><History size={16} /> History</button>
-                <button className="btn btn-primary" onClick={saveTemplate} disabled={savingTemplate}><Save size={16} /> Save Template</button>
+          {/* EDITOR ADMIN BAR */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '1.25rem 2rem', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--glass-border)', borderRadius: '8px' }}>
+            
+            {/* Left: Signatory */}
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Signatory Name</label>
+                <input type="text" className="form-input" style={{ width: '150px', padding: '4px 8px' }} value={signatoryName} onChange={e => setSignatoryName(e.target.value)} placeholder="Enter Name..." />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <label style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Designation</label>
+                <input type="text" className="form-input" style={{ width: '150px', padding: '4px 8px' }} value={signatoryDesg} onChange={e => setSignatoryDesg(e.target.value)} placeholder="Enter Role..." />
               </div>
             </div>
 
-            {/* Toolbar */}
-            <div style={{ display: 'flex', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '4px' }}>
-              <button className="btn btn-outline" style={{ padding: '4px 10px' }} onClick={() => execCommand('bold')}><b>B</b></button>
-              <button className="btn btn-outline" style={{ padding: '4px 10px' }} onClick={() => execCommand('italic')}><i>I</i></button>
-              <button className="btn btn-outline" style={{ padding: '4px 10px' }} onClick={() => execCommand('underline')}><u>U</u></button>
-              <button className="btn btn-outline" style={{ padding: '4px 10px' }} onClick={() => execCommand('insertOrderedList')}>1.</button>
-              <button className="btn btn-outline" style={{ padding: '4px 10px' }} onClick={() => execCommand('insertUnorderedList')}>•</button>
-              <button className="btn btn-outline" style={{ padding: '4px 10px' }} onClick={() => execCommand('justifyLeft')}>Left</button>
-              <button className="btn btn-outline" style={{ padding: '4px 10px' }} onClick={() => execCommand('justifyCenter')}>Center</button>
-            </div>
+            {/* Right: Actions */}
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(99, 102, 241, 0.1)', padding: '5px 10px', borderRadius: '4px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                <label style={{ fontSize: '0.7rem', color: 'var(--primary-light)', textTransform: 'uppercase', marginRight: '5px' }}>Target:</label>
+                <select className="form-input" style={{ width: '150px', padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none' }} value={targetApplicant} onChange={e => setTargetApplicant(e.target.value)}>
+                  <option value="">-- Select Applicant --</option>
+                  {applicants.map(a => <option key={a.email} value={a.email}>{a.fullName} ({a.email})</option>)}
+                </select>
+              </div>
 
-            {/* Editor */}
-            <div 
-              ref={editorRef}
-              onInput={handleEditorInput}
-              contentEditable
-              style={{
-                flex: 1,
-                background: '#fff',
-                color: '#000',
-                padding: '20px',
-                borderRadius: '4px',
-                border: '1px solid var(--glass-border)',
-                outline: 'none',
-                overflowY: 'auto',
-                fontFamily: 'Helvetica, Arial, sans-serif'
-              }}
-            />
+              <button className="btn btn-sm btn-primary" onClick={handleHubpush} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none' }}>
+                <Send size={14} /> Generate & Send
+              </button>
+
+              <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(!livePreview)} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Eye size={14} /> {livePreview ? 'Edit Mode' : 'Preview'}
+              </button>
+
+              <button className="btn btn-sm btn-outline" onClick={saveTemplate} disabled={savingTemplate} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#10b981', color: '#10b981' }}>
+                <Save size={14} /> Save Master
+              </button>
+            </div>
           </div>
 
-          <div className="dash-card">
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Dynamic Placeholders</h3>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Click to insert into template.</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-              {placeholders.map(ph => (
-                <button 
-                  key={ph}
-                  onClick={() => insertPlaceholder(ph)}
-                  style={{ textAlign: 'left', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-main)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
-                >
-                  {ph}
-                </button>
-              ))}
+          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem', minHeight: '600px' }}>
+            
+            {/* Sidebar Controls */}
+            <div className="dash-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>Template Type</h3>
+              <select className="form-input" value={activeTemplate} onChange={e => setActiveTemplate(e.target.value)}>
+                {templateOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
+              </select>
+
+              <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', marginTop: '1rem', marginBottom: '0.5rem' }}>Tags (Placeholders)</h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Click to insert tag at cursor.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '400px', overflowY: 'auto' }}>
+                {placeholders.map(ph => (
+                  <button 
+                    key={ph}
+                    onClick={() => insertPlaceholder(ph)}
+                    style={{ textAlign: 'left', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-main)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
+                  >
+                    {ph}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Main Editor Area */}
+            <div style={{ display: 'flex', flexDirection: 'column', background: 'rgba(15, 23, 42, 0.4)', border: '1px solid var(--glass-border)', borderRadius: '8px', overflow: 'hidden' }}>
+              
+              {/* Full Toolbar */}
+              <div style={{ padding: '0.75rem', background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid var(--glass-border)', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                
+                <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '6px' }}>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('bold')}><b>B</b></button>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('italic')}><i>I</i></button>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('underline')}><u>U</u></button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '6px' }}>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('justifyLeft')}><AlignLeft size={14} /></button>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('justifyCenter')}><AlignCenter size={14} /></button>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('justifyRight')}><AlignRight size={14} /></button>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('justifyFull')}><AlignJustify size={14} /></button>
+                </div>
+
+                <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '6px' }}>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('insertOrderedList')}><List size={14} /></button>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('insertUnorderedList')}><List size={14} /></button>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
+                  <Type size={14} color="var(--text-muted)" />
+                  <select className="form-input" style={{ padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none' }} onChange={(e) => execCommand('fontName', e.target.value)}>
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                  </select>
+                </div>
+
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <SearchZoomIn size={14} color="var(--text-muted)" />
+                  <select className="form-input" style={{ padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none' }} value={zoom} onChange={(e) => setZoom(e.target.value)}>
+                    <option value="0.75">75%</option>
+                    <option value="1.0">100%</option>
+                    <option value="1.2">120%</option>
+                  </select>
+                </div>
+
+              </div>
+
+              {/* Editor Workspace */}
+              <div style={{ background: '#e2e8f0', padding: '2rem', overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
+                <div 
+                  ref={editorRef}
+                  className="a4-page-standard"
+                  contentEditable={!livePreview}
+                  suppressContentEditableWarning
+                  onInput={handleEditorInput}
+                  style={{ 
+                    transform: `scale(${zoom})`, 
+                    transformOrigin: 'top center',
+                    opacity: livePreview ? 0.7 : 1,
+                    pointerEvents: livePreview ? 'none' : 'auto'
+                  }}
+                />
+              </div>
+
             </div>
           </div>
         </div>
@@ -235,21 +369,26 @@ export default function SetupAndLetters() {
       )}
 
       {activeTab === 'system' && (
-        <div className="dash-card" style={{ maxWidth: '600px' }}>
-          <h2 style={{ marginBottom: '1.5rem' }}>System Maintenance</h2>
-          {dbStats && (
-            <div style={{ marginBottom: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-              <p><strong>Total Storage Used:</strong> {(dbStats.totalStorageMB || 0).toFixed(2)} MB</p>
-              <p><strong>DB Size:</strong> {(dbStats.dbSizeMB || 0).toFixed(2)} MB</p>
-            </div>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <a href="/api/admin/system/export" download className="btn btn-outline" style={{ textAlign: 'center' }}>Download Database Backup (JSON)</a>
-            <button className="btn btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={wipeDatabase}>
-              <AlertTriangle size={16} style={{ display: 'inline', marginRight: '8px' }} />
-              Wipe Database (Factory Reset)
+        <div className="dash-card">
+          <h2 style={{ marginBottom: '1.5rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <AlertTriangle size={24} /> Danger Zone
+          </h2>
+          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '1.5rem', borderRadius: '8px' }}>
+            <h4 style={{ marginBottom: '1rem' }}>Factory Reset</h4>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>This action will permanently delete all applicants, documents, test results, and assets. It cannot be undone.</p>
+            <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={wipeDatabase}>
+              Wipe Database Clean
             </button>
           </div>
+          
+          {dbStats && (
+            <div style={{ marginTop: '2rem' }}>
+              <h3>System Status</h3>
+              <pre style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '4px', marginTop: '1rem', fontSize: '0.85rem' }}>
+                {JSON.stringify(dbStats, null, 2)}
+              </pre>
+            </div>
+          )}
         </div>
       )}
 

@@ -58,7 +58,7 @@ async function handleRegister(req, res) {
                 <p>Dear ${title} ${fullName},</p>
                 <p>Thank you for registering. You can now log into your Applicant Portal to complete your onboarding process.</p>
                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                    <p style="margin: 0; font-size: 16px;"><strong>Login Portal:</strong> <a href="${process.env.BASE_URL || 'https://emyrishr.in'}/beta">${process.env.BASE_URL || 'https://emyrishr.in'}/beta</a></p>
+                    <p style="margin: 0; font-size: 16px;"><strong>Login Portal:</strong> <a href="${process.env.BASE_URL || 'https://emyrishr.in'}">${process.env.BASE_URL || 'https://emyrishr.in'}</a></p>
                     <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>Your Email:</strong> ${email}</p>
                     <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>Your PIN:</strong> <span style="font-size: 20px; font-weight: bold; color: #e74c3c;">${pin}</span></p>
                 </div>
