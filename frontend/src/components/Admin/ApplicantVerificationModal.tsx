@@ -105,7 +105,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     const hra = parseFloat((basic * 0.40).toFixed(2));
     const edu = 200.00;
     const conveyance = 1250.00;
-    const medical = 0.00;
+    const medical = 1250.00;
     const lta = parseFloat((basic * 0.04).toFixed(2));
     const fixedAllw = 0.00;
     const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
