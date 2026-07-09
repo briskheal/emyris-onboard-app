@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, CheckCircle, Download, Save, Ban, Eye, Upload } from 'lucide-react';
 import api from '../../api/client';
 
@@ -97,17 +97,16 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     }
   };
 
-  const autoDistributeSalary = () => {
+  const autoDistributeSalary = useCallback(() => {
     if (!salary || parseFloat(salary) <= 0) return alert('Please enter an Approved Annual CTC first.');
     const annual = parseFloat(salary);
     const monthly = parseFloat((annual / 12).toFixed(2));
-    const basic = parseFloat((monthly * 0.40).toFixed(2));
+    const basic = parseFloat((monthly * 0.60).toFixed(2));
     const hra = parseFloat((basic * 0.40).toFixed(2));
     const edu = 200.00;
-    const conveyance = 3000.00;
-    const medical = 1250.00;
-    const ltaBase = monthly - (basic + hra);
-    const lta = parseFloat((ltaBase * 0.07).toFixed(2));
+    const conveyance = 1250.00;
+    const medical = 0.00;
+    const lta = parseFloat((basic * 0.04).toFixed(2));
     const fixedAllw = 0.00;
     const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
     const special = parseFloat((monthly - used).toFixed(2));
@@ -120,7 +119,13 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     setSalEdu(edu.toFixed(2));
     setSalSpecial(special.toFixed(2));
     setSalFixed(fixedAllw.toFixed(2));
-  };
+  }, [salary]);
+
+  useEffect(() => {
+    if (salary && !salBasic) {
+      autoDistributeSalary();
+    }
+  }, [salary, salBasic, autoDistributeSalary]);
 
   const handleTaskToggle = async (taskKey: string, value: boolean) => {
     setTasks(prev => ({ ...prev, [taskKey]: value }));
@@ -134,6 +139,37 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       console.error("Failed to update task", err);
       // Revert if failed
       setTasks(prev => ({ ...prev, [taskKey]: !value }));
+    }
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      const salaryBreakup = { 
+        basic: parseFloat(salBasic) || 0, 
+        hra: parseFloat(salHra) || 0, 
+        lta: parseFloat(salLta) || 0, 
+        conveyance: parseFloat(salConv) || 0, 
+        medical: parseFloat(salMed) || 0, 
+        special: parseFloat(salSpecial) || 0, 
+        edu: parseFloat(salEdu) || 0, 
+        fixed: parseFloat(salFixed) || 0 
+      };
+
+      const updateRes = await api.post('/admin/update-workflow-data', {
+        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup
+      });
+      if (updateRes.data.success) {
+        alert('Workouts saved successfully!');
+        if (onRefresh) onRefresh();
+      } else {
+        alert('Failed to save data');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Error saving data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -220,7 +256,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   );
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
       <div className="dash-card" style={{ width: '100%', maxWidth: '1100px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '2rem' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <X size={24} />
@@ -351,12 +387,15 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
               </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: 'auto' }}>
-              <button className="btn btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={handleReject} disabled={loading}>
-                <Ban size={16} /> Reject
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
+              <button type="button" className="btn btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={handleReject} disabled={loading}>
+                Reject Application
               </button>
-              <button className="btn btn-primary" onClick={handleApprove} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Save size={16} /> Approve & Generate
+              <button type="button" className="btn btn-outline" onClick={handleSave} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Save size={18} /> Save Workouts
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handleApprove} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle size={18} /> Approve & Generate
               </button>
             </div>
           </div>
