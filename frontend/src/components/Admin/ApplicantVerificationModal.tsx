@@ -355,7 +355,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                             <Upload size={14} style={{ margin: 'auto' }} />
                             <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e, dName)} />
                           </label>
-                          <button className="btn btn-sm" onClick={() => handleDeleteDocument(assetId, dName)} style={{ flex: 1, background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '4px', border: 'none' }} title="Delete">
+                          <button type="button" className="btn btn-sm" onClick={() => handleDeleteDocument(assetId, dName)} style={{ flex: 1, background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '4px', border: 'none' }} title="Delete">
                             <X size={14} style={{ margin: 'auto' }} />
                           </button>
                         </div>

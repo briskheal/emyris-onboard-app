@@ -684,10 +684,14 @@ router.post('/delete-document', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
         
         const targetId = String(assetId).trim();
+        console.log(`[DELETE-DOC] targetId: "${targetId}"`);
         const updatedDocs = (applicant.documents || []).filter(d => {
             const dId = String(d.assetId || d.filename || d.fileName || d.name || d._id || d.id || '').trim();
-            return dId !== targetId;
+            const keep = dId !== targetId;
+            if (!keep) console.log(`[DELETE-DOC] Found match! Deleting document with dId: "${dId}"`);
+            return keep;
         });
+        console.log(`[DELETE-DOC] Docs before: ${applicant.documents?.length || 0}, Docs after: ${updatedDocs.length}`);
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
         const cleanFilename = String(assetId).split('/').pop().trim();
@@ -1069,10 +1073,14 @@ router.post('/delete-document', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
         
         const targetId = String(assetId).trim();
+        console.log(`[DELETE-DOC] targetId: "${targetId}"`);
         const updatedDocs = (applicant.documents || []).filter(d => {
             const dId = String(d.assetId || d.filename || d.fileName || d.name || d._id || d.id || '').trim();
-            return dId !== targetId;
+            const keep = dId !== targetId;
+            if (!keep) console.log(`[DELETE-DOC] Found match! Deleting document with dId: "${dId}"`);
+            return keep;
         });
+        console.log(`[DELETE-DOC] Docs before: ${applicant.documents?.length || 0}, Docs after: ${updatedDocs.length}`);
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
         const cleanFilename = String(assetId).split('/').pop().trim();
