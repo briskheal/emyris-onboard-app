@@ -685,7 +685,7 @@ router.post('/delete-document', async (req, res) => {
         
         const targetId = String(assetId).trim();
         const updatedDocs = (applicant.documents || []).filter(d => {
-            const dId = String(d.assetId || d._id || d.id || '').trim();
+            const dId = String(d.assetId || d.filename || d.fileName || d.name || d._id || d.id || '').trim();
             return dId !== targetId;
         });
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
@@ -1070,7 +1070,7 @@ router.post('/delete-document', async (req, res) => {
         
         const targetId = String(assetId).trim();
         const updatedDocs = (applicant.documents || []).filter(d => {
-            const dId = String(d.assetId || d._id || d.id || '').trim();
+            const dId = String(d.assetId || d.filename || d.fileName || d.name || d._id || d.id || '').trim();
             return dId !== targetId;
         });
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });

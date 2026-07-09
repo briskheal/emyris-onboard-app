@@ -51,28 +51,30 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
     setLoading(true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const base64Data = ev.target?.result as string;
-        const res = await api.post('/admin/upload-applicant-doc', {
-          email: applicant.email,
-          category,
-          base64Data,
-          fileName: file.name
-        });
-        if (res.data.success) {
-          alert('Document uploaded successfully!');
-          if (onRefresh) onRefresh();
-          else onSuccess(); // Fallback if onRefresh not provided
-        } else {
-          alert(res.data.message || 'Upload failed');
-        }
-        setLoading(false);
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const res = await api.post('/admin/upload-applicant-doc', {
+        email: applicant.email,
+        category,
+        base64Data,
+        fileName: file.name
+      });
+      if (res.data.success) {
+        alert('Document uploaded successfully!');
+        if (onRefresh) onRefresh();
+        else onSuccess(); // Fallback if onRefresh not provided
+      } else {
+        alert(res.data.message || 'Failed to upload document');
+      }
+    } catch (err: any) {
       console.error(err);
-      alert('Error uploading document');
+      alert('Error uploading document: ' + (err.response?.data?.message || err.message));
+    } finally {
       setLoading(false);
     }
   };
