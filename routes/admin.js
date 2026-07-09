@@ -216,6 +216,14 @@ router.post('/upload-applicant-doc', async (req, res) => {
         const buffer = Buffer.from(matches[2], 'base64');
         fs.writeFileSync(require('path').join(uploadsDir, savedFilename), buffer);
 
+        // Asynchronously save to PostgreSQL Asset database as backup against Docker volume wipes
+        Asset.create({
+            _id: savedFilename,
+            category: `doc_${safeCategory}`,
+            name: savedFilename,
+            data: base64Data
+        }).catch(e => console.error('Asset backup failed:', e));
+
         // Update applicant DB
         const newDoc = { docType: category, category, filename: `/api/admin/uploads/${savedFilename}`, uploadedAt: new Date() };
         await Applicant.updateOne(
