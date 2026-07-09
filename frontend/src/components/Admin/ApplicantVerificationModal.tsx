@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { X, CheckCircle, Download, Save, Ban, Eye, Upload } from 'lucide-react';
+import { X, CheckCircle, Download, Save, Eye, Upload } from 'lucide-react';
 import api from '../../api/client';
 
 interface ApplicantVerificationModalProps {
