@@ -255,11 +255,12 @@ app.get(['/admin*', '/beta*'], (req, res) => {
 });
 
 // Serve Original Applicant Portal (Catch-all)
-app.get('*', (req, res) => {
-    if (!req.path.startsWith('/api/')) {
-        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+app.use((req, res) => {
+    if (req.url.startsWith('/api/')) {
+        console.error(`[404] API route not found: ${req.method} ${req.url}`);
+        res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
     } else {
-        res.status(404).json({ success: false, message: 'API route not found' });
+        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
     }
 });
 
