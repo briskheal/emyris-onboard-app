@@ -255,9 +255,20 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     </div>
   );
 
+  const totalMonthly = (
+    (parseFloat(salBasic) || 0) +
+    (parseFloat(salHra) || 0) +
+    (parseFloat(salLta) || 0) +
+    (parseFloat(salConv) || 0) +
+    (parseFloat(salMed) || 0) +
+    (parseFloat(salSpecial) || 0) +
+    (parseFloat(salEdu) || 0) +
+    (parseFloat(salFixed) || 0)
+  ).toFixed(2);
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
-      <div className="dash-card" style={{ width: '100%', maxWidth: '1100px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '2rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.98)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
+      <div className="dash-card" style={{ width: '100%', maxWidth: '1100px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '2rem', background: '#1e293b' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <X size={24} />
         </button>
@@ -384,6 +395,10 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 <div><label className="form-label">Special Allw.</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salSpecial} onChange={e => setSalSpecial(e.target.value)} /></div>
                 <div><label className="form-label">Education</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salEdu} onChange={e => setSalEdu(e.target.value)} /></div>
                 <div><label className="form-label">Fixed</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salFixed} onChange={e => setSalFixed(e.target.value)} /></div>
+              </div>
+              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Total Monthly Calculated:</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981' }}>₹{totalMonthly}</span>
               </div>
             </div>
 
