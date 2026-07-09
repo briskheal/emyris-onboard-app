@@ -27,6 +27,15 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     } catch { return ''; }
   });
 
+  const [salBasic, setSalBasic] = useState<string>(applicant.salaryBreakup?.basic?.toString() || '0');
+  const [salHra, setSalHra] = useState<string>(applicant.salaryBreakup?.hra?.toString() || '0');
+  const [salLta, setSalLta] = useState<string>(applicant.salaryBreakup?.lta?.toString() || '0');
+  const [salConv, setSalConv] = useState<string>(applicant.salaryBreakup?.conveyance?.toString() || '0');
+  const [salMed, setSalMed] = useState<string>(applicant.salaryBreakup?.medical?.toString() || '0');
+  const [salEdu, setSalEdu] = useState<string>(applicant.salaryBreakup?.edu?.toString() || '0');
+  const [salSpecial, setSalSpecial] = useState<string>(applicant.salaryBreakup?.special?.toString() || '0');
+  const [salFixed, setSalFixed] = useState<string>(applicant.salaryBreakup?.fixed?.toString() || '0');
+
   const [tasks, setTasks] = useState({
     offerLetter: applicant.tasks?.offerLetter || false,
     appointmentLetter: applicant.tasks?.appointmentLetter || false,
@@ -68,6 +77,51 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     }
   };
 
+  const handleDeleteDocument = async (assetId: string, categoryName: string) => {
+    if (!window.confirm(`Are you sure you want to completely delete this file for ${categoryName}?`)) return;
+    setLoading(true);
+    try {
+      const res = await api.post('/admin/delete-document', { email: applicant.email, assetId });
+      if (res.data.success) {
+        alert(`${categoryName} deleted successfully!`);
+        if (onRefresh) onRefresh();
+        else onSuccess();
+      } else {
+        alert(res.data.error || 'Delete failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting document');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const autoDistributeSalary = () => {
+    if (!salary || parseFloat(salary) <= 0) return alert('Please enter an Approved Annual CTC first.');
+    const annual = parseFloat(salary);
+    const monthly = parseFloat((annual / 12).toFixed(2));
+    const basic = parseFloat((monthly * 0.40).toFixed(2));
+    const hra = parseFloat((basic * 0.40).toFixed(2));
+    const edu = 200.00;
+    const conveyance = 3000.00;
+    const medical = 1250.00;
+    const ltaBase = monthly - (basic + hra);
+    const lta = parseFloat((ltaBase * 0.07).toFixed(2));
+    const fixedAllw = 0.00;
+    const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
+    const special = parseFloat((monthly - used).toFixed(2));
+
+    setSalBasic(basic.toFixed(2));
+    setSalHra(hra.toFixed(2));
+    setSalLta(lta.toFixed(2));
+    setSalConv(conveyance.toFixed(2));
+    setSalMed(medical.toFixed(2));
+    setSalEdu(edu.toFixed(2));
+    setSalSpecial(special.toFixed(2));
+    setSalFixed(fixedAllw.toFixed(2));
+  };
+
   const handleTaskToggle = async (taskKey: string, value: boolean) => {
     setTasks(prev => ({ ...prev, [taskKey]: value }));
     try {
@@ -90,20 +144,16 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
     setLoading(true);
     try {
-      const annual = parseFloat(salary);
-      const monthly = parseFloat((annual / 12).toFixed(2));
-      const basic = parseFloat((monthly * 0.40).toFixed(2));
-      const hra = parseFloat((basic * 0.40).toFixed(2));
-      const edu = 200.00;
-      const conveyance = 3000.00;
-      const medical = 1250.00;
-      const ltaBase = monthly - (basic + hra);
-      const lta = parseFloat((ltaBase * 0.07).toFixed(2));
-      const fixedAllw = 0.00;
-      const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
-      const special = parseFloat((monthly - used).toFixed(2));
-
-      const salaryBreakup = { basic, hra, lta, conveyance, medical, special, edu, fixed: fixedAllw };
+      const salaryBreakup = { 
+        basic: parseFloat(salBasic) || 0, 
+        hra: parseFloat(salHra) || 0, 
+        lta: parseFloat(salLta) || 0, 
+        conveyance: parseFloat(salConv) || 0, 
+        medical: parseFloat(salMed) || 0, 
+        special: parseFloat(salSpecial) || 0, 
+        edu: parseFloat(salEdu) || 0, 
+        fixed: parseFloat(salFixed) || 0 
+      };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
         email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup
@@ -207,43 +257,63 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
             </div>
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Uploaded Documents (Testimonials)</h3>
-              {(!applicant.documents || applicant.documents.length === 0) ? (
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No documents uploaded yet.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {(applicant.documents || []).map((doc: any, i: number) => {
-                    const docCat = doc.docType || doc.category || 'Document';
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', margin: 0 }}>Uploaded Documents (Testimonials)</h3>
+                <label className="btn btn-sm btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
+                  <Upload size={14} /> Upload Additional
+                  <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e)} />
+                </label>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+                {["Aadhaar Card", "PAN Card", "Degree/Provisional Certificate", "Relieving Letter", "Passport Size Photo", "Testimonial"].map(dName => {
+                  const categoryFiles = (applicant.documents || []).filter((u: any) => (u.docType || u.category || 'Document') === dName);
+                  
+                  if (categoryFiles.length === 0) {
+                    return (
+                      <div key={dName} style={{ background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem' }}>{dName}</div>
+                          <div style={{ background: 'rgba(239,68,68,0.12)', color: '#ef4444', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Missing</div>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Not uploaded</div>
+                        <label className="btn btn-sm" style={{ marginTop: 'auto', background: 'rgba(255,255,255,0.05)', cursor: 'pointer', textAlign: 'center', display: 'block' }}>
+                          Upload Now
+                          <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e, dName)} />
+                        </label>
+                      </div>
+                    );
+                  }
+
+                  return categoryFiles.map((doc: any, i: number) => {
                     const assetId = doc.assetId || doc.filename || doc.fileName || doc.name || '';
                     const downloadUrl = assetId.startsWith('/') ? assetId : `/api/admin/uploads/${assetId}`;
+                    
                     return (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '8px 12px', borderRadius: '4px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', flex: 1 }}>
-                          <FileText size={16} /> {docCat}
+                      <div key={`${dName}-${i}`} style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem' }}>{dName}</div>
+                          <div style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Uploaded</div>
                         </div>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                          <a href={downloadUrl} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
-                            <Eye size={14} /> View
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name || assetId}</div>
+                        <div style={{ display: 'flex', gap: '6px', marginTop: 'auto' }}>
+                          <a href={downloadUrl} target="_blank" rel="noreferrer" className="btn btn-sm" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', padding: '4px', textAlign: 'center' }} title="View">
+                            <Eye size={14} style={{ margin: 'auto' }} />
                           </a>
-                          <a href={`${downloadUrl}?download=true`} target="_blank" rel="noreferrer" className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}>
-                            <Download size={14} /> Download
+                          <a href={`${downloadUrl}?download=true`} download className="btn btn-sm" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', padding: '4px', textAlign: 'center' }} title="Download">
+                            <Download size={14} style={{ margin: 'auto' }} />
                           </a>
-                          <label className="btn btn-outline" style={{ padding: '4px 8px', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', margin: 0 }}>
-                            <Upload size={14} /> Override
-                            <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e, docCat)} />
+                          <label className="btn btn-sm" style={{ flex: 1, background: 'rgba(255,255,255,0.05)', padding: '4px', cursor: 'pointer', margin: 0, textAlign: 'center' }} title="Override">
+                            <Upload size={14} style={{ margin: 'auto' }} />
+                            <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e, dName)} />
                           </label>
+                          <button className="btn btn-sm" onClick={() => handleDeleteDocument(assetId, dName)} style={{ flex: 1, background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '4px', border: 'none' }} title="Delete">
+                            <X size={14} style={{ margin: 'auto' }} />
+                          </button>
                         </div>
                       </div>
                     );
-                  })}
-                </div>
-              )}
-              
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-                <label className="btn btn-sm btn-outline" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                  <Upload size={14} /> Upload Missing Document Category
-                  <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e)} />
-                </label>
+                  });
+                })}
               </div>
             </div>
           </div>
@@ -259,8 +329,25 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 <div><label className="form-label">Division</label><input type="text" className="form-input" value={division} onChange={e => setDivision(e.target.value)} /></div>
                 <div><label className="form-label">Reporting To</label><input type="text" className="form-input" value={reportingTo} onChange={e => setReportingTo(e.target.value)} /></div>
                 <div><label className="form-label">Joining HQ</label><input type="text" className="form-input" value={hq} onChange={e => setHq(e.target.value)} /></div>
-                <div><label className="form-label">Approved Annual CTC</label><input type="number" className="form-input" value={salary} onChange={e => setSalary(e.target.value)} /></div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px' }}>
+                  <div style={{ flex: 1 }}><label className="form-label">Approved Annual CTC</label><input type="number" className="form-input" value={salary} onChange={e => setSalary(e.target.value)} /></div>
+                  <button type="button" className="btn btn-outline" onClick={autoDistributeSalary} style={{ height: '42px', padding: '0 15px' }}>Calculate Breakup</button>
+                </div>
                 <div><label className="form-label">Actual Date of Joining</label><input type="date" className="form-input" value={actualJoiningDate} onChange={e => setActualJoiningDate(e.target.value)} /></div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Salary Breakup (Monthly)</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div><label className="form-label">Basic Salary</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salBasic} onChange={e => setSalBasic(e.target.value)} /></div>
+                <div><label className="form-label">HRA</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salHra} onChange={e => setSalHra(e.target.value)} /></div>
+                <div><label className="form-label">LTA</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salLta} onChange={e => setSalLta(e.target.value)} /></div>
+                <div><label className="form-label">Conveyance</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salConv} onChange={e => setSalConv(e.target.value)} /></div>
+                <div><label className="form-label">Medical Allw.</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salMed} onChange={e => setSalMed(e.target.value)} /></div>
+                <div><label className="form-label">Special Allw.</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salSpecial} onChange={e => setSalSpecial(e.target.value)} /></div>
+                <div><label className="form-label">Education</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salEdu} onChange={e => setSalEdu(e.target.value)} /></div>
+                <div><label className="form-label">Fixed</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salFixed} onChange={e => setSalFixed(e.target.value)} /></div>
               </div>
             </div>
 
