@@ -67,12 +67,17 @@ export default function SetupAndLetters() {
 
   const fetchCompanyTemplates = async () => {
     try {
-      const res = await api.get('/company-profile');
-      const comp = res.data.company || res.data;
-      if (comp && comp[activeTemplate] !== undefined) {
-        setTemplateContent(comp[activeTemplate] || '');
+      const [profileRes, lettersRes] = await Promise.all([
+        api.get('/company-profile'),
+        api.get('/admin/company/letters')
+      ]);
+      const comp = profileRes.data.company || profileRes.data;
+      const letters = lettersRes.data;
+      
+      if (letters && letters[activeTemplate] !== undefined) {
+        setTemplateContent(letters[activeTemplate] || '');
         if (editorRef.current) {
-          editorRef.current.innerHTML = comp[activeTemplate] || '';
+          editorRef.current.innerHTML = letters[activeTemplate] || '';
         }
       }
       if (comp) {

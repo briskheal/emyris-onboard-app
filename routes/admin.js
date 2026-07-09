@@ -77,7 +77,43 @@ router.get('/uploads/:filename', async (req, res) => {
 router.get('/company', async (req, res) => {
     try {
         const company = await Company.findOne();
-        res.json({ success: true, company: company || {} });
+        if (company) {
+            // Strip heavy HTML template bodies for the main profile endpoint
+            let optimizedCompany = company;
+            if (typeof company.toObject === 'function') optimizedCompany = company.toObject();
+            else if (company.dataValues) optimizedCompany = company.dataValues;
+            else optimizedCompany = { ...company }; // Fallback for raw JSON objects
+            
+            delete optimizedCompany.offerLetterBody;
+            delete optimizedCompany.apptLetterBody;
+            delete optimizedCompany.confirmLetterBody;
+            delete optimizedCompany.revisedSalaryBody;
+            delete optimizedCompany.incentiveCircularBody;
+            res.json({ success: true, company: optimizedCompany });
+        } else {
+            res.json({ success: true, company: {} });
+        }
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// GET /api/admin/company/letters - for Setup & Letters page
+router.get('/company/letters', async (req, res) => {
+    try {
+        const company = await Company.findOne();
+        if (company) {
+            res.json({ 
+                success: true, 
+                offerLetterBody: company.offerLetterBody || '',
+                apptLetterBody: company.apptLetterBody || '',
+                confirmLetterBody: company.confirmLetterBody || '',
+                revisedSalaryBody: company.revisedSalaryBody || '',
+                incentiveCircularBody: company.incentiveCircularBody || ''
+            });
+        } else {
+            res.json({ success: true });
+        }
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -499,13 +535,20 @@ router.get('/applicants', async (req, res) => {
         // Manually strip nested base64 data from documents since Sequelize doesn't support dot notation excludes natively
         const optimizedApplicants = applicants.map(app => {
             if (app.documents && Array.isArray(app.documents)) {
-                app.documents = app.documents.map(d => ({
-                    category: d.category,
-                    name: d.name,
-                    assetId: d.assetId,
-                    uploadedAt: d.uploadedAt
-                    // Intentionally omitting 'data' (the heavy base64 string)
-                }));
+                app.documents = app.documents.map(d => {
+                    // Check if assetId contains a raw base64 string (from an old bug) and truncate it
+                    let safeAssetId = d.assetId;
+                    if (safeAssetId && typeof safeAssetId === 'string' && safeAssetId.length > 500) {
+                        safeAssetId = "/BROKEN_LEGACY_DOCUMENT_PLEASE_REUPLOAD";
+                    }
+                    return {
+                        category: d.category,
+                        name: d.name,
+                        assetId: safeAssetId,
+                        uploadedAt: d.uploadedAt
+                        // Intentionally omitting 'data' (the heavy base64 string)
+                    };
+                });
             }
             return app;
         });
@@ -1721,6 +1764,13 @@ router.get('/company-profile', async (req, res) => {
         // Hydrate with latest active divisions
         const divisions = await Division.find({ active: true }).sort({ name: 1 }).lean();
         profile.divisions = divisions;
+
+        // Strip heavy HTML template bodies for the main profile endpoint to prevent 4MB payload
+        delete profile.offerLetterBody;
+        delete profile.apptLetterBody;
+        delete profile.confirmLetterBody;
+        delete profile.revisedSalaryBody;
+        delete profile.incentiveCircularBody;
 
         res.status(200).json(profile);
     } catch (error) { res.status(500).json({ error: 'Failed' }); }
