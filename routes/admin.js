@@ -1777,9 +1777,11 @@ router.get('/company-profile', async (req, res) => {
             }
         }
 
-        // Hydrate with latest active divisions
+        // Hydrate with latest active divisions and hqs
         const divisions = await Division.find({ active: true }).sort({ name: 1 }).lean();
         profile.divisions = divisions;
+        const hqs = await HQ.find({ active: true }).sort({ name: 1 }).lean();
+        profile.hqs = hqs;
 
         // Strip heavy HTML template bodies for the main profile endpoint to prevent 4MB payload
         delete profile.offerLetterBody;
