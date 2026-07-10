@@ -13,6 +13,7 @@ export default function SetupAndLetters() {
   const [templateContent, setTemplateContent] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
   
   // Admin Bar State
   const [signatoryName, setSignatoryName] = useState('');
@@ -182,10 +183,10 @@ export default function SetupAndLetters() {
   };
 
   const handleDownloadPdf = async () => {
-    if (!editorRef.current) return;
+    const targetEl = previewRef.current || editorRef.current;
+    if (!targetEl) return;
     try {
-      // Create a temporary clone for printing without any UI bounds
-      const canvas = await html2canvas(editorRef.current, { scale: 2 });
+      const canvas = await html2canvas(targetEl, { scale: 2, useCORS: true });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -388,6 +389,7 @@ export default function SetupAndLetters() {
                       </div>
 
                       <div 
+                        ref={previewRef}
                         className="letter-editor a4-page-standard preview-mode"
                         dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
                           title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
