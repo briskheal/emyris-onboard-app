@@ -270,7 +270,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   ).toFixed(2);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.98)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgb(15, 23, 42)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
       <div className="dash-card" style={{ width: '100%', maxWidth: '1100px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '2rem', background: '#1e293b' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <X size={24} />
@@ -373,30 +373,44 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
             
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Internal Assignment</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '170px 1fr', gap: '12px', alignItems: 'center' }}>
-                <label className="form-label" style={{ margin: 0 }}>Assigned Employee Code</label>
-                <input type="text" className="form-input" value={empCode} onChange={e => setEmpCode(e.target.value)} />
-
-                <label className="form-label" style={{ margin: 0 }}>Proposed Designation</label>
-                <input type="text" className="form-input" value={designation} onChange={e => setDesignation(e.target.value)} />
-
-                <label className="form-label" style={{ margin: 0 }}>Division</label>
-                <input type="text" className="form-input" value={division} onChange={e => setDivision(e.target.value)} />
-
-                <label className="form-label" style={{ margin: 0 }}>Reporting To</label>
-                <input type="text" className="form-input" value={reportingTo} onChange={e => setReportingTo(e.target.value)} />
-
-                <label className="form-label" style={{ margin: 0 }}>Joining HQ</label>
-                <input type="text" className="form-input" value={hq} onChange={e => setHq(e.target.value)} />
-
-                <label className="form-label" style={{ margin: 0 }}>Approved Annual CTC</label>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <input type="number" className="form-input" style={{ flex: 1 }} value={salary} onChange={e => setSalary(e.target.value)} />
-                  <button type="button" className="btn btn-outline" onClick={autoDistributeSalary} style={{ height: '42px', padding: '0 15px', whiteSpace: 'nowrap' }}>Calculate Breakup</button>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Assigned Employee Code</label>
+                  <input type="text" className="form-input" value={empCode} onChange={e => setEmpCode(e.target.value)} />
                 </div>
 
-                <label className="form-label" style={{ margin: 0 }}>Actual Date of Joining</label>
-                <input type="date" className="form-input" value={actualJoiningDate} onChange={e => setActualJoiningDate(e.target.value)} />
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Proposed Designation</label>
+                  <input type="text" className="form-input" value={designation} onChange={e => setDesignation(e.target.value)} />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Division</label>
+                  <input type="text" className="form-input" value={division} onChange={e => setDivision(e.target.value)} />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Reporting To</label>
+                  <input type="text" className="form-input" value={reportingTo} onChange={e => setReportingTo(e.target.value)} />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Joining HQ</label>
+                  <input type="text" className="form-input" value={hq} onChange={e => setHq(e.target.value)} />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Actual Date of Joining</label>
+                  <input type="date" className="form-input" value={actualJoiningDate} onChange={e => setActualJoiningDate(e.target.value)} />
+                </div>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Approved Annual CTC</label>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <input type="number" className="form-input" style={{ flex: 1 }} value={salary} onChange={e => setSalary(e.target.value)} />
+                    <button type="button" className="btn btn-outline" onClick={autoDistributeSalary} style={{ height: '42px', padding: '0 15px', whiteSpace: 'nowrap' }}>Calculate Breakup</button>
+                  </div>
+                </div>
               </div>
             </div>
 

@@ -3,6 +3,7 @@ import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, 
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '../../api/client';
+import { fillLetterPlaceholders } from '../../utils/letterUtils';
 
 export default function SetupAndLetters() {
   const [activeTab, setActiveTab] = useState<'templates' | 'assets' | 'system'>('templates');
@@ -145,19 +146,10 @@ export default function SetupAndLetters() {
       return;
     }
     
-    // Attempt to parse out the applicant data and replace placeholders before sending
     const applicant = applicants.find(a => a.email === targetApplicant);
     if (!applicant) return;
 
-    let finalContent = templateContent;
-    finalContent = finalContent.replace(/{{FULL_NAME}}/g, applicant.fullName || '');
-    finalContent = finalContent.replace(/{{ADDRESS}}/g, applicant.address || '');
-    finalContent = finalContent.replace(/{{CITY_STATE}}/g, `${applicant.city || ''} ${applicant.state || ''}`);
-    finalContent = finalContent.replace(/{{PIN}}/g, applicant.pin || '');
-    finalContent = finalContent.replace(/{{DESIGNATION}}/g, applicant.designation || '');
-    finalContent = finalContent.replace(/{{HQ}}/g, applicant.hq || '');
-    finalContent = finalContent.replace(/{{REPORTING_TO}}/g, applicant.reportingTo || '');
-    finalContent = finalContent.replace(/{{TODAY_DATE}}/g, new Date().toLocaleDateString());
+    let finalContent = fillLetterPlaceholders(templateContent, applicant, dbStats?.company);
 
     const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
 
@@ -290,27 +282,30 @@ export default function SetupAndLetters() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '2rem', minHeight: '600px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', minHeight: '600px' }}>
             
-            {/* Sidebar Controls */}
-            <div className="dash-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
-              <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>Template Type</h3>
-              <select className="form-input" value={activeTemplate} onChange={e => setActiveTemplate(e.target.value)}>
-                {templateOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
-              </select>
+            {/* Top Controls (Template Type & Tags) */}
+            <div className="dash-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '1rem', color: 'var(--primary)', margin: 0, whiteSpace: 'nowrap' }}>Template Type:</h3>
+                <select className="form-input" style={{ width: '250px' }} value={activeTemplate} onChange={e => setActiveTemplate(e.target.value)}>
+                  {templateOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
+                </select>
+              </div>
 
-              <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', marginTop: '1rem', marginBottom: '0.5rem' }}>Tags (Placeholders)</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Click to insert tag at cursor.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', maxHeight: '400px', overflowY: 'auto' }}>
-                {placeholders.map(ph => (
-                  <button 
-                    key={ph}
-                    onClick={() => insertPlaceholder(ph)}
-                    style={{ textAlign: 'left', background: 'rgba(255,255,255,0.05)', border: 'none', color: 'var(--text-main)', padding: '8px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem' }}
-                  >
-                    {ph}
-                  </button>
-                ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <h3 style={{ fontSize: '1rem', color: 'var(--primary)', margin: 0, whiteSpace: 'nowrap' }}>Tags (Placeholders):</h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                  {placeholders.map(ph => (
+                    <button 
+                      key={ph}
+                      onClick={() => insertPlaceholder(ph)}
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'var(--text-main)', padding: '4px 10px', borderRadius: '15px', cursor: 'pointer', fontSize: '0.75rem', whiteSpace: 'nowrap' }}
+                    >
+                      {ph}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -383,7 +378,11 @@ export default function SetupAndLetters() {
 
                     <div 
                       className="a4-page-standard"
-                      dangerouslySetInnerHTML={{ __html: templateContent }}
+                      dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
+                        title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
+                        designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
+                        actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
+                      }, dbStats?.company).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
                       style={{ 
                         transform: `scale(${zoom})`, 
                         transformOrigin: 'top center', 
