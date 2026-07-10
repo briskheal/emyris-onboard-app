@@ -124,7 +124,10 @@ export default function SetupAndLetters() {
 
   const execCommand = (cmd: string, val: string = '') => {
     document.execCommand(cmd, false, val);
-    if (editorRef.current) editorRef.current.focus();
+    if (editorRef.current) {
+      editorRef.current.focus();
+      setTemplateContent(editorRef.current.innerHTML);
+    }
   };
 
   const insertPlaceholder = (ph: string) => {
@@ -343,12 +346,12 @@ export default function SetupAndLetters() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
                   <Type size={14} color="var(--text-muted)" />
                   <select className="form-input" style={{ padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none', maxWidth: '140px' }} value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
-                    <option value="Plus Jakarta Sans">Plus Jakarta Sans</option>
-                    <option value="Roboto">Roboto</option>
-                    <option value="Outfit">Outfit</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                    <option value="Courier New">Courier New</option>
-                    <option value="Georgia">Georgia</option>
+                    <option value="'Plus Jakarta Sans', Arial, sans-serif">Plus Jakarta Sans</option>
+                    <option value="'Roboto', sans-serif">Roboto</option>
+                    <option value="'Outfit', sans-serif">Outfit</option>
+                    <option value="'Times New Roman', Times, serif">Times New Roman</option>
+                    <option value="'Courier New', monospace">Courier New</option>
+                    <option value="Georgia, serif">Georgia</option>
                   </select>
                   <div style={{ width: '1px', height: '15px', background: 'rgba(255,255,255,0.2)', margin: '0 4px' }}></div>
                   <input type="number" className="form-input" value={fontSize} onChange={(e) => setFontSize(Number(e.target.value))} style={{ width: '50px', padding: '2px 4px', fontSize: '0.8rem', background: 'transparent', border: 'none', textAlign: 'center' }} step="0.5" />
@@ -367,55 +370,57 @@ export default function SetupAndLetters() {
               </div>
 
               {/* Editor Workspace */}
-              <div style={{ background: '#e2e8f0', padding: '2rem', overflowY: 'auto', display: 'flex', justifyContent: 'center', position: 'relative', minHeight: '600px' }}>
-                
-                {livePreview && (
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.95)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem', overflowY: 'auto' }}>
-                    
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', alignItems: 'center' }}>
-                      <h4 style={{ color: 'var(--accent)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={18} /> Fidelity Preview</h4>
-                      <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)', margin: '0 10px' }}></div>
-                      <button className="btn btn-sm btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981', border: 'none' }}>
-                        <Download size={14} /> Download Dossier PDF
-                      </button>
-                      <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderColor: '#ef4444', color: '#ef4444' }}>
-                        <X size={14} /> Return to Editor
-                      </button>
+              <div style={{ background: 'rgba(15, 23, 42, 0.2)', padding: '2rem', overflowY: 'auto', display: 'flex', justifyContent: 'center', position: 'relative', minHeight: '600px', flex: 1 }}>
+                <div className="fidelity-desk" style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
+                  
+                  {livePreview && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.95)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem', overflowY: 'auto' }}>
+                      
+                      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', alignItems: 'center' }}>
+                        <h4 style={{ color: 'var(--accent)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={18} /> Fidelity Preview</h4>
+                        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)', margin: '0 10px' }}></div>
+                        <button className="btn btn-sm btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981', border: 'none' }}>
+                          <Download size={14} /> Download Dossier PDF
+                        </button>
+                        <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderColor: '#ef4444', color: '#ef4444' }}>
+                          <X size={14} /> Return to Editor
+                        </button>
+                      </div>
+
+                      <div 
+                        className="letter-editor a4-page-standard preview-mode"
+                        dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
+                          title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
+                          designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
+                          actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
+                        }, dbStats?.company).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
+                        style={{ 
+                          transform: `scale(${zoom})`, 
+                          transformOrigin: 'top center', 
+                          pointerEvents: 'none', 
+                          background: 'white',
+                          fontFamily: fontFamily,
+                          fontSize: `${fontSize}pt`
+                        }}
+                      />
                     </div>
+                  )}
 
-                    <div 
-                      className="a4-page-standard"
-                      dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
-                        title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
-                        designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
-                        actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
-                      }, dbStats?.company).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
-                      style={{ 
-                        transform: `scale(${zoom})`, 
-                        transformOrigin: 'top center', 
-                        pointerEvents: 'none', 
-                        background: 'white',
-                        fontFamily: fontFamily,
-                        fontSize: `${fontSize}pt`
-                      }}
-                    />
-                  </div>
-                )}
-
-                <div 
-                  ref={editorRef}
-                  className="full-width-editor"
-                  contentEditable={!livePreview}
-                  suppressContentEditableWarning
-                  onInput={handleEditorInput}
-                  style={{ 
-                    transform: `scale(${zoom})`, 
-                    transformOrigin: 'top center',
-                    display: livePreview ? 'none' : 'block',
-                    fontFamily: fontFamily,
-                    fontSize: `${fontSize}pt`
-                  }}
-                />
+                  <div 
+                    ref={editorRef}
+                    className="letter-editor a4-page-standard"
+                    contentEditable={!livePreview}
+                    suppressContentEditableWarning
+                    onInput={handleEditorInput}
+                    style={{ 
+                      transform: `scale(${zoom})`, 
+                      transformOrigin: 'top center',
+                      display: livePreview ? 'none' : 'block',
+                      fontFamily: fontFamily,
+                      fontSize: `${fontSize}pt`
+                    }}
+                  />
+                </div>
               </div>
 
             </div>
