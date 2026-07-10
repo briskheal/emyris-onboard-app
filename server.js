@@ -249,8 +249,8 @@ app.get('/api/test-email', async (req, res) => {
 
 // --- RAPID TEST APIs ---
 
-// Serve React Admin Portal & Beta Portal
-app.get(['/admin*', '/beta*'], (req, res) => {
+// Serve React Admin Portal
+app.get(['/admin*'], (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
 });
 

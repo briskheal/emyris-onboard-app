@@ -6,7 +6,6 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/beta" element={<ApplicantPortal />} />
         <Route path="/admin" element={<AdminPanel />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />
       </Routes>
