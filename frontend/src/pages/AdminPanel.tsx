@@ -10,7 +10,7 @@ import api from '../api/client';
 type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending';
 
 const AdminPanel: React.FC = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -24,12 +24,17 @@ const AdminPanel: React.FC = () => {
     try {
       const res = await api.post('/admin/login', { username, password });
       if (res.data.success) {
+        sessionStorage.setItem('admin_logged_in', 'true');
         setIsLoggedIn(true);
       } else {
         setLoginError(res.data.message || 'Invalid credentials.');
       }
-    } catch {
-      setLoginError('Login failed. Check server connection.');
+    } catch (err: any) {
+      if (err.response && err.response.status === 401) {
+        setLoginError('Invalid credentials.');
+      } else {
+        setLoginError('Login failed. Check server connection.');
+      }
     } finally {
       setLoginLoading(false);
     }
@@ -116,7 +121,10 @@ const AdminPanel: React.FC = () => {
         </nav>
         <button
           className="btn btn-outline"
-          onClick={() => setIsLoggedIn(false)}
+          onClick={() => {
+            sessionStorage.removeItem('admin_logged_in');
+            setIsLoggedIn(false);
+          }}
           style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start', marginTop: 'auto' }}
         >
           <LogOut size={16} /> Logout
