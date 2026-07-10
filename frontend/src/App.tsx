@@ -1,5 +1,4 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import ApplicantPortal from './pages/ApplicantPortal';
 import AdminPanel from './pages/AdminPanel';
 
 function App() {
