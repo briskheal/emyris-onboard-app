@@ -1,3 +1,9 @@
+@media (min-width: 769px) {
+  .mobile-header {
+    display: none !important;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-sidebar {
     position: fixed !important;

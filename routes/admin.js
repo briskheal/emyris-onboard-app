@@ -170,13 +170,16 @@ router.get('/exam-reports', async (req, res) => {
 });
 
 router.post('/login', (req, res) => {
+    console.log(`[LOGIN ATTEMPT] username: ${req.body.username}`);
     const { username, password } = req.body;
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
 
     if (username && username.toUpperCase() === adminUser && password === adminPass) {
+        console.log(`[LOGIN SUCCESS] ${req.body.username}`);
         res.status(200).json({ success: true });
     } else {
+        console.log(`[LOGIN FAILED] ${req.body.username}`);
         res.status(401).json({ success: false });
     }
 });
