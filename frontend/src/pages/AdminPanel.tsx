@@ -68,10 +68,32 @@ const AdminPanel: React.FC = () => {
     );
   }
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-main)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-main)', position: 'relative' }}>
+      {/* Mobile Hamburger Header */}
+      <div style={{ display: 'flex', alignItems: 'center', padding: '1rem', background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid var(--glass-border)', position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10, '@media (min-width: 768px)': { display: 'none' } } as any} className="mobile-header">
+        <button className="btn btn-outline" style={{ padding: '0.5rem' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <span style={{ fontSize: '1.2rem' }}>☰</span>
+        </button>
+        <h2 style={{ marginLeft: '1rem', color: 'var(--primary)', fontSize: '1.1rem', margin: 0 }}>Admin Portal</h2>
+      </div>
+
       {/* Sidebar */}
-      <aside style={{ width: '240px', background: 'rgba(255,255,255,0.02)', borderRight: '1px solid var(--glass-border)', padding: '2rem 1rem', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+      <aside className={`admin-sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ 
+        width: '240px', 
+        background: '#0f172a', 
+        borderRight: '1px solid var(--glass-border)', 
+        padding: '2rem 1rem', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        flexShrink: 0,
+        height: '100vh',
+        position: 'sticky',
+        top: 0,
+        overflowY: 'auto'
+      }}>
         <h2 style={{ marginBottom: '0.25rem', paddingLeft: '0.5rem', color: 'var(--primary)', fontSize: '1.1rem' }}>Admin Portal</h2>
         <p style={{ paddingLeft: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '2rem' }}>Emyris Biolifesciences</p>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>

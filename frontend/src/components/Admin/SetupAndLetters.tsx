@@ -220,20 +220,33 @@ export default function SetupAndLetters() {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
     const reader = new FileReader();
-    reader.onloadend = async () => {
-      try {
-        await api.post('/admin/upload-asset', {
-          category,
-          name: file.name,
-          data: reader.result,
-          setActive: true
-        });
-        alert('Asset uploaded successfully!');
-        fetchAssets();
-        fetchCompanyTemplates();
-      } catch (err) {
-        alert('Upload failed');
-      }
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) ctx.drawImage(img, 0, 0);
+        
+        // Convert to WebP like the old modal did
+        const webpDataUrl = canvas.toDataURL('image/webp', 0.8);
+        
+        try {
+          await api.post('/admin/upload-asset', {
+            category,
+            name: file.name.replace(/\.[^/.]+$/, "") + ".webp",
+            data: webpDataUrl,
+            setActive: true
+          });
+          alert('Asset uploaded successfully!');
+          fetchAssets();
+          fetchCompanyTemplates();
+        } catch (err) {
+          alert('Upload failed');
+        }
+      };
+      img.src = reader.result as string;
     };
     reader.readAsDataURL(file);
   };
