@@ -235,15 +235,15 @@ export default function CompanyProfile() {
           </div>
         </div>
 
-        {/* Divisions & HQs */}
+        {/* Divisions Management */}
         <div className="dash-card">
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>Operational Structure</h3>
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>🚀 Division Management</h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define business divisions for applicant categorization.</p>
           
           <div style={{ marginBottom: '1.5rem' }}>
-            <label className="form-label">Divisions</label>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" className="form-input" placeholder="New Division Name" value={newDivision} onChange={e => setNewDivision(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDivision()} />
-              <button className="btn btn-primary" onClick={addDivision}><Plus size={16} /></button>
+              <input type="text" className="form-input" placeholder="NEW DIVISION NAME" style={{ textTransform: 'uppercase' }} value={newDivision} onChange={e => setNewDivision(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDivision()} />
+              <button className="btn btn-primary" onClick={addDivision}><Plus size={16} /> Add Division</button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {divisions.map((d, i) => (
@@ -253,12 +253,17 @@ export default function CompanyProfile() {
               ))}
             </div>
           </div>
+        </div>
 
+        {/* HQ Management */}
+        <div className="dash-card">
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>🚀 Headquarters (HQ) Management</h3>
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define available HQs for recruitment selection.</p>
+          
           <div>
-            <label className="form-label">Headquarters (HQs)</label>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" className="form-input" placeholder="New HQ Location" value={newHq} onChange={e => setNewHq(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHq()} />
-              <button className="btn btn-primary" onClick={addHq}><Plus size={16} /></button>
+              <input type="text" className="form-input" placeholder="NEW HQ NAME" style={{ textTransform: 'uppercase' }} value={newHq} onChange={e => setNewHq(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHq()} />
+              <button className="btn btn-primary" onClick={addHq}><Plus size={16} /> Add HQ</button>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
               {hqs.map((hq, i) => (
