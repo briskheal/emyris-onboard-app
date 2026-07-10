@@ -43,6 +43,37 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     loginDetailsSent: applicant.tasks?.loginDetailsSent || false
   });
 
+  useEffect(() => {
+    setSalBasic(applicant.salaryBreakup?.basic?.toString() || '0');
+    setSalHra(applicant.salaryBreakup?.hra?.toString() || '0');
+    setSalLta(applicant.salaryBreakup?.lta?.toString() || '0');
+    setSalConv(applicant.salaryBreakup?.conveyance?.toString() || '0');
+    setSalMed(applicant.salaryBreakup?.medical?.toString() || '0');
+    setSalEdu(applicant.salaryBreakup?.edu?.toString() || '0');
+    setSalSpecial(applicant.salaryBreakup?.special?.toString() || '0');
+    setSalFixed(applicant.salaryBreakup?.fixed?.toString() || '0');
+    
+    setEmpCode(applicant.empCode || '');
+    setDesignation(applicant.designation || '');
+    setDivision(applicant.division || '');
+    setReportingTo(applicant.reportingTo || '');
+    setHq(applicant.hq || '');
+    setSalary(applicant.salary || '');
+    
+    try {
+      setActualJoiningDate(applicant.actualJoiningDate && !isNaN(new Date(applicant.actualJoiningDate).getTime()) 
+        ? new Date(applicant.actualJoiningDate).toISOString().split('T')[0] 
+        : '');
+    } catch { setActualJoiningDate(''); }
+
+    setTasks({
+      offerLetter: applicant.tasks?.offerLetter || false,
+      appointmentLetter: applicant.tasks?.appointmentLetter || false,
+      appLinkSent: applicant.tasks?.appLinkSent || false,
+      loginDetailsSent: applicant.tasks?.loginDetailsSent || false
+    });
+  }, [applicant]);
+
   const handleUploadMissingDoc = async (e: React.ChangeEvent<HTMLInputElement>, categoryName?: string) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];

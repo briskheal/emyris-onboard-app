@@ -37,7 +37,14 @@ export default function SetupAndLetters() {
     { id: 'relievingLetterBody', label: 'Relieving Letter', type: 'relieving' }
   ];
 
-  const placeholders = ['{{FULL_NAME}}', '{{ADDRESS}}', '{{CITY_STATE}}', '{{PIN}}', '{{DESIGNATION}}', '{{JOINING_DATE}}', '{{HQ}}', '{{REPORTING_TO}}', '{{SALARY_MONTHLY}}', '{{SALARY_ANNUAL}}', '{{COMPANY_NAME}}', '{{TODAY_DATE}}'];
+  const placeholders = [
+    '{{TODAY_DATE}}', '{{REF_NO}}', '{{TITLE}}', '{{TITLE_SHORT}}', '{{FULL_NAME}}', '{{FIRST_NAME}}', '{{FATHER_NAME}}', '{{DOB}}',
+    '{{BLOOD_GROUP}}', '{{PAN_NO}}', '{{PHONE}}', '{{ADDRESS}}', '{{CITY_STATE}}', '{{PIN}}', '{{DESIGNATION}}', '{{EMP_CODE}}', 
+    '{{DIVISION}}', '{{HQ}}', '{{REPORTING_TO}}', '{{SALARY_MONTHLY}}', '{{SALARY_ANNUAL}}', '{{SALARY_WORDS}}', '{{BANK_NAME}}', 
+    '{{BANK_ACC}}', '{{IFSC}}', '{{JOINING_DATE}}', '{{COMPANY_NAME}}', '{{SIGNATORY_NAME}}', '{{SIGNATORY_DESG}}', '{{SAL_BASIC}}', 
+    '{{SAL_HRA}}', '{{SAL_LTA}}', '{{SAL_CONV}}', '{{SAL_MED}}', '{{SAL_SPECIAL}}', '{{SAL_EDU}}', '{{SAL_FIXED}}', 
+    '{{SAL_GROSS_MONTHLY}}', '{{SAL_GROSS_ANNUAL}}', '{{SALARY_BREAKUP}}'
+  ];
 
   useEffect(() => {
     fetchCompanyTemplates();
@@ -397,7 +404,7 @@ export default function SetupAndLetters() {
 
                 <div 
                   ref={editorRef}
-                  className="a4-page-standard"
+                  className="full-width-editor"
                   contentEditable={!livePreview}
                   suppressContentEditableWarning
                   onInput={handleEditorInput}
