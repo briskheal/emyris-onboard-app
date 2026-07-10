@@ -68,10 +68,17 @@ export default function SetupAndLetters() {
 
   const fetchAssets = async () => {
     try {
-      const res = await api.get('/admin/assets');
-      setAssets(res.data || []);
+      const res = await api.get('/admin/asset-library');
+      if (Array.isArray(res.data)) {
+        setAssets(res.data);
+      } else if (res.data && res.data.success && Array.isArray(res.data.assets)) {
+        setAssets(res.data.assets);
+      } else {
+        setAssets([]);
+      }
     } catch (e) {
       console.error('Failed to load assets');
+      setAssets([]);
     }
   };
 
