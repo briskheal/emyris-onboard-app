@@ -203,26 +203,28 @@ export default function SetupAndLetters() {
   const handleAssetUpload = async (e: React.ChangeEvent<HTMLInputElement>, category: string) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append('asset', file);
-    formData.append('category', category);
-    formData.append('name', file.name);
-
-    try {
-      await api.post('/admin/upload-asset', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      alert('Asset uploaded successfully!');
-      fetchAssets();
-    } catch (err) {
-      alert('Upload failed');
-    }
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      try {
+        await api.post('/admin/upload-asset', {
+          category,
+          name: file.name,
+          data: reader.result,
+          setActive: true
+        });
+        alert('Asset uploaded successfully!');
+        fetchAssets();
+      } catch (err) {
+        alert('Upload failed');
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const getAssetPreviewUrl = (category: string) => {
     const asset = assets.find(a => a.category === category);
     if (!asset) return null;
-    return asset.filename.includes('/api/admin/uploads/') ? asset.filename : `/api/admin/uploads/${asset.filename}`;
+    return asset.data || (asset.filename ? (asset.filename.includes('/api/admin/uploads/') ? asset.filename : `/api/admin/uploads/${asset.filename}`) : null);
   };
 
   const wipeDatabase = async () => {

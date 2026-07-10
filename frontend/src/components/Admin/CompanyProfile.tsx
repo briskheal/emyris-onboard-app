@@ -71,24 +71,38 @@ export default function CompanyProfile() {
     }
   };
 
-  const addDivision = () => {
+  const addDivision = async () => {
     if (!newDivision.trim()) return;
-    setDivisions([...divisions, { name: newDivision.trim() }]);
-    setNewDivision('');
+    try {
+      await api.post('/admin/divisions', { name: newDivision.trim() });
+      setNewDivision('');
+      fetchProfile();
+    } catch (e) { alert('Failed to add division'); }
   };
 
-  const removeDivision = (index: number) => {
-    setDivisions(divisions.filter((_, i) => i !== index));
+  const removeDivision = async (index: number) => {
+    const div = divisions[index] as any;
+    try {
+      if (div._id) await api.delete(`/admin/divisions/${div._id}`);
+      fetchProfile();
+    } catch (e) { alert('Failed to remove division'); }
   };
 
-  const addHq = () => {
+  const addHq = async () => {
     if (!newHq.trim()) return;
-    setHQs([...hqs, { name: newHq.trim() }]);
-    setNewHq('');
+    try {
+      await api.post('/admin/hqs', { name: newHq.trim() });
+      setNewHq('');
+      fetchProfile();
+    } catch (e) { alert('Failed to add HQ'); }
   };
 
-  const removeHq = (index: number) => {
-    setHQs(hqs.filter((_, i) => i !== index));
+  const removeHq = async (index: number) => {
+    const hq = hqs[index] as any;
+    try {
+      if (hq._id) await api.delete(`/admin/hqs/${hq._id}`);
+      fetchProfile();
+    } catch (e) { alert('Failed to remove HQ'); }
   };
 
   const addProduct = () => {
@@ -190,6 +204,33 @@ export default function CompanyProfile() {
                 <label className="form-label">Scroll Speed (Seconds)</label>
                 <input type="number" className="form-input" value={profile.marqueeSpeed} onChange={e => setProfile({...profile, marqueeSpeed: parseInt(e.target.value) || 20})} />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Counters Settings */}
+        <div className="dash-card">
+          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>Financial Year & Letter Counters</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem' }}>
+            <div>
+              <label className="form-label">Offer Counter</label>
+              <input type="number" className="form-input" value={profile.offerCounter || 0} onChange={e => setProfile({...profile, offerCounter: parseInt(e.target.value) || 0})} />
+            </div>
+            <div>
+              <label className="form-label">Appt Counter</label>
+              <input type="number" className="form-input" value={profile.apptCounter || 0} onChange={e => setProfile({...profile, apptCounter: parseInt(e.target.value) || 0})} />
+            </div>
+            <div>
+              <label className="form-label">Misc Counter</label>
+              <input type="number" className="form-input" value={profile.miscCounter || 0} onChange={e => setProfile({...profile, miscCounter: parseInt(e.target.value) || 0})} />
+            </div>
+            <div>
+              <label className="form-label">EmpCode Counter</label>
+              <input type="number" className="form-input" value={profile.empCodeCounter || 0} onChange={e => setProfile({...profile, empCodeCounter: parseInt(e.target.value) || 0})} />
+            </div>
+            <div>
+              <label className="form-label">Revised Sal Counter</label>
+              <input type="number" className="form-input" value={profile.revisedSalaryCounter || 0} onChange={e => setProfile({...profile, revisedSalaryCounter: parseInt(e.target.value) || 0})} />
             </div>
           </div>
         </div>
