@@ -28,6 +28,7 @@ export default function SetupAndLetters() {
   // System & Assets State
   const [dbStats, setDbStats] = useState<any>(null);
   const [assets, setAssets] = useState<any[]>([]);
+  const [activeAssets, setActiveAssets] = useState<{ [key: string]: string }>({});
 
   const templateOptions = [
     { id: 'offerLetterBody', label: 'Offer Letter', type: 'offer' },
@@ -84,14 +85,22 @@ export default function SetupAndLetters() {
       const letters = lettersRes.data;
       
       if (letters && letters[activeTemplate] !== undefined) {
-        setTemplateContent(letters[activeTemplate] || '');
-        if (editorRef.current) {
-          editorRef.current.innerHTML = letters[activeTemplate] || '';
+        if (!editorRef.current?.innerHTML || editorRef.current.innerHTML === '<br>' || editorRef.current.innerHTML === templateContent) {
+          setTemplateContent(letters[activeTemplate]);
+          if (editorRef.current) {
+            editorRef.current.innerHTML = letters[activeTemplate];
+          }
         }
       }
       if (comp) {
         setSignatoryName(comp.signatoryName || '');
         setSignatoryDesg(comp.signatoryDesignation || '');
+        setActiveAssets({
+          logo: comp.activeLogoId || '',
+          stamp: comp.activeStampId || '',
+          digitalSignature: comp.activeSignatureId || '',
+          letterheadImage: comp.activeLetterheadId || ''
+        });
       }
     } catch (e) {
       console.error('Failed to load templates');
@@ -214,6 +223,7 @@ export default function SetupAndLetters() {
         });
         alert('Asset uploaded successfully!');
         fetchAssets();
+        fetchCompanyTemplates();
       } catch (err) {
         alert('Upload failed');
       }
@@ -221,9 +231,31 @@ export default function SetupAndLetters() {
     reader.readAsDataURL(file);
   };
 
-  const getAssetPreviewUrl = (category: string) => {
-    const asset = assets.find(a => a.category === category);
-    if (!asset) return null;
+  const setActiveAsset = async (assetId: string, category: string) => {
+    try {
+      const res = await api.post('/admin/set-active-asset', { assetId, category });
+      if (res.data.success) {
+        fetchCompanyTemplates();
+      }
+    } catch (e) {
+      alert('Failed to set active asset');
+    }
+  };
+
+  const deleteAsset = async (assetId: string) => {
+    if (!window.confirm("Delete this asset permanently?")) return;
+    try {
+      const res = await api.post('/admin/delete-asset', { assetId });
+      if (res.data.success) {
+        fetchAssets();
+        fetchCompanyTemplates();
+      }
+    } catch (e) {
+      alert('Failed to delete asset');
+    }
+  };
+
+  const getAssetDataUrl = (asset: any) => {
     return asset.data || (asset.filename ? (asset.filename.includes('/api/admin/uploads/') ? asset.filename : `/api/admin/uploads/${asset.filename}`) : null);
   };
 
@@ -434,22 +466,66 @@ export default function SetupAndLetters() {
 
       {activeTab === 'assets' && (
         <div className="dash-card">
-          <h2 style={{ marginBottom: '2rem' }}>Brand Asset Uploader</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-            {['Company Logo', 'Company Stamp', 'Authorized Signature', 'Letterhead Base'].map(cat => {
-              const previewUrl = getAssetPreviewUrl(cat);
+          <div style={{ marginBottom: '2rem' }}>
+            <h2 style={{ margin: 0 }}>Brand Assets & Global Artwork</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '4px' }}>Upload and manage company logos, digital stamps, and signatures.</p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+            {[
+              { id: 'logo', label: 'Company Logos' },
+              { id: 'stamp', label: 'Company Stamps' },
+              { id: 'digitalSignature', label: 'Digital Signatures' },
+              { id: 'letterheadImage', label: 'Letterhead Backgrounds' }
+            ].map(cat => {
+              const categoryAssets = assets.filter(a => a.category === cat.id);
+              
               return (
-                <div key={cat} style={{ border: '1px dashed var(--glass-border)', padding: '2rem', borderRadius: '8px', textAlign: 'center', background: 'rgba(255,255,255,0.02)', position: 'relative' }}>
-                  {previewUrl ? (
-                    <img src={previewUrl} alt={cat} style={{ maxWidth: '100%', maxHeight: '120px', objectFit: 'contain', marginBottom: '1rem', borderRadius: '4px' }} />
-                  ) : (
-                    <ImageIcon size={32} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }} />
-                  )}
-                  <h4 style={{ marginBottom: '1rem' }}>{cat}</h4>
-                  <label className="btn btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', gap: '8px' }}>
-                    <Upload size={16} /> {previewUrl ? 'Replace Asset' : 'Upload Asset'}
-                    <input type="file" style={{ display: 'none' }} onChange={(e) => handleAssetUpload(e, cat)} accept="image/*" />
-                  </label>
+                <div key={cat.id} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <div style={{ border: '2px dashed rgba(255,255,255,0.1)', padding: '2rem', borderRadius: '12px', textAlign: 'center', background: 'rgba(15, 23, 42, 0.4)', position: 'relative', transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => document.getElementById(`upload-${cat.id}`)?.click()}>
+                    <Upload size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 1rem auto', opacity: 0.7 }} />
+                    <h4 style={{ margin: '0 0 0.5rem 0', color: 'var(--accent)' }}>Upload to {cat.label}</h4>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Click or drag file here</p>
+                    <input id={`upload-${cat.id}`} type="file" style={{ display: 'none' }} onChange={(e) => handleAssetUpload(e, cat.id)} accept="image/*" />
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {categoryAssets.length === 0 && (
+                      <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+                        No assets uploaded yet.
+                      </div>
+                    )}
+                    {categoryAssets.map(asset => {
+                      const isActive = activeAssets[cat.id] === asset._id;
+                      const previewUrl = getAssetDataUrl(asset);
+                      
+                      return (
+                        <div key={asset._id} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: isActive ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${isActive ? 'rgba(16, 185, 129, 0.3)' : 'transparent'}`, borderRadius: '8px', transition: 'all 0.2s' }}>
+                          <div style={{ width: '40px', height: '40px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {previewUrl ? (
+                              <img src={previewUrl} alt={asset.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <ImageIcon size={20} color="var(--text-muted)" />
+                            )}
+                          </div>
+                          
+                          <div style={{ flex: 1, overflow: 'hidden' }}>
+                            <div style={{ fontSize: '0.85rem', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{asset.name}</div>
+                          </div>
+                          
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            {isActive ? (
+                              <span style={{ fontSize: '0.75rem', background: '#10b981', color: 'white', padding: '2px 8px', borderRadius: '12px', fontWeight: 600 }}>Active</span>
+                            ) : (
+                              <button className="btn btn-sm" style={{ padding: '2px 8px', fontSize: '0.75rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#cbd5e1' }} onClick={() => setActiveAsset(asset._id, cat.id)}>Set Active</button>
+                            )}
+                            <button className="btn btn-sm" style={{ padding: '4px', background: 'transparent', border: 'none', color: '#ef4444' }} onClick={() => deleteAsset(asset._id)}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
