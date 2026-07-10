@@ -58,11 +58,12 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
         reader.readAsDataURL(file);
       });
 
-      const res = await api.post('/admin/upload-applicant-doc', {
+      const res = await api.post('/applicant/upload-document', {
         email: applicant.email,
         category,
-        base64Data,
-        fileName: file.name
+        fileData: base64Data,
+        fileName: file.name,
+        isProxy: true
       });
       if (res.data.success) {
         alert('Document uploaded successfully!');
