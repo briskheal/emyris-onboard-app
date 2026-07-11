@@ -242,8 +242,10 @@ export default function SetupAndLetters() {
       const pdf = new jsPDF('p', 'mm', 'a4');
       let cursorY = 0;
       let pageCount = 0;
+      // Calculate 25mm bottom padding in pixels relative to canvas width (which represents 210mm)
+      const bottomPaddingPx = Math.floor((25 / 210) * canvasW);
 
-      while (cursorY < canvasH - 50) {
+      while (cursorY < canvasH - bottomPaddingPx) {
         if (pageCount > 0) pdf.addPage();
         
         const sliceH = Math.min(A4_PX_H, canvasH - cursorY);
