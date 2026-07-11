@@ -31,13 +31,25 @@ export default function SetupAndLetters() {
   const [assets, setAssets] = useState<any[]>([]);
   const [activeAssets, setActiveAssets] = useState<{ [key: string]: string }>({});
 
-  const templateOptions = [
+  const coreTemplates = [
     { id: 'offerLetterBody', label: 'Offer Letter', type: 'offer' },
     { id: 'apptLetterBody', label: 'Appointment Letter', type: 'appt' },
     { id: 'confirmLetterBody', label: 'Confirmation Letter', type: 'confirm' },
     { id: 'revisedSalaryBody', label: 'Salary Revision Letter', type: 'revised' },
     { id: 'experienceLetterBody', label: 'Experience Letter', type: 'experience' },
-    { id: 'relievingLetterBody', label: 'Relieving Letter', type: 'relieving' }
+    { id: 'relievingLetterBody', label: 'Relieving Letter', type: 'relieving' },
+    { id: 'warningLetterBody', label: 'Warning Letter', type: 'warning' },
+    { id: 'showCauseNoticeBody', label: 'Show Cause Notice', type: 'show_cause' },
+    { id: 'incentiveCircularBody', label: 'Incentive Circular', type: 'incentive' }
+  ];
+
+  const templateOptions = [
+    ...coreTemplates,
+    ...(companyData?.miscLetters || []).map((m: any) => ({
+      id: `misc_${m.id}`,
+      label: `📝 ${m.title}`,
+      type: `misc_${m.id}`
+    }))
   ];
 
   const placeholders = [
@@ -92,11 +104,18 @@ export default function SetupAndLetters() {
       const comp = profileRes.data.company || profileRes.data;
       const letters = lettersRes.data;
       
-      if (letters && letters[activeTemplate] !== undefined) {
+      const allLetters = { ...letters };
+      if (comp?.miscLetters) {
+        comp.miscLetters.forEach((m: any) => {
+          allLetters[`misc_${m.id}`] = m.body || '';
+        });
+      }
+      
+      if (allLetters && allLetters[activeTemplate] !== undefined) {
         if (!editorRef.current?.innerHTML || editorRef.current.innerHTML === '<br>' || editorRef.current.innerHTML === templateContent) {
-          setTemplateContent(letters[activeTemplate]);
+          setTemplateContent(allLetters[activeTemplate]);
           if (editorRef.current) {
-            editorRef.current.innerHTML = letters[activeTemplate];
+            editorRef.current.innerHTML = allLetters[activeTemplate];
           }
         }
       }
@@ -163,13 +182,26 @@ export default function SetupAndLetters() {
   const saveTemplate = async () => {
     setSavingTemplate(true);
     try {
-      await api.post('/company-profile', {
-        [activeTemplate]: templateContent,
+      let updatePayload: any = {
         signatoryName,
         signatoryDesignation: signatoryDesg,
         letterFontSize: fontSize,
         letterFontType: fontFamily
-      });
+      };
+
+      if (activeTemplate.startsWith('misc_')) {
+        const miscId = activeTemplate.split('_')[1];
+        const newMiscLetters = [...(companyData?.miscLetters || [])];
+        const idx = newMiscLetters.findIndex((m: any) => m.id === miscId);
+        if (idx > -1) {
+          newMiscLetters[idx].body = templateContent;
+        }
+        updatePayload.miscLetters = newMiscLetters;
+      } else {
+        updatePayload[activeTemplate] = templateContent;
+      }
+
+      await api.post('/company-profile', updatePayload);
       alert('Template Master saved successfully!');
     } catch (e) {
       alert('Error saving template');
@@ -190,9 +222,7 @@ export default function SetupAndLetters() {
     let finalContent = fillLetterPlaceholders(templateContent, applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
     finalContent = `<div style="font-family: ${fontFamily}; font-size: ${fontSize}pt;">${finalContent}</div>`;
 
-    const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
-
-    try {
+    const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';    try {
       const res = await api.post('/admin/save-letter-snapshot', {
         email: targetApplicant,
         letterType: activeLetterType,
@@ -306,6 +336,43 @@ export default function SetupAndLetters() {
     reader.readAsDataURL(file);
   };
 
+  const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === 'CREATE_NEW') {
+      const title = window.prompt("Enter a title for this new Custom Letter (e.g., 'Warning Letter'):");
+      if (!title || title.trim() === '') return;
+      
+      const newId = Date.now().toString(36);
+      const newMiscLetters = [...(companyData?.miscLetters || []), { id: newId, title: title.trim(), body: "" }];
+      
+      api.post('/company-profile', { miscLetters: newMiscLetters }).then(() => {
+        setCompanyData({ ...companyData, miscLetters: newMiscLetters });
+        setActiveTemplate(`misc_${newId}`);
+      }).catch(() => {
+        alert("Failed to create new template");
+      });
+    } else {
+      setActiveTemplate(val);
+    }
+  };
+
+  const handleDeleteCustomTemplate = async () => {
+    if (!activeTemplate.startsWith('misc_')) return;
+    const confirmDel = window.confirm("Are you sure you want to delete this custom template?");
+    if (!confirmDel) return;
+    
+    const miscId = activeTemplate.split('_')[1];
+    const newMiscLetters = (companyData?.miscLetters || []).filter((m: any) => m.id !== miscId);
+    
+    try {
+      await api.post('/company-profile', { miscLetters: newMiscLetters });
+      setCompanyData({ ...companyData, miscLetters: newMiscLetters });
+      setActiveTemplate('offerLetterBody');
+    } catch (e) {
+      alert("Failed to delete template");
+    }
+  };
+
   const setActiveAsset = async (assetId: string, category: string) => {
     try {
       const res = await api.post('/admin/set-active-asset', { assetId, category });
@@ -316,7 +383,6 @@ export default function SetupAndLetters() {
       alert('Failed to set active asset');
     }
   };
-
   const deleteAsset = async (assetId: string) => {
     if (!window.confirm("Delete this asset permanently?")) return;
     try {
@@ -408,9 +474,15 @@ export default function SetupAndLetters() {
             <div className="dash-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                 <h3 style={{ fontSize: '1rem', color: 'var(--primary)', margin: 0, whiteSpace: 'nowrap' }}>Template Type:</h3>
-                <select className="form-input" style={{ width: '250px' }} value={activeTemplate} onChange={e => setActiveTemplate(e.target.value)}>
+                <select className="form-input" style={{ width: '250px' }} value={activeTemplate} onChange={handleTemplateChange}>
                   {templateOptions.map(opt => <option key={opt.id} value={opt.id}>{opt.label}</option>)}
+                  <option value="CREATE_NEW" style={{ fontWeight: 'bold', color: 'var(--primary)' }}>➕ Create New Custom Letter...</option>
                 </select>
+                {activeTemplate.startsWith('misc_') && (
+                  <button type="button" className="btn btn-sm" onClick={handleDeleteCustomTemplate} style={{ background: 'rgba(239,68,68,0.15)', color: '#ef4444', padding: '6px 12px', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', cursor: 'pointer' }}>
+                    <Trash2 size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'text-bottom' }} /> Delete Custom Letter
+                  </button>
+                )}
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
