@@ -58,7 +58,7 @@ export function fillLetterPlaceholders(text: string, app: any, companyData: any 
         "{{BLOOD_GROUP}}": (fd.bloodGroup || "").toUpperCase(),
         "{{PAN_NO}}": (fd.panNo || "").toUpperCase(),
         "{{PHONE}}": fd.phone || "",
-        "{{ADDRESS}}": (fd.address || ""),
+        "{{ADDRESS}}": [fd.address || "", fd.city || "", fd.state || "", fd.pin ? `PIN: ${fd.pin}` : ""].filter(Boolean).join(", ").toUpperCase(),
         "{{CITY_STATE}}": `${fd.city || ""}, ${fd.state || ""}`.toUpperCase(),
         "{{PIN}}": fd.pin || "",
         "{{DESIGNATION}}": (app.designation || fd.designation || "").toUpperCase(),
