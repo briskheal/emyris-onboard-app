@@ -20,7 +20,8 @@ function saveBase64ToFile(email, category, base64Data) {
         const ext = matches[1].split('/')[1] || 'bin';
         const dir = path.join(__dirname, '..', 'uploads', email.replace('@', '_'));
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        const filename = `${category}_${Date.now()}.${ext}`;
+        const safeCategory = category.replace(/[\/\\]/g, '_');
+        const filename = `${safeCategory}_${Date.now()}.${ext}`;
         const filepath = path.join(dir, filename);
         fs.writeFileSync(filepath, Buffer.from(matches[2], 'base64'));
         return `/uploads/${email.replace('@', '_')}/${filename}`;
