@@ -17,6 +17,7 @@ export default function QuestionBank() {
   const [targetProduct, setTargetProduct] = useState('General');
   const [mcqTime, setMcqTime] = useState(15);
   const [descTime, setDescTime] = useState(15);
+  const [rapidTime, setRapidTime] = useState(25);
   const [mcqCount, setMcqCount] = useState(10);
   const [availableProducts, setAvailableProducts] = useState<string[]>([]);
   const [savingConfig, setSavingConfig] = useState(false);
@@ -47,6 +48,7 @@ export default function QuestionBank() {
         setTargetProduct(comp.activeExamProduct || 'General');
         setMcqTime(comp.examMcqTime || 15);
         setDescTime(comp.examDescriptiveTime || 15);
+        setRapidTime(comp.rapidTestTime || 25);
         setMcqCount(comp.examMcqCount || 10);
         setAvailableProducts(comp.targetProductsList || []);
       }
@@ -61,7 +63,7 @@ export default function QuestionBank() {
     setSavingConfig(true);
     try {
       await api.post('/admin/schedule-exam', {
-        examDate, targetProduct, mcqTime, descTime, mcqCount
+        examDate, targetProduct, mcqTime, descTime, rapidTime, mcqCount
       });
       alert('Exam configuration saved!');
     } catch (e) {
@@ -132,7 +134,17 @@ export default function QuestionBank() {
   const allUniqueCategories = Array.from(new Set(questions.map(q => q.category))).sort();
   const coreSubjects = ['math', 'english', 'gk', 'current_affairs', 'general'];
   const coreCategories = allUniqueCategories.filter(cat => coreSubjects.includes(cat.toLowerCase()));
-  const productCategories = allUniqueCategories.filter(cat => !coreSubjects.includes(cat.toLowerCase()));
+  
+  // Create a combined list of products from both database questions AND available setup products
+  const productCategoriesRaw = [
+    ...allUniqueCategories.filter(cat => !coreSubjects.includes(cat.toLowerCase())),
+    ...availableProducts
+  ];
+  
+  // Normalize casing for uniqueness, but keep original case for display
+  const productCategories = Array.from(
+    new Map(productCategoriesRaw.map(cat => [cat.toLowerCase(), cat])).values()
+  ).sort();
 
   const filteredQuestions = activeCategoryTab === 'All' ? questions : questions.filter(q => q.category === activeCategoryTab);
   return (
@@ -146,6 +158,7 @@ export default function QuestionBank() {
           <div><label className="form-label">Target Product</label><select className="form-input" value={targetProduct} onChange={e => setTargetProduct(e.target.value)}>{availableProducts.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
           <div><label className="form-label">MCQ Mins</label><input type="number" className="form-input" value={mcqTime} onChange={e => setMcqTime(parseInt(e.target.value))} style={{ width: '80px' }} /></div>
           <div><label className="form-label">Desc Mins</label><input type="number" className="form-input" value={descTime} onChange={e => setDescTime(parseInt(e.target.value))} style={{ width: '80px' }} /></div>
+          <div><label className="form-label">Rapid Mins</label><input type="number" className="form-input" value={rapidTime} onChange={e => setRapidTime(parseInt(e.target.value))} style={{ width: '80px' }} /></div>
           <div><label className="form-label">MCQ Count</label><input type="number" className="form-input" value={mcqCount} onChange={e => setMcqCount(parseInt(e.target.value))} style={{ width: '80px' }} /></div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px', alignSelf: 'flex-end' }}>
             <button className="btn btn-primary" onClick={saveConfig} disabled={savingConfig}><Save size={16} /> Save Config</button>

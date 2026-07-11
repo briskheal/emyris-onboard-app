@@ -45,6 +45,7 @@ const OnboardCompany = sequelize.define('onboard_company', {
     miscCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
     empCodeCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
     revisedSalaryCounter: { type: DataTypes.INTEGER, defaultValue: 0 },
+    rapidTestTime: { type: DataTypes.INTEGER, defaultValue: 25 },
     activeExamDate: { type: DataTypes.STRING, defaultValue: "" },
     activeExamProduct: { type: DataTypes.STRING, defaultValue: "" },
     examMcqTime: { type: DataTypes.INTEGER, defaultValue: 15 },

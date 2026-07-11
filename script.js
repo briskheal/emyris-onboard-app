@@ -1591,7 +1591,8 @@ async function startRapidTest() {
             rapidTestAnswers = {};
             renderRapidTestUI();
             updateView('rapidTestView');
-            startRapidTestTimer(25 * 60); // 25 minutes
+            const rTime = data.rapidTime || 25;
+            startRapidTestTimer(rTime * 60);
         } else {
             showToast("Failed to load test.", "error");
         }

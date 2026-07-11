@@ -174,7 +174,7 @@ router.get('/test-questions', async (req, res) => {
         }));
         
         // Shuffle the final 20 questions so they aren't grouped by category
-        res.json({ success: true, questions: safeQuestions.sort(() => 0.5 - Math.random()) });
+        res.json({ success: true, rapidTime: company.rapidTestTime || 25, questions: safeQuestions.sort(() => 0.5 - Math.random()) });
     } catch (e) {
         console.error('Fetch Test Error:', e);
         res.status(500).json({ error: 'Failed to fetch test' });
