@@ -241,19 +241,23 @@ export default function QuestionBank() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
-          <div className="dash-card" style={{ width: '100%', maxWidth: '600px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
+          <div className="dash-card" style={{ width: '100%', maxWidth: '800px', backgroundColor: '#0f172a', border: '1px solid #334155', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
             <h2 style={{ marginBottom: '1.5rem', color: 'var(--primary)' }}>{editingQuestion ? 'Edit Question' : 'Add Question'}</h2>
             <form onSubmit={saveQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div style={{ flex: 1 }}><label className="form-label">Type</label><select className="form-input" value={qType} onChange={e => setQType(e.target.value)} disabled={!!editingQuestion}><option value="mcq">Multiple Choice</option><option value="descriptive">Descriptive</option></select></div>
                 <div style={{ flex: 1 }}>
                   <label className="form-label">Category</label>
-                  <input type="text" list="category-options" className="form-input" required value={category} onChange={e => setCategory(e.target.value)} />
-                  <datalist id="category-options">
-                    {coreCategories.map(cat => <option key={cat} value={cat.toUpperCase()} />)}
-                    {productCategories.map(cat => <option key={cat} value={cat.toUpperCase()} />)}
-                  </datalist>
+                  <select className="form-input" required value={category.toLowerCase()} onChange={e => setCategory(e.target.value)}>
+                    <option value="" disabled>Select a Category...</option>
+                    <optgroup label="Core Subjects">
+                      {coreCategories.map(cat => <option key={cat} value={cat.toLowerCase()}>{cat.toUpperCase()}</option>)}
+                    </optgroup>
+                    <optgroup label="Products">
+                      {productCategories.map(cat => <option key={cat} value={cat.toLowerCase()}>{cat.toUpperCase()}</option>)}
+                    </optgroup>
+                  </select>
                 </div>
               </div>
               <div><label className="form-label">Question Text</label><textarea className="form-input" required rows={3} value={qText} onChange={e => setQText(e.target.value)} /></div>
