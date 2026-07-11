@@ -102,6 +102,8 @@ export default function SetupAndLetters() {
       if (comp) {
         setSignatoryName(comp.signatoryName || '');
         setSignatoryDesg(comp.signatoryDesignation || '');
+        if (comp.letterFontType) setFontFamily(comp.letterFontType);
+        if (comp.letterFontSize) setFontSize(Number(comp.letterFontSize) || 11);
         setActiveAssets({
           logo: comp.activeLogoId || '',
           stamp: comp.activeStampId || '',
@@ -157,7 +159,9 @@ export default function SetupAndLetters() {
       await api.post('/company-profile', {
         [activeTemplate]: templateContent,
         signatoryName,
-        signatoryDesignation: signatoryDesg
+        signatoryDesignation: signatoryDesg,
+        letterFontSize: fontSize,
+        letterFontType: fontFamily
       });
       alert('Template Master saved successfully!');
     } catch (e) {
@@ -177,6 +181,7 @@ export default function SetupAndLetters() {
     if (!applicant) return;
 
     let finalContent = fillLetterPlaceholders(templateContent, applicant, { signatoryName, signatoryDesignation: signatoryDesg });
+    finalContent = `<div style="font-family: ${fontFamily}; font-size: ${fontSize}pt;">${finalContent}</div>`;
 
     const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
 
@@ -206,9 +211,21 @@ export default function SetupAndLetters() {
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
       
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      let heightLeft = pdfHeight;
+      let position = 0;
+      
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pageHeight;
+      
+      while (heightLeft > 0) {
+        position -= pageHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+        heightLeft -= pageHeight;
+      }
       pdf.save(`${activeTemplate}_${Date.now()}.pdf`);
     } catch (err) {
       console.error(err);
