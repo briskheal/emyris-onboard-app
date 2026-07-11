@@ -43,6 +43,10 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     loginDetailsSent: applicant.tasks?.loginDetailsSent || false
   });
 
+  const [designationsList, setDesignationsList] = useState<any[]>([]);
+  const [divisionsList, setDivisionsList] = useState<any[]>([]);
+  const [managersList, setManagersList] = useState<any[]>([]);
+
   useEffect(() => {
     setSalBasic(applicant.salaryBreakup?.basic?.toString() || '0');
     setSalHra(applicant.salaryBreakup?.hra?.toString() || '0');
@@ -72,6 +76,20 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       appLinkSent: applicant.tasks?.appLinkSent || false,
       loginDetailsSent: applicant.tasks?.loginDetailsSent || false
     });
+
+    api.get('/admin/company-profile').then(res => {
+      if (res.data.success) {
+        setDesignationsList(res.data.profile?.designations || []);
+        setDivisionsList(res.data.divisions || []);
+      }
+    }).catch(console.error);
+
+    api.get('/admin/applicants?month=all&year=all').then(res => {
+      if (res.data.success) {
+         const joined = res.data.applicants.filter((a: any) => a.status === 'joined' || a.status === 'approved' || a.isExistingStaff);
+         setManagersList(joined);
+      }
+    }).catch(console.error);
   }, [applicant]);
 
   const handleUploadMissingDoc = async (e: React.ChangeEvent<HTMLInputElement>, categoryName?: string) => {
@@ -191,7 +209,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup
+        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation
       });
       if (updateRes.data.success) {
         alert('Workouts saved successfully!');
@@ -226,7 +244,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup
+        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation
       });
       if (!updateRes.data.success) throw new Error(updateRes.data.error || 'Failed to update assignment');
 
@@ -412,17 +430,32 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label className="form-label" style={{ marginBottom: '4px' }}>Proposed Designation</label>
-                  <input type="text" className="form-input" value={designation} onChange={e => setDesignation(e.target.value)} />
+                  <select className="form-input" value={designation} onChange={e => setDesignation(e.target.value)}>
+                    <option value="">Select Designation</option>
+                    {designationsList.map((d: any) => (
+                      <option key={d.title} value={d.title}>{d.title}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label className="form-label" style={{ marginBottom: '4px' }}>Division</label>
-                  <input type="text" className="form-input" value={division} onChange={e => setDivision(e.target.value)} />
+                  <select className="form-input" value={division} onChange={e => setDivision(e.target.value)}>
+                    <option value="">Select Division</option>
+                    {divisionsList.map((d: any) => (
+                      <option key={d.name} value={d.name}>{d.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label className="form-label" style={{ marginBottom: '4px' }}>Reporting To</label>
-                  <input type="text" className="form-input" value={reportingTo} onChange={e => setReportingTo(e.target.value)} />
+                  <select className="form-input" value={reportingTo} onChange={e => setReportingTo(e.target.value)}>
+                    <option value="">Select Manager</option>
+                    {managersList.map((m: any) => (
+                      <option key={m.email} value={m.fullName}>{m.fullName} ({m.designation || 'Staff'} - {m.division || 'General'})</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -436,7 +469,12 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1' }}>
-                  <label className="form-label" style={{ marginBottom: '4px' }}>Approved Annual CTC</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4px' }}>
+                    <label className="form-label" style={{ margin: 0 }}>Approved Annual CTC</label>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                      Asked Salary (Expected): <strong style={{ color: 'var(--text)' }}>₹{applicant.formData?.salary || applicant.expectedSalary || 'N/A'}</strong>
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <input type="number" className="form-input" style={{ flex: 1 }} value={salary} onChange={e => setSalary(e.target.value)} />
                     <button type="button" className="btn btn-outline" onClick={autoDistributeSalary} style={{ height: '42px', padding: '0 15px', whiteSpace: 'nowrap' }}>Calculate Breakup</button>
