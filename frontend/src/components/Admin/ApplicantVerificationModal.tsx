@@ -94,11 +94,12 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     });
 
     api.get('/admin/company-profile').then(res => {
-      if (res.data.success) {
-        setDesignationsList(res.data.profile?.designations || []);
-        setDivisionsList(res.data.divisions || []);
-        setHqsList(res.data.hqs || []);
-        setRequiredDocsList(res.data.profile?.requiredDocs || []);
+      if (res.data) {
+        const comp = res.data.company || res.data;
+        setDesignationsList(comp.designations || []);
+        setDivisionsList(comp.divisions || []);
+        setHqsList(comp.hqs || []);
+        setRequiredDocsList(comp.requiredDocs || []);
       }
     }).catch(console.error);
 
