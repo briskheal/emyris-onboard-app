@@ -229,7 +229,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
       const updateRes = await api.post('/admin/update-workflow-data', {
         email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
-        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc
+        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary
       });
       if (updateRes.data.success) {
         alert('Workouts saved successfully!');
@@ -265,7 +265,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
       const updateRes = await api.post('/admin/update-workflow-data', {
         email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
-        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc
+        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary
       });
       if (!updateRes.data.success) throw new Error(updateRes.data.error || 'Failed to update assignment');
 
@@ -485,9 +485,16 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                   <label className="form-label" style={{ marginBottom: '4px' }}>Reporting To</label>
                   <select className="form-input" value={reportingTo} onChange={e => setReportingTo(e.target.value)}>
                     <option value="">Select Manager</option>
-                    {managersList.map((m: any) => (
-                      <option key={m.email} value={m.fullName}>{m.fullName} ({m.designation || 'Staff'} - {m.division || 'General'})</option>
-                    ))}
+                    <optgroup label="STAFF (Existing Employees)">
+                      {managersList.map((m: any) => (
+                        <option key={m.email} value={m.fullName}>{m.fullName} ({m.designation || 'Staff'} - {m.division || 'General'})</option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="ROLE (Designations Fallback)">
+                      {designationsList.map((d: any) => (
+                        <option key={`role-${d.title}`} value={d.title}>{d.title} (Role Only)</option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
 

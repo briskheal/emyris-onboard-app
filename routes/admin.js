@@ -1454,7 +1454,7 @@ function calculateMonthlyGross(sal) {
 router.post('/update-workflow-data', async (req, res) => {
     try {
         const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
-                epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
+                epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc, salary } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
         if (reportingTo !== undefined) update.reportingTo = reportingTo;
@@ -1468,6 +1468,7 @@ router.post('/update-workflow-data', async (req, res) => {
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
+        if (salary !== undefined) update.salary = salary;
 
         // Editable profile fields
         if (fullName !== undefined) update.fullName = fullName;
