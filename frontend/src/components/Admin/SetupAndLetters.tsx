@@ -779,10 +779,24 @@ export default function SetupAndLetters() {
           
           {dbStats && (
             <div style={{ marginTop: '2rem' }}>
-              <h3>System Status</h3>
-              <pre style={{ background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '4px', marginTop: '1rem', fontSize: '0.85rem' }}>
-                {JSON.stringify(dbStats, null, 2)}
-              </pre>
+              <div style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.3)', padding: '1.5rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '400px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: 'var(--primary-light)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  <Database size={16} /> Storage & DB Capacity
+                </div>
+                
+                <div style={{ height: '8px', background: 'rgba(255,255,255,0.07)', borderRadius: '4px', overflow: 'hidden' }}>
+                  <div style={{ width: `${dbStats.summary?.usedPercentage || 0}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #a855f7)', transition: 'width 1s ease' }}></div>
+                </div>
+                
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1rem', fontWeight: 700 }}>
+                  <span style={{ color: '#fff' }}>{Math.round((dbStats.summary?.totalUsedBytes || 0) / 1024 / 1024)} MB</span>
+                  <span style={{ color: 'var(--primary-light)' }}>{dbStats.summary?.usedPercentage || 0}% Used</span>
+                </div>
+                
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  Total Server Disk: {Math.round((dbStats.summary?.limitBytes || 0) / 1024 / 1024 / 1024)} GB
+                </div>
+              </div>
             </div>
           )}
         </div>
