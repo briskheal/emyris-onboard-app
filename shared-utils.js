@@ -141,6 +141,13 @@ function updateView(viewId) {
     // Reset Scroll
     window.scrollTo(0, 0);
 
+    // Always hide all view-sections first
+    sections.forEach(s => {
+        s.classList.add('hidden');
+        s.style.display = 'none';
+        s.classList.remove('active');
+    });
+
     if (viewId === 'landingPage') {
         if (landingPage) landingPage.classList.remove('hidden');
         if (appShell) appShell.classList.add('hidden');
@@ -150,13 +157,7 @@ function updateView(viewId) {
         if (landingPage) landingPage.classList.add('hidden');
         if (appShell) appShell.classList.remove('hidden');
         document.body.classList.remove('at-landing');
-
-        sections.forEach(s => {
-            s.classList.add('hidden');
-            s.style.display = 'none';
-            s.classList.remove('active');
-        });
-
+        
         const activeSection = document.getElementById(viewId);
         if (activeSection) {
             activeSection.classList.remove('hidden');
