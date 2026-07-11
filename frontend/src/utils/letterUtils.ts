@@ -47,6 +47,8 @@ export function fillLetterPlaceholders(text: string, app: any, companyData: any 
     const simRef = app.refNo || `${prefix}/${counter}/${fyShort} (SIM)`;
 
     const placeholders: any = {
+        "{{OFFER_COUNTER}}": companyData.offerCounter || 0,
+        "{{APPT_COUNTER}}": companyData.apptCounter || 0,
         "{{TODAY_DATE}}": new Date().toLocaleDateString('en-GB'),
         "{{REF_NO}}": simRef,
         "{{TITLE}}": (app.title || ((fd.gender||"").toLowerCase() === 'male' ? 'Mr.' : 'Ms.')).toUpperCase(),

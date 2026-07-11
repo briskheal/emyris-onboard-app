@@ -208,23 +208,33 @@ export default function SetupAndLetters() {
     if (!targetEl) return;
     try {
       const canvas = await html2canvas(targetEl, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
+      const canvasW = canvas.width;
+      const canvasH = canvas.height;
+      // 210mm x 297mm (A4 ratio = ~1.414)
+      const A4_PX_H = Math.floor(canvasW * 1.414); 
+
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      let heightLeft = pdfHeight;
-      let position = 0;
-      
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pageHeight;
-      
-      while (heightLeft > 0) {
-        position -= pageHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        heightLeft -= pageHeight;
+      let cursorY = 0;
+      let pageCount = 0;
+
+      while (cursorY < canvasH) {
+        if (pageCount > 0) pdf.addPage();
+        
+        const sliceH = Math.min(A4_PX_H, canvasH - cursorY);
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvasW;
+        sliceCanvas.height = sliceH;
+        
+        const sCtx = sliceCanvas.getContext('2d');
+        sCtx?.drawImage(canvas, 0, cursorY, canvasW, sliceH, 0, 0, canvasW, sliceH);
+        
+        const sliceData = sliceCanvas.toDataURL('image/png', 1.0);
+        const sliceH_mm = (sliceH / canvasW) * 210;
+        
+        pdf.addImage(sliceData, 'PNG', 0, 0, 210, sliceH_mm, undefined, 'FAST');
+        
+        cursorY += A4_PX_H;
+        pageCount++;
       }
       pdf.save(`${activeTemplate}_${Date.now()}.pdf`);
     } catch (err) {
