@@ -1435,8 +1435,8 @@ router.post('/render-template', async (req, res) => {
             'REF_NO': applicant.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? company.apptCounter : company.offerCounter) || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`,
             'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             'EMP_CODE': applicant.empCode || applicant.formData?.empCode || 'TBD',
-            'OFFER_COUNTER': company.offerCounter || 1001,
-            'APPT_COUNTER': company.apptCounter || 1001
+            'OFFER_COUNTER': `${company.offerCounter || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`,
+            'APPT_COUNTER': `${company.apptCounter || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`
         };
 
         const resolved = resolveTemplate(template, map);
@@ -1945,8 +1945,8 @@ router.post('/render-template', async (req, res) => {
             'REF_NO': applicant.refNo || `${type === 'appt' ? 'EMY/APT' : 'EMY/OFR'}/${(type === 'appt' ? company.apptCounter : company.offerCounter) || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`,
             'TODAY_DATE': new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
             'EMP_CODE': applicant.empCode || applicant.formData?.empCode || 'TBD',
-            'OFFER_COUNTER': company.offerCounter || 1001,
-            'APPT_COUNTER': company.apptCounter || 1001
+            'OFFER_COUNTER': `${company.offerCounter || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`,
+            'APPT_COUNTER': `${company.apptCounter || 1001}/${String(new Date(company.fyFrom || Date.now()).getFullYear()).slice(2)}-${String(new Date(company.fyTo || Date.now()).getFullYear()).slice(2)}`
         };
 
         const resolved = resolveTemplate(template, map);

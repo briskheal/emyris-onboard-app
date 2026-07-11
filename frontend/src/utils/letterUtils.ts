@@ -47,8 +47,11 @@ export function fillLetterPlaceholders(text: string, app: any, companyData: any 
     const simRef = app.refNo || `${prefix}/${counter}/${fyShort} (SIM)`;
 
     const placeholders: any = {
-        "{{OFFER_COUNTER}}": companyData.offerCounter || 0,
-        "{{APPT_COUNTER}}": companyData.apptCounter || 0,
+        "{{OFFER_COUNTER}}": `${companyData.offerCounter || 0}/${fyShort}`,
+        "{{APPT_COUNTER}}": `${companyData.apptCounter || 0}/${fyShort}`,
+        "{{MISC_COUNTER}}": `${companyData.miscCounter || 0}/${fyShort}`,
+        "{{EMP_CODE_COUNTER}}": `${companyData.empCodeCounter || 0}/${fyShort}`,
+        "{{REV_SAL_COUNTER}}": `${companyData.revisedSalaryCounter || 0}/${fyShort}`,
         "{{TODAY_DATE}}": new Date().toLocaleDateString('en-GB'),
         "{{REF_NO}}": simRef,
         "{{TITLE}}": (app.title || ((fd.gender||"").toLowerCase() === 'male' ? 'Mr.' : 'Ms.')).toUpperCase(),
