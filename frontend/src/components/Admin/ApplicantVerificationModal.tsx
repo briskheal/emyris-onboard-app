@@ -52,6 +52,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
   const [designationsList, setDesignationsList] = useState<any[]>([]);
   const [divisionsList, setDivisionsList] = useState<any[]>([]);
+  const [hqsList, setHqsList] = useState<any[]>([]);
   const [managersList, setManagersList] = useState<any[]>([]);
 
   useEffect(() => {
@@ -95,6 +96,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       if (res.data.success) {
         setDesignationsList(res.data.profile?.designations || []);
         setDivisionsList(res.data.divisions || []);
+        setHqsList(res.data.hqs || []);
       }
     }).catch(console.error);
 
@@ -488,7 +490,12 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label className="form-label" style={{ marginBottom: '4px' }}>Joining HQ</label>
-                  <input type="text" className="form-input" value={hq} onChange={e => setHq(e.target.value)} />
+                  <select className="form-input" value={hq} onChange={e => setHq(e.target.value)}>
+                    <option value="">Select HQ</option>
+                    {hqsList.map((h: any) => (
+                      <option key={h.name} value={h.name}>{h.name}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
