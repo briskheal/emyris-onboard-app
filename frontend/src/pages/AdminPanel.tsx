@@ -40,6 +40,8 @@ const AdminPanel: React.FC = () => {
     }
   };
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   if (!isLoggedIn) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
@@ -72,8 +74,6 @@ const AdminPanel: React.FC = () => {
       </div>
     );
   }
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-main)', flexDirection: 'column' }}>
