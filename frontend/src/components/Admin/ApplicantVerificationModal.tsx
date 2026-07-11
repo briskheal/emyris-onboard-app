@@ -418,7 +418,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
                   return categoryFiles.map((doc: any, i: number) => {
                     const assetId = doc.assetId || doc.filename || doc.fileName || doc.name || '';
-                    const downloadUrl = assetId.startsWith('/') ? assetId : `/api/admin/uploads/${assetId}`;
+                    const downloadUrl = assetId.startsWith('/uploads/') ? `/api/admin${assetId}` : (assetId.startsWith('/') ? assetId : `/api/admin/uploads/${assetId}`);
                     
                     return (
                       <div key={`${dName}-${i}`} style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>

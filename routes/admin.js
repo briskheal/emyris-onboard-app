@@ -45,13 +45,13 @@ function safeParseDateServer(s) {
 
 // You may need to port upload middleware and other shared utilities here.
 
-router.get('/uploads/:filename', async (req, res) => {
+router.get('/uploads/*', async (req, res) => {
     try {
-        const filename = decodeURIComponent(req.params.filename);
-        const filePath = path.join(__dirname, '..', 'uploads', filename);
+        const subpath = decodeURIComponent(req.params[0]);
+        const filePath = path.join(__dirname, '..', 'uploads', subpath);
         if (fs.existsSync(filePath)) {
             if (req.query.download === 'true') {
-                return res.download(filePath, req.query.name || filename);
+                return res.download(filePath, req.query.name || path.basename(subpath));
             }
             return res.sendFile(filePath);
         }
