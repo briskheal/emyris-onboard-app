@@ -256,31 +256,47 @@ export default function QuestionBank() {
 
       {/* Simulator Modal */}
       {showSimulator && (
-        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-main)', zIndex: 2000, display: 'flex', flexDirection: 'column' }}>
-          <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2>Rapid Test Simulator</h2>
-            <button className="btn btn-outline" onClick={() => setShowSimulator(false)}>Close Simulator</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-surface)', zIndex: 2000, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-body)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <PlayCircle size={24} color="var(--primary)" />
+              <h2 style={{ margin: 0, color: '#fff' }}>Rapid Test Simulator</h2>
+            </div>
+            <button className="btn btn-outline" onClick={() => setShowSimulator(false)} style={{ borderColor: 'var(--error)', color: 'var(--error)' }}>
+              Close Simulator
+            </button>
           </div>
-          <div style={{ flex: 1, overflowY: 'auto', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <h3 style={{ color: 'var(--primary)', marginBottom: '2rem' }}>Preview Mode Active</h3>
+          <div style={{ flex: 1, overflowY: 'auto', padding: '3rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'var(--bg-surface)' }}>
             <div style={{ maxWidth: '800px', width: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                <h3 style={{ color: 'var(--primary)', margin: 0 }}>Preview Mode</h3>
+                <p style={{ color: 'var(--text-muted)' }}>Showing up to 3 questions.</p>
+              </div>
               {questions.slice(0, 3).map((q, idx) => (
-                <div key={q._id} className="dash-card">
-                  <p style={{ fontWeight: 'bold', marginBottom: '1rem' }}>Q{idx + 1}. {q.text}</p>
+                <div key={q._id} className="dash-card" style={{ padding: '2rem', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '12px' }}>
+                  <p style={{ fontWeight: '600', marginBottom: '1.5rem', fontSize: '1.1rem', color: '#fff' }}>
+                    <span style={{ color: 'var(--primary)', marginRight: '10px' }}>Q{idx + 1}.</span> {q.text}
+                  </p>
                   {q.questionType === 'mcq' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       {q.options.map((o: string, i: number) => (
-                        <div key={i} style={{ padding: '10px', background: i === q.correctAnswerIndex ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)', borderRadius: '4px', border: i === q.correctAnswerIndex ? '1px solid #10b981' : '1px solid transparent' }}>
-                          {o} {i === q.correctAnswerIndex && '(Correct)'}
+                        <div key={i} style={{ 
+                          padding: '12px 16px', 
+                          background: i === q.correctAnswerIndex ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)', 
+                          borderRadius: '8px', 
+                          border: i === q.correctAnswerIndex ? '1px solid var(--success)' : '1px solid var(--glass-border)',
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        }}>
+                          <span>{o}</span>
+                          {i === q.correctAnswerIndex && <span style={{ color: 'var(--success)', fontSize: '0.85rem', fontWeight: 'bold' }}>✓ Correct</span>}
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <textarea className="form-input" rows={3} placeholder="Descriptive answer box preview..." disabled></textarea>
+                    <textarea className="form-input" rows={4} placeholder="Applicant will type descriptive answer here..." disabled style={{ width: '100%', resize: 'none', background: 'rgba(0,0,0,0.2)' }}></textarea>
                   )}
                 </div>
               ))}
-              <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>Showing up to 3 questions for simulator preview.</p>
             </div>
           </div>
         </div>

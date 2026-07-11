@@ -1207,26 +1207,31 @@ router.post('/submit-onboarding', async (req, res) => {
             return res.status(404).json({ success: false, message: 'Applicant session not found. Please log in again.' });
         }
 
+        const isUpdate = applicant.status && applicant.status !== 'draft' && applicant.status !== 'registered';
         const emailHtml = `
             <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
-                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">New Onboarding Submission</h2>
+                <h2 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">${isUpdate ? 'Applicant Profile Updated' : 'New Onboarding Submission'}</h2>
                 <p><strong>Applicant:</strong> ${applicant.fullName}</p>
                 <p><strong>Email:</strong> ${email}</p>
                 <hr>
-                <p>Detailed profile is now available in the Admin Portal for review and PDF download.</p>
+                <p>${isUpdate ? 'The applicant has updated their personal details and documents.' : 'Detailed profile is now available in the Admin Portal for review and PDF download.'}</p>
             </div>
         `;
 
         sendEmail({
             to: process.env.EMAIL_USER,
-            subject: `Form Submitted: ${applicant.fullName}`,
+            subject: `${isUpdate ? 'Profile Updated' : 'Form Submitted'}: ${applicant.fullName}`,
             html: emailHtml
         }).catch(e => console.error("Admin notification failed:", e.message));
 
+        const applicantEmailHtml = isUpdate 
+            ? `<h3>Hello, ${applicant.fullName}!</h3><p>Your details have been successfully updated at the official Emyris HR site. Our team will review the changes.</p>`
+            : `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`;
+
         sendEmail({
             to: email,
-            subject: 'Application Received - Emyris Biolifesciences',
-            html: `<h3>Thank you, ${applicant.fullName}!</h3><p>Your onboarding documents have been submitted successfully. Our team will review them and get back to you.</p>`
+            subject: isUpdate ? 'Profile Update Confirmed - Emyris Biolifesciences' : 'Application Received - Emyris Biolifesciences',
+            html: applicantEmailHtml
         }).catch(e => console.error("Applicant confirmation failed:", e.message));
 
         res.status(200).json({ success: true, message: 'Application submitted!' });

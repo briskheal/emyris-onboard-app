@@ -142,16 +142,16 @@ router.post('/questions', async (req, res) => {
 
 router.post('/schedule-exam', async (req, res) => {
     try {
-        const { date, product, mcqTime, descTime, mcqCount } = req.body;
+        const { examDate, targetProduct, mcqTime, descTime, mcqCount } = req.body;
         const company = await Company.findOne();
         if (company) {
             await Company.updateOne({ _id: company._id }, { 
                 $set: { 
-                    activeExamDate: date, 
-                    activeExamProduct: product || '',
+                    activeExamDate: examDate, 
+                    activeExamProduct: targetProduct || '',
                     examMcqTime: mcqTime || 15,
                     examDescriptiveTime: descTime || 15,
-                    examMcqCount: mcqCount || 10
+                    examMcqCount: mcqCount || 5
                 } 
             });
             res.json({ success: true });
