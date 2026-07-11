@@ -110,7 +110,7 @@ export default function QuestionBank() {
 
   const saveQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
-    const payload: any = { category, targetProduct: targetProduct, questionType: qType, text: qText };
+    const payload: any = { category, targetProduct: category, questionType: qType, text: qText };
     if (qType === 'mcq') {
       payload.options = options;
       payload.correctAnswerIndex = correctAnswerIndex;
@@ -146,7 +146,9 @@ export default function QuestionBank() {
     new Map(productCategoriesRaw.map(cat => [cat.toLowerCase(), cat])).values()
   ).sort();
 
-  const filteredQuestions = activeCategoryTab === 'All' ? questions : questions.filter(q => q.category === activeCategoryTab);
+  const filteredQuestions = activeCategoryTab === 'All' 
+    ? questions 
+    : questions.filter(q => (q.category || '').toLowerCase() === activeCategoryTab.toLowerCase());
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
