@@ -49,9 +49,11 @@ router.get('/uploads/*', async (req, res) => {
     try {
         const subpath = decodeURIComponent(req.params[0]);
         const filePath = path.join(__dirname, '..', 'uploads', subpath);
+        const filename = path.basename(subpath);
+        
         if (fs.existsSync(filePath)) {
             if (req.query.download === 'true') {
-                return res.download(filePath, req.query.name || path.basename(subpath));
+                return res.download(filePath, req.query.name || filename);
             }
             return res.sendFile(filePath);
         }
@@ -67,10 +69,12 @@ router.get('/uploads/*', async (req, res) => {
                 }
                 return res.send(buffer);
             }
+            res.send(asset.data);
+        } else {
+            res.status(404).send('File not found');
         }
-        res.status(404).send('Document file not found on server or database.');
-    } catch (e) {
-        res.status(500).send('Error retrieving document.');
+    } catch (error) {
+        res.status(500).send('Error accessing file');
     }
 });
 
@@ -706,8 +710,11 @@ router.post('/delete-document', async (req, res) => {
         console.log(`[DELETE-DOC] Docs before: ${applicant.documents?.length || 0}, Docs after: ${updatedDocs.length}`);
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: updatedDocs } });
 
-        const cleanFilename = String(assetId).split('/').pop().trim();
-        const filePath = path.join(__dirname, '..', 'uploads', cleanFilename);
+        // Fix: get the relative path inside uploads/ directory
+        const assetPath = String(assetId).replace(/^\/?api\/admin\/uploads\//, '').replace(/^\/?uploads\//, '').trim();
+        const cleanFilename = assetPath.split('/').pop().trim();
+        const filePath = path.join(__dirname, '..', 'uploads', ...assetPath.split('/'));
+        
         if (fs.existsSync(filePath)) {
             try { fs.unlinkSync(filePath); } catch (e) {}
         }
@@ -2624,6 +2631,37 @@ router.post('/system/vacuum', async (req, res) => {
     try {
         const company = await Company.findOne();
         const applicants = await Applicant.find();
+
+        // 0. Clean broken base64 and duplicate documents from Applicants
+        for (let app of applicants) {
+            if (app.documents && Array.isArray(app.documents)) {
+                const originalLength = app.documents.length;
+                
+                // Clean Base64 strings and oversize assetIds
+                let cleanDocs = app.documents.filter(doc => {
+                    const assetId = String(doc.assetId || '');
+                    if (assetId.startsWith('data:image')) return false;
+                    if (assetId.length > 500) return false;
+                    return true;
+                });
+                
+                // Deduplicate by assetId to prevent "board certificate.jpg" duplicates
+                const uniqueDocs = [];
+                const seenAssets = new Set();
+                for (let doc of cleanDocs) {
+                    const assetId = String(doc.assetId || doc.filename || doc.name || '').trim();
+                    if (assetId && !seenAssets.has(assetId)) {
+                        seenAssets.add(assetId);
+                        uniqueDocs.push(doc);
+                    }
+                }
+                
+                if (uniqueDocs.length !== originalLength) {
+                    await Applicant.updateOne({ _id: app._id }, { $set: { documents: uniqueDocs } });
+                    app.documents = uniqueDocs; // update memory ref for step 1
+                }
+            }
+        }
 
         // 1. Collect all "In-Use" Asset IDs (clean filenames)
         const inUseIds = new Set();
