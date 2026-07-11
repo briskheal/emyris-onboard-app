@@ -54,6 +54,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   const [divisionsList, setDivisionsList] = useState<any[]>([]);
   const [hqsList, setHqsList] = useState<any[]>([]);
   const [managersList, setManagersList] = useState<any[]>([]);
+  const [requiredDocsList, setRequiredDocsList] = useState<string[]>([]);
 
   useEffect(() => {
     setSalBasic(applicant.salaryBreakup?.basic?.toString() || '0');
@@ -97,6 +98,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
         setDesignationsList(res.data.profile?.designations || []);
         setDivisionsList(res.data.divisions || []);
         setHqsList(res.data.hqs || []);
+        setRequiredDocsList(res.data.profile?.requiredDocs || []);
       }
     }).catch(console.error);
 
@@ -394,7 +396,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 </label>
               </div>
               <div className="custom-scrollbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '15px', maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
-                {["Aadhaar Card", "PAN Card", "Degree/Provisional Certificate", "Relieving Letter", "Passport Size Photo", "Testimonial"].map(dName => {
+                {(requiredDocsList.length > 0 ? requiredDocsList : ["Aadhaar Card", "PAN Card", "Degree/Provisional Certificate", "Previous Company Appointment Letter", "Last Month Salary Slip", "Cancel Cheque", "Passport Photo", "Resume"]).map(dName => {
                   const categoryFiles = (applicant.documents || []).filter((u: any) => (u.docType || u.category || 'Document') === dName);
                   
                   if (categoryFiles.length === 0) {

@@ -68,14 +68,14 @@ const OnboardCompany = sequelize.define('onboard_company', {
     },
     requiredDocs: {
         type: DataTypes.JSON, defaultValue: [
-            "Aadhar Card - Front",
-            "Aadhar Card - Back",
+            "Aadhaar Card",
             "PAN Card",
             "Degree/Provisional Certificate",
-            "Experience Letter - Previous Company",
-            "Relieving Letter - Previous Company",
+            "Previous Company Appointment Letter",
             "Last Month Salary Slip",
-            "Digital Signature"
+            "Cancel Cheque",
+            "Passport Photo",
+            "Resume"
         ]
     }
 });

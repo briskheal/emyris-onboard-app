@@ -137,7 +137,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ applicant, formData
           const categoryDocs = uploadedDocs.filter(d => d.category === docName);
           const hasFiles = categoryDocs.length > 0;
           
-          const expDocs = ["Last Month Salary Slip", "Previous Company Appointment Letter", "Experience Letter - Previous Company", "Relieving Letter - Previous Company"];
+          const expDocs = ["Last Month Salary Slip", "Previous Company Appointment Letter"];
           let isOptional = OPTIONAL_DOCS.includes(docName);
           if (expDocs.includes(docName)) {
             isOptional = !isExperienced;
