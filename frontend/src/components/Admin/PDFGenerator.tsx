@@ -45,7 +45,7 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ applicant, type, onComplete
       let cursorY = 0;
       let pageCount = 0;
 
-      while (cursorY < canvasH) {
+      while (cursorY < canvasH - 50) {
         if (pageCount > 0) pdf.addPage();
         
         const sliceH = Math.min(A4_PX_H, canvasH - cursorY);
