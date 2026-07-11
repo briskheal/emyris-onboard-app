@@ -311,7 +311,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
           <CheckCircle size={24} /> Applicant Verification View
         </h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '55% 45%', gap: '2rem' }}>
           
           {/* Left Column: Dossier, Pipeline, & Documents */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -345,7 +345,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                   <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e)} />
                 </label>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+              <div className="custom-scrollbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '15px', maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
                 {["Aadhaar Card", "PAN Card", "Degree/Provisional Certificate", "Relieving Letter", "Passport Size Photo", "Testimonial"].map(dName => {
                   const categoryFiles = (applicant.documents || []).filter((u: any) => (u.docType || u.category || 'Document') === dName);
                   

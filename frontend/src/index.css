@@ -3492,3 +3492,8 @@ body.onboarding-inactive .header-logo img { height: 28px !important; }
     margin: 4px 2px;
 }
 .full-width-editor { width: 100%; min-height: 297mm; background: #ffffff; color: #1e293b; padding: 2rem; box-sizing: border-box; position: relative; box-shadow: 0 40px 100px rgba(0,0,0,0.5), 0 0 20px rgba(255,255,255,0.05); border-radius: 4px; line-height: 1.5; outline: none; }
+
+.custom-scrollbar::-webkit-scrollbar { width: 6px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
