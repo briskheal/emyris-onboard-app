@@ -140,6 +140,21 @@ router.post('/questions', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+router.put('/questions/:id', async (req, res) => {
+    try {
+        await Question.updateOne({ _id: req.params.id }, req.body);
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+router.delete('/questions/:id', async (req, res) => {
+    try {
+        await Question.deleteOne({ _id: req.params.id });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+
 router.post('/schedule-exam', async (req, res) => {
     try {
         const { examDate, targetProduct, mcqTime, descTime, mcqCount, rapidTime } = req.body;
