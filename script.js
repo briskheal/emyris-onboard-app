@@ -1017,7 +1017,7 @@ function renderApplicantDashboard() {
             const examBtn = document.getElementById('applicantExamBtn');
             if (examBtn) {
                 examBtn.classList.add('hidden');
-                if (companyData && companyData.activeExamDate && app.offerAccepted) {
+                if (companyData && companyData.activeExamDate && app.status !== 'rejected') {
                     const localDate = new Date();
                     localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
                     const today = localDate.toISOString().split('T')[0];

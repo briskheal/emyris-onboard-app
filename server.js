@@ -264,4 +264,6 @@ app.use((req, res) => {
     }
 });
 
+const { startCronJobs } = require('./utils/cron');
+startCronJobs();
 app.listen(PORT, () => console.log('Server running on port ' + PORT));

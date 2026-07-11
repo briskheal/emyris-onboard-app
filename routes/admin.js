@@ -170,6 +170,33 @@ router.post('/schedule-exam', async (req, res) => {
                     rapidTestTime: rapidTime || 25
                 } 
             });
+
+            // Send notification to eligible applicants
+            const applicants = await Applicant.find({ status: { $nin: ['rejected'] } });
+            const productName = targetProduct || 'General Assessment';
+            
+            for (const app of applicants) {
+                const existingResult = await ExamResult.findOne({ email: app.email, examDate: examDate });
+                if (!existingResult) {
+                    try {
+                        const emailHtml = `
+                            <h2>Exam Scheduled: ${productName}</h2>
+                            <p>Hi ${app.fullName},</p>
+                            <p>Your MCQ Questionnaire for <strong>${productName}</strong> has been uploaded to your dashboard.</p>
+                            <p>Please log in and complete it as soon as possible. The exam date is set for ${examDate}.</p>
+                            <p><a href="${BASE_URL}/" style="padding: 10px 20px; background: #6366f1; color: #fff; text-decoration: none; border-radius: 5px;">Login to Dashboard</a></p>
+                        `;
+                        await sendEmail({
+                            to: app.email,
+                            subject: `Action Required: Exam Scheduled for ${productName}`,
+                            html: emailHtml
+                        });
+                    } catch (err) {
+                        console.error('Failed to notify applicant:', app.email, err.message);
+                    }
+                }
+            }
+
             res.json({ success: true });
         } else {
             res.status(404).json({ error: 'Company not found' });
