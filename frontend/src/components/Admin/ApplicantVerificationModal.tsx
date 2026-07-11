@@ -341,7 +341,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgb(15, 23, 42)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
-      <div className="dash-card" style={{ width: '100%', maxWidth: '1100px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '2rem', background: '#1e293b' }}>
+      <div className="dash-card" style={{ width: '100%', maxWidth: '1250px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', padding: '2rem', background: '#1e293b' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <X size={24} />
         </button>
@@ -350,7 +350,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
           <CheckCircle size={24} /> Applicant Verification View
         </h2>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '55% 45%', gap: '2rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2.5rem' }}>
           
           {/* Left Column: Dossier, Pipeline, & Documents */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -514,9 +514,9 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px', gap: '10px' }}>
                     <label className="form-label" style={{ margin: 0 }}>Approved Annual CTC</label>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
                       Asked Salary (Expected): <strong style={{ color: 'var(--text)' }}>₹{applicant.formData?.salary || applicant.expectedSalary || 'N/A'}</strong>
                     </span>
                   </div>
