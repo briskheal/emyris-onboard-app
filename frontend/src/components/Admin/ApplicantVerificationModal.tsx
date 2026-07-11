@@ -55,6 +55,9 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   const [hqsList, setHqsList] = useState<any[]>([]);
   const [managersList, setManagersList] = useState<any[]>([]);
   const [requiredDocsList, setRequiredDocsList] = useState<string[]>([]);
+  
+  // Track verified documents
+  const [verificationChecks, setVerificationChecks] = useState<Record<string, boolean>>(applicant.verificationChecks || {});
 
   useEffect(() => {
     setSalBasic(applicant.salaryBreakup?.basic?.toString() || '0');
@@ -148,6 +151,13 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     }
   };
 
+  const toggleVerify = (docName: string) => {
+    setVerificationChecks(prev => ({
+      ...prev,
+      [docName]: !prev[docName]
+    }));
+  };
+
   const handleDeleteDocument = async (assetId: string, categoryName: string) => {
     if (!window.confirm(`Are you sure you want to completely delete this file for ${categoryName}?`)) return;
     setLoading(true);
@@ -229,7 +239,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
       const updateRes = await api.post('/admin/update-workflow-data', {
         email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
-        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary
+        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary, verificationChecks
       });
       if (updateRes.data.success) {
         alert('Workouts saved successfully!');
@@ -271,7 +281,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
       const res = await api.post('/admin/verify-and-activate', {
         email: applicant.email,
-        verificationChecks: {}
+        verificationChecks: verificationChecks
       });
       
       if (res.data.success || res.data.message === 'Approved') {
@@ -390,7 +400,22 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', margin: 0 }}>Uploaded Documents (Testimonials)</h3>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', color: 'var(--primary)', margin: 0 }}>Uploaded Documents (Testimonials)</h3>
+                  {(() => {
+                    const docsToRender = requiredDocsList.length > 0 ? requiredDocsList : ["Aadhaar Card", "PAN Card", "Degree/Provisional Certificate", "Previous Company Appointment Letter", "Last Month Salary Slip", "Cancel Cheque", "Passport Photo", "Resume"];
+                    const verifiedCount = docsToRender.filter(d => verificationChecks[d]).length;
+                    const progress = docsToRender.length > 0 ? Math.round((verifiedCount / docsToRender.length) * 100) : 0;
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Verification Progress: {verifiedCount}/{docsToRender.length}</div>
+                        <div style={{ width: '150px', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: 'var(--success)', width: `${progress}%`, transition: 'width 0.3s ease' }}></div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
                 <label className="btn btn-sm btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
                   <Upload size={14} /> Upload Additional
                   <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e)} />
@@ -399,6 +424,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
               <div className="custom-scrollbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '15px', maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
                 {(requiredDocsList.length > 0 ? requiredDocsList : ["Aadhaar Card", "PAN Card", "Degree/Provisional Certificate", "Previous Company Appointment Letter", "Last Month Salary Slip", "Cancel Cheque", "Passport Photo", "Resume"]).map(dName => {
                   const categoryFiles = (applicant.documents || []).filter((u: any) => (u.docType || u.category || 'Document') === dName);
+                  const isVerified = !!verificationChecks[dName];
                   
                   if (categoryFiles.length === 0) {
                     return (
@@ -421,10 +447,31 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                     const downloadUrl = assetId.startsWith('/uploads/') ? `/api/admin${assetId}` : (assetId.startsWith('/') ? assetId : `/api/admin/uploads/${assetId}`);
                     
                     return (
-                      <div key={`${dName}-${i}`} style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem' }}>{dName}</div>
-                          <div style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981', padding: '2px 8px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 600 }}>Uploaded</div>
+                      <div key={`${dName}-${i}`} style={{ background: isVerified ? 'rgba(16,185,129,0.05)' : 'rgba(245, 158, 11, 0.05)', border: isVerified ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(245, 158, 11, 0.3)', padding: '15px', borderRadius: '8px', display: 'flex', flexDirection: 'column', gap: '8px', transition: 'all 0.3s ease' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem', paddingRight: '8px' }}>{dName}</div>
+                          <label style={{ position: 'relative', display: 'inline-block', width: '36px', height: '20px', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={isVerified} 
+                              onChange={() => toggleVerify(dName)} 
+                              style={{ opacity: 0, width: 0, height: 0 }} 
+                            />
+                            <span style={{
+                              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                              backgroundColor: isVerified ? '#10b981' : '#475569',
+                              transition: '.3s', borderRadius: '20px'
+                            }}>
+                              <span style={{
+                                position: 'absolute', content: '""', height: '14px', width: '14px', left: '3px', bottom: '3px',
+                                backgroundColor: 'white', transition: '.3s', borderRadius: '50%',
+                                transform: isVerified ? 'translateX(16px)' : 'translateX(0)'
+                              }}></span>
+                            </span>
+                          </label>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: isVerified ? '#10b981' : '#f59e0b', fontWeight: 600 }}>
+                          {isVerified ? '✓ Verified' : 'Pending Verification'}
                         </div>
                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.name || assetId}</div>
                         <div style={{ display: 'flex', gap: '6px', marginTop: 'auto' }}>
