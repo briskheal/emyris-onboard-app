@@ -684,13 +684,96 @@ export default function SetupAndLetters() {
       {activeTab === 'system' && (
         <div className="dash-card">
           <h2 style={{ marginBottom: '1.5rem', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <AlertTriangle size={24} /> Danger Zone
+            <Database size={24} /> System Maintenance & Data Pipeline
           </h2>
-          <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '1.5rem', borderRadius: '8px' }}>
-            <h4 style={{ marginBottom: '1rem' }}>Factory Reset</h4>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>This action will permanently delete all applicants, documents, test results, and assets. It cannot be undone.</p>
-            <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }} onClick={wipeDatabase}>
-              Wipe Database Clean
+          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>
+            Download a full JSON snapshot of your environment, prune junk files, or permanently clear all data.
+          </p>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            
+            {/* Backup Button */}
+            <button 
+              className="btn btn-outline" 
+              onClick={() => window.open(`${api.defaults.baseURL}/admin/export-backup`, '_blank')}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '1.5rem', height: '120px', borderColor: 'rgba(99, 102, 241, 0.4)', color: 'var(--primary-light)' }}
+            >
+              <Save size={28} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold' }}>Backup Library</div>
+                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Download JSON</div>
+              </div>
+            </button>
+
+            {/* Restore Button */}
+            <div style={{ position: 'relative' }}>
+              <input 
+                type="file" 
+                id="importBackupInput" 
+                accept=".json" 
+                style={{ display: 'none' }} 
+                onChange={async (e) => {
+                  if (!e.target.files || e.target.files.length === 0) return;
+                  const file = e.target.files[0];
+                  const reader = new FileReader();
+                  reader.onload = async (ev) => {
+                    try {
+                      const data = JSON.parse(ev.target?.result as string);
+                      await api.post('/admin/import-backup', { data });
+                      alert("Restore successful! Please refresh the page.");
+                      window.location.reload();
+                    } catch (err) {
+                      alert("Failed to parse or restore JSON backup.");
+                    }
+                  };
+                  reader.readAsText(file);
+                }} 
+              />
+              <button 
+                className="btn btn-outline" 
+                onClick={() => document.getElementById('importBackupInput')?.click()}
+                style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '1.5rem', height: '120px', borderColor: 'rgba(245, 158, 11, 0.4)', color: '#fbbf24' }}
+              >
+                <Upload size={28} />
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontWeight: 'bold' }}>Restore Library</div>
+                  <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Import JSON</div>
+                </div>
+              </button>
+            </div>
+
+            {/* Vacuum Button */}
+            <button 
+              className="btn btn-outline" 
+              onClick={async () => {
+                if (!confirm("Are you sure you want to run Asset Vacuum? This will delete unused junk files.")) return;
+                try {
+                  const res = await api.post('/admin/system/vacuum');
+                  alert(res.data.message || "Vacuum complete.");
+                } catch (e) {
+                  alert("Vacuum failed.");
+                }
+              }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '1.5rem', height: '120px', borderColor: 'rgba(16, 185, 129, 0.4)', color: '#10b981' }}
+            >
+              <Trash2 size={28} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold' }}>Asset Vacuum</div>
+                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Prune Unused Files</div>
+              </div>
+            </button>
+
+            {/* Reset Button */}
+            <button 
+              className="btn btn-outline" 
+              onClick={wipeDatabase}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px', padding: '1.5rem', height: '120px', borderColor: 'rgba(239, 68, 68, 0.4)', color: '#ef4444', background: 'rgba(239, 68, 68, 0.05)' }}
+            >
+              <AlertTriangle size={28} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold' }}>System Reset</div>
+                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Wipe Database</div>
+              </div>
             </button>
           </div>
           
