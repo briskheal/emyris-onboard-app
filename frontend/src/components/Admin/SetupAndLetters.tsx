@@ -176,7 +176,7 @@ export default function SetupAndLetters() {
     const applicant = applicants.find(a => a.email === targetApplicant);
     if (!applicant) return;
 
-    let finalContent = fillLetterPlaceholders(templateContent, applicant, dbStats?.company);
+    let finalContent = fillLetterPlaceholders(templateContent, applicant, { signatoryName, signatoryDesignation: signatoryDesg });
 
     const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
 
@@ -449,7 +449,7 @@ export default function SetupAndLetters() {
                           title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
                           designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
                           actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
-                        }, dbStats?.company).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
+                        }, { signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
                         style={{ 
                           transform: `scale(${zoom})`, 
                           transformOrigin: 'top center', 
