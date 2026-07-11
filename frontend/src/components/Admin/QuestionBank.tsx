@@ -129,9 +129,12 @@ export default function QuestionBank() {
     }
   };
 
-  const uniqueCategories = Array.from(new Set(questions.map(q => q.category))).sort();
-  const filteredQuestions = activeCategoryTab === 'All' ? questions : questions.filter(q => q.category === activeCategoryTab);
+  const allUniqueCategories = Array.from(new Set(questions.map(q => q.category))).sort();
+  const coreSubjects = ['math', 'english', 'gk', 'current_affairs', 'general'];
+  const coreCategories = allUniqueCategories.filter(cat => coreSubjects.includes(cat.toLowerCase()));
+  const productCategories = allUniqueCategories.filter(cat => !coreSubjects.includes(cat.toLowerCase()));
 
+  const filteredQuestions = activeCategoryTab === 'All' ? questions : questions.filter(q => q.category === activeCategoryTab);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
@@ -153,28 +156,37 @@ export default function QuestionBank() {
 
       {/* Questions Table */}
       <div className="dash-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-          <h3 style={{ fontSize: '1.2rem' }}>Test & Exam Bank</h3>
-          <button className="btn btn-primary" onClick={openAddModal}><Plus size={16} /> Add Question</button>
-        </div>
-
-        {/* Categories Tabs */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-          <button 
-            className={`btn ${activeCategoryTab === 'All' ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setActiveCategoryTab('All')}
-          >
-            All Questions
-          </button>
-          {uniqueCategories.map(cat => (
-            <button 
-              key={cat}
-              className={`btn ${activeCategoryTab === cat ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setActiveCategoryTab(cat)}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h3 style={{ fontSize: '1.2rem', margin: 0 }}>Test & Exam Bank</h3>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <select 
+              className="form-input" 
+              value={activeCategoryTab} 
+              onChange={e => setActiveCategoryTab(e.target.value)}
+              style={{ minWidth: '200px', margin: 0 }}
             >
-              {cat.toUpperCase()}
-            </button>
-          ))}
+              <option value="All">All Questions</option>
+              
+              {coreCategories.length > 0 && (
+                <optgroup label="Core Subjects">
+                  {coreCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat.toUpperCase()}</option>
+                  ))}
+                </optgroup>
+              )}
+              
+              {productCategories.length > 0 && (
+                <optgroup label="Products">
+                  {productCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat.toUpperCase()}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+            
+            <button className="btn btn-primary" onClick={openAddModal} style={{ margin: 0 }}><Plus size={16} /> Add Question</button>
+          </div>
         </div>
 
         {loading ? (
