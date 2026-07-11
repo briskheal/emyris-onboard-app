@@ -140,6 +140,7 @@ const AdminPanel: React.FC = () => {
         {activeView === 'questions' && <QuestionBank />}
         {activeView === 'pending' && <PendingExams />}
       </main>
+      </div>
     </div>
   );
 };
