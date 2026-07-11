@@ -272,7 +272,12 @@
                         <h3 style="margin: 0; color: white; font-size: 1.25rem; display: flex; align-items: center; gap: 10px;">
                             <span style="font-size: 1.5rem;">🚀</span> Your Onboarding Journey
                         </h3>
-                        <span id="hubGlobalProgressText" style="font-size: 0.95rem; font-weight: 800; color: var(--primary-light); background: rgba(99,102,241,0.15); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(99,102,241,0.3);">0%</span>
+                        <div style="display: flex; gap: 1rem; align-items: center;">
+                            <span id="hubGlobalProgressText" style="font-size: 0.95rem; font-weight: 800; color: var(--primary-light); background: rgba(99,102,241,0.15); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(99,102,241,0.3);">0%</span>
+                            <button class="btn-action-small btn-logout-danger" style="margin: 0; padding: 4px 12px;" onclick="logoutApplicant()">
+                                <span>🔒</span> Logout
+                            </button>
+                        </div>
                     </div>
                     <div style="height: 8px; border-radius: 4px; background: rgba(255,255,255,0.05); overflow: hidden; width: 100%;">
                         <div id="hubGlobalProgressBar" style="height: 100%; border-radius: 4px; background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899); width: 0%; transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 15px rgba(168,85,247,0.5);"></div>
@@ -300,7 +305,6 @@
 
                             <button class="btn btn-primary" style="width:100%; margin-top: 1.5rem; background: linear-gradient(135deg, var(--primary), var(--accent)); border: none;" onclick="downloadCandidateDossier()">📥 Download My Profile</button>
                             <button id="applicantExamBtn" class="btn btn-primary hidden" style="width:100%; margin-top: 0.75rem; background: linear-gradient(135deg, #10b981, #3b82f6); border: none;" onclick="launchOngoingExam()">📝 Take Scheduled Exam</button>
-                            <button class="btn btn-outline" style="width:100%; margin-top: 0.75rem;" onclick="logoutApplicant()">Logout Securely</button>
                         </div>
                     </div>
 
@@ -772,6 +776,9 @@
                     <h2 id="examPhaseTitle" style="color: var(--primary-light); margin: 0;">📝 Scheduled Assessment</h2>
                     <p style="font-size: 0.85rem; color: var(--text-muted); margin: 5px 0 0 0;">Product Knowledge & Market Intelligence.</p>
                 </div>
+                <button class="btn-action-small btn-logout-danger" style="margin: 0; padding: 6px 16px;" onclick="logoutApplicant()">
+                    <span>🔒</span> Logout
+                </button>
             </div>
 
             <!-- Pre-Exam Intro -->
