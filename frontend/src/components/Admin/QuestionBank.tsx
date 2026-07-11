@@ -245,7 +245,14 @@ export default function QuestionBank() {
             <form onSubmit={saveQuestion} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div style={{ flex: 1 }}><label className="form-label">Type</label><select className="form-input" value={qType} onChange={e => setQType(e.target.value)} disabled={!!editingQuestion}><option value="mcq">Multiple Choice</option><option value="descriptive">Descriptive</option></select></div>
-                <div style={{ flex: 1 }}><label className="form-label">Category</label><input type="text" className="form-input" required value={category} onChange={e => setCategory(e.target.value)} /></div>
+                <div style={{ flex: 1 }}>
+                  <label className="form-label">Category</label>
+                  <input type="text" list="category-options" className="form-input" required value={category} onChange={e => setCategory(e.target.value)} />
+                  <datalist id="category-options">
+                    {coreCategories.map(cat => <option key={cat} value={cat.toUpperCase()} />)}
+                    {productCategories.map(cat => <option key={cat} value={cat.toUpperCase()} />)}
+                  </datalist>
+                </div>
               </div>
               <div><label className="form-label">Question Text</label><textarea className="form-input" required rows={3} value={qText} onChange={e => setQText(e.target.value)} /></div>
               
