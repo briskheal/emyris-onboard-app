@@ -26,6 +26,7 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ applicant, type, onComplete
       clone.style.height = 'auto';
       clone.style.overflow = 'visible';
       clone.style.transform = 'none';
+      clone.style.margin = '0';
       document.body.appendChild(clone);
 
       const canvas = await html2canvas(clone, {

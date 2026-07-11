@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, X, Trash2 } from 'lucide-react';
+import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, X, Trash2, Scissors } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '../../api/client';
@@ -24,6 +24,7 @@ export default function SetupAndLetters() {
   const [zoom, setZoom] = useState('1.0');
   const [fontFamily, setFontFamily] = useState('Plus Jakarta Sans');
   const [fontSize, setFontSize] = useState(11);
+  const [companyData, setCompanyData] = useState<any>({});
 
   // System & Assets State
   const [dbStats, setDbStats] = useState<any>(null);
@@ -100,6 +101,7 @@ export default function SetupAndLetters() {
         }
       }
       if (comp) {
+        setCompanyData(comp);
         setSignatoryName(comp.signatoryName || '');
         setSignatoryDesg(comp.signatoryDesignation || '');
         if (comp.letterFontType) setFontFamily(comp.letterFontType);
@@ -153,6 +155,11 @@ export default function SetupAndLetters() {
     execCommand('insertText', ph);
   };
 
+  const insertPageBreak = () => {
+    const pbHtml = '<div class="hard-page-break" style="height: 20px; border-top: 2px dashed rgba(99,102,241,0.3); margin: 20px 0; pointer-events: none;" contenteditable="false"></div><p><br></p>';
+    execCommand('insertHTML', pbHtml);
+  };
+
   const saveTemplate = async () => {
     setSavingTemplate(true);
     try {
@@ -180,7 +187,7 @@ export default function SetupAndLetters() {
     const applicant = applicants.find(a => a.email === targetApplicant);
     if (!applicant) return;
 
-    let finalContent = fillLetterPlaceholders(templateContent, applicant, { signatoryName, signatoryDesignation: signatoryDesg });
+    let finalContent = fillLetterPlaceholders(templateContent, applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
     finalContent = `<div style="font-family: ${fontFamily}; font-size: ${fontSize}pt;">${finalContent}</div>`;
 
     const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
@@ -215,6 +222,7 @@ export default function SetupAndLetters() {
       clone.style.height = 'auto';
       clone.style.overflow = 'visible';
       clone.style.transform = 'none'; // Remove any zoom
+      clone.style.margin = '0'; // Remove inherited margins that would increase height artificially
       document.body.appendChild(clone);
 
       const canvas = await html2canvas(clone, { 
@@ -441,6 +449,7 @@ export default function SetupAndLetters() {
                 <div style={{ display: 'flex', gap: '2px', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '6px' }}>
                   <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('insertOrderedList')}><List size={14} /></button>
                   <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none' }} onClick={() => execCommand('insertUnorderedList')}><List size={14} /></button>
+                  <button className="btn btn-outline" style={{ padding: '4px 10px', border: 'none', color: 'var(--accent)' }} onClick={insertPageBreak} title="Insert Page Break"><Scissors size={14} /></button>
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
@@ -494,7 +503,7 @@ export default function SetupAndLetters() {
                           title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
                           designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
                           actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
-                        }, { signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
+                        }, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
                         style={{ 
                           transform: `scale(${zoom})`, 
                           transformOrigin: 'top center', 
