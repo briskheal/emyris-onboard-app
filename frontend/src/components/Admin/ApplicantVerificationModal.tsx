@@ -416,8 +416,8 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                     );
                   })()}
                 </div>
-                <label className="btn btn-sm btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', cursor: 'pointer' }}>
-                  <Upload size={14} /> Upload Additional
+                <label className="btn btn-sm btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer', padding: '4px 10px', fontSize: '0.75rem', height: 'fit-content' }}>
+                  <Upload size={12} /> Upload Additional
                   <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e)} />
                 </label>
               </div>
