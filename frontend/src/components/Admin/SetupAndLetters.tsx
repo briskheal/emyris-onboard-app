@@ -207,7 +207,25 @@ export default function SetupAndLetters() {
     const targetEl = previewRef.current || editorRef.current;
     if (!targetEl) return;
     try {
-      const canvas = await html2canvas(targetEl, { scale: 2, useCORS: true });
+      const clone = targetEl.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.top = '-9999px';
+      clone.style.left = '0';
+      clone.style.width = '210mm';
+      clone.style.height = 'auto';
+      clone.style.overflow = 'visible';
+      clone.style.transform = 'none'; // Remove any zoom
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, { 
+        scale: 2, 
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      document.body.removeChild(clone);
+
       const canvasW = canvas.width;
       const canvasH = canvas.height;
       // 210mm x 297mm (A4 ratio = ~1.414)

@@ -18,12 +18,24 @@ const PDFGenerator: React.FC<PDFGeneratorProps> = ({ applicant, type, onComplete
     try {
       if (!captureRef.current) return;
       
-      const canvas = await html2canvas(captureRef.current, {
+      const clone = captureRef.current.cloneNode(true) as HTMLElement;
+      clone.style.position = 'absolute';
+      clone.style.top = '-9999px';
+      clone.style.left = '0';
+      clone.style.width = '210mm';
+      clone.style.height = 'auto';
+      clone.style.overflow = 'visible';
+      clone.style.transform = 'none';
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff'
       });
+      
+      document.body.removeChild(clone);
 
       const canvasW = canvas.width;
       const canvasH = canvas.height;
