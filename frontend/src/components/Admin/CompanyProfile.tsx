@@ -14,7 +14,8 @@ export default function CompanyProfile() {
     marqueeColor: '#94a3b8',
     marqueeSpeed: 20,
     designations: [],
-    targetProductsList: []
+    targetProductsList: [],
+    requiredDocs: []
   });
 
   const [divisions, setDivisions] = useState<{ name: string }[]>([]);
@@ -28,6 +29,7 @@ export default function CompanyProfile() {
   const [newProduct, setNewProduct] = useState('');
   const [newDesignationTitle, setNewDesignationTitle] = useState('');
   const [newDesignationDept, setNewDesignationDept] = useState('');
+  const [newRequiredDoc, setNewRequiredDoc] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -42,7 +44,8 @@ export default function CompanyProfile() {
         setProfile({
           ...comp,
           designations: comp.designations || [],
-          targetProductsList: comp.targetProductsList || []
+          targetProductsList: comp.targetProductsList || [],
+          requiredDocs: comp.requiredDocs || []
         });
         setDivisions(res.data.divisions || comp.divisions || []);
         setHQs(res.data.hqs || comp.hqs || []);
@@ -116,6 +119,21 @@ export default function CompanyProfile() {
       ...profile,
       targetProductsList: profile.targetProductsList.filter((_: any, i: number) => i !== index)
     });
+  };
+
+  const addRequiredDoc = () => {
+    if (!newRequiredDoc.trim()) return;
+    setProfile({
+      ...profile,
+      requiredDocs: [...(profile.requiredDocs || []), newRequiredDoc.trim()]
+    });
+    setNewRequiredDoc('');
+  };
+
+  const removeRequiredDoc = (index: number) => {
+    const updated = [...(profile.requiredDocs || [])];
+    updated.splice(index, 1);
+    setProfile({ ...profile, requiredDocs: updated });
   };
 
   const addDesignation = () => {
@@ -305,6 +323,22 @@ export default function CompanyProfile() {
               {profile.targetProductsList.map((prod: string, i: number) => (
                 <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   {prod} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeProduct(i)} />
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginTop: '1.5rem' }}>
+            <label className="form-label">Required Documents (Testimonials)</label>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+              <input type="text" className="form-input" placeholder="Add custom document (e.g. Aadhar)" value={newRequiredDoc} onChange={e => setNewRequiredDoc(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRequiredDoc()} />
+              <button className="btn btn-primary" onClick={addRequiredDoc}><Plus size={16} /></button>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {(profile.requiredDocs || []).length === 0 && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No documents defined yet.</span>}
+              {(profile.requiredDocs || []).map((doc: string, i: number) => (
+                <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {doc} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeRequiredDoc(i)} />
                 </span>
               ))}
             </div>

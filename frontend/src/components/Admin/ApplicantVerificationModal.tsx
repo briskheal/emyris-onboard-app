@@ -36,6 +36,13 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   const [salSpecial, setSalSpecial] = useState<string>(applicant.salaryBreakup?.special?.toString() || '0');
   const [salFixed, setSalFixed] = useState<string>(applicant.salaryBreakup?.fixed?.toString() || '0');
 
+  const [epfNumber, setEpfNumber] = useState<string>(applicant.epfNumber || '');
+  const [uanNumber, setUanNumber] = useState<string>(applicant.uanNumber || '');
+  const [esiNumber, setEsiNumber] = useState<string>(applicant.esiNumber || '');
+  const [bankName, setBankName] = useState<string>(applicant.formData?.bankName || '');
+  const [accNo, setAccNo] = useState<string>(applicant.formData?.accNo || '');
+  const [ifsc, setIfsc] = useState<string>(applicant.formData?.ifsc || '');
+
   const [tasks, setTasks] = useState({
     offerLetter: applicant.tasks?.offerLetter || false,
     appointmentLetter: applicant.tasks?.appointmentLetter || false,
@@ -64,6 +71,13 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     setHq(applicant.hq || '');
     setSalary(applicant.salary || '');
     
+    setEpfNumber(applicant.epfNumber || '');
+    setUanNumber(applicant.uanNumber || '');
+    setEsiNumber(applicant.esiNumber || '');
+    setBankName(applicant.formData?.bankName || '');
+    setAccNo(applicant.formData?.accNo || '');
+    setIfsc(applicant.formData?.ifsc || '');
+
     try {
       setActualJoiningDate(applicant.actualJoiningDate && !isNaN(new Date(applicant.actualJoiningDate).getTime()) 
         ? new Date(applicant.actualJoiningDate).toISOString().split('T')[0] 
@@ -209,7 +223,8 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation
+        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
+        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc
       });
       if (updateRes.data.success) {
         alert('Workouts saved successfully!');
@@ -244,7 +259,8 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation
+        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
+        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc
       });
       if (!updateRes.data.success) throw new Error(updateRes.data.error || 'Failed to update assignment');
 
@@ -344,6 +360,18 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                 <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> {applicant.address}, {applicant.state} - {applicant.pin}</div>
               </div>
             </div>
+
+            {applicant.rapidTestCompleted && (
+              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', margin: 0, color: 'var(--primary)' }}>Rapid Test Result</h3>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>MCQ Exam Auto-Score</div>
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#4ade80' }}>
+                  {applicant.rapidTestScore || 0}
+                </div>
+              </div>
+            )}
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Pipeline Tracking</h3>
@@ -479,6 +507,36 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
                     <input type="number" className="form-input" style={{ flex: 1 }} value={salary} onChange={e => setSalary(e.target.value)} />
                     <button type="button" className="btn btn-outline" onClick={autoDistributeSalary} style={{ height: '42px', padding: '0 15px', whiteSpace: 'nowrap' }}>Calculate Breakup</button>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Statutory & Bank Details</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>EPF Number</label>
+                  <input type="text" className="form-input" placeholder="e.g. AB/123/456789" value={epfNumber} onChange={e => setEpfNumber(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>UAN Number</label>
+                  <input type="text" className="form-input" placeholder="e.g. 100123456789" value={uanNumber} onChange={e => setUanNumber(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>ESI Number</label>
+                  <input type="text" className="form-input" placeholder="e.g. 1234567890" value={esiNumber} onChange={e => setEsiNumber(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Bank Name</label>
+                  <input type="text" className="form-input" placeholder="e.g. HDFC Bank" value={bankName} onChange={e => setBankName(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Account Number</label>
+                  <input type="text" className="form-input" placeholder="e.g. 50100012345" value={accNo} onChange={e => setAccNo(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>IFSC Code</label>
+                  <input type="text" className="form-input" placeholder="e.g. HDFC0001234" value={ifsc} onChange={e => setIfsc(e.target.value)} />
                 </div>
               </div>
             </div>
