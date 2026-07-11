@@ -253,97 +253,105 @@ export default function CompanyProfile() {
           </div>
         </div>
 
-        {/* Divisions Management */}
-        <div className="dash-card">
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>🚀 Division Management</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define business divisions for applicant categorization.</p>
+        {/* 2-Column Grid for Configuration Blocks */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', gridColumn: 'span 2' }}>
           
-          <div style={{ marginBottom: '1.5rem' }}>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" className="form-input" placeholder="NEW DIVISION NAME" style={{ textTransform: 'uppercase' }} value={newDivision} onChange={e => setNewDivision(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDivision()} />
-              <button className="btn btn-primary" onClick={addDivision}><Plus size={16} /> Add Division</button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {divisions.map((d, i) => (
-                <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {d.name} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeDivision(i)} />
-                </span>
-              ))}
+          {/* Divisions Management */}
+          <div className="dash-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>🚀 Division Management</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define business divisions for applicant categorization.</p>
+            
+            <div style={{ marginBottom: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <input type="text" className="form-input" placeholder="NEW DIVISION NAME" style={{ textTransform: 'uppercase' }} value={newDivision} onChange={e => setNewDivision(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDivision()} />
+                <button className="btn btn-primary" onClick={addDivision} style={{ whiteSpace: 'nowrap' }}><Plus size={16} /> Add Division</button>
+              </div>
+              <div className="custom-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '250px', overflowY: 'auto', alignContent: 'flex-start', paddingRight: '5px' }}>
+                {divisions.map((d, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {d.name} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeDivision(i)} />
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* HQ Management */}
-        <div className="dash-card">
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>🚀 Headquarters (HQ) Management</h3>
-          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define available HQs for recruitment selection.</p>
+          {/* HQ Management */}
+          <div className="dash-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>🚀 Headquarters (HQ) Management</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define available HQs for recruitment selection.</p>
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <input type="text" className="form-input" placeholder="NEW HQ NAME" style={{ textTransform: 'uppercase' }} value={newHq} onChange={e => setNewHq(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHq()} />
+                <button className="btn btn-primary" onClick={addHq} style={{ whiteSpace: 'nowrap' }}><Plus size={16} /> Add HQ</button>
+              </div>
+              <div className="custom-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '250px', overflowY: 'auto', alignContent: 'flex-start', paddingRight: '5px' }}>
+                {hqs.map((hq, i) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {hq.name} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeHq(i)} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Designations & Target Products */}
+          <div className="dash-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>Roles & Targets</h3>
+            
+            <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+              <label className="form-label">Designations</label>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <input type="text" className="form-input" placeholder="Title" value={newDesignationTitle} onChange={e => setNewDesignationTitle(e.target.value)} />
+                <input type="text" className="form-input" placeholder="Department" value={newDesignationDept} onChange={e => setNewDesignationDept(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDesignation()} />
+                <button className="btn btn-primary" onClick={addDesignation}><Plus size={16} /></button>
+              </div>
+              <div className="custom-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', alignContent: 'flex-start', paddingRight: '5px' }}>
+                {profile.designations.map((d: any, i: number) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {d.title} ({d.department}) <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeDesignation(i)} />
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <label className="form-label">Target Products (Test Bank)</label>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <input type="text" className="form-input" placeholder="Product Name" value={newProduct} onChange={e => setNewProduct(e.target.value)} onKeyDown={e => e.key === 'Enter' && addProduct()} />
+                <button className="btn btn-primary" onClick={addProduct}><Plus size={16} /></button>
+              </div>
+              <div className="custom-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '150px', overflowY: 'auto', alignContent: 'flex-start', paddingRight: '5px' }}>
+                {profile.targetProductsList.map((prod: string, i: number) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {prod} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeProduct(i)} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Required Documents (Testimonials) */}
+          <div className="dash-card" style={{ display: 'flex', flexDirection: 'column' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>Required Documents (Testimonials)</h3>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Configure the list of documents applicants are required to upload.</p>
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
+                <input type="text" className="form-input" placeholder="Add custom document (e.g. Aadhar)" value={newRequiredDoc} onChange={e => setNewRequiredDoc(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRequiredDoc()} />
+                <button className="btn btn-primary" onClick={addRequiredDoc}><Plus size={16} /></button>
+              </div>
+              <div className="custom-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '250px', overflowY: 'auto', alignContent: 'flex-start', paddingRight: '5px' }}>
+                {(profile.requiredDocs || []).map((doc: string, i: number) => (
+                  <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {doc} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeRequiredDoc(i)} />
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
           
-          <div>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" className="form-input" placeholder="NEW HQ NAME" style={{ textTransform: 'uppercase' }} value={newHq} onChange={e => setNewHq(e.target.value)} onKeyDown={e => e.key === 'Enter' && addHq()} />
-              <button className="btn btn-primary" onClick={addHq}><Plus size={16} /> Add HQ</button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {hqs.map((hq, i) => (
-                <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {hq.name} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeHq(i)} />
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Designations & Target Products */}
-        <div className="dash-card">
-          <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>Roles & Targets</h3>
-          
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label className="form-label">Designations</label>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" className="form-input" placeholder="Title" value={newDesignationTitle} onChange={e => setNewDesignationTitle(e.target.value)} />
-              <input type="text" className="form-input" placeholder="Department" value={newDesignationDept} onChange={e => setNewDesignationDept(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDesignation()} />
-              <button className="btn btn-primary" onClick={addDesignation}><Plus size={16} /></button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {profile.designations.map((d: any, i: number) => (
-                <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {d.title} ({d.department}) <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeDesignation(i)} />
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="form-label">Target Products (Test Bank)</label>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" className="form-input" placeholder="Product Name" value={newProduct} onChange={e => setNewProduct(e.target.value)} onKeyDown={e => e.key === 'Enter' && addProduct()} />
-              <button className="btn btn-primary" onClick={addProduct}><Plus size={16} /></button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {profile.targetProductsList.map((prod: string, i: number) => (
-                <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {prod} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeProduct(i)} />
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ marginTop: '1.5rem' }}>
-            <label className="form-label">Required Documents (Testimonials)</label>
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-              <input type="text" className="form-input" placeholder="Add custom document (e.g. Aadhar)" value={newRequiredDoc} onChange={e => setNewRequiredDoc(e.target.value)} onKeyDown={e => e.key === 'Enter' && addRequiredDoc()} />
-              <button className="btn btn-primary" onClick={addRequiredDoc}><Plus size={16} /></button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {(profile.requiredDocs || []).length === 0 && <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No documents defined yet.</span>}
-              {(profile.requiredDocs || []).map((doc: string, i: number) => (
-                <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {doc} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeRequiredDoc(i)} />
-                </span>
-              ))}
-            </div>
-          </div>
-
         </div>
 
       </div>
