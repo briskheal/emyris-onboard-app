@@ -148,6 +148,30 @@ function updateView(viewId) {
         s.classList.remove('active');
     });
 
+    // --- REACT MIGRATION INTERCEPTOR ---
+    const reactApplicantViews = {
+        'landingPage': 'landing',
+        'applicantLogin': 'login',
+        'applicantRegister': 'register',
+        'loginLandingView': 'dashboard',
+        'applicantDashboard': 'dashboard' // Just in case
+    };
+
+    if (reactApplicantViews[viewId] && window.mountReactApp) {
+        // If it's the dashboard, we must pass the applicant
+        if (reactApplicantViews[viewId] === 'dashboard' && typeof currentApplicant !== 'undefined') {
+            window.mountReactApp('dashboard', currentApplicant);
+        } else {
+            window.mountReactApp(reactApplicantViews[viewId], null);
+        }
+        
+        // Hide legacy UI elements
+        if (landingPage) landingPage.classList.add('hidden');
+        if (appShell) appShell.classList.add('hidden');
+        return; // Stop further vanilla JS rendering for these views
+    }
+
+    // --- LEGACY VANILLA JS FALLBACK ---
     if (viewId === 'landingPage') {
         if (landingPage) landingPage.classList.remove('hidden');
         if (appShell) appShell.classList.add('hidden');
@@ -159,27 +183,16 @@ function updateView(viewId) {
         document.body.classList.remove('at-landing');
         
         const activeSection = document.getElementById(viewId);
-        
-        // --- REACT MIGRATION INTERCEPTOR ---
-        if (viewId === 'applicantDashboard' && window.mountReactDashboard && typeof currentApplicant !== 'undefined') {
-            window.mountReactDashboard(currentApplicant);
-            if (activeSection) {
-                activeSection.classList.add('hidden');
-                activeSection.style.display = 'none';
-                activeSection.classList.remove('active');
-            }
-        } else {
-            if (window.unmountReactDashboard) window.unmountReactDashboard();
-            if (activeSection) {
-                activeSection.classList.remove('hidden');
-                activeSection.style.display = (viewId === 'adminDashboard' || viewId === 'applicantDashboard') ? 'flex' : 'block';
-                activeSection.classList.add('active');
-                
-                if (typeof gsap !== 'undefined') {
-                    gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
-                }
+        if (activeSection) {
+            activeSection.classList.remove('hidden');
+            activeSection.style.display = (viewId === 'adminDashboard' || viewId === 'applicantDashboard') ? 'flex' : 'block';
+            activeSection.classList.add('active');
+            
+            if (typeof gsap !== 'undefined') {
+                gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
             }
         }
+    }
 
         // Show/Hide Step Indicator
         const onboardingSteps = ['onboardingForm', 'applicantRegister', 'applicantLogin', 'applicantWelcome', 'applicantDataEntry', 'applicantDocumentUpload', 'applicantStatusView'];

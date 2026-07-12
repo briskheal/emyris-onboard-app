@@ -1,170 +1,94 @@
 import React, { useState, useEffect } from 'react';
+import LandingPage from './components/LandingPage';
+import Login from './components/Login';
+import Registration from './components/Registration';
+import Dashboard from './components/Dashboard';
 
-const App = ({ applicant }) => {
-    const [pendingExams, setPendingExams] = useState([]);
+const App = ({ initialApplicant, initialView = 'landing' }) => {
+  const [currentView, setCurrentView] = useState(initialApplicant ? 'dashboard' : initialView);
+  const [applicant, setApplicant] = useState(initialApplicant || null);
+  const [companyData, setCompanyData] = useState(null);
 
-    useEffect(() => {
-        if (applicant && applicant.pendingExams) {
-            try {
-                const exams = typeof applicant.pendingExams === 'string' 
-                    ? JSON.parse(applicant.pendingExams) 
-                    : applicant.pendingExams;
-                setPendingExams(exams);
-            } catch (e) {
-                console.error("Failed to parse pendingExams in React:", e);
-            }
-        }
-    }, [applicant]);
-
-    // Handle exam launch by bridging back to the Vanilla JS function
-    const handleLaunchExam = (exam) => {
-        if (window.launchOngoingExam) {
-            window.launchOngoingExam(exam);
-        } else {
-            alert("Error: Exam launcher not found.");
-        }
-    };
-
-    if (!applicant) return <div>Loading...</div>;
-
-    return (
-        <div style={styles.dashboardContainer}>
-            <div style={styles.headerCard}>
-                <h2 style={styles.welcomeText}>Welcome back, {applicant.fullName}!</h2>
-                <p style={styles.statusText}>Current Status: <span style={styles.statusBadge}>{applicant.status}</span></p>
-                <div style={styles.detailsGrid}>
-                    <p><strong>Email:</strong> {applicant.email}</p>
-                    <p><strong>Phone:</strong> {applicant.phone}</p>
-                    <p><strong>Division:</strong> {applicant.division || 'N/A'}</p>
-                    <p><strong>HQ:</strong> {applicant.hq || 'N/A'}</p>
-                </div>
-            </div>
-
-            <div style={styles.actionSection}>
-                <h3 style={styles.sectionTitle}>Your Action Items</h3>
-                
-                {pendingExams.length === 0 ? (
-                    <div style={styles.emptyState}>
-                        <p>You have no pending exams at this time.</p>
-                    </div>
-                ) : (
-                    <div style={styles.examList}>
-                        {pendingExams.map((exam, index) => (
-                            <div key={index} style={styles.examCard}>
-                                <div style={styles.examInfo}>
-                                    <h4 style={styles.examTitle}>{exam.targetProduct} Assessment</h4>
-                                    <p style={styles.examDetail}>Scheduled: {exam.examDate}</p>
-                                </div>
-                                <button 
-                                    onClick={() => handleLaunchExam(exam)}
-                                    style={styles.examButton}
-                                >
-                                    🚀 Take Scheduled Exam
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-            
-            {/* We will add forms and offers here in future phases */}
-        </div>
-    );
-};
-
-// Inline styles for Phase 1 to match the aesthetic without complex setup yet
-const styles = {
-    dashboardContainer: {
-        padding: '20px',
-        maxWidth: '800px',
-        margin: '0 auto',
-        fontFamily: "'Inter', sans-serif"
-    },
-    headerCard: {
-        background: 'rgba(255, 255, 255, 0.03)',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
-        borderRadius: '12px',
-        padding: '24px',
-        marginBottom: '24px',
-        backdropFilter: 'blur(10px)'
-    },
-    welcomeText: {
-        margin: '0 0 10px 0',
-        fontSize: '24px',
-        color: '#fff'
-    },
-    statusText: {
-        color: '#aaa',
-        marginBottom: '20px'
-    },
-    statusBadge: {
-        background: '#3b82f6',
-        color: '#fff',
-        padding: '4px 10px',
-        borderRadius: '20px',
-        fontSize: '12px',
-        fontWeight: 'bold',
-        textTransform: 'uppercase'
-    },
-    detailsGrid: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '12px',
-        color: '#ddd',
-        fontSize: '14px'
-    },
-    actionSection: {
-        marginTop: '30px'
-    },
-    sectionTitle: {
-        color: '#fff',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        paddingBottom: '10px',
-        marginBottom: '20px'
-    },
-    examList: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px'
-    },
-    examCard: {
-        background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.7))',
-        border: '1px solid rgba(16, 185, 129, 0.3)',
-        borderRadius: '12px',
-        padding: '20px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-    },
-    examTitle: {
-        margin: '0 0 5px 0',
-        color: '#10b981',
-        fontSize: '18px'
-    },
-    examDetail: {
-        margin: 0,
-        color: '#94a3b8',
-        fontSize: '14px'
-    },
-    examButton: {
-        background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-        color: 'white',
-        border: 'none',
-        padding: '12px 24px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: 'bold',
-        transition: 'transform 0.2s',
-        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
-    },
-    emptyState: {
-        background: 'rgba(255,255,255,0.02)',
-        padding: '30px',
-        textAlign: 'center',
-        borderRadius: '12px',
-        color: '#64748b',
-        border: '1px dashed rgba(255,255,255,0.1)'
+  useEffect(() => {
+    // If applicant was passed later, update state
+    if (initialApplicant && !applicant) {
+      setApplicant(initialApplicant);
+      setCurrentView('dashboard');
     }
+  }, [initialApplicant]);
+
+  useEffect(() => {
+    // Fetch company data on load for Landing/Registration
+    const fetchCompany = async () => {
+      try {
+        const res = await fetch('/api/company-data');
+        if (res.ok) {
+          const data = await res.json();
+          setCompanyData(data);
+        }
+      } catch (err) {
+        console.error("Failed to load company data in React", err);
+      }
+    };
+    fetchCompany();
+  }, []);
+
+  const handleLoginSuccess = (applicantData) => {
+    setApplicant(applicantData);
+    setCurrentView('dashboard');
+    
+    // Legacy integration: Keep the global currentApplicant updated
+    if (window.resumeApplication) {
+      window.currentApplicant = applicantData;
+      // We don't call resumeApplication() because we handle the dashboard in React now!
+    }
+  };
+
+  const handleRegistrationSuccess = (pin) => {
+    alert(`Registration Successful!\n\nYour Secure PIN is: ${pin}\n\nPlease save this PIN to login later.`);
+    setCurrentView('login');
+  };
+
+  const handleLogout = () => {
+    setApplicant(null);
+    setCurrentView('landing');
+    if (window.currentApplicant) {
+      window.currentApplicant = null;
+    }
+  };
+
+  return (
+    <div className="react-app-root">
+      {currentView === 'landing' && (
+        <LandingPage 
+          onNavigate={setCurrentView} 
+          companyData={companyData} 
+        />
+      )}
+      
+      {currentView === 'login' && (
+        <Login 
+          onNavigate={setCurrentView} 
+          onLoginSuccess={handleLoginSuccess} 
+        />
+      )}
+      
+      {currentView === 'register' && (
+        <Registration 
+          onNavigate={setCurrentView} 
+          onRegistrationSuccess={handleRegistrationSuccess} 
+          companyData={companyData} 
+        />
+      )}
+      
+      {currentView === 'dashboard' && applicant && (
+        <Dashboard 
+          applicant={applicant} 
+          onLogout={handleLogout}
+        />
+      )}
+    </div>
+  );
 };
 
 export default App;
