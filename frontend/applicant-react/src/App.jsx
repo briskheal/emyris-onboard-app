@@ -4,19 +4,25 @@ import Login from './components/Login';
 import Registration from './components/Registration';
 import Dashboard from './components/Dashboard';
 import OnboardingForm from './components/OnboardingForm';
+import { OfferLetterView } from './components/OfferLetterView';
 
 const App = ({ initialApplicant, initialView = 'landing' }) => {
-  const [currentView, setCurrentView] = useState(initialApplicant ? 'dashboard' : initialView);
+  const [currentView, setCurrentView] = useState(
+    (initialView && initialView !== 'landing') ? initialView : (initialApplicant ? 'dashboard' : 'landing')
+  );
   const [applicant, setApplicant] = useState(initialApplicant || null);
   const [companyData, setCompanyData] = useState(null);
 
   useEffect(() => {
-    // If applicant was passed later, update state
-    if (initialApplicant && !applicant) {
+    if (initialApplicant) {
       setApplicant(initialApplicant);
+    }
+    if (initialView && initialView !== 'landing') {
+      setCurrentView(initialView);
+    } else if (initialApplicant && currentView === 'landing') {
       setCurrentView('dashboard');
     }
-  }, [initialApplicant]);
+  }, [initialApplicant, initialView]);
 
   useEffect(() => {
     // Fetch company data on load for Landing/Registration
@@ -58,6 +64,27 @@ const App = ({ initialApplicant, initialView = 'landing' }) => {
     }
   };
 
+  const refreshApplicant = async () => {
+    if (!applicant?.email) return;
+    const pin = applicant.password || applicant.pin || "";
+    if (pin) {
+      try {
+        const res = await fetch('/api/applicant-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: applicant.email, pin })
+        });
+        const data = await res.json();
+        if (data.success && data.applicant) {
+          setApplicant(data.applicant);
+          if (window.currentApplicant) window.currentApplicant = data.applicant;
+        }
+      } catch (err) {
+        console.error("Refresh error:", err);
+      }
+    }
+  };
+
   return (
     <div className="react-app-root">
       {currentView === 'landing' && (
@@ -94,6 +121,15 @@ const App = ({ initialApplicant, initialView = 'landing' }) => {
           applicant={applicant} 
           companyData={companyData}
           onComplete={() => setCurrentView('dashboard')}
+        />
+      )}
+
+      {currentView === 'offerLetter' && applicant && (
+        <OfferLetterView 
+          applicant={applicant} 
+          companyData={companyData}
+          onBackToDashboard={() => setCurrentView('dashboard')}
+          onRefreshApplicant={refreshApplicant}
         />
       )}
     </div>

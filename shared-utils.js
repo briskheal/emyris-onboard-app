@@ -155,12 +155,13 @@ function updateView(viewId) {
         'applicantRegister': 'register',
         'loginLandingView': 'dashboard',
         'applicantDashboard': 'dashboard',
-        'onboardingForm': 'onboardingForm'
+        'onboardingForm': 'onboardingForm',
+        'offerLetter': 'offerLetter'
     };
 
     if (reactApplicantViews[viewId] && window.mountReactApp) {
         // If it requires the applicant object
-        if (['dashboard', 'onboardingForm'].includes(reactApplicantViews[viewId]) && typeof currentApplicant !== 'undefined') {
+        if (['dashboard', 'onboardingForm', 'offerLetter'].includes(reactApplicantViews[viewId]) && typeof currentApplicant !== 'undefined') {
             window.mountReactApp(reactApplicantViews[viewId], currentApplicant);
         } else {
             window.mountReactApp(reactApplicantViews[viewId], null);

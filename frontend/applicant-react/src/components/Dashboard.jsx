@@ -68,7 +68,26 @@ const Dashboard = ({ applicant, onLogout }) => {
                     </div>
                 )}
 
-                {pendingExams.length === 0 && !['draft', 'registered', 'rejected', 'onboarding'].includes(applicant.status) ? (
+                {(applicant.offerLetterData || applicant.offerAccepted || ['selected', 'joined', 'confirmed'].includes(applicant.status)) && (
+                    <div style={styles.offerCard}>
+                        <div style={styles.examInfo}>
+                            <h4 style={styles.examTitle}>🎉 Official Offer of Employment</h4>
+                            <p style={styles.examDetail}>
+                                {applicant.offerAccepted ? '✅ You have formally accepted this offer of employment.' : '📜 Your offer letter and joining terms are ready for review and digital signature.'}
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                if (window.mountReactApp) window.mountReactApp('offerLetter', applicant);
+                            }}
+                            style={applicant.offerAccepted ? styles.offerAcceptedButton : styles.offerButton}
+                        >
+                            {applicant.offerAccepted ? '👀 View Accepted Offer Letter' : '✍️ Review & Accept Offer Letter 🚀'}
+                        </button>
+                    </div>
+                )}
+
+                {pendingExams.length === 0 && !applicant.offerLetterData && !applicant.offerAccepted && !['draft', 'registered', 'rejected', 'onboarding', 'selected', 'joined', 'confirmed'].includes(applicant.status) ? (
                     <div style={styles.emptyState}>
                         <p>You have no pending action items at this time.</p>
                     </div>
@@ -204,6 +223,36 @@ const styles = {
         fontWeight: 'bold',
         transition: 'transform 0.2s',
         boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
+    },
+    offerCard: {
+        background: 'linear-gradient(145deg, rgba(16, 185, 129, 0.12), rgba(15, 23, 42, 0.8))',
+        border: '1px solid rgba(16, 185, 129, 0.5)',
+        borderRadius: '12px',
+        padding: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '16px'
+    },
+    offerButton: {
+        background: 'linear-gradient(135deg, #10b981, #059669)',
+        color: 'white',
+        border: 'none',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        transition: 'transform 0.2s',
+        boxShadow: '0 4px 15px rgba(16, 185, 129, 0.4)'
+    },
+    offerAcceptedButton: {
+        background: 'rgba(255, 255, 255, 0.08)',
+        color: '#34d399',
+        border: '1px solid rgba(16, 185, 129, 0.4)',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold'
     },
     emptyState: {
         background: 'rgba(255,255,255,0.02)',
