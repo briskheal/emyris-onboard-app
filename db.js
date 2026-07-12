@@ -51,14 +51,28 @@ async function syncDatabase() {
         }
         console.log('✅ Synchronized onboard_* tables in database.');
 
-        // Seed Default Company if missing
-        const c = await Company.findOne();
+        // Seed Default Company if missing, or update existing targetProductsList with GLOWVIT-60K
+        let c = await Company.findOne();
         if (!c) {
-            await Company.create({
+            c = await Company.create({
                 name: 'Emyris Biolifesciences',
-                website: 'www.emyrisbio.com'
+                website: 'www.emyrisbio.com',
+                targetProductsList: ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'Briskheal']
             });
             console.log('🌱 Seeded default Company profile.');
+        } else {
+            let currentList = Array.isArray(c.targetProductsList) ? [...c.targetProductsList] : ['General', 'Emystein', 'Briskheal'];
+            let updated = false;
+            ['Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'Briskheal'].forEach(prod => {
+                if (!currentList.includes(prod) && !currentList.some(p => p.toLowerCase() === prod.toLowerCase())) {
+                    currentList.push(prod);
+                    updated = true;
+                }
+            });
+            if (updated) {
+                await Company.updateOne({ _id: c._id }, { targetProductsList: currentList });
+                console.log('🔄 Updated existing Company profile targetProductsList with GLOWVIT-60K.');
+            }
         }
 
         // Seed Rapid Test Questions
