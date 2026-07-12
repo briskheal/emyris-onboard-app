@@ -314,13 +314,15 @@ router.post('/exam-questions', async (req, res) => {
         
         const questions = await Question.find({ active: true });
         
-        // ONLY fetch Product questions
-        let allProductQs = questions.filter(q => 
-            q.category === 'exam_product' || 
-            (activeProduct && q.targetProduct === activeProduct) || 
-            (activeProduct && q.category.toLowerCase() === activeProduct.toLowerCase()) ||
-            q.category.toLowerCase() === 'emystein' // Fallback for legacy DB structure
-        );
+        // ONLY fetch Product questions for the activeProduct selected
+        let allProductQs = questions.filter(q => {
+            if (q.category === 'exam_product') return true;
+            if (!activeProduct || activeProduct === 'General') {
+                return q.category.toLowerCase() === 'emystein' || q.targetProduct === 'Emystein'; // Fallback for legacy DB structure
+            }
+            return q.targetProduct === activeProduct || 
+                   q.category.toLowerCase() === activeProduct.toLowerCase();
+        });
         
         // Strict slice for MCQ based on mcqCount, NO slice for Descriptive
         let mcqProductQs = allProductQs.filter(q => q.questionType === 'mcq').sort(() => 0.5 - Math.random()).slice(0, mcqCount);

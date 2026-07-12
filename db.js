@@ -43,7 +43,12 @@ const ExamResult = new MongooseAdapter(OnboardExamResult);
 // Database Sync and Seed Function
 async function syncDatabase() {
     try {
-        await sequelize.sync({ alter: true });
+        try {
+            await sequelize.sync({ alter: true });
+        } catch (alterErr) {
+            console.warn('⚠️ Sync alter warning (falling back to standard sync):', alterErr.message);
+            await sequelize.sync();
+        }
         console.log('✅ Synchronized onboard_* tables in database.');
 
         // Seed Default Company if missing
@@ -94,6 +99,27 @@ async function syncDatabase() {
                 { category: 'emystein', text: 'What was last month Secondary units?', questionType: 'descriptive', inputFields: [] },
                 { category: 'emystein', text: 'What was last month Primary units?', questionType: 'descriptive', inputFields: [] },
                 { category: 'emystein', text: 'How to improve sales? Your suggestions.', questionType: 'descriptive', inputFields: [] },
+
+                // GLOWVIT-60K Specific Questions (15 MCQ & 3 Descriptive)
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'What is the active ingredient and strength of GLOWVIT-60K?', questionType: 'mcq', options: ['Vitamin B12 Oral Solution 1,500 mcg', 'Vitamin D3 Oral Solution 60,000 IU', 'Calcium Carbonate Oral Suspension 500 mg', 'Vitamin C Oral Solution 1,000 mg'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'What advanced formulation technology is used in GLOWVIT-60K to ensure superior bioavailability?', questionType: 'mcq', options: ['Extended-release micro-pellets', 'Advanced Vitamin D3 Nano Formula (Nano-sized particles)', 'Enteric-coated tablet matrix', 'Effervescent powder granules'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'According to clinical specifications, what is the bioavailability and absorption rate of GLOWVIT-60K nano shot compared to conventional forms?', questionType: 'mcq', options: ['50% bioavailability with 2x absorption rate', '75% bioavailability with standard absorption', '95%+ bioavailability with 3x faster absorption', '60% bioavailability with slow sustained release'], correctAnswerIndex: 2 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'In what ready-to-use dosage form and volume is GLOWVIT-60K presented?', questionType: 'mcq', options: ['10 ml multi-dose syrup bottle', 'Single 5ml ready-to-use oral solution shot', '2 ml intramuscular injection vial', '15 ml drop bottle for infants'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Beyond bone mineralization, what key musculoskeletal benefit does GLOWVIT-60K provide?', questionType: 'mcq', options: ['Reduces synovial fluid viscosity', 'Enhances skeletal muscle strength and reduces muscle weakness', 'Acts as a direct neuromuscular blocker', 'Stimulates uric acid excretion from joints'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'GLOWVIT-60K significantly improves the intestinal absorption of which two essential minerals?', questionType: 'mcq', options: ['Sodium and Potassium', 'Iron and Zinc', 'Calcium and Phosphorus', 'Magnesium and Copper'], correctAnswerIndex: 2 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'How does GLOWVIT-60K contribute to the management of diabetes?', questionType: 'mcq', options: ['By directly inhibiting intestinal glucose absorption', 'By enhancing insulin sensitivity, supporting pancreatic beta-cell function, & reducing inflammation', 'By acting as a synthetic insulin analogue', 'By accelerating renal excretion of glucose'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'What potential cardiovascular benefit is associated with the Vitamin D3 action in GLOWVIT-60K?', questionType: 'mcq', options: ['Reduces platelet aggregation and thrombogenesis, contributing potential role in treatment of CVDs', 'Directly lowers heart rate like a beta-blocker', 'Increases peripheral vascular resistance', 'Acts as a direct loop diuretic'], correctAnswerIndex: 0 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Why is GLOWVIT-60K specifically indicated for elderly individuals and post-menopausal women?', questionType: 'mcq', options: ['To treat acute respiratory distress', 'To promote bone density and significantly reduce fracture risk', 'To prevent age-related macular degeneration', 'To increase gastric acid secretion'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'What clinical role does GLOWVIT-60K play during pregnancy and lactation?', questionType: 'mcq', options: ['Improves maternal and foetal bone health and supports stable D3 levels', 'Acts as an anti-emetic for morning sickness', 'Prevents gestational iron-deficiency anemia', 'Accelerates labor contractions'], correctAnswerIndex: 0 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Which of the following conditions is NOT a primary indication for GLOWVIT-60K?', questionType: 'mcq', options: ['Osteoporosis, Osteopenia, and Osteomalacia / Rickets', 'Hypocalcemia and Hypoparathyroidism', 'Chronic Kidney Disease (CKD) associated bone disease', 'Acute Bacterial Meningitis'], correctAnswerIndex: 3 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'What is the recommended dosage regimen of GLOWVIT-60K for standard Vitamin D deficiency?', questionType: 'mcq', options: ['60,000 IU once daily for 30 days', '60,000 IU once weekly for 6–8 weeks', '60,000 IU twice weekly for 2 weeks', '60,000 IU once monthly for 1 year'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'For severe Vitamin D deficiency, how long is the weekly 60,000 IU dosing typically advised by a physician?', questionType: 'mcq', options: ['Once weekly for 2–3 weeks', 'Once weekly for 8–12 weeks', 'Once daily for 14 days', 'Once every two months for 6 months'], correctAnswerIndex: 1 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'What is the official brand tagline for GLOWVIT-60K?', questionType: 'mcq', options: ['Shine Stronger', 'Care for Life', 'Advanced Vitamin Power', 'Rapid Bone Relief'], correctAnswerIndex: 0 },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Which pharmaceutical company markets GLOWVIT-60K with the motto "Enhancing Life, Excelling in Care"?', questionType: 'mcq', options: ['Sun Pharmaceutical Industries Ltd', 'Emyris Biolifesciences Pvt Ltd', 'Cipla Limited', 'Dr. Reddy\'s Laboratories'], correctAnswerIndex: 1 },
+
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Explain the clinical advantages of GLOWVIT-60K\'s "Advanced Vitamin D3 Nano Formula" (including bioavailability, absorption speed, and dosage convenience) over conventional tablets or granules.', questionType: 'descriptive', inputFields: [] },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Describe the role of GLOWVIT-60K beyond bone density, specifically highlighting its mechanism and benefits in managing Diabetes and Cardiovascular Diseases (CVDs).', questionType: 'descriptive', inputFields: [] },
+                { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'List the top 4 doctor specialties you will target for GLOWVIT-60K (e.g. Orthopedists, Gynecologists, Diabetologists/Physicians, Nephrologists) and explain the key clinical benefit you will pitch to each.', questionType: 'descriptive', inputFields: ['Specialty 1 & Pitch', 'Specialty 2 & Pitch', 'Specialty 3 & Pitch', 'Specialty 4 & Pitch'] },
 
                 // English
                 { category: 'english', text: 'Which word is a synonym for "Abundant"?', options: ['Scarce', 'Plentiful', 'Empty', 'Brief'], correctAnswerIndex: 1 },
@@ -164,8 +190,16 @@ async function syncDatabase() {
             const newQsToSeed = seedQuestions.filter(q => !existingTexts.has(q.text));
             if (newQsToSeed.length > 0) {
                 console.log(`🌱 Seeding ${newQsToSeed.length} new Rapid Test questions into database...`);
-                await OnboardQuestion.bulkCreate(newQsToSeed.map(q => ({ _id: generateId(), ...q })));
-                console.log('✅ Seeded new questions successfully.');
+                let seededCount = 0;
+                for (const q of newQsToSeed) {
+                    try {
+                        await OnboardQuestion.create({ _id: generateId(), ...q });
+                        seededCount++;
+                    } catch (createErr) {
+                        console.error(`⚠️ Question create failed for "${q.text.substring(0, 35)}...":`, createErr.message);
+                    }
+                }
+                console.log(`✅ Seeded ${seededCount} new questions successfully.`);
             }
         } catch (err) {
             console.error('⚠️ Question seeding check failed:', err.message);
