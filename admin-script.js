@@ -5487,13 +5487,30 @@ async function addTargetProduct() {
 
 async function deleteTargetProduct(prod) {
     if (prod === 'General') return;
-    if (!confirm('Remove ' + prod + '? Existing questions will keep this tag but you cannot schedule new exams for it.')) return;
+    if (!confirm(`Permanently delete "${prod}" from your Target Products list AND delete all associated questions in the Question Bank?`)) return;
     
-    companyData.targetProductsList = companyData.targetProductsList.filter(p => p !== prod);
-    await submitProfileUpdate({ targetProductsList: companyData.targetProductsList }, true);
-    renderTargetProductsList();
-    populateTargetProductDropdowns();
-    showToast("Product Removed");
+    try {
+        lockUI("🗑️ Deleting Product & Questions...");
+        const res = await fetch(`/api/admin/target-product/${encodeURIComponent(prod)}`, { method: 'DELETE' });
+        const result = await res.json();
+        if (result.success) {
+            companyData.targetProductsList = companyData.targetProductsList.filter(p => p !== prod && p.toLowerCase() !== prod.toLowerCase());
+            if (typeof testBankQuestions !== 'undefined' && Array.isArray(testBankQuestions)) {
+                testBankQuestions = testBankQuestions.filter(q => q.targetProduct !== prod && q.category !== prod.toLowerCase() && q.category !== prod);
+            }
+            renderTargetProductsList();
+            populateTargetProductDropdowns();
+            if (typeof fetchTestBankQuestions === 'function') fetchTestBankQuestions();
+            showToast(`Deleted ${prod} and its questions`, 'success');
+        } else {
+            showToast(result.error || 'Failed to delete product', 'error');
+        }
+    } catch (e) {
+        console.error('Delete target product error:', e);
+        showToast('Error deleting target product', 'error');
+    } finally {
+        unlockUI();
+    }
 }
 
 

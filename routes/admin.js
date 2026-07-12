@@ -170,6 +170,33 @@ router.delete('/questions/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+router.delete('/target-product/:prod', async (req, res) => {
+    try {
+        const prod = decodeURIComponent(req.params.prod);
+        if (prod === 'General') return res.status(400).json({ error: 'Cannot delete General category' });
+        
+        let company = await Company.findOne();
+        if (company && Array.isArray(company.targetProductsList)) {
+            const updatedList = company.targetProductsList.filter(p => p !== prod && p.toLowerCase() !== prod.toLowerCase());
+            await Company.updateOne({ _id: company._id }, { $set: { targetProductsList: updatedList } });
+        }
+        
+        // Also delete all questions associated with this target product or category
+        await Question.deleteMany({
+            $or: [
+                { targetProduct: prod },
+                { category: prod.toLowerCase() },
+                { category: prod }
+            ]
+        });
+        
+        res.json({ success: true, message: `Deleted ${prod} and all associated questions.` });
+    } catch (e) {
+        console.error('Target product deletion error:', e);
+        res.status(500).json({ success: false, error: 'Failed to delete target product' });
+    }
+});
+
 
 router.post('/schedule-exam', async (req, res) => {
     try {

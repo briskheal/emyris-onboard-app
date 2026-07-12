@@ -51,7 +51,7 @@ async function syncDatabase() {
         }
         console.log('✅ Synchronized onboard_* tables in database.');
 
-        // Seed Default Company if missing, or update existing targetProductsList from seed questions & defaults
+        // Seed Default Company only if missing. Never overwrite existing targetProductsList if admin deleted/edited items.
         let c = await Company.findOne();
         let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'Briskheal'];
         // Also extract any distinct product/category labels from seedQuestions
@@ -77,18 +77,7 @@ async function syncDatabase() {
             });
             console.log('🌱 Seeded default Company profile with dynamic targetProductsList.');
         } else {
-            let currentList = Array.isArray(c.targetProductsList) ? [...c.targetProductsList] : ['General'];
-            let updated = false;
-            defaultProducts.forEach(prod => {
-                if (!currentList.includes(prod) && !currentList.some(p => p.toLowerCase() === prod.toLowerCase())) {
-                    currentList.push(prod);
-                    updated = true;
-                }
-            });
-            if (updated) {
-                await Company.updateOne({ _id: c._id }, { targetProductsList: currentList });
-                console.log('🔄 Updated existing Company profile targetProductsList dynamically.');
-            }
+            console.log('ℹ️ Company profile already exists. Preserving admin targetProductsList exactly.');
         }
 
         // Seed Rapid Test Questions
