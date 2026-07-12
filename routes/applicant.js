@@ -408,7 +408,6 @@ router.post('/save-draft', async (req, res) => {
             actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
             dob: formData.dob, // Store as string DD-MM-YYYY
             address: formData.address || "",
-            pin: formData.pin || "",
             state: formData.state || "",
             salary: formData.salary || "",
             maritalStatus: formData.maritalStatus || "",
@@ -907,7 +906,6 @@ router.post('/save-draft', async (req, res) => {
             actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
             dob: formData.dob, // Store as string DD-MM-YYYY
             address: formData.address || "",
-            pin: formData.pin || "",
             state: formData.state || "",
             salary: formData.salary || "",
             maritalStatus: formData.maritalStatus || "",
@@ -1143,7 +1141,6 @@ router.post('/submit-onboarding', async (req, res) => {
                 actualJoiningDate: formData.joiningDate, 
                 dob: formData.dob, 
                 address: formData.address || "",
-                pin: formData.pin || "",
                 state: formData.state || "",
                 salary: formData.salary || "",
                 maritalStatus: formData.maritalStatus || "Unmarried",

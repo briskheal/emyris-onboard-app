@@ -6,12 +6,13 @@ import './index.css';
 let reactRoot = null;
 
 window.mountReactApp = (initialView = 'landing', applicantData = null) => {
-    // Hide ALL legacy views
-    const viewsToHide = ['landingPage', 'applicantRegister', 'applicantLogin', 'applicantDashboard'];
+    // Hide ALL legacy views and containers
+    const viewsToHide = ['landingPage', 'applicantRegister', 'applicantLogin', 'applicantDashboard', 'onboardingForm', 'appShell'];
     viewsToHide.forEach(id => {
         const el = document.getElementById(id);
         if (el) el.classList.add('hidden');
     });
+    document.querySelectorAll('.view-section, .app-container').forEach(el => el.classList.add('hidden'));
 
     let rootElement = document.getElementById('react-applicant-root');
     if (!rootElement) {
