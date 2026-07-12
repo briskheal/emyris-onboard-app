@@ -51,19 +51,35 @@ async function syncDatabase() {
         }
         console.log('✅ Synchronized onboard_* tables in database.');
 
-        // Seed Default Company if missing, or update existing targetProductsList with GLOWVIT-60K
+        // Seed Default Company if missing, or update existing targetProductsList from seed questions & defaults
         let c = await Company.findOne();
+        let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'Briskheal'];
+        // Also extract any distinct product/category labels from seedQuestions
+        if (typeof seedQuestions !== 'undefined' && Array.isArray(seedQuestions)) {
+            seedQuestions.forEach(sq => {
+                if (sq.targetProduct && sq.targetProduct !== 'General' && !defaultProducts.includes(sq.targetProduct)) {
+                    defaultProducts.push(sq.targetProduct);
+                }
+                if (sq.category && !['math', 'english', 'current_affairs', 'gk', 'exam_product', 'exam_current_affairs', 'general'].includes(sq.category.toLowerCase())) {
+                    const formattedCat = sq.category.toUpperCase().includes('GLOWVIT') ? 'GLOWVIT-60K' : sq.category;
+                    if (!defaultProducts.includes(formattedCat) && !defaultProducts.some(p => p.toLowerCase() === sq.category.toLowerCase())) {
+                        defaultProducts.push(formattedCat);
+                    }
+                }
+            });
+        }
+
         if (!c) {
             c = await Company.create({
                 name: 'Emyris Biolifesciences',
                 website: 'www.emyrisbio.com',
-                targetProductsList: ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'Briskheal']
+                targetProductsList: defaultProducts
             });
-            console.log('🌱 Seeded default Company profile.');
+            console.log('🌱 Seeded default Company profile with dynamic targetProductsList.');
         } else {
-            let currentList = Array.isArray(c.targetProductsList) ? [...c.targetProductsList] : ['General', 'Emystein', 'Briskheal'];
+            let currentList = Array.isArray(c.targetProductsList) ? [...c.targetProductsList] : ['General'];
             let updated = false;
-            ['Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'Briskheal'].forEach(prod => {
+            defaultProducts.forEach(prod => {
                 if (!currentList.includes(prod) && !currentList.some(p => p.toLowerCase() === prod.toLowerCase())) {
                     currentList.push(prod);
                     updated = true;
@@ -71,7 +87,7 @@ async function syncDatabase() {
             });
             if (updated) {
                 await Company.updateOne({ _id: c._id }, { targetProductsList: currentList });
-                console.log('🔄 Updated existing Company profile targetProductsList with GLOWVIT-60K.');
+                console.log('🔄 Updated existing Company profile targetProductsList dynamically.');
             }
         }
 

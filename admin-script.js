@@ -5425,6 +5425,7 @@ function populateTargetProductDropdowns() {
     if (!companyData.targetProductsList) return;
     const qDrop = document.getElementById('q_targetProduct');
     const schDrop = document.getElementById('activeExamProductInput');
+    const catDrop = document.getElementById('q_category');
     
     const buildOptions = (includeAll) => {
         let html = includeAll ? '<option value="General">General / All</option>' : '<option value="General">General / Not Applicable</option>';
@@ -5441,6 +5442,28 @@ function populateTargetProductDropdowns() {
         if (currentVal && companyData.targetProductsList.includes(currentVal)) {
             schDrop.value = currentVal;
         }
+    }
+
+    if (catDrop && companyData.targetProductsList) {
+        let catHtml = '';
+        const standardCats = [
+            { id: 'math', label: 'Rapid Test - Mathematics' },
+            { id: 'english', label: 'Rapid Test - English' },
+            { id: 'current_affairs', label: 'Rapid Test - Current Affairs' },
+            { id: 'gk', label: 'Rapid Test - General Knowledge' },
+            { id: 'exam_product', label: 'Employee Exam - Product' },
+            { id: 'exam_current_affairs', label: 'Employee Exam - Current Affairs' }
+        ];
+        companyData.targetProductsList.forEach(p => {
+            if (p !== 'General') {
+                const cleanId = p.toLowerCase();
+                catHtml += `<option value="${cleanId}">Rapid Test - ${p}</option>`;
+            }
+        });
+        standardCats.forEach(sc => {
+            catHtml += `<option value="${sc.id}">${sc.label}</option>`;
+        });
+        catDrop.innerHTML = catHtml;
     }
 }
 
