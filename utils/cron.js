@@ -7,51 +7,53 @@ function startCronJobs() {
     cron.schedule('0 0,8,16 * * *', async () => {
         try {
             console.log('⏰ Running 8-hourly exam reminder and report cron job...');
-            const company = await Company.findOne();
-            if (!company || !company.activeExamDate) return;
-
-            const examDate = company.activeExamDate.substring(0, 10);
-            const productName = company.activeExamProduct || 'General Assessment';
+            console.log('⏰ Running 8-hourly exam reminder and report cron job...');
 
             const applicants = await Applicant.find({ status: { $nin: ['rejected'] } });
             
             let reportRows = '';
 
             for (const app of applicants) {
-                const existingResult = await ExamResult.findOne({ email: app.email, examDate: examDate });
+                let pending = [];
+                try { pending = typeof app.pendingExams === 'string' ? JSON.parse(app.pendingExams) : (app.pendingExams || []); } catch(e){}
                 
-                let attemptStatus = 'Not Attempted';
+                let attemptStatus = pending.length > 0 ? `${pending.length} Pending` : 'All Completed';
                 let mcqMarks = '-';
-                let manualStatus = 'Pending';
+                let manualStatus = '-';
                 let totalMarks = '-';
 
-                if (!existingResult) {
+                // Look up recent results for the admin report
+                const recentResults = await ExamResult.find({ email: app.email });
+                const latest = recentResults.length > 0 ? recentResults[recentResults.length - 1] : null;
+                if (latest) {
+                    mcqMarks = latest.autoScore || 0;
+                    if (latest.status === 'graded') {
+                        manualStatus = 'Done';
+                        totalMarks = latest.totalScore || 0;
+                    } else {
+                        manualStatus = 'Pending';
+                        totalMarks = 'Pending';
+                    }
+                }
+
+                if (pending.length > 0) {
                     // Send reminder
                     try {
+                        const productNames = pending.map(p => p.targetProduct).join(', ');
                         const emailHtml = `
-                            <h2>Reminder: Exam Pending for ${productName}</h2>
+                            <h2>Reminder: Exams Pending</h2>
                             <p>Hi ${app.fullName},</p>
-                            <p>This is a reminder that your MCQ Questionnaire for <strong>${productName}</strong> is waiting on your dashboard.</p>
-                            <p>Please log in and complete it as soon as possible.</p>
+                            <p>This is a reminder that you have <strong>${pending.length}</strong> mandatory exam(s) waiting on your dashboard for the following products: <strong>${productNames}</strong>.</p>
+                            <p>Please log in and complete them as soon as possible.</p>
                             <p><a href="${process.env.BASE_URL || 'https://emyrishr.in'}/" style="padding: 10px 20px; background: #6366f1; color: #fff; text-decoration: none; border-radius: 5px;">Login to Dashboard</a></p>
                         `;
                         await sendEmail({
                             to: app.email,
-                            subject: `Reminder: Action Required for ${productName} Exam`,
+                            subject: `Reminder: Action Required for Pending Exams`,
                             html: emailHtml
                         });
                     } catch (err) {
                         console.error('Failed to send reminder to:', app.email, err.message);
-                    }
-                } else {
-                    attemptStatus = 'Attempted';
-                    mcqMarks = existingResult.autoScore || 0;
-                    if (existingResult.status === 'graded') {
-                        manualStatus = 'Done';
-                        totalMarks = existingResult.totalScore || 0;
-                    } else {
-                        manualStatus = 'Pending';
-                        totalMarks = 'Pending';
                     }
                 }
 
@@ -72,8 +74,7 @@ function startCronJobs() {
             const reportHtml = `
                 <div style="font-family: Arial, sans-serif; max-width: 800px; margin: auto;">
                     <h2 style="color: #6366f1;">8-Hourly Exam Status Report</h2>
-                    <p><strong>Product:</strong> ${productName}</p>
-                    <p><strong>Scheduled Date:</strong> ${examDate}</p>
+                    <p><strong>Total Applicants:</strong> ${applicants.length}</p>
                     <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
                         <thead>
                             <tr style="background-color: #f3f4f6; color: #000;">
@@ -94,7 +95,7 @@ function startCronJobs() {
 
             await sendEmail({
                 to: adminEmail,
-                subject: `Exam Status Report - ${productName}`,
+                subject: `Exam Status Report (Multi-Exam Queue)`,
                 html: reportHtml
             });
 

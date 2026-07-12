@@ -171,13 +171,34 @@ router.post('/schedule-exam', async (req, res) => {
                 } 
             });
 
-            // Send notification to eligible applicants
+            // Queue exam to eligible applicants
             const applicants = await Applicant.find({ status: { $nin: ['rejected'] } });
             const productName = targetProduct || 'General Assessment';
             
+            const newExam = {
+                id: Date.now().toString(),
+                examDate,
+                targetProduct: productName,
+                mcqTime: mcqTime || 15,
+                descTime: descTime || 15,
+                mcqCount: mcqCount || 5,
+                rapidTime: rapidTime || 25,
+                assignedAt: new Date().toISOString()
+            };
+
             for (const app of applicants) {
-                const existingResult = await ExamResult.findOne({ email: app.email, examDate: examDate });
-                if (!existingResult) {
+                let currentPending = [];
+                try {
+                    currentPending = typeof app.pendingExams === 'string' ? JSON.parse(app.pendingExams) : (app.pendingExams || []);
+                } catch(e) { currentPending = []; }
+                
+                const alreadyQueued = currentPending.find(e => e.examDate === examDate && e.targetProduct === productName);
+                const existingResult = await ExamResult.findOne({ email: app.email, testedProduct: productName });
+
+                if (!alreadyQueued && !existingResult) {
+                    currentPending.push(newExam);
+                    await Applicant.updateOne({ _id: app._id }, { $set: { pendingExams: currentPending } });
+                    
                     try {
                         const emailHtml = `
                             <h2>Exam Scheduled: ${productName}</h2>

@@ -106,6 +106,7 @@ const OnboardApplicant = sequelize.define('onboard_applicant', {
     submittedAt: DataTypes.DATE,
     approvedAt: DataTypes.DATE,
     documents: { type: DataTypes.JSON, defaultValue: [] },
+    pendingExams: { type: DataTypes.JSON, defaultValue: [] },
     designation: DataTypes.STRING,
     division: DataTypes.STRING,
     reportingTo: DataTypes.STRING,

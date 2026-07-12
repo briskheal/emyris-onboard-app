@@ -1014,16 +1014,18 @@ function renderApplicantDashboard() {
                 </div>
             `).join('');
 
-            const examBtn = document.getElementById('applicantExamBtn');
-            if (examBtn) {
-                examBtn.classList.add('hidden');
-                if (companyData && companyData.activeExamDate && app.status !== 'rejected') {
-                    const localDate = new Date();
-                    localDate.setMinutes(localDate.getMinutes() - localDate.getTimezoneOffset());
-                    const today = localDate.toISOString().split('T')[0];
-                    if (companyData.activeExamDate.substring(0, 10) === today) {
-                        examBtn.classList.remove('hidden');
-                    }
+            const examContainer = document.getElementById('applicantExamContainer');
+            if (examContainer) {
+                examContainer.innerHTML = '';
+                if (app.pendingExams && app.pendingExams.length > 0) {
+                    app.pendingExams.forEach(exam => {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn btn-primary';
+                        btn.style.cssText = 'width:100%; margin-top: 0.75rem; background: linear-gradient(135deg, #10b981, #3b82f6); border: none;';
+                        btn.innerText = `📝 Take Scheduled Exam: ${exam.targetProduct}`;
+                        btn.onclick = () => launchOngoingExam(exam);
+                        examContainer.appendChild(btn);
+                    });
                 }
             }
             
@@ -1727,8 +1729,10 @@ let ongoingExamQuestions = [];
 let ongoingExamAnswers = {};
 let ongoingExamTimerInterval;
 let ongoingExamPhase = 1;
+let currentOngoingExamContext = null;
 
-function launchOngoingExam() {
+function launchOngoingExam(exam) {
+    currentOngoingExamContext = exam;
     updateView('ongoingExamView');
     document.getElementById('examIntroSection').classList.remove('hidden');
     document.getElementById('examQuestionsContainer').classList.add('hidden');
@@ -1739,7 +1743,7 @@ let ongoingExamMcqTime = 15;
 let ongoingExamDescTime = 15;
 
 async function startOngoingExam() {
-    lockUI('⏳ Preparing your exam...');
+    lockUI('🚀 Preparing your exam...');
     try {
         const res = await fetch('/api/applicant/exam-questions', {
             method: 'POST',
@@ -1979,7 +1983,8 @@ async function submitOngoingExam() {
                 name: (currentApplicant.firstName || '') + ' ' + (currentApplicant.lastName || ''),
                 hq: currentApplicant.hq || 'Not Specified',
                 division: currentApplicant.division || 'Not Specified',
-                examDate: new Date().toISOString().split('T')[0],
+                examDate: currentOngoingExamContext ? currentOngoingExamContext.examDate : new Date().toISOString().split('T')[0],
+                targetProduct: currentOngoingExamContext ? currentOngoingExamContext.targetProduct : '',
                 totalQuestions: ongoingExamQuestions.length,
                 answers: ongoingExamAnswers
             })
@@ -1987,10 +1992,7 @@ async function submitOngoingExam() {
         const data = await res.json();
         if (data.success) {
             alert('Your exam has been submitted successfully! Your final result will be declared after the Admin reviews your Descriptive Assessment.');
-            renderApplicantDashboard();
-            updateView('applicantDashboard');
-            document.getElementById('floatingExamTimer').style.display = 'none';
-            document.getElementById('applicantExamBtn').classList.add('hidden');
+            window.location.reload();
         } else {
             alert(data.message || 'Failed to submit exam.');
         }

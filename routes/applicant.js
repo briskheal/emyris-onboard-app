@@ -274,11 +274,25 @@ router.post('/schedule-exam', async (req, res) => {
 
 router.post('/exam-questions', async (req, res) => {
     try {
+        const { email, targetProduct } = req.body;
+        const applicant = await Applicant.findOne({ email });
         const company = await Company.findOne();
-        const activeProduct = company && company.activeExamProduct ? company.activeExamProduct : '';
-        const mcqTime = company && company.examMcqTime ? company.examMcqTime : 15;
-        const descTime = company && company.examDescriptiveTime ? company.examDescriptiveTime : 15;
-        const mcqCount = company && company.examMcqCount ? company.examMcqCount : 10;
+        
+        let activeProduct = targetProduct || (company && company.activeExamProduct ? company.activeExamProduct : '');
+        let mcqTime = company && company.examMcqTime ? company.examMcqTime : 15;
+        let descTime = company && company.examDescriptiveTime ? company.examDescriptiveTime : 15;
+        let mcqCount = company && company.examMcqCount ? company.examMcqCount : 10;
+
+        if (applicant && applicant.pendingExams) {
+            let pending = [];
+            try { pending = typeof applicant.pendingExams === 'string' ? JSON.parse(applicant.pendingExams) : applicant.pendingExams; } catch(e){}
+            const examConfig = pending.find(e => e.targetProduct === activeProduct);
+            if (examConfig) {
+                mcqTime = examConfig.mcqTime || mcqTime;
+                descTime = examConfig.descTime || descTime;
+                mcqCount = examConfig.mcqCount || mcqCount;
+            }
+        }
         
         const questions = await Question.find({ active: true });
         
@@ -316,7 +330,7 @@ router.post('/exam-questions', async (req, res) => {
 
 router.post('/submit-exam', async (req, res) => {
     try {
-        const { email, name, hq, division, examDate, answers, totalQuestions } = req.body;
+        const { email, name, hq, division, examDate, targetProduct, answers, totalQuestions } = req.body;
         
         let autoScore = 0;
         const questions = await Question.find({ active: true });
@@ -334,6 +348,7 @@ router.post('/submit-exam', async (req, res) => {
             hq,
             division,
             examDate,
+            testedProduct: targetProduct || '',
             totalQuestions,
             autoScore,
             manualScore: 0,
@@ -341,6 +356,17 @@ router.post('/submit-exam', async (req, res) => {
             status: 'pending_review',
             answers
         });
+        
+        // Remove submitted exam from pendingExams
+        const applicant = await Applicant.findOne({ email });
+        if (applicant && applicant.pendingExams) {
+            let pending = [];
+            try { pending = typeof applicant.pendingExams === 'string' ? JSON.parse(applicant.pendingExams) : applicant.pendingExams; } catch(e){}
+            const updatedPending = pending.filter(e => 
+                !(e.targetProduct === targetProduct && e.examDate === examDate)
+            );
+            await Applicant.updateOne({ _id: applicant._id }, { $set: { pendingExams: updatedPending } });
+        }
         
         res.json({ success: true });
     } catch (e) {
@@ -859,82 +885,7 @@ router.post('/submit-test', async (req, res) => {
     }
 });
 
-router.post('/exam-questions', async (req, res) => {
-    try {
-        const company = await Company.findOne();
-        const activeProduct = company && company.activeExamProduct ? company.activeExamProduct : '';
-        const mcqTime = company && company.examMcqTime ? company.examMcqTime : 15;
-        const descTime = company && company.examDescriptiveTime ? company.examDescriptiveTime : 15;
-        const mcqCount = company && company.examMcqCount ? company.examMcqCount : 10;
-        
-        const questions = await Question.find({ active: true });
-        
-        // ONLY fetch Product questions
-        let allProductQs = questions.filter(q => 
-            q.category === 'exam_product' || 
-            (activeProduct && q.targetProduct === activeProduct) || 
-            (activeProduct && q.category.toLowerCase() === activeProduct.toLowerCase()) ||
-            q.category.toLowerCase() === 'emystein' // Fallback for legacy DB structure
-        );
-        
-        // Strict slice for MCQ based on mcqCount, NO slice for Descriptive
-        let mcqProductQs = allProductQs.filter(q => q.questionType === 'mcq').sort(() => 0.5 - Math.random()).slice(0, mcqCount);
-        let descProductQs = allProductQs.filter(q => q.questionType === 'descriptive').sort(() => 0.5 - Math.random()).slice(0, 5);
-        
-        // Combine and shuffle
-        const selected = [...mcqProductQs, ...descProductQs].sort(() => 0.5 - Math.random());
-        
-        const safeQuestions = selected.map(q => ({
-            _id: q._id,
-            category: q.category,
-            questionType: q.questionType,
-            text: q.text,
-            options: q.options,
-            inputFields: q.inputFields,
-            correctAnswerIndex: q.correctAnswerIndex
-        }));
-        
-        res.json({ success: true, mcqTime, descTime, questions: safeQuestions });
-    } catch (e) {
-        console.error('Fetch Exam Error:', e);
-        res.status(500).json({ error: 'Failed to fetch exam questions' });
-    }
-});
 
-router.post('/submit-exam', async (req, res) => {
-    try {
-        const { email, name, hq, division, examDate, answers, totalQuestions } = req.body;
-        
-        let autoScore = 0;
-        const questions = await Question.find({ active: true });
-        
-        for (const [qId, selectedIdxOrText] of Object.entries(answers || {})) {
-            const q = questions.find(qu => qu._id === qId);
-            if (q && q.questionType === 'mcq' && q.correctAnswerIndex === Number(selectedIdxOrText)) {
-                autoScore++;
-            }
-        }
-        
-        await ExamResult.create({
-            email,
-            name,
-            hq,
-            division,
-            examDate,
-            totalQuestions,
-            autoScore,
-            manualScore: 0,
-            totalScore: autoScore,
-            status: 'pending_review',
-            answers
-        });
-        
-        res.json({ success: true });
-    } catch (e) {
-        console.error('Submit Exam Error:', e);
-        res.status(500).json({ error: 'Failed to submit exam' });
-    }
-});
 
 router.post('/save-draft', async (req, res) => {
     try {
