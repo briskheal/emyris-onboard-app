@@ -154,13 +154,14 @@ function updateView(viewId) {
         'applicantLogin': 'login',
         'applicantRegister': 'register',
         'loginLandingView': 'dashboard',
-        'applicantDashboard': 'dashboard' // Just in case
+        'applicantDashboard': 'dashboard',
+        'onboardingForm': 'onboardingForm'
     };
 
     if (reactApplicantViews[viewId] && window.mountReactApp) {
-        // If it's the dashboard, we must pass the applicant
-        if (reactApplicantViews[viewId] === 'dashboard' && typeof currentApplicant !== 'undefined') {
-            window.mountReactApp('dashboard', currentApplicant);
+        // If it requires the applicant object
+        if (['dashboard', 'onboardingForm'].includes(reactApplicantViews[viewId]) && typeof currentApplicant !== 'undefined') {
+            window.mountReactApp(reactApplicantViews[viewId], currentApplicant);
         } else {
             window.mountReactApp(reactApplicantViews[viewId], null);
         }

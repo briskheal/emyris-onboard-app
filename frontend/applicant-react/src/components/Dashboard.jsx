@@ -51,11 +51,30 @@ const Dashboard = ({ applicant, onLogout }) => {
             <div style={styles.actionSection}>
                 <h3 style={styles.sectionTitle}>Your Action Items</h3>
                 
-                {pendingExams.length === 0 ? (
-                    <div style={styles.emptyState}>
-                        <p>You have no pending exams at this time.</p>
+                {['draft', 'registered', 'rejected', 'onboarding'].includes(applicant.status) && !applicant.offerAccepted && (
+                    <div style={styles.formCard}>
+                        <div style={styles.examInfo}>
+                            <h4 style={styles.examTitle}>Onboarding Form ({applicant.status.toUpperCase()})</h4>
+                            <p style={styles.examDetail}>Please complete your onboarding details and submit.</p>
+                        </div>
+                        <button 
+                            onClick={() => {
+                                if (window.mountReactApp) window.mountReactApp('onboardingForm', applicant);
+                            }}
+                            style={styles.formButton}
+                        >
+                            📝 Continue Form
+                        </button>
                     </div>
-                ) : (
+                )}
+
+                {pendingExams.length === 0 && !['draft', 'registered', 'rejected', 'onboarding'].includes(applicant.status) ? (
+                    <div style={styles.emptyState}>
+                        <p>You have no pending action items at this time.</p>
+                    </div>
+                ) : null}
+
+                {pendingExams.length > 0 && (
                     <div style={styles.examList}>
                         {pendingExams.map((exam, index) => (
                             <div key={index} style={styles.examCard}>
@@ -144,6 +163,16 @@ const styles = {
         justifyContent: 'space-between',
         alignItems: 'center'
     },
+    formCard: {
+        background: 'linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.7))',
+        border: '1px solid rgba(59, 130, 246, 0.4)',
+        borderRadius: '12px',
+        padding: '20px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '16px'
+    },
     examTitle: {
         margin: '0 0 5px 0',
         color: '#10b981',
@@ -164,6 +193,17 @@ const styles = {
         fontWeight: 'bold',
         transition: 'transform 0.2s',
         boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)'
+    },
+    formButton: {
+        background: 'linear-gradient(135deg, #3b82f6, #6366f1)',
+        color: 'white',
+        border: 'none',
+        padding: '12px 24px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        transition: 'transform 0.2s',
+        boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
     },
     emptyState: {
         background: 'rgba(255,255,255,0.02)',

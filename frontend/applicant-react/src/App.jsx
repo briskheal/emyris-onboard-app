@@ -3,6 +3,7 @@ import LandingPage from './components/LandingPage';
 import Login from './components/Login';
 import Registration from './components/Registration';
 import Dashboard from './components/Dashboard';
+import OnboardingForm from './components/OnboardingForm';
 
 const App = ({ initialApplicant, initialView = 'landing' }) => {
   const [currentView, setCurrentView] = useState(initialApplicant ? 'dashboard' : initialView);
@@ -85,6 +86,14 @@ const App = ({ initialApplicant, initialView = 'landing' }) => {
         <Dashboard 
           applicant={applicant} 
           onLogout={handleLogout}
+        />
+      )}
+
+      {currentView === 'onboardingForm' && applicant && (
+        <OnboardingForm 
+          applicant={applicant} 
+          companyData={companyData}
+          onComplete={() => setCurrentView('dashboard')}
         />
       )}
     </div>
