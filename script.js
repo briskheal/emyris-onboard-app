@@ -451,6 +451,11 @@ function resumeApplication() {
     }
 
     // Show the multi-step form for drafts or re-submissions
+    if (window.mountReactApp) {
+        window.mountReactApp('onboardingForm', currentApplicant);
+        return;
+    }
+
     updateView('onboardingForm');
     currentStep = 1;
     populateDropdowns();
@@ -461,6 +466,7 @@ function resumeApplication() {
 
 
 function prefillForm() {
+    if (window.mountReactApp) return;
     const form = document.getElementById('onboardingForm');
     if (!form) return;
 
@@ -587,6 +593,7 @@ function prevStep(step) {
 }
 
 function renderStep(step) {
+    if (window.mountReactApp) return;
     currentStep = step;
     document.querySelectorAll('.form-step').forEach(s => {
         s.classList.remove('active');
@@ -774,6 +781,7 @@ function showReview() {
 // --- DOCUMENT UPLOAD LOGIC ---
 
 function renderApplicantDocuments() {
+    if (window.mountReactApp) return;
     const container = document.getElementById('dynamicTestimonialUploads');
     if (!container) return;
     container.innerHTML = '';
