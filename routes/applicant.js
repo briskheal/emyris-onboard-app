@@ -128,6 +128,7 @@ router.post('/login', async (req, res) => {
                 status: applicant.status,
                 formData: applicant.formData,
                 documents: applicant.documents || [],
+                pendingExams: applicant.pendingExams || [],
                 verificationChecks: applicant.verificationChecks || {},
                 salaryBreakup: applicant.salaryBreakup || {},
                 tasks: applicant.tasks || {},

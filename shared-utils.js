@@ -159,13 +159,25 @@ function updateView(viewId) {
         document.body.classList.remove('at-landing');
         
         const activeSection = document.getElementById(viewId);
-        if (activeSection) {
-            activeSection.classList.remove('hidden');
-            activeSection.style.display = (viewId === 'adminDashboard' || viewId === 'applicantDashboard') ? 'flex' : 'block';
-            activeSection.classList.add('active');
-            
-            if (typeof gsap !== 'undefined') {
-                gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
+        
+        // --- REACT MIGRATION INTERCEPTOR ---
+        if (viewId === 'applicantDashboard' && window.mountReactDashboard && typeof currentApplicant !== 'undefined') {
+            window.mountReactDashboard(currentApplicant);
+            if (activeSection) {
+                activeSection.classList.add('hidden');
+                activeSection.style.display = 'none';
+                activeSection.classList.remove('active');
+            }
+        } else {
+            if (window.unmountReactDashboard) window.unmountReactDashboard();
+            if (activeSection) {
+                activeSection.classList.remove('hidden');
+                activeSection.style.display = (viewId === 'adminDashboard' || viewId === 'applicantDashboard') ? 'flex' : 'block';
+                activeSection.classList.add('active');
+                
+                if (typeof gsap !== 'undefined') {
+                    gsap.fromTo(activeSection, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" });
+                }
             }
         }
 
