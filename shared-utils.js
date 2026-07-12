@@ -212,9 +212,7 @@ function updateView(viewId) {
         if (rapidTimer) {
             rapidTimer.style.display = (viewId === 'rapidTestView') ? 'flex' : 'none';
         }
-    }
 }
-
 function backToLanding() { updateView('landingPage'); }
 function showAdminLogin() { updateView('adminLogin'); }
 function showApplicantRegister() { updateView('applicantRegister'); }
