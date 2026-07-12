@@ -435,9 +435,9 @@ function resumeApplication() {
         return;
     }
 
-    // Candidates can resume the form if they are in draft, registered, rejected, onboarding, submitted, or approved status 
-    // (unless an offer has already been issued/accepted)
-    const canResumeForm = ['draft', 'registered', 'rejected', 'onboarding', 'submitted', 'approved'].includes(app.status);
+    // Candidates jump immediately to the form if they are in draft, registered, or rejected status.
+    // Once submitted/approved/onboarding, they land on the dashboard (loginLandingView) first.
+    const canResumeForm = ['draft', 'registered', 'rejected'].includes(app.status);
     const hasOffer = !!(app.offerAccepted || app.offerLetterData);
 
     if (hasOffer) {
