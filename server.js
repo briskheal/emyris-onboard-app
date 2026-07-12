@@ -145,28 +145,39 @@ app.post('/api/submit-onboarding', (req, res, next) => {
 
 
 // Local File Storage Helper
-function saveBase64ToFile(email, category, base64Data) {
+const sharp = require('sharp');
+async function saveBase64ToFile(email, category, base64Data) {
     if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
         return base64Data; // Already a URL or missing
     }
     const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) return base64Data;
     
+    const mimeType = matches[1].toLowerCase();
     let ext = 'png';
-    if (matches[1].includes('pdf')) ext = 'pdf';
-    else if (matches[1].includes('webp')) ext = 'webp';
-    else if (matches[1].includes('jpeg') || matches[1].includes('jpg') || matches[1].includes('jfif')) ext = 'jpg';
+    if (mimeType.includes('pdf')) ext = 'pdf';
+    else if (mimeType.includes('webp')) ext = 'webp';
+    else if (mimeType.includes('jpeg') || mimeType.includes('jpg') || mimeType.includes('jfif')) ext = 'jpg';
 
     const safeEmail = email.replace(/[^a-z0-9]/gi, '_');
     const safeCategory = category.replace(/[^a-z0-9]/gi, '_');
-    const filename = `${safeEmail}_${safeCategory}_${Date.now()}.${ext}`;
     
     const uploadsDir = path.join(__dirname, 'uploads');
     if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
     }
     
-    const buffer = Buffer.from(matches[2], 'base64');
+    let buffer = Buffer.from(matches[2], 'base64');
+    if (mimeType.startsWith('image/') && !mimeType.includes('svg') && !mimeType.includes('icon')) {
+        try {
+            buffer = await sharp(buffer).webp({ quality: 80, effort: 4 }).toBuffer();
+            ext = 'webp';
+        } catch (sharpErr) {
+            console.warn('[SHARP CONVERSION WARNING] Could not convert server image to WebP, saving original:', sharpErr.message);
+        }
+    }
+
+    const filename = `${safeEmail}_${safeCategory}_${Date.now()}.${ext}`;
     fs.writeFileSync(path.join(uploadsDir, filename), buffer);
     // Asynchronously save to PostgreSQL Asset database as backup against Docker volume wipes
     Asset.create({

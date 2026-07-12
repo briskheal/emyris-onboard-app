@@ -8,22 +8,39 @@ const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateH
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
 const { sendEmail } = require('../utils/mailer');
+const sharp = require('sharp');
 
-// Shared file helper
-function saveBase64ToFile(email, category, base64Data) {
+// Shared file helper (Converts images to WebP using sharp; leaves PDF documents intact)
+async function saveBase64ToFile(email, category, base64Data) {
     if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
         return base64Data;
     }
     try {
         const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
         if (!matches) return base64Data;
-        const ext = matches[1].split('/')[1] || 'bin';
+        const mimeType = matches[1].toLowerCase();
+        let ext = matches[1].split('/')[1] || 'bin';
         const dir = path.join(__dirname, '..', 'uploads', email.replace('@', '_'));
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         const safeCategory = category.replace(/[\/\\]/g, '_');
+        
+        let buffer = Buffer.from(matches[2], 'base64');
+        
+        // Convert raster images (png, jpeg, jpg, webp, bmp, tiff) to optimized WebP format
+        if (mimeType.startsWith('image/') && !mimeType.includes('svg') && !mimeType.includes('icon')) {
+            try {
+                buffer = await sharp(buffer)
+                    .webp({ quality: 80, effort: 4 })
+                    .toBuffer();
+                ext = 'webp';
+            } catch (sharpErr) {
+                console.warn('[SHARP CONVERSION WARNING] Could not convert image to WebP, saving original:', sharpErr.message);
+            }
+        }
+        
         const filename = `${safeCategory}_${Date.now()}.${ext}`;
         const filepath = path.join(dir, filename);
-        fs.writeFileSync(filepath, Buffer.from(matches[2], 'base64'));
+        fs.writeFileSync(filepath, buffer);
         return `/uploads/${email.replace('@', '_')}/${filename}`;
     } catch (e) {
         console.error('[FILE SAVE ERROR]', e.message);
@@ -458,7 +475,7 @@ router.post('/upload-document', async (req, res) => {
         }
 
         // 1. Save to Local File System instead of Asset DB
-        const fileUrl = saveBase64ToFile(email, category, fileData);
+        const fileUrl = await saveBase64ToFile(email, category, fileData);
 
         // 2. Link metadata in Applicant (WITHOUT the heavy data)
         const docMetadata = {
@@ -950,7 +967,7 @@ router.post('/upload-document', async (req, res) => {
         }
 
         // 1. Save to Local File System instead of Asset DB
-        const fileUrl = saveBase64ToFile(email, category, fileData);
+        const fileUrl = await saveBase64ToFile(email, category, fileData);
 
         // 2. Link metadata in Applicant (WITHOUT the heavy data)
         const docMetadata = {
@@ -1091,7 +1108,7 @@ router.post('/resubmit-document', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
 
         // Save Base64 to disk
-        const fileUrl = saveBase64ToFile(email, category, data);
+        const fileUrl = await saveBase64ToFile(email, category, data);
 
         // Remove old document of same category
         const newDocs = (applicant.documents || []).filter(d => d.category !== category);
