@@ -40,14 +40,35 @@ async function initializeApp() {
         });
     }
 
-    // Check for existing session (optional, for now we just show landing)
     await fetchCompanyData();
     populateAnniversaryDays();
-    updateView('landingPage');
 
-    // Check for existing session (optional, for now we just show landing)
-    await fetchCompanyData();
-    populateAnniversaryDays();
+    // Restore existing applicant session from localStorage if present
+    try {
+        const savedSession = localStorage.getItem('emyris_applicant_session');
+        if (savedSession) {
+            const { email, pin } = JSON.parse(savedSession);
+            if (email && pin) {
+                console.log('🔄 Restoring applicant session for:', email);
+                const res = await fetch('/api/applicant-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, pin })
+                });
+                const result = await res.json();
+                if (result.success && result.applicant) {
+                    currentApplicant = result.applicant;
+                    resumeApplication();
+                    return;
+                } else {
+                    localStorage.removeItem('emyris_applicant_session');
+                }
+            }
+        }
+    } catch (e) {
+        console.warn('Session restoration failed:', e);
+    }
+
     updateView('landingPage');
 }
 
@@ -372,6 +393,9 @@ async function handleApplicantLogin(e) {
         const result = await res.json();
         if (result.success && result.applicant) {
             currentApplicant = result.applicant;
+            try {
+                localStorage.setItem('emyris_applicant_session', JSON.stringify({ email, pin }));
+            } catch (e) {}
             resumeApplication();
         } else {
             showToast(result.message, "error");
@@ -410,6 +434,7 @@ async function handleForgotPin() {
 
 function logoutApplicant() {
     currentApplicant = null;
+    try { localStorage.removeItem('emyris_applicant_session'); } catch (e) {}
     backToLanding();
     populateDropdowns(); // Ensure dropdowns are fresh
     showToast("Logged out safely.");
@@ -421,6 +446,7 @@ function logoutApplicant() {
 
 function resumeApplication() {
     const app = currentApplicant;
+    if (!app) return;
 
     // ── EXISTING STAFF BYPASS ──────────────────────────────────────────────
     if (app.isExistingStaff) {
@@ -435,41 +461,21 @@ function resumeApplication() {
         return;
     }
 
-    // Candidates jump immediately to the form if they are in draft, registered, or rejected status.
-    // Once submitted/approved/onboarding, they land on the dashboard (loginLandingView) first.
-    const canResumeForm = ['draft', 'registered', 'rejected'].includes(app.status);
-    const hasOffer = !!(app.offerAccepted || app.offerLetterData);
+    // Always show the hub dashboard card (Where would you like to go today? Go to My Dashboard / Update Personal Info)
+    updateView('loginLandingView');
+}
 
-    if (hasOffer) {
-        updateView('loginLandingView');
-        return;
-    }
-
-    if (!canResumeForm) {
-        updateView('loginLandingView');
-        return;
-    }
-
-    // Show the multi-step form for drafts or re-submissions
+function goToPersonalInfoUpdate() {
     if (window.mountReactApp) {
-        window.mountReactApp('onboardingForm', currentApplicant);
+        window.mountReactApp('onboardingForm', typeof currentApplicant !== 'undefined' ? currentApplicant : null);
         return;
     }
-
     updateView('onboardingForm');
     currentStep = 1;
     populateDropdowns();
     renderStep(1);
     prefillForm();
     renderApplicantDocuments();
-}
-
-function goToPersonalInfoUpdate() {
-    if (window.mountReactApp) {
-        window.mountReactApp('onboardingForm', typeof currentApplicant !== 'undefined' ? currentApplicant : null);
-    } else {
-        resumeApplication();
-    }
 }
 
 

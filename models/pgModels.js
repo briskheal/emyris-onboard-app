@@ -51,7 +51,7 @@ const OnboardCompany = sequelize.define('onboard_company', {
     examMcqTime: { type: DataTypes.INTEGER, defaultValue: 15 },
     examDescriptiveTime: { type: DataTypes.INTEGER, defaultValue: 15 },
     examMcqCount: { type: DataTypes.INTEGER, defaultValue: 10 },
-    targetProductsList: { type: DataTypes.JSON, defaultValue: ["General", "Emystein", "Briskheal"] },
+    targetProductsList: { type: DataTypes.JSON, defaultValue: ["General", "Emystein"] },
     customAssetCategories: { type: DataTypes.JSON, defaultValue: [] },
     designations: { 
         type: DataTypes.JSON, 

@@ -175,20 +175,22 @@ router.delete('/target-product/:prod', async (req, res) => {
         const prod = decodeURIComponent(req.params.prod);
         if (prod === 'General') return res.status(400).json({ error: 'Cannot delete General category' });
         
-        let company = await Company.findOne();
-        if (company && Array.isArray(company.targetProductsList)) {
-            const updatedList = company.targetProductsList.filter(p => p !== prod && p.toLowerCase() !== prod.toLowerCase());
-            await Company.updateOne({ _id: company._id }, { $set: { targetProductsList: updatedList } });
+        const allCompanies = await Company.find();
+        for (const company of allCompanies) {
+            if (company && Array.isArray(company.targetProductsList)) {
+                const updatedList = company.targetProductsList.filter(p => p !== prod && p.toLowerCase() !== prod.toLowerCase());
+                await Company.updateOne({ _id: company._id }, { targetProductsList: updatedList, $set: { targetProductsList: updatedList } });
+            }
         }
         
-        // Also delete all questions associated with this target product or category
-        await Question.deleteMany({
-            $or: [
-                { targetProduct: prod },
-                { category: prod.toLowerCase() },
-                { category: prod }
-            ]
-        });
+        // Also delete all questions associated with this target product or category (case-insensitive)
+        const allQuestions = await Question.find();
+        for (const q of allQuestions) {
+            if ((q.targetProduct && q.targetProduct.toLowerCase() === prod.toLowerCase()) ||
+                (q.category && q.category.toLowerCase() === prod.toLowerCase())) {
+                await q.destroy();
+            }
+        }
         
         res.json({ success: true, message: `Deleted ${prod} and all associated questions.` });
     } catch (e) {
@@ -1951,7 +1953,10 @@ router.post('/company-profile', async (req, res) => {
         if (!profile) {
             await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD.", ...updateData });
         } else {
-            await Company.updateOne({ _id: profile._id }, { $set: updateData });
+            await Company.updateOne({}, { ...updateData, $set: updateData });
+            if (profile._id) {
+                await Company.updateOne({ _id: profile._id }, { ...updateData, $set: updateData });
+            }
         }
         res.json({ success: true, message: 'Profile updated' });
     } catch (e) {

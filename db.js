@@ -53,7 +53,7 @@ async function syncDatabase() {
 
         // Seed Default Company only if missing. Never overwrite existing targetProductsList if admin deleted/edited items.
         let c = await Company.findOne();
-        let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'Briskheal'];
+        let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K'];
         // Also extract any distinct product/category labels from seedQuestions
         if (typeof seedQuestions !== 'undefined' && Array.isArray(seedQuestions)) {
             seedQuestions.forEach(sq => {

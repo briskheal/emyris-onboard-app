@@ -5407,7 +5407,7 @@ function renderTargetProductsList() {
     if (!listEl) return;
     listEl.innerHTML = '';
     
-    if (!companyData.targetProductsList) companyData.targetProductsList = ['General', 'Emystein', 'Briskheal'];
+    if (!companyData.targetProductsList) companyData.targetProductsList = ['General', 'Emystein'];
     
     companyData.targetProductsList.forEach((prod, i) => {
         const div = document.createElement('div');
@@ -5495,6 +5495,7 @@ async function deleteTargetProduct(prod) {
         const result = await res.json();
         if (result.success) {
             companyData.targetProductsList = companyData.targetProductsList.filter(p => p !== prod && p.toLowerCase() !== prod.toLowerCase());
+            try { await submitProfileUpdate({ targetProductsList: companyData.targetProductsList }, true); } catch (err) { console.warn('Secondary profile update warning:', err); }
             if (typeof testBankQuestions !== 'undefined' && Array.isArray(testBankQuestions)) {
                 testBankQuestions = testBankQuestions.filter(q => q.targetProduct !== prod && q.category !== prod.toLowerCase() && q.category !== prod);
             }
