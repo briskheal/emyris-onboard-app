@@ -51,11 +51,15 @@ const Dashboard = ({ applicant, onLogout }) => {
             <div style={styles.actionSection}>
                 <h3 style={styles.sectionTitle}>Your Action Items</h3>
                 
-                {['draft', 'registered', 'rejected', 'onboarding'].includes(applicant.status) && !applicant.offerAccepted && (
+                {['draft', 'registered', 'rejected', 'onboarding', 'submitted', 'approved'].includes(applicant.status) && !applicant.offerAccepted && (
                     <div style={styles.formCard}>
                         <div style={styles.examInfo}>
-                            <h4 style={styles.examTitle}>Onboarding Form ({applicant.status.toUpperCase()})</h4>
-                            <p style={styles.examDetail}>Please complete your onboarding details and submit.</p>
+                            <h4 style={styles.examTitle}>Onboarding Profile ({applicant.status.toUpperCase()})</h4>
+                            <p style={styles.examDetail}>
+                                {['submitted', 'approved'].includes(applicant.status) 
+                                    ? 'Your profile has been submitted. You can still review or update your personal information and documents.' 
+                                    : 'Please complete your onboarding details and submit.'}
+                            </p>
                         </div>
                         <button 
                             onClick={() => {
@@ -63,7 +67,7 @@ const Dashboard = ({ applicant, onLogout }) => {
                             }}
                             style={styles.formButton}
                         >
-                            📝 Continue Form
+                            {['submitted', 'approved'].includes(applicant.status) ? '📝 Update Personal Info & Docs' : '📝 Continue Form'}
                         </button>
                     </div>
                 )}

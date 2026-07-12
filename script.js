@@ -435,9 +435,9 @@ function resumeApplication() {
         return;
     }
 
-    // Candidates can resume the form if they are in draft, registered, rejected, or onboarding status 
+    // Candidates can resume the form if they are in draft, registered, rejected, onboarding, submitted, or approved status 
     // (unless an offer has already been issued/accepted)
-    const canResumeForm = ['draft', 'registered', 'rejected', 'onboarding'].includes(app.status);
+    const canResumeForm = ['draft', 'registered', 'rejected', 'onboarding', 'submitted', 'approved'].includes(app.status);
     const hasOffer = !!(app.offerAccepted || app.offerLetterData);
 
     if (hasOffer) {
@@ -462,6 +462,14 @@ function resumeApplication() {
     renderStep(1);
     prefillForm();
     renderApplicantDocuments();
+}
+
+function goToPersonalInfoUpdate() {
+    if (window.mountReactApp) {
+        window.mountReactApp('onboardingForm', typeof currentApplicant !== 'undefined' ? currentApplicant : null);
+    } else {
+        resumeApplication();
+    }
 }
 
 
