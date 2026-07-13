@@ -89,10 +89,11 @@ const AdminPanel: React.FC = () => {
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>
         {/* Sidebar */}
         <aside className={`admin-sidebar ${mobileMenuOpen ? 'open' : ''}`} style={{ 
-          width: '240px', 
+          width: '260px', 
+          minWidth: '260px',
           background: '#0f172a', 
           borderRight: '1px solid var(--glass-border)', 
-          padding: '2rem 1rem', 
+          padding: '1.75rem 0.85rem', 
           display: 'flex', 
           flexDirection: 'column', 
           flexShrink: 0,
@@ -102,23 +103,39 @@ const AdminPanel: React.FC = () => {
           overflowY: 'auto'
         }}>
         <h2 style={{ marginBottom: '0.25rem', paddingLeft: '0.5rem', color: 'var(--primary)', fontSize: '1.1rem' }}>Admin Portal</h2>
-        <p style={{ paddingLeft: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '2rem' }}>Emyris Biolifesciences</p>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1 }}>
+        <p style={{ paddingLeft: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '1.75rem' }}>Emyris Biolifesciences</p>
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', flex: 1, width: '100%' }}>
           {[
-            { id: 'company', icon: <Building2 size={16} />, label: 'Company Profile' },
-            { id: 'applicants', icon: <Users size={16} />, label: 'Applicant Manager' },
-            { id: 'setup', icon: <FileSignature size={16} />, label: 'Setup & Letters' },
-            { id: 'questions', icon: <HelpCircle size={16} />, label: 'Question Bank' },
-            { id: 'pending', icon: <ClipboardList size={16} />, label: 'Test Results' },
-            { id: 'reports', icon: <FileSpreadsheet size={16} />, label: 'Reports & Analytics' },
+            { id: 'company', icon: <Building2 size={16} style={{ flexShrink: 0 }} />, label: 'Company Profile' },
+            { id: 'applicants', icon: <Users size={16} style={{ flexShrink: 0 }} />, label: 'Applicant Manager' },
+            { id: 'setup', icon: <FileSignature size={16} style={{ flexShrink: 0 }} />, label: 'Setup & Letters' },
+            { id: 'questions', icon: <HelpCircle size={16} style={{ flexShrink: 0 }} />, label: 'Question Bank' },
+            { id: 'pending', icon: <ClipboardList size={16} style={{ flexShrink: 0 }} />, label: 'Test Results' },
+            { id: 'reports', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Reports & Analytics' },
           ].map(item => (
             <button
               key={item.id}
               className={`btn ${activeView === item.id ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setActiveView(item.id as AdminView)}
-              style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start', fontSize: '0.88rem' }}
+              onClick={() => {
+                setActiveView(item.id as AdminView);
+                setMobileMenuOpen(false);
+              }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px', 
+                justifyContent: 'flex-start', 
+                textAlign: 'left',
+                fontSize: '0.82rem', 
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                padding: '10px 14px',
+                width: '100%',
+                lineHeight: '1.2'
+              }}
             >
-              {item.icon} {item.label}
+              {item.icon} <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
             </button>
           ))}
         </nav>
@@ -128,9 +145,19 @@ const AdminPanel: React.FC = () => {
             sessionStorage.removeItem('admin_logged_in');
             setIsLoggedIn(false);
           }}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-start', marginTop: 'auto' }}
+          style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '10px', 
+            justifyContent: 'flex-start', 
+            textAlign: 'left',
+            fontSize: '0.82rem',
+            padding: '10px 14px',
+            width: '100%',
+            marginTop: 'auto' 
+          }}
         >
-          <LogOut size={16} /> Logout
+          <LogOut size={16} style={{ flexShrink: 0 }} /> <span>Logout</span>
         </button>
       </aside>
 
