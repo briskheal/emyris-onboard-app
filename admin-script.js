@@ -1454,6 +1454,7 @@ async function openVerificationView(email) {
     document.getElementById('v_salSpecial').value = sal.special || '';
     document.getElementById('v_salEdu').value = sal.edu || '';
     document.getElementById('v_salFixed').value = sal.fixed || '';
+    if (document.getElementById('v_salRoundOff')) document.getElementById('v_salRoundOff').value = (sal.roundOff !== undefined && sal.roundOff !== null && sal.roundOff !== '') ? sal.roundOff : ((sal.round_off !== undefined && sal.round_off !== null && sal.round_off !== '') ? sal.round_off : '');
     
     // Approved CTC Override pre-population
     const approvedCtcEl = document.getElementById('v_approvedCtc');
@@ -1947,7 +1948,8 @@ async function saveAllVerificationData(silent = false) {
         medical: parseFloat(document.getElementById('v_salMed').value) || 0,
         special: parseFloat(document.getElementById('v_salSpecial').value) || 0,
         edu: parseFloat(document.getElementById('v_salEdu').value) || 0,
-        fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
+        fixed: parseFloat(document.getElementById('v_salFixed').value) || 0,
+        roundOff: parseFloat(document.getElementById('v_salRoundOff')?.value) || 0
     };
 
     // 2. Validate Salary vs Target CTC — only when both sides are non-zero
@@ -2106,7 +2108,8 @@ function calcSalaryTotal() {
         medical: parseFloat(document.getElementById('v_salMed').value) || 0,
         special: parseFloat(document.getElementById('v_salSpecial').value) || 0,
         edu: parseFloat(document.getElementById('v_salEdu').value) || 0,
-        fixed: parseFloat(document.getElementById('v_salFixed').value) || 0
+        fixed: parseFloat(document.getElementById('v_salFixed').value) || 0,
+        roundOff: parseFloat(document.getElementById('v_salRoundOff').value) || 0
     };
     
     const total = Object.values(sal).reduce((a, b) => a + b, 0);
@@ -2180,6 +2183,7 @@ function autoDistributeSalary() {
     // 6. Special Allowance: match Monthly Gross exactly
     const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
     const special = parseFloat((monthly - used).toFixed(2));
+    const initialRoundOff = parseFloat((Math.round(monthly) - monthly).toFixed(2));
     
     const fields = {
         'v_salBasic': basic,
@@ -5241,203 +5245,6 @@ function submitAdminTestSimulator() {
     closeAdminTestSimulator();
 }
 
-window.addEventListener('DOMContentLoaded', initializeApp);
-
-
-        active: true
-    };
-    
-    if (qType === 'mcq') {
-        payload.options = [
-            document.getElementById('q_opt0').value,
-            document.getElementById('q_opt1').value,
-            document.getElementById('q_opt2').value,
-            document.getElementById('q_opt3').value
-        ];
-        payload.correctAnswerIndex = parseInt(document.getElementById('q_correct').value, 10);
-        payload.inputFields = [];
-    } else {
-        const rawInputs = document.getElementById('q_inputs') ? document.getElementById('q_inputs').value : '';
-        payload.inputFields = rawInputs ? rawInputs.split(',').map(s => s.trim()).filter(s => s) : [];
-        payload.options = [];
-        payload.correctAnswerIndex = 0;
-    }
-    try {
-        const url = qId ? '/api/admin/questions/' + qId : '/api/admin/questions';
-        const method = qId ? 'PUT' : 'POST';
-        
-        const res = await fetch(url, {
-            method: method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (data.success) {
-            closeAddQuestionModal();
-            fetchTestBankQuestions();
-        } else {
-            alert('Failed to save question.');
-        }
-    } catch (err) {
-        alert('Error saving question.');
-    }
-}
-
-async function deleteQuestion(id) {
-    if (!confirm('Are you sure you want to delete this question?')) return;
-    try {
-        const res = await fetch('/api/admin/questions/' + id, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-            fetchTestBankQuestions();
-        }
-    } catch (err) {
-        alert('Error deleting question.');
-    }
-}
-
-// --- ADMIN RAPID TEST SIMULATOR (PREVIEW TIMER & RIGHT/WRONG FEEDBACK) ---
-let adminSimulatorTimer;
-let adminSimulatorQuestions = [];
-let adminSimulatorAnswers = {};
-
-async function launchAdminTestSimulator() {
-    try {
-        const res = await fetch('/api/admin/questions');
-        const data = await res.json();
-        if (!data.success || !data.questions || data.questions.length === 0) {
-            alert('No questions in test bank to simulate.');
-            return;
-        }
-        
-        // Randomly pick up to 20 questions just like the applicant portal
-        let pool = [...data.questions].sort(() => 0.5 - Math.random());
-        adminSimulatorQuestions = pool.slice(0, 20);
-        adminSimulatorAnswers = {};
-        
-        renderAdminSimulatorUI();
-        
-        // Open modal
-        const modal = document.getElementById('adminTestSimulatorModal');
-        const body = document.getElementById('adminTestSimulatorBody');
-        modal.classList.remove('hidden');
-        modal.style.opacity = '1';
-        modal.style.pointerEvents = 'auto';
-        if (body) body.style.transform = 'translateY(0)';
-        
-        // Show root-level floating timer
-        const timerEl = document.getElementById('adminFloatingRapidTimer');
-        if (timerEl) timerEl.style.display = 'flex';
-        
-        startAdminSimulatorTimer(25 * 60);
-    } catch (e) {
-        console.error(e);
-        alert('Error launching simulator.');
-    }
-}
-
-function closeAdminTestSimulator() {
-    if (adminSimulatorTimer) clearInterval(adminSimulatorTimer);
-    const modal = document.getElementById('adminTestSimulatorModal');
-    const body = document.getElementById('adminTestSimulatorBody');
-    if (modal) {
-        modal.style.opacity = '0';
-        modal.style.pointerEvents = 'none';
-        if (body) body.style.transform = 'translateY(20px)';
-        setTimeout(() => modal.classList.add('hidden'), 300);
-    }
-    const timerEl = document.getElementById('adminFloatingRapidTimer');
-    if (timerEl) timerEl.style.display = 'none';
-}
-
-function startAdminSimulatorTimer(seconds) {
-    const display = document.getElementById('adminRapidTestTimerDisplay');
-    if (!display) return;
-    let timeLeft = seconds;
-    if (adminSimulatorTimer) clearInterval(adminSimulatorTimer);
-    adminSimulatorTimer = setInterval(() => {
-        timeLeft--;
-        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-        const s = (timeLeft % 60).toString().padStart(2, '0');
-        display.innerText = `${m}:${s}`;
-        if (timeLeft <= 0) {
-            clearInterval(adminSimulatorTimer);
-            alert("Time's up! Simulator ending.");
-            closeAdminTestSimulator();
-        }
-    }, 1000);
-}
-
-function renderAdminSimulatorUI() {
-    const container = document.getElementById('adminSimulatorQuestionsContainer');
-    if (!container) return;
-    let html = '';
-    adminSimulatorQuestions.forEach((q, idx) => {
-        html += `<div class="question-card" id="sim_qcard_${q._id}" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.25); padding: 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s ease;">`;
-        html += `<h4 style="margin-bottom: 12px; color: #fff; font-size: 1.05rem; line-height: 1.4;">Q${idx + 1}. ${q.text} <span style="font-size:0.75rem; color:var(--text-muted); background:rgba(255,255,255,0.05); padding:2px 6px; border-radius:4px; margin-left:8px;">${q.category}</span></h4>`;
-        html += `<div id="sim_qoptions_${q._id}">`;
-        q.options.forEach((opt, optIdx) => {
-            html += `
-                <div id="sim_optbox_${q._id}_${optIdx}" style="margin-bottom: 8px; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); transition: all 0.2s ease;">
-                    <label style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 0.95rem; margin: 0;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <input type="radio" name="sim_qt_${q._id}" value="${optIdx}" style="accent-color: var(--primary);" onchange="selectAdminSimulatorAnswer('${q._id}', ${optIdx}, ${q.correctAnswerIndex})">
-                            <span>${opt}</span>
-                        </div>
-                        <span id="sim_optbadge_${q._id}_${optIdx}" style="font-weight: 700; font-size: 0.85rem;"></span>
-                    </label>
-                </div>
-            `;
-        });
-        html += `</div></div>`;
-    });
-    container.innerHTML = html;
-}
-
-function selectAdminSimulatorAnswer(qId, selectedIdx, correctIdx) {
-    adminSimulatorAnswers[qId] = selectedIdx;
-    const card = document.getElementById(`sim_qcard_${qId}`);
-    if (card) {
-        card.style.borderColor = selectedIdx === correctIdx ? 'rgba(34, 197, 94, 0.6)' : 'rgba(239, 68, 68, 0.6)';
-    }
-    const optionsContainer = document.getElementById(`sim_qoptions_${qId}`);
-    if (!optionsContainer) return;
-    const optionBoxes = optionsContainer.querySelectorAll('[id^="sim_optbox_"]');
-    optionBoxes.forEach((box, idx) => {
-        const badge = document.getElementById(`sim_optbadge_${qId}_${idx}`);
-        if (idx === correctIdx) {
-            box.style.background = 'rgba(34, 197, 94, 0.15)';
-            box.style.borderColor = 'rgba(34, 197, 94, 0.6)';
-            box.style.color = '#4ade80';
-            if (badge) badge.innerHTML = '✅ Correct Answer';
-        } else if (idx === selectedIdx && selectedIdx !== correctIdx) {
-            box.style.background = 'rgba(239, 68, 68, 0.15)';
-            box.style.borderColor = 'rgba(239, 68, 68, 0.6)';
-            box.style.color = '#f87171';
-            if (badge) badge.innerHTML = '❌ Incorrect';
-        } else {
-            box.style.background = 'rgba(255,255,255,0.02)';
-            box.style.borderColor = 'rgba(255,255,255,0.06)';
-            box.style.color = 'var(--text-secondary)';
-            if (badge) badge.innerHTML = '';
-        }
-    });
-}
-
-function submitAdminTestSimulator() {
-    let correct = 0;
-    let total = adminSimulatorQuestions.length;
-    adminSimulatorQuestions.forEach(q => {
-        if (adminSimulatorAnswers[q._id] === q.correctAnswerIndex) {
-            correct++;
-        }
-    });
-    alert(`Simulator Complete!\n\nScore: ${correct} / ${total}\n\nThis confirms the floating timer and educational right/wrong feedback are functioning perfectly.`);
-    closeAdminTestSimulator();
-}
-
-window.addEventListener('DOMContentLoaded', initializeApp);
-
 
 // --- EXAM REPORTS & GRADING ---
 
@@ -5845,3 +5652,5 @@ async function submitExamGrade() {
         alert('Error submitting grade');
     }
 }
+
+window.addEventListener('DOMContentLoaded', initializeApp);

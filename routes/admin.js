@@ -1579,7 +1579,7 @@ router.post('/render-template', async (req, res) => {
 // --- HELPERS ---
 function calculateMonthlyGross(sal) {
     if (!sal) return 0;
-    return (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
+    return (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0) + (Number(sal.roundOff)||Number(sal.round_off)||0);
 }
 
 // --- UPDATE APPLICANT WORKFLOW DATA ---
