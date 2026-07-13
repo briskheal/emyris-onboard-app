@@ -9,6 +9,7 @@ const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
 const { sendEmail } = require('../utils/mailer');
 const { numberToWords, resolveTemplate } = require('../utils/templateHelpers');
+const { purgeApplicantAndAllAssociatedRecords } = require('../utils/applicantPurge');
 const sharp = require('sharp');
 
 // Shared file helper (Converts images to WebP using sharp; leaves PDF documents intact)
@@ -707,12 +708,14 @@ router.get('/applicant/:email', async (req, res) => {
     }
 });
 
-// DELETE single applicant
+// DELETE single applicant (with cascading wipe of all test reports and document assets)
 router.delete('/applicant/:email', async (req, res) => {
     try {
-        const result = await Applicant.destroy({ where: { email: req.params.email } });
-        if (!result) return res.status(404).json({ error: 'Not found' });
-        res.status(200).json({ success: true, message: 'Applicant deleted successfully' });
+        const purgeResult = await purgeApplicantAndAllAssociatedRecords(req.params.email);
+        if (!purgeResult.success || (!purgeResult.applicantFoundAndDeleted && purgeResult.deletedExamResultsCount === 0 && purgeResult.deletedAssetsCount === 0)) {
+            return res.status(404).json({ error: 'Applicant or associated records not found' });
+        }
+        res.status(200).json({ success: true, message: `Applicant ${req.params.email} and all associated records (test scores, assets, files) purged successfully.`, details: purgeResult });
     } catch (error) {
         console.error("Delete Applicant Error:", error);
         res.status(500).json({ error: 'Failed to delete applicant' });
@@ -2720,29 +2723,12 @@ router.post('/system/clear', async (req, res) => {
 router.post('/delete-applicant', async (req, res) => {
     try {
         const { email } = req.body;
-        const applicant = await Applicant.findOne({ email });
-        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
-
-        // Collect all assets linked to this applicant
-        const filenames = (applicant.documents || [])
-            .filter(d => d.assetId)
-            .map(d => String(d.assetId).split('/').pop().trim());
-
-        // 1. Delete Assets from Assets DB and physical files
-        if (filenames.length > 0) {
-            await Asset.deleteMany({ _id: { $in: filenames } });
-            for (const fname of filenames) {
-                const filePath = path.join(__dirname, '..', 'uploads', fname);
-                if (fs.existsSync(filePath)) {
-                    try { fs.unlinkSync(filePath); } catch (e) {}
-                }
-            }
+        if (!email) return res.status(400).json({ error: 'Email required' });
+        const purgeResult = await purgeApplicantAndAllAssociatedRecords(email);
+        if (!purgeResult.success || !purgeResult.applicantFoundAndDeleted) {
+            return res.status(404).json({ error: 'Applicant not found' });
         }
-
-        // 2. Delete Applicant from Main DB
-        await Applicant.deleteOne({ email });
-
-        res.json({ success: true, message: `Applicant ${email} and all linked assets deleted.` });
+        res.json({ success: true, message: `Applicant ${email} and all linked assets, test results, and files deleted cleanly.`, details: purgeResult });
     } catch (e) {
         console.error('Delete error:', e);
         res.status(500).json({ error: 'Failed' });
