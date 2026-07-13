@@ -4,10 +4,11 @@ import ApplicantManager from '../components/Admin/ApplicantManager';
 import SetupAndLetters from '../components/Admin/SetupAndLetters';
 import QuestionBank from '../components/Admin/QuestionBank';
 import PendingExams from '../components/Admin/PendingExams';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut } from 'lucide-react';
+import ReportsTab from '../components/Admin/ReportsTab';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet } from 'lucide-react';
 import api from '../api/client';
 
-type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending';
+type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -109,6 +110,7 @@ const AdminPanel: React.FC = () => {
             { id: 'setup', icon: <FileSignature size={16} />, label: 'Setup & Letters' },
             { id: 'questions', icon: <HelpCircle size={16} />, label: 'Question Bank' },
             { id: 'pending', icon: <ClipboardList size={16} />, label: 'Test Results' },
+            { id: 'reports', icon: <FileSpreadsheet size={16} />, label: 'Reports & Analytics' },
           ].map(item => (
             <button
               key={item.id}
@@ -139,6 +141,7 @@ const AdminPanel: React.FC = () => {
         {activeView === 'setup' && <SetupAndLetters />}
         {activeView === 'questions' && <QuestionBank />}
         {activeView === 'pending' && <PendingExams />}
+        {activeView === 'reports' && <ReportsTab />}
       </main>
       </div>
     </div>
