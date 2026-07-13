@@ -91,43 +91,90 @@ const ReportsTab: React.FC = () => {
 
   const currentApplicant = applicants.find(a => a.email === selectedEmail) || (filteredDetailsApplicants.length > 0 ? filteredDetailsApplicants[0] : null);
 
+  const profileHeaders = [
+    "Full Name",
+    "Email ID",
+    "Phone Number",
+    "Employee Code",
+    "Designation",
+    "Division",
+    "Headquarters (HQ)",
+    "Onboarding Status",
+    "Date of Birth",
+    "Gender",
+    "Marital Status",
+    "Blood Group",
+    "Current Address",
+    "Permanent Address",
+    "Highest Qualification",
+    "Year of Passing",
+    "Previous Company",
+    "Total Experience",
+    "Last Drawn Salary",
+    "Bank Name",
+    "Account Number",
+    "IFSC Code",
+    "PAN Number",
+    "Aadhar Number",
+    "Emergency Contact Name",
+    "Emergency Contact Number",
+    "Registration Date",
+    "Submission Date",
+    "Approval Date",
+    "Joining Date"
+  ];
+
+  const getApplicantRow = (app: any) => {
+    const fd = app.formData || {};
+    return [
+      app.fullName || fd.fullName || "",
+      app.email || fd.email || "",
+      app.phone || fd.phone || "",
+      app.empCode || fd.empCode || "Not Assigned",
+      app.designation || fd.designation || "",
+      app.division || fd.division || "",
+      app.hq || fd.hq || "",
+      app.status || "Draft",
+      fd.dob || "",
+      fd.gender || "",
+      fd.maritalStatus || "",
+      fd.bloodGroup || "",
+      fd.currentAddress || "",
+      fd.permanentAddress || "",
+      fd.highestQualification || fd.qualification || "",
+      fd.yearOfPassing || "",
+      fd.lastCompany || fd.previousCompany || "",
+      fd.totalExperience || "",
+      fd.lastSalary ? `INR ${fd.lastSalary}` : "",
+      fd.bankName || "",
+      fd.accountNumber || "",
+      fd.ifscCode || "",
+      fd.panNumber || "",
+      fd.aadharNumber || "",
+      fd.emergencyContactName || "",
+      fd.emergencyContactPhone || fd.emergencyContactNumber || "",
+      app.registeredAt ? new Date(app.registeredAt).toLocaleString() : "",
+      app.submittedAt ? new Date(app.submittedAt).toLocaleString() : "",
+      app.approvedAt ? new Date(app.approvedAt).toLocaleString() : "",
+      app.joinedAt ? new Date(app.joinedAt).toLocaleString() : ""
+    ];
+  };
+
   const exportApplicantProfileCSV = (app: any) => {
     if (!app) return;
-    const fd = app.formData || {};
     const rows = [
-      ["FIELD", "DETAILS"],
-      ["Full Name", app.fullName || fd.fullName || ""],
-      ["Email ID", app.email || fd.email || ""],
-      ["Phone Number", app.phone || fd.phone || ""],
-      ["Employee Code", app.empCode || fd.empCode || "Not Assigned"],
-      ["Designation", app.designation || fd.designation || ""],
-      ["Division", app.division || fd.division || ""],
-      ["Headquarters (HQ)", app.hq || fd.hq || ""],
-      ["Onboarding Status", app.status || "Draft"],
-      ["Date of Birth", fd.dob || ""],
-      ["Gender", fd.gender || ""],
-      ["Marital Status", fd.maritalStatus || ""],
-      ["Blood Group", fd.bloodGroup || ""],
-      ["Current Address", fd.currentAddress || ""],
-      ["Permanent Address", fd.permanentAddress || ""],
-      ["Highest Qualification", fd.highestQualification || fd.qualification || ""],
-      ["Year of Passing", fd.yearOfPassing || ""],
-      ["Previous Company", fd.lastCompany || fd.previousCompany || ""],
-      ["Total Experience", fd.totalExperience || ""],
-      ["Last Drawn Salary", fd.lastSalary ? `INR ${fd.lastSalary}` : ""],
-      ["Bank Name", fd.bankName || ""],
-      ["Account Number", fd.accountNumber || ""],
-      ["IFSC Code", fd.ifscCode || ""],
-      ["PAN Number", fd.panNumber || ""],
-      ["Aadhar Number", fd.aadharNumber || ""],
-      ["Emergency Contact Name", fd.emergencyContactName || ""],
-      ["Emergency Contact Number", fd.emergencyContactPhone || fd.emergencyContactNumber || ""],
-      ["Registration Date", app.registeredAt ? new Date(app.registeredAt).toLocaleString() : ""],
-      ["Submission Date", app.submittedAt ? new Date(app.submittedAt).toLocaleString() : ""],
-      ["Approval Date", app.approvedAt ? new Date(app.approvedAt).toLocaleString() : ""],
-      ["Joining Date", app.joinedAt ? new Date(app.joinedAt).toLocaleString() : ""]
+      profileHeaders,
+      getApplicantRow(app)
     ];
-    downloadCSV(`${(app.fullName || 'Applicant').replace(/\s+/g, '_')}_Complete_Dossier`, rows);
+    downloadCSV(`${(app.fullName || 'Applicant').replace(/\s+/g, '_')}_Horizontal_Dossier`, rows);
+  };
+
+  const exportAllApplicantsProfilesCSV = () => {
+    const rows = [profileHeaders];
+    filteredDetailsApplicants.forEach(app => {
+      rows.push(getApplicantRow(app));
+    });
+    downloadCSV("All_Applicants_Horizontal_Dossier_Report", rows);
   };
 
   // --- SUB-REPORT 2: TEST EXAM BREAKDOWN ---
@@ -307,24 +354,34 @@ const ReportsTab: React.FC = () => {
               </select>
             </div>
 
-            {currentApplicant && (
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  onClick={() => exportApplicantProfileCSV(currentApplicant)}
-                  className="btn btn-sm btn-outline"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', borderColor: '#10b981', color: '#10b981' }}
-                >
-                  <Download size={15} /> Export Dossier (CSV)
-                </button>
-                <button
-                  onClick={() => window.print()}
-                  className="btn btn-sm btn-primary"
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  <Printer size={15} /> Print Report
-                </button>
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                onClick={exportAllApplicantsProfilesCSV}
+                className="btn btn-sm btn-primary"
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#10b981', borderColor: '#10b981' }}
+              >
+                <Download size={15} /> Export ALL Candidate Records ({filteredDetailsApplicants.length}) (Horizontal CSV)
+              </button>
+
+              {currentApplicant && (
+                <>
+                  <button
+                    onClick={() => exportApplicantProfileCSV(currentApplicant)}
+                    className="btn btn-sm btn-outline"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', borderColor: '#10b981', color: '#10b981' }}
+                  >
+                    <Download size={15} /> Export Selected ({currentApplicant.fullName})
+                  </button>
+                  <button
+                    onClick={() => window.print()}
+                    className="btn btn-sm btn-primary"
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Printer size={15} /> Print Report
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Dossier Display Card */}
