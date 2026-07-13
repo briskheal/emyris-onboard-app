@@ -10,8 +10,9 @@ const ApplicantManager: React.FC = () => {
   const [pdfTask, setPdfTask] = useState<{app: any, type: 'offer' | 'appointment'} | null>(null);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [verificationApp, setVerificationApp] = useState<any | null>(null);
-  const [filterMonth, setFilterMonth] = useState<string>(new Date().getMonth().toString());
-  const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
+  const [filterMonth, setFilterMonth] = useState<string>('all');
+  const [filterYear, setFilterYear] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   const fetchApplicants = async () => {
     try {
@@ -36,7 +37,20 @@ const ApplicantManager: React.FC = () => {
     fetchApplicants();
   }, [filterMonth, filterYear]);
 
-
+  const filteredApplicants = applicants.filter(app => {
+    if (!searchTerm.trim()) return true;
+    const q = searchTerm.toLowerCase().trim();
+    return (
+      (app.fullName && app.fullName.toLowerCase().includes(q)) ||
+      (app.email && app.email.toLowerCase().includes(q)) ||
+      (app.phone && app.phone.toLowerCase().includes(q)) ||
+      (app.empCode && app.empCode.toLowerCase().includes(q)) ||
+      (app.designation && app.designation.toLowerCase().includes(q)) ||
+      (app.division && app.division.toLowerCase().includes(q)) ||
+      (app.formData?.fullName && app.formData.fullName.toLowerCase().includes(q)) ||
+      (app.formData?.email && app.formData.email.toLowerCase().includes(q))
+    );
+  });
 
   const handleDelete = async (email: string) => {
     if (!window.confirm(`Are you sure you want to permanently delete applicant ${email}?`)) return;
@@ -82,7 +96,14 @@ const ApplicantManager: React.FC = () => {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
-          <input type="text" placeholder="Search..." className="form-input-sm" style={{ width: '200px' }} />
+          <input 
+            type="text" 
+            placeholder="Search by name, email, phone..." 
+            className="form-input-sm" 
+            style={{ width: '220px' }} 
+            value={searchTerm} 
+            onChange={e => setSearchTerm(e.target.value)} 
+          />
           <button className="btn btn-sm btn-primary" onClick={() => setShowStaffModal(true)}>Add Existing Staff</button>
         </div>
       </div>
@@ -100,7 +121,7 @@ const ApplicantManager: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {applicants.map((app, idx) => (
+              {filteredApplicants.map((app, idx) => (
                 <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                   <td style={{ padding: '15px' }}>
                     <div>{app.fullName}</div>
@@ -123,9 +144,11 @@ const ApplicantManager: React.FC = () => {
                   </td>
                 </tr>
               ))}
-              {applicants.length === 0 && (
+              {filteredApplicants.length === 0 && (
                 <tr>
-                  <td colSpan={3} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No applicants found.</td>
+                  <td colSpan={3} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                    {applicants.length === 0 ? 'No applicants found.' : 'No applicants match your search.'}
+                  </td>
                 </tr>
               )}
             </tbody>
