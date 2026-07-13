@@ -444,14 +444,110 @@ function logoutApplicant() {
 
 // Statuses that mean "beyond the onboarding form" — show the hub dashboard
 
+function renderPendingExamsUI(app) {
+    if (!app) return;
+    let pending = [];
+    try {
+        pending = typeof app.pendingExams === 'string' ? JSON.parse(app.pendingExams) : (app.pendingExams || []);
+    } catch(e) { pending = []; }
+
+    // 1. Sidebar Exam Container
+    const sidebarContainer = document.getElementById('applicantExamContainer');
+    if (sidebarContainer) {
+        sidebarContainer.innerHTML = '';
+        if (pending.length > 0) {
+            pending.forEach(exam => {
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-primary';
+                btn.style.cssText = 'width:100%; margin-top: 0.75rem; background: linear-gradient(135deg, #10b981, #3b82f6); border: none; font-weight: 600; padding: 10px; border-radius: 8px;';
+                btn.innerText = `📝 Take Scheduled Exam: ${exam.targetProduct}`;
+                btn.onclick = () => launchOngoingExam(exam);
+                sidebarContainer.appendChild(btn);
+            });
+        }
+    }
+
+    // 2. Main Dashboard Prominent Test Exam Block
+    const mainContainer = document.getElementById('mainApplicantExamContainer');
+    if (mainContainer) {
+        mainContainer.innerHTML = '';
+        if (pending.length > 0) {
+            const buttonsHtml = pending.map((exam, idx) => `
+                <button class="btn btn-primary" onclick="launchOngoingExam(currentApplicant.pendingExams[${idx}])" style="padding: 12px 24px; font-size: 1rem; font-weight: bold; border-radius: 10px; background: linear-gradient(135deg, #6366f1, #3b82f6); border: none; box-shadow: 0 4px 15px rgba(99,102,241,0.4); cursor: pointer;">
+                    🚀 Launch ${exam.targetProduct} Assessment (${exam.mcqCount || 5} MCQs + Descriptive)
+                </button>
+            `).join('');
+
+            mainContainer.innerHTML = `
+                <div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #6366f1; border-radius: 16px; padding: 1.5rem; color: #fff; box-shadow: 0 10px 25px rgba(99, 102, 241, 0.25); margin-top: 1rem;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                <span style="background: #ef4444; color: #fff; font-size: 0.75rem; font-weight: bold; padding: 3px 10px; border-radius: 999px;">MANDATORY TEST BLOCK</span>
+                                <h3 style="margin: 0; font-size: 1.35rem; color: #fff;">${pending.map(e => e.targetProduct).join(', ')} Assessment Scheduled</h3>
+                            </div>
+                            <p style="margin: 0; color: #94a3b8; font-size: 0.95rem; line-height: 1.4;">Whether your offer letter is pending, issued, or accepted, completing this test exam block is a mandatory requirement.</p>
+                        </div>
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            ${buttonsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // 3. Login Landing Card Alert
+    const landingContainer = document.getElementById('landingExamAlertContainer');
+    if (landingContainer) {
+        landingContainer.innerHTML = '';
+        if (pending.length > 0) {
+            const landingButtonsHtml = pending.map((exam, idx) => `
+                <button onclick="launchOngoingExam(currentApplicant.pendingExams[${idx}])" style="padding: 10px 18px; font-size: 0.95rem; font-weight: bold; border-radius: 8px; background: #ef4444; color: #fff; border: none; cursor: pointer; box-shadow: 0 2px 10px rgba(239, 68, 68, 0.4);">
+                    🔴 Take ${exam.targetProduct} Assessment Now
+                </button>
+            `).join('');
+
+            landingContainer.innerHTML = `
+                <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: 12px; padding: 1.25rem; text-align: left;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <span style="font-size: 1.5rem;">⚠️</span>
+                        <h4 style="margin: 0; color: #f87171; font-size: 1.1rem;">Mandatory Assessment Waiting</h4>
+                    </div>
+                    <p style="margin: 0 0 12px 0; color: #cbd5e1; font-size: 0.95rem;">You have <strong>${pending.length}</strong> mandatory test exam(s) waiting (${pending.map(e => e.targetProduct).join(', ')}). Please complete your exam to proceed:</p>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        ${landingButtonsHtml}
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+
 function resumeApplication() {
     const app = currentApplicant;
     if (!app) return;
+
+    // Trigger exam sync in background to ensure latest exam block is loaded
+    try {
+        fetch('/api/applicant/sync-exam', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: app.email })
+        }).then(res => res.json()).then(data => {
+            if (data && data.success && data.applicant) {
+                currentApplicant = data.applicant;
+                localStorage.setItem('currentApplicant', JSON.stringify(currentApplicant));
+                renderPendingExamsUI(currentApplicant);
+            }
+        }).catch(e => console.warn('Exam sync check failed:', e));
+    } catch(err) {}
 
     // ── EXISTING STAFF BYPASS ──────────────────────────────────────────────
     if (app.isExistingStaff) {
         console.log('👤 [EXISTING STAFF] Bypassing rapid test and offer flow.');
         updateView('loginLandingView');
+        renderPendingExamsUI(app);
         return;
     }
     // ── END EXISTING STAFF BYPASS ──────────────────────────────────────────
@@ -463,6 +559,7 @@ function resumeApplication() {
 
     // Always show the hub dashboard card (Where would you like to go today? Go to My Dashboard / Update Personal Info)
     updateView('loginLandingView');
+    renderPendingExamsUI(app);
 }
 
 function goToPersonalInfoUpdate() {
@@ -1036,20 +1133,7 @@ function renderApplicantDashboard() {
                 </div>
             `).join('');
 
-            const examContainer = document.getElementById('applicantExamContainer');
-            if (examContainer) {
-                examContainer.innerHTML = '';
-                if (app.pendingExams && app.pendingExams.length > 0) {
-                    app.pendingExams.forEach(exam => {
-                        const btn = document.createElement('button');
-                        btn.className = 'btn btn-primary';
-                        btn.style.cssText = 'width:100%; margin-top: 0.75rem; background: linear-gradient(135deg, #10b981, #3b82f6); border: none;';
-                        btn.innerText = `📝 Take Scheduled Exam: ${exam.targetProduct}`;
-                        btn.onclick = () => launchOngoingExam(exam);
-                        examContainer.appendChild(btn);
-                    });
-                }
-            }
+            renderPendingExamsUI(app);
             
             // Global Progress Animation
             let completedSteps = steps.filter(s => s.done).length;
@@ -1248,9 +1332,13 @@ async function acceptOfferLetter() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: currentApplicant.email, actualJoiningDate: adoj })
         });
-        if ((await res.json()).success) {
+        const data = await res.json();
+        if (data.success) {
             currentApplicant.offerAccepted = true;
             currentApplicant.actualJoiningDate = adoj;
+            if (data.pendingExams !== undefined) {
+                currentApplicant.pendingExams = data.pendingExams;
+            }
             renderApplicantDashboard();
             showToast("Welcome aboard!");
         }

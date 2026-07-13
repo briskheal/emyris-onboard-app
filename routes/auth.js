@@ -1,26 +1,30 @@
 const express = require('express');
 const router = express.Router();
-const { Applicant } = require('../db');
+const { Applicant, Company, ExamResult } = require('../db');
 const { sendEmail } = require('../utils/mailer');
+const { syncActiveExamForApplicant } = require('../utils/examSync');
+
 
 // Login Endpoint
-router.post('/applicant-login', (req, res, next) => {
+router.post('/applicant-login', async (req, res, next) => {
     let { email, pin } = req.body;
     email = (email || '').trim().toLowerCase();
     pin = (pin || '').trim();
 
-    Applicant.findOne({ email, pin }).then(applicant => {
+    try {
+        let applicant = await Applicant.findOne({ email, pin });
         if (!applicant) {
             return res.json({ success: false, message: 'Invalid credentials. If you lost your PIN, register again with the same email to receive a new one.' });
         }
         if (!applicant.canLogin) {
             return res.json({ success: false, message: 'Your application is blocked or under review.' });
         }
+        applicant = await syncActiveExamForApplicant(applicant);
         return res.json({ success: true, applicant });
-    }).catch(err => {
+    } catch (err) {
         console.error("Login Error:", err);
         return res.json({ success: false, message: 'System error during login.' });
-    });
+    }
 });
 
 // Alias for React frontend - directly calls same handler as /register-applicant
@@ -74,7 +78,8 @@ async function handleRegister(req, res) {
             html: emailHtml
         });
 
-        res.json({ success: true, applicant: newApplicant, pin: pin });
+        const syncedApplicant = await syncActiveExamForApplicant(newApplicant);
+        res.json({ success: true, applicant: syncedApplicant, pin: pin });
     } catch (err) {
         console.error('Registration error:', err);
         res.json({ success: false, message: 'Failed to register applicant. Ensure database is connected.' });

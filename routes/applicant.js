@@ -8,6 +8,7 @@ const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateH
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
 const { sendEmail } = require('../utils/mailer');
+const { syncActiveExamForApplicant } = require('../utils/examSync');
 const sharp = require('sharp');
 
 // Shared file helper (Converts images to WebP using sharp; leaves PDF documents intact)
@@ -58,6 +59,7 @@ function safeParseDateServer(s) {
     return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
 }
 
+
 // Number to words helper
 function numberToWords(n) {
     const ones = ['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine','Ten',
@@ -78,6 +80,26 @@ function resolveTemplate(template, data) {
     if (!template) return '';
     return template.replace(/{{(w+)}}/g, (match, key) => data[key] !== undefined ? data[key] : match);
 }
+
+router.post('/sync-exam', async (req, res) => {
+    try {
+        let { email } = req.body;
+        if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+        email = email.toString().toLowerCase().trim();
+        let applicants = await Applicant.find({ email: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
+        if (!applicants || applicants.length === 0) {
+            applicants = await Applicant.find({ email });
+        }
+        if (!applicants || applicants.length === 0) return res.status(404).json({ success: false, message: 'Applicant not found' });
+        
+        let applicant = applicants[0];
+        applicant = await syncActiveExamForApplicant(applicant);
+        return res.json({ success: true, applicant });
+    } catch (err) {
+        console.error('Error syncing exam:', err);
+        return res.status(500).json({ success: false, message: err.message });
+    }
+});
 
 router.post('/login', async (req, res) => {
     try {
@@ -135,6 +157,8 @@ router.post('/login', async (req, res) => {
                 return res.status(403).json({ success: false, message: 'Access Locked: Your approval period (7 days) has expired.' });
             }
         }
+
+        await syncActiveExamForApplicant(applicant);
 
         res.status(200).json({
             success: true,
@@ -1029,6 +1053,9 @@ router.post('/accept-offer', async (req, res) => {
         if (!applicant) return res.status(404).json({ error: 'Not found' });
 
         await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, offerAcceptedAt: new Date(), actualJoiningDate } });
+        applicant.offerAccepted = true;
+        applicant.actualJoiningDate = actualJoiningDate;
+        await syncActiveExamForApplicant(applicant);
 
         // 1. Congratulate Applicant
         await sendEmail({
@@ -1061,7 +1088,7 @@ router.post('/accept-offer', async (req, res) => {
                 </div>`
         });
 
-        res.json({ success: true });
+        res.json({ success: true, pendingExams: applicant.pendingExams });
     } catch (e) { res.status(500).json({ error: 'Acceptance failed' }); }
 });
 
