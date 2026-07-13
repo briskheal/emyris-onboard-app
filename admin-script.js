@@ -996,9 +996,10 @@ async function fetchApplicants() {
 
         const res = await fetch(`/api/admin/applicants?month=${month}&year=${year}`);
         const data = await res.json();
+        const list = Array.isArray(data) ? data : (data && Array.isArray(data.applicants) ? data.applicants : null);
         
-        if (Array.isArray(data)) {
-            allApplicants = data;
+        if (list) {
+            allApplicants = list;
             calculateStats(allApplicants);
             renderApplicantsTable(allApplicants);
         } else {

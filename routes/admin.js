@@ -647,7 +647,8 @@ router.get('/applicants', async (req, res) => {
             query = { 
                 $or: [
                     { submittedAt: { $gte: startDate, $lt: endDate } },
-                    { registeredAt: { $gte: startDate, $lt: endDate }, submittedAt: null }
+                    { registeredAt: { $gte: startDate, $lt: endDate } },
+                    { createdAt: { $gte: startDate, $lt: endDate } }
                 ] 
             };
         } else if (year && year !== 'all') {
@@ -657,7 +658,8 @@ router.get('/applicants', async (req, res) => {
             query = { 
                 $or: [
                     { submittedAt: { $gte: startDate, $lt: endDate } },
-                    { registeredAt: { $gte: startDate, $lt: endDate }, submittedAt: null }
+                    { registeredAt: { $gte: startDate, $lt: endDate } },
+                    { createdAt: { $gte: startDate, $lt: endDate } }
                 ] 
             };
         }
