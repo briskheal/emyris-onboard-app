@@ -133,6 +133,18 @@ function updateSalaryWords(inputId, outputId) {
 }
 function updateView(viewId) {
     console.log(`🎬 [VIEW CHANGE] Switching to: ${viewId}`);
+    
+    // Auto-close Voice Studio modal if open when navigating views
+    const voiceModal = document.getElementById('globalVoiceStudioModal');
+    if (voiceModal && voiceModal.style.display === 'block') {
+        voiceModal.style.display = 'none';
+        const stickyBtn = document.getElementById('stickyStudioBtn');
+        if (stickyBtn) {
+            stickyBtn.innerHTML = `<span>🎙️ Voice Studio (\`AI Lab\`) & Test Bank</span>`;
+            stickyBtn.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+        }
+    }
+
     const landingPage = document.getElementById('landingPage');
     const appShell = document.getElementById('appShell');
     const sections = document.querySelectorAll('.view-section');

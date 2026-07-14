@@ -1385,13 +1385,79 @@ window.toggleGlobalVoiceStudioLegacy = function() {
     const modal = document.getElementById('globalVoiceStudioModal');
     if (!modal) return;
     const isHidden = modal.style.display === 'none' || !modal.style.display;
-    modal.style.display = isHidden ? 'block' : 'none';
+    
+    const landing = document.getElementById('landingPage');
+    const appShell = document.getElementById('appShell');
+    const reactRoot = document.getElementById('react-root');
+    const stickyBtn = document.getElementById('stickyStudioBtn');
+
     if (isHidden) {
-        modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // OPENING VOICE STUDIO: Save previous visibility state
+        window._lastDashboardVisibility = {
+            landingHidden: landing ? landing.classList.contains('hidden') || landing.style.display === 'none' : true,
+            appShellHidden: appShell ? appShell.classList.contains('hidden') || appShell.style.display === 'none' : true,
+            reactRootHidden: reactRoot ? reactRoot.classList.contains('hidden') || reactRoot.style.display === 'none' : true
+        };
+
+        // Omit / hide dashboard and landing containers completely while Voice Studio is open
+        if (landing) {
+            landing.classList.add('hidden');
+            landing.style.display = 'none';
+        }
+        if (appShell) {
+            appShell.classList.add('hidden');
+            appShell.style.display = 'none';
+        }
+        if (reactRoot && reactRoot.children.length > 0) {
+            reactRoot.style.display = 'none';
+        }
+
+        // Show Voice Studio modal and update top bar button
+        modal.style.display = 'block';
+        if (stickyBtn) {
+            stickyBtn.innerHTML = `<span>← Return to Dashboard</span>`;
+            stickyBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
         // Initialize dynamic detailing tabs and reading box on open
         if (typeof window.renderLegacyVoiceStudioProduct === 'function') {
             window.renderLegacyVoiceStudioProduct((window.currentLegacyScript && window.currentLegacyScript.name) || 'ALOMOS GOLD');
         }
+    } else {
+        // CLOSING VOICE STUDIO
+        modal.style.display = 'none';
+
+        // Stop any active audio or speech recognition when closing
+        if (typeof window.stopLegacyVoiceRecording === 'function') {
+            try { window.stopLegacyVoiceRecording(); } catch (e) {}
+        }
+        if (window.speechSynthesis) {
+            try { window.speechSynthesis.cancel(); } catch (e) {}
+        }
+
+        // Restore dashboard containers exactly as they were before opening
+        const prev = window._lastDashboardVisibility || { landingHidden: true, appShellHidden: false, reactRootHidden: true };
+        
+        if (landing && !prev.landingHidden) {
+            landing.classList.remove('hidden');
+            landing.style.display = '';
+        }
+        if (appShell && !prev.appShellHidden) {
+            appShell.classList.remove('hidden');
+            appShell.style.display = '';
+        }
+        if (reactRoot && !prev.reactRootHidden && reactRoot.children.length > 0) {
+            reactRoot.style.display = '';
+        }
+
+        // Reset top bar button text
+        if (stickyBtn) {
+            stickyBtn.innerHTML = `<span>🎙️ Voice Studio (\`AI Lab\`) & Test Bank</span>`;
+            stickyBtn.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 };
 
