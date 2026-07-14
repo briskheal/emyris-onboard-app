@@ -53,7 +53,7 @@ async function syncDatabase() {
 
         // Seed Default Company only if missing. Never overwrite existing targetProductsList if admin deleted/edited items.
         let c = await Company.findOne();
-        let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K'];
+        let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'ALOMOS GOLD'];
         // Also extract any distinct product/category labels from seedQuestions
         if (typeof seedQuestions !== 'undefined' && Array.isArray(seedQuestions)) {
             seedQuestions.forEach(sq => {
@@ -61,7 +61,7 @@ async function syncDatabase() {
                     defaultProducts.push(sq.targetProduct);
                 }
                 if (sq.category && !['math', 'english', 'current_affairs', 'gk', 'exam_product', 'exam_current_affairs', 'general'].includes(sq.category.toLowerCase())) {
-                    const formattedCat = sq.category.toUpperCase().includes('GLOWVIT') ? 'GLOWVIT-60K' : sq.category;
+                    const formattedCat = sq.category.toUpperCase().includes('GLOWVIT') ? 'GLOWVIT-60K' : (sq.category.toUpperCase().includes('ALOMOS GOLD') ? 'ALOMOS GOLD' : sq.category);
                     if (!defaultProducts.includes(formattedCat) && !defaultProducts.some(p => p.toLowerCase() === sq.category.toLowerCase())) {
                         defaultProducts.push(formattedCat);
                     }
@@ -78,6 +78,11 @@ async function syncDatabase() {
             console.log('🌱 Seeded default Company profile with dynamic targetProductsList.');
         } else {
             console.log('ℹ️ Company profile already exists. Preserving admin targetProductsList exactly.');
+            if (c.targetProductsList && Array.isArray(c.targetProductsList) && !c.targetProductsList.includes('ALOMOS GOLD')) {
+                const updatedList = [...c.targetProductsList, 'ALOMOS GOLD'];
+                await Company.updateOne({ _id: c._id }, { $set: { targetProductsList: updatedList } });
+                console.log('🌱 Automatically added ALOMOS GOLD to existing Company targetProductsList.');
+            }
         }
 
         // Seed Rapid Test Questions
@@ -139,6 +144,27 @@ async function syncDatabase() {
                 { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Explain the clinical advantages of GLOWVIT-60K\'s "Advanced Vitamin D3 Nano Formula" (including bioavailability, absorption speed, and dosage convenience) over conventional tablets or granules.', questionType: 'descriptive', inputFields: [] },
                 { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'Describe the role of GLOWVIT-60K beyond bone density, specifically highlighting its mechanism and benefits in managing Diabetes and Cardiovascular Diseases (CVDs).', questionType: 'descriptive', inputFields: [] },
                 { category: 'glowvit-60k', targetProduct: 'GLOWVIT-60K', text: 'List the top 4 doctor specialties you will target for GLOWVIT-60K (e.g. Orthopedists, Gynecologists, Diabetologists/Physicians, Nephrologists) and explain the key clinical benefit you will pitch to each.', questionType: 'descriptive', inputFields: ['Specialty 1 & Pitch', 'Specialty 2 & Pitch', 'Specialty 3 & Pitch', 'Specialty 4 & Pitch'] },
+
+                // ALOMOS GOLD Specific Questions (15 MCQ & 3 Descriptive)
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What type of protein is used in ALOMOS GOLD and what is its protein concentration per 100gm?', questionType: 'mcq', options: ['Whey Protein Concentrate (60gm/100gm)', 'Whey Protein Isolate (83.4gm/100gm)', 'Soy Protein Isolate (75gm/100gm)', 'Casein Protein (80gm/100gm)'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'How much high-density Whey Protein Isolate (WPI) is delivered in a single 30gm (1 level scoop) serving of ALOMOS GOLD?', questionType: 'mcq', options: ['15 gm', '20 gm', '25 gm', '30 gm'], correctAnswerIndex: 2 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What is the total amino acid content per 100gm and the exact amount of BCAAs per serving in ALOMOS GOLD?', questionType: 'mcq', options: ['50gm Amino Acids per 100gm; 2,000 mg BCAAs per serving', '76gm Amino Acids per 100gm; 4,706 mg BCAAs per serving', '65gm Amino Acids per 100gm; 3,500 mg BCAAs per serving', '80gm Amino Acids per 100gm; 5,500 mg BCAAs per serving'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What clinical role do the 4,706 mg of Total BCAAs and 76gm Amino Acids in ALOMOS GOLD play during recovery?', questionType: 'mcq', options: ['They act as a sedative for pain relief', 'They trigger robust Muscle Protein Synthesis (MPS), supporting lean body mass and preventing sarcopenia', 'They lower gastric acid pH immediately', 'They induce systemic vasodilation'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'How much Curcumin Extract is contained per 100gm of ALOMOS GOLD and what is its primary clinical benefit?', questionType: 'mcq', options: ['200 mg per 100gm; acts as a bulk laxative', '500 mg per 100gm; supports post-surgical and anti-inflammatory recovery', '1,000 mg per 100gm; acts as an anticoagulant', '300 mg per 100gm; suppresses appetite'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'Which proprietary multi-enzyme blend is included in ALOMOS GOLD at 1,000 mg per 100gm (300 mg per serving) to ensure enhanced protein bioavailability without GI distress?', questionType: 'mcq', options: ['Pancreatin Extra', 'DigeZyme Enzyme Blend (containing Amylase, Protease, Lactase, Lipase & Cellulase)', 'Bromelain & Papain Complex', 'Pepsin Gold Matrix'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What is the strength of the infused Probiotic Blend per 100gm and per serving in ALOMOS GOLD?', questionType: 'mcq', options: ['5 Billion CFU per 100gm (1 Billion per serving)', '13.88 Billion CFU per 100gm (4 Billion CFU per serving)', '20 Billion CFU per 100gm (6 Billion per serving)', '2.5 Billion CFU per 100gm (500 Million per serving)'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'How much prebiotic fiber does ALOMOS GOLD contain per 100gm to support gut microbiome health and digestion?', questionType: 'mcq', options: ['5 gm per 100gm', '12 gm per 100gm', '18 gm per 100gm', '25 gm per 100gm'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What is the Sugar and Gluten status of ALOMOS GOLD, making it clinically safe for diabetic and sensitive patients?', questionType: 'mcq', options: ['Contains 10% added sucrose and low gluten', 'Free Sugar and Gluten Free (0g Sugar, 0g Gluten)', 'Contains artificial sweeteners with wheat protein', 'Contains fructose and maltodextrin'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'How many essential vitamins and minerals are fortified inside ALOMOS GOLD to provide complete clinical micronutrition?', questionType: 'mcq', options: ['12 Vitamins & Minerals', '18 Vitamins & Minerals', '26 Vitamins & Minerals', '32 Vitamins & Minerals'], correctAnswerIndex: 2 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'Which of the following patient groups is ALOMOS GOLD specifically indicated for?', questionType: 'mcq', options: ['Post Bariatric Surgery & Critical Care/Post-Surgical Recovery patients', 'Cancer Cachexia & Sarcopenia/Geriatric Nutrition patients', 'Both A and B (All of the above)', 'Only pediatric asthma patients'], correctAnswerIndex: 2 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What are the 5-in-1 Clinical Benefits highlighted on the ALOMOS GOLD wheel?', questionType: 'mcq', options: ['High Protein Density, Gut & Absorption Support, Anti-Inflammatory Support, Complete Micronutrition, and Muscle Recovery', 'Rapid Weight Gain, Sedation, Anti-Diarrheal, Bone Calcium, and Joint Lubrication', 'Renal Diuresis, Hepatic Cleansing, Cardiac Pumping, Pulmonary Oxygenation, and Dermal Healing', 'Appetite Suppression, Gastric Acid Blockade, Bile Stimulation, Electrolyte Surge, and Sleep Induction'], correctAnswerIndex: 0 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What is the recommended dilution and preparation protocol for a single 30gm serving of ALOMOS GOLD?', questionType: 'mcq', options: ['Add 30g to 100ml boiling water and stir immediately', 'Add 30g (1 level scoop) to 200-250ml cold water or unsweetened almond milk in a shaker bottle, shake vigorously for 30-45 seconds, and let stand 1 minute before sipping', 'Mix 30g with hot fruit juice and consume instantly', 'Blend 30g with 500ml warm tap water and drink over 1 hour'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'In what flavor and pack size is ALOMOS GOLD available for patient adherence and convenience?', questionType: 'mcq', options: ['Vanilla Flavour in 500gm tin', 'Chocolate Flavour in 1kg jar', 'Strawberry Flavour in 2kg pouch', 'Unflavored in 250gm box'], correctAnswerIndex: 1 },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'What is the primary brand tagline of ALOMOS GOLD marketed by Emyris Biolifesciences Pvt Ltd?', questionType: 'mcq', options: ['The Gold-Standard Protein Quality / For Empowering Surgical Recovery', 'Rapid Weight Loss Formula', 'The Ultimate Sports Gainer', 'Daily Energy & Stamina Booster'], correctAnswerIndex: 0 },
+
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'Explain the clinical superiority of ALOMOS GOLD over standard protein powders in Post-Surgical and ICU Recovery, specifically detailing the synergistic roles of 100% WPI (83.4g), DigeZyme® (1000mg), and Curcumin Extract (500mg).', questionType: 'descriptive', inputFields: [] },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'Write out your exact 2-minute Doctor Detailing Pitch (`In-Clinic Script`) when presenting ALOMOS GOLD to a Bariatric Surgeon or Critical Care Specialist.', questionType: 'descriptive', inputFields: [] },
+                { category: 'alomos-gold', targetProduct: 'ALOMOS GOLD', text: 'List the top 4 target doctor specialties in your HQ for ALOMOS GOLD (e.g., Bariatric Surgeons, Critical Care Specialists/Intensivists, Oncologists, Geriatricians/Physicians) and describe the key clinical indication you will emphasize for each.', questionType: 'descriptive', inputFields: ['Specialty 1 & Indication', 'Specialty 2 & Indication', 'Specialty 3 & Indication', 'Specialty 4 & Indication'] },
 
                 // English
                 { category: 'english', text: 'Which word is a synonym for "Abundant"?', options: ['Scarce', 'Plentiful', 'Empty', 'Brief'], correctAnswerIndex: 1 },
