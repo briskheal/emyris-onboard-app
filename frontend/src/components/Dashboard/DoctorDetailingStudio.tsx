@@ -99,6 +99,9 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
   const [missedWords, setMissedWords] = useState<string[]>([]);
 
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
   const currentScript = PRODUCT_SCRIPTS[selectedProd] || PRODUCT_SCRIPTS['ALOMOS GOLD'];
 
@@ -147,8 +150,14 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+      }
     };
-  }, []);
+  }, [audioUrl]);
 
   const handleToggleRecording = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -161,6 +170,9 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
       setIsRecording(false);
       evaluatePracticePitch(transcript);
     } else {
@@ -168,10 +180,39 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
         window.speechSynthesis.cancel();
         setIsPlaying(false);
       }
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
       setTranscript('');
       setPracticeScore(null);
       setMatchedWords([]);
       setMissedWords([]);
+
+      // Start parallel audio recording for applicant self-modulation playback
+      audioChunksRef.current = [];
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            const recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = (e) => {
+              if (e.data && e.data.size > 0) {
+                audioChunksRef.current.push(e.data);
+              }
+            };
+            recorder.onstop = () => {
+              const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+              const url = URL.createObjectURL(audioBlob);
+              setAudioUrl(url);
+              stream.getTracks().forEach(track => track.stop());
+            };
+            recorder.start();
+            mediaRecorderRef.current = recorder;
+          })
+          .catch(err => {
+            console.warn("Parallel audio recording failed (continuing with speech recognition only):", err);
+          });
+      }
 
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
@@ -189,10 +230,16 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
       recognition.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
         setIsRecording(false);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
       };
 
       recognition.onend = () => {
         setIsRecording(false);
+        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
       };
 
       recognitionRef.current = recognition;
@@ -264,6 +311,10 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
             key={prod}
             onClick={() => {
               if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+              if (audioUrl) {
+                URL.revokeObjectURL(audioUrl);
+                setAudioUrl(null);
+              }
               setIsPlaying(false);
               setSelectedProd(prod);
               setTranscript('');
@@ -467,6 +518,28 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
                 {transcript || (isRecording ? "Listening to your voice... Speak clearly now into your microphone..." : "Click 'Start Microphone Practice' above and deliver your 2-minute detailing pitch. Your spoken words will appear right here!")}
               </div>
             </div>
+
+            {/* Recorded Voice Playback (`Self-Modulation Lab`) */}
+            {audioUrl && (
+              <div style={{ marginBottom: '1.5rem', background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.18), rgba(99, 102, 241, 0.18))', border: '1px solid rgba(168, 85, 247, 0.6)', borderRadius: '12px', padding: '1.4rem', boxShadow: '0 8px 25px rgba(168, 85, 247, 0.2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#f3e8ff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    🎧 Recorded Voice Playback (`Self-Modulation Lab`)
+                  </span>
+                  <span style={{ fontSize: '0.72rem', background: '#a855f7', color: '#fff', padding: '4px 12px', borderRadius: '20px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    ✨ AUDIO READY TO PLAY
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.88rem', color: '#e2e8f0', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+                  Listen to your exact spoken delivery below. Compare your pacing, vocal clarity, and clinical tone against the doctor's chamber standard to modulate and perfect your pitch.
+                </p>
+                <audio 
+                  controls 
+                  src={audioUrl} 
+                  style={{ width: '100%', borderRadius: '8px', height: '44px', outline: 'none' }}
+                />
+              </div>
+            )}
 
             {/* AI Pitch Evaluation Scorecard */}
             {practiceScore !== null && (
