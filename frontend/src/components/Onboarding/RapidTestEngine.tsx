@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Clock, CheckCircle, XCircle } from 'lucide-react';
 import api from '../../api/client';
+import DoctorDetailingStudio from '../Dashboard/DoctorDetailingStudio';
 
 interface RapidTestEngineProps {
   applicant: any;
@@ -13,6 +14,7 @@ const RapidTestEngine: React.FC<RapidTestEngineProps> = ({ applicant, onComplete
   const [timeLeft, setTimeLeft] = useState<number>(25 * 60);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showStudio, setShowStudio] = useState(false);
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ const RapidTestEngine: React.FC<RapidTestEngineProps> = ({ applicant, onComplete
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', paddingBottom: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <div>
           <h3 style={{ margin: 0, color: 'var(--primary)' }}>Rapid Assessment</h3>
           <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>Attempt all questions. Instant feedback provided.</p>
@@ -102,6 +104,39 @@ const RapidTestEngine: React.FC<RapidTestEngineProps> = ({ applicant, onComplete
           <Clock size={20} />
           {m}:{s}
         </div>
+      </div>
+
+      {/* Test Question Bank & Doctor Detailing Voice Studio (`Qualification & Training Center`) for Rapid Assessment Candidates */}
+      <div className="dash-card" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95))', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '16px', padding: '1.4rem', marginBottom: '2rem', boxShadow: '0 10px 30px rgba(0,0,0,0.3)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showStudio ? '1.5rem' : '0', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+              <span style={{ background: '#a855f7', color: '#fff', fontSize: '0.72rem', fontWeight: 800, padding: '3px 10px', borderRadius: '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                🎓 Qualification & Training Center
+              </span>
+              <span style={{ color: '#34d399', fontSize: '0.85rem', fontWeight: 600 }}>
+                Test Bank & Audio Pitch Lab
+              </span>
+            </div>
+            <h3 style={{ margin: 0, color: '#f8fafc', fontSize: '1.25rem' }}>Doctor Detailing Voice Studio & Question Bank</h3>
+            <p style={{ margin: '4px 0 0 0', color: 'var(--text-muted)', fontSize: '0.86rem' }}>
+              Listen to the 4-Step MR Pitch and practice speaking into the microphone with audio playback right while completing your assessment!
+            </p>
+          </div>
+          <button
+            onClick={() => setShowStudio(!showStudio)}
+            className={`btn ${showStudio ? 'btn-outline' : 'btn-primary'}`}
+            style={{ background: showStudio ? 'rgba(255,255,255,0.08)' : 'linear-gradient(135deg, #a855f7, #6366f1)', border: showStudio ? '1px solid #a855f7' : 'none', padding: '10px 20px', fontSize: '0.92rem', fontWeight: 700, borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(168, 85, 247, 0.3)' }}
+          >
+            <span>{showStudio ? '✕ Close Studio Lab' : '🎙️ Open Voice Studio & Test Bank'}</span>
+          </button>
+        </div>
+
+        {showStudio && (
+          <div style={{ marginTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+            <DoctorDetailingStudio onClose={() => setShowStudio(false)} />
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
