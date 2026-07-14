@@ -49,6 +49,15 @@ async function syncDatabase() {
             console.warn('⚠️ Sync alter warning (falling back to standard sync):', alterErr.message);
             await sequelize.sync();
         }
+        // Safely ensure new columns exist in SQLite if alter:true skipped due to table backup conflicts
+        const queries = [
+            'ALTER TABLE onboard_applicants ADD COLUMN psychometricTestCompleted BOOLEAN DEFAULT 0;',
+            'ALTER TABLE onboard_applicants ADD COLUMN psychometricScores TEXT;',
+            'ALTER TABLE onboard_applicants ADD COLUMN mindsetReport TEXT;'
+        ];
+        for (const q of queries) {
+            try { await sequelize.query(q); } catch (e) {}
+        }
         console.log('✅ Synchronized onboard_* tables in database.');
 
         // Seed Default Company only if missing. Never overwrite existing targetProductsList if admin deleted/edited items.
