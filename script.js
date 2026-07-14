@@ -1341,7 +1341,12 @@ window.renderLegacyVoiceStudioProduct = function(prodName) {
     const script = scripts[prodName] || scripts['ALOMOS GOLD'] || window.DEFAULT_LEGACY_SCRIPTS['ALOMOS GOLD'];
     window.currentLegacyScript = script;
 
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        window.isLegacyTtsPlaying = false;
+        const ttsBtn = document.getElementById('ttsAlomosBtn');
+        if (ttsBtn) ttsBtn.innerHTML = '<span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>';
+    }
 
     // Render tabs
     const tabsContainer = document.getElementById('legacyVoiceProductTabs');
@@ -1434,6 +1439,9 @@ window.toggleGlobalVoiceStudioLegacy = function() {
         }
         if (window.speechSynthesis) {
             try { window.speechSynthesis.cancel(); } catch (e) {}
+            window.isLegacyTtsPlaying = false;
+            const ttsBtn = document.getElementById('ttsAlomosBtn');
+            if (ttsBtn) ttsBtn.innerHTML = '<span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>';
         }
 
         // Restore dashboard containers exactly as they were before opening
@@ -1466,6 +1474,16 @@ window.pronounceAlomosGoldLegacy = function() {
         showToast("Text-to-Speech is not supported in your browser.", "error");
         return;
     }
+    const btn = document.getElementById('ttsAlomosBtn');
+    
+    // If currently playing or speaking, stop/cancel on 2nd click
+    if (window.isLegacyTtsPlaying || window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        window.isLegacyTtsPlaying = false;
+        if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>';
+        return;
+    }
+
     window.speechSynthesis.cancel();
     
     const script = window.currentLegacyScript || window.DEFAULT_LEGACY_SCRIPTS['ALOMOS GOLD'];
@@ -1496,13 +1514,15 @@ window.pronounceAlomosGoldLegacy = function() {
         utterance.rate = parseFloat(rateSelect.value) || 1.0;
     }
     
-    const btn = document.getElementById('ttsAlomosBtn');
-    if (btn) btn.innerHTML = '<span>🔊 Playing Pitch (`Standard Female Voice`)...</span>';
+    window.isLegacyTtsPlaying = true;
+    if (btn) btn.innerHTML = '<span>⏹️ Stop Playing Pitch (`Click to Stop`)</span>';
     
     utterance.onend = () => {
+        window.isLegacyTtsPlaying = false;
         if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>';
     };
     utterance.onerror = () => {
+        window.isLegacyTtsPlaying = false;
         if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>';
     };
     
