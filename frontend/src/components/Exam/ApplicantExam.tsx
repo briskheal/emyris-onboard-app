@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/client';
+import DoctorDetailingStudio from '../Dashboard/DoctorDetailingStudio';
 
 interface ApplicantExamProps {
   applicant: any;
@@ -12,6 +13,7 @@ const ApplicantExam: React.FC<ApplicantExamProps> = ({ applicant, onComplete }) 
   const [timeLeft, setTimeLeft] = useState(15 * 60);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showStudio, setShowStudio] = useState(false);
 
   useEffect(() => {
     const fetchExam = async () => {
@@ -68,12 +70,27 @@ const ApplicantExam: React.FC<ApplicantExamProps> = ({ applicant, onComplete }) 
 
   return (
     <div className="dash-card">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem', flexWrap: 'wrap', gap: '10px' }}>
         <h2>Emyris Qualification Exam</h2>
-        <div style={{ background: timeLeft < 60 ? '#ef4444' : 'rgba(255,255,255,0.1)', padding: '10px 20px', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>
-          ⏱ {m}:{s}
+        <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+          <button 
+            onClick={() => setShowStudio(!showStudio)}
+            className="btn btn-sm btn-outline"
+            style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            🎙️ {showStudio ? 'Close Detailing Studio' : 'Audio Detailing Guide'}
+          </button>
+          <div style={{ background: timeLeft < 60 ? '#ef4444' : 'rgba(255,255,255,0.1)', padding: '10px 20px', borderRadius: '8px', fontSize: '1.2rem', fontWeight: 'bold' }}>
+            ⏱ {m}:{s}
+          </div>
         </div>
       </div>
+
+      {showStudio && (
+        <div style={{ marginBottom: '2rem' }}>
+          <DoctorDetailingStudio onClose={() => setShowStudio(false)} />
+        </div>
+      )}
 
       <div style={{ display: 'grid', gap: '2rem' }}>
         {questions.map((q, idx) => (

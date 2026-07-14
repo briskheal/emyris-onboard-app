@@ -53,7 +53,7 @@ async function syncDatabase() {
 
         // Seed Default Company only if missing. Never overwrite existing targetProductsList if admin deleted/edited items.
         let c = await Company.findOne();
-        let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'GLOWVIT-60K', 'ALOMOS GOLD'];
+        let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'Alomos DM', 'ALOMOS GOLD', 'Alomos MAMA', 'GLOWVIT-60K', 'GulpCDZ'];
         // Also extract any distinct product/category labels from seedQuestions
         if (typeof seedQuestions !== 'undefined' && Array.isArray(seedQuestions)) {
             seedQuestions.forEach(sq => {
@@ -77,12 +77,21 @@ async function syncDatabase() {
             });
             console.log('🌱 Seeded default Company profile with dynamic targetProductsList.');
         } else {
-            console.log('ℹ️ Company profile already exists. Preserving admin targetProductsList exactly.');
-            if (c.targetProductsList && Array.isArray(c.targetProductsList) && !c.targetProductsList.includes('ALOMOS GOLD')) {
-                const updatedList = [...c.targetProductsList, 'ALOMOS GOLD'];
-                await Company.updateOne({ _id: c._id }, { $set: { targetProductsList: updatedList } });
-                console.log('🌱 Automatically added ALOMOS GOLD to existing Company targetProductsList.');
-            }
+            console.log('ℹ️ Company profile already exists. Updating and deduplicating targetProductsList to match uploaded Questionnaires exactly.');
+            let existingList = Array.isArray(c.targetProductsList) ? c.targetProductsList : [];
+            // Remove 'Alomos GOLD' or mismatched casing and keep only 'ALOMOS GOLD' against which questionnaires are uploaded
+            existingList = existingList.filter(p => p !== 'Alomos GOLD' && (p.toLowerCase() !== 'alomos gold' || p === 'ALOMOS GOLD'));
+            // Ensure all required defaultProducts are included
+            defaultProducts.forEach(prod => {
+                if (!existingList.some(p => p.toLowerCase() === prod.toLowerCase())) {
+                    existingList.push(prod);
+                } else if (prod === 'ALOMOS GOLD' && !existingList.includes('ALOMOS GOLD')) {
+                    existingList = existingList.map(p => p.toLowerCase() === 'alomos gold' ? 'ALOMOS GOLD' : p);
+                }
+            });
+            const cleanList = [...new Set(existingList)];
+            await Company.updateOne({ _id: c._id }, { $set: { targetProductsList: cleanList } });
+            console.log('🌱 Synchronized targetProductsList clean summary:', cleanList);
         }
 
         // Seed Rapid Test Questions
