@@ -449,7 +449,7 @@ function logoutApplicant() {
         window.isLegacyTtsPlaying = false;
     }
     if (typeof window.stopLegacyVoiceRecording === 'function') {
-        try { window.stopLegacyVoiceRecording(); } catch (e) {}
+        try { window.stopLegacyVoiceRecording(true); } catch (e) {}
     }
 
     const landingContainer = document.getElementById('landingPage');
@@ -1459,7 +1459,7 @@ window.toggleGlobalVoiceStudioLegacy = function() {
 
         // Stop any active audio or speech recognition when closing
         if (typeof window.stopLegacyVoiceRecording === 'function') {
-            try { window.stopLegacyVoiceRecording(); } catch (e) {}
+            try { window.stopLegacyVoiceRecording(true); } catch (e) {}
         }
         if (window.speechSynthesis) {
             try { window.speechSynthesis.cancel(); } catch (e) {}
@@ -1618,21 +1618,34 @@ window.startLegacyVoiceRecording = async function() {
     }
 };
 
-window.stopLegacyVoiceRecording = function() {
-    if (legacyMediaRecorder && legacyMediaRecorder.state !== 'inactive') {
+window.stopLegacyVoiceRecording = function(silent = false) {
+    const wasActive = legacyMediaRecorder && legacyMediaRecorder.state !== 'inactive';
+    if (wasActive) {
         legacyMediaRecorder.stop();
     }
     if (legacyRecognition) {
         try { legacyRecognition.stop(); } catch(e){}
     }
     
-    document.getElementById('startLegacyRecBtn').style.display = 'inline-flex';
-    document.getElementById('stopLegacyRecBtn').style.display = 'none';
+    // If called silently during logout or view change, return immediately without scoring or toast
+    if (silent === true) {
+        return;
+    }
+
+    const startBtn = document.getElementById('startLegacyRecBtn');
+    const stopBtn = document.getElementById('stopLegacyRecBtn');
+    if (startBtn) startBtn.style.display = 'inline-flex';
+    if (stopBtn) stopBtn.style.display = 'none';
     
     const boxWrap = document.getElementById('legacyTranscriptBoxWrap');
     if (boxWrap) {
         boxWrap.style.border = '2px dashed #475569';
         boxWrap.style.boxShadow = 'none';
+    }
+
+    // If Stop button clicked when no recording was actually active, don't show "recording analyzed" toast
+    if (!wasActive) {
+        return;
     }
     
     // Calculate Score against current script targets

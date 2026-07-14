@@ -158,7 +158,7 @@ function updateView(viewId) {
         window.isLegacyTtsPlaying = false;
     }
     if (typeof window.stopLegacyVoiceRecording === 'function') {
-        try { window.stopLegacyVoiceRecording(); } catch (e) {}
+        try { window.stopLegacyVoiceRecording(true); } catch (e) {}
     }
 
     const landingPage = document.getElementById('landingPage');
