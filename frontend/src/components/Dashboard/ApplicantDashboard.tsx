@@ -30,9 +30,18 @@ const ApplicantDashboard: React.FC<ApplicantDashboardProps> = ({ applicant, onLo
             </div>
             <h2>Welcome, {app.fullName}</h2>
           </div>
-          <button className="btn btn-sm btn-outline" onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-            <LogOut size={16} /> Logout
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button 
+              className={`btn btn-sm ${showStudio ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setShowStudio(!showStudio)} 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: showStudio ? 'var(--primary)' : 'rgba(168, 85, 247, 0.15)', borderColor: '#a855f7', color: '#fff', fontWeight: 600 }}
+            >
+              🎙️ {showStudio ? 'Close Voice Studio' : 'Voice Studio (`AI Lab`)'}
+            </button>
+            <button className="btn btn-sm btn-outline" onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
         </div>
       </header>
 

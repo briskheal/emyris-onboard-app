@@ -141,14 +141,20 @@ export default function QuestionBank() {
     ...availableProducts
   ];
   
-  // Normalize casing for uniqueness, but keep original case for display
-  const productCategories = Array.from(
-    new Map(productCategoriesRaw.map(cat => [cat.toLowerCase(), cat])).values()
-  ).sort();
+  // Normalize casing and hyphens for uniqueness, preferring clean uppercase or admin display name
+  const productCategoriesMap = new Map();
+  productCategoriesRaw.forEach(cat => {
+    if (!cat) return;
+    const cleanKey = cat.toLowerCase().replace(/-/g, ' ').trim();
+    if (!productCategoriesMap.has(cleanKey) || cat === cat.toUpperCase() || availableProducts.includes(cat)) {
+      productCategoriesMap.set(cleanKey, cat.replace(/-/g, ' '));
+    }
+  });
+  const productCategories = Array.from(productCategoriesMap.values()).sort();
 
   const filteredQuestions = activeCategoryTab === 'All' 
     ? questions 
-    : questions.filter(q => (q.category || '').toLowerCase() === activeCategoryTab.toLowerCase());
+    : questions.filter(q => (q.category || '').toLowerCase().replace(/-/g, ' ').trim() === activeCategoryTab.toLowerCase().replace(/-/g, ' ').trim());
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       

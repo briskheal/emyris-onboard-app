@@ -5,10 +5,11 @@ import SetupAndLetters from '../components/Admin/SetupAndLetters';
 import QuestionBank from '../components/Admin/QuestionBank';
 import PendingExams from '../components/Admin/PendingExams';
 import ReportsTab from '../components/Admin/ReportsTab';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet } from 'lucide-react';
+import DoctorDetailingStudio from '../components/Dashboard/DoctorDetailingStudio';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic } from 'lucide-react';
 import api from '../api/client';
 
-type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports';
+type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -110,6 +111,7 @@ const AdminPanel: React.FC = () => {
             { id: 'applicants', icon: <Users size={16} style={{ flexShrink: 0 }} />, label: 'Applicant Manager' },
             { id: 'setup', icon: <FileSignature size={16} style={{ flexShrink: 0 }} />, label: 'Setup & Letters' },
             { id: 'questions', icon: <HelpCircle size={16} style={{ flexShrink: 0 }} />, label: 'Question Bank' },
+            { id: 'voice-studio', icon: <Mic size={16} style={{ flexShrink: 0, color: '#a855f7' }} />, label: '🎙️ Voice Studio' },
             { id: 'pending', icon: <ClipboardList size={16} style={{ flexShrink: 0 }} />, label: 'Test Results' },
             { id: 'reports', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Reports & Analytics' },
           ].map(item => (
@@ -167,6 +169,11 @@ const AdminPanel: React.FC = () => {
         {activeView === 'applicants' && <ApplicantManager />}
         {activeView === 'setup' && <SetupAndLetters />}
         {activeView === 'questions' && <QuestionBank />}
+        {activeView === 'voice-studio' && (
+          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+            <DoctorDetailingStudio />
+          </div>
+        )}
         {activeView === 'pending' && <PendingExams />}
         {activeView === 'reports' && <ReportsTab />}
       </main>

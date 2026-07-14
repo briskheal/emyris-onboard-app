@@ -94,6 +94,10 @@ async function syncDatabase() {
             console.log('🌱 Synchronized targetProductsList clean summary:', cleanList);
         }
 
+        // Migrate any hyphenated 'alomos-gold' or mixed-case Alomos GOLD in Question Bank to exact 'ALOMOS GOLD'
+        await Question.updateMany({ category: { $in: ['alomos-gold', 'Alomos GOLD', 'alomos gold'] } }, { $set: { category: 'ALOMOS GOLD', targetProduct: 'ALOMOS GOLD' } });
+        await Question.updateMany({ targetProduct: { $in: ['alomos-gold', 'Alomos GOLD', 'alomos gold'] } }, { $set: { category: 'ALOMOS GOLD', targetProduct: 'ALOMOS GOLD' } });
+
         // Seed Rapid Test Questions
         try {
             const seedQuestions = [

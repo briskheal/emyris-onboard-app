@@ -213,6 +213,19 @@ function createModelAdapter(Model) {
         }
         return { acknowledged: true };
     };
+    Adapter.updateMany = async (query, updateObj) => {
+        const insts = await Model.findAll({ where: buildWhere(query) });
+        let updatedCount = 0;
+        for (const inst of insts) {
+            const id = (typeof inst.get === 'function' ? inst.get('_id') : null) || inst.dataValues?._id || inst._id;
+            applyUpdate(inst, updateObj);
+            const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
+            delete plainData._id;
+            await Model.update(plainData, { where: { _id: id } });
+            updatedCount++;
+        }
+        return { acknowledged: true, modifiedCount: updatedCount };
+    };
     Adapter.deleteOne = async (query) => {
         const count = await Model.destroy({ where: buildWhere(query), limit: 1 });
         return { deletedCount: count };
