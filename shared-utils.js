@@ -209,6 +209,17 @@ function updateView(viewId) {
             document.body.classList.remove('admin-mode');
         }
 
+        // Show/Hide Candidate Sticky Top Bar across all active candidate sessions
+        const stickyBar = document.getElementById('candidateStickyTopBar');
+        if (stickyBar) {
+            const isCandidateActive = typeof currentApplicant !== 'undefined' && currentApplicant !== null && !['landingPage', 'applicantLogin', 'applicantRegister', 'adminLogin', 'adminDashboard'].includes(viewId);
+            stickyBar.style.display = isCandidateActive ? 'flex' : 'none';
+            const nameSpan = document.getElementById('stickyCandidateName');
+            if (nameSpan && typeof currentApplicant !== 'undefined' && currentApplicant) {
+                nameSpan.innerText = currentApplicant.fullName || currentApplicant.email || 'Candidate';
+            }
+        }
+
         // Toggle root-level floating rapid timer
         const rapidTimer = document.getElementById('floatingRapidTimer');
         if (rapidTimer) {

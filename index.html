@@ -49,6 +49,83 @@
         </a>
     </div>
 
+    <!-- Sticky Candidate Top Header Bar (Global across all candidate views) -->
+    <div id="candidateStickyTopBar" style="background: linear-gradient(135deg, #0f172a, #1e293b); border-bottom: 2px solid #a855f7; padding: 12px 24px; display: none; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10000; box-shadow: 0 4px 25px rgba(0,0,0,0.7); flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.4rem;">🎙️</span>
+            <div>
+                <span style="color: #f8fafc; font-weight: 800; font-size: 1.05rem; letter-spacing: 0.3px;">Emyris Biolifesciences Portal</span>
+                <span id="stickyCandidateName" style="background: rgba(168, 85, 247, 0.25); border: 1px solid #a855f7; color: #e9d5ff; font-size: 0.82rem; padding: 3px 12px; border-radius: 12px; margin-left: 10px; font-weight: 700;">Candidate</span>
+            </div>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <button onclick="toggleGlobalVoiceStudioLegacy()" class="btn btn-primary btn-sm" id="stickyStudioBtn" style="background: linear-gradient(135deg, #a855f7, #6366f1); border: none; padding: 10px 20px; font-size: 0.95rem; font-weight: 700; border-radius: 8px; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4); cursor: pointer; color: #fff;">
+                <span>🎙️ Voice Studio (`AI Lab`) & Test Bank</span>
+            </button>
+            <button onclick="logoutApplicant()" class="btn btn-outline btn-sm" style="border-color: rgba(255,255,255,0.25); color: #cbd5e1; padding: 9px 16px;">
+                Logout
+            </button>
+        </div>
+    </div>
+
+    <!-- Global Voice Studio Modal (Legacy Portal) -->
+    <div id="globalVoiceStudioModal" style="display: none; background: rgba(15, 23, 42, 0.98); border-bottom: 2px solid #a855f7; padding: 2.5rem 1.5rem; position: relative; z-index: 9999; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
+        <div style="max-width: 1000px; margin: 0 auto; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 16px; padding: 2rem; color: #fff;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.2rem; margin-bottom: 1.5rem;">
+                <div>
+                    <span style="background: #a855f7; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase;">AI Clinical Detailing Lab</span>
+                    <h2 style="margin: 8px 0 0 0; color: #f8fafc; font-size: 1.6rem;">🎙️ Voice Detailing & Self-Modulation Studio</h2>
+                </div>
+                <button onclick="toggleGlobalVoiceStudioLegacy()" style="background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer;">✕ Close Lab</button>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: #c084fc; margin-top: 0; font-size: 1.2rem;">🔊 Step 1: Listen to Alomos Gold Pitch</h3>
+                    <p style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6;">
+                        Listen carefully to the complete word pronunciation of <strong style="color: #fff;">Alomos Gold</strong> and our 4-step structure (`Introduction, Indication, Dosage, Safety`).
+                    </p>
+                    <div style="display: flex; gap: 10px; margin: 1.2rem 0; align-items: center;">
+                        <button onclick="pronounceAlomosGoldLegacy()" id="ttsAlomosBtn" style="background: #10b981; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <span>🔊 Listen to Sample Pitch</span>
+                        </button>
+                        <select id="ttsRateSelect" style="background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px; border-radius: 6px;">
+                            <option value="1">1.0x (Normal)</option>
+                            <option value="0.85">0.85x (Clear & Slow)</option>
+                            <option value="1.15">1.15x (Fast)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 1.5rem;">
+                    <h3 style="color: #e9d5ff; margin-top: 0; font-size: 1.2rem;">🎙️ Step 2: Record & Self-Modulate</h3>
+                    <p style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6;">
+                        Speak your detailing pitch aloud. Once recorded, listen back to your own voice so that you can modulate and refine further before your assessment.
+                    </p>
+                    <div style="display: flex; gap: 10px; margin: 1.2rem 0; flex-wrap: wrap;">
+                        <button onclick="startLegacyVoiceRecording()" id="startLegacyRecBtn" style="background: #a855f7; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <span>🔴 Start Recording Pitch</span>
+                        </button>
+                        <button onclick="stopLegacyVoiceRecording()" id="stopLegacyRecBtn" style="background: #64748b; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: none;">
+                            <span>⏹️ Stop & Score</span>
+                        </button>
+                    </div>
+                    <!-- Self Modulation Playback Container -->
+                    <div id="legacyAudioPlaybackWrap" style="display: none; margin-top: 1rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid #a855f7;">
+                        <span style="color: #a855f7; font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 6px;">🎧 Listen to Your Own Voice (`Self-Modulation Lab`):</span>
+                        <audio id="legacyAudioPlayer" controls style="width: 100%;"></audio>
+                    </div>
+                </div>
+            </div>
+
+            <div id="legacyScoreCard" style="display: none; margin-top: 1.5rem; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 12px; padding: 1.2rem;">
+                <h4 style="color: #34d399; margin: 0 0 8px 0;">🎯 AI Detailing Score Summary: <span id="legacyAIAccuracy">0%</span></h4>
+                <p id="legacyTranscriptText" style="color: #e2e8f0; font-size: 0.9rem; font-style: italic; margin: 0 0 10px 0;"></p>
+                <div id="legacyFeedbackTags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- LANDING PAGE -->
     <div id="landingPage" class="landing-screen">
         <div class="landing-marquee-bar">
@@ -331,6 +408,54 @@
                                 </div>
                                 <div id="resubmitMessage" class="dash-alert success hidden" style="margin-top: 1.5rem;">
                                     🚀 Documents resubmitted! Our team is reviewing them again.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Qualification & Training Center Block (Test Question Bank & Voice Detailing Studio) -->
+                        <div id="legacyDashboardStudioBlock" class="dash-card" style="background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 16px; padding: 1.8rem; margin-bottom: 2rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem;">
+                                <div>
+                                    <span style="background: #a855f7; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase;">🎓 Qualification & Training Center</span>
+                                    <h2 style="margin: 8px 0 0 0; color: #f8fafc; font-size: 1.4rem;">Test Question Bank & Voice Detailing Studio</h2>
+                                </div>
+                            </div>
+                            
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.5rem;">
+                                <!-- Test Question Block -->
+                                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 1.4rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                                            <span style="font-size: 1.4rem;">📝</span>
+                                            <h3 style="margin: 0; color: #6366f1; font-size: 1.15rem;">Test Question Block</h3>
+                                        </div>
+                                        <p style="color: #94a3b8; font-size: 0.88rem; line-height: 1.5;">
+                                            Access the official product question bank including Alomos Gold MCQs and descriptive detailing questions. Review your test attempt scores and launch your qualification exam.
+                                        </p>
+                                    </div>
+                                    <div style="margin-top: 1.5rem;">
+                                        <button class="btn btn-primary" onclick="launchLegacyQualificationTest()" style="width: 100%; padding: 12px; font-size: 0.95rem; font-weight: 700; background: linear-gradient(135deg, #6366f1, #4f46e5); border: none; border-radius: 8px; color: #fff; cursor: pointer;">
+                                            📝 Launch Practice Test & Question Bank
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Voice Studio Block -->
+                                <div style="background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(99, 102, 241, 0.12)); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 1.4rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                    <div>
+                                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                                            <span style="font-size: 1.4rem;">🎙️</span>
+                                            <h3 style="margin: 0; color: #c084fc; font-size: 1.15rem;">Voice Detailing Studio</h3>
+                                        </div>
+                                        <p style="color: #94a3b8; font-size: 0.88rem; line-height: 1.5;">
+                                            Listen to the full word pronunciation of <strong style="color: #fff;">Alomos Gold</strong> at adjustable speeds, record your own voice, and practice modulating further before your assessment.
+                                        </p>
+                                    </div>
+                                    <div style="margin-top: 1.5rem;">
+                                        <button onclick="toggleGlobalVoiceStudioLegacy()" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #a855f7, #6366f1); border: none; padding: 12px; font-size: 0.95rem; font-weight: 700; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3); cursor: pointer; color: #fff;">
+                                            <span>🎙️ Open Voice Studio Lab</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

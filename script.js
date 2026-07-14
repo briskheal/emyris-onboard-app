@@ -1281,6 +1281,163 @@ function renderApplicantDashboard() {
     }
 }
 
+// --- LEGACY VOICE DETAILING STUDIO (AI LAB & SELF-MODULATION PLAYER) ---
+let legacyMediaRecorder = null;
+let legacyAudioChunks = [];
+let legacyRecognition = null;
+let legacyTranscript = "";
+
+window.toggleGlobalVoiceStudioLegacy = function() {
+    const modal = document.getElementById('globalVoiceStudioModal');
+    if (!modal) return;
+    const isHidden = modal.style.display === 'none' || !modal.style.display;
+    modal.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+        modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+};
+
+window.pronounceAlomosGoldLegacy = function() {
+    if (!('speechSynthesis' in window)) {
+        showToast("Text-to-Speech is not supported in your browser.", "error");
+        return;
+    }
+    window.speechSynthesis.cancel();
+    
+    // Normalize ALOMOS GOLD to Title Case complete word so speech synthesis pronounces it smoothly as "Alomos Gold" (not A-L-O-M-O-S)
+    const pitchText = "Good morning Doctor. Today I am presenting Alomos Gold, our advanced nutritional supplement and clinical formulation. Alomos Gold provides complete mineral and antioxidant defense for sustained patient vitality and daily wellness. Recommended dosage is one tablet daily after meals for optimum clinical efficacy and safety.";
+    const utterance = new SpeechSynthesisUtterance(pitchText);
+    utterance.lang = 'en-US';
+    
+    const rateSelect = document.getElementById('ttsRateSelect');
+    if (rateSelect) {
+        utterance.rate = parseFloat(rateSelect.value) || 1.0;
+    }
+    
+    const btn = document.getElementById('ttsAlomosBtn');
+    if (btn) btn.innerHTML = '<span>🔊 Playing Pitch...</span>';
+    
+    utterance.onend = () => {
+        if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch</span>';
+    };
+    utterance.onerror = () => {
+        if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch</span>';
+    };
+    
+    window.speechSynthesis.speak(utterance);
+};
+
+window.startLegacyVoiceRecording = async function() {
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        legacyAudioChunks = [];
+        legacyTranscript = "";
+        
+        // Start MediaRecorder for Self-Modulation Audio Playback
+        legacyMediaRecorder = new MediaRecorder(stream);
+        legacyMediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) legacyAudioChunks.push(e.data);
+        };
+        
+        legacyMediaRecorder.onstop = () => {
+            const audioBlob = new Blob(legacyAudioChunks, { type: 'audio/webm' });
+            const audioUrl = URL.createObjectURL(audioBlob);
+            const player = document.getElementById('legacyAudioPlayer');
+            const wrap = document.getElementById('legacyAudioPlaybackWrap');
+            if (player && wrap) {
+                player.src = audioUrl;
+                wrap.style.display = 'block';
+            }
+            stream.getTracks().forEach(t => t.stop());
+        };
+        
+        legacyMediaRecorder.start();
+        
+        // Start Speech Recognition for Real-time AI Keyword Scoring
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (SpeechRecognition) {
+            legacyRecognition = new SpeechRecognition();
+            legacyRecognition.lang = 'en-US';
+            legacyRecognition.continuous = true;
+            legacyRecognition.interimResults = true;
+            legacyRecognition.onresult = (e) => {
+                let finalStr = "";
+                for (let i = e.resultIndex; i < e.results.length; ++i) {
+                    finalStr += e.results[i][0].transcript;
+                }
+                legacyTranscript = finalStr;
+            };
+            legacyRecognition.start();
+        }
+        
+        document.getElementById('startLegacyRecBtn').style.display = 'none';
+        document.getElementById('stopLegacyRecBtn').style.display = 'inline-flex';
+        const scoreCard = document.getElementById('legacyScoreCard');
+        if (scoreCard) scoreCard.style.display = 'none';
+        
+        showToast("🎙️ Recording started! Speak your Alomos Gold detailing pitch clearly.", "success");
+    } catch (e) {
+        console.error("Mic access error:", e);
+        showToast("Could not access microphone. Please allow mic permissions in your browser.", "error");
+    }
+};
+
+window.stopLegacyVoiceRecording = function() {
+    if (legacyMediaRecorder && legacyMediaRecorder.state !== 'inactive') {
+        legacyMediaRecorder.stop();
+    }
+    if (legacyRecognition) {
+        try { legacyRecognition.stop(); } catch(e){}
+    }
+    
+    document.getElementById('startLegacyRecBtn').style.display = 'inline-flex';
+    document.getElementById('stopLegacyRecBtn').style.display = 'none';
+    
+    // Calculate Score
+    const keywords = ["alomos", "gold", "supplement", "antioxidant", "vitality", "dosage", "tablet", "safety", "clinical"];
+    const textLower = legacyTranscript.toLowerCase();
+    let hits = 0;
+    const foundTags = [];
+    
+    keywords.forEach(kw => {
+        if (textLower.includes(kw)) {
+            hits++;
+            foundTags.push(kw);
+        }
+    });
+    
+    const accuracy = Math.min(100, Math.round((hits / Math.max(1, keywords.length)) * 100));
+    
+    const accSpan = document.getElementById('legacyAIAccuracy');
+    const txtEl = document.getElementById('legacyTranscriptText');
+    const tagsContainer = document.getElementById('legacyFeedbackTags');
+    const scoreCard = document.getElementById('legacyScoreCard');
+    
+    if (accSpan) accSpan.innerText = `${accuracy}% (${hits}/${keywords.length} clinical targets hit)`;
+    if (txtEl) txtEl.innerText = legacyTranscript ? `"${legacyTranscript}"` : '"Audio recorded successfully! Listen to your own voice below to modulate and practice."';
+    
+    if (tagsContainer) {
+        tagsContainer.innerHTML = keywords.map(kw => {
+            const hit = foundTags.includes(kw);
+            return `<span style="padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: ${hit ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.15)'}; color: ${hit ? '#34d399' : '#fca5a5'}; border: 1px solid ${hit ? '#10b981' : '#ef4444'};">${hit ? '✓' : '✕'} ${kw}</span>`;
+        }).join('');
+    }
+    
+    if (scoreCard) scoreCard.style.display = 'block';
+    showToast("🎯 Recording analyzed! Listen to your audio playback below.", "success");
+};
+
+window.launchLegacyQualificationTest = function() {
+    // Scroll or trigger assessment
+    const examSec = document.getElementById('applicantScoreboardCard');
+    if (examSec) {
+        examSec.scrollIntoView({ behavior: 'smooth' });
+        showToast("Choose your product test below or launch an attempt from your scoreboard!", "info");
+    } else {
+        showToast("Qualification test options are loading...", "info");
+    }
+};
+
 function toggleApptPreview() {
     document.getElementById('apptPreviewer').classList.toggle('hidden');
 }
