@@ -1347,26 +1347,38 @@ window.renderLegacyVoiceStudioProduct = function(prodName) {
     const tabsContainer = document.getElementById('legacyVoiceProductTabs');
     if (tabsContainer) {
         tabsContainer.innerHTML = Object.keys(scripts).map(p => `
-            <button onclick="renderLegacyVoiceStudioProduct('${p}')" style="padding: 10px 20px; border-radius: 8px; border: none; background: ${p === prodName ? '#6366f1' : 'transparent'}; color: #fff; font-weight: ${p === prodName ? '700' : '500'}; cursor: pointer;">
+            <button onclick="renderLegacyVoiceStudioProduct('${p}')" style="padding: 10px 20px; border-radius: 8px; border: none; background: ${p === prodName ? '#6366f1' : 'transparent'}; color: #fff; font-weight: ${p === prodName ? '700' : '500'}; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: ${p === prodName ? '0 4px 15px rgba(99, 102, 241, 0.4)' : 'none'}; transition: all 0.2s;">
                 📖 ${p}
             </button>
         `).join('');
     }
 
-    // Populate reading box
+    // Populate 4-step cards & full text
     const titleEl = document.getElementById('legacyScriptTitle');
     const hookEl = document.getElementById('legacyScriptHook');
+    const needEl = document.getElementById('legacyScriptNeed');
     const pillarsEl = document.getElementById('legacyScriptPillars');
+    const closingEl = document.getElementById('legacyScriptClosing');
     const fullTextEl = document.getElementById('legacyScriptFullText');
 
     if (titleEl) titleEl.innerHTML = `${script.name} — <span style="font-size: 0.9rem; color: #a855f7;">${script.tagline || ''}</span>`;
-    if (hookEl) hookEl.textContent = `${script.hook || ''} ${script.need || ''}`;
+    if (hookEl) hookEl.textContent = script.hook || '';
+    if (needEl) needEl.textContent = script.need || '';
     if (pillarsEl && Array.isArray(script.pillars)) {
         pillarsEl.innerHTML = `<ul style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6; margin: 6px 0 0 16px; padding: 0;">` +
-            script.pillars.map(pill => `<li>${pill}</li>`).join('') +
+            script.pillars.map(pill => `<li style="margin-bottom: 6px;">${pill}</li>`).join('') +
             `</ul>`;
     }
+    if (closingEl) closingEl.textContent = script.closing || '';
     if (fullTextEl) fullTextEl.textContent = script.fullText || '';
+
+    // Reset scorecard and audio
+    const scoreCard = document.getElementById('legacyScoreCard');
+    if (scoreCard) scoreCard.style.display = 'none';
+    const audioWrap = document.getElementById('legacyAudioPlaybackWrap');
+    if (audioWrap) audioWrap.style.display = 'none';
+    const transcriptText = document.getElementById('legacyTranscriptText');
+    if (transcriptText) transcriptText.textContent = "Your spoken pitch words will appear here live as you speak into the microphone...";
 };
 
 window.toggleGlobalVoiceStudioLegacy = function() {
@@ -1419,13 +1431,13 @@ window.pronounceAlomosGoldLegacy = function() {
     }
     
     const btn = document.getElementById('ttsAlomosBtn');
-    if (btn) btn.innerHTML = '<span>🔊 Playing Pitch...</span>';
+    if (btn) btn.innerHTML = '<span>🔊 Playing Pitch (`Standard Female Voice`)...</span>';
     
     utterance.onend = () => {
-        if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch</span>';
+        if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>';
     };
     utterance.onerror = () => {
-        if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch</span>';
+        if (btn) btn.innerHTML = '<span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>';
     };
     
     window.speechSynthesis.speak(utterance);
@@ -1461,7 +1473,7 @@ window.startLegacyVoiceRecording = async function() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             legacyRecognition = new SpeechRecognition();
-            legacyRecognition.lang = 'en-US';
+            legacyRecognition.lang = 'en-IN';
             legacyRecognition.continuous = true;
             legacyRecognition.interimResults = true;
             legacyRecognition.onresult = (e) => {
@@ -1470,6 +1482,8 @@ window.startLegacyVoiceRecording = async function() {
                     finalStr += e.results[i][0].transcript;
                 }
                 legacyTranscript = finalStr;
+                const txtEl = document.getElementById('legacyTranscriptText');
+                if (txtEl) txtEl.textContent = finalStr || "Listening to your voice...";
             };
             legacyRecognition.start();
         }
@@ -1479,7 +1493,15 @@ window.startLegacyVoiceRecording = async function() {
         const scoreCard = document.getElementById('legacyScoreCard');
         if (scoreCard) scoreCard.style.display = 'none';
         
-        showToast("🎙️ Recording started! Speak your Alomos Gold detailing pitch clearly.", "success");
+        const boxWrap = document.getElementById('legacyTranscriptBoxWrap');
+        if (boxWrap) {
+            boxWrap.style.border = '2px solid #06b6d4';
+            boxWrap.style.boxShadow = '0 0 20px rgba(6, 182, 212, 0.4)';
+        }
+        const txtEl = document.getElementById('legacyTranscriptText');
+        if (txtEl) txtEl.textContent = "🎙️ Listening... Speak your pitch clearly aloud!";
+        
+        showToast("🎙️ Recording started! Speak your detailing pitch clearly.", "success");
     } catch (e) {
         console.error("Mic access error:", e);
         showToast("Could not access microphone. Please allow mic permissions in your browser.", "error");
@@ -1497,34 +1519,67 @@ window.stopLegacyVoiceRecording = function() {
     document.getElementById('startLegacyRecBtn').style.display = 'inline-flex';
     document.getElementById('stopLegacyRecBtn').style.display = 'none';
     
-    // Calculate Score
-    const keywords = ["alomos", "gold", "supplement", "antioxidant", "vitality", "dosage", "tablet", "safety", "clinical"];
-    const textLower = legacyTranscript.toLowerCase();
-    let hits = 0;
-    const foundTags = [];
+    const boxWrap = document.getElementById('legacyTranscriptBoxWrap');
+    if (boxWrap) {
+        boxWrap.style.border = '2px dashed #475569';
+        boxWrap.style.boxShadow = 'none';
+    }
     
-    keywords.forEach(kw => {
-        if (textLower.includes(kw)) {
-            hits++;
-            foundTags.push(kw);
+    // Calculate Score against current script targets
+    const script = window.currentLegacyScript || window.DEFAULT_LEGACY_SCRIPTS['ALOMOS GOLD'];
+    let targetWords = ["Alomos", "Gold", "Protein", "Scoop", "DigeZyme", "Probiotics", "Curcumin", "Twice Daily", "Surgical"];
+    if (script && Array.isArray(script.keywords) && script.keywords.length > 0) {
+        targetWords = script.keywords.map(k => typeof k === 'string' ? k : k.word);
+    } else if (script && script.name) {
+        targetWords = script.name.split(' ').concat(script.fullText ? script.fullText.split(' ').filter(w => w.length > 5).slice(0, 10) : []);
+    }
+
+    const textLower = (legacyTranscript || "").toLowerCase();
+    const matched = [];
+    const missed = [];
+    
+    targetWords.forEach(kw => {
+        const cleanWord = kw.trim();
+        if (!cleanWord) return;
+        if (textLower.includes(cleanWord.toLowerCase())) {
+            matched.push(cleanWord);
+        } else {
+            const parts = cleanWord.toLowerCase().split(' ');
+            if (parts.some(p => p.length > 3 && textLower.includes(p))) {
+                matched.push(cleanWord);
+            } else {
+                missed.push(cleanWord);
+            }
         }
     });
     
-    const accuracy = Math.min(100, Math.round((hits / Math.max(1, keywords.length)) * 100));
+    const accuracy = Math.min(100, Math.round((matched.length / Math.max(1, targetWords.length)) * 100));
     
-    const accSpan = document.getElementById('legacyAIAccuracy');
+    const accBadge = document.getElementById('legacyAccuracyBadge');
+    const matchedBox = document.getElementById('legacyMatchedKeywordsBox');
+    const missedBox = document.getElementById('legacyMissedKeywordsBox');
     const txtEl = document.getElementById('legacyTranscriptText');
-    const tagsContainer = document.getElementById('legacyFeedbackTags');
     const scoreCard = document.getElementById('legacyScoreCard');
     
-    if (accSpan) accSpan.innerText = `${accuracy}% (${hits}/${keywords.length} clinical targets hit)`;
-    if (txtEl) txtEl.innerText = legacyTranscript ? `"${legacyTranscript}"` : '"Audio recorded successfully! Listen to your own voice below to modulate and practice."';
+    if (accBadge) {
+        accBadge.textContent = `${accuracy}%`;
+        accBadge.style.background = accuracy >= 70 ? 'linear-gradient(135deg, #10b981, #059669)' : accuracy >= 40 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'linear-gradient(135deg, #ef4444, #dc2626)';
+    }
     
-    if (tagsContainer) {
-        tagsContainer.innerHTML = keywords.map(kw => {
-            const hit = foundTags.includes(kw);
-            return `<span style="padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; background: ${hit ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.15)'}; color: ${hit ? '#34d399' : '#fca5a5'}; border: 1px solid ${hit ? '#10b981' : '#ef4444'};">${hit ? '✓' : '✕'} ${kw}</span>`;
-        }).join('');
+    if (txtEl) {
+        txtEl.textContent = legacyTranscript ? `"${legacyTranscript}"` : '"Audio recorded successfully! Listen to your own voice below to modulate and practice."';
+    }
+    
+    if (matchedBox) {
+        matchedBox.innerHTML = matched.length > 0 
+            ? matched.map(kw => `<span style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #34d399; padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;">✓ ${kw}</span>`).join('')
+            : `<span style="color: #64748b; font-size: 0.82rem;">No exact keyword matches detected in audio</span>`;
+    }
+    
+    if (missedBox) {
+        missedBox.innerHTML = missed.length > 0 
+            ? missed.map(kw => `<span style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; font-weight: 600;">✕ ${kw}</span>`).join('')
+            : `<span style="color: #34d399; font-size: 0.82rem;">🎉 Perfect delivery! You pronounced all target keywords clearly!</span>`;
     }
     
     if (scoreCard) scoreCard.style.display = 'block';

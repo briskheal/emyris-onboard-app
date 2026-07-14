@@ -70,74 +70,155 @@
 
     <!-- Global Voice Studio Modal (Legacy Portal) -->
     <div id="globalVoiceStudioModal" style="display: none; background: rgba(15, 23, 42, 0.98); border-bottom: 2px solid #a855f7; padding: 2.5rem 1.5rem; position: relative; z-index: 9999; box-shadow: 0 10px 40px rgba(0,0,0,0.8);">
-        <div style="max-width: 1000px; margin: 0 auto; background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 16px; padding: 2rem; color: #fff;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.2rem; margin-bottom: 1.5rem;">
-                <div>
-                    <span style="background: #a855f7; color: #fff; font-size: 0.75rem; font-weight: 800; padding: 4px 12px; border-radius: 20px; text-transform: uppercase;">AI Clinical Detailing Lab</span>
-                    <h2 style="margin: 8px 0 0 0; color: #f8fafc; font-size: 1.6rem;">🎙️ Voice Detailing & Self-Modulation Studio</h2>
-                </div>
-                <button onclick="toggleGlobalVoiceStudioLegacy()" style="background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer;">✕ Close Lab</button>
-            </div>
+        <div style="max-width: 1100px; margin: 0 auto; background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95)); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 16px; padding: 2.2rem; color: #fff; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
             
-            <!-- Dynamic Product Selector Bar for Legacy Portal -->
-            <div id="legacyVoiceProductTabs" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 12px;">
+            {/* Header */}
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1.2rem;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                        <span style="background: linear-gradient(135deg, #6366f1, #a855f7); padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letterSpacing: 1px; color: #fff;">
+                            🎙️ Voice Integration Module
+                        </span>
+                        <span style="color: #10b981; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 4px;">
+                            ✨ AI Detailing & Practice Lab
+                        </span>
+                    </div>
+                    <h2 style="font-size: 1.8rem; margin: 0; color: #fff;">Doctor Detailing Voice Studio</h2>
+                    <p style="margin: 4px 0 0 0; color: #94a3b8; font-size: 0.95rem;">
+                        Listen to the exact 4-step In-Clinic MR Pitch, practice your delivery into the microphone, and get instant clinical score evaluation.
+                    </p>
+                </div>
+                <button onclick="toggleGlobalVoiceStudioLegacy()" style="background: rgba(255,255,255,0.08); border: none; color: #fff; font-size: 1.2rem; padding: 6px 14px; border-radius: 8px; cursor: pointer; transition: background 0.2s;">✕</button>
+            </div>
+
+            {/* Product Selector Bar */}
+            <div id="legacyVoiceProductTabs" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 2rem; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 12px;">
                 <!-- Dynamically populated by script.js -->
             </div>
 
-            <!-- Reading Script Box (`Hook, Need, Pillars, Closing, Full Text`) -->
-            <div id="legacyVoiceReadingBox" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
-                <h3 id="legacyScriptTitle" style="color: #60a5fa; margin-top: 0; font-size: 1.3rem;">Loading Detailing Script...</h3>
-                <p id="legacyScriptHook" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 10px;"></p>
-                <div id="legacyScriptPillars" style="margin-bottom: 10px;"></div>
-                <div style="background: rgba(15, 23, 42, 0.9); padding: 12px; border-radius: 8px; border-left: 3px solid #10b981; margin-top: 10px;">
-                    <span style="color: #10b981; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Full Spoken Pitch Text (Read aloud along with Voiceover):</span>
-                    <p id="legacyScriptFullText" style="color: #fff; font-size: 0.9rem; margin: 6px 0 0 0; line-height: 1.6;"></p>
-                </div>
-            </div>
+            {/* 2-Column Studio Grid */}
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(440px, 1fr)); gap: 2rem; align-items: start;">
+                
+                {/* Left Column: The 4-Step Detailing Script & Audio Player */}
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.6rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
+                    
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 1rem;">
+                        <div>
+                            <h3 id="legacyScriptTitle" style="margin: 0; color: #f8fafc; font-size: 1.35rem;">Loading Detailing Script...</h3>
+                        </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.5rem;">
-                    <h3 style="color: #c084fc; margin-top: 0; font-size: 1.2rem;">🔊 Step 1: Listen to Sample Pitch</h3>
-                    <p style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6;">
-                        Listen to the exact standardized pronunciation and delivery of the selected detailing story.
-                    </p>
-                    <div style="display: flex; gap: 10px; margin: 1.2rem 0; align-items: center; flex-wrap: wrap;">
-                        <button onclick="pronounceAlomosGoldLegacy()" id="ttsAlomosBtn" style="background: #10b981; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                            <span>🔊 Listen to Sample Pitch</span>
-                        </button>
-                        <select id="ttsRateSelect" style="background: #0f172a; color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px; border-radius: 6px;">
-                            <option value="1">1.0x (Normal)</option>
-                            <option value="0.85">0.85x (Clear & Slow)</option>
-                            <option value="1.15">1.15x (Fast)</option>
-                        </select>
+                        {/* Audio Speed Selector */}
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <span style="font-size: 0.75rem; color: #94a3b8;">Speed:</span>
+                            <select id="ttsRateSelect" style="background: #1e293b; color: #fff; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; padding: 4px 8px; font-size: 0.8rem;">
+                                <option value="0.85">0.85x (Slow Practice)</option>
+                                <option value="0.95" selected>0.95x (Standard Pace)</option>
+                                <option value="1.1">1.10x (Fast Clinical)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    {/* Audio Play/Stop Button */}
+                    <button onclick="pronounceAlomosGoldLegacy()" id="ttsAlomosBtn" style="width: 100%; background: linear-gradient(135deg, #6366f1, #4f46e5); color: #fff; padding: 12px 20px; border-radius: 10px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3); margin-bottom: 1.5rem;">
+                        <span>🔊 Listen to Sample Pitch (`Standard Female Voice`)</span>
+                    </button>
+
+                    {/* Step 1: Hook & Opening */}
+                    <div id="legacyScriptHookCard" style="background: rgba(99, 102, 241, 0.1); border-left: 4px solid #6366f1; padding: 14px; border-radius: 8px; margin-bottom: 1rem;">
+                        <span style="color: #a5b4fc; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Step 1: The Hook (Opening Greeting & Intro)</span>
+                        <p id="legacyScriptHook" style="color: #e2e8f0; font-size: 0.92rem; margin: 0; line-height: 1.5;"></p>
+                    </div>
+
+                    {/* Step 2: Clinical Need */}
+                    <div id="legacyScriptNeedCard" style="background: rgba(6, 182, 212, 0.1); border-left: 4px solid #06b6d4; padding: 14px; border-radius: 8px; margin-bottom: 1rem;">
+                        <span style="color: #67e8f9; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Step 2: The Clinical Need</span>
+                        <p id="legacyScriptNeed" style="color: #e2e8f0; font-size: 0.92rem; margin: 0; line-height: 1.5;"></p>
+                    </div>
+
+                    {/* Step 3: The 3 Pillars */}
+                    <div id="legacyScriptPillarsCard" style="background: rgba(168, 85, 247, 0.1); border-left: 4px solid #a855f7; padding: 14px; border-radius: 8px; margin-bottom: 1rem;">
+                        <span style="color: #d8b4fe; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">Step 3: Core Clinical Pillars (USPs)</span>
+                        <div id="legacyScriptPillars"></div>
+                    </div>
+
+                    {/* Step 4: Closing & Dosage */}
+                    <div id="legacyScriptClosingCard" style="background: rgba(16, 185, 129, 0.1); border-left: 4px solid #10b981; padding: 14px; border-radius: 8px; margin-bottom: 1.2rem;">
+                        <span style="color: #6ee7b7; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 4px;">Step 4: Closing & Regimen</span>
+                        <p id="legacyScriptClosing" style="color: #e2e8f0; font-size: 0.92rem; margin: 0; line-height: 1.5;"></p>
+                    </div>
+
+                    {/* Full Spoken Text Reference Box */}
+                    <div style="background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 14px;">
+                        <span style="color: #10b981; font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 6px;">📖 Complete Spoken Pitch (Word-for-Word Reference)</span>
+                        <p id="legacyScriptFullText" style="color: #cbd5e1; font-size: 0.88rem; margin: 0; line-height: 1.6; font-style: italic;"></p>
                     </div>
                 </div>
 
-                <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 1.5rem;">
-                    <h3 style="color: #e9d5ff; margin-top: 0; font-size: 1.2rem;">🎙️ Step 2: Record & Self-Modulate</h3>
-                    <p style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6;">
-                        Speak your detailing pitch aloud while reading the full text above. Once recorded, listen back to your own voice to modulate and refine further!
-                    </p>
-                    <div style="display: flex; gap: 10px; margin: 1.2rem 0; flex-wrap: wrap;">
-                        <button onclick="startLegacyVoiceRecording()" id="startLegacyRecBtn" style="background: #a855f7; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
-                            <span>🔴 Start Recording Pitch</span>
-                        </button>
-                        <button onclick="stopLegacyVoiceRecording()" id="stopLegacyRecBtn" style="background: #64748b; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: none;">
-                            <span>⏹️ Stop & Score</span>
-                        </button>
+                {/* Right Column: Interactive Practice & Evaluation Panel */}
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 1.6rem; box-shadow: 0 10px 30px rgba(0,0,0,0.4); display: flex; flex-direction: column; justify-content: space-between;">
+                    
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+                            <span style="background: rgba(168, 85, 247, 0.2); color: #c084fc; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Self-Modulation Lab</span>
+                            <h3 style="margin: 0; color: #f8fafc; font-size: 1.35rem;">Live Pitch Evaluation</h3>
+                        </div>
+                        <p style="color: #94a3b8; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                            Click <strong style="color: #a855f7;">Practice Pitch</strong> below, read the 4-step detailing script clearly into your microphone, and click <strong style="color: #ef4444;">Stop & Evaluate</strong> when finished.
+                        </p>
+
+                        {/* Microphone Action Buttons */}
+                        <div style="display: flex; gap: 12px; margin-bottom: 1.5rem; flex-wrap: wrap;">
+                            <button onclick="startLegacyVoiceRecording()" id="startLegacyRecBtn" style="flex: 1; background: linear-gradient(135deg, #a855f7, #9333ea); color: #fff; padding: 14px 22px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1.02rem; box-shadow: 0 4px 20px rgba(168, 85, 247, 0.4);">
+                                <span>🎙️ Practice Pitch Into Microphone</span>
+                            </button>
+                            <button onclick="stopLegacyVoiceRecording()" id="stopLegacyRecBtn" style="flex: 1; background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; padding: 14px 22px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer; display: none; align-items: center; justify-content: center; gap: 8px; font-size: 1.02rem; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);">
+                                <span>⏹️ Stop Recording & Evaluate Score</span>
+                            </button>
+                        </div>
+
+                        {/* Real-Time Speech-to-Text Transcript Console Box */}
+                        <div style="background: #0f172a; border: 2px dashed #475569; border-radius: 12px; padding: 1.2rem; min-height: 140px; margin-bottom: 1.5rem; transition: all 0.3s;" id="legacyTranscriptBoxWrap">
+                            <span style="color: #64748b; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; display: block; margin-bottom: 8px;">Real-Time Speech Recognition Transcript:</span>
+                            <p id="legacyTranscriptText" style="color: #cbd5e1; font-family: monospace; font-size: 0.92rem; margin: 0; line-height: 1.6; min-height: 60px;">Your spoken pitch words will appear here live as you speak into the microphone...</p>
+                        </div>
+
+                        {/* Self Modulation Playback Audio Player */}
+                        <div id="legacyAudioPlaybackWrap" style="display: none; background: rgba(168, 85, 247, 0.12); border: 1px solid #a855f7; border-radius: 12px; padding: 14px; margin-bottom: 1.5rem;">
+                            <span style="color: #d8b4fe; font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 8px;">🎧 Listen to Your Own Voice (`Self-Modulation Lab`):</span>
+                            <audio id="legacyAudioPlayer" controls style="width: 100%; border-radius: 6px;"></audio>
+                        </div>
                     </div>
-                    <!-- Self Modulation Playback Container -->
-                    <div id="legacyAudioPlaybackWrap" style="display: none; margin-top: 1rem; background: rgba(0,0,0,0.3); padding: 12px; border-radius: 8px; border: 1px solid #a855f7;">
-                        <span style="color: #a855f7; font-size: 0.8rem; font-weight: 700; display: block; margin-bottom: 6px;">🎧 Listen to Your Own Voice (`Self-Modulation Lab`):</span>
-                        <audio id="legacyAudioPlayer" controls style="width: 100%;"></audio>
+
+                    {/* AI Scorecard & Interactive Keyword Pills Box */}
+                    <div id="legacyScoreCard" style="display: none; background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(99, 102, 241, 0.4); border-radius: 14px; padding: 1.5rem; margin-top: 1rem;">
+                        
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+                            <div>
+                                <span style="color: #34d399; font-size: 0.75rem; font-weight: 800; text-transform: uppercase;">Clinical Evaluation Result</span>
+                                <h4 style="margin: 4px 0 0 0; color: #fff; font-size: 1.3rem;">AI Detailing Score</h4>
+                            </div>
+                            <div id="legacyAccuracyBadge" style="background: linear-gradient(135deg, #10b981, #059669); color: #fff; font-size: 1.6rem; font-weight: 900; padding: 8px 18px; border-radius: 12px; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                                0%
+                            </div>
+                        </div>
+
+                        {/* Matched Keywords */}
+                        <div style="margin-bottom: 1.2rem;">
+                            <span style="color: #34d399; font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 8px;">✅ Matched Target Keywords (`High Efficacy Delivery`):</span>
+                            <div id="legacyMatchedKeywordsBox" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <span style="color: #64748b; font-size: 0.82rem;">None detected yet</span>
+                            </div>
+                        </div>
+
+                        {/* Missed Keywords */}
+                        <div>
+                            <span style="color: #f87171; font-size: 0.82rem; font-weight: 700; display: block; margin-bottom: 8px;">❌ Missed Target Keywords (`Modulate & Practice These Next`):</span>
+                            <div id="legacyMissedKeywordsBox" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                <span style="color: #64748b; font-size: 0.82rem;">None detected yet</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-
-            <div id="legacyScoreCard" style="display: none; margin-top: 1.5rem; background: rgba(16, 185, 129, 0.12); border: 1px solid #10b981; border-radius: 12px; padding: 1.2rem;">
-                <h4 style="color: #34d399; margin: 0 0 8px 0;">🎯 AI Detailing Score Summary: <span id="legacyAIAccuracy">0%</span></h4>
-                <p id="legacyTranscriptText" style="color: #e2e8f0; font-size: 0.9rem; font-style: italic; margin: 0 0 10px 0;"></p>
-                <div id="legacyFeedbackTags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
             </div>
         </div>
     </div>
@@ -464,12 +545,12 @@
                                             <h3 style="margin: 0; color: #c084fc; font-size: 1.15rem;">Voice Detailing Studio</h3>
                                         </div>
                                         <p style="color: #94a3b8; font-size: 0.88rem; line-height: 1.5;">
-                                            Listen to the full word pronunciation of <strong style="color: #fff;">Alomos Gold</strong> at adjustable speeds, record your own voice, and practice modulating further before your assessment.
+                                            Listen to the complete 4-step detailing stories (<strong style="color: #fff;">ALOMOS GOLD, GLOWVIT-60K, Emystein</strong>) at adjustable speeds, record into your microphone, and get instant keyword accuracy scoring (`with self-modulation audio playback`)!
                                         </p>
                                     </div>
                                     <div style="margin-top: 1.5rem;">
                                         <button onclick="toggleGlobalVoiceStudioLegacy()" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #a855f7, #6366f1); border: none; padding: 12px; font-size: 0.95rem; font-weight: 700; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3); cursor: pointer; color: #fff;">
-                                            <span>🎙️ Open Voice Studio Lab</span>
+                                            <span>🎙️ Open 2-Column Voice Studio Lab</span>
                                         </button>
                                     </div>
                                 </div>
