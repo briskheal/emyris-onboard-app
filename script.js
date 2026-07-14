@@ -435,15 +435,8 @@ async function handleForgotPin() {
 function logoutApplicant() {
     currentApplicant = null;
     try { localStorage.removeItem('emyris_applicant_session'); } catch (e) {}
+    try { sessionStorage.clear(); } catch (e) {}
     
-    // Cleanly close Voice Studio if open and reset inline container styles
-    const voiceModal = document.getElementById('globalVoiceStudioModal');
-    if (voiceModal) voiceModal.style.display = 'none';
-    const stickyBtn = document.getElementById('stickyStudioBtn');
-    if (stickyBtn) {
-        stickyBtn.innerHTML = `<span>🎙️ Voice Studio (\`AI Lab\`) & Test Bank</span>`;
-        stickyBtn.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
-    }
     if (window.speechSynthesis) {
         try { window.speechSynthesis.cancel(); } catch (e) {}
         window.isLegacyTtsPlaying = false;
@@ -452,16 +445,8 @@ function logoutApplicant() {
         try { window.stopLegacyVoiceRecording(true); } catch (e) {}
     }
 
-    const landingContainer = document.getElementById('landingPage');
-    const appShellContainer = document.getElementById('appShell');
-    const reactRootContainer = document.getElementById('react-root');
-    if (landingContainer) landingContainer.style.display = '';
-    if (appShellContainer) appShellContainer.style.display = '';
-    if (reactRootContainer) reactRootContainer.style.display = '';
-
-    backToLanding();
-    populateDropdowns(); // Ensure dropdowns are fresh
-    showToast("Logged out safely.");
+    // Ensure a completely fresh opening page on logout without showing any toast notification
+    window.location.href = window.location.pathname ? window.location.pathname : 'index.html';
 }
 
 // --- ONBOARDING FLOW ---

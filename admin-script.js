@@ -684,8 +684,7 @@ function showApplicantLogin() { updateView('applicantLogin'); }
 function logoutAdmin() {
     sessionStorage.removeItem('admin_auth');
     document.body.classList.remove('admin-mode');
-    showToast("✅ Logged out successfully", "success");
-    // Force reload to clean all memory states
+    // Force reload to clean all memory states without showing toast
     window.location.href = 'admin.html';
 }
 
