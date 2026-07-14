@@ -113,7 +113,16 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
       setIsPlaying(false);
     } else {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(currentScript.fullText);
+      // Convert all-caps brand names to Title Case or phonetics so browser TTS pronounces Alomos Gold completely without spelling letters
+      const pronounceableText = currentScript.fullText
+        .replace(/ALOMOS GOLD/gi, 'Alomos Gold')
+        .replace(/ALOMOS HP ADVANCED/gi, 'Alomos H P Advanced')
+        .replace(/ALOMOS DM/gi, 'Alomos D M')
+        .replace(/ALOMOS MAMA/gi, 'Alomos Mama')
+        .replace(/ALOMOS/gi, 'Alomos')
+        .replace(/GLOWVIT-60K/gi, 'Glowvit Sixty K')
+        .replace(/GulpCDZ/gi, 'Gulp C D Z');
+      const utterance = new SpeechSynthesisUtterance(pronounceableText);
       utterance.rate = speechRate;
       utterance.pitch = 1.0;
       utterance.lang = 'en-IN';

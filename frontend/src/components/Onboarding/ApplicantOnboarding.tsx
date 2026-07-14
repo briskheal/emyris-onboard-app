@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { ChevronRight, ChevronLeft, Save, Mic } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Save } from 'lucide-react';
 import api from '../../api/client';
 import StepPersonalInfo from './StepPersonalInfo';
 import StepBanking from './StepBanking';
 import StepExperience from './StepExperience';
 import DocumentUploader from './DocumentUploader';
-import DoctorDetailingStudio from '../Dashboard/DoctorDetailingStudio';
 
 interface ApplicantOnboardingProps {
   applicant: any;
@@ -14,7 +13,6 @@ interface ApplicantOnboardingProps {
 
 const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, onComplete }) => {
   const [currentStep, setCurrentStep] = useState(applicant.isExistingStaff ? 4 : 1);
-  const [showStudio, setShowStudio] = useState(false);
   const [formData, setFormData] = useState<any>({
     ...applicant,
     ...applicant.formData,
@@ -76,24 +74,11 @@ const ApplicantOnboarding: React.FC<ApplicantOnboardingProps> = ({ applicant, on
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            className={`btn btn-sm ${showStudio ? 'btn-primary' : 'btn-outline'}`}
-            onClick={() => setShowStudio(!showStudio)} 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: showStudio ? 'var(--primary)' : 'rgba(168, 85, 247, 0.15)', borderColor: '#a855f7', color: '#fff', fontWeight: 600 }}
-          >
-            <Mic size={16} /> {showStudio ? 'Close Studio' : '🎙️ Voice Studio (`AI Lab`)'}
-          </button>
           <button className="btn btn-sm btn-outline" onClick={handleSaveDraft} disabled={isSaving}>
             <Save size={16} /> {isSaving ? 'Saving...' : 'Save Draft'}
           </button>
         </div>
       </div>
-
-      {showStudio && (
-        <div style={{ marginBottom: '2rem' }}>
-          <DoctorDetailingStudio onClose={() => setShowStudio(false)} />
-        </div>
-      )}
 
       <div style={{ minHeight: '400px' }}>
         {currentStep === 1 && (
