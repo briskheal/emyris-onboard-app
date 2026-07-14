@@ -145,6 +145,22 @@ function updateView(viewId) {
         }
     }
 
+    // Always clear inline display style overrides set by Voice Studio so updateView can cleanly show the target view
+    const landingContainer = document.getElementById('landingPage');
+    const appShellContainer = document.getElementById('appShell');
+    const reactRootContainer = document.getElementById('react-root');
+    if (landingContainer) landingContainer.style.display = '';
+    if (appShellContainer) appShellContainer.style.display = '';
+    if (reactRootContainer) reactRootContainer.style.display = '';
+
+    if (window.speechSynthesis) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        window.isLegacyTtsPlaying = false;
+    }
+    if (typeof window.stopLegacyVoiceRecording === 'function') {
+        try { window.stopLegacyVoiceRecording(); } catch (e) {}
+    }
+
     const landingPage = document.getElementById('landingPage');
     const appShell = document.getElementById('appShell');
     const sections = document.querySelectorAll('.view-section');

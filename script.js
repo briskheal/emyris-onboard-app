@@ -435,6 +435,30 @@ async function handleForgotPin() {
 function logoutApplicant() {
     currentApplicant = null;
     try { localStorage.removeItem('emyris_applicant_session'); } catch (e) {}
+    
+    // Cleanly close Voice Studio if open and reset inline container styles
+    const voiceModal = document.getElementById('globalVoiceStudioModal');
+    if (voiceModal) voiceModal.style.display = 'none';
+    const stickyBtn = document.getElementById('stickyStudioBtn');
+    if (stickyBtn) {
+        stickyBtn.innerHTML = `<span>🎙️ Voice Studio (\`AI Lab\`) & Test Bank</span>`;
+        stickyBtn.style.background = 'linear-gradient(135deg, #a855f7, #6366f1)';
+    }
+    if (window.speechSynthesis) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+        window.isLegacyTtsPlaying = false;
+    }
+    if (typeof window.stopLegacyVoiceRecording === 'function') {
+        try { window.stopLegacyVoiceRecording(); } catch (e) {}
+    }
+
+    const landingContainer = document.getElementById('landingPage');
+    const appShellContainer = document.getElementById('appShell');
+    const reactRootContainer = document.getElementById('react-root');
+    if (landingContainer) landingContainer.style.display = '';
+    if (appShellContainer) appShellContainer.style.display = '';
+    if (reactRootContainer) reactRootContainer.style.display = '';
+
     backToLanding();
     populateDropdowns(); // Ensure dropdowns are fresh
     showToast("Logged out safely.");
