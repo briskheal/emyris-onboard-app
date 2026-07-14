@@ -1970,6 +1970,103 @@ router.post('/company-profile', async (req, res) => {
     }
 });
 
+const DEFAULT_DETAILING_SCRIPTS = {
+  'ALOMOS GOLD': {
+    id: 'alomos-gold',
+    name: 'ALOMOS GOLD',
+    tagline: 'The Gold-Standard 5-in-1 Clinical Nutrition Formula',
+    hook: "Good Morning/Afternoon Doctor! Today, I am proud to introduce Emyris Biolifesciences' ALOMOS GOLD — The Gold-Standard 5-in-1 Clinical Nutrition Formula engineered specifically to Empower Surgical Recovery, Critical Care, and Muscle Synthesis without the GI distress common in standard protein supplements.",
+    need: "Doctor, whether in Post-Surgical Recovery, Post-Bariatric surgery, Critical Care ICU, Cancer Cachexia, or Geriatric Sarcopenia, your patients desperately require rapid tissue repair and positive nitrogen balance without bloating or malabsorption.",
+    pillars: [
+      "Ultra-High Protein Density (25g WPI per 30g scoop) with 4,706 mg BCAAs: Triggers rapid Muscle Protein Synthesis (MPS) and preserves lean body mass.",
+      "Maximal Bioavailability with Zero GI Distress (300mg DigeZyme® + 13.88B CFU Probiotics + 12g Prebiotic Fiber): A proprietary 5-enzyme matrix plus multi-strain probiotics ensuring complete protein breakdown without lactose sensitivity or bloating.",
+      "Anti-Inflammatory Recovery (150mg Curcumin Extract): Natural antioxidant support reducing post-surgical swelling and oxidative stress."
+    ],
+    closing: "Best of all, Doctor, ALOMOS GOLD is completely Sugar-Free and Gluten-Free, enriched with 26 essential vitamins and minerals, and comes in a delicious Chocolate Flavour. Please prescribe ALOMOS GOLD — 1 level scoop (30g) in 200–250ml cold water or milk twice daily for your recovering patients.",
+    fullText: "Good Morning Doctor! Today, I am proud to introduce Emyris Biolifesciences' ALOMOS GOLD — The Gold-Standard 5-in-1 Clinical Nutrition Formula engineered specifically to Empower Surgical Recovery, Critical Care, and Muscle Synthesis without GI distress. Doctor, whether in Post-Surgical Recovery, Post-Bariatric surgery, Critical Care ICU, Cancer Cachexia, or Geriatric Sarcopenia, your patients require rapid tissue repair without bloating. First, it delivers Ultra-High Protein Density with 25 grams of 100% Whey Protein Isolate and 4,706 milligrams of BCAAs per scoop to trigger rapid Muscle Protein Synthesis. Second, it guarantees maximal bioavailability with zero GI distress using 300 milligrams of DigeZyme 5-enzyme matrix and 13.88 Billion CFU Probiotics with 12 grams Prebiotic Fiber. Third, it provides anti-inflammatory recovery through 150 milligrams of Curcumin Extract. Best of all, ALOMOS GOLD is completely Sugar-Free and Gluten-Free, fortified with 26 vitamins and minerals in a palatable Chocolate Flavour. Please prescribe ALOMOS GOLD — 1 level scoop (30g) in 200 to 250 millilitres of cold water twice daily.",
+    keywords: [
+      { word: "Whey Protein Isolate", category: "Core Protein" },
+      { word: "25g", category: "Dosage Strength" },
+      { word: "BCAAs", category: "Muscle Synthesis" },
+      { word: "4,706 mg", category: "BCAA Strength" },
+      { word: "DigeZyme", category: "Enzyme Matrix" },
+      { word: "Probiotics", category: "Gut Health" },
+      { word: "Prebiotic Fiber", category: "Microbiome" },
+      { word: "Curcumin", category: "Anti-Inflammatory" },
+      { word: "Sugar-Free", category: "Safety Profile" },
+      { word: "Gluten-Free", category: "Safety Profile" },
+      { word: "26 Vitamins", category: "Micronutrition" },
+      { word: "Chocolate Flavour", category: "Palatability" },
+      { word: "200", category: "Preparation Protocol" }
+    ]
+  },
+  'GLOWVIT-60K': {
+    id: 'glowvit-60k',
+    name: 'GLOWVIT-60K',
+    tagline: 'Advanced Vitamin D3 Nano Formula Oral Shot',
+    hook: "Good Morning Doctor! I am pleased to present GLOWVIT-60K, our advanced ready-to-use Vitamin D3 Nano Oral Solution delivering 60,000 IU for rapid bone mineralization and systemic clinical support.",
+    need: "Doctor, standard D3 tablets often suffer from poor intestinal absorption and delayed onset in severe osteopenia, osteoporosis, and elderly patients.",
+    pillars: [
+      "Advanced Nano-Emulsion Technology: Ensures 95%+ bioavailability and 3x faster absorption directly into circulation compared to conventional oil granules or tablets.",
+      "Ready-to-Use 5ml Oral Shot: Zero mixing needed, ensuring 100% patient compliance especially in elderly and post-menopausal women.",
+      "Pleasant Palatability: Delivers robust support for bone density, muscular strength, and insulin sensitivity without any metallic aftertaste."
+    ],
+    closing: "Please prescribe GLOWVIT-60K 5ml oral shot once weekly for 6 to 8 weeks for rapid deficiency correction, and once monthly for maintenance.",
+    fullText: "Good Morning Doctor! I am pleased to present GLOWVIT-60K, our advanced ready-to-use Vitamin D3 Nano Oral Solution delivering 60,000 IU for rapid bone mineralization and systemic clinical support. Doctor, standard D3 tablets often suffer from poor intestinal absorption and delayed onset in severe osteopenia, osteoporosis, and elderly patients. First, GLOWVIT-60K utilizes Advanced Nano-Emulsion Technology, ensuring 95% bioavailability and 3 times faster absorption directly into circulation compared to conventional oil granules. Second, it is presented in a ready-to-use 5 millilitre oral shot requiring zero mixing, guaranteeing 100% patient compliance. Third, beyond calcium absorption, it significantly supports skeletal muscle strength and insulin sensitivity. Please prescribe GLOWVIT-60K 5 millilitre oral shot once weekly for 6 to 8 weeks for rapid deficiency correction.",
+    keywords: [
+      { word: "60,000 IU", category: "Potency" },
+      { word: "Nano", category: "Technology" },
+      { word: "Bioavailability", category: "Absorption" },
+      { word: "Ready-to-Use", category: "Convenience" },
+      { word: "5ml", category: "Volume" },
+      { word: "Weekly", category: "Regimen" }
+    ]
+  },
+  'Emystein': {
+    id: 'emystein',
+    name: 'Emystein 3miu',
+    tagline: 'Broad-Spectrum Colistimethate Sodium for ICU Infection',
+    hook: "Good Morning Doctor! I am introducing Emystein 3 MIU, our critical-care Colistimethate Sodium injection engineered for life-saving efficacy against multi-drug resistant Gram-negative pathogens.",
+    need: "Doctor, in Intensive Care Units, Pseudomonas aeruginosa and Acinetobacter infections demand immediate, bactericidal action where conventional beta-lactams fail.",
+    pillars: [
+      "Targeted Bactericidal Action: Rapidly disrupts bacterial cell membranes of multi-drug resistant Gram-negative organisms.",
+      "Optimized 3 MIU Strength: Provides exact clinical titration for IV and aerosolized administration in ventilator-associated pneumonia.",
+      "High Purity & Safety Profile: Manufactured under strict lyophilization standards to minimize nephrotoxicity risks when dosed per renal guidelines."
+    ],
+    closing: "Please consider Emystein 3 MIU as your trusted first-line defense in critical ICU multi-drug resistant infections.",
+    fullText: "Good Morning Doctor! I am introducing Emystein 3 MIU, our critical-care Colistimethate Sodium injection engineered for life-saving efficacy against multi-drug resistant Gram-negative pathogens. Doctor, in Intensive Care Units, Pseudomonas aeruginosa and Acinetobacter infections demand immediate, bactericidal action where conventional beta-lactams fail. First, Emystein delivers targeted bactericidal action that rapidly disrupts bacterial cell membranes of resistant Gram-negative organisms. Second, its optimized 3 Million International Units strength allows exact clinical titration for IV and aerosolized administration. Third, it is manufactured under strict lyophilization standards to ensure high purity and consistent ICU performance. Please prescribe Emystein 3 MIU as your trusted defense in critical ICU infections.",
+    keywords: [
+      { word: "Colistimethate", category: "Molecule" },
+      { word: "3 MIU", category: "Strength" },
+      { word: "Gram-negative", category: "Spectrum" },
+      { word: "ICU", category: "Indication" },
+      { word: "Pseudomonas", category: "Pathogen" }
+    ]
+  }
+};
+
+router.post('/api/save-detailing-scripts', async (req, res) => {
+    try {
+        const { detailingScripts } = req.body;
+        if (!detailingScripts || typeof detailingScripts !== 'object') {
+            return res.status(400).json({ success: false, error: 'Invalid detailingScripts data' });
+        }
+        let profile = await Company.findOne();
+        if (!profile) {
+            await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD.", detailingScripts });
+        } else {
+            await Company.updateOne({}, { detailingScripts, $set: { detailingScripts } });
+            if (profile._id) {
+                await Company.updateOne({ _id: profile._id }, { detailingScripts, $set: { detailingScripts } });
+            }
+        }
+        res.json({ success: true, message: 'Detailing scripts saved successfully' });
+    } catch (e) {
+        console.error('Save Detailing Scripts Error:', e);
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 router.get('/api/company-data', async (req, res) => {
     try {
         const company = await Company.findOne().lean();
@@ -2004,6 +2101,7 @@ router.get('/api/company-data', async (req, res) => {
             ...company,
             divisions: enrichedDivisions,
             hqs: hqs,
+            detailingScripts: (company.detailingScripts && Object.keys(company.detailingScripts).length > 0) ? company.detailingScripts : DEFAULT_DETAILING_SCRIPTS,
             logo: "" // Logo logic handled by asset hydration if needed
         };
 

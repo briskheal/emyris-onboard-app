@@ -1287,6 +1287,88 @@ let legacyAudioChunks = [];
 let legacyRecognition = null;
 let legacyTranscript = "";
 
+window.DEFAULT_LEGACY_SCRIPTS = {
+  'ALOMOS GOLD': {
+    id: 'alomos-gold',
+    name: 'ALOMOS GOLD',
+    tagline: 'The Gold-Standard 5-in-1 Clinical Nutrition Formula',
+    hook: "Good Morning/Afternoon Doctor! Today, I am proud to introduce Emyris Biolifesciences' ALOMOS GOLD — The Gold-Standard 5-in-1 Clinical Nutrition Formula engineered specifically to Empower Surgical Recovery, Critical Care, and Muscle Synthesis without the GI distress common in standard protein supplements.",
+    need: "Doctor, whether in Post-Surgical Recovery, Post-Bariatric surgery, Critical Care ICU, Cancer Cachexia, or Geriatric Sarcopenia, your patients desperately require rapid tissue repair and positive nitrogen balance without bloating or malabsorption.",
+    pillars: [
+      "Ultra-High Protein Density (25g WPI per 30g scoop) with 4,706 mg BCAAs: Triggers rapid Muscle Protein Synthesis (MPS) and preserves lean body mass.",
+      "Maximal Bioavailability with Zero GI Distress (300mg DigeZyme® + 13.88B CFU Probiotics + 12g Prebiotic Fiber): A proprietary 5-enzyme matrix plus multi-strain probiotics ensuring complete protein breakdown without lactose sensitivity or bloating.",
+      "Anti-Inflammatory Recovery (150mg Curcumin Extract): Natural antioxidant support reducing post-surgical swelling and oxidative stress."
+    ],
+    closing: "Best of all, Doctor, ALOMOS GOLD is completely Sugar-Free and Gluten-Free, enriched with 26 essential vitamins and minerals, and comes in a delicious Chocolate Flavour. Please prescribe ALOMOS GOLD — 1 level scoop (30g) in 200–250ml cold water or milk twice daily for your recovering patients.",
+    fullText: "Good Morning Doctor! Today, I am proud to introduce Emyris Biolifesciences' ALOMOS GOLD — The Gold-Standard 5-in-1 Clinical Nutrition Formula engineered specifically to Empower Surgical Recovery, Critical Care, and Muscle Synthesis without GI distress. Doctor, whether in Post-Surgical Recovery, Post-Bariatric surgery, Critical Care ICU, Cancer Cachexia, or Geriatric Sarcopenia, your patients require rapid tissue repair without bloating. First, it delivers Ultra-High Protein Density with 25 grams of 100% Whey Protein Isolate and 4,706 milligrams of BCAAs per scoop to trigger rapid Muscle Protein Synthesis. Second, it guarantees maximal bioavailability with zero GI distress using 300 milligrams of DigeZyme 5-enzyme matrix and 13.88 Billion CFU Probiotics with 12 grams Prebiotic Fiber. Third, it provides anti-inflammatory recovery through 150 milligrams of Curcumin Extract. Best of all, ALOMOS GOLD is completely Sugar-Free and Gluten-Free, fortified with 26 vitamins and minerals in a palatable Chocolate Flavour. Please prescribe ALOMOS GOLD — 1 level scoop (30g) in 200 to 250 millilitres of cold water twice daily."
+  },
+  'GLOWVIT-60K': {
+    id: 'glowvit-60k',
+    name: 'GLOWVIT-60K',
+    tagline: 'Advanced Vitamin D3 Nano Formula Oral Shot',
+    hook: "Good Morning Doctor! I am pleased to present GLOWVIT-60K, our advanced ready-to-use Vitamin D3 Nano Oral Solution delivering 60,000 IU for rapid bone mineralization and systemic clinical support.",
+    need: "Doctor, standard D3 tablets often suffer from poor intestinal absorption and delayed onset in severe osteopenia, osteoporosis, and elderly patients.",
+    pillars: [
+      "Advanced Nano-Emulsion Technology: Ensures 95%+ bioavailability and 3x faster absorption directly into circulation compared to conventional oil granules or tablets.",
+      "Ready-to-Use 5ml Oral Shot: Zero mixing needed, ensuring 100% patient compliance especially in elderly and post-menopausal women.",
+      "Pleasant Palatability: Delivers robust support for bone density, muscular strength, and insulin sensitivity without any metallic aftertaste."
+    ],
+    closing: "Please prescribe GLOWVIT-60K 5ml oral shot once weekly for 6 to 8 weeks for rapid deficiency correction, and once monthly for maintenance.",
+    fullText: "Good Morning Doctor! I am pleased to present GLOWVIT-60K, our advanced ready-to-use Vitamin D3 Nano Oral Solution delivering 60,000 IU for rapid bone mineralization and systemic clinical support. Doctor, standard D3 tablets often suffer from poor intestinal absorption and delayed onset in severe osteopenia, osteoporosis, and elderly patients. First, GLOWVIT-60K utilizes Advanced Nano-Emulsion Technology, ensuring 95% bioavailability and 3 times faster absorption directly into circulation compared to conventional oil granules. Second, it is presented in a ready-to-use 5 millilitre oral shot requiring zero mixing, guaranteeing 100% patient compliance. Third, beyond calcium absorption, it significantly supports skeletal muscle strength and insulin sensitivity. Please prescribe GLOWVIT-60K 5 millilitre oral shot once weekly for 6 to 8 weeks for rapid deficiency correction."
+  },
+  'Emystein': {
+    id: 'emystein',
+    name: 'Emystein 3miu',
+    tagline: 'Broad-Spectrum Colistimethate Sodium for ICU Infection',
+    hook: "Good Morning Doctor! I am introducing Emystein 3 MIU, our critical-care Colistimethate Sodium injection engineered for life-saving efficacy against multi-drug resistant Gram-negative pathogens.",
+    need: "Doctor, in Intensive Care Units, Pseudomonas aeruginosa and Acinetobacter infections demand immediate, bactericidal action where conventional beta-lactams fail.",
+    pillars: [
+      "Targeted Bactericidal Action: Rapidly disrupts bacterial cell membranes of multi-drug resistant Gram-negative organisms.",
+      "Optimized 3 MIU Strength: Provides exact clinical titration for IV and aerosolized administration in ventilator-associated pneumonia.",
+      "High Purity & Safety Profile: Manufactured under strict lyophilization standards to minimize nephrotoxicity risks when dosed per renal guidelines."
+    ],
+    closing: "Please consider Emystein 3 MIU as your trusted first-line defense in critical ICU multi-drug resistant infections.",
+    fullText: "Good Morning Doctor! I am introducing Emystein 3 MIU, our critical-care Colistimethate Sodium injection engineered for life-saving efficacy against multi-drug resistant Gram-negative pathogens. Doctor, in Intensive Care Units, Pseudomonas aeruginosa and Acinetobacter infections demand immediate, bactericidal action where conventional beta-lactams fail. First, Emystein delivers targeted bactericidal action that rapidly disrupts bacterial cell membranes of resistant Gram-negative organisms. Second, its optimized 3 Million International Units strength allows exact clinical titration for IV and aerosolized administration. Third, it is manufactured under strict lyophilization standards to ensure high purity and consistent ICU performance. Please prescribe Emystein 3 MIU as your trusted defense in critical ICU infections."
+  }
+};
+
+window.currentLegacyScript = window.DEFAULT_LEGACY_SCRIPTS['ALOMOS GOLD'];
+
+window.renderLegacyVoiceStudioProduct = function(prodName) {
+    const scripts = (window.companyData && window.companyData.detailingScripts && Object.keys(window.companyData.detailingScripts).length > 0)
+        ? window.companyData.detailingScripts
+        : window.DEFAULT_LEGACY_SCRIPTS;
+    const script = scripts[prodName] || scripts['ALOMOS GOLD'] || window.DEFAULT_LEGACY_SCRIPTS['ALOMOS GOLD'];
+    window.currentLegacyScript = script;
+
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    // Render tabs
+    const tabsContainer = document.getElementById('legacyVoiceProductTabs');
+    if (tabsContainer) {
+        tabsContainer.innerHTML = Object.keys(scripts).map(p => `
+            <button onclick="renderLegacyVoiceStudioProduct('${p}')" style="padding: 10px 20px; border-radius: 8px; border: none; background: ${p === prodName ? '#6366f1' : 'transparent'}; color: #fff; font-weight: ${p === prodName ? '700' : '500'}; cursor: pointer;">
+                📖 ${p}
+            </button>
+        `).join('');
+    }
+
+    // Populate reading box
+    const titleEl = document.getElementById('legacyScriptTitle');
+    const hookEl = document.getElementById('legacyScriptHook');
+    const pillarsEl = document.getElementById('legacyScriptPillars');
+    const fullTextEl = document.getElementById('legacyScriptFullText');
+
+    if (titleEl) titleEl.innerHTML = `${script.name} — <span style="font-size: 0.9rem; color: #a855f7;">${script.tagline || ''}</span>`;
+    if (hookEl) hookEl.textContent = `${script.hook || ''} ${script.need || ''}`;
+    if (pillarsEl && Array.isArray(script.pillars)) {
+        pillarsEl.innerHTML = `<ul style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6; margin: 6px 0 0 16px; padding: 0;">` +
+            script.pillars.map(pill => `<li>${pill}</li>`).join('') +
+            `</ul>`;
+    }
+    if (fullTextEl) fullTextEl.textContent = script.fullText || '';
+};
+
 window.toggleGlobalVoiceStudioLegacy = function() {
     const modal = document.getElementById('globalVoiceStudioModal');
     if (!modal) return;
@@ -1294,6 +1376,10 @@ window.toggleGlobalVoiceStudioLegacy = function() {
     modal.style.display = isHidden ? 'block' : 'none';
     if (isHidden) {
         modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Initialize dynamic detailing tabs and reading box on open
+        if (typeof window.renderLegacyVoiceStudioProduct === 'function') {
+            window.renderLegacyVoiceStudioProduct((window.currentLegacyScript && window.currentLegacyScript.name) || 'ALOMOS GOLD');
+        }
     }
 };
 
@@ -1304,10 +1390,28 @@ window.pronounceAlomosGoldLegacy = function() {
     }
     window.speechSynthesis.cancel();
     
-    // Normalize ALOMOS GOLD to Title Case complete word so speech synthesis pronounces it smoothly as "Alomos Gold" (not A-L-O-M-O-S)
-    const pitchText = "Good morning Doctor. Today I am presenting Alomos Gold, our advanced nutritional supplement and clinical formulation. Alomos Gold provides complete mineral and antioxidant defense for sustained patient vitality and daily wellness. Recommended dosage is one tablet daily after meals for optimum clinical efficacy and safety.";
-    const utterance = new SpeechSynthesisUtterance(pitchText);
-    utterance.lang = 'en-US';
+    const script = window.currentLegacyScript || window.DEFAULT_LEGACY_SCRIPTS['ALOMOS GOLD'];
+    const pronounceableText = (script.fullText || '')
+        .replace(/ALOMOS GOLD/gi, 'Alomos Gold')
+        .replace(/ALOMOS HP ADVANCED/gi, 'Alomos H P Advanced')
+        .replace(/ALOMOS DM/gi, 'Alomos D M')
+        .replace(/ALOMOS MAMA/gi, 'Alomos Mama')
+        .replace(/ALOMOS/gi, 'Alomos')
+        .replace(/GLOWVIT-60K/gi, 'Glowvit Sixty K')
+        .replace(/GulpCDZ/gi, 'Gulp C D Z');
+
+    const utterance = new SpeechSynthesisUtterance(pronounceableText);
+    utterance.lang = 'en-IN';
+    
+    // Standardize to Female voice identical to Admin
+    const voices = window.speechSynthesis.getVoices();
+    const femaleVoice = voices.find(v => (v.lang.includes('IN') || v.lang.includes('en-GB') || v.lang.includes('en-US')) && (v.name.includes('Heera') || v.name.includes('Female') || v.name.includes('Google English (India)') || v.name.includes('Zira')))
+                     || voices.find(v => v.name.includes('Female') || v.name.includes('Heera') || v.name.includes('Google'))
+                     || voices.find(v => v.lang.includes('IN'))
+                     || voices[0];
+    if (femaleVoice) {
+        utterance.voice = femaleVoice;
+    }
     
     const rateSelect = document.getElementById('ttsRateSelect');
     if (rateSelect) {

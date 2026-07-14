@@ -88,7 +88,8 @@ const PRODUCT_SCRIPTS: Record<string, DetailingScript> = {
   }
 };
 
-const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
+const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean }> = ({ onClose, isAdmin = false }) => {
+  const [scriptsMap, setScriptsMap] = useState<Record<string, DetailingScript>>(PRODUCT_SCRIPTS);
   const [selectedProd, setSelectedProd] = useState<string>('ALOMOS GOLD');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speechRate, setSpeechRate] = useState<number>(0.95);
@@ -98,12 +99,89 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
   const [matchedWords, setMatchedWords] = useState<string[]>([]);
   const [missedWords, setMissedWords] = useState<string[]>([]);
 
+  // Editing state for Admin
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [editScript, setEditScript] = useState<DetailingScript | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
+
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
-  const currentScript = PRODUCT_SCRIPTS[selectedProd] || PRODUCT_SCRIPTS['ALOMOS GOLD'];
+  useEffect(() => {
+    fetch('/api/company-data')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.detailingScripts && typeof data.detailingScripts === 'object' && Object.keys(data.detailingScripts).length > 0) {
+          setScriptsMap(data.detailingScripts);
+          if (!data.detailingScripts[selectedProd]) {
+            setSelectedProd(Object.keys(data.detailingScripts)[0] || 'ALOMOS GOLD');
+          }
+        }
+      })
+      .catch(err => console.warn("Could not load dynamic detailing scripts, using defaults:", err));
+  }, []);
+
+  const currentScript = scriptsMap[selectedProd] || scriptsMap['ALOMOS GOLD'] || PRODUCT_SCRIPTS['ALOMOS GOLD'];
+
+  const handleSaveEditedScript = async () => {
+    if (!editScript) return;
+    setIsSaving(true);
+    const updatedMap = {
+      ...scriptsMap,
+      [editScript.name]: editScript
+    };
+    try {
+      const res = await fetch('/api/save-detailing-scripts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ detailingScripts: updatedMap })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setScriptsMap(updatedMap);
+        setSelectedProd(editScript.name);
+        setIsEditing(false);
+        setEditScript(null);
+        alert("✅ Detailing script saved successfully! The Voice Studio will now read this edited version.");
+      } else {
+        alert("Error saving script: " + (data.error || 'Unknown error'));
+      }
+    } catch (e: any) {
+      alert("Failed to save: " + e.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleStartAddNewProduct = () => {
+    const newName = prompt("Enter new product name (e.g., Alomos DM or Glowvit 60K):", "New Product");
+    if (!newName || !newName.trim()) return;
+    const cleanName = newName.trim();
+    const newScriptObj: DetailingScript = {
+      id: cleanName.toLowerCase().replace(/\s+/g, '-'),
+      name: cleanName,
+      tagline: `Clinical Detailing Formula for ${cleanName}`,
+      hook: `Good Morning Doctor! Today I am introducing ${cleanName}, our advanced clinical formulation engineered for superior patient recovery and efficacy.`,
+      need: `Doctor, standard therapies often suffer from poor compliance or delayed onset in acute and chronic patient care.`,
+      pillars: [
+        "High Clinical Efficacy: Engineered with targeted active ingredients ensuring prompt therapeutic action.",
+        "Optimized Tolerability & Safety Profile: Formulated to prevent common gastrointestinal distress or adverse interactions.",
+        "Convenient Patient Regimen: Designed for straightforward daily administration and improved adherence."
+      ],
+      closing: `Please prescribe ${cleanName} twice daily for your recovering patients for optimum clinical outcomes.`,
+      fullText: `Good Morning Doctor! Today I am introducing ${cleanName}, our advanced clinical formulation engineered for superior patient recovery and efficacy. Doctor, standard therapies often suffer from poor compliance or delayed onset in acute and chronic patient care. First, it delivers high clinical efficacy engineered with targeted active ingredients. Second, it ensures an optimized tolerability and safety profile. Third, it provides a convenient patient regimen designed for straightforward daily administration. Please prescribe ${cleanName} twice daily for your recovering patients.`,
+      keywords: [
+        { word: cleanName.split(' ')[0], category: "Product Name" },
+        { word: "Clinical Efficacy", category: "Benefit" },
+        { word: "Safety Profile", category: "Tolerability" },
+        { word: "Regimen", category: "Dosage" }
+      ]
+    };
+    setEditScript(newScriptObj);
+    setIsEditing(true);
+  };
 
   const handleToggleAudio = () => {
     if (!('speechSynthesis' in window)) {
@@ -129,6 +207,16 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
       utterance.rate = speechRate;
       utterance.pitch = 1.0;
       utterance.lang = 'en-IN';
+
+      // Explicitly pick a consistent Female voice (en-IN or Female English voice) across all browsers
+      const voices = window.speechSynthesis.getVoices();
+      const femaleVoice = voices.find(v => (v.lang.includes('IN') || v.lang.includes('en-GB') || v.lang.includes('en-US')) && (v.name.includes('Heera') || v.name.includes('Female') || v.name.includes('Google English (India)') || v.name.includes('Zira')))
+                       || voices.find(v => v.name.includes('Female') || v.name.includes('Heera') || v.name.includes('Google'))
+                       || voices.find(v => v.lang.includes('IN'))
+                       || voices[0];
+      if (femaleVoice) {
+        utterance.voice = femaleVoice;
+      }
 
       utterance.onend = () => {
         setIsPlaying(false);
@@ -304,9 +392,153 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void }> = ({ onClose }) 
         )}
       </div>
 
+      {/* Admin Edit / Add Banner */}
+      {isAdmin && (
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', background: 'rgba(168, 85, 247, 0.15)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(168, 85, 247, 0.4)', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+          <div>
+            <span style={{ color: '#c084fc', fontWeight: 700, fontSize: '0.95rem' }}>👑 Admin Customization Mode</span>
+            <p style={{ margin: 0, fontSize: '0.82rem', color: '#e2e8f0' }}>You can edit any product's detailing story or add new products. Changes take effect instantly across both Admin & Applicant Voice Studios.</p>
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => {
+                setEditScript(JSON.parse(JSON.stringify(currentScript)));
+                setIsEditing(true);
+              }}
+              className="btn btn-sm"
+              style={{ background: '#3b82f6', color: '#fff', fontWeight: 600, border: 'none', padding: '6px 12px', borderRadius: '8px' }}
+            >
+              ✏️ Edit Story ({currentScript.name})
+            </button>
+            <button
+              onClick={handleStartAddNewProduct}
+              className="btn btn-sm"
+              style={{ background: '#10b981', color: '#fff', fontWeight: 600, border: 'none', padding: '6px 12px', borderRadius: '8px' }}
+            >
+              ➕ Add New Product
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Editable Story Box Modal / Form for Admin */}
+      {isEditing && editScript && (
+        <div style={{ background: 'rgba(15, 23, 42, 0.98)', border: '2px solid #3b82f6', borderRadius: '16px', padding: '1.8rem', marginBottom: '2rem', boxShadow: '0 25px 50px rgba(0,0,0,0.7)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.8rem' }}>
+            <h3 style={{ margin: 0, color: '#60a5fa', fontSize: '1.4rem' }}>✏️ Editing Detailing Script: {editScript.name}</h3>
+            <button onClick={() => { setIsEditing(false); setEditScript(null); }} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>✕</button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+            <div>
+              <label style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Product Name</label>
+              <input
+                type="text"
+                value={editScript.name}
+                onChange={e => setEditScript({ ...editScript, name: e.target.value })}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#1e293b', border: '1px solid #475569', color: '#fff' }}
+              />
+            </div>
+            <div>
+              <label style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Tagline</label>
+              <input
+                type="text"
+                value={editScript.tagline}
+                onChange={e => setEditScript({ ...editScript, tagline: e.target.value })}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#1e293b', border: '1px solid #475569', color: '#fff' }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Hook (Opening Greeting & Introduction)</label>
+            <textarea
+              rows={2}
+              value={editScript.hook}
+              onChange={e => setEditScript({ ...editScript, hook: e.target.value })}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#1e293b', border: '1px solid #475569', color: '#fff', fontFamily: 'inherit' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Clinical Need (Why Doctor Needs This)</label>
+            <textarea
+              rows={2}
+              value={editScript.need}
+              onChange={e => setEditScript({ ...editScript, need: e.target.value })}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#1e293b', border: '1px solid #475569', color: '#fff', fontFamily: 'inherit' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Pillars / Key Benefits (One per line)</label>
+            <textarea
+              rows={3}
+              value={editScript.pillars.join('\n')}
+              onChange={e => setEditScript({ ...editScript, pillars: e.target.value.split('\n').filter(Boolean) })}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#1e293b', border: '1px solid #475569', color: '#fff', fontFamily: 'inherit' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Closing & Dosage Regimen</label>
+            <textarea
+              rows={2}
+              value={editScript.closing}
+              onChange={e => setEditScript({ ...editScript, closing: e.target.value })}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#1e293b', border: '1px solid #475569', color: '#fff', fontFamily: 'inherit' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#10b981', fontSize: '0.9rem', fontWeight: 700, display: 'block', marginBottom: '4px' }}>Full Spoken Pitch Text (Exact Text Read Aloud by Voiceover & Checked Against Applicant Speech)</label>
+            <textarea
+              rows={4}
+              value={editScript.fullText}
+              onChange={e => setEditScript({ ...editScript, fullText: e.target.value })}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '2px solid #10b981', color: '#fff', fontSize: '0.95rem', fontFamily: 'inherit' }}
+            />
+          </div>
+
+          <div style={{ marginBottom: '1.5rem' }}>
+            <label style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Target Keywords (Comma separated words/phrases evaluated by AI scorer)</label>
+            <input
+              type="text"
+              value={editScript.keywords.map(k => k.word).join(', ')}
+              onChange={e => {
+                const words = e.target.value.split(',').map(w => w.trim()).filter(Boolean);
+                setEditScript({
+                  ...editScript,
+                  keywords: words.map(w => ({ word: w, category: "Core Target" }))
+                });
+              }}
+              style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', background: '#1e293b', border: '1px solid #475569', color: '#fff' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+            <button
+              onClick={() => { setIsEditing(false); setEditScript(null); }}
+              className="btn btn-outline"
+              style={{ border: '1px solid #64748b', color: '#fff', padding: '8px 16px', borderRadius: '8px' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEditedScript}
+              disabled={isSaving}
+              className="btn"
+              style={{ background: '#10b981', color: '#fff', fontWeight: 700, padding: '8px 20px', borderRadius: '8px', border: 'none' }}
+            >
+              {isSaving ? 'Saving...' : '💾 Save & Update Voiceover'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Product Selector Bar */}
       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '2rem', background: 'rgba(0,0,0,0.3)', padding: '8px', borderRadius: '12px' }}>
-        {Object.keys(PRODUCT_SCRIPTS).map(prod => (
+        {Object.keys(scriptsMap).map(prod => (
           <button
             key={prod}
             onClick={() => {

@@ -171,7 +171,7 @@ const AdminPanel: React.FC = () => {
         {activeView === 'questions' && <QuestionBank />}
         {activeView === 'voice-studio' && (
           <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <DoctorDetailingStudio />
+            <DoctorDetailingStudio isAdmin={true} />
           </div>
         )}
         {activeView === 'pending' && <PendingExams />}

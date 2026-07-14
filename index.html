@@ -79,13 +79,29 @@
                 <button onclick="toggleGlobalVoiceStudioLegacy()" style="background: #ef4444; color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; cursor: pointer;">✕ Close Lab</button>
             </div>
             
+            <!-- Dynamic Product Selector Bar for Legacy Portal -->
+            <div id="legacyVoiceProductTabs" style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 1.5rem; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 12px;">
+                <!-- Dynamically populated by script.js -->
+            </div>
+
+            <!-- Reading Script Box (`Hook, Need, Pillars, Closing, Full Text`) -->
+            <div id="legacyVoiceReadingBox" style="background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(168, 85, 247, 0.4); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                <h3 id="legacyScriptTitle" style="color: #60a5fa; margin-top: 0; font-size: 1.3rem;">Loading Detailing Script...</h3>
+                <p id="legacyScriptHook" style="color: #cbd5e1; font-size: 0.95rem; line-height: 1.6; margin-bottom: 10px;"></p>
+                <div id="legacyScriptPillars" style="margin-bottom: 10px;"></div>
+                <div style="background: rgba(15, 23, 42, 0.9); padding: 12px; border-radius: 8px; border-left: 3px solid #10b981; margin-top: 10px;">
+                    <span style="color: #10b981; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;">Full Spoken Pitch Text (Read aloud along with Voiceover):</span>
+                    <p id="legacyScriptFullText" style="color: #fff; font-size: 0.9rem; margin: 6px 0 0 0; line-height: 1.6;"></p>
+                </div>
+            </div>
+
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
                 <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.5rem;">
-                    <h3 style="color: #c084fc; margin-top: 0; font-size: 1.2rem;">🔊 Step 1: Listen to Alomos Gold Pitch</h3>
+                    <h3 style="color: #c084fc; margin-top: 0; font-size: 1.2rem;">🔊 Step 1: Listen to Sample Pitch</h3>
                     <p style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6;">
-                        Listen carefully to the complete word pronunciation of <strong style="color: #fff;">Alomos Gold</strong> and our 4-step structure (`Introduction, Indication, Dosage, Safety`).
+                        Listen to the exact standardized pronunciation and delivery of the selected detailing story.
                     </p>
-                    <div style="display: flex; gap: 10px; margin: 1.2rem 0; align-items: center;">
+                    <div style="display: flex; gap: 10px; margin: 1.2rem 0; align-items: center; flex-wrap: wrap;">
                         <button onclick="pronounceAlomosGoldLegacy()" id="ttsAlomosBtn" style="background: #10b981; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                             <span>🔊 Listen to Sample Pitch</span>
                         </button>
@@ -100,7 +116,7 @@
                 <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.35); border-radius: 12px; padding: 1.5rem;">
                     <h3 style="color: #e9d5ff; margin-top: 0; font-size: 1.2rem;">🎙️ Step 2: Record & Self-Modulate</h3>
                     <p style="color: #cbd5e1; font-size: 0.88rem; line-height: 1.6;">
-                        Speak your detailing pitch aloud. Once recorded, listen back to your own voice so that you can modulate and refine further before your assessment.
+                        Speak your detailing pitch aloud while reading the full text above. Once recorded, listen back to your own voice to modulate and refine further!
                     </p>
                     <div style="display: flex; gap: 10px; margin: 1.2rem 0; flex-wrap: wrap;">
                         <button onclick="startLegacyVoiceRecording()" id="startLegacyRecBtn" style="background: #a855f7; color: #fff; border: none; padding: 10px 18px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
