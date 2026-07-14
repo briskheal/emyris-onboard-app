@@ -183,7 +183,10 @@ router.post('/login', async (req, res) => {
                 offerLetterData: applicant.offerLetterData,
                 apptLetterData: applicant.apptLetterData,
                 isExistingStaff: applicant.isExistingStaff,
-                rapidTestCompleted: applicant.rapidTestCompleted
+                rapidTestCompleted: applicant.rapidTestCompleted,
+                psychometricTestCompleted: applicant.psychometricTestCompleted,
+                psychometricScores: applicant.psychometricScores,
+                mindsetReport: applicant.mindsetReport
             }
         });
     } catch (error) {
@@ -249,6 +252,454 @@ router.post('/submit-test', async (req, res) => {
     } catch (e) {
         console.error('Submit Test Error:', e);
         res.status(500).json({ error: 'Failed to submit test' });
+    }
+});
+
+// --- 30-ITEM PSYCHOMETRIC & MINDSET ASSESSMENT QUESTION BANK ---
+const PSYCHOMETRIC_QUESTIONS_30 = [
+    // Dimension 1: Clinical Integrity & Ethics (Honesty & Compliance)
+    {
+        _id: 'psy_1', dimension: 'Clinical Integrity & Ethics',
+        text: 'A senior cardiologist asks if ALOMOS GOLD can be used for a condition where clinical trial data is currently inconclusive. How do you respond?',
+        options: [
+            'Strictly state what the scientific trials support and offer to provide published monographs.',
+            'Mention that while not officially indicated, some doctors observe anecdotal benefits.',
+            'Emphasize the positive general nutrition profile without addressing the specific clinical gap.',
+            'Agree enthusiastically to secure immediate hospital formulary approval.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_2', dimension: 'Clinical Integrity & Ethics',
+        text: 'During a competitive hospital audit, a colleague suggests slightly exaggerating competitor side-effect rates to win the tender. What do you do?',
+        options: [
+            'Refuse firmly, relying exclusively on verified clinical head-to-head comparative data.',
+            'Explain that misleading claims risk severe long-term credibility loss with doctors.',
+            'Stay neutral and allow your colleague to present their argument alone.',
+            'Go along with the suggestion if the competitor is known for aggressive marketing.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_3', dimension: 'Clinical Integrity & Ethics',
+        text: 'You discover a minor reporting discrepancy in your monthly call summary log. What is your immediate action?',
+        options: [
+            'Proactively notify your reporting manager and rectify the log transparently.',
+            'Correct the discrepancy moving forward without raising past flags.',
+            'Wait until the quarterly review to see if the system auto-reconciles.',
+            'Leave it as is since it does not affect commercial billing targets.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_4', dimension: 'Clinical Integrity & Ethics',
+        text: 'A hospital stockist requests back-dated invoices for promotional sample distributions. How do you handle this?',
+        options: [
+            'Decline immediately and explain strict company compliance and audit policies.',
+            'Consult your regional sales manager before making any commitments.',
+            'Try to find a middle ground by adjusting future delivery dates.',
+            'Accommodate the request to maintain a smooth distributor relationship.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_5', dimension: 'Clinical Integrity & Ethics',
+        text: 'How do you view scientific compliance guidelines when under extreme end-of-month commercial target pressure?',
+        options: [
+            'Compliance and scientific accuracy are non-negotiable foundations of long-term medical trust.',
+            'Important guidelines to follow, though speed is prioritized during month-end closing.',
+            'Administrative hurdles that should balance flexibly against commercial urgency.',
+            'Secondary checks once primary hospital order numbers are achieved.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+
+    // Dimension 2: Resilience & Grit Under Pressure
+    {
+        _id: 'psy_6', dimension: 'Resilience & Grit Under Pressure',
+        text: 'After waiting 2.5 hours outside an ICU, the head surgeon abruptly cancels your meeting due to an emergency surgery. How do you react?',
+        options: [
+            'Empathize completely with the clinical emergency, leave a polite note, and reschedule promptly.',
+            'Accept the situation professionally and utilize the time to meet resident doctors or hospital pharmacy staff.',
+            'Feel frustrated about the lost time but attempt to catch the doctor in the corridor next day.',
+            'Consider the hospital difficult to penetrate and shift immediate focus to easier clinics.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_7', dimension: 'Resilience & Grit Under Pressure',
+        text: 'Your newly launched clinical formula faces unexpected initial skepticism from key opinion leaders (KOLs). What is your mindset?',
+        options: [
+            'View skepticism as an intellectual invitation to present deeper clinical evidence and mechanism studies.',
+            'Seek senior manager intervention to co-detail and address specific clinical queries.',
+            'Wait a few weeks for other doctors to adopt the formula before re-approaching skeptical KOLs.',
+            'Focus promotional efforts entirely on doctors who readily accept new supplements without questioning.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_8', dimension: 'Resilience & Grit Under Pressure',
+        text: 'You miss your quarterly territory milestone by 8% due to unforeseen hospital supply delays. How do you process this?',
+        options: [
+            'Conduct a root-cause analysis, optimize supply chain coordination, and create a robust recovery plan.',
+            'Review where calls dropped and intensify daily detailing frequency in the new quarter.',
+            'Accept that external supply delays are beyond personal control and reset expectations.',
+            'Feel discouraged and wait for management to assign revised lower targets.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_9', dimension: 'Resilience & Grit Under Pressure',
+        text: 'During a live clinical presentation, a doctor challenges the statistical significance of your clinical trial chart in front of peers. How do you respond?',
+        options: [
+            'Maintain absolute poise, acknowledge the valid perspective, and clearly explain the p-value and study parameters.',
+            'Politely note the observation and offer to email the complete medical affairs dossier after the session.',
+            'Become defensive and reassert that the brand is approved by leading national specialists.',
+            'Deflect the question quickly to move on to the remaining presentation slides.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_10', dimension: 'Resilience & Grit Under Pressure',
+        text: 'When faced with back-to-back challenging days of high traffic and difficult doctor availability, what sustains your momentum?',
+        options: [
+            'Internal drive, discipline, and commitment to improving patient clinical outcomes through detailing.',
+            'Focusing on daily step-by-step progress and upcoming weekly territory milestones.',
+            'Taking frequent breaks and waiting for the schedule to ease up.',
+            'Relying primarily on external sales incentive bonuses to push through exhausting days.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+
+    // Dimension 3: Empathy & Relationship Building (EQ)
+    {
+        _id: 'psy_11', dimension: 'Empathy & Relationship Building',
+        text: 'A pediatric consultant expresses deep frustration about gastrointestinal side effects observed with standard protein formulas. How do you approach the pitch?',
+        options: [
+            'Actively listen to their specific patient struggles first before explaining ALOMOS GOLD’s DigeZyme and probiotic tolerability profile.',
+            'Immediately present the product brochure highlighting the 5-in-1 GI friendly formula.',
+            'Mention that GI issues are common across all protein supplements in the industry.',
+            'Emphasize only the taste and price benefits to change the topic from GI distress.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_12', dimension: 'Empathy & Relationship Building',
+        text: 'You notice that a key hospital pharmacist looks unusually stressed and overwhelmed during your afternoon visit. What do you do?',
+        options: [
+            'Offer brief cordial support, ask how you can help streamline stock checks, and keep the interaction efficient.',
+            'Ask quickly if stock is needed and leave promotional flyers without taking up their time.',
+            'Proceed with your standard 10-minute product presentation regardless of their busy state.',
+            'Postpone the visit entirely without inquiring if urgent inventory replenishment is required.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_13', dimension: 'Empathy & Relationship Building',
+        text: 'A doctor mentions they care more about post-surgical recovery speed than just daily protein intake. How do you adapt?',
+        options: [
+            'Pivot the conversation directly to clinical muscle synthesis, wound healing, and recovery kinetics.',
+            'Acknowledge recovery speed but continue detailing all standard protein nutrition slides sequentially.',
+            'State that protein intake naturally solves all recovery issues over time.',
+            'Suggest they consult the hospital dietician for specific surgical recovery protocols.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_14', dimension: 'Empathy & Relationship Building',
+        text: 'How do you build trust with a senior institutional buyer who has been loyal to a legacy competitor for 15 years?',
+        options: [
+            'Respect their clinical experience, seek their expert feedback on nutritional gaps, and build rapport gradually.',
+            'Offer aggressive comparative discounts and free trial packages to force a switch.',
+            'Argue that legacy formulations are outdated and inferior to modern clinical nutrition.',
+            'Avoid spending significant time on loyalist buyers until they express dissatisfaction.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_15', dimension: 'Empathy & Relationship Building',
+        text: 'When a patient caregiver asks you a product dosage question in the hospital corridor, how do you handle it?',
+        options: [
+            'Provide clear, empathetic general information while strictly advising them to verify dosing with their treating doctor.',
+            'Give exact clinical dosage recommendations directly based on the product insert.',
+            'Politely state that you only speak with medical professionals and walk away.',
+            'Hand them a promotional leaflet and ask them to read the back panel.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+
+    // Dimension 4: Autonomy & Self-Motivation (Drive)
+    {
+        _id: 'psy_16', dimension: 'Autonomy & Self-Motivation',
+        text: 'Your reporting manager is traveling and unreachable during an unexpected hospital formulary submission deadline. What steps do you take?',
+        options: [
+            'Take complete initiative, assemble all verified statutory and clinical documents accurately, and submit on time.',
+            'Prepare the documentation package and inform HR or secondary managers for interim sign-off.',
+            'Wait until your reporting manager returns to avoid taking sole responsibility.',
+            'Request the hospital procurement officer for an extension until your manager is back.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_17', dimension: 'Autonomy & Self-Motivation',
+        text: 'How do you structure your daily hospital detailing schedule when working independently in the field?',
+        options: [
+            'Plan routes systematically based on doctor OPD timings, priority tiering, and clinical high-impact targets.',
+            'Follow a standard geographical loop from morning to evening across familiar hospitals.',
+            'Decide daily visits spontaneously each morning depending on traffic and weather.',
+            'Rely on hospital calls or distributor requests to dictate where you visit each day.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_18', dimension: 'Autonomy & Self-Motivation',
+        text: 'You discover a new private nursing home that is not currently listed in your territory coverage master. What do you do?',
+        options: [
+            'Autonomously conduct an initial survey, meet the resident medical officer, and add it to your growth pipeline.',
+            'Note down the address and ask your manager during the next review if you should visit.',
+            'Ignore it unless it is officially assigned during territory redistribution.',
+            'Check if a competitor visits there before deciding whether it is worth exploring.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_19', dimension: 'Autonomy & Self-Motivation',
+        text: 'When learning about a new clinical indication for ALOMOS GOLD, how do you upgrade your detailing mastery?',
+        options: [
+            'Self-study clinical papers, practice pitch delivery using Voice Studio AI, and refine terminology proactively.',
+            'Attend official company training webinars and review the provided slide decks carefully.',
+            'Wait for the sales manager to conduct a role-play session during the monthly meeting.',
+            'Use the basic tagline summary until doctors start asking specific technical questions.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_20', dimension: 'Autonomy & Self-Motivation',
+        text: 'What best describes your personal attitude toward setting professional career benchmarks?',
+        options: [
+            'I constantly challenge myself to exceed standard clinical mastery and territory leadership goals.',
+            'I aim to consistently meet all official company targets and maintain reliable performance.',
+            'I focus on steady work-life balance while completing assigned daily duties.',
+            'I prefer when supervisors define clear benchmarks so I know what minimums to hit.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+
+    // Dimension 5: Scientific Adaptability (Learning Agility)
+    {
+        _id: 'psy_21', dimension: 'Scientific Adaptability',
+        text: 'You are asked to detail a complex 5-in-1 clinical nutrition formula with only 24 hours of preparation time. How do you approach it?',
+        options: [
+            'Deconstruct the 5 core pillars (Protein, DigeZyme, Probiotics, Curcumin, Micronutrients) and master the primary clinical hook immediately.',
+            'Focus on memorizing the top 3 product benefits and read up on the rest during transit.',
+            'Request a 48-hour extension from management to ensure complete memorization.',
+            'Detail only the general brand name until you feel comfortable with complex pharmacology.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_22', dimension: 'Scientific Adaptability',
+        text: 'A specialist doctor asks how ALOMOS GOLD’s Curcumin absorption differs from standard dietary turmeric extract. How do you respond?',
+        options: [
+            'Explain the specialized bio-enhanced formulation and anti-inflammatory kinetics clearly and accurately.',
+            'State that it is formulated specifically for maximum clinical absorption and high bioavailability.',
+            'Admit you will confirm the precise pharmacological mechanism with medical affairs and follow up promptly.',
+            'Change the subject back to the high protein content and delicious flavor profile.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_23', dimension: 'Scientific Adaptability',
+        text: 'When digital detailing iPads and AI voice scoring tools are introduced to replace paper brochures, what is your reaction?',
+        options: [
+            'Embrace the digital tools enthusiastically, practicing rapidly to elevate doctor engagement quality.',
+            'Adopt the technology as required by company SOPs after attending orientation sessions.',
+            'Use digital tools when required but prefer relying on traditional physical flipcharts whenever possible.',
+            'Resist the digital transition, feeling that technology complicates personal doctor interactions.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_24', dimension: 'Scientific Adaptability',
+        text: 'How do you handle complex questions regarding geriatric sarcopenia during a clinical presentation?',
+        options: [
+            'Connect muscle protein synthesis directly to clinical prevention of age-related muscle wasting with confidence.',
+            'Highlight that ALOMOS GOLD is excellent for senior citizens and joint mobility support.',
+            'Refer the doctor to the geriatric section of the clinical monograph.',
+            'Admit that geriatric care is complex and focus the pitch on general adult wellness.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_25', dimension: 'Scientific Adaptability',
+        text: 'When reading dense clinical trial journals and pharmacological papers, what is your primary focus?',
+        options: [
+            'Extracting clinical evidence, patient outcome metrics, and practical detailing hooks for doctors.',
+            'Understanding the summary conclusion and key statistically significant p-values.',
+            'Scanning for brand names and dosage guidelines suitable for promotional folders.',
+            'Finding simple bullet points that can be quickly recited without deep reading.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+
+    // Dimension 6: Collaborative Communication (Team Play)
+    {
+        _id: 'psy_26', dimension: 'Collaborative Communication',
+        text: 'A colleague on a shared hospital territory disagrees with your product positioning strategy during a joint preparation meeting. How do you resolve this?',
+        options: [
+            'Engage in open, objective dialogue, evaluate both clinical angles, and align on a unified high-impact strategy.',
+            'Suggest splitting the hospital doctors so each person can detail their preferred way.',
+            'Defer completely to your colleague’s strategy to avoid any friction.',
+            'Insist on your approach since you have done more recent doctor visits.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_27', dimension: 'Collaborative Communication',
+        text: 'During a regional sales conference, HR provides constructive feedback on improving your CRM reporting frequency. How do you receive it?',
+        options: [
+            'Welcome the feedback with gratitude, recognize its organizational value, and optimize your reporting routine immediately.',
+            'Accept the feedback calmly and make sure weekly reports are submitted on schedule.',
+            'Explain that heavy fieldwork leaves limited time for administrative CRM entries.',
+            'Feel criticized and believe that clinical sales results should outweigh reporting formalities.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_28', dimension: 'Collaborative Communication',
+        text: 'A new junior team member joins your division and struggles to understand clinical detailing scripts. What do you do?',
+        options: [
+            'Offer mentorship, conduct practice mock calls, and share successful detailing techniques to accelerate their growth.',
+            'Answer their specific questions whenever they reach out to you for guidance.',
+            'Encourage them to re-read the training manual and watch official video recordings.',
+            'Focus strictly on your own territory goals and let HR handle all onboarding training.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_29', dimension: 'Collaborative Communication',
+        text: 'How do you coordinate with hospital distributors and supply chain teams when facing sudden demand spikes?',
+        options: [
+            'Maintain transparent, proactive daily communication, forecasting hospital needs clearly to prevent stock-outs.',
+            'Inform the supply team once an order is placed and track expected delivery dates.',
+            'Expect the distributor to automatically manage buffer inventory without personal follow-up.',
+            'Blame the logistics department if hospital supply runs short during peak demand.'
+        ],
+        weights: [5, 4, 2, 1]
+    },
+    {
+        _id: 'psy_30', dimension: 'Collaborative Communication',
+        text: 'What is your core philosophy on achieving commercial success within Emyris Biolifesciences?',
+        options: [
+            'True excellence is achieved through clinical integrity, collaborative teamwork, and continuous scientific learning.',
+            'Success comes from disciplined daily effort, hitting personal numbers, and following company guidelines.',
+            'Individual drive and competitive ambition are the primary drivers of field performance.',
+            'Maintaining good relationships with hospital staff and managers ensures steady career progress.'
+        ],
+        weights: [5, 4, 2, 1]
+    }
+];
+
+router.get('/psychometric-questions', async (req, res) => {
+    try {
+        // Return all 30 questions randomized
+        const safeQuestions = PSYCHOMETRIC_QUESTIONS_30.map(q => ({
+            _id: q._id,
+            dimension: q.dimension,
+            text: q.text,
+            options: q.options
+        }));
+        res.json({ success: true, timeLimitMinutes: 30, questions: safeQuestions.sort(() => 0.5 - Math.random()) });
+    } catch (e) {
+        console.error('Fetch Psychometric Questions Error:', e);
+        res.status(500).json({ error: 'Failed to fetch psychometric questions' });
+    }
+});
+
+router.post('/submit-psychometric', async (req, res) => {
+    try {
+        const { email, answers } = req.body;
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
+        
+        if (applicant.psychometricTestCompleted) {
+            return res.status(400).json({ error: 'Psychometric assessment already completed' });
+        }
+
+        // Calculate scores across the 6 dimensions
+        const dimensionScores = {
+            'Clinical Integrity & Ethics': { earned: 0, max: 25 },
+            'Resilience & Grit Under Pressure': { earned: 0, max: 25 },
+            'Empathy & Relationship Building': { earned: 0, max: 25 },
+            'Autonomy & Self-Motivation': { earned: 0, max: 25 },
+            'Scientific Adaptability': { earned: 0, max: 25 },
+            'Collaborative Communication': { earned: 0, max: 25 }
+        };
+
+        let totalPointsEarned = 0;
+        let totalPointsMax = 0;
+
+        PSYCHOMETRIC_QUESTIONS_30.forEach(q => {
+            const selectedIdx = answers && answers[q._id] !== undefined ? Number(answers[q._id]) : -1;
+            const pts = (selectedIdx >= 0 && selectedIdx < q.weights.length) ? q.weights[selectedIdx] : 1;
+            if (dimensionScores[q.dimension]) {
+                dimensionScores[q.dimension].earned += pts;
+            }
+            totalPointsEarned += pts;
+            totalPointsMax += 5; // max weight is 5
+        });
+
+        // Convert to percentages
+        const traitPercentiles = {};
+        for (const [dim, data] of Object.entries(dimensionScores)) {
+            traitPercentiles[dim] = Math.min(100, Math.round((data.earned / data.max) * 100));
+        }
+
+        const overallPercentile = Math.min(100, Math.round((totalPointsEarned / totalPointsMax) * 100));
+
+        // Determine Executive Archetype
+        let archetype = "⚡ The Balanced Professional";
+        if (overallPercentile >= 85 && traitPercentiles['Scientific Adaptability'] >= 85 && traitPercentiles['Clinical Integrity & Ethics'] >= 85) {
+            archetype = "🌟 The Scientific Strategist";
+        } else if (overallPercentile >= 85 && traitPercentiles['Empathy & Relationship Building'] >= 85 && traitPercentiles['Resilience & Grit Under Pressure'] >= 85) {
+            archetype = "🤝 The Empathetic Relationship Builder";
+        } else if (overallPercentile >= 85 && traitPercentiles['Autonomy & Self-Motivation'] >= 85) {
+            archetype = "🚀 The Autonomous Pioneer";
+        } else if (overallPercentile < 65 || Object.values(traitPercentiles).some(val => val < 50)) {
+            archetype = "⚠️ Coaching Required Profile";
+        }
+
+        // Generate automated coaching tips based on top and bottom traits
+        const sortedTraits = Object.entries(traitPercentiles).sort((a, b) => b[1] - a[1]);
+        const topTrait = sortedTraits[0];
+        const bottomTrait = sortedTraits[sortedTraits.length - 1];
+
+        const coachingTips = [
+            `Key Strength: Exhibits exceptional mastery in ${topTrait[0]} (${topTrait[1]}%). Assign to high-priority hospital accounts that leverage this attribute.`,
+            `Development Area: ${bottomTrait[0]} (${bottomTrait[1]}%). Provide structured 1-on-1 mentorship and field role-play during the initial 60-day probation period.`,
+            `Overall Readiness: Achieved an executive mindset rating of ${overallPercentile}%. ${overallPercentile >= 75 ? 'Highly recommended for autonomous hospital territory onboarding.' : 'Recommended for structured onboarding with frequent supervisory check-ins.'}`
+        ];
+
+        const mindsetReport = {
+            archetype,
+            overallPercentile,
+            traitPercentiles,
+            coachingTips,
+            completedAt: new Date().toISOString()
+        };
+
+        await Applicant.updateOne({ _id: applicant._id }, {
+            $set: {
+                psychometricTestCompleted: true,
+                psychometricScores: traitPercentiles,
+                mindsetReport: mindsetReport
+            }
+        });
+
+        res.json({ success: true, overallPercentile, archetype, mindsetReport });
+    } catch (e) {
+        console.error('Submit Psychometric Error:', e);
+        res.status(500).json({ error: 'Failed to submit psychometric assessment' });
     }
 });
 

@@ -581,6 +581,11 @@ function resumeApplication() {
         return;
     }
 
+    if (!app.psychometricTestCompleted) {
+        startPsychometricTest();
+        return;
+    }
+
     // Always show the hub dashboard card (Where would you like to go today? Go to My Dashboard / Update Personal Info)
     updateView('loginLandingView');
     renderPendingExamsUI(app);
@@ -2269,6 +2274,150 @@ async function submitRapidTest() {
         }
     } catch (e) {
         showToast("Error submitting test", "error");
+        unlockUI();
+    }
+}
+
+// --- PHASE 2: PSYCHOMETRIC & MINDSET ASSESSMENT LOGIC ---
+let psychometricQuestions = [];
+let psychometricAnswers = {};
+let psychometricTimer = null;
+
+async function startPsychometricTest() {
+    try {
+        lockUI("Loading Phase 2: Candidate Mindset & Psychometric Assessment...");
+        const res = await fetch('/api/applicant/psychometric-questions');
+        const data = await res.json();
+        if (data.success && data.questions) {
+            psychometricQuestions = data.questions;
+            psychometricAnswers = {};
+            renderPsychometricTestUI();
+            updateView('psychometricTestView');
+            const pTime = data.timeLimitMinutes || 30;
+            startPsychometricTestTimer(pTime * 60);
+        } else {
+            showToast("Failed to load psychometric assessment.", "error");
+        }
+    } catch (e) {
+        showToast("Error loading psychometric assessment.", "error");
+    } finally {
+        unlockUI();
+    }
+}
+
+function startPsychometricTestTimer(seconds) {
+    const display = document.getElementById('psychometricTimerDisplay');
+    if (!display) return;
+    
+    let timeLeft = seconds;
+    if (psychometricTimer) clearInterval(psychometricTimer);
+    psychometricTimer = setInterval(() => {
+        timeLeft--;
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        display.innerText = `${m}:${s}`;
+        
+        if (timeLeft <= 0) {
+            clearInterval(psychometricTimer);
+            showToast("Time's up! Auto-submitting psychometric assessment...", "warning");
+            submitPsychometricTest();
+        }
+    }, 1000);
+}
+
+function renderPsychometricTestUI() {
+    const container = document.getElementById('psychometricQuestionsContainer');
+    if (!container) return;
+    
+    const counter = document.getElementById('psychometricProgressCounter');
+    if (counter && psychometricQuestions) counter.innerText = `0 / ${psychometricQuestions.length} Answered`;
+
+    let html = '';
+    psychometricQuestions.forEach((q, idx) => {
+        html += `<div class="question-card" id="psycard_${q._id}" style="margin-bottom: 1.5rem; background: rgba(0,0,0,0.25); padding: 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); transition: all 0.3s ease;">`;
+        html += `<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">`;
+        html += `<span style="font-size: 0.75rem; background: rgba(168, 85, 247, 0.2); color: #d8b4fe; padding: 3px 10px; border-radius: 12px; font-weight: 600;">Dimension: ${q.dimension}</span>`;
+        html += `</div>`;
+        html += `<h4 style="margin-bottom: 12px; color: #fff; font-size: 1.05rem; line-height: 1.4;">Q${idx + 1}. ${q.text}</h4>`;
+        html += `<div id="psyoptions_${q._id}">`;
+        q.options.forEach((opt, optIdx) => {
+            html += `
+                <div id="psyoptbox_${q._id}_${optIdx}" style="margin-bottom: 8px; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); transition: all 0.2s ease;">
+                    <label style="cursor: pointer; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; width: 100%; font-size: 0.95rem; margin: 0;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="radio" name="psyt_${q._id}" value="${optIdx}" style="accent-color: #a855f7;" onchange="selectPsychometricAnswer('${q._id}', ${optIdx})">
+                            <span>${opt}</span>
+                        </div>
+                    </label>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+    });
+    container.innerHTML = html;
+}
+
+function selectPsychometricAnswer(qId, selectedIdx) {
+    psychometricAnswers[qId] = selectedIdx;
+    
+    const card = document.getElementById(`psycard_${qId}`);
+    if (card) {
+        card.style.borderColor = 'rgba(168, 85, 247, 0.6)';
+        const boxes = card.querySelectorAll(`[id^="psyoptbox_${qId}_"]`);
+        boxes.forEach((b, i) => {
+            if (i === selectedIdx) {
+                b.style.background = 'rgba(168, 85, 247, 0.15)';
+                b.style.borderColor = '#a855f7';
+            } else {
+                b.style.background = 'rgba(255,255,255,0.02)';
+                b.style.borderColor = 'rgba(255,255,255,0.06)';
+            }
+        });
+    }
+
+    const counter = document.getElementById('psychometricProgressCounter');
+    if (counter && psychometricQuestions) {
+        const answeredCount = Object.keys(psychometricAnswers).length;
+        counter.innerText = `${answeredCount} / ${psychometricQuestions.length} Answered`;
+    }
+}
+
+async function submitPsychometricTest() {
+    if (psychometricTimer) clearInterval(psychometricTimer);
+    if (!currentApplicant || !currentApplicant.email) {
+        showToast("Session missing applicant email", "error");
+        return;
+    }
+    
+    const answeredCount = Object.keys(psychometricAnswers).length;
+    if (answeredCount < psychometricQuestions.length && answeredCount < 15) {
+        if (!confirm(`You have only answered ${answeredCount} of ${psychometricQuestions.length} questions. Are you sure you want to submit?`)) {
+            return;
+        }
+    }
+
+    try {
+        lockUI("Analyzing Candidate Mindset & Psychometric Profile...");
+        const res = await fetch('/api/applicant/submit-psychometric', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentApplicant.email, answers: psychometricAnswers })
+        });
+        const data = await res.json();
+        unlockUI();
+        
+        if (data.success) {
+            currentApplicant.psychometricTestCompleted = true;
+            currentApplicant.psychometricScores = data.mindsetReport ? data.mindsetReport.traitPercentiles : {};
+            currentApplicant.mindsetReport = data.mindsetReport;
+            
+            alert(`🧠 Psychometric Assessment Complete!\n\nOverall Mindset Index: ${data.overallPercentile}%\nArchetype: ${data.archetype}\n\nThank you for completing Phase 2. You will now be forwarded to your onboarding dashboard.`);
+            resumeApplication();
+        } else {
+            showToast(data.error || "Failed to submit psychometric assessment", "error");
+        }
+    } catch (e) {
+        showToast("Error submitting psychometric assessment", "error");
         unlockUI();
     }
 }

@@ -1597,6 +1597,7 @@ function renderVerificationProfile(app) {
         { label: 'IFSC Code', val: `<input type="text" id="v_ifsc" class="form-input-sm" value="${fd.ifsc || ''}" placeholder="e.g. HDFC0001234" style="width:100%; max-width:200px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
         { label: 'Date of Birth', val: `<input type="text" id="v_dob" class="form-input-sm" value="${app.dob ? formatDateDMY(app.dob) : (fd.dob ? formatDateDMY(fd.dob) : '')}" placeholder="DD-MM-YYYY" style="width:100%; max-width:150px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; height:32px; padding:0 8px; border-radius:6px;">` },
         { label: 'Rapid Test Score', val: app.rapidTestCompleted ? `<span style="color:var(--success); font-weight:bold; background:rgba(16,185,129,0.1); padding:2px 8px; border-radius:12px;">${app.rapidTestScore} / 20</span>` : '<span style="color:var(--text-muted);">Not Completed</span>' },
+        { label: 'Psychometric Index', val: app.psychometricTestCompleted ? `<span style="color:#a855f7; font-weight:bold; background:rgba(168,85,247,0.15); padding:2px 8px; border-radius:12px;">${app.mindsetReport ? `${app.mindsetReport.overallPercentile}% (${app.mindsetReport.archetype})` : 'Completed'}</span>` : '<span style="color:var(--text-muted);">Not Completed</span>' },
         { label: 'Current Address', val: `<textarea id="v_address" class="form-input-sm" style="width:100%; min-height:60px; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:8px; border-radius:6px; font-family:inherit; font-size:0.85rem; resize:vertical;">${app.address || fd.address || ''}</textarea>` },
         { label: 'Applied At', val: app.submittedAt ? formatDateDMY(app.submittedAt) : (app.registeredAt ? formatDateDMY(app.registeredAt) : 'N/A') },
         { label: 'Offer Status', val: app.offerAccepted ? '<span style="color:var(--success); font-weight:bold;">✅ ACCEPTED</span>' : (app.status === 'approved' ? 'Issued (Pending)' : 'Not Issued') },
@@ -1614,12 +1615,42 @@ function renderVerificationProfile(app) {
         }
     ];
 
-    container.innerHTML = rows.map(r => `
+    let html = rows.map(r => `
         <div class="detail-row">
             <label>${r.label}</label>
             <span>${r.val}</span>
         </div>
     `).join('');
+
+    if (app.mindsetReport && app.mindsetReport.traitPercentiles) {
+        html += `
+            <div style="margin-top: 1.5rem; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 16px;">
+                <h4 style="color: #d8b4fe; margin-bottom: 12px; font-size: 1rem; display: flex; align-items: center; gap: 8px;">🧠 Psychometric & Mindset Dossier</h4>
+                <div style="margin-bottom: 12px;">
+                    <span style="font-size: 0.85rem; color: #fff; font-weight: 700;">Archetype:</span> 
+                    <span style="background: rgba(168, 85, 247, 0.25); color: #fff; padding: 3px 10px; border-radius: 12px; font-weight: 600; font-size: 0.85rem;">${app.mindsetReport.archetype} (${app.mindsetReport.overallPercentile}%)</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    ${Object.entries(app.mindsetReport.traitPercentiles).map(([trait, score]) => `
+                        <div style="background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;">
+                            <div style="color: var(--text-muted); margin-bottom: 3px;">${trait}</div>
+                            <div style="color: #fff; font-weight: 700;">${score}%</div>
+                        </div>
+                    `).join('')}
+                </div>
+                ${app.mindsetReport.coachingTips && app.mindsetReport.coachingTips.length ? `
+                    <div style="background: rgba(0,0,0,0.3); padding: 10px 12px; border-radius: 8px; border-left: 3px solid #a855f7;">
+                        <div style="font-size: 0.8rem; font-weight: 700; color: #d8b4fe; margin-bottom: 6px;">💡 HR & Field Coaching Recommendations:</div>
+                        <ul style="margin: 0; padding-left: 16px; color: #e2e8f0; font-size: 0.8rem; line-height: 1.4;">
+                            ${app.mindsetReport.coachingTips.map(tip => `<li style="margin-bottom: 4px;">${tip}</li>`).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    container.innerHTML = html;
 }
 
 function renderVerificationChecklist(app) {

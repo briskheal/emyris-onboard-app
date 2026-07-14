@@ -146,7 +146,10 @@ const OnboardApplicant = sequelize.define('onboard_applicant', {
     rejectedAt: DataTypes.DATE,
     isExistingStaff: { type: DataTypes.BOOLEAN, defaultValue: false },
     rapidTestScore: { type: DataTypes.INTEGER, defaultValue: 0 },
-    rapidTestCompleted: { type: DataTypes.BOOLEAN, defaultValue: false }
+    rapidTestCompleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+    psychometricTestCompleted: { type: DataTypes.BOOLEAN, defaultValue: false },
+    psychometricScores: { type: DataTypes.JSON, defaultValue: {} },
+    mindsetReport: { type: DataTypes.JSON, defaultValue: null }
 });
 
 // 4. Division Model

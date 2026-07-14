@@ -248,10 +248,14 @@ function updateView(viewId) {
             }
         }
 
-        // Toggle root-level floating rapid timer
+        // Toggle root-level floating rapid timer and psychometric timer
         const rapidTimer = document.getElementById('floatingRapidTimer');
         if (rapidTimer) {
             rapidTimer.style.display = (viewId === 'rapidTestView') ? 'flex' : 'none';
+        }
+        const psyTimer = document.getElementById('floatingPsychometricTimer');
+        if (psyTimer) {
+            psyTimer.style.display = (viewId === 'psychometricTestView') ? 'flex' : 'none';
         }
 }
 function backToLanding() { updateView('landingPage'); }
