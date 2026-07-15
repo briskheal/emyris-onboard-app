@@ -45,6 +45,20 @@ export const OfferLetterView = ({ applicant, companyData, onBackToDashboard, onR
 
     return (
         <div style={styles.container}>
+            <style>
+                {`
+                    /* Force legacy pdf-page-container to have solid background */
+                    .letter-content-render .pdf-page-container {
+                        background: #ffffff !important;
+                        margin-bottom: 20px;
+                        border-bottom: 1px dashed #ccc;
+                    }
+                    /* Hide full-page letterhead background images from legacy HTML since they stack weirdly in web view */
+                    .letter-content-render img[style*="100%"][style*="absolute"] {
+                        display: none !important;
+                    }
+                `}
+            </style>
             <div style={styles.header}>
                 <button type="button" onClick={onBackToDashboard} style={styles.backBtn}>
                     &larr; Back to Dashboard
@@ -257,8 +271,7 @@ const styles = {
         flex: 1
     },
     acceptCard: {
-        background: 'rgba(30, 41, 59, 0.75)',
-        backdropFilter: 'blur(16px)',
+        background: '#1e293b',
         border: '1px solid rgba(255, 255, 255, 0.14)',
         borderRadius: '16px',
         padding: '28px',
