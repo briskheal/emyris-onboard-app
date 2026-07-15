@@ -80,11 +80,18 @@ export const OfferLetterView = ({ applicant, companyData, onBackToDashboard, onR
             {/* Offer Letter Document Viewer */}
             <div style={styles.letterBox}>
                 {applicant?.offerLetterData ? (
-                    <div 
-                        className="letter-content-render" 
-                        style={styles.letterContent}
-                        dangerouslySetInnerHTML={{ __html: applicant.offerLetterData }} 
-                    />
+                    <>
+                        <div style={styles.infoNotice}>
+                            ℹ️ <strong>Note:</strong> A soft copy of this offer letter will be mailed to your registered email address. This portal view is provided strictly to review the terms and submit your formal acceptance.
+                        </div>
+                        <div style={styles.paperDocument}>
+                            <div 
+                                className="letter-content-render" 
+                                style={styles.letterContent}
+                                dangerouslySetInnerHTML={{ __html: applicant.offerLetterData }} 
+                            />
+                        </div>
+                    </>
                 ) : (
                     <div style={styles.placeholderBox}>
                         <span style={{ fontSize: '2.5rem' }}>⌛</span>
@@ -200,18 +207,43 @@ const styles = {
         cursor: 'pointer'
     },
     letterBox: {
-        background: '#fff',
-        color: '#1e293b',
+        background: '#0f172a',
+        color: '#f8fafc',
         borderRadius: '16px',
-        padding: '40px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4)',
+        padding: '24px',
+        boxShadow: 'inset 0 2px 10px rgba(0, 0, 0, 0.2)',
         minHeight: '400px',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        gap: '20px'
+    },
+    infoNotice: {
+        background: 'rgba(56, 189, 248, 0.15)',
+        border: '1px solid rgba(56, 189, 248, 0.3)',
+        color: '#bae6fd',
+        padding: '14px 20px',
+        borderRadius: '10px',
+        fontSize: '0.92rem',
+        lineHeight: '1.5',
+        display: 'flex',
+        gap: '10px',
+        alignItems: 'center'
+    },
+    paperDocument: {
+        background: '#ffffff',
+        color: '#1e293b',
+        borderRadius: '8px',
+        padding: '40px 50px',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05)',
+        overflowX: 'auto',
+        fontFamily: "'Arial', sans-serif"
     },
     letterContent: {
         lineHeight: '1.6',
-        fontSize: '0.95rem'
+        fontSize: '0.95rem',
+        width: '100%',
+        maxWidth: '800px',
+        margin: '0 auto'
     },
     placeholderBox: {
         background: '#0f172a',
