@@ -36,8 +36,9 @@ export function numberToWords(num: number | string) {
 export function fillLetterPlaceholders(text: string, app: any, companyData: any = {}) {
     const fd = app.formData || {};
     const sal = app.salaryBreakup || {};
-    const totalMonthly = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
-    const totalAnnual = totalMonthly * 12;
+    const totalMonthly = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0) + (Number(sal.roundoff)||0);
+    // Use the exact app.salary for annual if present, else fallback
+    const totalAnnual = parseFloat(app.salary) || (totalMonthly * 12);
     const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
     const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
     const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;
@@ -76,8 +77,8 @@ export function fillLetterPlaceholders(text: string, app: any, companyData: any 
         "{{HQ}}": (app.hq || fd.hq || "").toUpperCase(),
         "{{REPORTING_TO}}": (app.reportingTo || "").toUpperCase(),
         "{{SALARY_MONTHLY}}": totalMonthly.toLocaleString('en-IN'),
-        "{{SALARY_ANNUAL}}": (totalAnnual + (Number(sal.variation) || 0)).toLocaleString('en-IN'),
-        "{{SALARY_WORDS}}": (numberToWords(totalAnnual + (Number(sal.variation) || 0)) + " only").toUpperCase(),
+        "{{SALARY_ANNUAL}}": totalAnnual.toLocaleString('en-IN'),
+        "{{SALARY_WORDS}}": (numberToWords(totalAnnual) + " only").toUpperCase(),
         "{{BANK_NAME}}": (fd.bankName || "").toUpperCase(),
         "{{BANK_ACC}}": fd.accNo || "",
         "{{IFSC}}": (fd.ifsc || "").toUpperCase(),
@@ -94,14 +95,13 @@ export function fillLetterPlaceholders(text: string, app: any, companyData: any 
         "{{SAL_SPECIAL}}": (Number(sal.special) || 0).toLocaleString('en-IN'),
         "{{SAL_EDU}}": (Number(sal.edu) || 0).toLocaleString('en-IN'),
         "{{SAL_FIXED}}": (Number(sal.fixed) || 0).toLocaleString('en-IN'),
+        "{{SAL_ROUNDOFF}}": (Number(sal.roundoff) || 0).toLocaleString('en-IN'),
         "{{SAL_GROSS_MONTHLY}}": totalMonthly.toLocaleString('en-IN'),
-        "{{SAL_GROSS_ANNUAL}}": (totalAnnual + (Number(sal.variation) || 0)).toLocaleString('en-IN'),
+        "{{SAL_GROSS_ANNUAL}}": totalAnnual.toLocaleString('en-IN'),
         "{{SALARY_BREAKUP}}": (() => {
             const formatRs = (num: any) => 'Rs. ' + (Number(num) || 0).toLocaleString('en-IN');
-            const variation = Number(sal.variation) || 0;
-            const totalM = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + 
-                           (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0);
-            const totalA = (totalM * 12) + variation;
+            const totalM = totalMonthly;
+            const totalA = totalAnnual;
             const borderColor = "#888";
             const headerBg = "rgba(128, 128, 128, 0.15)";
             return `
@@ -119,9 +119,10 @@ export function fillLetterPlaceholders(text: string, app: any, companyData: any 
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Leave Travel Allowance (LTA)</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.lta)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.lta||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Conveyance Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.conveyance)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.conveyance||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Medical Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.medical)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.medical||0)*12)}</td></tr>
-                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(((sal.special||0)*12) + variation)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Special Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.special)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.special||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Education Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.edu)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.edu||0)*12)}</td></tr>
                     <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Fixed Allowance</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.fixed)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.fixed||0)*12)}</td></tr>
+                    <tr><td style="border: 1px solid ${borderColor}; padding: 6px 8px;">Roundoff</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs(sal.roundoff)}</td><td style="border: 1px solid ${borderColor}; padding: 6px 8px; text-align: right;">${formatRs((sal.roundoff||0)*12)}</td></tr>
                     <tr style="font-weight: bold; background: ${headerBg};"><td style="border: 1px solid ${borderColor}; padding: 8px;">Gross Total</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(totalM)}</td><td style="border: 1px solid ${borderColor}; padding: 8px; text-align: right;">${formatRs(totalA)}</td></tr>
                 </tbody>
             </table>
