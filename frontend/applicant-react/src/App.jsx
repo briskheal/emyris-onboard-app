@@ -113,6 +113,7 @@ const App = ({ initialApplicant, initialView = 'landing' }) => {
         <Dashboard 
           applicant={applicant} 
           onLogout={handleLogout}
+          companyData={companyData}
         />
       )}
 

@@ -97,6 +97,9 @@ app.use(express.static(__dirname));
 // Serve React assets for Admin panel
 app.use('/assets', express.static(path.join(__dirname, 'frontend', 'dist', 'assets')));
 
+// Serve React assets for Applicant Portal
+app.use('/dist-applicant', express.static(path.join(__dirname, 'public', 'dist-applicant')));
+
 // Mount modular routers
 const applicantRouter = require('./routes/applicant');
 const adminRouter = require('./routes/admin');
