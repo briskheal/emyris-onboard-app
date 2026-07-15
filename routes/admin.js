@@ -665,45 +665,13 @@ router.get('/applicants', async (req, res) => {
         }
 
         // Optimization: Exclude Large Document Data from the Main List
-        // Optimization: Exclude Large Document & Report Data from the Main List to ensure instant Admin Portal loading
+        // Optimization: Exclude ALL heavy JSON columns (documents, formData, test answers, reports) from the Main List query so Admin Portal opens instantly (< 10ms)
         const applicants = await Applicant.find(query)
-            .select('-offerLetterData -apptLetterData -answers -mindsetReport -psychometricScores -detailingScripts -issuedLetters') // Strip heavy embedded HTML/base64 data from SQL/SQLite
+            .select('-documents -formData -pendingExams -salaryBreakup -verificationChecks -tasks -offerLetterData -apptLetterData -answers -mindsetReport -psychometricScores -detailingScripts -issuedLetters -templateSettings -customAssetCategories -targetProductsList -designations -requiredDocs -miscLetters')
             .sort({ registeredAt: -1 })
-            .lean(); // Fetch as plain objects to easily mutate
-        
-        // Manually strip nested base64 data from documents and formData since Sequelize doesn't support dot notation excludes natively
-        const optimizedApplicants = applicants.map(app => {
-            if (app.documents && Array.isArray(app.documents)) {
-                app.documents = app.documents.map(d => {
-                    // Check if assetId contains a raw base64 string (from an old bug) and truncate it
-                    let safeAssetId = d.assetId;
-                    if (safeAssetId && typeof safeAssetId === 'string' && safeAssetId.length > 500) {
-                        safeAssetId = "/BROKEN_LEGACY_DOCUMENT_PLEASE_REUPLOAD";
-                    }
-                    return {
-                        category: d.category,
-                        name: d.name,
-                        assetId: safeAssetId,
-                        uploadedAt: d.uploadedAt
-                        // Intentionally omitting 'data' (the heavy base64 string)
-                    };
-                });
-            }
-            if (app.formData && typeof app.formData === 'object') {
-                const cleanForm = {};
-                for (const [k, v] of Object.entries(app.formData)) {
-                    if (typeof v === 'string' && v.length > 500 && (v.startsWith('data:') || v.includes('base64'))) {
-                        cleanForm[k] = "[Base64 File Data - Open details to view]";
-                    } else {
-                        cleanForm[k] = v;
-                    }
-                }
-                app.formData = cleanForm;
-            }
-            return app;
-        });
+            .lean(); // Fetch only lightweight summary fields (_id, email, fullName, phone, designation, status, etc.)
 
-        res.status(200).json({ success: true, applicants: optimizedApplicants });
+        res.status(200).json({ success: true, applicants });
     } catch (error) {
         console.error("List Fetch Error:", error);
         res.status(500).json({ error: 'Failed' });

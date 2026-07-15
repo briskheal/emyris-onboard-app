@@ -9,45 +9,47 @@ interface ApplicantVerificationModalProps {
   onRefresh?: () => void;
 }
 
-export default function ApplicantVerificationModal({ applicant, onClose, onSuccess, onRefresh }: ApplicantVerificationModalProps) {
+export default function ApplicantVerificationModal({ applicant: initialApplicant, onClose, onSuccess, onRefresh }: ApplicantVerificationModalProps) {
+  const [applicant, setApplicant] = useState<any>(initialApplicant);
+  const [loadingDetails, setLoadingDetails] = useState(true);
   const [loading, setLoading] = useState(false);
   
   // Local state for internal assignment
-  const [empCode, setEmpCode] = useState(applicant.empCode || '');
-  const [designation, setDesignation] = useState(applicant.designation || '');
-  const [division, setDivision] = useState(applicant.division || '');
-  const [reportingTo, setReportingTo] = useState(applicant.reportingTo || '');
-  const [hq, setHq] = useState(applicant.hq || '');
-  const [salary, setSalary] = useState(applicant.salary || '');
+  const [empCode, setEmpCode] = useState(initialApplicant.empCode || '');
+  const [designation, setDesignation] = useState(initialApplicant.designation || '');
+  const [division, setDivision] = useState(initialApplicant.division || '');
+  const [reportingTo, setReportingTo] = useState(initialApplicant.reportingTo || '');
+  const [hq, setHq] = useState(initialApplicant.hq || '');
+  const [salary, setSalary] = useState(initialApplicant.salary || '');
   const [actualJoiningDate, setActualJoiningDate] = useState(() => {
     try {
-      return applicant.actualJoiningDate && !isNaN(new Date(applicant.actualJoiningDate).getTime()) 
-        ? new Date(applicant.actualJoiningDate).toISOString().split('T')[0] 
+      return initialApplicant.actualJoiningDate && !isNaN(new Date(initialApplicant.actualJoiningDate).getTime()) 
+        ? new Date(initialApplicant.actualJoiningDate).toISOString().split('T')[0] 
         : '';
     } catch { return ''; }
   });
 
-  const [salBasic, setSalBasic] = useState<string>(applicant.salaryBreakup?.basic?.toString() || '0');
-  const [salHra, setSalHra] = useState<string>(applicant.salaryBreakup?.hra?.toString() || '0');
-  const [salLta, setSalLta] = useState<string>(applicant.salaryBreakup?.lta?.toString() || '0');
-  const [salConv, setSalConv] = useState<string>(applicant.salaryBreakup?.conveyance?.toString() || '0');
-  const [salMed, setSalMed] = useState<string>(applicant.salaryBreakup?.medical?.toString() || '0');
-  const [salEdu, setSalEdu] = useState<string>(applicant.salaryBreakup?.edu?.toString() || '0');
-  const [salSpecial, setSalSpecial] = useState<string>(applicant.salaryBreakup?.special?.toString() || '0');
-  const [salFixed, setSalFixed] = useState<string>(applicant.salaryBreakup?.fixed?.toString() || '0');
+  const [salBasic, setSalBasic] = useState<string>(initialApplicant.salaryBreakup?.basic?.toString() || '0');
+  const [salHra, setSalHra] = useState<string>(initialApplicant.salaryBreakup?.hra?.toString() || '0');
+  const [salLta, setSalLta] = useState<string>(initialApplicant.salaryBreakup?.lta?.toString() || '0');
+  const [salConv, setSalConv] = useState<string>(initialApplicant.salaryBreakup?.conveyance?.toString() || '0');
+  const [salMed, setSalMed] = useState<string>(initialApplicant.salaryBreakup?.medical?.toString() || '0');
+  const [salEdu, setSalEdu] = useState<string>(initialApplicant.salaryBreakup?.edu?.toString() || '0');
+  const [salSpecial, setSalSpecial] = useState<string>(initialApplicant.salaryBreakup?.special?.toString() || '0');
+  const [salFixed, setSalFixed] = useState<string>(initialApplicant.salaryBreakup?.fixed?.toString() || '0');
 
-  const [epfNumber, setEpfNumber] = useState<string>(applicant.epfNumber || '');
-  const [uanNumber, setUanNumber] = useState<string>(applicant.uanNumber || '');
-  const [esiNumber, setEsiNumber] = useState<string>(applicant.esiNumber || '');
-  const [bankName, setBankName] = useState<string>(applicant.formData?.bankName || '');
-  const [accNo, setAccNo] = useState<string>(applicant.formData?.accNo || '');
-  const [ifsc, setIfsc] = useState<string>(applicant.formData?.ifsc || '');
+  const [epfNumber, setEpfNumber] = useState<string>(initialApplicant.epfNumber || '');
+  const [uanNumber, setUanNumber] = useState<string>(initialApplicant.uanNumber || '');
+  const [esiNumber, setEsiNumber] = useState<string>(initialApplicant.esiNumber || '');
+  const [bankName, setBankName] = useState<string>(initialApplicant.formData?.bankName || '');
+  const [accNo, setAccNo] = useState<string>(initialApplicant.formData?.accNo || '');
+  const [ifsc, setIfsc] = useState<string>(initialApplicant.formData?.ifsc || '');
 
   const [tasks, setTasks] = useState({
-    offerLetter: applicant.tasks?.offerLetter || false,
-    appointmentLetter: applicant.tasks?.appointmentLetter || false,
-    appLinkSent: applicant.tasks?.appLinkSent || false,
-    loginDetailsSent: applicant.tasks?.loginDetailsSent || false
+    offerLetter: initialApplicant.tasks?.offerLetter || false,
+    appointmentLetter: initialApplicant.tasks?.appointmentLetter || false,
+    appLinkSent: initialApplicant.tasks?.appLinkSent || false,
+    loginDetailsSent: initialApplicant.tasks?.loginDetailsSent || false
   });
 
   const [designationsList, setDesignationsList] = useState<any[]>([]);
@@ -57,43 +59,55 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
   const [requiredDocsList, setRequiredDocsList] = useState<string[]>([]);
   
   // Track verified documents
-  const [verificationChecks, setVerificationChecks] = useState<Record<string, boolean>>(applicant.verificationChecks || {});
+  const [verificationChecks, setVerificationChecks] = useState<Record<string, boolean>>(initialApplicant.verificationChecks || {});
 
   useEffect(() => {
-    setSalBasic(applicant.salaryBreakup?.basic?.toString() || '0');
-    setSalHra(applicant.salaryBreakup?.hra?.toString() || '0');
-    setSalLta(applicant.salaryBreakup?.lta?.toString() || '0');
-    setSalConv(applicant.salaryBreakup?.conveyance?.toString() || '0');
-    setSalMed(applicant.salaryBreakup?.medical?.toString() || '0');
-    setSalEdu(applicant.salaryBreakup?.edu?.toString() || '0');
-    setSalSpecial(applicant.salaryBreakup?.special?.toString() || '0');
-    setSalFixed(applicant.salaryBreakup?.fixed?.toString() || '0');
-    
-    setEmpCode(applicant.empCode || '');
-    setDesignation(applicant.designation || '');
-    setDivision(applicant.division || '');
-    setReportingTo(applicant.reportingTo || '');
-    setHq(applicant.hq || '');
-    setSalary(applicant.salary || '');
-    
-    setEpfNumber(applicant.epfNumber || '');
-    setUanNumber(applicant.uanNumber || '');
-    setEsiNumber(applicant.esiNumber || '');
-    setBankName(applicant.formData?.bankName || '');
-    setAccNo(applicant.formData?.accNo || '');
-    setIfsc(applicant.formData?.ifsc || '');
+    setLoadingDetails(true);
+    api.get(`/admin/applicants/${initialApplicant.email}`).then(res => {
+      const fullApp = (res.data && res.data.success && res.data.applicant) ? res.data.applicant : initialApplicant;
+      setApplicant(fullApp);
+      
+      setSalBasic(fullApp.salaryBreakup?.basic?.toString() || '0');
+      setSalHra(fullApp.salaryBreakup?.hra?.toString() || '0');
+      setSalLta(fullApp.salaryBreakup?.lta?.toString() || '0');
+      setSalConv(fullApp.salaryBreakup?.conveyance?.toString() || '0');
+      setSalMed(fullApp.salaryBreakup?.medical?.toString() || '0');
+      setSalEdu(fullApp.salaryBreakup?.edu?.toString() || '0');
+      setSalSpecial(fullApp.salaryBreakup?.special?.toString() || '0');
+      setSalFixed(fullApp.salaryBreakup?.fixed?.toString() || '0');
+      
+      setEmpCode(fullApp.empCode || '');
+      setDesignation(fullApp.designation || '');
+      setDivision(fullApp.division || '');
+      setReportingTo(fullApp.reportingTo || '');
+      setHq(fullApp.hq || '');
+      setSalary(fullApp.salary || '');
+      
+      setEpfNumber(fullApp.epfNumber || '');
+      setUanNumber(fullApp.uanNumber || '');
+      setEsiNumber(fullApp.esiNumber || '');
+      setBankName(fullApp.formData?.bankName || '');
+      setAccNo(fullApp.formData?.accNo || '');
+      setIfsc(fullApp.formData?.ifsc || '');
+      setVerificationChecks(fullApp.verificationChecks || {});
 
-    try {
-      setActualJoiningDate(applicant.actualJoiningDate && !isNaN(new Date(applicant.actualJoiningDate).getTime()) 
-        ? new Date(applicant.actualJoiningDate).toISOString().split('T')[0] 
-        : '');
-    } catch { setActualJoiningDate(''); }
+      try {
+        setActualJoiningDate(fullApp.actualJoiningDate && !isNaN(new Date(fullApp.actualJoiningDate).getTime()) 
+          ? new Date(fullApp.actualJoiningDate).toISOString().split('T')[0] 
+          : '');
+      } catch { setActualJoiningDate(''); }
 
-    setTasks({
-      offerLetter: applicant.tasks?.offerLetter || false,
-      appointmentLetter: applicant.tasks?.appointmentLetter || false,
-      appLinkSent: applicant.tasks?.appLinkSent || false,
-      loginDetailsSent: applicant.tasks?.loginDetailsSent || false
+      setTasks({
+        offerLetter: fullApp.tasks?.offerLetter || false,
+        appointmentLetter: fullApp.tasks?.appointmentLetter || false,
+        appLinkSent: fullApp.tasks?.appLinkSent || false,
+        loginDetailsSent: fullApp.tasks?.loginDetailsSent || false
+      });
+      setLoadingDetails(false);
+    }).catch(err => {
+      console.error("Failed to load full applicant details:", err);
+      setApplicant(initialApplicant);
+      setLoadingDetails(false);
     });
 
     api.get('/admin/company-profile').then(res => {
@@ -112,7 +126,7 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
          setManagersList(joined);
       }
     }).catch(console.error);
-  }, [applicant]);
+  }, [initialApplicant]);
 
   const handleUploadMissingDoc = async (e: React.ChangeEvent<HTMLInputElement>, categoryName?: string) => {
     if (!e.target.files || e.target.files.length === 0) return;
@@ -348,6 +362,21 @@ export default function ApplicantVerificationModal({ applicant, onClose, onSucce
     (parseFloat(salEdu) || 0) +
     (parseFloat(salFixed) || 0)
   ).toFixed(2);
+
+  if (loadingDetails) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '2rem' }}>
+        <div className="dash-card" style={{ width: '460px', padding: '2.5rem', textAlign: 'center', border: '1px solid var(--primary)', background: '#1e293b', borderRadius: '16px', boxShadow: '0 25px 60px rgba(0,0,0,0.8)' }}>
+          <div className="spinner" style={{ margin: '0 auto 1.5rem auto', width: '48px', height: '48px', borderWidth: '4px', borderTopColor: 'var(--primary)' }}></div>
+          <h3 style={{ color: '#fff', marginBottom: '0.6rem', fontSize: '1.35rem', fontWeight: 700 }}>Loading Applicant Folder</h3>
+          <p style={{ color: '#cbd5e1', fontSize: '0.95rem', marginBottom: '1.8rem', lineHeight: '1.5' }}>
+            Uploading details & documents for <strong style={{ color: 'var(--primary)' }}>{initialApplicant.fullName || initialApplicant.email}</strong>... please wait.
+          </p>
+          <button className="btn btn-outline btn-sm" onClick={onClose} style={{ padding: '8px 24px', fontSize: '0.9rem', borderColor: 'rgba(255,255,255,0.2)', color: '#fff' }}>Cancel</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgb(15, 23, 42)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
