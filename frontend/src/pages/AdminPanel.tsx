@@ -6,10 +6,10 @@ import QuestionBank from '../components/Admin/QuestionBank';
 import PendingExams from '../components/Admin/PendingExams';
 import ReportsTab from '../components/Admin/ReportsTab';
 import DoctorDetailingStudio from '../components/Dashboard/DoctorDetailingStudio';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award } from 'lucide-react';
 import api from '../api/client';
 
-type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio';
+type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -113,6 +113,7 @@ const AdminPanel: React.FC = () => {
             { id: 'questions', icon: <HelpCircle size={16} style={{ flexShrink: 0 }} />, label: 'Question Bank' },
             { id: 'voice-studio', icon: <Mic size={16} style={{ flexShrink: 0, color: '#a855f7' }} />, label: '🎙️ Voice Studio' },
             { id: 'pending', icon: <ClipboardList size={16} style={{ flexShrink: 0 }} />, label: 'Test Results' },
+            { id: 'psychometric', icon: <Award size={16} style={{ flexShrink: 0, color: '#a855f7' }} />, label: '🧠 Psychometric Dossiers' },
             { id: 'reports', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Reports & Analytics' },
           ].map(item => (
             <button
@@ -175,7 +176,8 @@ const AdminPanel: React.FC = () => {
           </div>
         )}
         {activeView === 'pending' && <PendingExams />}
-        {activeView === 'reports' && <ReportsTab />}
+        {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" />}
+        {activeView === 'reports' && <ReportsTab initialTab="details" />}
       </main>
       </div>
     </div>

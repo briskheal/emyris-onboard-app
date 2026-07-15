@@ -79,8 +79,12 @@ const getOrReconstructMindsetReport = (app: any) => {
   return null;
 };
 
-const ReportsTab: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ReportTabType>('details');
+interface ReportsTabProps {
+  initialTab?: ReportTabType;
+}
+
+const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details' }) => {
+  const [activeTab, setActiveTab] = useState<ReportTabType>(initialTab);
   const [applicants, setApplicants] = useState<any[]>([]);
   const [examReports, setExamReports] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -126,6 +130,12 @@ const ReportsTab: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const openExamDetail = (exam: any) => {
     setSelectedExamDetail(exam);
