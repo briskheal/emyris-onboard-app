@@ -28,22 +28,32 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
         }
     }, [initialApplicant]);
 
+    // Auto-deploy Stage 1 & 2 screening upon login if not completed and not existing staff
+    useEffect(() => {
+        if (!applicant || applicant.isExistingStaff) return;
+        if (!applicant.rapidTestCompleted) {
+            setActiveExamContext({ targetProduct: 'Phase 1: Rapid Fire Screening' });
+            setIsRapidLaunch(true);
+            setActiveTab('runningExam');
+        } else if (!applicant.psychometricTestCompleted) {
+            setActiveTab('runningPsychometric');
+        }
+    }, [applicant?.email, applicant?.rapidTestCompleted, applicant?.psychometricTestCompleted, applicant?.isExistingStaff]);
+
     const refreshApplicantProfile = async () => {
-        if (!applicant?.email) return;
+        if (!applicant?.email) return null;
         try {
-            const pin = applicant.password || applicant.pin || "";
-            const res = await fetch('/api/applicant-login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: applicant.email, pin })
-            });
+            const res = await fetch(`/api/applicant/profile?email=${encodeURIComponent(applicant.email)}`);
             const data = await res.json();
             if (data.success && data.applicant) {
                 setApplicant(data.applicant);
+                if (window.currentApplicant) window.currentApplicant = data.applicant;
+                return data.applicant;
             }
         } catch (err) {
             console.error("Profile refresh error:", err);
         }
+        return null;
     };
 
     const handleLaunchExam = (exam) => {
@@ -53,15 +63,23 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     };
 
     const handleLaunchRapidFire = () => {
+        if (applicant?.rapidTestCompleted) {
+            setActiveTab('scores');
+            return;
+        }
         setActiveExamContext({ targetProduct: 'Phase 1: Rapid Fire Screening' });
         setIsRapidLaunch(true);
         setActiveTab('runningExam');
     };
 
-    const handleExamCompleted = (data) => {
-        refreshApplicantProfile();
+    const handleExamCompleted = async (data) => {
+        const latestApp = await refreshApplicantProfile() || applicant;
         setActiveExamContext(null);
-        setActiveTab('scores');
+        if (!latestApp?.isExistingStaff && !latestApp?.psychometricTestCompleted) {
+            setActiveTab('runningPsychometric');
+        } else {
+            setActiveTab('scores');
+        }
     };
 
     if (!applicant) return <div style={{ color: '#fff', textAlign: 'center', padding: '50px' }}>Loading Applicant Profile...</div>;
@@ -77,7 +95,11 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                     onComplete={handleExamCompleted}
                     onCancel={() => {
                         setActiveExamContext(null);
-                        setActiveTab('exams');
+                        if (applicant?.rapidTestCompleted && !applicant?.psychometricTestCompleted) {
+                            setActiveTab('runningPsychometric');
+                        } else {
+                            setActiveTab('scores');
+                        }
                     }}
                 />
             </div>
@@ -91,7 +113,7 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                 <PsychometricAssessment
                     applicant={applicant}
                     onComplete={handleExamCompleted}
-                    onCancel={() => setActiveTab('exams')}
+                    onCancel={() => setActiveTab('scores')}
                 />
             </div>
         );
@@ -166,48 +188,97 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
             </div>
 
             {/* Navigation Tabs */}
-            <div style={styles.tabBar}>
-                <button
-                    style={activeTab === 'overview' ? styles.tabActive : styles.tabInactive}
-                    onClick={() => setActiveTab('overview')}
-                >
-                    🏠 Profile Overview
-                </button>
-                <button
-                    style={activeTab === 'exams' ? styles.tabActive : styles.tabInactive}
-                    onClick={() => setActiveTab('exams')}
-                >
-                    🎯 Assigned & Screening Tests {pendingExams.length > 0 && <span style={styles.badgeCount}>{pendingExams.length}</span>}
-                </button>
-                <button
-                    style={activeTab === 'voice-studio' ? styles.tabActive : styles.tabInactive}
-                    onClick={() => setActiveTab('voice-studio')}
-                >
-                    🎙️ Voice Studio (`AI Lab`)
-                </button>
-                <button
-                    style={activeTab === 'scores' ? styles.tabActive : styles.tabInactive}
-                    onClick={() => setActiveTab('scores')}
-                >
-                    🏆 My Exam Scores
-                </button>
-                <button
-                    style={activeTab === 'onboarding' ? styles.tabActive : styles.tabInactive}
-                    onClick={() => setActiveTab('onboarding')}
-                >
-                    📝 Digital Onboarding Form
-                </button>
-                <button
-                    style={activeTab === 'offer' ? styles.tabActive : styles.tabInactive}
-                    onClick={() => setActiveTab('offer')}
-                >
-                    ✍️ Offer Letter Hub {applicant.offerAccepted && '✅'}
-                </button>
-            </div>
+            {(() => {
+                const isScreeningPending = !applicant?.isExistingStaff && (!applicant?.rapidTestCompleted || !applicant?.psychometricTestCompleted);
+                const handleTabClick = (tab) => {
+                    if (isScreeningPending && tab !== 'overview' && tab !== 'exams') {
+                        alert("⚠️ Stage 1 & 2 Screening and Psychometric Assessments must be completed before accessing other portal features. Please complete your assessments first.");
+                        return;
+                    }
+                    setActiveTab(tab);
+                };
+
+                return (
+                    <div style={styles.tabBar}>
+                        <button
+                            style={activeTab === 'overview' ? styles.tabActive : styles.tabInactive}
+                            onClick={() => handleTabClick('overview')}
+                        >
+                            🏠 Profile Overview
+                        </button>
+                        <button
+                            style={activeTab === 'exams' ? styles.tabActive : styles.tabInactive}
+                            onClick={() => handleTabClick('exams')}
+                        >
+                            🎯 Assigned & Screening Tests {pendingExams.length > 0 && <span style={styles.badgeCount}>{pendingExams.length}</span>}
+                        </button>
+                        <button
+                            style={{ ...(activeTab === 'voice-studio' ? styles.tabActive : styles.tabInactive), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }}
+                            onClick={() => handleTabClick('voice-studio')}
+                        >
+                            🎙️ Voice Studio (`AI Lab`) {isScreeningPending && '🔒'}
+                        </button>
+                        <button
+                            style={{ ...(activeTab === 'scores' ? styles.tabActive : styles.tabInactive), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }}
+                            onClick={() => handleTabClick('scores')}
+                        >
+                            🏆 My Exam Scores {isScreeningPending && '🔒'}
+                        </button>
+                        <button
+                            style={{ ...(activeTab === 'onboarding' ? styles.tabActive : styles.tabInactive), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }}
+                            onClick={() => handleTabClick('onboarding')}
+                        >
+                            📝 Digital Onboarding Form {isScreeningPending && '🔒'}
+                        </button>
+                        <button
+                            style={{ ...(activeTab === 'offer' ? styles.tabActive : styles.tabInactive), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }}
+                            onClick={() => handleTabClick('offer')}
+                        >
+                            ✍️ Offer Letter Hub {applicant.offerAccepted && '✅'} {isScreeningPending && '🔒'}
+                        </button>
+                    </div>
+                );
+            })()}
 
             {/* Tab Contents */}
-            {activeTab === 'overview' && (
+            {activeTab === 'overview' && (() => {
+                const isScreeningPending = !applicant?.isExistingStaff && (!applicant?.rapidTestCompleted || !applicant?.psychometricTestCompleted);
+                return (
                 <div style={styles.tabContentCard}>
+                    {isScreeningPending && (
+                        <div style={{ background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2))', border: '1px solid #f59e0b', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <span style={{ fontSize: '1.8rem' }}>⚠️</span>
+                                <div>
+                                    <h4 style={{ margin: '0 0 4px 0', color: '#fef08a', fontSize: '1.1rem' }}>Mandatory Screening Assessments in Progress</h4>
+                                    <p style={{ margin: 0, color: '#f3f4f6', fontSize: '0.9rem', lineHeight: '1.4' }}>
+                                        As a new applicant, **Stage 1 (Rapid Fire Screening)** and **Stage 2 (Psychometric Evaluation)** are mandatory and automatically deployed upon login. All other portal sections (Voice Studio, Onboarding Form, Offer Letter Hub) will unlock as soon as you complete both assessments.
+                                    </p>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '14px', flexWrap: 'wrap' }}>
+                                {!applicant?.rapidTestCompleted ? (
+                                    <button onClick={handleLaunchRapidFire} style={{ ...styles.actionButtonGreen, fontWeight: 'bold' }}>
+                                        ⚡ Launch Stage 1 Rapid Fire Test Now ➔
+                                    </button>
+                                ) : (
+                                    <span style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #34d399', color: '#34d399', padding: '8px 14px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 'bold' }}>
+                                        ✅ Stage 1 Rapid Fire Completed
+                                    </span>
+                                )}
+                                {!applicant?.psychometricTestCompleted ? (
+                                    <button onClick={() => setActiveTab('runningPsychometric')} style={{ ...styles.actionButtonPurple, fontWeight: 'bold' }}>
+                                        🧠 Launch Stage 2 Psychometric Evaluation Now ➔
+                                    </button>
+                                ) : (
+                                    <span style={{ background: 'rgba(16, 185, 129, 0.2)', border: '1px solid #34d399', color: '#34d399', padding: '8px 14px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: 'bold' }}>
+                                        ✅ Stage 2 Psychometric Completed
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
                     <h3 style={styles.sectionTitle}>⚡ Immediate Action Items & Milestones</h3>
 
                     {/* Step 1: Rapid Fire / Psychometric Screening */}
@@ -220,29 +291,38 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                         </div>
                         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                             <button onClick={handleLaunchRapidFire} style={styles.actionButtonGreen}>
-                                ⚡ Take Rapid Fire Test
+                                {applicant.rapidTestCompleted ? '✅ Rapid Fire Completed' : '⚡ Take Rapid Fire Test'}
                             </button>
                             <button onClick={() => setActiveTab('runningPsychometric')} style={styles.actionButtonPurple}>
-                                🧠 Phase 2 Psychometric
+                                {applicant.psychometricTestCompleted ? '✅ Psychometric Completed' : '🧠 Phase 2 Psychometric'}
                             </button>
                         </div>
                     </div>
 
                     {/* Voice Studio & Question Bank Milestone */}
-                    <div style={{ ...styles.milestoneCard, border: '1px solid #a855f7', background: 'rgba(168, 85, 247, 0.08)' }}>
+                    <div style={{ ...styles.milestoneCard, border: '1px solid #a855f7', background: 'rgba(168, 85, 247, 0.08)', opacity: isScreeningPending ? 0.6 : 1 }}>
                         <div>
                             <h4 style={{ ...styles.milestoneTitle, color: '#d8b4fe' }}>🎙️ Qualification & Training: Doctor Detailing Voice Studio (`AI Lab`)</h4>
                             <p style={styles.milestoneDesc}>
                                 Practice standardized detailing pitches, listen to sample female voice audio, and self-modulate your pitch with AI scoring.
                             </p>
                         </div>
-                        <button onClick={() => setActiveTab('voice-studio')} style={{ ...styles.actionButtonPurple, background: 'linear-gradient(135deg, #a855f7, #6366f1)' }}>
-                            🎙️ Open Voice Studio Lab ➔
+                        <button 
+                            onClick={() => {
+                                if (isScreeningPending) {
+                                    alert("⚠️ Please complete Stage 1 & 2 Screening before accessing Voice Studio.");
+                                } else {
+                                    setActiveTab('voice-studio');
+                                }
+                            }} 
+                            style={{ ...styles.actionButtonPurple, background: isScreeningPending ? '#475569' : 'linear-gradient(135deg, #a855f7, #6366f1)', cursor: isScreeningPending ? 'not-allowed' : 'pointer' }}
+                        >
+                            🎙️ Open Voice Studio Lab {isScreeningPending ? '🔒' : '➔'}
                         </button>
                     </div>
 
                     {/* Step 2: Digital Onboarding & KYC */}
-                    <div style={styles.milestoneCard}>
+                    <div style={{ ...styles.milestoneCard, opacity: isScreeningPending ? 0.6 : 1 }}>
                         <div>
                             <h4 style={styles.milestoneTitle}>Stage 3: Digital Onboarding KYC Form</h4>
                             <p style={styles.milestoneDesc}>
@@ -251,8 +331,17 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                                     : 'Please complete your personal, educational, bank details and upload mandatory KYC documents.'}
                             </p>
                         </div>
-                        <button onClick={() => setActiveTab('onboarding')} style={styles.actionButtonBlue}>
-                            {['submitted', 'approved'].includes(applicant.status) ? '📝 Review Onboarding Data' : '📝 Fill Onboarding Form ➔'}
+                        <button 
+                            onClick={() => {
+                                if (isScreeningPending) {
+                                    alert("⚠️ Please complete Stage 1 & 2 Screening before accessing Digital Onboarding Form.");
+                                } else {
+                                    setActiveTab('onboarding');
+                                }
+                            }} 
+                            style={{ ...styles.actionButtonBlue, background: isScreeningPending ? '#475569' : undefined, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }}
+                        >
+                            {isScreeningPending ? '🔒 Onboarding Locked' : (['submitted', 'approved'].includes(applicant.status) ? '📝 Review Onboarding Data' : '📝 Fill Onboarding Form ➔')}
                         </button>
                     </div>
 
@@ -291,7 +380,8 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                         </div>
                     )}
                 </div>
-            )}
+                );
+            })()}
 
             {activeTab === 'exams' && (
                 <div style={styles.tabContentCard}>

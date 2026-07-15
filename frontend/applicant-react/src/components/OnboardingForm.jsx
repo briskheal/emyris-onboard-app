@@ -22,10 +22,38 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
         setTimeout(() => setNotification(null), 4000);
     };
 
+    const [fetchingPin, setFetchingPin] = useState(false);
+
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         const finalVal = type === 'checkbox' ? checked : value;
         setFormData(prev => ({ ...prev, [name]: finalVal }));
+    };
+
+    const handlePinChange = async (e) => {
+        const pinVal = e.target.value;
+        setFormData(prev => ({ ...prev, pin: pinVal }));
+        if (pinVal.length === 6 && /^\d{6}$/.test(pinVal)) {
+            setFetchingPin(true);
+            try {
+                const res = await fetch(`https://api.postalpincode.in/pincode/${pinVal}`);
+                const data = await res.json();
+                if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice[0]) {
+                    const details = data[0].PostOffice[0];
+                    setFormData(prev => ({
+                        ...prev,
+                        pin: pinVal,
+                        city: prev.city || details.District || details.Name || '',
+                        state: details.State || prev.state || ''
+                    }));
+                    showToast(`📍 Auto-filled: ${details.District}, ${details.State}`);
+                }
+            } catch (err) {
+                console.warn('Pincode fetch error:', err);
+            } finally {
+                setFetchingPin(false);
+            }
+        }
     };
 
     const handleTileSelect = (name, value) => {
@@ -60,19 +88,12 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
     const refreshApplicantData = async () => {
         if (!applicantState?.email) return;
         try {
-            const pin = applicantState.password || applicantState.pin || "";
-            if (pin) {
-                const res = await fetch('/api/applicant-login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: applicantState.email, pin })
-                });
-                const data = await res.json();
-                if (data.success && data.applicant) {
-                    setApplicantState(data.applicant);
-                    if (window.currentApplicant) {
-                        window.currentApplicant = data.applicant;
-                    }
+            const res = await fetch(`/api/applicant/profile?email=${encodeURIComponent(applicantState.email)}`);
+            const data = await res.json();
+            if (data.success && data.applicant) {
+                setApplicantState(data.applicant);
+                if (window.currentApplicant) {
+                    window.currentApplicant = data.applicant;
                 }
             }
         } catch (err) {
@@ -276,6 +297,22 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                         </div>
 
                         <div style={styles.grid}>
+                            <div style={styles.formGroupFull}>
+                                <label style={styles.label}>
+                                    Pincode (Postal Code)* {fetchingPin && <span style={{fontSize:'0.75rem', color:'#10b981'}}>Checking...</span>}
+                                </label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input name="pin" maxLength="6" value={formData.pin || ''} onChange={handlePinChange} required style={{ ...styles.input, flex: 1 }} placeholder="6-digit PIN e.g. 400001" />
+                                    <button 
+                                        type="button" 
+                                        onClick={() => handlePinChange({ target: { value: formData.pin || '' } })} 
+                                        style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', color: '#fff', border: 'none', borderRadius: '8px', padding: '0 16px', fontWeight: 'bold', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                                        title="Auto-fetch City and State from PIN"
+                                    >
+                                        📍 Fetch PIN
+                                    </button>
+                                </div>
+                            </div>
                             <div style={styles.formGroup}>
                                 <label style={styles.label}>City / Town*</label>
                                 <input name="city" value={formData.city || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. Mumbai" />
@@ -404,6 +441,18 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                 <span style={styles.reviewKey}>Total Uploaded Documents:</span>
                                 <strong style={{ color: '#34d399' }}>{(applicantState?.documents || []).length} Files uploaded to cloud</strong>
                             </div>
+                            {(applicantState?.documents || []).length > 0 && (
+                                <div style={{ marginTop: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px' }}>
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8', marginBottom: '6px' }}>Uploaded Files Summary:</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                        {(applicantState?.documents || []).map((d, idx) => (
+                                            <span key={idx} style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#34d399', padding: '4px 8px', borderRadius: '12px', fontSize: '0.78rem' }}>
+                                                📄 {d.category}: {d.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div style={styles.consentBox}>

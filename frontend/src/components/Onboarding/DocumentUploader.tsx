@@ -46,16 +46,19 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ applicant, formData
   }, [formData]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !currentCategory) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0 || !currentCategory) return;
     
-    // Convert to base64
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      const base64 = reader.result;
-      setLoading(true);
-      try {
+    setLoading(true);
+    try {
+      for (const file of files) {
+        const base64: string = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.readAsDataURL(file);
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = err => reject(err);
+        });
+
         const res = await api.post('/applicant/upload-document', {
           email: applicant.email,
           category: currentCategory,
@@ -63,20 +66,21 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ applicant, formData
           fileData: base64
         });
         
-        if (res.data.success) {
-          // Fetch latest applicant to get updated docs
-          const appRes = await api.get(`/admin/applicant/${applicant.email}`);
-          if (appRes.data.success && appRes.data.applicant) {
-            setUploadedDocs(appRes.data.applicant.documents || []);
-          }
+        if (res.data.success && res.data.documents) {
+          setUploadedDocs(res.data.documents);
         }
-      } catch (err) {
-        alert("Failed to upload document");
-      } finally {
-        setLoading(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
       }
-    };
+      
+      const appRes = await api.get(`/admin/applicant/${applicant.email}`);
+      if (appRes.data.success && appRes.data.applicant) {
+        setUploadedDocs(appRes.data.applicant.applicant?.documents || appRes.data.applicant.documents || []);
+      }
+    } catch (err) {
+      alert("Failed to upload document");
+    } finally {
+      setLoading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const triggerUpload = (category: string) => {
@@ -127,6 +131,7 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ applicant, formData
       <input 
         type="file" 
         ref={fileInputRef} 
+        multiple
         style={{ display: 'none' }} 
         accept="application/pdf,image/*"
         onChange={handleFileUpload}
@@ -163,16 +168,17 @@ const DocumentUploader: React.FC<DocumentUploaderProps> = ({ applicant, formData
                 }}
               >
                 <UploadCloud size={24} style={{ color: hasFiles ? '#10b981' : 'var(--text-muted)', margin: '0 auto 0.5rem auto' }} />
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{hasFiles ? 'Upload Another' : 'Click to Upload'}</div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-main)' }}>{hasFiles ? 'Add More Files' : 'Click to Upload (Multiple allowed)'}</div>
               </div>
 
               {hasFiles && (
                 <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600 }}>✅ Uploaded Files ({categoryDocs.length}):</div>
                   {categoryDocs.map((doc, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '6px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
                         <FileText size={14} color="#10b981" />
-                        <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{doc.name}</span>
+                        <span style={{ fontSize: '0.8rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{idx + 1}. {doc.name}</span>
                       </div>
                       <button 
                         type="button"

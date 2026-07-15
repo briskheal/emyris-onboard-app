@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const OPTIONAL_DOCS = ["Medical Fitness Certificate", "Passport Photo"];
 const EXP_DOCS = [
@@ -29,12 +29,19 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
     const [deletingId, setDeletingId] = useState(null);
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
+    const [localDocs, setLocalDocs] = useState(applicant?.documents || []);
+
+    useEffect(() => {
+        if (applicant?.documents) {
+            setLocalDocs(applicant.documents);
+        }
+    }, [applicant?.documents]);
 
     const requiredDocsList = (companyData?.requiredDocs && companyData.requiredDocs.length > 0)
         ? companyData.requiredDocs
         : DEFAULT_REQUIRED_DOCS;
 
-    const existingDocs = applicant?.documents || [];
+    const existingDocs = localDocs || [];
     const totalExp = parseFloat(formData?.totalExperience || 0);
     const isExperienced = totalExp > 0;
 
@@ -87,6 +94,17 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
                 const result = await response.json();
                 if (result.success) {
                     successCount++;
+                    if (result.documents && Array.isArray(result.documents)) {
+                        setLocalDocs(result.documents);
+                    } else {
+                        setLocalDocs(prev => [...prev, {
+                            category: category,
+                            name: file.name,
+                            assetId: result.assetId || '#',
+                            sizeKB: Math.round(file.size / 1024),
+                            uploadedAt: new Date()
+                        }]);
+                    }
                 } else {
                     lastError = result.message || `Failed to upload ${file.name}`;
                 }
@@ -126,6 +144,11 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
             const result = await response.json();
             if (result.success) {
                 setSuccessMsg(`🗑️ Removed document from ${category}`);
+                if (result.documents && Array.isArray(result.documents)) {
+                    setLocalDocs(result.documents);
+                } else {
+                    setLocalDocs(prev => prev.filter(d => (d.assetId || d._id) !== assetId));
+                }
                 if (onRefreshApplicant) await onRefreshApplicant();
             } else {
                 setErrorMsg(result.message || "Failed to remove file.");
@@ -223,35 +246,6 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
                                 )}
                             </div>
 
-                            {/* Uploaded files pill list */}
-                            {hasFiles && (
-                                <div style={styles.fileList}>
-                                    {categoryDocs.map((doc, idx) => (
-                                        <div key={idx} style={styles.filePill}>
-                                            <a 
-                                                href={doc.assetId || '#'} 
-                                                target="_blank" 
-                                                rel="noreferrer" 
-                                                style={styles.fileLink}
-                                                title={doc.name}
-                                            >
-                                                <span>📄 {truncateFilename(doc.name, 20)}</span>
-                                                {doc.sizeKB && <span style={styles.fileSize}>({doc.sizeKB} KB)</span>}
-                                            </a>
-                                            <button 
-                                                type="button" 
-                                                onClick={() => handleDeleteDoc(doc.assetId || doc._id, docName)}
-                                                disabled={deletingId === (doc.assetId || doc._id)}
-                                                style={styles.deleteBtn}
-                                                title="Remove file"
-                                            >
-                                                {deletingId === (doc.assetId || doc._id) ? '⌛' : '🗑️'}
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-
                             {/* Drag & Drop Action Zone */}
                             <label style={isUploadingThis ? styles.dropzoneUploading : styles.dropzone}>
                                 <input 
@@ -271,14 +265,46 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
                                     <div style={styles.dropContent}>
                                         <span style={styles.uploadIcon}>{hasFiles ? '➕' : '⬆️'}</span>
                                         <span style={styles.uploadText}>
-                                            {hasFiles ? 'Add another file / page' : `Upload ${docName}`}
+                                            {hasFiles ? `Add more files to ${docName} (Multiple allowed)` : `Upload ${docName} (Multiple files supported)`}
                                         </span>
                                         <span style={styles.fileHint}>
-                                            {isSignature ? 'PNG, JPG or WEBP' : 'PDF or Image up to 12MB'}
+                                            {isSignature ? 'PNG, JPG or WEBP' : '📎 Click to Browse or Drag & Drop Multiple Files (Max 12MB each)'}
                                         </span>
                                     </div>
                                 )}
                             </label>
+
+                            {/* Uploaded files pill list (shown below the same block serially) */}
+                            {hasFiles && (
+                                <div style={{ ...styles.fileList, marginTop: '10px', borderTop: '1px solid rgba(255, 255, 255, 0.12)', paddingTop: '10px' }}>
+                                    <div style={{ fontSize: '0.82rem', color: '#34d399', fontWeight: 'bold', marginBottom: '4px' }}>
+                                        ✅ Uploaded Files ({categoryDocs.length}):
+                                    </div>
+                                    {categoryDocs.map((doc, idx) => (
+                                        <div key={idx} style={styles.filePill}>
+                                            <a 
+                                                href={doc.assetId || '#'} 
+                                                target="_blank" 
+                                                rel="noreferrer" 
+                                                style={styles.fileLink}
+                                                title={doc.name}
+                                            >
+                                                <span>📄 {idx + 1}. {truncateFilename(doc.name, 22)}</span>
+                                                {doc.sizeKB && <span style={styles.fileSize}>({doc.sizeKB} KB)</span>}
+                                            </a>
+                                            <button 
+                                                type="button" 
+                                                onClick={() => handleDeleteDoc(doc.assetId || doc._id, docName)}
+                                                disabled={deletingId === (doc.assetId || doc._id)}
+                                                style={styles.deleteBtn}
+                                                title="Remove file"
+                                            >
+                                                {deletingId === (doc.assetId || doc._id) ? '⌛' : '🗑️'}
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
@@ -425,7 +451,7 @@ const styles = {
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
-        maxHeight: '130px',
+        maxHeight: '280px',
         overflowY: 'auto',
         paddingRight: '4px'
     },

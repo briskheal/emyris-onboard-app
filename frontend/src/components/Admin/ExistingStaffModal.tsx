@@ -9,14 +9,39 @@ interface ExistingStaffModalProps {
 
 export default function ExistingStaffModal({ onClose, onSuccess }: ExistingStaffModalProps) {
   const [formData, setFormData] = useState({
-    fullName: '', email: '', phone: '', dob: '', pin: '', customPin: '', state: '', address: '',
+    fullName: '', email: '', phone: '', dob: '', pin: '', city: '', customPin: '', state: '', address: '',
     empCode: '', designation: '', division: '', reportingTo: '', hq: '', actualJoiningDate: '',
     salary: '', epfNumber: '', uanNumber: '', esiNumber: '', bankName: '', accountNumber: '', ifscCode: ''
   });
   const [loading, setLoading] = useState(false);
+  const [fetchingPin, setFetchingPin] = useState(false);
 
   const generatePin = () => {
     setFormData({ ...formData, customPin: Math.floor(100000 + Math.random() * 900000).toString() });
+  };
+
+  const handlePinChange = async (pinValue: string) => {
+    setFormData(prev => ({ ...prev, pin: pinValue }));
+    if (pinValue.length === 6 && /^\d{6}$/.test(pinValue)) {
+      setFetchingPin(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pinValue}`);
+        const data = await res.json();
+        if (data && data[0] && data[0].Status === 'Success' && data[0].PostOffice && data[0].PostOffice[0]) {
+          const details = data[0].PostOffice[0];
+          setFormData(prev => ({
+            ...prev,
+            pin: pinValue,
+            city: prev.city || details.District || details.Name || '',
+            state: details.State || prev.state || ''
+          }));
+        }
+      } catch (err) {
+        console.warn('Pincode fetch error:', err);
+      } finally {
+        setFetchingPin(false);
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,14 +83,18 @@ export default function ExistingStaffModal({ onClose, onSuccess }: ExistingStaff
           
           <div>
             <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>Personal Information</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1rem' }}>
               <div><label className="form-label">Full Name *</label><input type="text" className="form-input" required value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} /></div>
               <div><label className="form-label">Email *</label><input type="email" className="form-input" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} /></div>
               <div><label className="form-label">Phone *</label><input type="text" className="form-input" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} /></div>
               <div><label className="form-label">DOB</label><input type="date" className="form-input" value={formData.dob} onChange={e => setFormData({...formData, dob: e.target.value})} /></div>
-              <div><label className="form-label">Pincode</label><input type="text" className="form-input" value={formData.pin} onChange={e => setFormData({...formData, pin: e.target.value})} /></div>
-              <div><label className="form-label">State</label><input type="text" className="form-input" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} /></div>
-              <div style={{ gridColumn: 'span 3' }}><label className="form-label">Address</label><textarea className="form-input" rows={2} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} /></div>
+              <div>
+                <label className="form-label">Pincode {fetchingPin && <span style={{fontSize:'0.75rem', color:'#10b981'}}>Checking...</span>}</label>
+                <input type="text" className="form-input" maxLength={6} placeholder="6-digit PIN" value={formData.pin} onChange={e => handlePinChange(e.target.value)} />
+              </div>
+              <div><label className="form-label">City / District</label><input type="text" className="form-input" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} /></div>
+              <div style={{ gridColumn: 'span 2' }}><label className="form-label">State</label><input type="text" className="form-input" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} /></div>
+              <div style={{ gridColumn: 'span 4' }}><label className="form-label">Address</label><textarea className="form-input" rows={2} value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} /></div>
             </div>
           </div>
 
@@ -83,7 +112,9 @@ export default function ExistingStaffModal({ onClose, onSuccess }: ExistingStaff
                 <label className="form-label">Portal Access PIN (6 Digits)</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
                   <input type="text" className="form-input" value={formData.customPin} onChange={e => setFormData({...formData, customPin: e.target.value})} placeholder="6-digit PIN" />
-                  <button type="button" className="btn btn-outline" onClick={generatePin}><RefreshCw size={16} /></button>
+                  <button type="button" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }} onClick={generatePin}>
+                    <RefreshCw size={16} /> <span>🎲 Auto-Generate PIN</span>
+                  </button>
                 </div>
               </div>
             </div>

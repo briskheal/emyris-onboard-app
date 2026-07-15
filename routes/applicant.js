@@ -194,6 +194,18 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.all(['/profile/:email', '/profile', '/applicant-profile/:email'], async (req, res) => {
+    try {
+        const email = req.params.email || req.query.email || req.body?.email;
+        if (!email) return res.status(400).json({ success: false, message: 'Email required' });
+        const applicant = await Applicant.findOne({ email });
+        if (!applicant) return res.status(404).json({ success: false, message: 'Applicant not found' });
+        return res.json({ success: true, applicant });
+    } catch (err) {
+        return res.status(500).json({ success: false, message: 'Server error fetching profile' });
+    }
+});
+
 router.all(['/test-questions', '/start-rapid-fire', '/start-rapid-fire/:email'], async (req, res) => {
     try {
         const email = req.params.email || req.query.email || req.body?.email;
@@ -1035,6 +1047,7 @@ router.post('/upload-document', async (req, res) => {
         }
         documentUploadLocks[email] = true;
 
+        let updatedDocs = [];
         try {
             // Fresh read inside the lock to ensure we have the absolute latest array
             const currentApplicant = await Applicant.findOne({ email });
@@ -1045,10 +1058,9 @@ router.post('/upload-document', async (req, res) => {
                 try { docs = JSON.parse(docs); } catch (e) { docs = []; }
             }
 
-            // The isMulti restriction has been removed. 
-            // All categories now support multiple files (e.g. Front & Back uploads for Aadhar/PAN).
-            // Append the new document
+            // All categories support multiple files
             docs.push(docMetadata);
+            updatedDocs = docs;
 
             // Save back to DB atomically
             await Applicant.updateOne({ email }, { $set: { documents: docs } });
@@ -1057,15 +1069,16 @@ router.post('/upload-document', async (req, res) => {
             delete documentUploadLocks[email];
         }
 
-        console.log(`Γ£à [DOC] Local Upload: ${category} for ${email} saved to ${fileUrl}`);
+        console.log(`✅ [DOC] Local Upload: ${category} for ${email} saved to ${fileUrl}`);
 
         res.status(200).json({ 
             success: true, 
             message: `${category} uploaded successfully`,
-            assetId: fileUrl 
+            assetId: fileUrl,
+            documents: updatedDocs
         });
     } catch (error) {
-        console.error('Γ¥î Document upload error:', error);
+        console.error('❌ Document upload error:', error);
         res.status(500).json({ success: false, message: 'Server error during upload' });
     }
 });
@@ -1558,6 +1571,7 @@ router.post('/upload-document', async (req, res) => {
         }
         documentUploadLocks[email] = true;
 
+        let updatedDocs = [];
         try {
             // Fresh read inside the lock to ensure we have the absolute latest array
             const currentApplicant = await Applicant.findOne({ email });
@@ -1572,6 +1586,7 @@ router.post('/upload-document', async (req, res) => {
             // All categories now support multiple files (e.g. Front & Back uploads for Aadhar/PAN).
             // Append the new document
             docs.push(docMetadata);
+            updatedDocs = docs;
 
             // Save back to DB atomically
             await Applicant.updateOne({ email }, { $set: { documents: docs } });
@@ -1580,12 +1595,13 @@ router.post('/upload-document', async (req, res) => {
             delete documentUploadLocks[email];
         }
 
-        console.log(`Γ£à [DOC] Local Upload: ${category} for ${email} saved to ${fileUrl}`);
+        console.log(`✅ [DOC] Local Upload: ${category} for ${email} saved to ${fileUrl}`);
 
         res.status(200).json({ 
             success: true, 
             message: `${category} uploaded successfully`,
-            assetId: fileUrl 
+            assetId: fileUrl,
+            documents: updatedDocs
         });
     } catch (error) {
         console.error('Γ¥î Document upload error:', error);
@@ -1674,7 +1690,7 @@ router.post('/delete-document', async (req, res) => {
             delete checks[category];
         }
         await Applicant.updateOne({ _id: applicant._id }, { $set: { documents: applicant.documents, verificationChecks: checks } });
-        res.json({ success: true });
+        res.json({ success: true, documents: applicant.documents });
     } catch (e) { res.status(500).json({ error: 'Delete failed' }); }
 });
 

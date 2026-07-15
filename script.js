@@ -555,11 +555,20 @@ function resumeApplication() {
     // ── EXISTING STAFF BYPASS ──────────────────────────────────────────────
     if (app.isExistingStaff) {
         console.log('👤 [EXISTING STAFF] Bypassing rapid test and offer flow.');
+        if (window.mountReactApp) {
+            window.mountReactApp('dashboard', app);
+            return;
+        }
         updateView('loginLandingView');
         renderPendingExamsUI(app);
         return;
     }
     // ── END EXISTING STAFF BYPASS ──────────────────────────────────────────
+
+    if (window.mountReactApp) {
+        window.mountReactApp('dashboard', app);
+        return;
+    }
 
     if (!app.rapidTestCompleted) {
         startRapidTest();
@@ -571,7 +580,6 @@ function resumeApplication() {
         return;
     }
 
-    // Always show the hub dashboard card (Where would you like to go today? Go to My Dashboard / Update Personal Info)
     updateView('loginLandingView');
     renderPendingExamsUI(app);
 }
@@ -969,8 +977,8 @@ function renderApplicantDocuments() {
             <div class="drop-zone ${hasFiles ? 'has-files' : ''}" onclick="document.getElementById('file_${safeId}').click()">
                 <div class="progress-ribbon" id="ribbon_file_${safeId}" style="width: 0%"></div>
                 <span class="drop-icon">${hasFiles ? '📁' : '➕'}</span>
-                <span id="status_${safeId}" class="drop-label">${hasFiles ? 'Add More' : 'Upload'}</span>
-                <input type="file" id="file_${safeId}" class="hidden" accept="application/pdf,image/*">
+                <span id="status_${safeId}" class="drop-label">${hasFiles ? 'Add More Files' : 'Upload'}</span>
+                <input type="file" id="file_${safeId}" class="hidden" multiple accept="application/pdf,image/*">
             </div>
             ${filesHtml}
         `;
@@ -1003,8 +1011,8 @@ function attachApplicantFileListener(inputId, category) {
     const input = document.getElementById(inputId);
     if (!input) return;
     input.onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
 
         // Prevent parallel uploads to ensure robust UX and no backend race conditions
         if (activeUploads > 0) {
@@ -1022,29 +1030,37 @@ function attachApplicantFileListener(inputId, category) {
             activeUploads++;
             document.getElementById('globalUploadStatus').classList.add('show');
 
-            const isImage = file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.jfif');
-            const fileData = isImage ? await compressAndResize(file) : await new Promise(r => {
-                const reader = new FileReader();
-                reader.onload = (ev) => r(ev.target.result);
-                reader.readAsDataURL(file);
-            });
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (label) label.innerText = `Uploading (${i + 1}/${files.length})...`;
+                const isImage = file.type.startsWith('image/') || file.name.toLowerCase().endsWith('.jfif');
+                const fileData = isImage ? await compressAndResize(file) : await new Promise(r => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => r(ev.target.result);
+                    reader.readAsDataURL(file);
+                });
 
-            if (ribbon) ribbon.style.width = '70%';
+                if (ribbon) ribbon.style.width = `${30 + Math.round(((i + 1) / files.length) * 50)}%`;
 
-            const res = await fetch('/api/applicant/upload-document', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: currentApplicant.email, category, fileName: file.name, fileData })
-            });
-            const result = await res.json();
-            if (result.success) {
-                if (!currentApplicant.documents) currentApplicant.documents = [];
-                currentApplicant.documents.push({ category, name: file.name, assetId: result.assetId, uploadedAt: new Date() });
-                renderApplicantDocuments();
-                showToast(`${category} Uploaded!`);
-            } else {
-                showToast(result.message, "error");
+                const res = await fetch('/api/applicant/upload-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentApplicant.email, category, fileName: file.name, fileData })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    if (result.documents && Array.isArray(result.documents)) {
+                        currentApplicant.documents = result.documents;
+                    } else {
+                        if (!currentApplicant.documents) currentApplicant.documents = [];
+                        currentApplicant.documents.push({ category, name: file.name, assetId: result.assetId, sizeKB: Math.round(file.size / 1024), uploadedAt: new Date() });
+                    }
+                    showToast(`${category}: ${file.name} Uploaded!`);
+                } else {
+                    showToast(result.message || `Failed to upload ${file.name}`, "error");
+                }
             }
+            renderApplicantDocuments();
         } catch (err) {
             showToast("Upload failed.", "error");
         } finally {
