@@ -270,14 +270,30 @@ app.get(['/admin', '/admin/'], (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// Serve Original Applicant Portal (Catch-all)
+// Serve Emyris Applicant Portal & Admin Catch-all
 app.use((req, res) => {
     if (req.url.startsWith('/api/')) {
         console.error(`[404] API route not found: ${req.method} ${req.url}`);
         res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
     } else if (req.url.startsWith('/admin')) {
+        const urlWithoutQuery = req.url.split('?')[0];
+        if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {
+            const filename = path.basename(urlWithoutQuery);
+            const filePath = path.join(__dirname, filename);
+            if (fs.existsSync(filePath)) {
+                return res.sendFile(filePath);
+            }
+        }
         res.sendFile(path.join(__dirname, 'admin.html'));
     } else {
+        const urlWithoutQuery = req.url.split('?')[0];
+        if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {
+            const filename = path.basename(urlWithoutQuery);
+            const filePath = path.join(__dirname, filename);
+            if (fs.existsSync(filePath)) {
+                return res.sendFile(filePath);
+            }
+        }
         res.sendFile(path.join(__dirname, 'index.html'));
     }
 });
