@@ -938,7 +938,11 @@ function switchAdminTab(tab) {
     } else if (tab === 'psychometric') {
         const pTab = document.getElementById('adminPsychometricTab');
         if (pTab) pTab.classList.remove('hidden');
-        renderAdminPsychometricReports();
+        if (typeof fetchApplicants === 'function') {
+            fetchApplicants().then(() => renderAdminPsychometricReports());
+        } else {
+            renderAdminPsychometricReports();
+        }
     } else if (tab === 'examreports') {
         document.getElementById('adminExamreportsTab').classList.remove('hidden');
         fetchExamReports();

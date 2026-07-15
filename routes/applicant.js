@@ -696,6 +696,36 @@ router.post('/submit-psychometric', async (req, res) => {
             }
         });
 
+        // Save entry into ExamResult table so admin sees the Psychometric Report under Exam Reports tab
+        try {
+            await ExamResult.create({
+                email: applicant.email,
+                name: applicant.fullName || applicant.email,
+                hq: applicant.hq || '',
+                division: applicant.division || '',
+                examDate: new Date().toISOString().split('T')[0],
+                testedProduct: 'Phase 2 Psychometric & Mindset Assessment',
+                totalQuestions: 36,
+                autoScore: overallPercentile,
+                manualScore: 0,
+                totalScore: overallPercentile,
+                status: 'graded',
+                answers: {
+                    'Overall Readiness Index': `${overallPercentile}%`,
+                    'Executive Archetype Badge': archetype,
+                    'Clinical Integrity & Ethics': `${traitPercentiles['Clinical Integrity & Ethics'] || 0}%`,
+                    'Resilience & Grit Under Pressure': `${traitPercentiles['Resilience & Grit Under Pressure'] || 0}%`,
+                    'Empathy & Relationship Building': `${traitPercentiles['Empathy & Relationship Building'] || 0}%`,
+                    'Autonomy & Self-Motivation': `${traitPercentiles['Autonomy & Self-Motivation'] || 0}%`,
+                    'Scientific Adaptability': `${traitPercentiles['Scientific Adaptability'] || 0}%`,
+                    'Collaborative Communication': `${traitPercentiles['Collaborative Communication'] || 0}%`,
+                    'Coaching & Mentorship Tips': coachingTips ? coachingTips.join(' | ') : ''
+                }
+            });
+        } catch (examErr) {
+            console.error('Failed to create ExamResult entry for psychometric:', examErr);
+        }
+
         res.json({ success: true, overallPercentile, archetype, mindsetReport });
     } catch (e) {
         console.error('Submit Psychometric Error:', e);
