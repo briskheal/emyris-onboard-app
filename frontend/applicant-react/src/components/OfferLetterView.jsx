@@ -20,7 +20,7 @@ export const OfferLetterView = ({ applicant, companyData, onBackToDashboard, onR
         setIsAccepting(true);
         setErrorMsg('');
         try {
-            const res = await fetch('/api/accept-offer', {
+            const res = await fetch('/api/applicant/accept-offer', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

@@ -2145,7 +2145,7 @@ router.post('/render-template', async (req, res) => {
         
         // Calculate Total
         const monthlyTotal = Object.values(sal).reduce((a, b) => a + (parseFloat(b) || 0), 0);
-        const annualCTC = monthlyTotal * 12;
+        const annualCTC = parseFloat(applicant.salary) || (monthlyTotal * 12);
 
         const map = {
             'FULL_NAME': applicant.fullName.toUpperCase(),
@@ -2185,7 +2185,7 @@ router.post('/render-template', async (req, res) => {
 
 router.post('/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
+        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, salary, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
                 epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
@@ -2200,6 +2200,8 @@ router.post('/update-workflow-data', async (req, res) => {
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
+        if (salaryBreakup !== undefined) update.salaryBreakup = salaryBreakup;
+        if (salary !== undefined) update.salary = salary;
 
         // Editable profile fields
         if (fullName !== undefined) update.fullName = fullName;

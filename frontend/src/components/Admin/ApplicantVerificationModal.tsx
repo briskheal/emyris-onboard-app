@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { X, CheckCircle, Download, Save, Eye, Upload } from 'lucide-react';
 import api from '../../api/client';
 
@@ -37,6 +37,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [salEdu, setSalEdu] = useState<string>(initialApplicant.salaryBreakup?.edu?.toString() || '0');
   const [salSpecial, setSalSpecial] = useState<string>(initialApplicant.salaryBreakup?.special?.toString() || '0');
   const [salFixed, setSalFixed] = useState<string>(initialApplicant.salaryBreakup?.fixed?.toString() || '0');
+  const [salRoundoff, setSalRoundoff] = useState<string>(initialApplicant.salaryBreakup?.roundoff?.toString() || '0');
 
   const [epfNumber, setEpfNumber] = useState<string>(initialApplicant.epfNumber || '');
   const [uanNumber, setUanNumber] = useState<string>(initialApplicant.uanNumber || '');
@@ -63,8 +64,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
   useEffect(() => {
     setLoadingDetails(true);
-    api.get(`/admin/applicants/${initialApplicant.email}`).then(res => {
-      const fullApp = (res.data && res.data.success && res.data.applicant) ? res.data.applicant : initialApplicant;
+    api.get(`/admin/applicant/${initialApplicant.email}`).then(res => {
+      const fullApp = (res.data && !res.data.error) ? res.data : initialApplicant;
       setApplicant(fullApp);
       
       setSalBasic(fullApp.salaryBreakup?.basic?.toString() || '0');
@@ -72,9 +73,10 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       setSalLta(fullApp.salaryBreakup?.lta?.toString() || '0');
       setSalConv(fullApp.salaryBreakup?.conveyance?.toString() || '0');
       setSalMed(fullApp.salaryBreakup?.medical?.toString() || '0');
-      setSalEdu(fullApp.salaryBreakup?.edu?.toString() || '0');
       setSalSpecial(fullApp.salaryBreakup?.special?.toString() || '0');
+      setSalEdu(fullApp.salaryBreakup?.edu?.toString() || '0');
       setSalFixed(fullApp.salaryBreakup?.fixed?.toString() || '0');
+      setSalRoundoff(fullApp.salaryBreakup?.roundoff?.toString() || '0');
       
       setEmpCode(fullApp.empCode || '');
       setDesignation(fullApp.designation || '');
@@ -205,6 +207,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
     const fixedAllw = 0.00;
     const used = parseFloat((basic + hra + lta + edu + conveyance + medical + fixedAllw).toFixed(2));
     const special = parseFloat((monthly - used).toFixed(2));
+    const exactMonthly = Math.round(monthly);
+    const roundoff = parseFloat((exactMonthly - monthly).toFixed(2));
 
     setSalBasic(basic.toFixed(2));
     setSalHra(hra.toFixed(2));
@@ -214,6 +218,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
     setSalEdu(edu.toFixed(2));
     setSalSpecial(special.toFixed(2));
     setSalFixed(fixedAllw.toFixed(2));
+    setSalRoundoff(roundoff.toFixed(2));
   }, [salary]);
 
   useEffect(() => {
@@ -248,7 +253,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
         medical: parseFloat(salMed) || 0, 
         special: parseFloat(salSpecial) || 0, 
         edu: parseFloat(salEdu) || 0, 
-        fixed: parseFloat(salFixed) || 0 
+        fixed: parseFloat(salFixed) || 0,
+        roundoff: parseFloat(salRoundoff) || 0
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
@@ -284,7 +290,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
         medical: parseFloat(salMed) || 0, 
         special: parseFloat(salSpecial) || 0, 
         edu: parseFloat(salEdu) || 0, 
-        fixed: parseFloat(salFixed) || 0 
+        fixed: parseFloat(salFixed) || 0,
+        roundoff: parseFloat(salRoundoff) || 0
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
@@ -352,16 +359,19 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
     </div>
   );
 
-  const totalMonthly = (
-    (parseFloat(salBasic) || 0) +
-    (parseFloat(salHra) || 0) +
-    (parseFloat(salLta) || 0) +
-    (parseFloat(salConv) || 0) +
-    (parseFloat(salMed) || 0) +
-    (parseFloat(salSpecial) || 0) +
-    (parseFloat(salEdu) || 0) +
-    (parseFloat(salFixed) || 0)
-  ).toFixed(2);
+  const totalMonthly = useMemo(() => {
+    return (
+      (parseFloat(salBasic) || 0) +
+      (parseFloat(salHra) || 0) +
+      (parseFloat(salLta) || 0) +
+      (parseFloat(salConv) || 0) +
+      (parseFloat(salMed) || 0) +
+      (parseFloat(salSpecial) || 0) +
+      (parseFloat(salEdu) || 0) +
+      (parseFloat(salFixed) || 0) +
+      (parseFloat(salRoundoff) || 0)
+    ).toFixed(2);
+  }, [salBasic, salHra, salLta, salConv, salMed, salSpecial, salEdu, salFixed, salRoundoff]);
 
   if (loadingDetails) {
     return (
@@ -645,6 +655,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                 <div><label className="form-label">Special Allw.</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salSpecial} onChange={e => setSalSpecial(e.target.value)} /></div>
                 <div><label className="form-label">Education</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salEdu} onChange={e => setSalEdu(e.target.value)} /></div>
                 <div><label className="form-label">Fixed</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salFixed} onChange={e => setSalFixed(e.target.value)} /></div>
+                <div><label className="form-label">Roundoff</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salRoundoff} onChange={e => setSalRoundoff(e.target.value)} /></div>
               </div>
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>Total Monthly Calculated:</span>
