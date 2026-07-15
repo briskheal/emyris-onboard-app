@@ -18,13 +18,17 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
   // If a division is selected, and it has its own designations array, use that.
   // Otherwise fallback to global company designations.
   const availableDesignations = useMemo(() => {
+    let raw = [];
     if (formData.division) {
-      const selectedDiv = divisions.find(d => d.name === formData.division);
+      const selectedDiv = divisions.find(d => (typeof d === 'string' ? d : d.name) === formData.division);
       if (selectedDiv && selectedDiv.designations && selectedDiv.designations.length > 0) {
-        return selectedDiv.designations;
+        raw = selectedDiv.designations;
       }
     }
-    return companyData?.designations || [];
+    if (raw.length === 0) {
+      raw = companyData?.designations || [];
+    }
+    return raw.map(desg => typeof desg === 'string' ? desg : (desg.title || desg.name || JSON.stringify(desg)));
   }, [formData.division, divisions, companyData]);
 
   const handleChange = (e) => {
@@ -32,7 +36,8 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
   };
 
   const selectDesignation = (title) => {
-    setFormData({ ...formData, designation: title });
+    const desgStr = typeof title === 'string' ? title : (title.title || title.name || JSON.stringify(title));
+    setFormData({ ...formData, designation: desgStr });
   };
 
   const handleRegister = async (e) => {
@@ -122,9 +127,10 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
             <label style={styles.label}>Applying for Division</label>
             <select name="division" value={formData.division} onChange={handleChange} style={styles.input} required>
               <option value="">-- Select Division --</option>
-              {divisions.map((div, i) => (
-                <option key={i} value={div.name}>{div.name}</option>
-              ))}
+              {divisions.map((div, i) => {
+                const divName = typeof div === 'string' ? div : (div.name || "Unknown");
+                return <option key={i} value={divName}>{divName}</option>;
+              })}
             </select>
           </div>
 
@@ -135,11 +141,12 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
                 <p style={{color: '#94a3b8', fontSize: '12px', margin: 0}}>Select a division first to see available roles.</p>
               ) : (
                 availableDesignations.map((desg, i) => {
-                  const isSelected = formData.designation === desg;
+                  const desgStr = typeof desg === 'string' ? desg : (desg.title || desg.name || JSON.stringify(desg));
+                  const isSelected = formData.designation === desgStr;
                   return (
                     <div 
                       key={i}
-                      onClick={() => selectDesignation(desg)}
+                      onClick={() => selectDesignation(desgStr)}
                       style={{
                         ...styles.chip,
                         background: isSelected ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.05)',
@@ -147,7 +154,7 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
                         color: isSelected ? '#10b981' : '#fff'
                       }}
                     >
-                      {desg}
+                      {desgStr}
                     </div>
                   );
                 })

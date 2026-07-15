@@ -9,30 +9,38 @@ interface ExistingStaffModalProps {
 
 export default function ExistingStaffModal({ onClose, onSuccess }: ExistingStaffModalProps) {
   const [formData, setFormData] = useState({
-    fullName: '', email: '', phone: '', dob: '', pin: '', state: '', address: '',
+    fullName: '', email: '', phone: '', dob: '', pin: '', customPin: '', state: '', address: '',
     empCode: '', designation: '', division: '', reportingTo: '', hq: '', actualJoiningDate: '',
     salary: '', epfNumber: '', uanNumber: '', esiNumber: '', bankName: '', accountNumber: '', ifscCode: ''
   });
   const [loading, setLoading] = useState(false);
 
   const generatePin = () => {
-    setFormData({ ...formData, pin: Math.floor(100000 + Math.random() * 900000).toString() });
+    setFormData({ ...formData, customPin: Math.floor(100000 + Math.random() * 900000).toString() });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await api.post('/admin/add-existing-staff', formData);
+      const payload = {
+        ...formData,
+        targetSalary: formData.salary,
+        joinDate: formData.actualJoiningDate,
+        customPin: formData.customPin || Math.floor(100000 + Math.random() * 900000).toString(),
+        accNo: formData.accountNumber,
+        ifsc: formData.ifscCode
+      };
+      const res = await api.post('/admin/add-existing-staff', payload);
       if (res.data.success) {
         alert('Staff added successfully');
         onSuccess();
       } else {
         alert(res.data.message || 'Failed to add staff');
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert('Network error');
+      alert(err?.response?.data?.message || 'Network error while adding staff');
     } finally {
       setLoading(false);
     }
@@ -74,7 +82,7 @@ export default function ExistingStaffModal({ onClose, onSuccess }: ExistingStaff
               <div style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Portal Access PIN (6 Digits)</label>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <input type="text" className="form-input" value={formData.pin} onChange={e => setFormData({...formData, pin: e.target.value})} />
+                  <input type="text" className="form-input" value={formData.customPin} onChange={e => setFormData({...formData, customPin: e.target.value})} placeholder="6-digit PIN" />
                   <button type="button" className="btn btn-outline" onClick={generatePin}><RefreshCw size={16} /></button>
                 </div>
               </div>
