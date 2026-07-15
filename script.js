@@ -2716,7 +2716,7 @@ async function fetchMyExamScores() {
 }
 
 function renderScoreboard() {
-    const container = document.getElementById('myScoresScoreboard');
+    const container = document.getElementById('scoreboardContainer') || document.getElementById('myScoresScoreboard');
     if (!container) return;
     
     if (myScoresData.length === 0) {
@@ -2724,7 +2724,85 @@ function renderScoreboard() {
         return;
     }
     
+    const formatCleanDate = (val, fallback) => {
+        if (!val && fallback) val = fallback;
+        if (!val) return 'Recently';
+        if (typeof val === 'string') {
+            if (/^\d{4}-\d{2}-\d{2}/.test(val)) {
+                const parts = val.split(/[-T]/);
+                const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                if (!isNaN(d.getTime())) return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+            if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}/.test(val)) {
+                const parts = val.split(/[-/]/);
+                const d = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+                if (!isNaN(d.getTime())) return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+            }
+        }
+        const d = new Date(val);
+        if (!isNaN(d.getTime()) && d.getFullYear() > 1970) {
+            return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+        if (typeof fallback === 'string') return fallback;
+        return 'Recently';
+    };
+
+    let html = `
+    <div style="background: #0f172a; border: 1px solid #334155; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);">
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; color: #e2e8f0; font-size: 0.92rem;">
+                <thead>
+                    <tr style="background: #1e293b; border-bottom: 1px solid #334155; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; color: #94a3b8;">
+                        <th style="padding: 12px 18px; font-weight: 700;">Questionnaire / Assessment</th>
+                        <th style="padding: 12px 18px; font-weight: 700;">Submitted Date</th>
+                        <th style="padding: 12px 18px; font-weight: 700;">Score / Badge</th>
+                        <th style="padding: 12px 18px; font-weight: 700; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+    myScoresData.forEach((exam, idx) => {
+        const dStr = formatCleanDate(exam.submittedAt, exam.examDate);
+        const isGraded = exam.status === 'graded';
+        const prodName = exam.testedProduct || 'General Assessment';
+        const isPsychometric = prodName.toLowerCase().includes('psychometric') || prodName.toLowerCase().includes('phase 2');
+        const isRapid = prodName.toLowerCase().includes('rapid') || prodName.toLowerCase().includes('phase 1');
+        
+        let scoreCell = '';
+        if (isPsychometric) {
+            const badge = exam.answers?.['Executive Archetype Badge'] || '🌟 The Scientific Strategist';
+            scoreCell = `<div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <span style="padding: 3px 10px; background: rgba(168,85,247,0.18); border: 1px solid rgba(168,85,247,0.4); color: #d8b4fe; border-radius: 6px; font-weight: 700; font-size: 0.8rem;">Index: ${exam.autoScore || 85}%</span>
+                <span style="padding: 3px 10px; background: rgba(236,72,153,0.18); border: 1px solid rgba(236,72,153,0.4); color: #f472b6; border-radius: 6px; font-weight: 700; font-size: 0.8rem;">${badge}</span>
+            </div>`;
+        } else if (isRapid) {
+            scoreCell = `<span style="padding: 3px 12px; background: rgba(16,185,129,0.18); border: 1px solid rgba(16,185,129,0.4); color: #34d399; border-radius: 6px; font-weight: 700; font-size: 0.82rem;">Score: ${exam.autoScore} / ${exam.totalQuestions || 20}</span>`;
+        } else if (isGraded) {
+            scoreCell = `<div style="display: flex; gap: 6px; align-items: center; font-size: 0.8rem;">
+                <span style="background: rgba(99,102,241,0.18); border: 1px solid rgba(99,102,241,0.4); padding: 2px 8px; border-radius: 6px; color: #818cf8;">MCQ: <strong>${exam.autoScore}</strong></span>
+                <span style="background: rgba(34,197,94,0.18); border: 1px solid rgba(34,197,94,0.4); padding: 2px 8px; border-radius: 6px; color: #4ade80;">Desc: <strong>${exam.manualScore}</strong></span>
+                <span style="background: #1e293b; border: 1px solid #475569; padding: 2px 8px; border-radius: 6px; color: #fff; font-weight: 800;">Total: ${exam.totalScore} / ${exam.totalQuestions}</span>
+            </div>`;
+        } else {
+            scoreCell = `<span style="padding: 3px 10px; background: rgba(234,179,8,0.18); border: 1px solid rgba(234,179,8,0.4); color: #facc15; border-radius: 6px; font-size: 0.8rem; font-weight: 600;">Pending Review</span>`;
+        }
+        
+        const rowBg = idx % 2 === 0 ? '#0f172a' : '#131d31';
+        html += `
+            <tr style="background: ${rowBg}; border-bottom: 1px solid #1e293b; transition: background 0.2s;"
+                onmouseover="this.style.background='#1e293b'"
+                onmouseout="this.style.background='${rowBg}'">
+                <td style="padding: 12px 18px; font-weight: 600; font-size: 0.93rem; color: #f8fafc;">${prodName}</td>
+                <td style="padding: 12px 18px; color: #94a3b8; font-size: 0.85rem; white-space: nowrap;">${dStr}</td>
+                <td style="padding: 12px 18px;">${scoreCell}</td>
+                <td style="padding: 12px 18px; text-align: right; white-space: nowrap;">
+                    <button class="btn btn-sm" style="background: #6366f1; border: 1px solid #818cf8; color: #fff; font-weight: 600; padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; box-shadow: 0 2px 8px rgba(99,102,241,0.25); cursor: pointer;" onclick="openReviewModal('${exam._id}')">View Details</button>
+                </td>
+            </tr>
+        `;
+    });
     
+    html += `</tbody></table></div></div>`;
     container.innerHTML = html;
 }
 
