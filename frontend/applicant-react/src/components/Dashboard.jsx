@@ -4,6 +4,7 @@ import PsychometricAssessment from './PsychometricAssessment';
 import ExamRunner from './ExamRunner';
 import OnboardingForm from './OnboardingForm';
 import { OfferLetterView } from './OfferLetterView';
+import VoiceStudio from './VoiceStudio';
 
 const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     const [applicant, setApplicant] = useState(initialApplicant);
@@ -179,6 +180,12 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                     🎯 Assigned & Screening Tests {pendingExams.length > 0 && <span style={styles.badgeCount}>{pendingExams.length}</span>}
                 </button>
                 <button
+                    style={activeTab === 'voice-studio' ? styles.tabActive : styles.tabInactive}
+                    onClick={() => setActiveTab('voice-studio')}
+                >
+                    🎙️ Voice Studio (`AI Lab`)
+                </button>
+                <button
                     style={activeTab === 'scores' ? styles.tabActive : styles.tabInactive}
                     onClick={() => setActiveTab('scores')}
                 >
@@ -219,6 +226,19 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                                 🧠 Phase 2 Psychometric
                             </button>
                         </div>
+                    </div>
+
+                    {/* Voice Studio & Question Bank Milestone */}
+                    <div style={{ ...styles.milestoneCard, border: '1px solid #a855f7', background: 'rgba(168, 85, 247, 0.08)' }}>
+                        <div>
+                            <h4 style={{ ...styles.milestoneTitle, color: '#d8b4fe' }}>🎙️ Qualification & Training: Doctor Detailing Voice Studio (`AI Lab`)</h4>
+                            <p style={styles.milestoneDesc}>
+                                Practice standardized detailing pitches, listen to sample female voice audio, and self-modulate your pitch with AI scoring.
+                            </p>
+                        </div>
+                        <button onClick={() => setActiveTab('voice-studio')} style={{ ...styles.actionButtonPurple, background: 'linear-gradient(135deg, #a855f7, #6366f1)' }}>
+                            🎙️ Open Voice Studio Lab ➔
+                        </button>
                     </div>
 
                     {/* Step 2: Digital Onboarding & KYC */}
@@ -331,6 +351,12 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                         </button>
                     </div>
                     <MyScoresTable applicant={applicant} />
+                </div>
+            )}
+
+            {activeTab === 'voice-studio' && (
+                <div style={styles.tabContentCard}>
+                    <VoiceStudio applicant={applicant} />
                 </div>
             )}
         </div>

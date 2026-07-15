@@ -49,41 +49,55 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
     };
 
     const handleFileChange = async (e, category) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
+        const files = Array.from(e.target.files || []);
+        if (files.length === 0) return;
 
         // Reset inputs so same file can be chosen again if needed
         e.target.value = '';
         setErrorMsg('');
         setSuccessMsg('');
 
-        // Size check (max 12MB)
-        const sizeMB = file.size / (1024 * 1024);
-        if (sizeMB > 12) {
-            setErrorMsg(`File "${file.name}" exceeds the 12MB limit (${sizeMB.toFixed(1)}MB).`);
-            return;
+        // Size check (max 12MB per file)
+        for (const file of files) {
+            const sizeMB = file.size / (1024 * 1024);
+            if (sizeMB > 12) {
+                setErrorMsg(`File "${file.name}" exceeds the 12MB limit (${sizeMB.toFixed(1)}MB).`);
+                return;
+            }
         }
 
         setUploadingCategory(category);
-        try {
-            const base64Data = await fileToBase64(file);
-            const response = await fetch('/api/upload-document', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email: applicant.email,
-                    category: category,
-                    fileName: file.name,
-                    fileData: base64Data
-                })
-            });
+        let successCount = 0;
+        let lastError = '';
 
-            const result = await response.json();
-            if (result.success) {
-                setSuccessMsg(`✅ ${category} uploaded successfully!`);
+        try {
+            for (const file of files) {
+                const base64Data = await fileToBase64(file);
+                const response = await fetch('/api/applicant/upload-document', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: applicant.email,
+                        category: category,
+                        fileName: file.name,
+                        fileData: base64Data
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    successCount++;
+                } else {
+                    lastError = result.message || `Failed to upload ${file.name}`;
+                }
+            }
+
+            if (successCount > 0) {
+                setSuccessMsg(`✅ ${successCount} file(s) uploaded successfully to ${category}!`);
                 if (onRefreshApplicant) await onRefreshApplicant();
-            } else {
-                setErrorMsg(result.message || `Failed to upload ${category}`);
+            }
+            if (lastError) {
+                setErrorMsg(lastError);
             }
         } catch (err) {
             console.error("Upload error:", err);
@@ -100,7 +114,7 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
         setErrorMsg('');
         setSuccessMsg('');
         try {
-            const response = await fetch('/api/delete-document', {
+            const response = await fetch('/api/applicant/delete-document', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -242,6 +256,7 @@ export const Stage5Documents = ({ applicant, companyData, formData, onPrev, onNe
                             <label style={isUploadingThis ? styles.dropzoneUploading : styles.dropzone}>
                                 <input 
                                     type="file" 
+                                    multiple
                                     style={{ display: 'none' }}
                                     accept={isSignature ? "image/*" : "application/pdf,image/*"}
                                     onChange={(e) => handleFileChange(e, docName)}
