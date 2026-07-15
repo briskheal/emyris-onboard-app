@@ -2716,94 +2716,14 @@ async function fetchMyExamScores() {
 }
 
 function renderScoreboard() {
-    const container = document.getElementById('scoreboardContainer');
+    const container = document.getElementById('myScoresScoreboard');
     if (!container) return;
     
     if (myScoresData.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed var(--glass-border);">No past exams found.</div>';
+        container.innerHTML = '<div style="text-align: center; color: var(--text-muted); padding: 30px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed var(--glass-border);">No past exams or questionnaire sessions found.</div>';
         return;
     }
     
-    // Group by Year/Month
-    const groups = {};
-    myScoresData.forEach(exam => {
-        const d = new Date(exam.submittedAt);
-        const yyyyMm = d.toLocaleString('default', { month: 'long', year: 'numeric' });
-        if (!groups[yyyyMm]) groups[yyyyMm] = [];
-        groups[yyyyMm].push(exam);
-    });
-    
-    let html = '';
-    
-    for (const [monthGroup, exams] of Object.entries(groups)) {
-        html += `<div style="margin-bottom: 30px;">
-            <h3 style="font-size: 1.2rem; color: var(--text-main); margin-bottom: 15px; padding-bottom: 8px; border-bottom: 1px solid var(--glass-border);">🗓️ ${monthGroup}</h3>
-            <div style="display: grid; gap: 15px;">`;
-            
-        exams.forEach(exam => {
-            const dStr = new Date(exam.submittedAt || exam.examDate || Date.now()).toLocaleDateString();
-            const isGraded = exam.status === 'graded';
-            const prodName = exam.testedProduct || 'General';
-            const isPsychometric = prodName.toLowerCase().includes('psychometric') || prodName.toLowerCase().includes('phase 2');
-            const isRapid = prodName.toLowerCase().includes('rapid') || prodName.toLowerCase().includes('phase 1');
-            
-            let scoreBlock = '';
-            if (isPsychometric) {
-                scoreBlock = `<div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
-                    <div style="text-align: center; padding: 6px 14px; background: rgba(168,85,247,0.18); border-radius: 10px; border: 1px solid rgba(168,85,247,0.4);">
-                        <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: 600;">Mindset Index</div>
-                        <div style="font-weight: 800; color: #d8b4fe; font-size: 1.15rem;">${exam.autoScore}%</div>
-                    </div>
-                    <div style="text-align: center; padding: 6px 14px; background: rgba(236,72,153,0.18); border-radius: 10px; border: 1px solid rgba(236,72,153,0.4);">
-                        <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: 600;">Archetype Badge</div>
-                        <div style="font-weight: 800; color: #f472b6; font-size: 0.95rem;">${exam.answers?.['Executive Archetype Badge'] || '🌟 The Scientific Strategist'}</div>
-                    </div>
-                </div>`;
-            } else if (isRapid) {
-                scoreBlock = `<div style="display: flex; gap: 15px; align-items: center;">
-                    <div style="text-align: center; padding: 6px 16px; background: rgba(16,185,129,0.18); border-radius: 10px; border: 1px solid rgba(16,185,129,0.4);">
-                        <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: 600;">Rapid Fire Score</div>
-                        <div style="font-weight: 800; color: #34d399; font-size: 1.15rem;">${exam.autoScore} / ${exam.totalQuestions || 20} Points</div>
-                    </div>
-                </div>`;
-            } else if (isGraded) {
-                scoreBlock = `<div style="display: flex; gap: 20px; align-items: center;">
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">MCQ</div>
-                        <div style="font-weight: 700; color: #fff;">${exam.autoScore}</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">Desc</div>
-                        <div style="font-weight: 700; color: #fff;">${exam.manualScore}</div>
-                    </div>
-                    <div style="text-align: center; padding: 5px 15px; background: rgba(99,102,241,0.2); border-radius: 20px; border: 1px solid rgba(99,102,241,0.4);">
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">Total</div>
-                        <div style="font-weight: 800; color: #818cf8;">${exam.totalScore} / ${exam.totalQuestions}</div>
-                    </div>
-                </div>`;
-            } else {
-                scoreBlock = `<span style="padding: 4px 10px; background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.4); color: #facc15; border-radius: 12px; font-size: 0.8rem;">Pending Review</span>`;
-            }
-            
-            html += `
-                <div style="background: #1e293b !important; border: 1px solid #334155; border-radius: 14px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: all 0.3s;"
-                     onmouseover="this.style.background='#26354a !important'; this.style.borderColor='#6366f1'"
-                     onmouseout="this.style.background='#1e293b !important'; this.style.borderColor='#334155'">
-                    
-                    <div>
-                        <div style="font-size: 1.15rem; font-weight: 700; color: white; margin-bottom: 4px;">${prodName}</div>
-                        <div style="font-size: 0.82rem; color: #94a3b8; font-weight: 500;">Submitted: ${dStr}</div>
-                    </div>
-                    
-                    ${scoreBlock}
-                    
-                    <button class="btn btn-sm" style="margin-left: 20px; background: #6366f1; border: 1px solid #818cf8; color: #fff; font-weight: 600; padding: 8px 18px; border-radius: 10px; box-shadow: 0 2px 10px rgba(99,102,241,0.3);" onclick="openReviewModal('${exam._id}')">View Details</button>
-                </div>
-            `;
-        });
-        
-        html += `</div></div>`;
-    }
     
     container.innerHTML = html;
 }
