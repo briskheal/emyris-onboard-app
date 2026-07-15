@@ -2937,8 +2937,17 @@ router.get('/applicants/:email', async (req, res) => {
 
 router.get('/pending-exams', async (req, res) => {
     try {
-        const exams = await ExamResult.find().sort({ submittedAt: -1 });
+        let exams = await ExamResult.find().sort({ submittedAt: -1 });
         const questions = await Question.find();
+        
+        // Ensure answers JSON strings from TEXT columns are properly parsed
+        exams = (exams || []).map(ex => {
+            if (ex && typeof ex.answers === 'string') {
+                try { ex.answers = JSON.parse(ex.answers); } catch(err) {}
+            }
+            return ex;
+        });
+        
         res.json({ success: true, exams, questions });
     } catch (e) {
         console.error('Fetch Pending Exams Error:', e);
@@ -2948,15 +2957,19 @@ router.get('/pending-exams', async (req, res) => {
 
 router.post('/grade-exam', async (req, res) => {
     try {
-        const { examId, manualScore } = req.body;
+        const examId = req.body.examId || req.body.id;
+        const manualScore = req.body.manualScore;
+        if (!examId) return res.status(400).json({ error: 'Exam ID required' });
+        
         const exam = await ExamResult.findOne({ _id: examId });
         if (!exam) return res.status(404).json({ error: 'Exam not found' });
         
-        const total = (exam.autoScore || 0) + parseInt(manualScore || 0, 10);
+        const parsedManualScore = isNaN(parseInt(manualScore, 10)) ? 0 : parseInt(manualScore, 10);
+        const total = (exam.autoScore || 0) + parsedManualScore;
         
         await ExamResult.updateOne({ _id: examId }, {
             $set: {
-                manualScore: parseInt(manualScore || 0, 10),
+                manualScore: parsedManualScore,
                 totalScore: total,
                 status: 'graded'
             }

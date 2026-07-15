@@ -1,9 +1,41 @@
 const { Op } = require('sequelize');
-const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now().toString(36);// Helper to decorate instance with Mongoose methods
+const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+
+const JSON_FIELDS = ['mindsetReport', 'psychometricScores', 'answers', 'formData', 'documents', 'pendingExams', 'issuedLetters', 'salaryBreakup', 'verificationChecks', 'tasks'];
+
+function ensureParsed(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    for (const f of JSON_FIELDS) {
+        if (obj[f] && typeof obj[f] === 'string' && (obj[f].startsWith('{') || obj[f].startsWith('['))) {
+            try { obj[f] = JSON.parse(obj[f]); } catch(e) {}
+        }
+    }
+    return obj;
+}
+
+function prepareForStorage(Model, data) {
+    if (!data || typeof data !== 'object') return data;
+    const prepared = { ...data };
+    const attrs = Model.rawAttributes || {};
+    for (const [k, v] of Object.entries(prepared)) {
+        if (v !== null && typeof v === 'object' && !(v instanceof Date)) {
+            const attr = attrs[k];
+            // If the model attribute in Sequelize is TEXT/STRING or undefined (e.g., added via raw ALTER), serialize object to JSON string
+            if (!attr || attr.type?.key === 'TEXT' || attr.type?.key === 'STRING') {
+                prepared[k] = JSON.stringify(v);
+            }
+        }
+    }
+    return prepared;
+}
+
+// Helper to decorate instance with Mongoose methods
 function wrapInstance(instance) {
     if (!instance || typeof instance !== 'object') return instance;
+    ensureParsed(instance);
+    if (instance.dataValues) ensureParsed(instance.dataValues);
     if (typeof instance.get === 'function') {
-        const plain = instance.get({ plain: true });
+        const plain = ensureParsed(instance.get({ plain: true }));
         instance.markModified = (prop) => {
             instance.changed(prop, true);
         };
@@ -54,11 +86,11 @@ function makeQueryBuilder(Model, query, isSingle = false) {
             if (isSingle) {
                 return Model.findOne(opts).then(inst => {
                     if (!inst) return null;
-                    return isLean ? inst.get({ plain: true }) : wrapInstance(inst);
+                    return isLean ? ensureParsed(inst.get({ plain: true })) : wrapInstance(inst);
                 }).then(resolve, reject);
             } else {
                 return Model.findAll(opts).then(list => {
-                    return list.map(inst => isLean ? inst.get({ plain: true }) : wrapInstance(inst));
+                    return list.map(inst => isLean ? ensureParsed(inst.get({ plain: true })) : wrapInstance(inst));
                 }).then(resolve, reject);
             }
         },
@@ -154,10 +186,10 @@ function createModelAdapter(Model) {
                 applyUpdate(exists, this);
                 const plainData = typeof exists.get === 'function' ? exists.get({ plain: true }) : { ...exists };
                 delete plainData._id;
-                await Model.update(plainData, { where: { _id: id } });
+                await Model.update(prepareForStorage(Model, plainData), { where: { _id: id } });
                 return wrapInstance(await Model.findByPk(id));
             } else {
-                const inst = await Model.create(this);
+                const inst = await Model.create(prepareForStorage(Model, this));
                 return wrapInstance(inst);
             }
         };
@@ -169,11 +201,11 @@ function createModelAdapter(Model) {
     Adapter.create = async (data) => {
         if (Array.isArray(data)) {
             data.forEach(d => { if (!d._id) d._id = generateId(); });
-            const insts = await Model.bulkCreate(data);
+            const insts = await Model.bulkCreate(data.map(d => prepareForStorage(Model, d)));
             return insts.map(inst => wrapInstance(inst));
         } else {
             if (!data._id) data._id = generateId();
-            const inst = await Model.create(data);
+            const inst = await Model.create(prepareForStorage(Model, data));
             return wrapInstance(inst);
         }
     };
@@ -190,7 +222,7 @@ function createModelAdapter(Model) {
         applyUpdate(inst, updateObj);
         const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
         delete plainData._id;
-        await Model.update(plainData, { where: { _id: id } });
+        await Model.update(prepareForStorage(Model, plainData), { where: { _id: id } });
         return wrapInstance(await Model.findByPk(id));
     };
     Adapter.findByIdAndUpdate = async (id, updateObj, options = {}) => {
@@ -199,7 +231,7 @@ function createModelAdapter(Model) {
         applyUpdate(inst, updateObj);
         const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
         delete plainData._id;
-        await Model.update(plainData, { where: { _id: id } });
+        await Model.update(prepareForStorage(Model, plainData), { where: { _id: id } });
         return wrapInstance(await Model.findByPk(id));
     };
     Adapter.updateOne = async (query, updateObj) => {
@@ -209,7 +241,7 @@ function createModelAdapter(Model) {
             applyUpdate(inst, updateObj);
             const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
             delete plainData._id;
-            await Model.update(plainData, { where: { _id: id } });
+            await Model.update(prepareForStorage(Model, plainData), { where: { _id: id } });
         }
         return { acknowledged: true };
     };
@@ -221,7 +253,7 @@ function createModelAdapter(Model) {
             applyUpdate(inst, updateObj);
             const plainData = typeof inst.get === 'function' ? inst.get({ plain: true }) : { ...inst };
             delete plainData._id;
-            await Model.update(plainData, { where: { _id: id } });
+            await Model.update(prepareForStorage(Model, plainData), { where: { _id: id } });
             updatedCount++;
         }
         return { acknowledged: true, modifiedCount: updatedCount };

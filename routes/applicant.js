@@ -1342,6 +1342,15 @@ router.get('/applicants', async (req, res) => {
                     // Intentionally omitting 'data' (the heavy base64 string)
                 }));
             }
+            if (app && typeof app.mindsetReport === 'string') {
+                try { app.mindsetReport = JSON.parse(app.mindsetReport); } catch(e) {}
+            }
+            if (app && typeof app.psychometricScores === 'string') {
+                try { app.psychometricScores = JSON.parse(app.psychometricScores); } catch(e) {}
+            }
+            if (app && typeof app.formData === 'string') {
+                try { app.formData = JSON.parse(app.formData); } catch(e) {}
+            }
             return app;
         });
 
