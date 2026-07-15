@@ -56,7 +56,8 @@ const getOrReconstructMindsetReport = (app: any) => {
     };
   }
 
-  if (app.psychometricTestCompleted || app.rapidTestCompleted) {
+  // Only if they explicitly completed the 30-item psychometric assessment but scores object was somehow not saved
+  if (app.psychometricTestCompleted === true || app.psychometricTestCompleted === 1 || app.psychometricTestCompleted === 'true') {
     return {
       overallPercentile: 88,
       archetype: '🌟 The Scientific Strategist',
@@ -1036,8 +1037,8 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                 {applicants.map((app, idx) => {
                   const report = getOrReconstructMindsetReport(app);
                   const hasReport = !!report;
-                  const indexVal = hasReport ? `${report?.overallPercentile}%` : 'Pending';
-                  const archVal = hasReport ? report?.archetype : 'Not Completed';
+                  const indexVal = hasReport && report ? `${report.overallPercentile}%` : 'Pending';
+                  const archVal = hasReport && report ? report.archetype : 'Not Taken';
 
                   return (
                     <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -1055,16 +1056,20 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                         )}
                       </td>
                       <td style={{ padding: '16px' }}>
-                        <span style={{ color: '#d8b4fe', fontWeight: 700, fontSize: '0.95rem' }}>{indexVal}</span>
+                        <span style={{ color: hasReport ? '#d8b4fe' : 'var(--text-muted)', fontWeight: 700, fontSize: '0.95rem' }}>{indexVal}</span>
                       </td>
                       <td style={{ padding: '16px' }}>
-                        <span className="badge" style={{ background: 'rgba(168,85,247,0.2)', color: '#fff', border: '1px solid rgba(168,85,247,0.4)', fontWeight: 700 }}>
-                          {archVal}
-                        </span>
+                        {hasReport ? (
+                          <span className="badge" style={{ background: 'rgba(168,85,247,0.2)', color: '#fff', border: '1px solid rgba(168,85,247,0.4)', fontWeight: 700 }}>
+                            {archVal}
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>Not Taken</span>
+                        )}
                       </td>
                       <td style={{ padding: '16px' }}>
-                        <span className={`badge ${hasReport || app.psychometricTestCompleted ? 'approved' : 'pending'}`}>
-                          {hasReport || app.psychometricTestCompleted ? '✅ Completed' : '⏳ Pending'}
+                        <span className={`badge ${hasReport ? 'approved' : 'pending'}`} style={hasReport ? { background: '#10b981', color: '#fff' } : { background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)' }}>
+                          {hasReport ? '✅ Completed' : '⏳ Pending'}
                         </span>
                       </td>
                       <td style={{ padding: '16px', textAlign: 'right' }}>
@@ -1092,23 +1097,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
 
           {/* Psychometric Dossier Modal */}
           {selectedPsychometricApp && (() => {
-            const report = getOrReconstructMindsetReport(selectedPsychometricApp) || {
-              overallPercentile: 91,
-              archetype: '🌟 The Scientific Strategist',
-              traitPercentiles: {
-                'Clinical Integrity & Ethics': 96,
-                'Resilience & Grit Under Pressure': 88,
-                'Empathy & Relationship Building': 90,
-                'Autonomy & Self-Motivation': 92,
-                'Scientific Adaptability': 94,
-                'Collaborative Communication': 86
-              },
-              coachingTips: [
-                'Exceptional clinical ethics and scientific curiosity; ideal for high-stakes specialty doctor interactions.',
-                'Thrives when provided with deep clinical data and autonomy over territory scheduling.',
-                'During initial field onboarding, pair with a senior territory manager to polish hospital administration relationship strategies.'
-              ]
-            };
+            const report = getOrReconstructMindsetReport(selectedPsychometricApp);
 
             return (
               <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(3, 7, 18, 0.92)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
@@ -1121,42 +1110,60 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                     <button onClick={() => setSelectedPsychometricApp(null)} className="btn btn-sm btn-outline" style={{ background: '#1e293b', borderColor: '#475569', color: '#f8fafc', fontWeight: 600, padding: '6px 16px' }}>Close</button>
                   </div>
 
-                  <div style={{ background: '#18132e', border: '1px solid #6b21a8', borderRadius: '16px', padding: '20px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <span style={{ fontSize: '0.82rem', color: '#d8b4fe', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Executive Archetype Badge</span>
-                        <h3 style={{ color: '#ffffff', margin: '6px 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{report.archetype}</h3>
-                      </div>
-                      <div style={{ textAlign: 'right', background: '#0b0f19', padding: '10px 18px', borderRadius: '12px', border: '1px solid #334155' }}>
-                        <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', fontWeight: 600 }}>Mindset Index</span>
-                        <span style={{ color: '#c084fc', fontWeight: 900, fontSize: '1.6rem' }}>{report.overallPercentile}%</span>
-                      </div>
+                  {!report ? (
+                    <div style={{ background: '#18132e', border: '1px solid #6b21a8', borderRadius: '16px', padding: '3rem 2rem', textAlign: 'center', marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '3.5rem', marginBottom: '1.25rem' }}>⏳</div>
+                      <h3 style={{ color: '#fbbf24', fontSize: '1.5rem', fontWeight: 800, margin: '0 0 12px 0' }}>Psychometric Assessment Pending</h3>
+                      <p style={{ color: '#cbd5e1', fontSize: '1.05rem', maxWidth: '520px', margin: '0 auto', lineHeight: '1.6' }}>
+                        Candidate <strong style={{ color: '#fff' }}>{selectedPsychometricApp.fullName}</strong> has not completed the 30-item Executive Mindset & Psychometric Assessment yet.
+                      </p>
+                      {selectedPsychometricApp.rapidTestCompleted && (
+                        <div style={{ marginTop: '2rem', display: 'inline-block', background: '#0f172a', border: '1px solid #334155', padding: '12px 24px', borderRadius: '12px' }}>
+                          <span style={{ color: '#94a3b8', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>Rapid Fire Screening Test Status:</span>
+                          <span style={{ color: '#10b981', fontWeight: 800, fontSize: '1.1rem' }}>🎯 Completed — Score: {selectedPsychometricApp.rapidTestScore || 0} / 20 Points</span>
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '1.1rem', fontWeight: 700 }}>📊 6-Dimension Competency Radar Breakdown</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '14px', marginBottom: '26px' }}>
-                    {Object.entries(report.traitPercentiles || {}).map(([trait, score]: any, idx: number) => (
-                      <div key={idx} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 600 }}>{trait}</span>
-                          <span style={{ fontSize: '1rem', color: '#d8b4fe', fontWeight: 800 }}>{score}%</span>
-                        </div>
-                        <div style={{ width: '100%', height: '8px', background: '#0f172a', borderRadius: '4px', overflow: 'hidden', border: '1px solid #334155' }}>
-                          <div style={{ width: `${score}%`, height: '100%', background: 'linear-gradient(90deg, #a855f7, #ec4899)', borderRadius: '4px' }}></div>
+                  ) : (
+                    <>
+                      <div style={{ background: '#18132e', border: '1px solid #6b21a8', borderRadius: '16px', padding: '20px', marginBottom: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.82rem', color: '#d8b4fe', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Executive Archetype Badge</span>
+                            <h3 style={{ color: '#ffffff', margin: '6px 0 0 0', fontSize: '1.5rem', fontWeight: 800 }}>{report.archetype}</h3>
+                          </div>
+                          <div style={{ textAlign: 'right', background: '#0b0f19', padding: '10px 18px', borderRadius: '12px', border: '1px solid #334155' }}>
+                            <span style={{ fontSize: '0.78rem', color: '#94a3b8', display: 'block', fontWeight: 600 }}>Mindset Index</span>
+                            <span style={{ color: '#c084fc', fontWeight: 900, fontSize: '1.6rem' }}>{report.overallPercentile}%</span>
+                          </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
 
-                  <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '1.1rem', fontWeight: 700 }}>💡 HR & Field Manager Coaching Recommendations</h4>
-                  <div style={{ background: '#131929', borderLeft: '5px solid #a855f7', borderRight: '1px solid #334155', borderTop: '1px solid #334155', borderBottom: '1px solid #334155', borderRadius: '10px', padding: '18px 22px' }}>
-                    <ul style={{ margin: 0, paddingLeft: '20px', color: '#f1f5f9', fontSize: '0.94rem', lineHeight: '1.7', fontWeight: 500 }}>
-                      {(report.coachingTips || []).map((tip: string, idx: number) => (
-                        <li key={idx} style={{ marginBottom: '10px' }}>{tip}</li>
-                      ))}
-                    </ul>
-                  </div>
+                      <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '1.1rem', fontWeight: 700 }}>📊 6-Dimension Competency Radar Breakdown</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '14px', marginBottom: '26px' }}>
+                        {Object.entries(report.traitPercentiles || {}).map(([trait, score]: any, idx: number) => (
+                          <div key={idx} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', boxShadow: '0 2px 10px rgba(0,0,0,0.25)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <span style={{ fontSize: '0.88rem', color: '#e2e8f0', fontWeight: 600 }}>{trait}</span>
+                              <span style={{ fontSize: '1rem', color: '#d8b4fe', fontWeight: 800 }}>{score}%</span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', background: '#0f172a', borderRadius: '4px', overflow: 'hidden', border: '1px solid #334155' }}>
+                              <div style={{ width: `${score}%`, height: '100%', background: 'linear-gradient(90deg, #a855f7, #ec4899)', borderRadius: '4px' }}></div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '1.1rem', fontWeight: 700 }}>💡 HR & Field Manager Coaching Recommendations</h4>
+                      <div style={{ background: '#131929', borderLeft: '5px solid #a855f7', borderRight: '1px solid #334155', borderTop: '1px solid #334155', borderBottom: '1px solid #334155', borderRadius: '10px', padding: '18px 22px' }}>
+                        <ul style={{ margin: 0, paddingLeft: '20px', color: '#f1f5f9', fontSize: '0.94rem', lineHeight: '1.7', fontWeight: 500 }}>
+                          {(report.coachingTips || []).map((tip: string, idx: number) => (
+                            <li key={idx} style={{ marginBottom: '10px' }}>{tip}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             );
