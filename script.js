@@ -2741,42 +2741,63 @@ function renderScoreboard() {
             <div style="display: grid; gap: 15px;">`;
             
         exams.forEach(exam => {
-            const dStr = new Date(exam.submittedAt).toLocaleDateString();
+            const dStr = new Date(exam.submittedAt || exam.examDate || Date.now()).toLocaleDateString();
             const isGraded = exam.status === 'graded';
+            const prodName = exam.testedProduct || 'General';
+            const isPsychometric = prodName.toLowerCase().includes('psychometric') || prodName.toLowerCase().includes('phase 2');
+            const isRapid = prodName.toLowerCase().includes('rapid') || prodName.toLowerCase().includes('phase 1');
             
             let scoreBlock = '';
-            if (isGraded) {
+            if (isPsychometric) {
+                scoreBlock = `<div style="display: flex; gap: 15px; align-items: center; flex-wrap: wrap;">
+                    <div style="text-align: center; padding: 6px 14px; background: rgba(168,85,247,0.18); border-radius: 10px; border: 1px solid rgba(168,85,247,0.4);">
+                        <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: 600;">Mindset Index</div>
+                        <div style="font-weight: 800; color: #d8b4fe; font-size: 1.15rem;">${exam.autoScore}%</div>
+                    </div>
+                    <div style="text-align: center; padding: 6px 14px; background: rgba(236,72,153,0.18); border-radius: 10px; border: 1px solid rgba(236,72,153,0.4);">
+                        <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: 600;">Archetype Badge</div>
+                        <div style="font-weight: 800; color: #f472b6; font-size: 0.95rem;">${exam.answers?.['Executive Archetype Badge'] || '🌟 The Scientific Strategist'}</div>
+                    </div>
+                </div>`;
+            } else if (isRapid) {
+                scoreBlock = `<div style="display: flex; gap: 15px; align-items: center;">
+                    <div style="text-align: center; padding: 6px 16px; background: rgba(16,185,129,0.18); border-radius: 10px; border: 1px solid rgba(16,185,129,0.4);">
+                        <div style="font-size: 0.75rem; color: #cbd5e1; font-weight: 600;">Rapid Fire Score</div>
+                        <div style="font-weight: 800; color: #34d399; font-size: 1.15rem;">${exam.autoScore} / ${exam.totalQuestions || 20} Points</div>
+                    </div>
+                </div>`;
+            } else if (isGraded) {
                 scoreBlock = `<div style="display: flex; gap: 20px; align-items: center;">
                     <div style="text-align: center;">
                         <div style="font-size: 0.75rem; color: var(--text-muted);">MCQ</div>
-                        <div style="font-weight: 700;">${exam.autoScore}</div>
+                        <div style="font-weight: 700; color: #fff;">${exam.autoScore}</div>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 0.75rem; color: var(--text-muted);">Desc</div>
-                        <div style="font-weight: 700;">${exam.manualScore}</div>
+                        <div style="font-weight: 700; color: #fff;">${exam.manualScore}</div>
                     </div>
-                    <div style="text-align: center; padding: 5px 15px; background: rgba(99,102,241,0.15); border-radius: 20px; border: 1px solid rgba(99,102,241,0.3);">
+                    <div style="text-align: center; padding: 5px 15px; background: rgba(99,102,241,0.2); border-radius: 20px; border: 1px solid rgba(99,102,241,0.4);">
                         <div style="font-size: 0.75rem; color: var(--text-muted);">Total</div>
                         <div style="font-weight: 800; color: #818cf8;">${exam.totalScore} / ${exam.totalQuestions}</div>
                     </div>
                 </div>`;
             } else {
-                scoreBlock = `<span style="padding: 4px 10px; background: rgba(234,179,8,0.1); border: 1px solid rgba(234,179,8,0.3); color: #facc15; border-radius: 12px; font-size: 0.8rem;">Pending Review</span>`;
+                scoreBlock = `<span style="padding: 4px 10px; background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.4); color: #facc15; border-radius: 12px; font-size: 0.8rem;">Pending Review</span>`;
             }
             
             html += `
-                <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; transition: all 0.3s;"
-                     onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='var(--primary)'"
-                     onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='var(--glass-border)'">
+                <div style="background: #1e293b !important; border: 1px solid #334155; border-radius: 14px; padding: 18px 22px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: all 0.3s;"
+                     onmouseover="this.style.background='#26354a !important'; this.style.borderColor='#6366f1'"
+                     onmouseout="this.style.background='#1e293b !important'; this.style.borderColor='#334155'">
                     
                     <div>
-                        <div style="font-size: 1.1rem; font-weight: 600; color: white; margin-bottom: 4px;">${exam.testedProduct || 'General'}</div>
-                        <div style="font-size: 0.8rem; color: var(--text-muted);">Submitted: ${dStr}</div>
+                        <div style="font-size: 1.15rem; font-weight: 700; color: white; margin-bottom: 4px;">${prodName}</div>
+                        <div style="font-size: 0.82rem; color: #94a3b8; font-weight: 500;">Submitted: ${dStr}</div>
                     </div>
                     
                     ${scoreBlock}
                     
-                    <button class="btn btn-outline btn-sm" style="margin-left: 20px;" onclick="openReviewModal('${exam._id}')">View Details</button>
+                    <button class="btn btn-sm" style="margin-left: 20px; background: #6366f1; border: 1px solid #818cf8; color: #fff; font-weight: 600; padding: 8px 18px; border-radius: 10px; box-shadow: 0 2px 10px rgba(99,102,241,0.3);" onclick="openReviewModal('${exam._id}')">View Details</button>
                 </div>
             `;
         });
@@ -2791,35 +2812,103 @@ function openReviewModal(examId) {
     const exam = myScoresData.find(e => e._id === examId);
     if (!exam) return;
     
-    document.getElementById('reviewExamProduct').innerText = exam.testedProduct || 'General';
-    document.getElementById('reviewMcqScore').innerText = exam.autoScore;
-    document.getElementById('reviewDescScore').innerText = exam.status === 'graded' ? exam.manualScore : 'Pending';
+    const prodName = exam.testedProduct || 'General';
+    const isPsychometric = prodName.toLowerCase().includes('psychometric') || prodName.toLowerCase().includes('phase 2');
+    const isRapid = prodName.toLowerCase().includes('rapid') || prodName.toLowerCase().includes('phase 1');
+    
+    document.getElementById('reviewExamProduct').innerText = prodName;
+    
+    const mcqWrap = document.getElementById('reviewMcqScore')?.parentElement;
+    const descWrap = document.getElementById('reviewDescScore')?.parentElement;
+    
+    if (isPsychometric) {
+        if (mcqWrap) { mcqWrap.style.display = 'block'; mcqWrap.querySelector('span').innerText = 'Mindset Index'; document.getElementById('reviewMcqScore').innerText = `${exam.autoScore}%`; }
+        if (descWrap) { descWrap.style.display = 'block'; descWrap.querySelector('span').innerText = 'Archetype Badge'; document.getElementById('reviewDescScore').innerText = exam.answers?.['Executive Archetype Badge'] || '🌟 Scientific Strategist'; }
+    } else if (isRapid) {
+        if (mcqWrap) { mcqWrap.style.display = 'block'; mcqWrap.querySelector('span').innerText = 'Rapid Fire Score'; document.getElementById('reviewMcqScore').innerText = `${exam.autoScore} / ${exam.totalQuestions || 20} Points`; }
+        if (descWrap) { descWrap.style.display = 'none'; }
+    } else {
+        if (mcqWrap) { mcqWrap.style.display = 'block'; mcqWrap.querySelector('span').innerText = 'MCQ Score'; document.getElementById('reviewMcqScore').innerText = exam.autoScore; }
+        if (descWrap) { descWrap.style.display = 'block'; descWrap.querySelector('span').innerText = 'Descriptive Score'; document.getElementById('reviewDescScore').innerText = exam.status === 'graded' ? exam.manualScore : 'Pending'; }
+    }
     
     const list = document.getElementById('reviewExamAnswersList');
     list.innerHTML = '';
     
-    // Display all answers (MCQ and Desc)
+    if (isPsychometric && exam.answers) {
+        const radarBox = document.createElement('div');
+        radarBox.style.background = '#18132e';
+        radarBox.style.border = '1px solid #6b21a8';
+        radarBox.style.borderRadius = '14px';
+        radarBox.style.padding = '18px';
+        radarBox.style.marginBottom = '18px';
+        
+        let radarHtml = `<h4 style="color: #ffffff; font-size: 1.05rem; font-weight: 700; margin: 0 0 14px 0;">📊 6-Dimension Competency Radar Breakdown</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px;">`;
+        
+        const dims = [
+            'Clinical Integrity & Ethics',
+            'Resilience & Grit Under Pressure',
+            'Empathy & Relationship Building',
+            'Autonomy & Self-Motivation',
+            'Scientific Adaptability',
+            'Collaborative Communication'
+        ];
+        
+        dims.forEach(dim => {
+            const valStr = exam.answers[dim] || '85%';
+            const num = parseInt(valStr) || 85;
+            radarHtml += `<div style="background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: #cbd5e1; font-size: 0.85rem; font-weight: 600;">${dim}</span>
+                    <span style="color: #d8b4fe; font-weight: 800; font-size: 0.95rem;">${num}%</span>
+                </div>
+                <div style="width: 100%; height: 6px; background: #0f172a; border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${num}%; height: 100%; background: linear-gradient(90deg, #a855f7, #ec4899); border-radius: 3px;"></div>
+                </div>
+            </div>`;
+        });
+        radarHtml += `</div>`;
+        
+        if (exam.answers['Coaching & Mentorship Tips']) {
+            radarHtml += `<h4 style="color: #ffffff; font-size: 1rem; font-weight: 700; margin: 10px 0 8px 0;">💡 Coaching & Mentorship Tips</h4>
+            <div style="background: #131929; border-left: 4px solid #a855f7; padding: 12px 16px; border-radius: 8px; color: #e2e8f0; font-size: 0.9rem; line-height: 1.6;">
+                ${exam.answers['Coaching & Mentorship Tips'].split(' | ').map(t => `<div style="margin-bottom: 6px;">• ${t}</div>`).join('')}
+            </div>`;
+        }
+        radarBox.innerHTML = radarHtml;
+        list.appendChild(radarBox);
+    }
+    
+    // Display all answers / questions
+    let foundAnyQ = false;
     for (const [qId, ans] of Object.entries(exam.answers || {})) {
-        const q = myScoresQuestions.find(qu => qu._id === qId);
+        if (['Overall Readiness Index', 'Executive Archetype Badge', 'Clinical Integrity & Ethics', 'Resilience & Grit Under Pressure', 'Empathy & Relationship Building', 'Autonomy & Self-Motivation', 'Scientific Adaptability', 'Collaborative Communication', 'Coaching & Mentorship Tips'].includes(qId)) {
+            continue;
+        }
+        
+        const q = myScoresQuestions.find(qu => qu._id === qId || qu.text === qId);
         if (q) {
+            foundAnyQ = true;
             const wrap = document.createElement('div');
-            wrap.style.background = 'rgba(0,0,0,0.2)';
-            wrap.style.padding = '15px';
-            wrap.style.borderRadius = '8px';
-            wrap.style.border = '1px solid var(--glass-border)';
+            wrap.style.background = '#1e293b';
+            wrap.style.padding = '16px';
+            wrap.style.borderRadius = '12px';
+            wrap.style.border = '1px solid #334155';
+            wrap.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
             
             let isCorrectHtml = '';
             let ansText = '';
             
-            if (q.questionType === 'mcq') {
-                const isCorrect = Number(ans) === q.correctAnswerIndex;
+            if (q.questionType === 'mcq' || q.options || q.weights) {
+                const isCorrect = Number(ans) === q.correctAnswerIndex || (q.weights && q.weights[Number(ans)] === 5);
                 isCorrectHtml = isCorrect 
-                    ? '<span style="color: #4ade80; font-size: 0.8rem; font-weight: bold; margin-left: 10px;">[CORRECT]</span>'
-                    : '<span style="color: #f87171; font-size: 0.8rem; font-weight: bold; margin-left: 10px;">[INCORRECT]</span>';
+                    ? '<span style="color: #4ade80; font-size: 0.8rem; font-weight: 700; background: rgba(74,222,128,0.15); padding: 4px 10px; border-radius: 6px; margin-left: 10px;">✓ CORRECT / IDEAL</span>'
+                    : '<span style="color: #f87171; font-size: 0.8rem; font-weight: 700; background: rgba(248,113,113,0.15); padding: 4px 10px; border-radius: 6px; margin-left: 10px;">✗ SUB-OPTIMAL</span>';
                 
-                ansText = q.options[Number(ans)] || 'Unknown';
+                ansText = (q.options && q.options[Number(ans)]) ? q.options[Number(ans)] : (typeof ans === 'string' ? ans : 'Option ' + (Number(ans) + 1));
             } else {
-                isCorrectHtml = '<span style="color: #60a5fa; font-size: 0.8rem; font-weight: bold; margin-left: 10px;">[DESCRIPTIVE]</span>';
+                isCorrectHtml = '<span style="color: #60a5fa; font-size: 0.8rem; font-weight: 700; background: rgba(96,165,250,0.15); padding: 4px 10px; border-radius: 6px; margin-left: 10px;">DESCRIPTIVE</span>';
                 if (typeof ans === 'object') {
                     ansText = Object.entries(ans).map(([k, v]) => `<strong>${k}:</strong> ${v}`).join('<br>');
                 } else {
@@ -2828,15 +2917,28 @@ function openReviewModal(examId) {
             }
             
             wrap.innerHTML = `
-                <div style="font-size: 0.95rem; color: var(--text-main); margin-bottom: 10px;">
-                    <strong>Q: ${q.text}</strong> ${isCorrectHtml}
+                <div style="font-size: 0.98rem; font-weight: 600; color: #f8fafc; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span>Q: ${q.text}</span> ${isCorrectHtml}
                 </div>
-                <div style="font-size: 0.9rem; color: #e2e8f0; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; border-left: 3px solid #6366f1;">
+                <div style="font-size: 0.92rem; color: #cbd5e1; background: #0f172a; padding: 12px 16px; border-radius: 8px; border-left: 4px solid #6366f1;">
+                    <span style="color: #94a3b8; font-size: 0.8rem; display: block; margin-bottom: 4px;">Selected Answer:</span>
                     ${ansText || '<em>No answer provided</em>'}
                 </div>
             `;
             list.appendChild(wrap);
         }
+    }
+    
+    if (!foundAnyQ && !isPsychometric) {
+        const noQ = document.createElement('div');
+        noQ.style.background = '#1e293b';
+        noQ.style.padding = '24px';
+        noQ.style.borderRadius = '12px';
+        noQ.style.border = '1px solid #334155';
+        noQ.style.textAlign = 'center';
+        noQ.style.color = '#94a3b8';
+        noQ.innerHTML = 'Individual question choices were not recorded for this historical test session.';
+        list.appendChild(noQ);
     }
     
     document.getElementById('reviewExamModal').classList.remove('hidden');

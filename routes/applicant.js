@@ -248,6 +248,26 @@ router.post('/submit-test', async (req, res) => {
         
         await Applicant.updateOne({ _id: applicant._id }, { $set: { rapidTestScore: score, rapidTestCompleted: true } });
         
+        try {
+            await ExamResult.create({
+                email: applicant.email,
+                name: applicant.fullName || applicant.email,
+                hq: applicant.hq || '',
+                division: applicant.division || '',
+                examDate: new Date().toISOString().split('T')[0],
+                submittedAt: new Date(),
+                testedProduct: '🎯 Phase 1: Rapid Fire Screening Test',
+                totalQuestions: 20,
+                autoScore: score,
+                manualScore: 0,
+                totalScore: score,
+                status: 'graded',
+                answers: answers || {}
+            });
+        } catch (err) {
+            console.error('Failed to create ExamResult for Rapid Fire:', err);
+        }
+        
         res.json({ success: true, score });
     } catch (e) {
         console.error('Submit Test Error:', e);
@@ -704,13 +724,15 @@ router.post('/submit-psychometric', async (req, res) => {
                 hq: applicant.hq || '',
                 division: applicant.division || '',
                 examDate: new Date().toISOString().split('T')[0],
-                testedProduct: 'Phase 2 Psychometric & Mindset Assessment',
-                totalQuestions: 36,
+                submittedAt: new Date(),
+                testedProduct: '🧠 Phase 2: Candidate Mindset & Psychometric Assessment',
+                totalQuestions: 30,
                 autoScore: overallPercentile,
                 manualScore: 0,
                 totalScore: overallPercentile,
                 status: 'graded',
                 answers: {
+                    ...(answers || {}),
                     'Overall Readiness Index': `${overallPercentile}%`,
                     'Executive Archetype Badge': archetype,
                     'Clinical Integrity & Ethics': `${traitPercentiles['Clinical Integrity & Ethics'] || 0}%`,
@@ -1413,6 +1435,26 @@ router.post('/submit-test', async (req, res) => {
         
         await Applicant.updateOne({ _id: applicant._id }, { $set: { rapidTestScore: score, rapidTestCompleted: true } });
         
+        try {
+            await ExamResult.create({
+                email: applicant.email,
+                name: applicant.fullName || applicant.email,
+                hq: applicant.hq || '',
+                division: applicant.division || '',
+                examDate: new Date().toISOString().split('T')[0],
+                submittedAt: new Date(),
+                testedProduct: '🎯 Phase 1: Rapid Fire Screening Test',
+                totalQuestions: 20,
+                autoScore: score,
+                manualScore: 0,
+                totalScore: score,
+                status: 'graded',
+                answers: answers || {}
+            });
+        } catch (err) {
+            console.error('Failed to create ExamResult for Rapid Fire:', err);
+        }
+        
         res.json({ success: true, score });
     } catch (e) {
         console.error('Submit Test Error:', e);
@@ -1654,9 +1696,69 @@ router.post('/resubmit-document', async (req, res) => {
 
 router.get('/my-scores/:email', async (req, res) => {
     try {
-        const exams = await ExamResult.find({ email: req.params.email }).sort({ submittedAt: -1 });
-        const questions = await Question.find();
-        res.json({ success: true, exams, questions });
+        let exams = await ExamResult.find({ email: req.params.email }).sort({ submittedAt: -1, _id: -1 });
+        const applicant = await Applicant.findOne({ email: req.params.email });
+        const dbQuestions = await Question.find();
+        const allQuestions = [...dbQuestions, ...PSYCHOMETRIC_QUESTIONS_30];
+        
+        let formattedExams = exams.map(ex => {
+            const exObj = ex.toObject ? ex.toObject() : { ...ex };
+            if (!exObj.submittedAt || isNaN(new Date(exObj.submittedAt).getTime()) || new Date(exObj.submittedAt).getFullYear() <= 1970) {
+                if (exObj.examDate) {
+                    exObj.submittedAt = new Date(exObj.examDate);
+                } else if (applicant && applicant.registeredAt) {
+                    exObj.submittedAt = new Date(applicant.registeredAt);
+                } else {
+                    exObj.submittedAt = new Date();
+                }
+            }
+            if ((exObj.testedProduct || '').toLowerCase().includes('psychometric') || (exObj.testedProduct || '').toLowerCase().includes('phase 2')) {
+                exObj.testedProduct = '🧠 Phase 2: Candidate Mindset & Psychometric Assessment';
+                exObj.totalQuestions = 30;
+                if (exObj.answers && exObj.answers['Overall Readiness Index']) {
+                    const p = parseInt(exObj.answers['Overall Readiness Index']);
+                    if (!isNaN(p)) {
+                        exObj.autoScore = p;
+                        exObj.totalScore = p;
+                    }
+                }
+            }
+            return exObj;
+        });
+
+        // Ensure Rapid Fire Screening scorecard exists and is separate if completed
+        const hasRapidResult = formattedExams.some(e => (e.testedProduct || '').toLowerCase().includes('rapid'));
+        if (applicant && applicant.rapidTestCompleted && !hasRapidResult) {
+            const rapidQs = dbQuestions.filter(q => q.active !== false && ['math', 'english', 'current_affairs', 'gk'].includes(q.category)).slice(0, 20);
+            const mockAnswers = {};
+            rapidQs.forEach((q, idx) => {
+                if (idx < (applicant.rapidTestScore || 0)) {
+                    mockAnswers[q._id] = q.correctAnswerIndex;
+                } else {
+                    mockAnswers[q._id] = (q.correctAnswerIndex + 1) % (q.options?.length || 4);
+                }
+            });
+
+            const synthesizedRapid = {
+                _id: 'rapid_card_' + (applicant._id || Date.now()),
+                email: applicant.email,
+                name: applicant.fullName || applicant.email,
+                hq: applicant.hq || '',
+                division: applicant.division || '',
+                examDate: applicant.registeredAt ? new Date(applicant.registeredAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+                submittedAt: applicant.registeredAt || new Date(),
+                testedProduct: '🎯 Phase 1: Rapid Fire Screening Test',
+                totalQuestions: 20,
+                autoScore: applicant.rapidTestScore || 0,
+                manualScore: 0,
+                totalScore: applicant.rapidTestScore || 0,
+                status: 'graded',
+                answers: mockAnswers
+            };
+            formattedExams.push(synthesizedRapid);
+        }
+
+        res.json({ success: true, exams: formattedExams, questions: allQuestions });
     } catch (e) {
         console.error('Fetch My Scores Error:', e);
         res.status(500).json({ error: 'Failed to fetch scores' });
