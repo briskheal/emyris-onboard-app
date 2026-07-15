@@ -265,9 +265,9 @@ app.get('/api/test-email', async (req, res) => {
 
 // --- RAPID TEST APIs ---
 
-// Serve React Admin Portal
-app.get(['/admin*'], (req, res) => {
-    res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+// Serve Emyris Admin Portal
+app.get(['/admin', '/admin/'], (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
 // Serve Original Applicant Portal (Catch-all)
@@ -275,8 +275,10 @@ app.use((req, res) => {
     if (req.url.startsWith('/api/')) {
         console.error(`[404] API route not found: ${req.method} ${req.url}`);
         res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
+    } else if (req.url.startsWith('/admin')) {
+        res.sendFile(path.join(__dirname, 'admin.html'));
     } else {
-        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
+        res.sendFile(path.join(__dirname, 'index.html'));
     }
 });
 
