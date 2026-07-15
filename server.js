@@ -270,9 +270,9 @@ app.get('/api/test-email', async (req, res) => {
 
 // --- RAPID TEST APIs ---
 
-// Serve Emyris Admin Portal
+// Serve Emyris Admin Portal (React SPA)
 app.get(['/admin', '/admin/'], (req, res) => {
-    res.sendFile(path.join(__dirname, 'admin.html'));
+    res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
 });
 
 // Serve Emyris Applicant Portal & Admin Catch-all
@@ -289,7 +289,7 @@ app.use((req, res) => {
                 return res.sendFile(filePath);
             }
         }
-        res.sendFile(path.join(__dirname, 'admin.html'));
+        res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
     } else {
         const urlWithoutQuery = req.url.split('?')[0];
         if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {

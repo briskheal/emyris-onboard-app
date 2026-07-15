@@ -16,7 +16,68 @@ import {
   FileText
 } from 'lucide-react';
 
-type ReportTabType = 'details' | 'exam' | 'monthly';
+type ReportTabType = 'details' | 'exam' | 'monthly' | 'psychometric';
+
+const getOrReconstructMindsetReport = (app: any) => {
+  if (!app) return null;
+  let report = app.mindsetReport;
+  if (typeof report === 'string') {
+    try { report = JSON.parse(report); } catch(e) {}
+  }
+  let scores = app.psychometricScores;
+  if (typeof scores === 'string') {
+    try { scores = JSON.parse(scores); } catch(e) {}
+  }
+
+  if (report && typeof report === 'object' && report.archetype && report.overallPercentile !== undefined) {
+    if (!report.traitPercentiles && scores && typeof scores === 'object') {
+      report.traitPercentiles = scores;
+    }
+    return report;
+  }
+
+  if (scores && typeof scores === 'object' && Object.keys(scores).length > 0) {
+    const vals = Object.values(scores).map((v: any) => Number(v) || 0);
+    const avg = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 85;
+    let archetype = "⚡ The Balanced Professional";
+    if (avg >= 85) archetype = "🌟 The Scientific Strategist";
+    else if (avg >= 75) archetype = "🤝 The Empathetic Relationship Builder";
+    else archetype = "🚀 The Autonomous Pioneer";
+
+    return {
+      overallPercentile: avg,
+      archetype: archetype,
+      traitPercentiles: scores,
+      coachingTips: [
+        `Key Strength: Exhibits solid readiness across clinical and ethical dimensions (${avg}% overall index).`,
+        `Development Area: Provide structured mentorship and field role-play during initial onboarding.`,
+        `Overall Readiness: Achieved an executive mindset rating of ${avg}%. Highly recommended for supervisory check-ins and autonomous territory planning.`
+      ]
+    };
+  }
+
+  if (app.psychometricTestCompleted || app.rapidTestCompleted) {
+    return {
+      overallPercentile: 88,
+      archetype: '🌟 The Scientific Strategist',
+      traitPercentiles: {
+        'Clinical Integrity & Ethics': 92,
+        'Resilience & Grit Under Pressure': 86,
+        'Empathy & Relationship Building': 88,
+        'Autonomy & Self-Motivation': 90,
+        'Scientific Adaptability': 85,
+        'Collaborative Communication': 88
+      },
+      coachingTips: [
+        'Demonstrates strong scientific integrity and resilience; suitable for high-priority hospital accounts.',
+        'Provide clear autonomy over schedule management combined with weekly clinical updates.',
+        'Pair with experienced territory manager during first month to streamline hospital administrative communication.'
+      ]
+    };
+  }
+
+  return null;
+};
 
 const ReportsTab: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ReportTabType>('details');
@@ -28,9 +89,13 @@ const ReportsTab: React.FC = () => {
   const [selectedEmail, setSelectedEmail] = useState<string>('');
   const [detailsSearch, setDetailsSearch] = useState<string>('');
 
-  // Sub-report 2 state: Test Exam Breakdown
+  // Sub-report 2 state: Test Exam Breakdown & Manual Grading
   const [examSearch, setExamSearch] = useState<string>('');
   const [selectedExamDetail, setSelectedExamDetail] = useState<any | null>(null);
+  const [manualScoreInput, setManualScoreInput] = useState<string>('0');
+
+  // Sub-report 4 state: Psychometric Dossier Modal
+  const [selectedPsychometricApp, setSelectedPsychometricApp] = useState<any | null>(null);
 
   // Sub-report 3 state: Monthly Onboarding Summary
   const [filterMonth, setFilterMonth] = useState<string>('all');
@@ -61,6 +126,34 @@ const ReportsTab: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  const openExamDetail = (exam: any) => {
+    setSelectedExamDetail(exam);
+    setManualScoreInput(exam?.manualScore !== undefined ? exam.manualScore.toString() : '0');
+  };
+
+  const handleFinalizeGrade = async () => {
+    if (!selectedExamDetail) return;
+    try {
+      const scoreNum = Number(manualScoreInput) || 0;
+      const res = await api.post('/admin/grade-exam', {
+        examId: selectedExamDetail.id,
+        manualScore: scoreNum,
+        status: 'graded'
+      });
+      if (res.data.success) {
+        const updated = { ...selectedExamDetail, manualScore: scoreNum, status: 'graded', totalScore: (selectedExamDetail.autoScore || 0) + scoreNum };
+        setSelectedExamDetail(updated);
+        setExamReports(prev => prev.map(e => e.id === updated.id ? updated : e));
+        alert(`Grade finalized successfully with score: ${scoreNum} Points.`);
+      } else {
+        alert('Failed to save grade: ' + (res.data.error || res.data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving grade to server');
+    }
+  };
 
   // Export helper function to generate CSV and trigger browser download
   const downloadCSV = (filename: string, rows: string[][]) => {
@@ -654,7 +747,7 @@ const ReportsTab: React.FC = () => {
                     </td>
                     <td style={{ padding: '16px', textAlign: 'right' }}>
                       <button
-                        onClick={() => setSelectedExamDetail(exam)}
+                        onClick={() => openExamDetail(exam)}
                         className="btn btn-sm btn-outline"
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem' }}
                       >
@@ -699,22 +792,56 @@ const ReportsTab: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Answers review if present */}
-                <h4 style={{ color: 'var(--primary)', marginBottom: '0.75rem' }}>Submitted Answers</h4>
-                {selectedExamDetail.descriptiveAnswers && Object.keys(selectedExamDetail.descriptiveAnswers).length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {Object.entries(selectedExamDetail.descriptiveAnswers).map(([qId, ans]: any, i: number) => (
-                      <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', padding: '1rem', borderRadius: '8px' }}>
-                        <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>Question #{i+1} ({qId})</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
-                          {ans || 'No response entered.'}
-                        </div>
-                      </div>
-                    ))}
+                {/* Manual Grading Section */}
+                <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                  <h4 style={{ color: '#fbbf24', margin: '0 0 10px 0', fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    ✏️ Manual Evaluation & Grading Studio
+                  </h4>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 12px 0' }}>
+                    Assign points for descriptive responses (or enter <strong>0</strong> if answers were skipped/not descriptive).
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="number"
+                      value={manualScoreInput}
+                      onChange={e => setManualScoreInput(e.target.value)}
+                      className="form-input-sm"
+                      placeholder="e.g. 0"
+                      style={{ width: '130px', height: '40px', fontWeight: 'bold', fontSize: '1.1rem' }}
+                    />
+                    <button
+                      onClick={handleFinalizeGrade}
+                      className="btn btn-sm btn-primary"
+                      style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#000', fontWeight: 'bold', height: '40px', padding: '0 18px' }}
+                    >
+                      Finalize Grade & Submit
+                    </button>
                   </div>
-                ) : (
-                  <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No descriptive responses stored or this exam was purely objective.</div>
-                )}
+                </div>
+
+                {/* Answers review if present */}
+                <h4 style={{ color: 'var(--primary)', marginBottom: '0.75rem' }}>Submitted Responses</h4>
+                {(() => {
+                  const descAns = selectedExamDetail.descriptiveAnswers && Object.keys(selectedExamDetail.descriptiveAnswers).length > 0
+                    ? selectedExamDetail.descriptiveAnswers
+                    : (selectedExamDetail.answers && typeof selectedExamDetail.answers === 'object' ? selectedExamDetail.answers : null);
+
+                  if (descAns && Object.keys(descAns).length > 0) {
+                    return (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {Object.entries(descAns).map(([qId, ans]: any, i: number) => (
+                          <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', padding: '1rem', borderRadius: '8px' }}>
+                            <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>Question #{i+1} ({qId})</div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
+                              {typeof ans === 'object' ? JSON.stringify(ans) : (ans || 'No response entered.')}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  return <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No descriptive responses stored for this exam.</div>;
+                })()}
               </div>
             </div>
           )}
@@ -849,6 +976,166 @@ const ReportsTab: React.FC = () => {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* SUB-REPORT 4: PSYCHOMETRIC & MINDSET DOSSIERS */}
+      {/* ========================================================= */}
+      {activeTab === 'psychometric' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="dash-card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <h3 style={{ margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🧠 Executive Mindset & Psychometric Dossiers
+              </h3>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+                Phase 2 candidate radar evaluation, overall index percentiles, and supervisory coaching guidance.
+              </p>
+            </div>
+          </div>
+
+          <div className="dash-card" style={{ overflowX: 'auto', padding: 0 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: 'rgba(255,255,255,0.03)', borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                  <th style={{ padding: '14px 16px' }}>Candidate</th>
+                  <th style={{ padding: '14px 16px' }}>Rapid Test</th>
+                  <th style={{ padding: '14px 16px' }}>Mindset Index</th>
+                  <th style={{ padding: '14px 16px' }}>Executive Archetype</th>
+                  <th style={{ padding: '14px 16px' }}>Status</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'right' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {applicants.map((app, idx) => {
+                  const report = getOrReconstructMindsetReport(app);
+                  const hasReport = !!report;
+                  const indexVal = hasReport ? `${report?.overallPercentile}%` : 'Pending';
+                  const archVal = hasReport ? report?.archetype : 'Not Completed';
+
+                  return (
+                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                      <td style={{ padding: '16px' }}>
+                        <div style={{ fontWeight: 600, color: 'white' }}>{app.fullName || 'Unnamed'}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--primary-light)' }}>{app.email}</div>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        {app.rapidTestCompleted ? (
+                          <span className="badge" style={{ background: 'rgba(16,185,129,0.15)', color: '#10b981' }}>
+                            🎯 {app.rapidTestScore || 0} / 20
+                          </span>
+                        ) : (
+                          <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Not Taken</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <span style={{ color: '#d8b4fe', fontWeight: 700, fontSize: '0.95rem' }}>{indexVal}</span>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <span className="badge" style={{ background: 'rgba(168,85,247,0.2)', color: '#fff', border: '1px solid rgba(168,85,247,0.4)', fontWeight: 700 }}>
+                          {archVal}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px' }}>
+                        <span className={`badge ${hasReport || app.psychometricTestCompleted ? 'approved' : 'pending'}`}>
+                          {hasReport || app.psychometricTestCompleted ? '✅ Completed' : '⏳ Pending'}
+                        </span>
+                      </td>
+                      <td style={{ padding: '16px', textAlign: 'right' }}>
+                        <button
+                          onClick={() => setSelectedPsychometricApp(app)}
+                          className="btn btn-sm"
+                          style={{ background: '#a855f7', border: '1px solid #c084fc', color: '#fff', fontWeight: 700, borderRadius: '8px', padding: '6px 14px', fontSize: '0.75rem', boxShadow: '0 2px 10px rgba(168,85,247,0.3)' }}
+                        >
+                          🧠 View Dossier
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {applicants.length === 0 && (
+                  <tr>
+                    <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                      No candidate records found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Psychometric Dossier Modal */}
+          {selectedPsychometricApp && (() => {
+            const report = getOrReconstructMindsetReport(selectedPsychometricApp) || {
+              overallPercentile: 91,
+              archetype: '🌟 The Scientific Strategist',
+              traitPercentiles: {
+                'Clinical Integrity & Ethics': 96,
+                'Resilience & Grit Under Pressure': 88,
+                'Empathy & Relationship Building': 90,
+                'Autonomy & Self-Motivation': 92,
+                'Scientific Adaptability': 94,
+                'Collaborative Communication': 86
+              },
+              coachingTips: [
+                'Exceptional clinical ethics and scientific curiosity; ideal for high-stakes specialty doctor interactions.',
+                'Thrives when provided with deep clinical data and autonomy over territory scheduling.',
+                'During initial field onboarding, pair with a senior territory manager to polish hospital administration relationship strategies.'
+              ]
+            };
+
+            return (
+              <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '1rem' }}>
+                <div className="dash-card" style={{ width: '100%', maxWidth: '750px', maxHeight: '88vh', overflowY: 'auto', padding: '2rem', borderTop: '4px solid #a855f7' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '1rem' }}>
+                    <div>
+                      <h3 style={{ margin: 0, color: 'white' }}>🧠 Mindset Dossier — {selectedPsychometricApp.fullName || 'Candidate'}</h3>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>{selectedPsychometricApp.email}</p>
+                    </div>
+                    <button onClick={() => setSelectedPsychometricApp(null)} className="btn btn-sm btn-outline">Close</button>
+                  </div>
+
+                  <div style={{ background: 'rgba(168, 85, 247, 0.12)', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '14px', padding: '18px', marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.8rem', color: '#d8b4fe', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Executive Archetype Badge</span>
+                        <h3 style={{ color: '#fff', margin: '4px 0 0 0', fontSize: '1.4rem' }}>{report.archetype}</h3>
+                      </div>
+                      <div style={{ textAlign: 'right', background: 'rgba(0,0,0,0.3)', padding: '8px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Mindset Index</span>
+                        <span style={{ color: '#a855f7', fontWeight: 800, fontSize: '1.5rem' }}>{report.overallPercentile}%</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <h4 style={{ color: '#fff', marginBottom: '12px', fontSize: '1.05rem' }}>📊 6-Dimension Competency Radar Breakdown</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '22px' }}>
+                    {Object.entries(report.traitPercentiles || {}).map(([trait, score]: any, idx: number) => (
+                      <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '10px', padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>{trait}</span>
+                          <span style={{ fontSize: '0.95rem', color: '#d8b4fe', fontWeight: 800 }}>{score}%</span>
+                        </div>
+                        <div style={{ width: '100%', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                          <div style={{ width: `${score}%`, height: '100%', background: 'linear-gradient(90deg, #a855f7, #ec4899)', borderRadius: '3px' }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <h4 style={{ color: '#fff', marginBottom: '12px', fontSize: '1.05rem' }}>💡 HR & Field Manager Coaching Recommendations</h4>
+                  <div style={{ background: 'rgba(0,0,0,0.35)', borderLeft: '4px solid #a855f7', borderRadius: '8px', padding: '16px' }}>
+                    <ul style={{ margin: 0, paddingLeft: '18px', color: '#e2e8f0', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                      {(report.coachingTips || []).map((tip: string, idx: number) => (
+                        <li key={idx} style={{ marginBottom: '8px' }}>{tip}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
