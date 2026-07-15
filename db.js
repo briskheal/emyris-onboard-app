@@ -43,14 +43,21 @@ const ExamResult = new MongooseAdapter(OnboardExamResult);
 // Database Sync and Seed Function
 async function syncDatabase() {
     try {
+        // Run standard sync first so any new tables (like onboard_exam_results) are guaranteed to be created
+        await sequelize.sync();
         try {
             await sequelize.sync({ alter: true });
         } catch (alterErr) {
             console.warn('⚠️ Sync alter warning (falling back to standard sync):', alterErr.message);
-            await sequelize.sync();
         }
-        // Safely ensure new columns exist in SQLite if alter:true skipped due to table backup conflicts
-        const queries = [
+        
+        // Safely ensure new columns exist in SQLite or Postgres if alter:true skipped
+        const isPostgres = sequelize.getDialect() === 'postgres';
+        const queries = isPostgres ? [
+            'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricTestCompleted" BOOLEAN DEFAULT false;',
+            'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricScores" TEXT;',
+            'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "mindsetReport" TEXT;'
+        ] : [
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricTestCompleted BOOLEAN DEFAULT 0;',
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricScores TEXT;',
             'ALTER TABLE onboard_applicants ADD COLUMN mindsetReport TEXT;'
