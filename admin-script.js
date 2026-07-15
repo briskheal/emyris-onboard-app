@@ -605,7 +605,7 @@ async function handleAdminLogin() {
 
     try {
         lockUI("🔐 Authenticating Admin...");
-        const res = await fetch('/api/admin-login', {
+        const res = await fetch('/api/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
@@ -4552,7 +4552,7 @@ async function verifyMaintenanceAuth() {
 
     try {
         lockUI("🛡️ Verifying Identity...");
-        const res = await fetch('/api/admin-login', {
+        const res = await fetch('/api/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })

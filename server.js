@@ -118,6 +118,11 @@ app.post('/api/save-detailing-scripts', (req, res, next) => {
     adminRouter(req, res, next);
 });
 
+app.post('/api/admin-login', (req, res, next) => {
+    req.url = '/login';
+    adminRouter(req, res, next);
+});
+
 app.post('/api/applicant-login', (req, res, next) => {
     req.url = '/applicant-login';
     authRouter(req, res, next);
