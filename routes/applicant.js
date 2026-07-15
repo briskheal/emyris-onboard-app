@@ -194,8 +194,15 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.get('/test-questions', async (req, res) => {
+router.all(['/test-questions', '/start-rapid-fire', '/start-rapid-fire/:email'], async (req, res) => {
     try {
+        const email = req.params.email || req.query.email || req.body?.email;
+        if (email) {
+            const applicant = await Applicant.findOne({ email });
+            if (applicant && applicant.rapidTestCompleted) {
+                return res.status(400).json({ success: false, error: 'Rapid Fire screening test is already completed.' });
+            }
+        }
         const company = await Company.findOne();
         let questions = await Question.find({ active: true });
         if (company && company.activeExamProduct && company.activeExamProduct !== 'General') {
@@ -219,14 +226,14 @@ router.get('/test-questions', async (req, res) => {
         }));
         
         // Shuffle the final 20 questions so they aren't grouped by category
-        res.json({ success: true, rapidTime: company.rapidTestTime || 25, questions: safeQuestions.sort(() => 0.5 - Math.random()) });
+        res.json({ success: true, rapidTime: company?.rapidTestTime || 25, timeLimitMinutes: company?.rapidTestTime || 25, questions: safeQuestions.sort(() => 0.5 - Math.random()) });
     } catch (e) {
         console.error('Fetch Test Error:', e);
         res.status(500).json({ error: 'Failed to fetch test' });
     }
 });
 
-router.post('/submit-test', async (req, res) => {
+router.post(['/submit-test', '/submit-rapid-fire'], async (req, res) => {
     try {
         const { email, answers } = req.body;
         const applicant = await Applicant.findOne({ email });
@@ -620,8 +627,15 @@ const PSYCHOMETRIC_QUESTIONS_30 = [
     }
 ];
 
-router.get('/psychometric-questions', async (req, res) => {
+router.all('/psychometric-questions', async (req, res) => {
     try {
+        const email = req.params.email || req.query.email || req.body?.email;
+        if (email) {
+            const applicant = await Applicant.findOne({ email });
+            if (applicant && applicant.psychometricTestCompleted) {
+                return res.status(400).json({ success: false, error: 'Psychometric assessment is already completed.' });
+            }
+        }
         // Return all 30 questions randomized
         const safeQuestions = PSYCHOMETRIC_QUESTIONS_30.map(q => ({
             _id: q._id,

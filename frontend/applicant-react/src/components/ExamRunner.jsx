@@ -21,11 +21,11 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
             setError(null);
             try {
                 if (isRapidFire) {
-                    const res = await fetch(`/api/applicant/start-rapid-fire/${applicant.email}`);
+                    const res = await fetch(`/api/applicant/test-questions?email=${encodeURIComponent(applicant.email)}`);
                     const data = await res.json();
                     if (data.success && Array.isArray(data.questions)) {
                         setQuestions(data.questions);
-                        const timeLimitSec = (data.timeLimitMinutes || 20) * 60;
+                        const timeLimitSec = (data.timeLimitMinutes || data.rapidTime || 20) * 60;
                         setMcqTimeLimit(timeLimitSec);
                         setTimeLeft(timeLimitSec);
                     } else {
@@ -139,14 +139,15 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
         });
 
         try {
-            const endpoint = isRapidFire ? '/api/applicant/submit-rapid-fire' : '/api/applicant/submit-test';
+            const endpoint = isRapidFire ? '/api/applicant/submit-test' : '/api/applicant/submit-exam';
             const bodyData = isRapidFire
                 ? { email: applicant.email, answers: payloadAnswers }
                 : {
                     email: applicant.email,
                     testedProduct: examData?.targetProduct || 'Assigned Assessment',
                     answers: payloadAnswers,
-                    mcqScore: calculateLocalAutoScore()
+                    totalQuestions: totalQs,
+                    mcqScore: typeof calculateLocalAutoScore === 'function' ? calculateLocalAutoScore() : 0
                 };
 
             const res = await fetch(endpoint, {

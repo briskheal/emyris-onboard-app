@@ -16,7 +16,7 @@ const PsychometricAssessment = ({ applicant, onComplete, onCancel }) => {
             setLoading(true);
             setError(null);
             try {
-                const res = await fetch('/api/applicant/psychometric-questions', {
+                const res = await fetch(`/api/applicant/psychometric-questions?email=${encodeURIComponent(applicant.email)}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email: applicant.email })
