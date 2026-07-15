@@ -17,15 +17,23 @@ async function saveBase64ToFile(email, category, base64Data) {
         return base64Data;
     }
     try {
-        const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (!matches) return base64Data;
-        const mimeType = matches[1].toLowerCase();
-        let ext = matches[1].split('/')[1] || 'bin';
+        const splitIdx = base64Data.indexOf(';base64,');
+        if (splitIdx === -1) return base64Data;
+        
+        const mimeType = base64Data.substring(5, splitIdx).toLowerCase();
+        let ext = mimeType.split('/')[1] || 'bin';
+        
+        // Handle common long extension names
+        if (mimeType.includes('wordprocessingml')) ext = 'docx';
+        if (mimeType.includes('spreadsheetml')) ext = 'xlsx';
+        if (mimeType.includes('presentationml')) ext = 'pptx';
+        
         const dir = path.join(__dirname, '..', 'uploads', email.replace('@', '_'));
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
         const safeCategory = category.replace(/[\/\\]/g, '_');
         
-        let buffer = Buffer.from(matches[2], 'base64');
+        const base64Content = base64Data.substring(splitIdx + 8);
+        let buffer = Buffer.from(base64Content, 'base64');
         
         // Convert raster images (png, jpeg, jpg, webp, bmp, tiff) to optimized WebP format
         if (mimeType.startsWith('image/') && !mimeType.includes('svg') && !mimeType.includes('icon')) {
