@@ -176,8 +176,8 @@ const AdminPanel: React.FC = () => {
           </div>
         )}
         {activeView === 'pending' && <PendingExams />}
-        {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" />}
-        {activeView === 'reports' && <ReportsTab initialTab="details" />}
+        {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" isStandalone={true} />}
+        {activeView === 'reports' && <ReportsTab initialTab="details" isStandalone={false} />}
       </main>
       </div>
     </div>

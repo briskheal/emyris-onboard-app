@@ -81,9 +81,10 @@ const getOrReconstructMindsetReport = (app: any) => {
 
 interface ReportsTabProps {
   initialTab?: ReportTabType;
+  isStandalone?: boolean;
 }
 
-const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details' }) => {
+const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStandalone = false }) => {
   const [activeTab, setActiveTab] = useState<ReportTabType>(initialTab);
   const [applicants, setApplicants] = useState<any[]>([]);
   const [examReports, setExamReports] = useState<any[]>([]);
@@ -386,42 +387,56 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details' }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Reports Header & Sub-Nav */}
-      <div className="dash-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.95))', border: '1px solid var(--glass-border)' }}>
-        <div>
-          <h2 style={{ fontSize: '1.4rem', color: 'white', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
-            <FileSpreadsheet className="text-primary" size={24} style={{ color: '#10b981' }} />
-            Reports & Analytics Hub
-          </h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
-            Generate 360° candidate dossiers, exam score breakdowns, and monthly onboarding summaries.
-          </p>
+      {isStandalone ? (
+        <div className="dash-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, #1e1b4b, #312e81)', border: '1px solid #6b21a8' }}>
+          <div>
+            <h2 style={{ fontSize: '1.4rem', color: 'white', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <Award className="text-primary" size={24} style={{ color: '#c084fc' }} />
+              Executive Mindset & Psychometric Dossiers
+            </h2>
+            <p style={{ color: '#d8b4fe', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+              Inspect candidate Executive Archetypes (`🌟 The Scientific Strategist`), Rapid Test scores (/20), Mindset Index (%), and 6-Dimension Competency Radars.
+            </p>
+          </div>
         </div>
+      ) : (
+        <div className="dash-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, rgba(15,23,42,0.9), rgba(30,41,59,0.95))', border: '1px solid var(--glass-border)' }}>
+          <div>
+            <h2 style={{ fontSize: '1.4rem', color: 'white', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+              <FileSpreadsheet className="text-primary" size={24} style={{ color: '#10b981' }} />
+              Reports & Analytics Hub
+            </h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: '4px 0 0 0' }}>
+              Generate 360° candidate dossiers, exam score breakdowns, and monthly onboarding summaries.
+            </p>
+          </div>
 
-        {/* Sub-tabs buttons */}
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-          <button
-            onClick={() => setActiveTab('details')}
-            className={`btn btn-sm ${activeTab === 'details' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'details' ? 'none' : '1px solid transparent' }}
-          >
-            <UserCheck size={15} /> 1. Candidate Complete Profile
-          </button>
-          <button
-            onClick={() => setActiveTab('exam')}
-            className={`btn btn-sm ${activeTab === 'exam' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'exam' ? 'none' : '1px solid transparent' }}
-          >
-            <Award size={15} /> 2. Test Exam Report
-          </button>
-          <button
-            onClick={() => setActiveTab('monthly')}
-            className={`btn btn-sm ${activeTab === 'monthly' ? 'btn-primary' : 'btn-outline'}`}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'monthly' ? 'none' : '1px solid transparent' }}
-          >
-            <Calendar size={15} /> 3. Monthly Onboarding Summary
-          </button>
+          {/* Sub-tabs buttons */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', background: 'rgba(0,0,0,0.3)', padding: '6px', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`btn btn-sm ${activeTab === 'details' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'details' ? 'none' : '1px solid transparent' }}
+            >
+              <UserCheck size={15} /> 1. Candidate Complete Profile
+            </button>
+            <button
+              onClick={() => setActiveTab('exam')}
+              className={`btn btn-sm ${activeTab === 'exam' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'exam' ? 'none' : '1px solid transparent' }}
+            >
+              <Award size={15} /> 2. Test Exam Report
+            </button>
+            <button
+              onClick={() => setActiveTab('monthly')}
+              className={`btn btn-sm ${activeTab === 'monthly' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'monthly' ? 'none' : '1px solid transparent' }}
+            >
+              <Calendar size={15} /> 3. Monthly Onboarding Summary
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ========================================================= */}
       {/* SUB-REPORT 1: APPLICANT COMPLETE DETAILS REPORT */}
