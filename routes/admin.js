@@ -665,12 +665,13 @@ router.get('/applicants', async (req, res) => {
         }
 
         // Optimization: Exclude Large Document Data from the Main List
+        // Optimization: Exclude Large Document & Report Data from the Main List to ensure instant Admin Portal loading
         const applicants = await Applicant.find(query)
-            .select('-offerLetterData -apptLetterData') // Strip heavy embedded HTML/base64 data
+            .select('-offerLetterData -apptLetterData -answers -mindsetReport -psychometricScores -detailingScripts -issuedLetters') // Strip heavy embedded HTML/base64 data from SQL/SQLite
             .sort({ registeredAt: -1 })
             .lean(); // Fetch as plain objects to easily mutate
         
-        // Manually strip nested base64 data from documents since Sequelize doesn't support dot notation excludes natively
+        // Manually strip nested base64 data from documents and formData since Sequelize doesn't support dot notation excludes natively
         const optimizedApplicants = applicants.map(app => {
             if (app.documents && Array.isArray(app.documents)) {
                 app.documents = app.documents.map(d => {
@@ -687,6 +688,17 @@ router.get('/applicants', async (req, res) => {
                         // Intentionally omitting 'data' (the heavy base64 string)
                     };
                 });
+            }
+            if (app.formData && typeof app.formData === 'object') {
+                const cleanForm = {};
+                for (const [k, v] of Object.entries(app.formData)) {
+                    if (typeof v === 'string' && v.length > 500 && (v.startsWith('data:') || v.includes('base64'))) {
+                        cleanForm[k] = "[Base64 File Data - Open details to view]";
+                    } else {
+                        cleanForm[k] = v;
+                    }
+                }
+                app.formData = cleanForm;
             }
             return app;
         });

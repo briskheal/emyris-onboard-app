@@ -192,8 +192,8 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                             key={s.id} 
                             style={styles.stepItem}
                             onClick={() => {
-                                // Jump directly to any step that has been reached or completed
-                                if (isDone || isActive) setCurrentStep(s.id);
+                                // Jump directly to any step when clicked by the applicant
+                                setCurrentStep(s.id);
                             }}
                         >
                             <div style={{
@@ -201,7 +201,7 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                 background: isActive ? 'linear-gradient(135deg, #3b82f6, #2563eb)' : (isDone ? '#10b981' : 'rgba(255,255,255,0.08)'),
                                 borderColor: isActive ? '#60a5fa' : (isDone ? '#34d399' : 'rgba(255,255,255,0.15)'),
                                 boxShadow: isActive ? '0 0 15px rgba(59, 130, 246, 0.5)' : 'none',
-                                cursor: isDone ? 'pointer' : 'default'
+                                cursor: 'pointer'
                             }}>
                                 <span>{isDone ? '✓' : s.icon}</span>
                             </div>
