@@ -123,6 +123,7 @@ router.get('/company', async (req, res) => {
 // GET /api/admin/company/letters - for Setup & Letters page
 router.get('/company/letters', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         const company = await Company.findOne();
         if (company) {
             res.json({ 
@@ -1905,6 +1906,7 @@ router.get('/lifecycle-check', async (req, res) => {
 // Company Profile Fetching (With latest Assets)
 router.get('/company-profile', async (req, res) => {
     try {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         let profile = await Company.findOne().lean();
         if (!profile) {
             // Creation will apply all schema defaults
