@@ -10,6 +10,7 @@ export default function SetupAndLetters() {
   
   // Template State
   const [activeTemplate, setActiveTemplate] = useState('offerLetterBody');
+  const [allTemplatesMap, setAllTemplatesMap] = useState<Record<string, string>>({});
   const [templateContent, setTemplateContent] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -124,6 +125,7 @@ export default function SetupAndLetters() {
       }
       
       if (allLetters) {
+        setAllTemplatesMap(allLetters);
         const newContent = allLetters[activeTemplate] !== undefined ? allLetters[activeTemplate] : '';
         setTemplateContent(newContent);
         if (editorRef.current) {
@@ -154,9 +156,7 @@ export default function SetupAndLetters() {
     }
   };
 
-  useEffect(() => {
-    fetchCompanyTemplates();
-  }, [activeTemplate]);
+  // Removed useEffect on activeTemplate to prevent race conditions and unnecessary fetching
 
   const fetchDbStats = async () => {
     try {
@@ -213,6 +213,12 @@ export default function SetupAndLetters() {
       }
 
       await api.post('/company-profile', updatePayload);
+      
+      setAllTemplatesMap(prev => ({
+        ...prev,
+        [activeTemplate]: templateContent
+      }));
+      
       alert('Template Master saved successfully!');
     } catch (e) {
       alert('Error saving template');
@@ -359,11 +365,21 @@ export default function SetupAndLetters() {
       api.post('/company-profile', { miscLetters: newMiscLetters }).then(() => {
         setCompanyData({ ...companyData, miscLetters: newMiscLetters });
         setActiveTemplate(`misc_${newId}`);
+        const newContent = '';
+        setTemplateContent(newContent);
+        if (editorRef.current) {
+          editorRef.current.innerHTML = newContent;
+        }
       }).catch(() => {
         alert("Failed to create new template");
       });
     } else {
       setActiveTemplate(val);
+      const newContent = allTemplatesMap[val] !== undefined ? allTemplatesMap[val] : '';
+      setTemplateContent(newContent);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = newContent;
+      }
     }
   };
 
