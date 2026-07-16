@@ -1625,9 +1625,9 @@ router.post('/accept-offer', async (req, res) => {
         const company = await Company.findOne() || { name: 'Company' };
         if (!applicant) return res.status(404).json({ error: 'Not found' });
 
-        await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, status: 'joined', offerAcceptedAt: new Date(), actualJoiningDate } });
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, status: 'Joined (Probation)', offerAcceptedAt: new Date(), actualJoiningDate } });
         applicant.offerAccepted = true;
-        applicant.status = 'joined';
+        applicant.status = 'Joined (Probation)';
         applicant.actualJoiningDate = actualJoiningDate;
         await syncActiveExamForApplicant(applicant);
 

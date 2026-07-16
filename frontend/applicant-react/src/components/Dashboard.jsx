@@ -238,7 +238,7 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                             <div style={styles.detailsGrid}>
                                 <div><span style={{ color: '#94a3b8' }}>Email:</span> <strong>{applicant.email}</strong></div>
                                 <div><span style={{ color: '#94a3b8' }}>Phone:</span> <strong>{applicant.phone || 'N/A'}</strong></div>
-                                <div><span style={{ color: '#94a3b8' }}>{applicant.status === 'joined' ? 'Role:' : 'Applied Role:'}</span> <strong>{applicant.status === 'joined' ? (applicant.appliedRole || applicant.role || 'Confirmed Employee') : (applicant.appliedRole || applicant.role || 'Onboarding Candidate')}</strong></div>
+                                <div><span style={{ color: '#94a3b8' }}>{['Joined (Probation)', 'Confirmed Employee', 'Confirmation Extended', 'joined'].includes(applicant.status) ? 'Role:' : 'Applied Role:'}</span> <strong>{['Joined (Probation)', 'Confirmed Employee', 'Confirmation Extended', 'joined'].includes(applicant.status) ? (applicant.appliedRole || applicant.role || 'Confirmed Employee') : (applicant.appliedRole || applicant.role || 'Onboarding Candidate')}</strong></div>
                                 <div><span style={{ color: '#94a3b8' }}>HQ / Location:</span> <strong>{applicant.hq || 'N/A'}</strong></div>
                             </div>
                         </div>

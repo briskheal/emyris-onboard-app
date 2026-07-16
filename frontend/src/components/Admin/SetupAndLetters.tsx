@@ -46,6 +46,7 @@ export default function SetupAndLetters() {
     { id: 'offerLetterBody', label: 'Offer Letter', type: 'offer' },
     { id: 'apptLetterBody', label: 'Appointment Letter', type: 'appt' },
     { id: 'confirmLetterBody', label: 'Confirmation Letter', type: 'confirm' },
+    { id: 'confirmDelayedLetterBody', label: 'Confirmation Delayed Letter', type: 'confirm_delayed' },
     { id: 'revisedSalaryBody', label: 'Salary Revision Letter', type: 'revised' },
     { id: 'experienceLetterBody', label: 'Experience Letter', type: 'experience' },
     { id: 'relievingLetterBody', label: 'Relieving Letter', type: 'relieving' },

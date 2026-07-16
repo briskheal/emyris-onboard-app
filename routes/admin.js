@@ -1077,6 +1077,7 @@ router.post('/save-template', async (req, res) => {
         if (type === 'offer') update.offerLetterBody = body;
         else if (type === 'appt') update.apptLetterBody = body;
         else if (type === 'confirm') update.confirmLetterBody = body;
+        else if (type === 'confirm_delayed') update.confirmDelayedLetterBody = body;
         else if (type === 'revised_salary') update.revisedSalaryBody = body;
         else if (type === 'experience') update.experienceLetterBody = body;
         else if (type === 'relieving') update.relievingLetterBody = body;
@@ -1448,6 +1449,7 @@ router.post('/save-template', async (req, res) => {
         if (type === 'offer') update.offerLetterBody = body;
         else if (type === 'appt') update.apptLetterBody = body;
         else if (type === 'confirm') update.confirmLetterBody = body;
+        else if (type === 'confirm_delayed') update.confirmDelayedLetterBody = body;
         else if (type === 'revised_salary') update.revisedSalaryBody = body;
         else if (type === 'experience') update.experienceLetterBody = body;
         else if (type === 'relieving') update.relievingLetterBody = body;
@@ -1518,6 +1520,7 @@ router.post('/render-template', async (req, res) => {
                 case 'offer': template = company.offerLetterBody; break;
                 case 'appt': template = company.apptLetterBody; break;
                 case 'confirm': template = company.confirmLetterBody; break;
+                case 'confirm_delayed': template = company.confirmDelayedLetterBody; break;
                 case 'revised_salary': template = company.revisedSalaryBody; break;
                 case 'experience': template = company.experienceLetterBody; break;
                 case 'relieving': template = company.relievingLetterBody; break;
@@ -1719,6 +1722,8 @@ router.post('/save-letter-snapshot', async (req, res) => {
     try {
         const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
         const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
+        if (letterType === 'confirm') update.status = 'Confirmed Employee';
+        else if (letterType === 'confirm_delayed') update.status = 'Confirmation Extended';
         if (letterType === 'offer') update.offerLetterData = letterData;
         else if (letterType === 'appt') update.apptLetterData = letterData;
 
@@ -2145,6 +2150,7 @@ router.post('/render-template', async (req, res) => {
                 case 'offer': template = company.offerLetterBody; break;
                 case 'appt': template = company.apptLetterBody; break;
                 case 'confirm': template = company.confirmLetterBody; break;
+                case 'confirm_delayed': template = company.confirmDelayedLetterBody; break;
                 case 'revised_salary': template = company.revisedSalaryBody; break;
                 case 'experience': template = company.experienceLetterBody; break;
                 case 'relieving': template = company.relievingLetterBody; break;
@@ -2337,6 +2343,8 @@ router.post('/save-letter-snapshot', async (req, res) => {
     try {
         const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
         const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
+        if (letterType === 'confirm') update.status = 'Confirmed Employee';
+        else if (letterType === 'confirm_delayed') update.status = 'Confirmation Extended';
         if (letterType === 'offer') update.offerLetterData = letterData;
         else if (letterType === 'appt') update.apptLetterData = letterData;
 
