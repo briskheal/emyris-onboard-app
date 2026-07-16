@@ -14,6 +14,7 @@ export default function SetupAndLetters() {
   const [templateContent, setTemplateContent] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const printContainerRef = useRef<HTMLDivElement>(null);
   
   // Admin Bar State
   const [signatoryName, setSignatoryName] = useState('');
@@ -331,7 +332,7 @@ export default function SetupAndLetters() {
   };
 
   const generatePdfBlob = async (): Promise<Blob | null> => {
-    const targetEl = editorRef.current;
+    const targetEl = printContainerRef.current || editorRef.current;
     if (!targetEl) return null;
     try {
       const clone = targetEl.cloneNode(true) as HTMLElement;
@@ -695,27 +696,52 @@ export default function SetupAndLetters() {
               <div style={{ background: 'rgba(15, 23, 42, 0.2)', padding: '2rem', overflowY: 'auto', display: 'flex', justifyContent: 'center', position: 'relative', minHeight: '600px', flex: 1 }}>
                 <div className="fidelity-desk" style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
                   <div 
-                    ref={editorRef}
-                    className="letter-editor a4-page-standard"
-                    contentEditable={true}
-                    suppressContentEditableWarning
-                    onInput={handleEditorInput}
+                    ref={printContainerRef}
+                    className="a4-page-standard"
                     style={{ 
-                      transform: `scale(${zoom})`, 
-                      transformOrigin: 'top center',
-                      display: 'block',
+                      position: 'relative', 
+                      width: '210mm', 
+                      minHeight: '297mm', 
                       background: 'white',
-                      backgroundImage: activeAssets.letterheadImage ? `url(/api/public/asset/${activeAssets.letterheadImage})` : 'none',
-                      backgroundSize: '100% 297mm',
-                      backgroundRepeat: 'repeat-y',
-                      backgroundPosition: 'top center',
-                      outline: 'none',
-                      fontFamily: fontFamily,
-                      fontSize: `${fontSize}pt`,
-                      position: 'relative',
-                      padding: `${headerHeight}mm 20mm ${footerHeight}mm`
+                      transform: `scale(${zoom})`,
+                      transformOrigin: 'top center',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
                     }}
-                  />
+                  >
+                    {activeAssets.letterheadImage && (
+                      <img 
+                        src={`/api/public/asset/${activeAssets.letterheadImage}`}
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          zIndex: 0,
+                          pointerEvents: 'none',
+                          objectFit: 'fill'
+                        }}
+                        alt="Letterhead"
+                      />
+                    )}
+                    <div 
+                      ref={editorRef}
+                      className="letter-editor"
+                      contentEditable={true}
+                      suppressContentEditableWarning
+                      onInput={handleEditorInput}
+                      style={{ 
+                        display: 'block',
+                        background: 'transparent',
+                        minHeight: '297mm',
+                        outline: 'none',
+                        fontFamily: fontFamily,
+                        fontSize: `${fontSize}pt`,
+                        position: 'relative',
+                        zIndex: 1,
+                        padding: `${headerHeight}mm 20mm ${footerHeight}mm`
+                      }}
+                    />
                 </div>
               </div>
 
