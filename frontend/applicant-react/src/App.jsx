@@ -86,52 +86,90 @@ const App = ({ initialApplicant, initialView = 'landing' }) => {
   };
 
   return (
-    <div className="react-app-root">
-      {currentView === 'landing' && (
-        <LandingPage 
-          onNavigate={setCurrentView} 
-          companyData={companyData} 
-        />
-      )}
-      
-      {currentView === 'login' && (
-        <Login 
-          onNavigate={setCurrentView} 
-          onLoginSuccess={handleLoginSuccess} 
-        />
-      )}
-      
-      {currentView === 'register' && (
-        <Registration 
-          onNavigate={setCurrentView} 
-          onRegistrationSuccess={handleRegistrationSuccess} 
-          companyData={companyData} 
-        />
-      )}
-      
-      {currentView === 'dashboard' && applicant && (
-        <Dashboard 
-          applicant={applicant} 
-          onLogout={handleLogout}
-          companyData={companyData}
-        />
+    <div className="react-app-root" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Global Header with Marquee */}
+      {companyData && companyData.marqueeText && (
+        <div style={{ background: companyData.marqueeColor || '#1e293b', padding: '8px 0', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'inline-block', paddingLeft: '100%', animation: 'marquee 20s linear infinite', color: '#fff', fontWeight: '500' }}>
+                {companyData.marqueeText}
+            </div>
+            <style>
+                {`
+                @keyframes marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-100%); }
+                }
+                `}
+            </style>
+        </div>
       )}
 
-      {currentView === 'onboardingForm' && applicant && (
-        <OnboardingForm 
-          applicant={applicant} 
-          companyData={companyData}
-          onComplete={() => setCurrentView('dashboard')}
-        />
-      )}
+      {/* Main Content Area */}
+      <div style={{ flex: 1 }}>
+        {currentView === 'landing' && (
+          <LandingPage 
+            onNavigate={setCurrentView} 
+            companyData={companyData} 
+          />
+        )}
+        
+        {currentView === 'login' && (
+          <Login 
+            onNavigate={setCurrentView} 
+            onLoginSuccess={handleLoginSuccess} 
+          />
+        )}
+        
+        {currentView === 'register' && (
+          <Registration 
+            onNavigate={setCurrentView} 
+            onRegistrationSuccess={handleRegistrationSuccess} 
+            companyData={companyData} 
+          />
+        )}
+        
+        {currentView === 'dashboard' && applicant && (
+          <Dashboard 
+            applicant={applicant} 
+            onLogout={handleLogout}
+            companyData={companyData}
+          />
+        )}
 
-      {currentView === 'offerLetter' && applicant && (
-        <OfferLetterView 
-          applicant={applicant} 
-          companyData={companyData}
-          onBackToDashboard={() => setCurrentView('dashboard')}
-          onRefreshApplicant={refreshApplicant}
-        />
+        {currentView === 'onboardingForm' && applicant && (
+          <OnboardingForm 
+            applicant={applicant} 
+            companyData={companyData}
+            onComplete={() => setCurrentView('dashboard')}
+          />
+        )}
+
+        {currentView === 'offerLetter' && applicant && (
+          <OfferLetterView 
+            applicant={applicant} 
+            companyData={companyData}
+            onBackToDashboard={() => setCurrentView('dashboard')}
+            onRefreshApplicant={refreshApplicant}
+          />
+        )}
+      </div>
+
+      {/* Global Footer */}
+      {companyData && (
+        <footer style={{ background: 'rgba(15, 23, 42, 0.95)', borderTop: '1px solid #334155', padding: '20px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
+          <div>
+             <strong>{companyData.name || 'Emyris Biolifesciences'}</strong>
+          </div>
+          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center', gap: '20px', flexWrap: 'wrap' }}>
+             {companyData.phone && <span>📞 {companyData.phone}</span>}
+             {companyData.tollFree && <span>☎️ Toll Free: {companyData.tollFree}</span>}
+             {companyData.email && <span>✉️ {companyData.email}</span>}
+             {companyData.website && <span>🌐 <a href={companyData.website.startsWith('http') ? companyData.website : `https://${companyData.website}`} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'none' }}>{companyData.website}</a></span>}
+          </div>
+          <div style={{ marginTop: '12px', fontSize: '0.8rem', opacity: 0.7 }}>
+             &copy; {new Date().getFullYear()} All rights reserved.
+          </div>
+        </footer>
       )}
     </div>
   );

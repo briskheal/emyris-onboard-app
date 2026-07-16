@@ -3,38 +3,16 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 
-let reactRoot = null;
+const rootElement = document.getElementById('react-applicant-root');
 
-window.mountReactApp = (initialView = 'landing', applicantData = null) => {
-    // Hide ALL legacy views and containers
-    const viewsToHide = ['landingPage', 'applicantRegister', 'applicantLogin', 'applicantDashboard', 'onboardingForm', 'appShell'];
-    viewsToHide.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add('hidden');
-    });
-    document.querySelectorAll('.view-section, .app-container').forEach(el => el.classList.add('hidden'));
-
-    let rootElement = document.getElementById('react-applicant-root');
-    if (!rootElement) {
-        rootElement = document.createElement('div');
-        rootElement.id = 'react-applicant-root';
-        document.body.appendChild(rootElement);
-    }
-
-    if (!reactRoot) {
-        reactRoot = ReactDOM.createRoot(rootElement);
-    }
-
-    reactRoot.render(
+if (rootElement) {
+    ReactDOM.createRoot(rootElement).render(
         <React.StrictMode>
-            <App initialView={initialView} initialApplicant={applicantData} />
+            <App initialView="landing" initialApplicant={null} />
         </React.StrictMode>
     );
+}
 
-    rootElement.style.display = 'block';
-};
-
-// Legacy support just in case script.js calls this
-window.mountReactDashboard = (applicantData) => {
-    window.mountReactApp('dashboard', applicantData);
-};
+// Keep a stub for legacy scripts if they try to call it
+window.mountReactApp = () => {};
+window.mountReactDashboard = () => {};

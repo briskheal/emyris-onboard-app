@@ -65,7 +65,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   useEffect(() => {
     setLoadingDetails(true);
     api.get(`/admin/applicant/${initialApplicant.email}`).then(res => {
-      const fullApp = (res.data && !res.data.error) ? res.data : initialApplicant;
+      const fullApp = (res.data && res.data.applicant) ? res.data.applicant : initialApplicant;
       setApplicant(fullApp);
       
       setSalBasic(fullApp.salaryBreakup?.basic?.toString() || '0');

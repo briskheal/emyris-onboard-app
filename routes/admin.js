@@ -634,6 +634,18 @@ router.post('/bulk-add-existing-staff', async (req, res) => {
     }
 });
 
+// Fetch Full Single Applicant Details for Verification Modal
+router.get('/applicant/:email', async (req, res) => {
+    try {
+        const applicant = await Applicant.findOne({ email: req.params.email }).lean();
+        if (!applicant) return res.status(404).json({ success: false, message: 'Not found' });
+        res.status(200).json({ success: true, applicant });
+    } catch (error) {
+        console.error('Fetch Full Applicant Error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 router.get('/applicants', async (req, res) => {
     try {
         const { month, year } = req.query;
