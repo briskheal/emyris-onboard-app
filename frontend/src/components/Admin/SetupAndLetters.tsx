@@ -172,7 +172,7 @@ export default function SetupAndLetters() {
       // Revert back to master template
       editorRef.current.innerHTML = templateContent;
     }
-  }, [targetApplicant, applicants, companyData, signatoryName, signatoryDesg]);
+  }, [targetApplicant, targetApplicantData, templateContent, applicants, companyData, signatoryName, signatoryDesg]);
   const fetchDbStats = async () => {
     try {
       const res = await api.get('/admin/db-stats');
