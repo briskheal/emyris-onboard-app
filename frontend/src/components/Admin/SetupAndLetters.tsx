@@ -496,6 +496,10 @@ export default function SetupAndLetters() {
                 <Send size={14} /> Generate & Send
               </button>
 
+              <button className="btn btn-sm btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#0284c7', border: 'none' }} title="Download PDF of the current view">
+                <Download size={14} /> Download PDF
+              </button>
+
               <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(!livePreview)} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                 <Eye size={14} /> {livePreview ? 'Edit Mode' : 'Preview'}
               </button>
@@ -622,9 +626,6 @@ export default function SetupAndLetters() {
                       <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', alignItems: 'center' }}>
                         <h4 style={{ color: 'var(--accent)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={18} /> Fidelity Preview</h4>
                         <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)', margin: '0 10px' }}></div>
-                        <button className="btn btn-sm btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#10b981', border: 'none' }}>
-                          <Download size={14} /> Download Dossier PDF
-                        </button>
                         <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderColor: '#ef4444', color: '#ef4444' }}>
                           <X size={14} /> Return to Editor
                         </button>
@@ -685,6 +686,10 @@ export default function SetupAndLetters() {
                       transformOrigin: 'top center',
                       display: livePreview ? 'none' : 'block',
                       background: 'white',
+                      backgroundImage: activeAssets.letterheadImage ? `url(/api/public/asset/${activeAssets.letterheadImage})` : 'none',
+                      backgroundSize: '100% 297mm',
+                      backgroundRepeat: 'repeat-y',
+                      backgroundPosition: 'top center',
                       outline: 'none',
                       fontFamily: fontFamily,
                       fontSize: `${fontSize}pt`,
