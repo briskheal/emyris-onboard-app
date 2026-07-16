@@ -3499,7 +3499,7 @@ body.onboarding-inactive .header-logo img { height: 28px !important; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
 
 /* Force transparent backgrounds inside editor to prevent pasted content from blocking letterheads */
-.editor-content * {
+.letter-editor *, .letter-content-render * {
     background: transparent !important;
     background-color: transparent !important;
     background-image: none !important;
