@@ -194,7 +194,8 @@ router.post('/login', async (req, res) => {
                 rapidTestCompleted: applicant.rapidTestCompleted,
                 psychometricTestCompleted: applicant.psychometricTestCompleted,
                 psychometricScores: applicant.psychometricScores,
-                mindsetReport: applicant.mindsetReport
+                mindsetReport: applicant.mindsetReport,
+                issuedLetters: applicant.issuedLetters || []
             }
         });
     } catch (error) {
@@ -1624,8 +1625,9 @@ router.post('/accept-offer', async (req, res) => {
         const company = await Company.findOne() || { name: 'Company' };
         if (!applicant) return res.status(404).json({ error: 'Not found' });
 
-        await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, offerAcceptedAt: new Date(), actualJoiningDate } });
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, status: 'joined', offerAcceptedAt: new Date(), actualJoiningDate } });
         applicant.offerAccepted = true;
+        applicant.status = 'joined';
         applicant.actualJoiningDate = actualJoiningDate;
         await syncActiveExamForApplicant(applicant);
 
