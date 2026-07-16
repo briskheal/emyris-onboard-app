@@ -454,7 +454,7 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
             )}
             {activeTab === 'letters' && (
                 <div style={styles.tabContentCard}>
-                    <MyLettersView applicant={applicant} />
+                    <MyLettersView applicant={applicant} companyData={companyData} />
                 </div>
             )}
         </div>

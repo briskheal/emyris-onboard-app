@@ -83,7 +83,7 @@ const styles = {
   }
 };
 
-export default function MyLettersView({ applicant }) {
+export default function MyLettersView({ applicant, companyData }) {
   const [viewingLetter, setViewingLetter] = useState(null);
 
   const letters = applicant?.issuedLetters || [];
@@ -138,10 +138,24 @@ export default function MyLettersView({ applicant }) {
                   }
               `}
             </style>
-            <div 
-                className="letter-content-render"
-                dangerouslySetInnerHTML={{ __html: (viewingLetter.data || '').replace(/<img[^>]+style=["'][^"']*position:\s*absolute[^"']*["'][^>]*>/gi, '') }}
-            />
+            <div style={{ position: 'relative', width: '210mm', minHeight: '297mm', margin: '0 auto', background: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+              {companyData?.activeLetterheadId && (
+                <img 
+                  src={`/api/public/asset/${companyData.activeLetterheadId}`}
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.15, pointerEvents: 'none' }}
+                  alt="Letterhead"
+                />
+              )}
+              <div 
+                  className="letter-content-render"
+                  style={{ 
+                    position: 'relative', 
+                    zIndex: 1, 
+                    padding: `${companyData?.headerHeight !== undefined ? companyData.headerHeight : 65}mm 20mm ${companyData?.footerHeight !== undefined ? companyData.footerHeight : 25}mm` 
+                  }}
+                  dangerouslySetInnerHTML={{ __html: (viewingLetter.data || '').replace(/<img[^>]+style=["'][^"']*position:\s*absolute[^"']*["'][^>]*>/gi, '') }}
+              />
+            </div>
           </div>
         </div>
       )}

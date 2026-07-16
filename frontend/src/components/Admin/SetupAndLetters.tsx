@@ -36,6 +36,8 @@ export default function SetupAndLetters() {
   const [zoom, setZoom] = useState('1.0');
   const [fontFamily, setFontFamily] = useState('Plus Jakarta Sans');
   const [fontSize, setFontSize] = useState(11);
+  const [headerHeight, setHeaderHeight] = useState(65);
+  const [footerHeight, setFooterHeight] = useState(25);
   const [companyData, setCompanyData] = useState<any>({});
 
   // System & Assets State
@@ -138,6 +140,8 @@ export default function SetupAndLetters() {
         setSignatoryDesg(comp.signatoryDesignation || '');
         if (comp.letterFontType) setFontFamily(comp.letterFontType);
         if (comp.letterFontSize) setFontSize(Number(comp.letterFontSize) || 11);
+        if (comp.headerHeight !== undefined) setHeaderHeight(Number(comp.headerHeight) || 65);
+        if (comp.footerHeight !== undefined) setFooterHeight(Number(comp.footerHeight) || 25);
         setActiveAssets({
           logo: comp.activeLogoId || '',
           stamp: comp.activeStampId || '',
@@ -197,7 +201,9 @@ export default function SetupAndLetters() {
         signatoryName,
         signatoryDesignation: signatoryDesg,
         letterFontSize: fontSize,
-        letterFontType: fontFamily
+        letterFontType: fontFamily,
+        headerHeight,
+        footerHeight
       };
 
       if (activeTemplate.startsWith('misc_')) {
@@ -568,6 +574,20 @@ export default function SetupAndLetters() {
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>pt</span>
                 </div>
 
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'rgba(255,255,255,0.05)', padding: '4px 8px', borderRadius: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} title="Header Space (mm)">
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Header</span>
+                    <input type="number" className="form-input" value={headerHeight} onChange={(e) => setHeaderHeight(Number(e.target.value))} style={{ width: '45px', padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none', textAlign: 'center' }} step="5" />
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>mm</span>
+                  </div>
+                  <div style={{ width: '1px', height: '15px', background: 'rgba(255,255,255,0.2)', margin: '0 4px' }}></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }} title="Footer Space (mm)">
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Footer</span>
+                    <input type="number" className="form-input" value={footerHeight} onChange={(e) => setFooterHeight(Number(e.target.value))} style={{ width: '45px', padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none', textAlign: 'center' }} step="5" />
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)' }}>mm</span>
+                  </div>
+                </div>
+
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '5px' }}>
                   <ZoomIn size={14} color="var(--text-muted)" />
                   <select className="form-input" style={{ padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none' }} value={zoom} onChange={(e) => setZoom(e.target.value)}>
@@ -607,7 +627,8 @@ export default function SetupAndLetters() {
                           background: 'white',
                           fontFamily: fontFamily,
                           fontSize: `${fontSize}pt`,
-                          position: 'relative'
+                          position: 'relative',
+                          padding: `${headerHeight}mm 20mm ${footerHeight}mm`
                         }}
                       >
                         {activeAssets.letterheadImage && (
@@ -640,8 +661,12 @@ export default function SetupAndLetters() {
                       transform: `scale(${zoom})`, 
                       transformOrigin: 'top center',
                       display: livePreview ? 'none' : 'block',
+                      background: 'white',
+                      outline: 'none',
                       fontFamily: fontFamily,
-                      fontSize: `${fontSize}pt`
+                      fontSize: `${fontSize}pt`,
+                      position: 'relative',
+                      padding: `${headerHeight}mm 20mm ${footerHeight}mm`
                     }}
                   />
                 </div>
