@@ -20,6 +20,17 @@ export default function SetupAndLetters() {
   const [signatoryDesg, setSignatoryDesg] = useState('');
   const [applicants, setApplicants] = useState<any[]>([]);
   const [targetApplicant, setTargetApplicant] = useState('');
+  const [targetApplicantData, setTargetApplicantData] = useState<any>(null);
+
+  useEffect(() => {
+    if (targetApplicant) {
+      api.get(`/admin/applicant/${targetApplicant}`).then(res => {
+        if(res.data.success) setTargetApplicantData(res.data.applicant);
+      });
+    } else {
+      setTargetApplicantData(null);
+    }
+  }, [targetApplicant]);
   const [livePreview, setLivePreview] = useState(false);
   const [zoom, setZoom] = useState('1.0');
   const [fontFamily, setFontFamily] = useState('Plus Jakarta Sans');
@@ -219,7 +230,7 @@ export default function SetupAndLetters() {
     const applicant = applicants.find(a => a.email === targetApplicant);
     if (!applicant) return;
 
-    let finalContent = fillLetterPlaceholders(templateContent, applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
+    let finalContent = fillLetterPlaceholders(templateContent, targetApplicantData || applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
     finalContent = `<div style="font-family: ${fontFamily}; font-size: ${fontSize}pt;">${finalContent}</div>`;
 
     const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';    try {
@@ -573,11 +584,11 @@ export default function SetupAndLetters() {
                       <div 
                         ref={previewRef}
                         className="letter-editor a4-page-standard preview-mode"
-                        dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
+                        dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicantData || (targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
                           title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
                           designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
                           actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
-                        }, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
+                        }), { ...companyData, signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
                         style={{ 
                           transform: `scale(${zoom})`, 
                           transformOrigin: 'top center', 
