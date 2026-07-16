@@ -4,12 +4,13 @@ import api from '../../api/client';
 
 interface ApplicantVerificationModalProps {
   applicant: any;
+  managersList: any[];
   onClose: () => void;
   onSuccess: () => void;
   onRefresh?: () => void;
 }
 
-export default function ApplicantVerificationModal({ applicant: initialApplicant, onClose, onSuccess, onRefresh }: ApplicantVerificationModalProps) {
+export default function ApplicantVerificationModal({ applicant: initialApplicant, managersList, onClose, onSuccess, onRefresh }: ApplicantVerificationModalProps) {
   const [applicant, setApplicant] = useState<any>(initialApplicant);
   const [loadingDetails, setLoadingDetails] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -56,7 +57,6 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [designationsList, setDesignationsList] = useState<any[]>([]);
   const [divisionsList, setDivisionsList] = useState<any[]>([]);
   const [hqsList, setHqsList] = useState<any[]>([]);
-  const [managersList, setManagersList] = useState<any[]>([]);
   const [requiredDocsList, setRequiredDocsList] = useState<string[]>([]);
   
   // Track verified documents
@@ -112,7 +112,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       setLoadingDetails(false);
     });
 
-    api.get('/admin/company-profile').then(res => {
+    api.get('/admin/company-profile?light=true').then(res => {
       if (res.data) {
         const comp = res.data.company || res.data;
         setDesignationsList(comp.designations || []);
@@ -122,12 +122,6 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       }
     }).catch(console.error);
 
-    api.get('/admin/applicants?month=all&year=all').then(res => {
-      if (res.data.success) {
-         const joined = res.data.applicants.filter((a: any) => a.status === 'joined' || a.status === 'approved' || a.isExistingStaff);
-         setManagersList(joined);
-      }
-    }).catch(console.error);
   }, [initialApplicant]);
 
   const handleUploadMissingDoc = async (e: React.ChangeEvent<HTMLInputElement>, categoryName?: string) => {

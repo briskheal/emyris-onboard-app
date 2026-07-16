@@ -5,8 +5,8 @@ const LandingPage = ({ onNavigate, companyData }) => {
     <div style={styles.container}>
       <div style={styles.card}>
         <div style={styles.logoContainer}>
-          {companyData?.logoUrl ? (
-            <img src={companyData.logoUrl} alt="Logo" style={styles.logo} />
+          {companyData?.logo ? (
+            <img src={companyData.logo} alt="Logo" style={styles.logo} />
           ) : (
             <div style={styles.logoFallback}>{companyData?.name ? companyData.name[0] : 'E'}</div>
           )}

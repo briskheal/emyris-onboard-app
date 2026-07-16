@@ -1904,20 +1904,22 @@ router.get('/company-profile', async (req, res) => {
 
         // Legacy safety checks removed to allow explicit empty configurations
 
-        // Hydrate with latest active assets from Asset DB
-        const assetMap = {
-            activeLogoId: 'logo',
-            activeStampId: 'stamp',
-            activeSignatureId: 'digitalSignature',
-            activeLetterheadId: 'letterheadImage'
-        };
+        // Hydrate with latest active assets from Asset DB (SKIP if light=true is passed for performance)
+        if (req.query.light !== 'true') {
+            const assetMap = {
+                activeLogoId: 'logo',
+                activeStampId: 'stamp',
+                activeSignatureId: 'digitalSignature',
+                activeLetterheadId: 'letterheadImage'
+            };
 
-        for (const [key, field] of Object.entries(assetMap)) {
-            if (profile[key]) {
-                const asset = await Asset.findById(profile[key]).lean();
-                profile[field] = asset ? [asset] : [];
-            } else {
-                profile[field] = [];
+            for (const [key, field] of Object.entries(assetMap)) {
+                if (profile[key]) {
+                    const asset = await Asset.findById(profile[key]).lean();
+                    profile[field] = asset ? [asset] : [];
+                } else {
+                    profile[field] = [];
+                }
             }
         }
 

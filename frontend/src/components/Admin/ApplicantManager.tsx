@@ -166,6 +166,7 @@ const ApplicantManager: React.FC = () => {
       {verificationApp && (
         <ApplicantVerificationModal 
           applicant={verificationApp} 
+          managersList={applicants.filter((a: any) => a.status === 'joined' || a.status === 'approved' || a.isExistingStaff)}
           onClose={() => setVerificationApp(null)} 
           onSuccess={() => { setVerificationApp(null); fetchApplicants(); }} 
           onRefresh={() => fetchApplicants()}
