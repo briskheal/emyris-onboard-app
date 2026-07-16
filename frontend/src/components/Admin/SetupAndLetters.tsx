@@ -123,10 +123,11 @@ export default function SetupAndLetters() {
         });
       }
       
-      if (allLetters && allLetters[activeTemplate] !== undefined) {
-        setTemplateContent(allLetters[activeTemplate]);
+      if (allLetters) {
+        const newContent = allLetters[activeTemplate] !== undefined ? allLetters[activeTemplate] : '';
+        setTemplateContent(newContent);
         if (editorRef.current) {
-          editorRef.current.innerHTML = allLetters[activeTemplate];
+          editorRef.current.innerHTML = newContent;
         }
       }
       if (comp) {
