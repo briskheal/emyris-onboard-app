@@ -140,10 +140,21 @@ export default function MyLettersView({ applicant, companyData }) {
             </style>
             <div style={{ position: 'relative', width: '210mm', minHeight: '297mm', margin: '0 auto', background: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
               {companyData?.activeLetterheadId && (
-                <img 
-                  src={`/api/public/asset/${companyData.activeLetterheadId}`}
-                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.15, pointerEvents: 'none' }}
-                  alt="Letterhead"
+                <div 
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundImage: `url(/api/public/asset/${companyData.activeLetterheadId})`,
+                    backgroundSize: '100% 297mm',
+                    backgroundRepeat: 'repeat-y',
+                    backgroundPosition: 'top center',
+                    zIndex: 0,
+                    opacity: 1,
+                    pointerEvents: 'none'
+                  }}
                 />
               )}
               <div 

@@ -645,11 +645,21 @@ export default function SetupAndLetters() {
                         }}
                       >
                         {activeAssets.letterheadImage && (
-                          <img 
-                            src={`/api/public/asset/${activeAssets.letterheadImage}`}
-                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.15, pointerEvents: 'none' }}
-                            alt="Letterhead"
-                            crossOrigin="anonymous"
+                          <div 
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              right: 0,
+                              bottom: 0,
+                              backgroundImage: `url(/api/public/asset/${activeAssets.letterheadImage})`,
+                              backgroundSize: '100% 297mm',
+                              backgroundRepeat: 'repeat-y',
+                              backgroundPosition: 'top center',
+                              zIndex: 0,
+                              opacity: 1,
+                              pointerEvents: 'none'
+                            }}
                           />
                         )}
                         <div 
