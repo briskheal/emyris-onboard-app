@@ -102,7 +102,7 @@ export const OfferLetterView = ({ applicant, companyData, onBackToDashboard, onR
                             <div 
                                 className="letter-content-render" 
                                 style={styles.letterContent}
-                                dangerouslySetInnerHTML={{ __html: applicant.offerLetterData }} 
+                                dangerouslySetInnerHTML={{ __html: applicant.offerLetterData.replace(/<img[^>]+style=["'][^"']*position:\s*absolute[^"']*["'][^>]*>/gi, '') }} 
                             />
                         </div>
                     </>

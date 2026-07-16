@@ -2614,7 +2614,23 @@ router.post('/upload-asset', async (req, res) => {
         const { category, name, data, setActive } = req.body;
         if (!category || !data) return res.status(400).json({ error: 'Missing data' });
 
-        const asset = await Asset.create({ category, name, data });
+        let finalData = data;
+        
+        // Convert heavy image uploads to WebP to save database space
+        if (typeof data === 'string' && data.startsWith('data:image/') && !data.startsWith('data:image/webp')) {
+            try {
+                const matches = data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+                if (matches && matches.length === 3) {
+                    const buffer = Buffer.from(matches[2], 'base64');
+                    const webpBuffer = await sharp(buffer).webp({ quality: 80 }).toBuffer();
+                    finalData = 'data:image/webp;base64,' + webpBuffer.toString('base64');
+                }
+            } catch (err) {
+                console.error("Failed to convert image to webp:", err);
+            }
+        }
+
+        const asset = await Asset.create({ category, name, data: finalData });
 
         if (setActive) {
             const company = await Company.findOne();
