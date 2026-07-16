@@ -51,7 +51,7 @@ export default function SetupAndLetters() {
     { id: 'experienceLetterBody', label: 'Experience Letter', type: 'experience' },
     { id: 'relievingLetterBody', label: 'Relieving Letter', type: 'relieving' },
     { id: 'warningLetterBody', label: 'Warning Letter', type: 'warning' },
-    { id: 'showCauseNoticeBody', label: 'Show Cause Notice', type: 'show_cause' },
+    { id: 'showCauseLetterBody', label: 'Show Cause Notice', type: 'show_cause' },
     { id: 'incentiveCircularBody', label: 'Incentive Circular', type: 'incentive' }
   ];
 

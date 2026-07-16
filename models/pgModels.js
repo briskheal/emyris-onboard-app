@@ -29,6 +29,7 @@ const OnboardCompany = sequelize.define('onboard_company', {
     experienceLetterBody: DataTypes.TEXT,
     relievingLetterBody: DataTypes.TEXT,
     showCauseLetterBody: DataTypes.TEXT,
+    warningLetterBody: DataTypes.TEXT,
     miscLetters: { type: DataTypes.JSON, defaultValue: [] },
     templateSettings: { type: DataTypes.JSON, defaultValue: {} },
     fyFrom: DataTypes.STRING,

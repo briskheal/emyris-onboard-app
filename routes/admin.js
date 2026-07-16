@@ -130,7 +130,12 @@ router.get('/company/letters', async (req, res) => {
                 offerLetterBody: company.offerLetterBody || '',
                 apptLetterBody: company.apptLetterBody || '',
                 confirmLetterBody: company.confirmLetterBody || '',
+                confirmDelayedLetterBody: company.confirmDelayedLetterBody || '',
                 revisedSalaryBody: company.revisedSalaryBody || '',
+                experienceLetterBody: company.experienceLetterBody || '',
+                relievingLetterBody: company.relievingLetterBody || '',
+                warningLetterBody: company.warningLetterBody || '',
+                showCauseLetterBody: company.showCauseLetterBody || '',
                 incentiveCircularBody: company.incentiveCircularBody || ''
             });
         } else {
