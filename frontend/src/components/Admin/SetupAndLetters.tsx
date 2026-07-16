@@ -207,6 +207,14 @@ export default function SetupAndLetters() {
     execCommand('insertHTML', pbHtml);
   };
 
+  const handleClearEditor = () => {
+    if (!window.confirm("This will COMPLETELY ERASE all text, images, and formatting from the current letter template. Continue?")) return;
+    setTemplateContent('');
+    if (editorRef.current) {
+      editorRef.current.innerHTML = '';
+    }
+  };
+
   const handleClearImages = () => {
     if (!window.confirm("This will permanently remove all manually pasted images from the current letter template. Continue?")) return;
     const cleanContent = templateContent.replace(/<img[^>]*>/gi, '');
@@ -576,6 +584,9 @@ export default function SetupAndLetters() {
                 <Trash2 size={14} />
               </button>
 
+              <button className="btn btn-sm btn-outline" onClick={handleClearEditor} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444' }} title="Wipe Entire Editor Clean">
+                Wipe Template
+              </button>
               <button className="btn btn-sm btn-outline" onClick={handleClearImages} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#f59e0b', color: '#f59e0b' }} title="Wipe Inline Images">
                 Wipe Images
               </button>
