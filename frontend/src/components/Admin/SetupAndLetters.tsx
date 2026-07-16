@@ -124,11 +124,9 @@ export default function SetupAndLetters() {
       }
       
       if (allLetters && allLetters[activeTemplate] !== undefined) {
-        if (!editorRef.current?.innerHTML || editorRef.current.innerHTML === '<br>' || editorRef.current.innerHTML === templateContent) {
-          setTemplateContent(allLetters[activeTemplate]);
-          if (editorRef.current) {
-            editorRef.current.innerHTML = allLetters[activeTemplate];
-          }
+        setTemplateContent(allLetters[activeTemplate]);
+        if (editorRef.current) {
+          editorRef.current.innerHTML = allLetters[activeTemplate];
         }
       }
       if (comp) {
@@ -585,20 +583,33 @@ export default function SetupAndLetters() {
                       <div 
                         ref={previewRef}
                         className="letter-editor a4-page-standard preview-mode"
-                        dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicantData || (targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
-                          title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
-                          designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
-                          actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
-                        }), { ...companyData, signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
                         style={{ 
                           transform: `scale(${zoom})`, 
                           transformOrigin: 'top center', 
                           pointerEvents: 'none', 
                           background: 'white',
                           fontFamily: fontFamily,
-                          fontSize: `${fontSize}pt`
+                          fontSize: `${fontSize}pt`,
+                          position: 'relative'
                         }}
-                      />
+                      >
+                        {activeAssets.letterheadImage && (
+                          <img 
+                            src={`/api/public/asset/${activeAssets.letterheadImage}`}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, opacity: 0.15, pointerEvents: 'none' }}
+                            alt="Letterhead"
+                            crossOrigin="anonymous"
+                          />
+                        )}
+                        <div 
+                          style={{ position: 'relative', zIndex: 1 }}
+                          dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicantData || (targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
+                            title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
+                            designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
+                            actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
+                          }), { ...companyData, signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
+                        />
+                      </div>
                     </div>
                   )}
 
