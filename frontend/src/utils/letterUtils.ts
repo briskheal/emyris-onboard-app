@@ -36,9 +36,12 @@ export function numberToWords(num: number | string) {
 export function fillLetterPlaceholders(text: string, app: any, companyData: any = {}) {
     const fd = app.formData || {};
     const sal = app.salaryBreakup || {};
-    const totalMonthly = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0) + (Number(sal.roundoff)||0);
+    let totalMonthly = (Number(sal.basic)||0) + (Number(sal.hra)||0) + (Number(sal.lta)||0) + (Number(sal.conveyance)||0) + (Number(sal.medical)||0) + (Number(sal.special)||0) + (Number(sal.edu)||0) + (Number(sal.fixed)||0) + (Number(sal.roundoff)||0);
     // Use the exact app.salary for annual if present, else fallback
     const totalAnnual = parseFloat(app.salary) || (totalMonthly * 12);
+    if (totalMonthly === 0 && totalAnnual > 0) {
+        totalMonthly = Math.round(totalAnnual / 12);
+    }
     const fyFrom = companyData.fyFrom ? new Date(companyData.fyFrom) : new Date();
     const fyTo = companyData.fyTo ? new Date(companyData.fyTo) : new Date();
     const fyShort = `${String(fyFrom.getFullYear()).slice(2)}-${String(fyTo.getFullYear()).slice(2)}`;

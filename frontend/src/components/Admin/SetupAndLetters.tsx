@@ -298,9 +298,27 @@ export default function SetupAndLetters() {
       } else {
         alert('Failed to publish letter.');
       }
-    } catch (err) {
-      console.error(err);
-      alert('Failed to publish letter to hub.');
+    } catch (e) {
+      console.error(e);
+      alert('Error publishing letter');
+    }
+  };
+
+  const handleClearLetters = async () => {
+    if (!targetApplicant) {
+      alert("Please select a Target Applicant first.");
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to delete all issued letters for ${targetApplicant}? This cannot be undone.`)) return;
+
+    try {
+      const res = await api.post('/admin/clear-applicant-letters', { email: targetApplicant });
+      if (res.data.success) {
+        alert(res.data.message || 'Letters cleared successfully.');
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to clear letters.');
     }
   };
 
@@ -540,6 +558,10 @@ export default function SetupAndLetters() {
 
               <button className="btn btn-sm btn-primary" onClick={handleHubpush} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none' }}>
                 <Send size={14} /> Generate & Send
+              </button>
+
+              <button className="btn btn-sm btn-outline" onClick={handleClearLetters} disabled={!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444', opacity: targetApplicant ? 1 : 0.5 }} title="Wipe all letters for this applicant">
+                <Trash2 size={14} /> Clear Hub Letters
               </button>
 
               <button className="btn btn-sm btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#0284c7', border: 'none' }} title="Download PDF of the current view">

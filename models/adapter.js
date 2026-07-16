@@ -319,6 +319,16 @@ function applyUpdate(instance, updateObj) {
         }
     }
 
+    if (updateObj.$inc) {
+        for (const [key, val] of Object.entries(updateObj.$inc)) {
+            const currentVal = Number(instance[key]) || 0;
+            instance[key] = currentVal + Number(val);
+            if (typeof instance.changed === 'function') {
+                instance.changed(key, true);
+            }
+        }
+    }
+
     if (updateObj.$pull) {
         for (const [key, filter] of Object.entries(updateObj.$pull)) {
             const arr = Array.isArray(instance[key]) ? [...instance[key]] : [];

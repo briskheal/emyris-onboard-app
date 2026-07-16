@@ -1808,6 +1808,23 @@ router.post('/save-letter-snapshot', async (req, res) => {
     }
 });
 
+// --- NEW: CLEAR LETTERS ---
+router.post('/clear-applicant-letters', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email required' });
+        
+        await Applicant.findOneAndUpdate({ email }, {
+            $set: { issuedLetters: [] }
+        });
+
+        res.json({ success: true, message: 'All letters for this applicant have been wiped.' });
+    } catch (e) {
+        console.error("Clear letters error:", e);
+        res.status(500).json({ error: 'Failed to clear letters' });
+    }
+});
+
 // --- NEW: APPLICANT ACCEPT OFFER ---
 function safeParseDateServer(dateStr) {
     if (!dateStr) return null;
