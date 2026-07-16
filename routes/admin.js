@@ -1726,7 +1726,7 @@ router.post('/send-letter', async (req, res) => {
 // --- NEW: SAVE LETTER SNAPSHOT TO PORTAL ---
 router.post('/save-letter-snapshot', async (req, res) => {
     try {
-        const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
+        const { email, letterType, letterData, pdfBase64, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
         const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
         if (letterType === 'confirm') update.status = 'Confirmed Employee';
         else if (letterType === 'confirm_delayed') update.status = 'Confirmation Extended';
@@ -1763,8 +1763,17 @@ router.post('/save-letter-snapshot', async (req, res) => {
             const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
             const label = letterType.toUpperCase().replace('_', ' ');
 
+            let attachments = [];
+            if (pdfBase64) {
+                attachments.push({
+                    filename: `Emyris_Letter.pdf`,
+                    content: pdfBase64,
+                    contentType: 'application/pdf'
+                });
+            }
+
             await sendEmail({
-                to: email,
+                to: `${email}, hradmin@emyrishr.in`,
                 subject: `Important Document Update: ${label} - ${company.name}`,
                 html: `
                     <div style="font-family: sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
@@ -1787,7 +1796,8 @@ router.post('/save-letter-snapshot', async (req, res) => {
                             This is an automated notification from ${company.name}. Please do not reply to this email.
                         </div>
                     </div>
-                `
+                `,
+                attachments
             });
         }
 
@@ -2346,79 +2356,7 @@ router.post('/send-letter', async (req, res) => {
     }
 });
 
-router.post('/save-letter-snapshot', async (req, res) => {
-    try {
-        const { email, letterType, letterData, notifyByEmail } = req.body; // letterData can be HTML/Text or Base64
-        const update = { canLogin: true }; // Automatically ensure access when a letter is pushed to hub
-        if (letterType === 'confirm') update.status = 'Confirmed Employee';
-        else if (letterType === 'confirm_delayed') update.status = 'Confirmation Extended';
-        if (letterType === 'offer') update.offerLetterData = letterData;
-        else if (letterType === 'appt') update.apptLetterData = letterData;
 
-        const letterObj = {
-            type: letterType,
-            data: letterData,
-            issuedAt: new Date()
-        };
-
-        await Applicant.findOneAndUpdate({ email }, { 
-            $set: update,
-            $push: { issuedLetters: letterObj }
-        });
-
-        // Increment company counter
-        let counterKey = "";
-        if (letterType === 'offer') counterKey = 'offerCounter';
-        else if (letterType === 'appt') counterKey = 'apptCounter';
-        else if (letterType === 'revised_salary') counterKey = 'revisedSalaryCounter';
-        else if (['emyfe', 'emyho', 'emyhr'].includes(letterType)) counterKey = 'empCodeCounter';
-        else if (letterType && letterType.startsWith('misc_')) counterKey = 'miscCounter';
-
-        if (counterKey) {
-            await Company.findOneAndUpdate({}, {
-                $inc: { [counterKey]: 1 }
-            });
-        }
-
-        if (notifyByEmail) {
-            const applicant = await Applicant.findOne({ email });
-            const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
-            const label = letterType.toUpperCase().replace('_', ' ');
-
-            await sendEmail({
-                to: email,
-                subject: `Important Document Update: ${label} - ${company.name}`,
-                html: `
-                    <div style="font-family: sans-serif; line-height: 1.6; color: #334155; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-                        <div style="background: #6366f1; padding: 20px; text-align: center;">
-                            <h2 style="color: white; margin: 0;">Document Notification</h2>
-                        </div>
-                        <div style="padding: 30px;">
-                            <p>Dear ${applicant.fullName},</p>
-                            <p>We are pleased to inform you that a new document has been issued and published to your official onboarding hub.</p>
-                            <div style="background: #f8fafc; border-left: 4px solid #6366f1; padding: 15px; margin: 20px 0;">
-                                <strong>Document Type:</strong> ${label}<br>
-                                <strong>Status:</strong> Published to Hub
-                            </div>
-                            <p>Please log in to the portal to view, download, or accept the document.</p>
-                            <div style="text-align: center; margin-top: 30px;">
-                                <a href="${BASE_URL}" style="display: inline-block; padding: 12px 24px; background: #6366f1; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Access Portal</a>
-                            </div>
-                        </div>
-                        <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 0.8rem; color: #64748b;">
-                            This is an automated notification from ${company.name}. Please do not reply to this email.
-                        </div>
-                    </div>
-                `
-            });
-        }
-
-        res.json({ success: true, message: `Letter saved to applicant hub${notifyByEmail ? ' and applicant notified' : ''}.` });
-    } catch (e) { 
-        console.error("Save snapshot error:", e);
-        res.status(500).json({ error: 'Save failed' }); 
-    }
-});
 
 router.get('/lifecycle-check', async (req, res) => {
     try {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Eye, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, X, Trash2, Scissors } from 'lucide-react';
+import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, Trash2, Scissors } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '../../api/client';
@@ -14,7 +14,6 @@ export default function SetupAndLetters() {
   const [templateContent, setTemplateContent] = useState('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
   
   // Admin Bar State
   const [signatoryName, setSignatoryName] = useState('');
@@ -32,7 +31,6 @@ export default function SetupAndLetters() {
       setTargetApplicantData(null);
     }
   }, [targetApplicant]);
-  const [livePreview, setLivePreview] = useState(false);
   const [zoom, setZoom] = useState('1.0');
   const [fontFamily, setFontFamily] = useState('Plus Jakarta Sans');
   const [fontSize, setFontSize] = useState(11);
@@ -160,8 +158,21 @@ export default function SetupAndLetters() {
     }
   };
 
-  // Removed useEffect on activeTemplate to prevent race conditions and unnecessary fetching
-
+  // Auto-populate editor when target applicant is selected
+  useEffect(() => {
+    if (!editorRef.current) return;
+    
+    if (targetApplicant) {
+      const applicant = applicants.find(a => a.email === targetApplicant);
+      if (applicant) {
+        const filled = fillLetterPlaceholders(templateContent, targetApplicantData || applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
+        editorRef.current.innerHTML = filled;
+      }
+    } else {
+      // Revert back to master template
+      editorRef.current.innerHTML = templateContent;
+    }
+  }, [targetApplicant, applicants, companyData, signatoryName, signatoryDesg]);
   const fetchDbStats = async () => {
     try {
       const res = await api.get('/admin/db-stats');
@@ -172,7 +183,7 @@ export default function SetupAndLetters() {
   };
 
   const handleEditorInput = () => {
-    if (editorRef.current) {
+    if (editorRef.current && !targetApplicant) {
       setTemplateContent(editorRef.current.innerHTML);
     }
   };
@@ -181,7 +192,9 @@ export default function SetupAndLetters() {
     document.execCommand(cmd, false, val);
     if (editorRef.current) {
       editorRef.current.focus();
-      setTemplateContent(editorRef.current.innerHTML);
+      if (!targetApplicant) {
+        setTemplateContent(editorRef.current.innerHTML);
+      }
     }
   };
 
@@ -251,14 +264,33 @@ export default function SetupAndLetters() {
     const applicant = applicants.find(a => a.email === targetApplicant);
     if (!applicant) return;
 
-    let finalContent = fillLetterPlaceholders(templateContent, targetApplicantData || applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
+    // Grab the WYSIWYG content directly from the editor
+    let finalContent = editorRef.current?.innerHTML || '';
     finalContent = `<div style="font-family: ${fontFamily}; font-size: ${fontSize}pt;">${finalContent}</div>`;
 
-    const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';    try {
+    const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
+    
+    try {
+      // Generate the PDF blob for email attachment
+      const pdfBlob = await generatePdfBlob();
+      let pdfBase64 = null;
+      if (pdfBlob) {
+        const buffer = await pdfBlob.arrayBuffer();
+        // Convert array buffer to base64
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        pdfBase64 = window.btoa(binary);
+      }
+
       const res = await api.post('/admin/save-letter-snapshot', {
         email: targetApplicant,
         letterType: activeLetterType,
         letterData: finalContent,
+        pdfBase64: pdfBase64,
         notifyByEmail: true
       });
       if (res.data.success) {
@@ -272,9 +304,9 @@ export default function SetupAndLetters() {
     }
   };
 
-  const handleDownloadPdf = async () => {
-    const targetEl = previewRef.current || editorRef.current;
-    if (!targetEl) return;
+  const generatePdfBlob = async (): Promise<Blob | null> => {
+    const targetEl = editorRef.current;
+    if (!targetEl) return null;
     try {
       const clone = targetEl.cloneNode(true) as HTMLElement;
       clone.style.position = 'absolute';
@@ -326,9 +358,23 @@ export default function SetupAndLetters() {
         cursorY += A4_PX_H;
         pageCount++;
       }
-      pdf.save(`${activeTemplate}_${Date.now()}.pdf`);
+      return pdf.output('blob');
     } catch (err) {
       console.error(err);
+      return null;
+    }
+  };
+
+  const handleDownloadPdf = async () => {
+    const pdfBlob = await generatePdfBlob();
+    if (pdfBlob) {
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${activeTemplate}_${Date.now()}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } else {
       alert('Failed to generate PDF');
     }
   };
@@ -500,11 +546,7 @@ export default function SetupAndLetters() {
                 <Download size={14} /> Download PDF
               </button>
 
-              <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(!livePreview)} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                <Eye size={14} /> {livePreview ? 'Edit Mode' : 'Preview'}
-              </button>
-
-              <button className="btn btn-sm btn-outline" onClick={saveTemplate} disabled={savingTemplate} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#10b981', color: '#10b981' }}>
+              <button className="btn btn-sm btn-outline" onClick={saveTemplate} disabled={savingTemplate || !!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#10b981', color: '#10b981', opacity: targetApplicant ? 0.5 : 1 }} title={targetApplicant ? "Cannot save master while previewing applicant" : "Save Master Template"}>
                 <Save size={14} /> Save Master
               </button>
 
@@ -619,72 +661,16 @@ export default function SetupAndLetters() {
               {/* Editor Workspace */}
               <div style={{ background: 'rgba(15, 23, 42, 0.2)', padding: '2rem', overflowY: 'auto', display: 'flex', justifyContent: 'center', position: 'relative', minHeight: '600px', flex: 1 }}>
                 <div className="fidelity-desk" style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '2rem 0' }}>
-                  
-                  {livePreview && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.95)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem', overflowY: 'auto' }}>
-                      
-                      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px', alignItems: 'center' }}>
-                        <h4 style={{ color: 'var(--accent)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}><FileText size={18} /> Fidelity Preview</h4>
-                        <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)', margin: '0 10px' }}></div>
-                        <button className="btn btn-sm btn-outline" onClick={() => setLivePreview(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', borderColor: '#ef4444', color: '#ef4444' }}>
-                          <X size={14} /> Return to Editor
-                        </button>
-                      </div>
-
-                      <div 
-                        ref={previewRef}
-                        className="letter-editor a4-page-standard preview-mode"
-                        style={{ 
-                          transform: `scale(${zoom})`, 
-                          transformOrigin: 'top center', 
-                          pointerEvents: 'none', 
-                          background: 'white',
-                          fontFamily: fontFamily,
-                          fontSize: `${fontSize}pt`,
-                          position: 'relative',
-                          padding: `${headerHeight}mm 20mm ${footerHeight}mm`
-                        }}
-                      >
-                        {activeAssets.letterheadImage && (
-                          <div 
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                              right: 0,
-                              bottom: 0,
-                              backgroundImage: `url(/api/public/asset/${activeAssets.letterheadImage})`,
-                              backgroundSize: '100% 297mm',
-                              backgroundRepeat: 'repeat-y',
-                              backgroundPosition: 'top center',
-                              zIndex: 0,
-                              opacity: 1,
-                              pointerEvents: 'none'
-                            }}
-                          />
-                        )}
-                        <div 
-                          style={{ position: 'relative', zIndex: 1 }}
-                          dangerouslySetInnerHTML={{ __html: fillLetterPlaceholders(templateContent, targetApplicantData || (targetApplicant ? applicants.find(a => a.email === targetApplicant) || {} : {
-                            title: 'Mr.', fullName: 'Candidate Name', formData: { firstName: 'Candidate', lastName: 'Name', address: '123 Test St', city: 'Testville', state: 'TestState', pin: '123456', phone: '9876543210' },
-                            designation: 'Software Engineer', division: 'Engineering', hq: 'Mumbai', reportingTo: 'Jane Smith', empCode: 'EMY/EMPC/999',
-                            actualJoiningDate: '2026-07-01', salaryBreakup: { basic: 15000, hra: 5000, special: 3000, conveyance: 2000, medical: 1000, lta: 1000, edu: 1000, fixed: 2000 }
-                          }), { ...companyData, signatoryName, signatoryDesignation: signatoryDesg }).replace(/\{\{([^}]+)\}\}/g, '<span style="background:rgba(255,255,0,0.4); color:#000; font-weight:bold; padding:2px 4px; border-radius:3px;">{{$1}}</span>') }}
-                        />
-                      </div>
-                    </div>
-                  )}
-
                   <div 
                     ref={editorRef}
                     className="letter-editor a4-page-standard"
-                    contentEditable={!livePreview}
+                    contentEditable={true}
                     suppressContentEditableWarning
                     onInput={handleEditorInput}
                     style={{ 
                       transform: `scale(${zoom})`, 
                       transformOrigin: 'top center',
-                      display: livePreview ? 'none' : 'block',
+                      display: 'block',
                       background: 'white',
                       backgroundImage: activeAssets.letterheadImage ? `url(/api/public/asset/${activeAssets.letterheadImage})` : 'none',
                       backgroundSize: '100% 297mm',
