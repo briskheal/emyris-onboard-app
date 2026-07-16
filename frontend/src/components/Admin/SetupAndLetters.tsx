@@ -194,6 +194,15 @@ export default function SetupAndLetters() {
     execCommand('insertHTML', pbHtml);
   };
 
+  const handleClearImages = () => {
+    if (!window.confirm("This will permanently remove all manually pasted images from the current letter template. Continue?")) return;
+    const cleanContent = templateContent.replace(/<img[^>]*>/gi, '');
+    setTemplateContent(cleanContent);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = cleanContent;
+    }
+  };
+
   const saveTemplate = async () => {
     setSavingTemplate(true);
     try {
@@ -497,6 +506,10 @@ export default function SetupAndLetters() {
 
               <button className="btn btn-sm btn-outline" onClick={handleResetTemplate} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444' }} title="Reset to Saved Master">
                 <Trash2 size={14} />
+              </button>
+
+              <button className="btn btn-sm btn-outline" onClick={handleClearImages} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#f59e0b', color: '#f59e0b' }} title="Wipe Inline Images">
+                Wipe Images
               </button>
             </div>
           </div>
