@@ -297,8 +297,11 @@ router.post('/login', (req, res) => {
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
 
     if (username && username.toUpperCase() === adminUser && password === adminPass) {
-        console.log(`[LOGIN SUCCESS] ${req.body.username}`);
-        res.status(200).json({ success: true });
+        console.log(`[LOGIN SUCCESS] ${req.body.username} (superadmin)`);
+        res.status(200).json({ success: true, role: 'superadmin' });
+    } else if (username && username.toUpperCase() === 'ADMIN2' && password === '1234') {
+        console.log(`[LOGIN SUCCESS] ${req.body.username} (subadmin)`);
+        res.status(200).json({ success: true, role: 'subadmin' });
     } else {
         console.log(`[LOGIN FAILED] ${req.body.username}`);
         res.status(401).json({ success: false });

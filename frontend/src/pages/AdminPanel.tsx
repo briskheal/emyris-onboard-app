@@ -27,7 +27,11 @@ const AdminPanel: React.FC = () => {
       const res = await api.post('/admin/login', { username, password });
       if (res.data.success) {
         sessionStorage.setItem('admin_logged_in', 'true');
+        sessionStorage.setItem('admin_role', res.data.role || 'superadmin');
         setIsLoggedIn(true);
+        if (res.data.role === 'subadmin') {
+          setActiveView('questions'); // Default allowed tab for subadmin
+        }
       } else {
         setLoginError(res.data.message || 'Invalid credentials.');
       }
@@ -115,11 +119,19 @@ const AdminPanel: React.FC = () => {
             { id: 'pending', icon: <ClipboardList size={16} style={{ flexShrink: 0 }} />, label: 'Test Results' },
             { id: 'psychometric', icon: <Award size={16} style={{ flexShrink: 0, color: '#a855f7' }} />, label: '🧠 Psychometric Dossiers' },
             { id: 'reports', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Reports & Analytics' },
-          ].map(item => (
+          ].map(item => {
+            const adminRole = sessionStorage.getItem('admin_role') || 'superadmin';
+            const isRestricted = adminRole === 'subadmin' && !['questions', 'voice-studio', 'pending', 'psychometric'].includes(item.id);
+
+            return (
             <button
               key={item.id}
               className={`btn ${activeView === item.id ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => {
+                if (isRestricted) {
+                  alert("Meant for Superadmin Only");
+                  return;
+                }
                 setActiveView(item.id as AdminView);
                 setMobileMenuOpen(false);
               }}
@@ -135,12 +147,18 @@ const AdminPanel: React.FC = () => {
                 textOverflow: 'ellipsis',
                 padding: '10px 14px',
                 width: '100%',
-                lineHeight: '1.2'
+                lineHeight: '1.2',
+                opacity: isRestricted ? 0.4 : 1,
+                cursor: isRestricted ? 'not-allowed' : 'pointer'
               }}
             >
-              {item.icon} <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, overflow: 'hidden' }}>
+                {item.icon}
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+              </div>
+              {isRestricted && <span style={{ fontSize: '0.8rem', opacity: 0.8 }}>🔒</span>}
             </button>
-          ))}
+          )})}
         </nav>
         <button
           className="btn btn-outline"
