@@ -115,6 +115,12 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        const uploadedDocs = applicantState?.documents || [];
+        if (uploadedDocs.length === 0) {
+            alert("Please upload Mandatory Testimonials/Documents (e.g. Aadhar, PAN, certificates) to proceed further. You can save your work and return later if needed.");
+            return;
+        }
         
         if (!window.confirm("I declare that all particulars are true and I accept the Data Privacy Consent.")) {
             return;
