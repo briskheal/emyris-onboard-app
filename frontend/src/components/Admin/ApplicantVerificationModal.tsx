@@ -40,9 +40,9 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [salFixed, setSalFixed] = useState<string>(initialApplicant.salaryBreakup?.fixed?.toString() || '0');
   const [salRoundoff, setSalRoundoff] = useState<string>(initialApplicant.salaryBreakup?.roundoff?.toString() || '0');
 
-  const [epfNumber, setEpfNumber] = useState<string>(initialApplicant.epfNumber || '');
-  const [uanNumber, setUanNumber] = useState<string>(initialApplicant.uanNumber || '');
-  const [esiNumber, setEsiNumber] = useState<string>(initialApplicant.esiNumber || '');
+  const [epfNumber, setEpfNumber] = useState<string>(initialApplicant.epfNumber || initialApplicant.formData?.epfNumber || '');
+  const [uanNumber, setUanNumber] = useState<string>(initialApplicant.uanNumber || initialApplicant.formData?.uanNumber || '');
+  const [esiNumber, setEsiNumber] = useState<string>(initialApplicant.esiNumber || initialApplicant.formData?.esiNumber || '');
   const [bankName, setBankName] = useState<string>(initialApplicant.formData?.bankName || '');
   const [accNo, setAccNo] = useState<string>(initialApplicant.formData?.accNo || '');
   const [ifsc, setIfsc] = useState<string>(initialApplicant.formData?.ifsc || '');
@@ -85,9 +85,9 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       setHq(fullApp.hq || '');
       setSalary(fullApp.salary || '');
       
-      setEpfNumber(fullApp.epfNumber || '');
-      setUanNumber(fullApp.uanNumber || '');
-      setEsiNumber(fullApp.esiNumber || '');
+      setEpfNumber(fullApp.epfNumber || fullApp.formData?.epfNumber || '');
+      setUanNumber(fullApp.uanNumber || fullApp.formData?.uanNumber || '');
+      setEsiNumber(fullApp.esiNumber || fullApp.formData?.esiNumber || '');
       setBankName(fullApp.formData?.bankName || '');
       setAccNo(fullApp.formData?.accNo || '');
       setIfsc(fullApp.formData?.ifsc || '');

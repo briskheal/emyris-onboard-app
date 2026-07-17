@@ -75,6 +75,7 @@ const StepBanking: React.FC<StepProps> = ({ data, updateData }) => {
           <input 
             type="text" 
             className="form-input" 
+            placeholder="e.g. 100123456789"
             value={data.uanNumber || ''}
             onChange={e => updateData({ uanNumber: e.target.value })}
           />
@@ -84,6 +85,7 @@ const StepBanking: React.FC<StepProps> = ({ data, updateData }) => {
           <input 
             type="text" 
             className="form-input" 
+            placeholder="e.g. AB/123/456789"
             value={data.epfNumber || ''}
             onChange={e => updateData({ epfNumber: e.target.value })}
           />
@@ -93,6 +95,7 @@ const StepBanking: React.FC<StepProps> = ({ data, updateData }) => {
           <input 
             type="text" 
             className="form-input" 
+            placeholder="e.g. 1234567890"
             value={data.esiNumber || ''}
             onChange={e => updateData({ esiNumber: e.target.value })}
           />

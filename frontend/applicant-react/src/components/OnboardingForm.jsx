@@ -388,6 +388,18 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                 <label style={styles.label}>IFSC Code*</label>
                                 <input name="ifsc" value={formData.ifsc || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. HDFC0001234" />
                             </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>EPF Number (If applicable)</label>
+                                <input name="epfNumber" value={formData.epfNumber || ''} onChange={handleChange} style={styles.input} placeholder="e.g. AB/123/456789" />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>UAN Number (If applicable)</label>
+                                <input name="uanNumber" value={formData.uanNumber || ''} onChange={handleChange} style={styles.input} placeholder="e.g. 100123456789" />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>ESI Number (If applicable)</label>
+                                <input name="esiNumber" value={formData.esiNumber || ''} onChange={handleChange} style={styles.input} placeholder="e.g. 1234567890" />
+                            </div>
                         </div>
 
                         <div style={styles.navButtons}>
