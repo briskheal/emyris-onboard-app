@@ -42,8 +42,8 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!formData.division || !formData.designation) {
-      setError("Please select both a Division and a Designation.");
+    if (!formData.title || !formData.name || !formData.email || !formData.phone || !formData.division || !formData.designation) {
+      setError("Please fill out all mandatory fields, including Division and Designation.");
       return;
     }
     
@@ -97,7 +97,7 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
           
           <div style={styles.row}>
             <div style={{...styles.formGroup, flex: '1'}}>
-              <label style={styles.label}>Title</label>
+              <label style={styles.label}>Title*</label>
               <select name="title" value={formData.title} onChange={handleChange} style={styles.input} required>
                 <option value="Mr.">Mr.</option>
                 <option value="Ms.">Ms.</option>
@@ -107,24 +107,24 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
             </div>
             
             <div style={{...styles.formGroup, flex: '3'}}>
-              <label style={styles.label}>Full Name</label>
+              <label style={styles.label}>Full Name*</label>
               <input type="text" name="name" value={formData.name} onChange={handleChange} style={styles.input} required placeholder="Enter your full name" />
             </div>
           </div>
 
           <div style={styles.row}>
             <div style={{...styles.formGroup, flex: '1'}}>
-              <label style={styles.label}>Email</label>
+              <label style={styles.label}>Email*</label>
               <input type="email" name="email" value={formData.email} onChange={handleChange} style={styles.input} required placeholder="Email Address" />
             </div>
             <div style={{...styles.formGroup, flex: '1'}}>
-              <label style={styles.label}>Phone Number</label>
+              <label style={styles.label}>Phone Number*</label>
               <input type="tel" name="phone" value={formData.phone} onChange={handleChange} style={styles.input} required placeholder="Mobile Number" />
             </div>
           </div>
 
           <div style={styles.formGroup}>
-            <label style={styles.label}>Applying for Division</label>
+            <label style={styles.label}>Applying for Division*</label>
             <select name="division" value={formData.division} onChange={handleChange} style={styles.input} required>
               <option value="">-- Select Division --</option>
               {divisions.map((div, i) => {
@@ -135,7 +135,7 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
           </div>
 
           <div style={styles.formGroup}>
-            <label style={styles.label}>Select Designation</label>
+            <label style={styles.label}>Select Designation*</label>
             <div style={styles.pickerContainer}>
               {availableDesignations.length === 0 ? (
                 <p style={{color: '#94a3b8', fontSize: '12px', margin: 0}}>Select a division first to see available roles.</p>
