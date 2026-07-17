@@ -295,8 +295,40 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                             </div>
                             {formData.maritalStatus === 'Married' && (
                                 <div style={styles.formGroup}>
-                                    <label style={styles.label}>Anniversary Date*</label>
-                                    <input type="date" name="anniversaryDate" value={formData.anniversaryDate || ''} onChange={handleChange} required style={styles.input} />
+                                    <label style={styles.label}>Anniversary (Date & Month)*</label>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <select 
+                                            value={(formData.anniversaryDate || '').split('-')[0] || ''} 
+                                            onChange={(e) => {
+                                                const parts = (formData.anniversaryDate || '').split('-');
+                                                // Handle legacy YYYY-MM-DD format gracefully if it exists
+                                                const currentMonth = parts.length === 3 ? parts[1] : (parts[1] || 'Jan');
+                                                setFormData(prev => ({...prev, anniversaryDate: `${e.target.value}-${currentMonth}`}));
+                                            }} 
+                                            required 
+                                            style={{...styles.input, flex: 1}}
+                                        >
+                                            <option value="" disabled>Day</option>
+                                            {Array.from({length: 31}, (_, i) => String(i + 1).padStart(2, '0')).map(d => (
+                                                <option key={d} value={d}>{d}</option>
+                                            ))}
+                                        </select>
+                                        <select 
+                                            value={(formData.anniversaryDate || '').split('-').length === 3 ? (formData.anniversaryDate || '').split('-')[1] : ((formData.anniversaryDate || '').split('-')[1] || '')} 
+                                            onChange={(e) => {
+                                                const parts = (formData.anniversaryDate || '').split('-');
+                                                const currentDay = parts.length === 3 ? parts[2] : (parts[0] || '01');
+                                                setFormData(prev => ({...prev, anniversaryDate: `${currentDay}-${e.target.value}`}));
+                                            }} 
+                                            required 
+                                            style={{...styles.input, flex: 1}}
+                                        >
+                                            <option value="" disabled>Month</option>
+                                            {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map(m => (
+                                                <option key={m} value={m}>{m}</option>
+                                            ))}
+                                        </select>
+                                    </div>
                                 </div>
                             )}
                         </div>

@@ -588,7 +588,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                 {maritalStatus === 'Married' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gridColumn: 'span 2' }}>
                     <label className="form-label" style={{ marginBottom: '4px' }}>Anniversary Date</label>
-                    <input type="date" className="form-input" value={anniversaryDate} onChange={e => setAnniversaryDate(e.target.value)} />
+                    <input type="text" className="form-input" value={anniversaryDate} onChange={e => setAnniversaryDate(e.target.value)} placeholder="DD-MMM (e.g. 15-May)" />
                   </div>
                 )}
               </div>
