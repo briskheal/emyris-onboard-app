@@ -262,6 +262,44 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                 <input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} required style={styles.input} />
                             </div>
 
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Blood Group*</label>
+                                <select name="bloodGroup" value={formData.bloodGroup || ''} onChange={handleChange} required style={styles.input}>
+                                    <option value="" disabled>Select Blood Group</option>
+                                    <option value="A+">A+</option>
+                                    <option value="A-">A-</option>
+                                    <option value="B+">B+</option>
+                                    <option value="B-">B-</option>
+                                    <option value="O+">O+</option>
+                                    <option value="O-">O-</option>
+                                    <option value="AB+">AB+</option>
+                                    <option value="AB-">AB-</option>
+                                </select>
+                            </div>
+
+                            <div style={styles.formGroupFull}>
+                                <label style={styles.label}>Marital Status*</label>
+                                <div style={styles.tileGroup}>
+                                    {['Single', 'Married', 'Divorced', 'Widowed'].map((status) => (
+                                        <button
+                                            key={status}
+                                            type="button"
+                                            style={formData.maritalStatus === status ? styles.tileSelected : styles.tileBtn}
+                                            onClick={() => handleTileSelect('maritalStatus', status)}
+                                        >
+                                            {status}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {formData.maritalStatus === 'Married' && (
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Anniversary Date*</label>
+                                    <input type="date" name="anniversaryDate" value={formData.anniversaryDate || ''} onChange={handleChange} required style={styles.input} />
+                                </div>
+                            )}
+
                             <div style={styles.formGroupFull}>
                                 <label style={styles.label}>Gender*</label>
                                 <div style={styles.tileGroup}>

@@ -16,6 +16,9 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [loading, setLoading] = useState(false);
   
   // Local state for internal assignment
+  const [bloodGroup, setBloodGroup] = useState(initialApplicant.formData?.bloodGroup || initialApplicant.bloodGroup || '');
+  const [maritalStatus, setMaritalStatus] = useState(initialApplicant.maritalStatus || initialApplicant.formData?.maritalStatus || '');
+  const [anniversaryDate, setAnniversaryDate] = useState(initialApplicant.anniversaryDate || initialApplicant.formData?.anniversaryDate || '');
   const [empCode, setEmpCode] = useState(initialApplicant.empCode || '');
   const [designation, setDesignation] = useState(initialApplicant.designation || '');
   const [division, setDivision] = useState(initialApplicant.division || '');
@@ -92,6 +95,10 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       setAccNo(fullApp.formData?.accNo || '');
       setIfsc(fullApp.formData?.ifsc || '');
       setVerificationChecks(fullApp.verificationChecks || {});
+
+      setBloodGroup(fullApp.formData?.bloodGroup || fullApp.bloodGroup || '');
+      setMaritalStatus(fullApp.maritalStatus || fullApp.formData?.maritalStatus || '');
+      setAnniversaryDate(fullApp.anniversaryDate || fullApp.formData?.anniversaryDate || '');
 
       try {
         setActualJoiningDate(fullApp.actualJoiningDate && !isNaN(new Date(fullApp.actualJoiningDate).getTime()) 
@@ -268,7 +275,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
       const updateRes = await api.post('/admin/update-workflow-data', {
         email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
-        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary, verificationChecks
+        epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary, verificationChecks,
+        bloodGroup, maritalStatus, anniversaryDate
       });
       if (updateRes.data.success) {
         alert('Workouts saved successfully!');
@@ -549,6 +557,42 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
           {/* Right Column: Assignment & Salary */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            
+            <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Personal Details (Editable)</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Blood Group</label>
+                  <select className="form-input" value={bloodGroup} onChange={e => setBloodGroup(e.target.value)}>
+                    <option value="">Select</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Marital Status</label>
+                  <select className="form-input" value={maritalStatus} onChange={e => setMaritalStatus(e.target.value)}>
+                    <option value="">Select</option>
+                    <option value="Single">Single</option>
+                    <option value="Married">Married</option>
+                    <option value="Divorced">Divorced</option>
+                    <option value="Widowed">Widowed</option>
+                  </select>
+                </div>
+                {maritalStatus === 'Married' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gridColumn: 'span 2' }}>
+                    <label className="form-label" style={{ marginBottom: '4px' }}>Anniversary Date</label>
+                    <input type="date" className="form-input" value={anniversaryDate} onChange={e => setAnniversaryDate(e.target.value)} />
+                  </div>
+                )}
+              </div>
+            </div>
             
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Internal Assignment</h3>
