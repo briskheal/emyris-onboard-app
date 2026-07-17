@@ -11,24 +11,25 @@
     top: 68px !important;
     bottom: 0 !important;
     height: auto !important;
-    width: 100% !important; /* Full screen for mobile accessibility */
+    width: 260px !important; /* Left oriented, right side open */
     transform: translateX(-100%);
     transition: transform 0.3s ease;
     z-index: 50;
-    box-shadow: none;
+    box-shadow: 4px 0 15px rgba(0,0,0,0.5); /* Shadow to separate from content */
     overflow-y: auto !important;
   }
   .admin-sidebar.open {
     transform: translateX(0);
   }
   .admin-sidebar nav {
-    align-items: center; /* Center items on mobile */
-    padding: 0.5rem 0;
+    align-items: flex-start; /* Left oriented */
+    padding: 0.5rem 0.5rem;
   }
   .admin-sidebar button {
-    padding: 0.85rem 1.5rem !important; /* Slightly smaller touch targets */
+    padding: 0.85rem 1rem !important; 
     font-size: 1rem !important;
-    justify-content: center !important;
+    justify-content: flex-start !important; /* Left oriented */
+    width: 100%;
   }
   .mobile-header {
     height: 68px;
