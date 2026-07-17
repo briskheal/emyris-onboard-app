@@ -748,6 +748,7 @@ export default function SetupAndLetters() {
             </div>
           </div>
         </div>
+        </div>
       )}
 
       {activeTab === 'assets' && (
