@@ -85,7 +85,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       setDesignation(fullApp.designation || '');
       setDivision(fullApp.division || '');
       setReportingTo(fullApp.reportingTo || '');
-      setHq(fullApp.hq || '');
+      setHq(fullApp.hq || fullApp.formData?.hq || '');
       setSalary(fullApp.salary || '');
       
       setEpfNumber(fullApp.epfNumber || fullApp.formData?.epfNumber || '');

@@ -415,6 +415,15 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                     </div>
                                 )}
                             </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>HQ Selection (Headquarters)*</label>
+                                <select name="hq" value={formData.hq || ''} onChange={handleChange} required style={styles.input}>
+                                    <option value="" disabled>Select HQ</option>
+                                    {(companyData?.hqs || []).map((hqObj, i) => (
+                                        <option key={i} value={hqObj.name}>{hqObj.name}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
 
                         <div style={styles.navButtons}>
@@ -511,7 +520,7 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                             </div>
                             <div style={styles.reviewRow}>
                                 <span style={styles.reviewKey}>Professional:</span>
-                                <strong>{formData.highestQualification || 'N/A'} (Exp: {formData.totalExperience || '0'} Yrs)</strong>
+                                <strong>{formData.highestQualification || 'N/A'} (Exp: {formData.totalExperience || '0'}), HQ: {formData.hq || 'N/A'}</strong>
                             </div>
                             <div style={styles.reviewRow}>
                                 <span style={styles.reviewKey}>Statutory IDs:</span>
