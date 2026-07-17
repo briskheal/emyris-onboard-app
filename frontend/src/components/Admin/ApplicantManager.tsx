@@ -131,7 +131,7 @@ const ApplicantManager: React.FC = () => {
                     <span className={`badge ${app.status || 'pending'}`}>{app.status || 'Draft'}</span>
                   </td>
                   <td style={{ padding: '15px' }}>
-                    <div style={{ display: 'flex', gap: '5px' }}>
+                    <div style={{ display: 'flex', gap: '5px', width: '100%', alignItems: 'center' }}>
                       <button className="btn btn-sm btn-outline" onClick={() => setVerificationApp(app)}>Review / View</button>
                       {app.status === 'approved' && !app.offerLetterData && (
                         <button className="btn btn-sm btn-primary" onClick={() => setPdfTask({app, type: 'offer'})}>Offer Letter</button>
@@ -139,7 +139,7 @@ const ApplicantManager: React.FC = () => {
                       {app.status === 'joined' && !app.apptLetterData && (
                         <button className="btn btn-sm btn-primary" style={{background: '#10b981', color: 'white'}} onClick={() => setPdfTask({app, type: 'appointment'})}>Appt Letter</button>
                       )}
-                      <button className="btn btn-sm btn-outline" title="Delete Applicant" style={{ borderColor: '#ef4444', color: '#ef4444', padding: '0.25rem 0.5rem' }} onClick={() => handleDelete(app.email)}>🗑️</button>
+                      <button className="btn btn-sm btn-outline" title="Delete Applicant" style={{ borderColor: '#ef4444', color: '#ef4444', padding: '0.25rem 0.5rem', marginLeft: 'auto' }} onClick={() => handleDelete(app.email)}>🗑️</button>
                     </div>
                   </td>
                 </tr>
