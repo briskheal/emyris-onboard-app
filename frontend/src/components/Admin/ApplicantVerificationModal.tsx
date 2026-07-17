@@ -236,6 +236,21 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
     }
   };
 
+  const handleLoginAccessToggle = async (value: boolean) => {
+    setApplicant((prev: any) => ({ ...prev, canLogin: value }));
+    try {
+      await api.post('/admin/toggle-access', {
+        email: applicant.email,
+        canLogin: value
+      });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error("Failed to toggle access", err);
+      setApplicant((prev: any) => ({ ...prev, canLogin: !value }));
+      alert("Failed to change login access.");
+    }
+  };
+
   const handleSave = async () => {
     setLoading(true);
     try {
@@ -424,6 +439,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Pipeline Tracking</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <Switch label="🔒 Portal Login Access" checked={applicant.canLogin !== false} onChange={handleLoginAccessToggle} />
+                <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.05)', margin: '5px 0' }} />
                 <Switch label="📨 Offer Letter Sent" checked={tasks.offerLetter} onChange={(v) => handleTaskToggle('offerLetter', v)} />
                 <Switch label="📝 Appointment Letter Sent" checked={tasks.appointmentLetter} onChange={(v) => handleTaskToggle('appointmentLetter', v)} />
                 <Switch label="📱 App Link Sent to Applicant" checked={tasks.appLinkSent} onChange={(v) => handleTaskToggle('appLinkSent', v)} />
