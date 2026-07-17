@@ -236,18 +236,13 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '22px', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                             <div style={{ flex: '1 1 200px' }}>
                                 <label style={styles.label}>Title / Salutation*</label>
-                                <div style={{...styles.tileGroup, gap: '8px'}}>
-                                    {['Mr.', 'Mrs.', 'Ms.', 'Dr.'].map((t) => (
-                                        <button
-                                            key={t}
-                                            type="button"
-                                            style={formData.title === t ? {...styles.tileSelected, padding: '8px 12px'} : {...styles.tileBtn, padding: '8px 12px'}}
-                                            onClick={() => handleTileSelect('title', t)}
-                                        >
-                                            {t}
-                                        </button>
-                                    ))}
-                                </div>
+                                <select name="title" value={formData.title || ''} onChange={handleChange} required style={styles.input}>
+                                    <option value="" disabled>Select Title</option>
+                                    <option value="Mr.">Mr.</option>
+                                    <option value="Mrs.">Mrs.</option>
+                                    <option value="Ms.">Ms.</option>
+                                    <option value="Dr.">Dr.</option>
+                                </select>
                             </div>
                             <div style={{ flex: '2 1 200px', display: 'flex', flexDirection: 'column' }}>
                                 <label style={styles.label}>First Name*</label>
@@ -279,68 +274,65 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                     <option value="AB-">AB-</option>
                                 </select>
                             </div>
-                            <div style={{ gridColumn: '1 / -1' }}>
+                            <div style={styles.formGroup}>
                                 <label style={styles.label}>Gender*</label>
-                                <div style={{...styles.tileGroup, flexWrap: 'wrap'}}>
-                                    {[
-                                        { val: 'M', label: '👨 Male' },
-                                        { val: 'F', label: '👩 Female' },
-                                        { val: 'T', label: '🧑 Transgender / Other' }
-                                    ].map((g) => (
-                                        <button
-                                            key={g.val}
-                                            type="button"
-                                            style={formData.gender === g.val ? styles.tileSelected : styles.tileBtn}
-                                            onClick={() => handleTileSelect('gender', g.val)}
-                                        >
-                                            {g.label}
-                                        </button>
-                                    ))}
-                                </div>
+                                <select name="gender" value={formData.gender || ''} onChange={handleChange} required style={styles.input}>
+                                    <option value="" disabled>Select Gender</option>
+                                    <option value="M">👨 Male</option>
+                                    <option value="F">👩 Female</option>
+                                    <option value="T">🧑 Transgender / Other</option>
+                                </select>
                             </div>
-                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '22px', alignItems: 'flex-start' }}>
-                                <div style={{ flex: '1 1 300px' }}>
-                                    <label style={styles.label}>Marital Status*</label>
-                                    <div style={{...styles.tileGroup, flexWrap: 'wrap'}}>
-                                        {['Single', 'Married', 'Divorced', 'Widowed'].map((status) => (
-                                            <button
-                                                key={status}
-                                                type="button"
-                                                style={formData.maritalStatus === status ? styles.tileSelected : styles.tileBtn}
-                                                onClick={() => handleTileSelect('maritalStatus', status)}
-                                            >
-                                                {status}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                                {formData.maritalStatus === 'Married' && (
-                                    <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column' }}>
-                                        <label style={styles.label}>Anniversary Date*</label>
-                                        <input type="date" name="anniversaryDate" value={formData.anniversaryDate || ''} onChange={handleChange} required style={styles.input} />
-                                    </div>
-                                )}
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Marital Status*</label>
+                                <select name="maritalStatus" value={formData.maritalStatus || ''} onChange={handleChange} required style={styles.input}>
+                                    <option value="" disabled>Select Status</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                </select>
                             </div>
+                            {formData.maritalStatus === 'Married' && (
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Anniversary Date*</label>
+                                    <input type="date" name="anniversaryDate" value={formData.anniversaryDate || ''} onChange={handleChange} required style={styles.input} />
+                                </div>
+                            )}
                         </div>
 
                         {/* Professional Block */}
                         <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
-                            <div style={styles.formGroupFull}>
-                                <label style={styles.label}>Total Years of Work Experience* <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(Enter 0 if you are a Fresher)</span></label>
-                                <input type="number" step="0.1" name="totalExperience" value={formData.totalExperience || ''} onChange={handleChange} required style={styles.input} placeholder="0 for Fresher, 2.5 for experienced..." />
-                            </div>
-
-                            <div style={{...styles.grid, marginTop: '1rem'}}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '22px' }}>
                                 <div style={styles.formGroup}>
                                     <label style={styles.label}>Highest Qualification*</label>
-                                    <input name="highestQualification" value={formData.highestQualification || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. B.Tech, MBA, B.Sc" />
+                                    <select name="highestQualification" value={formData.highestQualification || ''} onChange={handleChange} required style={styles.input}>
+                                        <option value="" disabled>Select Qualification</option>
+                                        {['10th / High School', '12th / Intermediate', 'Diploma', 'ITI', 'B.A.', 'B.Sc', 'B.Com', 'B.Tech / B.E.', 'BCA', 'BBA', 'M.A.', 'M.Sc', 'M.Com', 'M.Tech / M.E.', 'MCA', 'MBA', 'Ph.D', 'Other'].map(qual => (
+                                            <option key={qual} value={qual}>{qual}</option>
+                                        ))}
+                                    </select>
                                 </div>
                                 <div style={styles.formGroup}>
                                     <label style={styles.label}>Year of Passing*</label>
-                                    <input type="number" name="passingYear" value={formData.passingYear || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. 2022" />
+                                    <select name="passingYear" value={formData.passingYear || ''} onChange={handleChange} required style={styles.input}>
+                                        <option value="" disabled>Select Year</option>
+                                        {Array.from({ length: 45 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
                                 </div>
-                                <div style={styles.formGroupFull}>
-                                    <label style={styles.label}>Previous Company <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(Leave blank if Fresher)</span></label>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Total Years of Work Experience*</label>
+                                    <select name="totalExperience" value={formData.totalExperience || ''} onChange={handleChange} required style={styles.input}>
+                                        <option value="" disabled>Select Experience</option>
+                                        {['0 (Fresher)', '0 - 1 Year', '1 - 3 Years', '3 - 5 Years', '5 - 7 Years', '7 - 10 Years', '10 - 15 Years', '15+ Years'].map(exp => (
+                                            <option key={exp} value={exp}>{exp}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Previous Company <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(If applicable)</span></label>
                                     <input name="previousCompany" value={formData.previousCompany || ''} onChange={handleChange} style={styles.input} placeholder="e.g. Acme Corp" />
                                 </div>
                             </div>
