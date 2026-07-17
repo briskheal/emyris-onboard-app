@@ -18,29 +18,35 @@ const PRODUCT_SCRIPTS: Record<string, DetailingScript> = {
     id: 'alomos-gold',
     name: 'ALOMOS GOLD',
     tagline: 'The Gold-Standard 5-in-1 Clinical Nutrition Formula',
-    hook: "Good Morning/Afternoon Doctor! Today, I am proud to introduce Emyris Biolifesciences' ALOMOS GOLD — The Gold-Standard 5-in-1 Clinical Nutrition Formula engineered specifically to Empower Surgical Recovery, Critical Care, and Muscle Synthesis without the GI distress common in standard protein supplements.",
-    need: "Doctor, whether in Post-Surgical Recovery, Post-Bariatric surgery, Critical Care ICU, Cancer Cachexia, or Geriatric Sarcopenia, your patients desperately require rapid tissue repair and positive nitrogen balance without bloating or malabsorption.",
+    hook: "Good morning Doctor, I am Rahul Kumar, Regards from Emyris Biolifesciences Pvt. Ltd. Doctor, As you know...After major surgery, the biggest challenge is not just wound healing—it is rapid muscle loss, poor immunity, inflammation, and delayed recovery due to inadequate protein intake. Doctor, ALOMOS GOLD is specially designed as an advanced surgical recovery nutrition with high-quality whey protein isolate, probiotics, digestive enzymes, and curcumin to support faster recovery.",
+    need: "Doctor, you will find Alomos Gold highly effective for: Post-Bariatric Surgery Patients (who require dense nutrition in small volumes), Critical Care & General Post-Surgical Recovery, Cancer Cachexia to prevent severe muscle wasting, and Sarcopenia & Geriatric Nutrition to improve strength.",
     pillars: [
-      "Ultra-High Protein Density (25g WPI per 30g scoop) with 4,706 mg BCAAs: Triggers rapid Muscle Protein Synthesis (MPS) and preserves lean body mass.",
-      "Maximal Bioavailability with Zero GI Distress (300mg DigeZyme® + 13.88B CFU Probiotics + 12g Prebiotic Fiber): A proprietary 5-enzyme matrix plus multi-strain probiotics ensuring complete protein breakdown without lactose sensitivity or bloating.",
-      "Anti-Inflammatory Recovery (150mg Curcumin Extract): Natural antioxidant support reducing post-surgical swelling and oxidative stress."
+      "Pure Whey Protein Isolate: It delivers an ultra-high protein density of 83.4g per 100g, yielding an exceptional 25g of pure protein per 30g serving to rapidly support post-surgical tissue repair and muscle recovery.",
+      "Enhanced Bioavailability: We have infused a 1000mg DigeZyme Enzyme Blend (Amylase, Protease, Lactase, Lipase, & Cellulase) to ensure maximum absorption and easy digestion without bloating.",
+      "Anti-Inflammatory Support: It contains 500mg Curcumin Extract to actively support post-surgical and anti-inflammatory recovery.",
+      "Gut & Microbiome Health: It includes a potent 13.88 Billion CFU Probiotic Blend mixed with 12g of prebiotic fiber to maintain gut health, which is crucial for recovering patients often on heavy medications.",
+      "Optimal BCAA Profile: It delivers 4,706mg of total BCAAs per serving to optimally trigger muscle protein synthesis."
     ],
-    closing: "Best of all, Doctor, ALOMOS GOLD is completely Sugar-Free and Gluten-Free, enriched with 26 essential vitamins and minerals, and comes in a delicious Chocolate Flavour. Please prescribe ALOMOS GOLD — 1 level scoop (30g) in 200–250ml cold water or milk twice daily for your recovering patients.",
-    fullText: "Good Morning Doctor! Today, I am proud to introduce Emyris Biolifesciences' ALOMOS GOLD — The Gold-Standard 5-in-1 Clinical Nutrition Formula engineered specifically to Empower Surgical Recovery, Critical Care, and Muscle Synthesis without GI distress. Doctor, whether in Post-Surgical Recovery, Post-Bariatric surgery, Critical Care ICU, Cancer Cachexia, or Geriatric Sarcopenia, your patients require rapid tissue repair without bloating. First, it delivers Ultra-High Protein Density with 25 grams of 100% Whey Protein Isolate and 4,706 milligrams of BCAAs per scoop to trigger rapid Muscle Protein Synthesis. Second, it guarantees maximal bioavailability with zero GI distress using 300 milligrams of DigeZyme 5-enzyme matrix and 13.88 Billion CFU Probiotics with 12 grams Prebiotic Fiber. Third, it provides anti-inflammatory recovery through 150 milligrams of Curcumin Extract. Best of all, ALOMOS GOLD is completely Sugar-Free and Gluten-Free, fortified with 26 vitamins and minerals in a palatable Chocolate Flavour. Please prescribe ALOMOS GOLD — 1 level scoop (30g) in 200 to 250 millilitres of cold water twice daily.",
+    closing: "For your patients' safety and compliance, it is completely Sugar-Free and Gluten-Free. It is available in a highly palatable chocolate flavor in both 500g and 1kg packs. Considering its comprehensive 5-in-1 nutritional profile, I request you to please prescribe Alomos Gold for your next post-surgical or recovering patients. Doctor, can I get at least 5 prescriptions of Alomos Gold today?",
+    fullText: "Good morning Doctor, I am Rahul Kumar, Regards from Emyris Biolifesciences Pvt. Ltd. Doctor, As you know...After major surgery, the biggest challenge is not just wound healing—it is rapid muscle loss, poor immunity, inflammation, and delayed recovery due to inadequate protein intake. Doctor, ALOMOS GOLD is specially designed as an advanced surgical recovery nutrition with high-quality whey protein isolate, probiotics, digestive enzymes, and curcumin to support faster recovery. Doctor, what makes Alomos Gold the gold standard in protein quality is its unique 5-in-1 benefits formula: Pure Whey Protein Isolate delivers an ultra-high protein density of 83.4g per 100g, yielding an exceptional 25g of pure protein per 30g serving to rapidly support post-surgical tissue repair and muscle recovery. Enhanced Bioavailability: We have infused a 1000mg DigeZyme Enzyme Blend to ensure maximum absorption and easy digestion without bloating. Anti-Inflammatory Support: It contains 500mg Curcumin Extract to actively support post-surgical and anti-inflammatory recovery. Gut & Microbiome Health: It includes a potent 13.88 Billion CFU Probiotic Blend mixed with 12g of prebiotic fiber to maintain gut health. Optimal BCAA Profile: It delivers 4,706mg of total BCAAs per serving to optimally trigger muscle protein synthesis. Doctor, you will find Alomos Gold highly effective for Post-Bariatric Surgery Patients, Critical Care & General Post-Surgical Recovery, Cancer Cachexia, and Sarcopenia & Geriatric Nutrition. For your patients' safety and compliance, it is completely Sugar-Free and Gluten-Free. It is available in a highly palatable chocolate flavor in both 500g and 1kg packs. Considering its comprehensive 5-in-1 nutritional profile, I request you to please prescribe Alomos Gold for your next post-surgical or recovering patients. Doctor, can I get at least 5 prescriptions of Alomos Gold today?",
     keywords: [
       { word: "Whey Protein Isolate", category: "Core Protein" },
       { word: "25g", category: "Dosage Strength" },
+      { word: "83.4g", category: "Protein Density" },
       { word: "BCAAs", category: "Muscle Synthesis" },
-      { word: "4,706 mg", category: "BCAA Strength" },
+      { word: "4,706mg", category: "BCAA Strength" },
       { word: "DigeZyme", category: "Enzyme Matrix" },
+      { word: "1000mg", category: "Enzyme Strength" },
       { word: "Probiotics", category: "Gut Health" },
-      { word: "Prebiotic Fiber", category: "Microbiome" },
-      { word: "Curcumin", category: "Anti-Inflammatory" },
+      { word: "13.88 Billion CFU", category: "Probiotic Strength" },
+      { word: "Prebiotic fiber", category: "Microbiome" },
+      { word: "12g", category: "Prebiotic Strength" },
+      { word: "Curcumin Extract", category: "Anti-Inflammatory" },
+      { word: "500mg", category: "Curcumin Strength" },
       { word: "Sugar-Free", category: "Safety Profile" },
       { word: "Gluten-Free", category: "Safety Profile" },
-      { word: "26 Vitamins", category: "Micronutrition" },
-      { word: "Chocolate Flavour", category: "Palatability" },
-      { word: "200", category: "Preparation Protocol" }
+      { word: "Chocolate flavor", category: "Palatability" },
+      { word: "5 prescriptions", category: "Closing Target" }
     ]
   },
   'GLOWVIT-60K': {
@@ -184,20 +190,29 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
   };
 
   const handleResetToSystemDefaults = async () => {
-    if (!window.confirm("Are you sure you want to restore the system defaults? This will erase any custom script modifications and reload the latest standard detailing scripts from the server.")) return;
+    if (!window.confirm(`Are you sure you want to restore the system default script for ${selectedProd}? This will only affect ${selectedProd}.`)) return;
+    
+    const defaultScript = PRODUCT_SCRIPTS[selectedProd];
+    if (!defaultScript) {
+      alert(`There is no system default for ${selectedProd}. If you wish to delete it, please clear its content and save.`);
+      return;
+    }
+
     setIsSaving(true);
+    const updatedMap = { ...scriptsMap, [selectedProd]: defaultScript };
+
     try {
       const res = await fetch('/api/save-detailing-scripts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ detailingScripts: {} })
+        body: JSON.stringify({ detailingScripts: updatedMap })
       });
       const data = await res.json();
       if (data.success) {
-        alert("System defaults restored! The page will now reload.");
+        alert(`${selectedProd} restored to default successfully! The page will now reload.`);
         window.location.reload();
       } else {
-        alert("Error resetting scripts: " + data.error);
+        alert("Error resetting script: " + data.error);
       }
     } catch (e: any) {
       alert("Failed to reset: " + e.message);
