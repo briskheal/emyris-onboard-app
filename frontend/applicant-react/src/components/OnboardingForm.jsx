@@ -324,6 +324,21 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                 <label style={styles.label}>Total Years of Work Experience* <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(Enter 0 if you are a Fresher)</span></label>
                                 <input type="number" step="0.1" name="totalExperience" value={formData.totalExperience || ''} onChange={handleChange} required style={styles.input} placeholder="0 for Fresher, 2.5 for experienced..." />
                             </div>
+
+                            <div style={{...styles.grid, marginTop: '1rem'}}>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Highest Qualification*</label>
+                                    <input name="highestQualification" value={formData.highestQualification || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. B.Tech, MBA, B.Sc" />
+                                </div>
+                                <div style={styles.formGroup}>
+                                    <label style={styles.label}>Year of Passing*</label>
+                                    <input type="number" name="passingYear" value={formData.passingYear || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. 2022" />
+                                </div>
+                                <div style={styles.formGroupFull}>
+                                    <label style={styles.label}>Previous Company <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(Leave blank if Fresher)</span></label>
+                                    <input name="previousCompany" value={formData.previousCompany || ''} onChange={handleChange} style={styles.input} placeholder="e.g. Acme Corp" />
+                                </div>
+                            </div>
                         </div>
 
                         <div style={styles.navButtons}>
@@ -433,6 +448,14 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                 <input name="ifsc" value={formData.ifsc || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. HDFC0001234" />
                             </div>
                             <div style={styles.formGroup}>
+                                <label style={styles.label}>PAN Number*</label>
+                                <input name="panNumber" value={formData.panNumber || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. ABCDE1234F" />
+                            </div>
+                            <div style={styles.formGroup}>
+                                <label style={styles.label}>Aadhar Number*</label>
+                                <input name="aadharNumber" value={formData.aadharNumber || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. 1234 5678 9012" />
+                            </div>
+                            <div style={styles.formGroup}>
                                 <label style={styles.label}>EPF Number (If applicable)</label>
                                 <input name="epfNumber" value={formData.epfNumber || ''} onChange={handleChange} style={styles.input} placeholder="e.g. AB/123/456789" />
                             </div>
@@ -488,6 +511,14 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                             <div style={styles.reviewRow}>
                                 <span style={styles.reviewKey}>Location / Address:</span>
                                 <strong>{[formData.city, formData.state].filter(Boolean).join(', ') || 'Not entered'}</strong>
+                            </div>
+                            <div style={styles.reviewRow}>
+                                <span style={styles.reviewKey}>Professional:</span>
+                                <strong>{formData.highestQualification || 'N/A'} (Exp: {formData.totalExperience || '0'} Yrs)</strong>
+                            </div>
+                            <div style={styles.reviewRow}>
+                                <span style={styles.reviewKey}>Statutory IDs:</span>
+                                <strong>PAN: {formData.panNumber || '***'}, Aadhar: {formData.aadharNumber || '***'}</strong>
                             </div>
                             <div style={styles.reviewRow}>
                                 <span style={styles.reviewKey}>Bank details:</span>
