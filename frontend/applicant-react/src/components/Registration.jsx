@@ -184,7 +184,7 @@ const styles = {
     backdropFilter: 'blur(12px)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '16px',
-    padding: '40px',
+    padding: '24px 30px',
     width: '100%',
     maxWidth: '600px',
     boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
@@ -193,7 +193,7 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    marginBottom: '20px'
+    marginBottom: '15px'
   },
   backButton: {
     background: 'transparent',
@@ -206,41 +206,41 @@ const styles = {
   title: {
     color: '#fff',
     margin: 0,
-    fontSize: '24px'
+    fontSize: '22px'
   },
   errorBanner: {
     background: 'rgba(239, 68, 68, 0.1)',
     color: '#ef4444',
-    padding: '12px',
+    padding: '10px',
     borderRadius: '8px',
-    marginBottom: '20px',
+    marginBottom: '15px',
     border: '1px solid rgba(239, 68, 68, 0.3)',
-    fontSize: '14px'
+    fontSize: '13px'
   },
   form: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '20px'
+    gap: '14px'
   },
   row: {
     display: 'flex',
-    gap: '15px'
+    gap: '12px'
   },
   formGroup: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
+    gap: '6px',
     textAlign: 'left'
   },
   label: {
     color: '#cbd5e1',
-    fontSize: '13px'
+    fontSize: '12px'
   },
   input: {
     background: 'rgba(15, 23, 42, 0.6)',
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '8px',
-    padding: '10px 14px',
+    padding: '8px 12px',
     color: '#fff',
     fontSize: '15px',
     outline: 'none'
