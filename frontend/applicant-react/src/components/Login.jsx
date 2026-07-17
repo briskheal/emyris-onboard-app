@@ -5,10 +5,13 @@ const Login = ({ onNavigate, onLoginSuccess }) => {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isForgotPin, setIsForgotPin] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setLoading(true);
 
     try {
@@ -33,6 +36,33 @@ const Login = ({ onNavigate, onLoginSuccess }) => {
     }
   };
 
+  const handleForgotPin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/resend-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase() })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        setSuccessMsg(data.message || 'PIN has been sent to your email.');
+        setIsForgotPin(false); // Switch back to login view so they can enter the PIN
+      } else {
+        setError(data.message || 'Failed to resend PIN.');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -44,36 +74,62 @@ const Login = ({ onNavigate, onLoginSuccess }) => {
         </div>
 
         {error && <div style={styles.errorBanner}>{error}</div>}
+        {successMsg && <div style={{ ...styles.errorBanner, backgroundColor: 'rgba(16, 185, 129, 0.2)', color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)' }}>{successMsg}</div>}
 
-        <form onSubmit={handleLogin} style={styles.form}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Registered Email</label>
-            <input 
-              type="email" 
-              required 
-              style={styles.input}
-              placeholder="Enter your email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
+        {isForgotPin ? (
+          <form onSubmit={handleForgotPin} style={styles.form}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Registered Email</label>
+              <input 
+                type="email" 
+                required 
+                style={styles.input}
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <button type="submit" style={styles.submitBtn} disabled={loading}>
+              {loading ? 'Sending...' : 'Send New PIN'}
+            </button>
+            <p style={{ ...styles.footerText, marginTop: '1rem', cursor: 'pointer', color: 'var(--primary)' }} onClick={() => { setIsForgotPin(false); setError(''); }}>
+              Back to Login
+            </p>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} style={styles.form}>
+            <div style={styles.formGroup}>
+              <label style={styles.label}>Registered Email</label>
+              <input 
+                type="email" 
+                required 
+                style={styles.input}
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
 
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Secure PIN</label>
-            <input 
-              type="password" 
-              required 
-              style={styles.input}
-              placeholder="Enter your 4-6 digit PIN"
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-            />
-          </div>
+            <div style={styles.formGroup}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <label style={{ ...styles.label, marginBottom: 0 }}>Secure PIN</label>
+                <span style={{ fontSize: '0.8rem', color: 'var(--primary)', cursor: 'pointer' }} onClick={() => { setIsForgotPin(true); setError(''); setSuccessMsg(''); }}>Forgot PIN?</span>
+              </div>
+              <input 
+                type="password" 
+                required 
+                style={styles.input}
+                placeholder="Enter your 4-6 digit PIN"
+                value={pin}
+                onChange={(e) => setPin(e.target.value)}
+              />
+            </div>
 
-          <button type="submit" style={styles.submitBtn} disabled={loading}>
-            {loading ? 'Verifying...' : 'Login Securely'}
-          </button>
-        </form>
+            <button type="submit" style={styles.submitBtn} disabled={loading}>
+              {loading ? 'Verifying...' : 'Login Securely'}
+            </button>
+          </form>
+        )}
 
         <p style={styles.footerText}>
           Don't have an account?{' '}

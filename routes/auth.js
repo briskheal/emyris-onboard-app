@@ -97,7 +97,7 @@ router.post('/resend-pin', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email });
         if (!applicant) {
-            return res.json({ success: false, message: 'Email not found in our records.' });
+            return res.json({ success: false, message: "Account doesn't exist - Apply in New Applicant Link" });
         }
         
         const pin = applicant.pin || Math.floor(100000 + Math.random() * 900000).toString();
