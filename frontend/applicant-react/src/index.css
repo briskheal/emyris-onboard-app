@@ -14,3 +14,40 @@
 }
 
 .letter-content-render * { background: transparent !important; background-color: transparent !important; background-image: none !important; }
+
+/* Mobile Accessibility for Dashboard */
+@media (min-width: 769px) {
+  .mobile-header {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-sidebar {
+    position: fixed !important;
+    left: 0;
+    top: 60px !important;
+    height: calc(100vh - 60px) !important;
+    width: 100% !important; /* Full screen for mobile accessibility */
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 50;
+    box-shadow: none;
+  }
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+  .admin-sidebar nav {
+    align-items: center;
+    padding: 1rem 0;
+  }
+  .admin-sidebar button {
+    padding: 1.25rem 1.5rem !important; /* Larger touch targets */
+    font-size: 1.1rem !important;
+    justify-content: center !important;
+  }
+  .mobile-header {
+    height: 60px;
+    width: 100%;
+  }
+}
