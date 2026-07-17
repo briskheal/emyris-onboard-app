@@ -2094,10 +2094,8 @@ router.post('/save-detailing-scripts', async (req, res) => {
         if (!profile) {
             await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD.", detailingScripts });
         } else {
-            await Company.updateOne({}, { detailingScripts, $set: { detailingScripts } });
-            if (profile._id) {
-                await Company.updateOne({ _id: profile._id }, { detailingScripts, $set: { detailingScripts } });
-            }
+            profile.detailingScripts = detailingScripts;
+            await profile.save();
         }
         res.json({ success: true, message: 'Detailing scripts saved successfully' });
     } catch (e) {
