@@ -2084,7 +2084,7 @@ const DEFAULT_DETAILING_SCRIPTS = {
   }
 };
 
-router.post('/api/save-detailing-scripts', async (req, res) => {
+router.post('/save-detailing-scripts', async (req, res) => {
     try {
         const { detailingScripts } = req.body;
         if (!detailingScripts || typeof detailingScripts !== 'object') {

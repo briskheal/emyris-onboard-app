@@ -116,11 +116,6 @@ app.get('/api/company-data', (req, res, next) => {
     adminRouter(req, res, next);
 });
 
-app.post('/api/save-detailing-scripts', (req, res, next) => {
-    req.url = '/api/save-detailing-scripts';
-    adminRouter(req, res, next);
-});
-
 app.post('/api/admin-login', (req, res, next) => {
     req.url = '/login';
     adminRouter(req, res, next);

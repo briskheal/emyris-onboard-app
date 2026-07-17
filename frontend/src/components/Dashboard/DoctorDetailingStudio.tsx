@@ -139,7 +139,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
       [editScript.name]: editScript
     };
     try {
-      const res = await fetch('/api/save-detailing-scripts', {
+      const res = await fetch('/api/admin/save-detailing-scripts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ detailingScripts: updatedMap })
@@ -202,7 +202,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
     const updatedMap = { ...scriptsMap, [selectedProd]: defaultScript };
 
     try {
-      const res = await fetch('/api/save-detailing-scripts', {
+      const res = await fetch('/api/admin/save-detailing-scripts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ detailingScripts: updatedMap })
