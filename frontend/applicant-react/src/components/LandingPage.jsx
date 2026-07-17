@@ -19,7 +19,7 @@ const LandingPage = ({ onNavigate, companyData }) => {
             style={styles.primaryButton}
             onClick={() => onNavigate('login')}
           >
-            Applicant Login
+            Existing User Login
           </button>
           <button 
             style={styles.outlineButton}
