@@ -183,6 +183,29 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
     setIsEditing(true);
   };
 
+  const handleResetToSystemDefaults = async () => {
+    if (!window.confirm("Are you sure you want to restore the system defaults? This will erase any custom script modifications and reload the latest standard detailing scripts from the server.")) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch('/api/save-detailing-scripts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ detailingScripts: {} })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("System defaults restored! The page will now reload.");
+        window.location.reload();
+      } else {
+        alert("Error resetting scripts: " + data.error);
+      }
+    } catch (e: any) {
+      alert("Failed to reset: " + e.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleToggleAudio = () => {
     if (!('speechSynthesis' in window)) {
       alert("Your browser does not support Web Speech Audio. Please use Google Chrome or Microsoft Edge.");
@@ -416,6 +439,14 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
               style={{ background: '#10b981', color: '#fff', fontWeight: 600, border: 'none', padding: '6px 12px', borderRadius: '8px' }}
             >
               ➕ Add New Product
+            </button>
+            <button
+              onClick={handleResetToSystemDefaults}
+              className="btn btn-sm"
+              style={{ background: '#ef4444', color: '#fff', fontWeight: 600, border: 'none', padding: '6px 12px', borderRadius: '8px' }}
+              disabled={isSaving}
+            >
+              {isSaving ? '⏳ Resetting...' : '🔄 Reset to Defaults'}
             </button>
           </div>
         </div>
