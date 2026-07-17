@@ -1,0 +1,2 @@
+## Deployment Rule: React Build Process
+This repository uses a custom build process. The production server does NOT automatically compile the React frontend. When making changes to any files inside the `frontend/` directory, you MUST manually compile the production bundle before pushing to git. Run `npm run build:local` in the root directory, wait for Vite to finish building the `frontend/dist/` folder, and include the updated `dist` folder in your git commit.
