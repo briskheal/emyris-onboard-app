@@ -232,15 +232,16 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                             <p style={styles.subtext}>Please provide your legal name and demographic details as per government ID.</p>
                         </div>
                         
-                        <div style={styles.grid}>
-                            <div style={styles.formGroupFull}>
+                        {/* Name & Identity Block */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '22px', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+                            <div style={{ flex: '1 1 200px' }}>
                                 <label style={styles.label}>Title / Salutation*</label>
-                                <div style={styles.tileGroup}>
+                                <div style={{...styles.tileGroup, gap: '8px'}}>
                                     {['Mr.', 'Mrs.', 'Ms.', 'Dr.'].map((t) => (
                                         <button
                                             key={t}
                                             type="button"
-                                            style={formData.title === t ? styles.tileSelected : styles.tileBtn}
+                                            style={formData.title === t ? {...styles.tileSelected, padding: '8px 12px'} : {...styles.tileBtn, padding: '8px 12px'}}
                                             onClick={() => handleTileSelect('title', t)}
                                         >
                                             {t}
@@ -248,20 +249,22 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                     ))}
                                 </div>
                             </div>
-
-                            <div style={styles.formGroup}>
+                            <div style={{ flex: '2 1 200px', display: 'flex', flexDirection: 'column' }}>
                                 <label style={styles.label}>First Name*</label>
                                 <input name="firstName" value={formData.firstName || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. Rahul" />
                             </div>
-                            <div style={styles.formGroup}>
+                            <div style={{ flex: '2 1 200px', display: 'flex', flexDirection: 'column' }}>
                                 <label style={styles.label}>Last Name*</label>
                                 <input name="lastName" value={formData.lastName || ''} onChange={handleChange} required style={styles.input} placeholder="e.g. Sharma" />
                             </div>
+                        </div>
+
+                        {/* Demographics Block */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '22px', marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                             <div style={styles.formGroup}>
                                 <label style={styles.label}>Date of Birth*</label>
                                 <input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} required style={styles.input} />
                             </div>
-
                             <div style={styles.formGroup}>
                                 <label style={styles.label}>Blood Group*</label>
                                 <select name="bloodGroup" value={formData.bloodGroup || ''} onChange={handleChange} required style={styles.input}>
@@ -276,33 +279,9 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                     <option value="AB-">AB-</option>
                                 </select>
                             </div>
-
-                            <div style={styles.formGroupFull}>
-                                <label style={styles.label}>Marital Status*</label>
-                                <div style={styles.tileGroup}>
-                                    {['Single', 'Married', 'Divorced', 'Widowed'].map((status) => (
-                                        <button
-                                            key={status}
-                                            type="button"
-                                            style={formData.maritalStatus === status ? styles.tileSelected : styles.tileBtn}
-                                            onClick={() => handleTileSelect('maritalStatus', status)}
-                                        >
-                                            {status}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {formData.maritalStatus === 'Married' && (
-                                <div style={styles.formGroup}>
-                                    <label style={styles.label}>Anniversary Date*</label>
-                                    <input type="date" name="anniversaryDate" value={formData.anniversaryDate || ''} onChange={handleChange} required style={styles.input} />
-                                </div>
-                            )}
-
-                            <div style={styles.formGroupFull}>
+                            <div style={{ gridColumn: '1 / -1' }}>
                                 <label style={styles.label}>Gender*</label>
-                                <div style={styles.tileGroup}>
+                                <div style={{...styles.tileGroup, flexWrap: 'wrap'}}>
                                     {[
                                         { val: 'M', label: '👨 Male' },
                                         { val: 'F', label: '👩 Female' },
@@ -319,7 +298,33 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                                     ))}
                                 </div>
                             </div>
+                            <div style={{ gridColumn: '1 / -1', display: 'flex', flexWrap: 'wrap', gap: '22px', alignItems: 'flex-start' }}>
+                                <div style={{ flex: '1 1 300px' }}>
+                                    <label style={styles.label}>Marital Status*</label>
+                                    <div style={{...styles.tileGroup, flexWrap: 'wrap'}}>
+                                        {['Single', 'Married', 'Divorced', 'Widowed'].map((status) => (
+                                            <button
+                                                key={status}
+                                                type="button"
+                                                style={formData.maritalStatus === status ? styles.tileSelected : styles.tileBtn}
+                                                onClick={() => handleTileSelect('maritalStatus', status)}
+                                            >
+                                                {status}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                {formData.maritalStatus === 'Married' && (
+                                    <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column' }}>
+                                        <label style={styles.label}>Anniversary Date*</label>
+                                        <input type="date" name="anniversaryDate" value={formData.anniversaryDate || ''} onChange={handleChange} required style={styles.input} />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
+                        {/* Professional Block */}
+                        <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
                             <div style={styles.formGroupFull}>
                                 <label style={styles.label}>Total Years of Work Experience* <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>(Enter 0 if you are a Fresher)</span></label>
                                 <input type="number" step="0.1" name="totalExperience" value={formData.totalExperience || ''} onChange={handleChange} required style={styles.input} placeholder="0 for Fresher, 2.5 for experienced..." />
