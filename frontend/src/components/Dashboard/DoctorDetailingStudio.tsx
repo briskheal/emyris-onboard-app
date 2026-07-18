@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Mic, MicOff, RefreshCw, CheckCircle, AlertCircle, Sparkles, Award, BookOpen, Download } from 'lucide-react';
+import { Volume2, VolumeX, Mic, MicOff, Sparkles, BookOpen, Download } from 'lucide-react';
 import { convertWebmToMp3 } from '../../utils/audioEncoder';
 
 interface DetailingScript {
@@ -102,28 +102,15 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
   const [speechRate, setSpeechRate] = useState<number>(0.95);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const isRecordingRef = useRef<boolean>(false);
-  const [transcript, setTranscript] = useState<string>('');
-  const finalTranscriptRef = useRef<string>('');
-  const [practiceScore, setPracticeScore] = useState<number | null>(null);
-  const [matchedWords, setMatchedWords] = useState<string[]>([]);
-  const [missedWords, setMissedWords] = useState<string[]>([]);
 
   // Editing state for Admin
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editScript, setEditScript] = useState<DetailingScript | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
-  const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
-  const transcriptDivRef = useRef<HTMLDivElement>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (transcriptDivRef.current) {
-      transcriptDivRef.current.scrollTop = transcriptDivRef.current.scrollHeight;
-    }
-  }, [transcript]);
 
   useEffect(() => {
     fetch('/api/company-data')
@@ -283,9 +270,6 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
       }
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
       }
@@ -296,23 +280,22 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
   }, [audioUrl]);
 
   const handleToggleRecording = () => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice microphone practice is not supported in this browser. Please use Google Chrome on desktop or mobile.");
-      return;
-    }
-
     if (isRecording) {
       isRecordingRef.current = false;
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      setIsRecording(false);
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
       }
-      setIsRecording(false);
-      evaluatePracticePitch(transcript);
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        setIsPlaying(false);
+      }
+      if (audioUrl) {
+        URL.revokeObjectURL(audioUrl);
+        setAudioUrl(null);
+      }
     } else {
+      setIsRecording(true);
       isRecordingRef.current = true;
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
@@ -322,161 +305,45 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
         URL.revokeObjectURL(audioUrl);
         setAudioUrl(null);
       }
-      setTranscript('');
-      finalTranscriptRef.current = '';
-      setPracticeScore(null);
-      setMatchedWords([]);
-      setMissedWords([]);
 
-      const initAndStartSpeechRecognition = () => {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = true;
-        recognition.interimResults = true;
-        recognition.lang = 'en-IN';
-
-        recognition.onresult = (event: any) => {
-          let interim = '';
-          let finalSegment = '';
-          for (let i = event.resultIndex; i < event.results.length; ++i) {
-            if (event.results[i].isFinal) {
-              finalSegment += event.results[i][0].transcript + ' ';
-            } else {
-              interim += event.results[i][0].transcript + ' ';
-            }
-          }
-          if (finalSegment) {
-            finalTranscriptRef.current += finalSegment;
-          }
-          setTranscript((finalTranscriptRef.current + interim).trim());
-        };
-
-        const restartRecognition = () => {
-          if (isRecordingRef.current) {
-            setTimeout(() => {
-              if (isRecordingRef.current) {
-                initAndStartSpeechRecognition(); // Completely recreate the engine
+      audioChunksRef.current = [];
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            const recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = e => {
+              if (e.data.size > 0) {
+                audioChunksRef.current.push(e.data);
               }
-            }, 50);
-          }
-        };
-
-        recognition.onerror = (event: any) => {
-          if (event.error === 'no-speech' || event.error === 'network') {
-            console.warn("Transient speech recognition error (ignoring):", event.error);
-            restartRecognition();
-            return;
-          }
-          console.error("Speech recognition error:", event.error);
-          isRecordingRef.current = false;
-          setIsRecording(false);
-          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-            mediaRecorderRef.current.stop();
-          }
-        };
-
-        recognition.onend = () => {
-          if (isRecordingRef.current) {
-            restartRecognition();
-          } else {
+            };
+            recorder.onstop = async () => {
+              const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+              try {
+                const mp3Blob = await convertWebmToMp3(audioBlob);
+                const url = URL.createObjectURL(mp3Blob);
+                setAudioUrl(url);
+              } catch (error) {
+                console.error("Audio transcoder failed, falling back to WebM:", error);
+                const url = URL.createObjectURL(audioBlob);
+                setAudioUrl(url);
+              }
+              stream.getTracks().forEach(track => track.stop());
+            };
+            recorder.start();
+            mediaRecorderRef.current = recorder;
+          })
+          .catch(err => {
+            console.error("Audio recording failed:", err);
             setIsRecording(false);
-            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-              mediaRecorderRef.current.stop();
-            }
-          }
-        };
-
-        recognitionRef.current = recognition;
-        try {
-          recognition.start();
-          setIsRecording(true);
-        } catch (e: any) {
-          console.error("Failed to start speech recognition:", e);
-        }
-      };
-
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-
-      const startAudioRecording = () => {
-        audioChunksRef.current = [];
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          navigator.mediaDevices.getUserMedia({ audio: true })
-            .then(stream => {
-              const recorder = new MediaRecorder(stream);
-              recorder.ondataavailable = e => {
-                if (e.data.size > 0) {
-                  audioChunksRef.current.push(e.data);
-                }
-              };
-              recorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-                try {
-                  const mp3Blob = await convertWebmToMp3(audioBlob);
-                  const url = URL.createObjectURL(mp3Blob);
-                  setAudioUrl(url);
-                } catch (error) {
-                  console.error("Audio transcoder failed, falling back to WebM:", error);
-                  const url = URL.createObjectURL(audioBlob);
-                  setAudioUrl(url);
-                }
-                stream.getTracks().forEach(track => track.stop());
-              };
-              recorder.start();
-              mediaRecorderRef.current = recorder;
-              
-              if (isMobile) {
-                // Mobile: Start speech rec AFTER media recorder to prevent auto-cut mic locks
-                initAndStartSpeechRecognition();
-              }
-            })
-            .catch(err => {
-              console.warn("Parallel audio recording failed:", err);
-              if (isMobile) initAndStartSpeechRecognition();
-            });
-        } else {
-          if (isMobile) initAndStartSpeechRecognition();
-        }
-      };
-
-      if (isMobile) {
-        startAudioRecording();
+            isRecordingRef.current = false;
+            alert("Microphone access denied. Please allow microphone permissions.");
+          });
       } else {
-        // Desktop: Start speech rec FIRST to prevent MediaRecorder from exclusively locking the mic
-        initAndStartSpeechRecognition();
-        setTimeout(() => {
-          startAudioRecording();
-        }, 300);
+        alert("Microphone recording is not supported in this browser.");
+        setIsRecording(false);
+        isRecordingRef.current = false;
       }
     }
-  };
-
-  const evaluatePracticePitch = (spokenText: string) => {
-    if (!spokenText || spokenText.trim().length < 10) {
-      alert("We couldn't hear enough spoken words to generate an AI score. Note: Live text scoring may not be supported on your specific mobile device, but your audio recording was successful!");
-      return;
-    }
-
-    const lowerSpoken = spokenText.toLowerCase();
-    const matched: string[] = [];
-    const missed: string[] = [];
-
-    currentScript.keywords.forEach(kw => {
-      const cleanWord = kw.word.toLowerCase();
-      if (lowerSpoken.includes(cleanWord)) {
-        matched.push(kw.word);
-      } else {
-        const parts = cleanWord.split(' ');
-        if (parts.some(p => p.length > 3 && lowerSpoken.includes(p))) {
-          matched.push(kw.word);
-        } else {
-          missed.push(kw.word);
-        }
-      }
-    });
-
-    const score = Math.round((matched.length / currentScript.keywords.length) * 100);
-    setMatchedWords(matched);
-    setMissedWords(missed);
-    setPracticeScore(score);
   };
 
   return (
@@ -670,8 +537,6 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
               }
               setIsPlaying(false);
               setSelectedProd(prod);
-              setTranscript('');
-              setPracticeScore(null);
             }}
             style={{
               padding: '10px 20px',
@@ -838,45 +703,15 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
               {isRecording ? (
                 <>
                   <MicOff size={22} className="animate-pulse" style={{ color: '#ef4444' }} />
-                  <span>Recording Active... Click when Finished Speaking (`Evaluate Score`)</span>
+                  <span>Recording Active... Click when Finished Speaking</span>
                 </>
               ) : (
                 <>
                   <Mic size={22} />
-                  <span>Start Microphone Practice (`Speech-to-Text`)</span>
+                  <span>Start Microphone Practice (Audio Lab)</span>
                 </>
               )}
             </button>
-
-            {/* Spoken Transcript Area */}
-            <div style={{ marginBottom: '1.5rem' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '8px' }}>
-                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8' }}>
-                  Spoken Pitch Transcription (`Live Speech Recognition`):
-                </label>
-                <span style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '4px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <AlertCircle size={12} /> Note: Live text transcription is not supported on all mobile devices. If text does not appear below, your audio is still being recorded successfully.
-                </span>
-              </div>
-              <div 
-                ref={transcriptDivRef}
-                style={{
-                  background: 'rgba(0,0,0,0.4)',
-                  border: isRecording ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '10px',
-                  padding: '14px',
-                  minHeight: '140px',
-                  maxHeight: '350px',
-                  overflowY: 'auto',
-                  color: transcript ? '#f8fafc' : '#64748b',
-                  fontSize: '0.95rem',
-                  lineHeight: 1.5,
-                  fontStyle: transcript ? 'normal' : 'italic'
-                }}
-              >
-                {transcript || (isRecording ? "Listening to your voice... Speak clearly now into your microphone..." : "Click 'Start Microphone Practice' above and deliver your 2-minute detailing pitch. Your spoken words will appear right here!")}
-              </div>
-            </div>
 
             {/* Recorded Voice Playback (`Self-Modulation Lab`) */}
             {audioUrl && (
@@ -913,38 +748,6 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
               </div>
             )}
 
-            {/* AI Pitch Evaluation Scorecard */}
-            {practiceScore !== null && (
-              <div style={{ background: practiceScore >= 80 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)', border: practiceScore >= 80 ? '1px solid #10b981' : '1px solid #f59e0b', borderRadius: '12px', padding: '1.2rem', animation: 'fadeIn 0.3s ease' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 700, color: practiceScore >= 80 ? '#34d399' : '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Award size={18} /> Clinical Keyword Match Score
-                  </span>
-                  <span style={{ fontSize: '1.5rem', fontWeight: 800, color: practiceScore >= 80 ? '#10b981' : '#f59e0b' }}>
-                    {practiceScore}%
-                  </span>
-                </div>
-
-                <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: '0 0 10px 0' }}>
-                  {practiceScore >= 80 ? "🎉 Outstanding Pitch! You successfully mentioned key clinical superiority pillars and dosage recommendations." : "⚠️ Good effort! Try to incorporate more exact clinical metrics and proprietary ingredient strengths in your next practice."}
-                </p>
-
-                {/* Keyword Pills */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                  {matchedWords.map((word, idx) => (
-                    <span key={idx} style={{ background: '#065f46', color: '#6ee7b7', fontSize: '0.75rem', fontWeight: 600, padding: '4px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <CheckCircle size={12} /> {word}
-                    </span>
-                  ))}
-                  {missedWords.map((word, idx) => (
-                    <span key={idx} style={{ background: '#7f1d1d', color: '#fca5a5', fontSize: '0.75rem', fontWeight: 600, padding: '4px 8px', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'line-through' }}>
-                      <AlertCircle size={12} /> {word}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
           </div>
 
           {/* Practice Tips Footer */}
@@ -952,15 +755,6 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
             <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
               💡 Tip: Maintain eye contact & emphasize <strong>"Zero GI Distress"</strong> when pitching to surgeons.
             </span>
-            {transcript && !isRecording && (
-              <button 
-                onClick={() => evaluatePracticePitch(transcript)}
-                className="btn btn-sm btn-outline"
-                style={{ fontSize: '0.8rem', padding: '4px 10px', display: 'flex', alignItems: 'center', gap: '4px' }}
-              >
-                <RefreshCw size={12} /> Re-Evaluate
-              </button>
-            )}
           </div>
 
         </div>
