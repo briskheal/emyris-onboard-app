@@ -100,6 +100,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [speechRate, setSpeechRate] = useState<number>(0.95);
   const [isRecording, setIsRecording] = useState<boolean>(false);
+  const isRecordingRef = useRef<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
   const [practiceScore, setPracticeScore] = useState<number | null>(null);
   const [matchedWords, setMatchedWords] = useState<string[]>([]);
@@ -293,6 +294,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
     }
 
     if (isRecording) {
+      isRecordingRef.current = false;
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
@@ -302,6 +304,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
       setIsRecording(false);
       evaluatePracticePitch(transcript);
     } else {
+      isRecordingRef.current = true;
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
         setIsPlaying(false);
@@ -362,9 +365,15 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
       };
 
       recognition.onend = () => {
-        setIsRecording(false);
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
+        if (isRecordingRef.current) {
+          try {
+            recognition.start();
+          } catch(e) {}
+        } else {
+          setIsRecording(false);
+          if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+            mediaRecorderRef.current.stop();
+          }
         }
       };
 
