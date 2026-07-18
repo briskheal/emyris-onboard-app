@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Volume2, VolumeX, Mic, MicOff, RefreshCw, CheckCircle, AlertCircle, Sparkles, Award, BookOpen } from 'lucide-react';
+import { Volume2, VolumeX, Mic, MicOff, RefreshCw, CheckCircle, AlertCircle, Sparkles, Award, BookOpen, Download } from 'lucide-react';
+import { convertWebmToWav } from '../../utils/audioEncoder';
 
 interface DetailingScript {
   id: string;
@@ -404,10 +405,18 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
                 audioChunksRef.current.push(e.data);
               }
             };
-            recorder.onstop = () => {
+            recorder.onstop = async () => {
               const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-              const url = URL.createObjectURL(audioBlob);
-              setAudioUrl(url);
+              try {
+                // Convert to universally playable WAV
+                const wavBlob = await convertWebmToWav(audioBlob);
+                const url = URL.createObjectURL(wavBlob);
+                setAudioUrl(url);
+              } catch (error) {
+                console.error("Audio transcoder failed, falling back to WebM:", error);
+                const url = URL.createObjectURL(audioBlob);
+                setAudioUrl(url);
+              }
               stream.getTracks().forEach(track => track.stop());
             };
             recorder.start();
@@ -862,11 +871,24 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
                 <p style={{ fontSize: '0.88rem', color: '#e2e8f0', margin: '0 0 12px 0', lineHeight: '1.5' }}>
                   Listen to your exact spoken delivery below. Compare your pacing, vocal clarity, and clinical tone against the doctor's chamber standard to modulate and perfect your pitch.
                 </p>
-                <audio 
-                  controls 
-                  src={audioUrl} 
-                  style={{ width: '100%', borderRadius: '8px', height: '44px', outline: 'none' }}
-                />
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <audio 
+                    controls 
+                    src={audioUrl} 
+                    style={{ flex: 1, borderRadius: '8px', height: '44px', outline: 'none' }}
+                  />
+                  <a 
+                    href={audioUrl} 
+                    download="My_Practice_Pitch.wav" 
+                    style={{
+                      background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff', padding: '0 20px', borderRadius: '8px',
+                      display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, textDecoration: 'none',
+                      fontSize: '0.85rem', flexShrink: 0, boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)', transition: 'all 0.2s'
+                    }}
+                  >
+                    <Download size={16} /> Download WAV
+                  </a>
+                </div>
               </div>
             )}
 
