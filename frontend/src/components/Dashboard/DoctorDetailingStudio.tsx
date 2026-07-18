@@ -320,31 +320,6 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
       setMatchedWords([]);
       setMissedWords([]);
 
-      // Start parallel audio recording for applicant self-modulation playback
-      audioChunksRef.current = [];
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => {
-            const recorder = new MediaRecorder(stream);
-            recorder.ondataavailable = (e) => {
-              if (e.data && e.data.size > 0) {
-                audioChunksRef.current.push(e.data);
-              }
-            };
-            recorder.onstop = () => {
-              const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-              const url = URL.createObjectURL(audioBlob);
-              setAudioUrl(url);
-              stream.getTracks().forEach(track => track.stop());
-            };
-            recorder.start();
-            mediaRecorderRef.current = recorder;
-          })
-          .catch(err => {
-            console.warn("Parallel audio recording failed (continuing with speech recognition only):", err);
-          });
-      }
-
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -403,9 +378,45 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
         }
       };
 
-      recognitionRef.current = recognition;
-      recognition.start();
-      setIsRecording(true);
+      const startSpeechRec = () => {
+        recognitionRef.current = recognition;
+        try {
+          recognition.start();
+          setIsRecording(true);
+        } catch (e: any) {
+          console.error("Failed to start speech recognition:", e);
+          alert("Could not start microphone: " + (e.message || "Microphone may be in use by another app."));
+        }
+      };
+
+      // Start parallel audio recording for applicant self-modulation playback
+      audioChunksRef.current = [];
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(stream => {
+            const recorder = new MediaRecorder(stream);
+            recorder.ondataavailable = (e) => {
+              if (e.data && e.data.size > 0) {
+                audioChunksRef.current.push(e.data);
+              }
+            };
+            recorder.onstop = () => {
+              const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+              const url = URL.createObjectURL(audioBlob);
+              setAudioUrl(url);
+              stream.getTracks().forEach(track => track.stop());
+            };
+            recorder.start();
+            mediaRecorderRef.current = recorder;
+            startSpeechRec(); // Start speech rec AFTER media recorder gets mic
+          })
+          .catch(err => {
+            console.warn("Parallel audio recording failed:", err);
+            startSpeechRec(); // Fallback start
+          });
+      } else {
+        startSpeechRec();
+      }
     }
   };
 
