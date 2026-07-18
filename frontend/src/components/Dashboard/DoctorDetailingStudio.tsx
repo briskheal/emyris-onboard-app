@@ -394,48 +394,64 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
         }
       };
 
-      // Start parallel audio recording for applicant self-modulation playback
-      audioChunksRef.current = [];
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ audio: true })
-          .then(stream => {
-            const recorder = new MediaRecorder(stream);
-            recorder.ondataavailable = (e) => {
-              if (e.data && e.data.size > 0) {
-                audioChunksRef.current.push(e.data);
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
+      const startAudioRecording = () => {
+        audioChunksRef.current = [];
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+              const recorder = new MediaRecorder(stream);
+              recorder.ondataavailable = e => {
+                if (e.data.size > 0) {
+                  audioChunksRef.current.push(e.data);
+                }
+              };
+              recorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
+                try {
+                  const mp3Blob = await convertWebmToMp3(audioBlob);
+                  const url = URL.createObjectURL(mp3Blob);
+                  setAudioUrl(url);
+                } catch (error) {
+                  console.error("Audio transcoder failed, falling back to WebM:", error);
+                  const url = URL.createObjectURL(audioBlob);
+                  setAudioUrl(url);
+                }
+                stream.getTracks().forEach(track => track.stop());
+              };
+              recorder.start();
+              mediaRecorderRef.current = recorder;
+              
+              if (isMobile) {
+                // Mobile: Start speech rec AFTER media recorder to prevent auto-cut mic locks
+                initAndStartSpeechRecognition();
               }
-            };
-            recorder.onstop = async () => {
-              const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
-              try {
-                // Convert to universally playable MP3
-                const mp3Blob = await convertWebmToMp3(audioBlob);
-                const url = URL.createObjectURL(mp3Blob);
-                setAudioUrl(url);
-              } catch (error) {
-                console.error("Audio transcoder failed, falling back to WebM:", error);
-                const url = URL.createObjectURL(audioBlob);
-                setAudioUrl(url);
-              }
-              stream.getTracks().forEach(track => track.stop());
-            };
-            recorder.start();
-            mediaRecorderRef.current = recorder;
-            initAndStartSpeechRecognition(); // Start speech rec AFTER media recorder gets mic
-          })
-          .catch(err => {
-            console.warn("Parallel audio recording failed:", err);
-            initAndStartSpeechRecognition(); // Fallback start
-          });
+            })
+            .catch(err => {
+              console.warn("Parallel audio recording failed:", err);
+              if (isMobile) initAndStartSpeechRecognition();
+            });
+        } else {
+          if (isMobile) initAndStartSpeechRecognition();
+        }
+      };
+
+      if (isMobile) {
+        startAudioRecording();
       } else {
+        // Desktop: Start speech rec FIRST to prevent MediaRecorder from exclusively locking the mic
         initAndStartSpeechRecognition();
+        setTimeout(() => {
+          startAudioRecording();
+        }, 300);
       }
     }
   };
 
   const evaluatePracticePitch = (spokenText: string) => {
     if (!spokenText || spokenText.trim().length < 10) {
-      alert("We couldn't hear enough spoken words. Please click 'Practice Pitch' and speak aloud clearly into your microphone.");
+      alert("We couldn't hear enough spoken words to generate an AI score. Note: Live text scoring may not be supported on your specific mobile device, but your audio recording was successful!");
       return;
     }
 
@@ -834,9 +850,14 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
 
             {/* Spoken Transcript Area */}
             <div style={{ marginBottom: '1.5rem' }}>
-              <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8', marginBottom: '6px' }}>
-                Spoken Pitch Transcription (`Live Speech Recognition`):
-              </label>
+              <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '8px' }}>
+                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#94a3b8' }}>
+                  Spoken Pitch Transcription (`Live Speech Recognition`):
+                </label>
+                <span style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '4px', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <AlertCircle size={12} /> Note: Live text transcription is not supported on all mobile devices. If text does not appear below, your audio is still being recorded successfully.
+                </span>
+              </div>
               <div 
                 ref={transcriptDivRef}
                 style={{
