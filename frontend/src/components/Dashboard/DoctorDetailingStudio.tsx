@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Volume2, VolumeX, Mic, MicOff, RefreshCw, CheckCircle, AlertCircle, Sparkles, Award, BookOpen, Download } from 'lucide-react';
-import { convertWebmToWav } from '../../utils/audioEncoder';
+import { convertWebmToMp3 } from '../../utils/audioEncoder';
 
 interface DetailingScript {
   id: string;
@@ -408,9 +408,9 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
             recorder.onstop = async () => {
               const audioBlob = new Blob(audioChunksRef.current, { type: recorder.mimeType || 'audio/webm' });
               try {
-                // Convert to universally playable WAV
-                const wavBlob = await convertWebmToWav(audioBlob);
-                const url = URL.createObjectURL(wavBlob);
+                // Convert to universally playable MP3
+                const mp3Blob = await convertWebmToMp3(audioBlob);
+                const url = URL.createObjectURL(mp3Blob);
                 setAudioUrl(url);
               } catch (error) {
                 console.error("Audio transcoder failed, falling back to WebM:", error);
@@ -879,14 +879,14 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
                   />
                   <a 
                     href={audioUrl} 
-                    download="My_Practice_Pitch.wav" 
+                    download="My_Practice_Pitch.mp3" 
                     style={{
                       background: 'linear-gradient(135deg, #3b82f6, #2563eb)', color: '#fff', padding: '0 20px', borderRadius: '8px',
                       display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, textDecoration: 'none',
                       fontSize: '0.85rem', flexShrink: 0, boxShadow: '0 4px 15px rgba(59, 130, 246, 0.4)', transition: 'all 0.2s'
                     }}
                   >
-                    <Download size={16} /> Download WAV
+                    <Download size={16} /> Download MP3
                   </a>
                 </div>
               </div>
