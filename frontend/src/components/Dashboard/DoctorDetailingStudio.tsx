@@ -115,7 +115,14 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const transcriptDivRef = useRef<HTMLDivElement>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (transcriptDivRef.current) {
+      transcriptDivRef.current.scrollTop = transcriptDivRef.current.scrollHeight;
+    }
+  }, [transcript]);
 
   useEffect(() => {
     fetch('/api/company-data')
@@ -320,72 +327,69 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
       setMatchedWords([]);
       setMissedWords([]);
 
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-IN';
+      const initAndStartSpeechRecognition = () => {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = 'en-IN';
 
-      recognition.onresult = (event: any) => {
-        let interim = '';
-        let finalSegment = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            finalSegment += event.results[i][0].transcript + ' ';
-          } else {
-            interim += event.results[i][0].transcript + ' ';
-          }
-        }
-        if (finalSegment) {
-          finalTranscriptRef.current += finalSegment;
-        }
-        setTranscript((finalTranscriptRef.current + interim).trim());
-      };
-
-      const restartRecognition = () => {
-        if (isRecordingRef.current) {
-          setTimeout(() => {
-            if (isRecordingRef.current) {
-              try {
-                recognition.start();
-              } catch(e) {}
+        recognition.onresult = (event: any) => {
+          let interim = '';
+          let finalSegment = '';
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            if (event.results[i].isFinal) {
+              finalSegment += event.results[i][0].transcript + ' ';
+            } else {
+              interim += event.results[i][0].transcript + ' ';
             }
-          }, 50);
-        }
-      };
+          }
+          if (finalSegment) {
+            finalTranscriptRef.current += finalSegment;
+          }
+          setTranscript((finalTranscriptRef.current + interim).trim());
+        };
 
-      recognition.onerror = (event: any) => {
-        if (event.error === 'no-speech' || event.error === 'network') {
-          console.warn("Transient speech recognition error (ignoring):", event.error);
-          restartRecognition();
-          return;
-        }
-        console.error("Speech recognition error:", event.error);
-        isRecordingRef.current = false;
-        setIsRecording(false);
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
-        }
-      };
+        const restartRecognition = () => {
+          if (isRecordingRef.current) {
+            setTimeout(() => {
+              if (isRecordingRef.current) {
+                initAndStartSpeechRecognition(); // Completely recreate the engine
+              }
+            }, 50);
+          }
+        };
 
-      recognition.onend = () => {
-        if (isRecordingRef.current) {
-          restartRecognition();
-        } else {
+        recognition.onerror = (event: any) => {
+          if (event.error === 'no-speech' || event.error === 'network') {
+            console.warn("Transient speech recognition error (ignoring):", event.error);
+            restartRecognition();
+            return;
+          }
+          console.error("Speech recognition error:", event.error);
+          isRecordingRef.current = false;
           setIsRecording(false);
           if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
             mediaRecorderRef.current.stop();
           }
-        }
-      };
+        };
 
-      const startSpeechRec = () => {
+        recognition.onend = () => {
+          if (isRecordingRef.current) {
+            restartRecognition();
+          } else {
+            setIsRecording(false);
+            if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+              mediaRecorderRef.current.stop();
+            }
+          }
+        };
+
         recognitionRef.current = recognition;
         try {
           recognition.start();
           setIsRecording(true);
         } catch (e: any) {
           console.error("Failed to start speech recognition:", e);
-          alert("Could not start microphone: " + (e.message || "Microphone may be in use by another app."));
         }
       };
 
@@ -408,14 +412,14 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
             };
             recorder.start();
             mediaRecorderRef.current = recorder;
-            startSpeechRec(); // Start speech rec AFTER media recorder gets mic
+            initAndStartSpeechRecognition(); // Start speech rec AFTER media recorder gets mic
           })
           .catch(err => {
             console.warn("Parallel audio recording failed:", err);
-            startSpeechRec(); // Fallback start
+            initAndStartSpeechRecognition(); // Fallback start
           });
       } else {
-        startSpeechRec();
+        initAndStartSpeechRecognition();
       }
     }
   };
@@ -825,13 +829,14 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
                 Spoken Pitch Transcription (`Live Speech Recognition`):
               </label>
               <div 
+                ref={transcriptDivRef}
                 style={{
                   background: 'rgba(0,0,0,0.4)',
                   border: isRecording ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)',
                   borderRadius: '10px',
                   padding: '14px',
                   minHeight: '140px',
-                  maxHeight: '180px',
+                  maxHeight: '350px',
                   overflowY: 'auto',
                   color: transcript ? '#f8fafc' : '#64748b',
                   fontSize: '0.95rem',
