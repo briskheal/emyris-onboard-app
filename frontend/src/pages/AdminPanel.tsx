@@ -6,7 +6,7 @@ import QuestionBank from '../components/Admin/QuestionBank';
 import PendingExams from '../components/Admin/PendingExams';
 import ReportsTab from '../components/Admin/ReportsTab';
 import DoctorDetailingStudio from '../components/Dashboard/DoctorDetailingStudio';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X } from 'lucide-react';
 import api from '../api/client';
 
 type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric';
@@ -83,12 +83,13 @@ const AdminPanel: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-main)', flexDirection: 'column' }}>
-      {/* Mobile Hamburger Header */}
-      <div className="mobile-header" style={{ display: 'flex', alignItems: 'center', padding: '1rem', background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid var(--glass-border)', zIndex: 10 }}>
-        <button className="btn btn-outline" style={{ padding: '0.5rem' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          <span style={{ fontSize: '1.2rem' }}>☰</span>
-        </button>
-        <h2 style={{ marginLeft: '1rem', color: 'var(--primary)', fontSize: '1.1rem', margin: 0 }}>Admin Portal</h2>
+      <div className="mobile-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'rgba(15, 23, 42, 0.9)', borderBottom: '1px solid var(--glass-border)', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <button className="btn btn-outline" style={{ padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
+          <h2 style={{ marginLeft: '1rem', color: 'var(--primary)', fontSize: '1.1rem', margin: 0 }}>Admin Portal</h2>
+        </div>
       </div>
 
       <div style={{ display: 'flex', flex: 1, position: 'relative' }}>

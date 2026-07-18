@@ -26,14 +26,28 @@ const ApplicantManager: React.FC = () => {
           return updated || prev;
         });
       }
-    } catch (err) {
-      console.error("Failed to load applicants", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
+      } catch (err) {
+        console.error("Failed to load applicants", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+  
+    const handleToggleLogin = async (email: string, currentStatus: boolean) => {
+      try {
+        const res = await api.post('/admin/toggle-login', { email, canLogin: !currentStatus });
+        if (res.data.success) {
+          setApplicants(prev => prev.map(a => a.email === email ? { ...a, canLogin: !currentStatus } : a));
+        } else {
+          alert("Failed to toggle login access");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Error toggling access");
+      }
+    };
+  
+    useEffect(() => {
     fetchApplicants();
   }, [filterMonth, filterYear]);
 
@@ -117,6 +131,7 @@ const ApplicantManager: React.FC = () => {
               <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)' }}>
                 <th style={{ padding: '12px 15px' }}>Name</th>
                 <th style={{ padding: '12px 15px' }}>Status</th>
+                <th style={{ padding: '12px 15px' }}>Access</th>
                 <th style={{ padding: '12px 15px' }}>Actions</th>
               </tr>
             </thead>
@@ -129,6 +144,22 @@ const ApplicantManager: React.FC = () => {
                   </td>
                   <td style={{ padding: '15px' }}>
                     <span className={`badge ${app.status || 'pending'}`}>{app.status || 'Draft'}</span>
+                  </td>
+                  <td style={{ padding: '15px' }}>
+                    <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '22px' }}>
+                      <input type="checkbox" checked={app.canLogin !== false} onChange={() => handleToggleLogin(app.email, app.canLogin !== false)} style={{ opacity: 0, width: 0, height: 0 }} />
+                      <span style={{
+                        position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
+                        backgroundColor: app.canLogin !== false ? 'var(--accent)' : '#ccc',
+                        transition: '.4s', borderRadius: '34px'
+                      }}>
+                        <span style={{
+                          position: 'absolute', content: '""', height: '14px', width: '14px',
+                          left: '4px', bottom: '4px', backgroundColor: 'white', transition: '.4s', borderRadius: '50%',
+                          transform: app.canLogin !== false ? 'translateX(18px)' : 'translateX(0)'
+                        }} />
+                      </span>
+                    </label>
                   </td>
                   <td style={{ padding: '15px' }}>
                     <div style={{ display: 'flex', gap: '5px', width: '100%', alignItems: 'center' }}>
@@ -146,7 +177,7 @@ const ApplicantManager: React.FC = () => {
               ))}
               {filteredApplicants.length === 0 && (
                 <tr>
-                  <td colSpan={3} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  <td colSpan={4} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                     {applicants.length === 0 ? 'No applicants found.' : 'No applicants match your search.'}
                   </td>
                 </tr>

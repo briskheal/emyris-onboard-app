@@ -563,12 +563,10 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                         <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.bloodGroup || 'N/A'}</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Current Address:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', maxWidth: '180px', wordWrap: 'break-word' }}>{currentApplicant.formData?.currentAddress || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Permanent Address:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', maxWidth: '180px', wordWrap: 'break-word' }}>{currentApplicant.formData?.permanentAddress || 'N/A'}</td>
+                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Full Address:</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', maxWidth: '180px', wordWrap: 'break-word' }}>
+                          {[currentApplicant.formData?.address, currentApplicant.formData?.city, currentApplicant.formData?.state, currentApplicant.formData?.pin].filter(Boolean).join(", ") || 'N/A'}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -587,21 +585,15 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Year of Passing:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.yearOfPassing || 'N/A'}</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.passingYear || currentApplicant.formData?.yearOfPassing || 'N/A'}</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Last / Previous Employer:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.lastCompany || currentApplicant.formData?.previousCompany || 'N/A'}</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.previousCompany || currentApplicant.formData?.lastCompany || 'N/A'}</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Total Experience:</td>
                         <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.totalExperience || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Last Drawn Salary:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>
-                          {currentApplicant.formData?.lastSalary ? `₹ ${currentApplicant.formData.lastSalary}` : 'N/A'}
-                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -620,39 +612,27 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Account Number:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', fontFamily: 'monospace' }}>{currentApplicant.formData?.accountNumber || 'N/A'}</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.accNo || currentApplicant.formData?.accountNumber || 'N/A'}</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>IFSC Code:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', fontFamily: 'monospace' }}>{currentApplicant.formData?.ifscCode || 'N/A'}</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.ifsc || currentApplicant.formData?.ifscCode || 'N/A'}</td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>PAN Number:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', fontFamily: 'monospace' }}>{currentApplicant.formData?.panNumber || 'N/A'}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Aadhar Number:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', fontFamily: 'monospace' }}>{currentApplicant.formData?.aadharNumber || 'N/A'}</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.panNumber || 'N/A'}</td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                {/* Lifecycle & Emergency Contact */}
+                {/* Lifecycle Timestamps */}
                 <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', borderRadius: '10px', padding: '1.25rem' }}>
                   <h4 style={{ color: 'var(--primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    🚨 Emergency & Lifecycle Timestamps
+                    ⏳ Lifecycle Timestamps
                   </h4>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
                     <tbody>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Emergency Contact:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.emergencyContactName || 'N/A'}</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Emergency Phone:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.emergencyContactPhone || currentApplicant.formData?.emergencyContactNumber || 'N/A'}</td>
-                      </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Registered At:</td>
                         <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>
