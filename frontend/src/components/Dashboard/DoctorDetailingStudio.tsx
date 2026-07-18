@@ -102,6 +102,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const isRecordingRef = useRef<boolean>(false);
   const [transcript, setTranscript] = useState<string>('');
+  const finalTranscriptRef = useRef<string>('');
   const [practiceScore, setPracticeScore] = useState<number | null>(null);
   const [matchedWords, setMatchedWords] = useState<string[]>([]);
   const [missedWords, setMissedWords] = useState<string[]>([]);
@@ -314,6 +315,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
         setAudioUrl(null);
       }
       setTranscript('');
+      finalTranscriptRef.current = '';
       setPracticeScore(null);
       setMatchedWords([]);
       setMissedWords([]);
@@ -349,15 +351,28 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
       recognition.lang = 'en-IN';
 
       recognition.onresult = (event: any) => {
-        let currentTranscript = '';
-        for (let i = 0; i < event.results.length; i++) {
-          currentTranscript += event.results[i][0].transcript + ' ';
+        let interim = '';
+        let finalSegment = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalSegment += event.results[i][0].transcript + ' ';
+          } else {
+            interim += event.results[i][0].transcript + ' ';
+          }
         }
-        setTranscript(currentTranscript);
+        if (finalSegment) {
+          finalTranscriptRef.current += finalSegment;
+        }
+        setTranscript((finalTranscriptRef.current + interim).trim());
       };
 
       recognition.onerror = (event: any) => {
+        if (event.error === 'no-speech' || event.error === 'network') {
+          console.warn("Transient speech recognition error (ignoring):", event.error);
+          return;
+        }
         console.error("Speech recognition error:", event.error);
+        isRecordingRef.current = false;
         setIsRecording(false);
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
           mediaRecorderRef.current.stop();
