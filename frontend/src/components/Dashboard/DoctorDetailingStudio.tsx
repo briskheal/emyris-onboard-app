@@ -366,9 +366,22 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
         setTranscript((finalTranscriptRef.current + interim).trim());
       };
 
+      const restartRecognition = () => {
+        if (isRecordingRef.current) {
+          setTimeout(() => {
+            if (isRecordingRef.current) {
+              try {
+                recognition.start();
+              } catch(e) {}
+            }
+          }, 50);
+        }
+      };
+
       recognition.onerror = (event: any) => {
         if (event.error === 'no-speech' || event.error === 'network') {
           console.warn("Transient speech recognition error (ignoring):", event.error);
+          restartRecognition();
           return;
         }
         console.error("Speech recognition error:", event.error);
@@ -381,9 +394,7 @@ const DoctorDetailingStudio: React.FC<{ onClose?: () => void; isAdmin?: boolean 
 
       recognition.onend = () => {
         if (isRecordingRef.current) {
-          try {
-            recognition.start();
-          } catch(e) {}
+          restartRecognition();
         } else {
           setIsRecording(false);
           if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
