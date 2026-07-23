@@ -565,7 +565,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
             
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Personal Details (Editable)</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label className="form-label" style={{ marginBottom: '4px' }}>Blood Group</label>
                   <select className="form-input" value={bloodGroup} onChange={e => setBloodGroup(e.target.value)}>
@@ -591,7 +591,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                   </select>
                 </div>
                 {maritalStatus === 'Married' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gridColumn: 'span 2' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
                     <label className="form-label" style={{ marginBottom: '4px' }}>Anniversary Date</label>
                     <input type="text" className="form-input" value={anniversaryDate} onChange={e => setAnniversaryDate(e.target.value)} placeholder="DD-MMM (e.g. 15-May)" />
                   </div>
@@ -601,7 +601,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
             
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Internal Assignment</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label className="form-label" style={{ marginBottom: '4px' }}>Assigned Employee Code</label>
                   <input type="text" className="form-input" value={empCode} onChange={e => setEmpCode(e.target.value)} />
@@ -676,7 +676,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Statutory & Bank Details</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
                   <label className="form-label" style={{ marginBottom: '4px' }}>EPF Number</label>
                   <input type="text" className="form-input" placeholder="e.g. AB/123/456789" value={epfNumber} onChange={e => setEpfNumber(e.target.value)} />
@@ -706,7 +706,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Salary Breakup (Monthly)</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
                 <div><label className="form-label">Basic Salary</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salBasic} onChange={e => setSalBasic(e.target.value)} /></div>
                 <div><label className="form-label">HRA</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salHra} onChange={e => setSalHra(e.target.value)} /></div>
                 <div><label className="form-label">LTA</label><input type="number" className="form-input-sm" style={{ width: '100%' }} value={salLta} onChange={e => setSalLta(e.target.value)} /></div>
