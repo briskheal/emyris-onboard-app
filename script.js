@@ -2917,8 +2917,8 @@ function openReviewModal(examId) {
             if (q.questionType === 'mcq' || q.options || q.weights) {
                 const isCorrect = Number(ans) === q.correctAnswerIndex || (q.weights && q.weights[Number(ans)] === 5);
                 isCorrectHtml = isCorrect 
-                    ? '<span style="color: #4ade80; font-size: 0.8rem; font-weight: 700; background: rgba(74,222,128,0.15); padding: 4px 10px; border-radius: 6px; margin-left: 10px;">✓ CORRECT / IDEAL</span>'
-                    : '<span style="color: #f87171; font-size: 0.8rem; font-weight: 700; background: rgba(248,113,113,0.15); padding: 4px 10px; border-radius: 6px; margin-left: 10px;">✗ SUB-OPTIMAL</span>';
+                    ? '<span style="color: #4ade80; font-size: 0.8rem; font-weight: 700; background: rgba(74,222,128,0.15); padding: 4px 10px; border-radius: 6px; margin-left: 10px;">✓ CORRECT (1 Mark)</span>'
+                    : '<span style="color: #f87171; font-size: 0.8rem; font-weight: 700; background: rgba(248,113,113,0.15); padding: 4px 10px; border-radius: 6px; margin-left: 10px;">✗ INCORRECT (0 Marks)</span>';
                 
                 ansText = (q.options && q.options[Number(ans)]) ? q.options[Number(ans)] : (typeof ans === 'string' ? ans : 'Option ' + (Number(ans) + 1));
             } else {

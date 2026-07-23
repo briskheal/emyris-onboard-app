@@ -88,6 +88,7 @@ const PsychometricAssessment = ({ applicant, onComplete, onCancel }) => {
             const data = await res.json();
             if (data.success) {
                 alert('🎉 Phase 2 Candidate Mindset & Psychometric Assessment submitted successfully!');
+                setSubmitting(false);
                 if (onComplete) onComplete(data);
             } else {
                 alert(`Error submitting assessment: ${data.error || 'Unknown error'}`);

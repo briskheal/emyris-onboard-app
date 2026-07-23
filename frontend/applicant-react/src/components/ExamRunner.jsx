@@ -158,6 +158,7 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
             const data = await res.json();
             if (data.success) {
                 alert('🎉 Assessment submitted successfully! You can review your detailed breakdown under "My Exam Scores".');
+                setSubmitting(false);
                 if (onComplete) onComplete(data);
             } else {
                 alert(`Error submitting exam: ${data.error || 'Please contact HR team.'}`);
