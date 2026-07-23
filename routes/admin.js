@@ -2933,9 +2933,12 @@ router.get('/applicants/:email', async (req, res) => {
         if (!applicant) return res.status(404).json({ success: false, message: 'Not found' });
         
         const latestExam = await ExamResult.findOne({ email: req.params.email }).sort({ submittedAt: -1 });
-        if (latestExam && applicant.rapidTestScore !== latestExam.autoScore) {
-            applicant.rapidTestScore = latestExam.autoScore;
-            await Applicant.updateOne({ email: req.params.email }, { $set: { rapidTestScore: latestExam.autoScore } });
+        if (latestExam) {
+            applicant.rapidTestTotal = latestExam.totalQuestions || 20;
+            if (applicant.rapidTestScore !== latestExam.autoScore) {
+                applicant.rapidTestScore = latestExam.autoScore;
+                await Applicant.updateOne({ email: req.params.email }, { $set: { rapidTestScore: latestExam.autoScore } });
+            }
         }
         
         res.json({ success: true, applicant });

@@ -444,7 +444,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>MCQ Exam Auto-Score</div>
                 </div>
                 <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#4ade80' }}>
-                  {applicant.rapidTestScore || 0}
+                  {applicant.rapidTestScore || 0} <span style={{ fontSize: '1rem', color: 'var(--text-muted)' }}>/ {applicant.rapidTestTotal || 20}</span>
                 </div>
               </div>
             )}

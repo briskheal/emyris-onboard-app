@@ -747,7 +747,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center' }}>
                       <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                        {exam.totalScore || 0} Points
+                        {exam.totalScore || 0} / {exam.totalQuestions || 20} Points
                       </span>
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center' }}>
@@ -785,7 +785,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                   <div>
                     <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.4rem', fontWeight: 800 }}>📋 Exam Breakdown: {selectedExamDetail.fullName}</h3>
                     <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '6px 0 0 0', fontWeight: 500 }}>
-                      Email: {selectedExamDetail.email} | Total Score: <span style={{ color: '#60a5fa', fontWeight: 800 }}>{selectedExamDetail.totalScore || 0} Points</span>
+                      Email: {selectedExamDetail.email} | Total Score: <span style={{ color: '#60a5fa', fontWeight: 800 }}>{selectedExamDetail.totalScore || 0} / {selectedExamDetail.totalQuestions || 20} Points</span>
                     </p>
                   </div>
                   <button onClick={() => setSelectedExamDetail(null)} className="btn btn-sm btn-outline" style={{ background: '#1e293b', borderColor: '#475569', color: '#f8fafc', fontWeight: 600, padding: '6px 16px' }}>Close</button>
@@ -794,7 +794,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
                   <div style={{ background: '#1e293b', border: '1px solid #3b82f6', padding: '1.25rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 15px rgba(59,130,246,0.15)' }}>
                     <div style={{ fontSize: '0.82rem', color: '#93c5fd', fontWeight: 700, letterSpacing: '0.5px' }}>MCQ SECTION (AUTO-SCORE)</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#60a5fa', marginTop: '6px' }}>{selectedExamDetail.autoScore || 0} Points</div>
+                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#60a5fa', marginTop: '6px' }}>{selectedExamDetail.autoScore || 0} / {selectedExamDetail.totalQuestions || 20} Points</div>
                   </div>
                   <div style={{ background: '#1e293b', border: '1px solid #f59e0b', padding: '1.25rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 15px rgba(245,158,11,0.15)' }}>
                     <div style={{ fontSize: '0.82rem', color: '#fde68a', fontWeight: 700, letterSpacing: '0.5px' }}>DESCRIPTIVE SECTION (MANUAL)</div>
