@@ -269,8 +269,10 @@ router.post(['/submit-test', '/submit-rapid-fire'], async (req, res) => {
         
         for (const [qId, selectedIdx] of Object.entries(answers || {})) {
             const q = questions.find(qu => qu._id === qId);
-            if (q && q.correctAnswerIndex === Number(selectedIdx)) {
-                score++;
+            if (q) {
+                if (q.correctAnswerIndex === Number(selectedIdx) || (q.options && q.options[q.correctAnswerIndex] === selectedIdx)) {
+                    score++;
+                }
             }
         }
         
@@ -941,8 +943,10 @@ router.post('/submit-exam', async (req, res) => {
         
         for (const [qId, selectedIdxOrText] of Object.entries(answers || {})) {
             const q = questions.find(qu => qu._id === qId);
-            if (q && q.questionType === 'mcq' && q.correctAnswerIndex === Number(selectedIdxOrText)) {
-                autoScore++;
+            if (q && q.questionType === 'mcq') {
+                if (q.correctAnswerIndex === Number(selectedIdxOrText) || (q.options && q.options[q.correctAnswerIndex] === selectedIdxOrText)) {
+                    autoScore++;
+                }
             }
         }
         

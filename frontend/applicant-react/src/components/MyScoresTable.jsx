@@ -208,7 +208,7 @@ const MyScoresTable = ({ applicant }) => {
                         </div>
 
                         {/* Radar Chart Breakdown for Psychometric */}
-                        {selectedExam.testedProduct && selectedExam.testedProduct.toLowerCase().includes('psychometric') && selectedExam.answers && (
+                        {selectedExam.testedProduct && (selectedExam.testedProduct.toLowerCase().includes('psychometric') || selectedExam.testedProduct.toLowerCase().includes('phase 2')) && selectedExam.answers && (
                             <div style={{ background: '#18132e', border: '1px solid #6b21a8', borderRadius: '14px', padding: '18px', marginBottom: '22px' }}>
                                 <h4 style={{ color: '#fff', fontSize: '1.05rem', fontWeight: '700', margin: '0 0 14px 0' }}>📊 6-Dimension Competency Radar Breakdown</h4>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px' }}>
@@ -220,7 +220,7 @@ const MyScoresTable = ({ applicant }) => {
                                         'Scientific Adaptability',
                                         'Collaborative Communication'
                                     ].map(dim => {
-                                        const num = parseInt(selectedExam.answers[dim] || '85') || 85;
+                                        const num = parseInt(selectedExam.answers[dim] || selectedExam.answers?.traitPercentiles?.[dim] || selectedExam.answers?.mindsetReport?.traitPercentiles?.[dim] || '85') || 85;
                                         return (
                                             <div key={dim} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -234,11 +234,11 @@ const MyScoresTable = ({ applicant }) => {
                                         );
                                     })}
                                 </div>
-                                {selectedExam.answers['Coaching & Mentorship Tips'] && (
+                                {(selectedExam.answers['Coaching & Mentorship Tips'] || selectedExam.answers?.mindsetReport?.['Coaching & Mentorship Tips']) && (
                                     <>
                                         <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: '700', margin: '14px 0 8px 0' }}>💡 Coaching & Mentorship Tips</h4>
                                         <div style={{ background: '#131929', borderLeft: '4px solid #a855f7', padding: '12px 16px', borderRadius: '8px', color: '#e2e8f0', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                                            {selectedExam.answers['Coaching & Mentorship Tips'].split(' | ').map((t, i) => (
+                                            {(selectedExam.answers['Coaching & Mentorship Tips'] || selectedExam.answers?.mindsetReport?.['Coaching & Mentorship Tips']).split(' | ').map((t, i) => (
                                                 <div key={i} style={{ marginBottom: '6px' }}>• {t}</div>
                                             ))}
                                         </div>
@@ -251,27 +251,42 @@ const MyScoresTable = ({ applicant }) => {
                         <h4 style={{ color: '#fff', fontSize: '1.05rem', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '14px' }}>📝 Itemized Answer Review</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {Object.entries(selectedExam.answers || {}).map(([qId, ans], qIdx) => {
-                                if (['Overall Readiness Index', 'Executive Archetype Badge', 'Clinical Integrity & Ethics', 'Resilience & Grit Under Pressure', 'Empathy & Relationship Building', 'Autonomy & Self-Motivation', 'Scientific Adaptability', 'Collaborative Communication', 'Coaching & Mentorship Tips'].includes(qId)) {
+                                if (['Overall Readiness Index', 'Executive Archetype Badge', 'Clinical Integrity & Ethics', 'Resilience & Grit Under Pressure', 'Empathy & Relationship Building', 'Autonomy & Self-Motivation', 'Scientific Adaptability', 'Collaborative Communication', 'Coaching & Mentorship Tips', 'mindsetReport', 'traitPercentiles', 'archetype', 'overallPercentile'].includes(qId)) {
                                     return null;
                                 }
                                 const q = questions.find(qu => qu._id === qId || qu.text === qId);
                                 const qText = q?.text || qId;
-                                const isCorrect = q ? (q.correctAnswer === ans || q.correctAnswer === parseInt(ans)) : true;
+                                
+                                let isCorrect = true;
+                                let idealAnswerText = '';
+                                
+                                if (q) {
+                                    const actualCorrectIndex = q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : q.correctAnswer;
+                                    idealAnswerText = q.options ? q.options[actualCorrectIndex] : actualCorrectIndex;
+                                    
+                                    if (typeof ans === 'number' || !isNaN(parseInt(ans))) {
+                                        isCorrect = parseInt(ans) === actualCorrectIndex || q.options?.[actualCorrectIndex] == ans;
+                                    } else {
+                                        isCorrect = ans === q.options?.[actualCorrectIndex] || parseInt(ans) === actualCorrectIndex;
+                                    }
+                                }
+
+                                const displayAns = typeof ans === 'object' ? JSON.stringify(ans) : String(ans);
 
                                 return (
                                     <div key={qId} style={{ background: '#1e293b', padding: '16px', borderRadius: '12px', border: `1px solid ${isCorrect ? '#10b981' : '#ef4444'}` }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                                             <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.95rem' }}>Q{qIdx + 1}: {qText}</span>
                                             <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', background: isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)', color: isCorrect ? '#34d399' : '#f87171' }}>
-                                                {isCorrect ? '✓ CORRECT' : '✗ SUB-OPTIMAL'}
+                                                {isCorrect ? '✓ CORRECT' : '✗ INCORRECT'}
                                             </span>
                                         </div>
                                         <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
-                                            <strong>Your Answer:</strong> {ans}
+                                            <strong>Your Answer:</strong> {displayAns}
                                         </div>
-                                        {q && !isCorrect && q.correctAnswer !== undefined && (
+                                        {q && !isCorrect && idealAnswerText !== undefined && (
                                             <div style={{ fontSize: '0.85rem', color: '#34d399', marginTop: '4px' }}>
-                                                <strong>Ideal/Correct Answer:</strong> {q.correctAnswer}
+                                                <strong>Ideal/Correct Answer:</strong> {idealAnswerText}
                                             </div>
                                         )}
                                     </div>
