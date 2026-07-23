@@ -2955,6 +2955,16 @@ router.get('/pending-exams', async (req, res) => {
             if (ex && typeof ex.answers === 'string') {
                 try { ex.answers = JSON.parse(ex.answers); } catch(err) {}
             }
+            // Auto-fix concatenated total scores on the fly
+            if (ex) {
+                const a = isNaN(parseInt(ex.autoScore, 10)) ? 0 : parseInt(ex.autoScore, 10);
+                const m = isNaN(parseInt(ex.manualScore, 10)) ? 0 : parseInt(ex.manualScore, 10);
+                if (ex.totalScore !== (a + m)) {
+                   ex.totalScore = a + m;
+                   // Save corrected score back to DB asynchronously
+                   ExamResult.updateOne({ _id: ex._id }, { $set: { totalScore: a + m, autoScore: a, manualScore: m } }).exec().catch(()=>{});
+                }
+            }
             return ex;
         });
         
@@ -2975,7 +2985,8 @@ router.post('/grade-exam', async (req, res) => {
         if (!exam) return res.status(404).json({ error: 'Exam not found' });
         
         const parsedManualScore = isNaN(parseInt(manualScore, 10)) ? 0 : parseInt(manualScore, 10);
-        const total = (exam.autoScore || 0) + parsedManualScore;
+        const parsedAutoScore = isNaN(parseInt(exam.autoScore, 10)) ? 0 : parseInt(exam.autoScore, 10);
+        const total = parsedAutoScore + parsedManualScore;
         
         await ExamResult.updateOne({ _id: examId }, {
             $set: {
