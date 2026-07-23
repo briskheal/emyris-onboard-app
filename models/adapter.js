@@ -151,7 +151,9 @@ function buildWhere(query) {
                     if (!hasStart) pattern = '%' + pattern;
                     if (!hasEnd) pattern = pattern + '%';
                 }
-                where[key] = isIgnoreCase ? { [Op.iLike]: pattern } : { [Op.like]: pattern };
+                let dialect = 'postgres';
+                try { if (Model && Model.sequelize) dialect = Model.sequelize.getDialect(); } catch(e) {}
+                where[key] = (isIgnoreCase && dialect !== 'sqlite') ? { [Op.iLike]: pattern } : { [Op.like]: pattern };
             } else if (value.$gte !== undefined || value.$gt !== undefined || value.$lte !== undefined || value.$lt !== undefined) {
                 where[key] = {};
                 if (value.$gte !== undefined) where[key][Op.gte] = value.$gte;

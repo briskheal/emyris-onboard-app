@@ -742,9 +742,9 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                 <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)', fontSize: '0.85rem', background: 'rgba(0,0,0,0.2)' }}>
                   <th style={{ padding: '14px 16px' }}>Candidate & Assignment</th>
                   <th style={{ padding: '14px 16px' }}>Submission Date</th>
-                  <th style={{ padding: '14px 16px', textAlign: 'center' }}>MCQ Auto-Score</th>
-                  <th style={{ padding: '14px 16px', textAlign: 'center' }}>Descriptive Score</th>
-                  <th style={{ padding: '14px 16px', textAlign: 'center' }}>Total Marks</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'center' }}>MCQ Auto-Score / Mindset</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'center' }}>Descriptive Score / N/A</th>
+                  <th style={{ padding: '14px 16px', textAlign: 'center' }}>Total Marks / Badge</th>
                   <th style={{ padding: '14px 16px', textAlign: 'center' }}>Grading Status</th>
                   <th style={{ padding: '14px 16px', textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -762,21 +762,48 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                     <td style={{ padding: '16px', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
                       {exam.submittedAt ? new Date(exam.submittedAt).toLocaleDateString() : 'N/A'}
                     </td>
-                    <td style={{ padding: '16px', textAlign: 'center' }}>
-                      <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
-                        {exam.autoScore || 0} Pts
-                      </span>
-                    </td>
-                    <td style={{ padding: '16px', textAlign: 'center' }}>
-                      <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
-                        {exam.manualScore || 0} Pts
-                      </span>
-                    </td>
-                    <td style={{ padding: '16px', textAlign: 'center' }}>
-                      <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                        {exam.totalScore || 0} / {exam.totalQuestions || 20} Points
-                      </span>
-                    </td>
+                    {(() => {
+                      const isPsycho = (exam.testedProduct || '').toLowerCase().includes('psychometric') || (exam.testedProduct || '').toLowerCase().includes('phase 2');
+                      if (isPsycho) {
+                        return (
+                          <>
+                            <td style={{ padding: '16px', textAlign: 'center' }}>
+                              <span className="badge" style={{ background: 'rgba(168,85,247,0.18)', color: '#d8b4fe' }}>
+                                Mindset: {exam.autoScore || 0}%
+                              </span>
+                            </td>
+                            <td style={{ padding: '16px', textAlign: 'center' }}>
+                              <span className="badge" style={{ background: 'rgba(15, 23, 42, 0)', color: '#94a3b8' }}>N/A</span>
+                            </td>
+                            <td style={{ padding: '16px', textAlign: 'center' }}>
+                              <span className="badge" style={{ background: 'rgba(236,72,153,0.18)', color: '#f472b6', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                {exam.answers?.['Executive Archetype Badge'] || 'Scientific Strategist'}
+                              </span>
+                            </td>
+                          </>
+                        );
+                      } else {
+                        return (
+                          <>
+                            <td style={{ padding: '16px', textAlign: 'center' }}>
+                              <span className="badge" style={{ background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa' }}>
+                                {exam.autoScore || 0} Pts
+                              </span>
+                            </td>
+                            <td style={{ padding: '16px', textAlign: 'center' }}>
+                              <span className="badge" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
+                                {exam.manualScore || 0} Pts
+                              </span>
+                            </td>
+                            <td style={{ padding: '16px', textAlign: 'center' }}>
+                              <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                                {exam.totalScore || 0} / {exam.totalQuestions || 20} Points
+                              </span>
+                            </td>
+                          </>
+                        );
+                      }
+                    })()}
                     <td style={{ padding: '16px', textAlign: 'center' }}>
                       <span className={`badge ${exam.status === 'graded' ? 'approved' : 'pending'}`}>
                         {exam.status === 'graded' ? 'Graded' : 'Needs Review'}
