@@ -19,9 +19,16 @@ import {
 
 type ReportTabType = 'details' | 'exam' | 'monthly' | 'psychometric';
 
-const getOrReconstructMindsetReport = (app: any) => {
+const getOrReconstructMindsetReport = (app: any, combinedExams: any[] = []) => {
   if (!app) return null;
   let report = app.mindsetReport;
+  
+  // Try to find the real mindset report in the exams array first
+  const psychExam = combinedExams.find(e => e.email === app.email && (e.testedProduct || '').toLowerCase().includes('psychometric'));
+  if (psychExam && psychExam.answers && psychExam.answers.mindsetReport) {
+      report = psychExam.answers.mindsetReport;
+  }
+  
   if (typeof report === 'string') {
     try { report = JSON.parse(report); } catch(e) {}
   }
@@ -57,27 +64,8 @@ const getOrReconstructMindsetReport = (app: any) => {
     };
   }
 
-  // Only if they explicitly completed the 30-item psychometric assessment but scores object was somehow not saved
-  if (app.psychometricTestCompleted === true || app.psychometricTestCompleted === 1 || app.psychometricTestCompleted === 'true') {
-    return {
-      overallPercentile: 88,
-      archetype: '🌟 The Scientific Strategist',
-      traitPercentiles: {
-        'Clinical Integrity & Ethics': 92,
-        'Resilience & Grit Under Pressure': 86,
-        'Empathy & Relationship Building': 88,
-        'Autonomy & Self-Motivation': 90,
-        'Scientific Adaptability': 85,
-        'Collaborative Communication': 88
-      },
-      coachingTips: [
-        'Demonstrates strong scientific integrity and resilience; suitable for high-priority hospital accounts.',
-        'Provide clear autonomy over schedule management combined with weekly clinical updates.',
-        'Pair with experienced territory manager during first month to streamline hospital administrative communication.'
-      ]
-    };
-  }
-
+  // Remove the hardcoded fallback that gives everyone "The Scientific Strategist" if they completed it
+  // If we reach here and there is no report and no scores, we should just return null.
   return null;
 };
 
@@ -1060,7 +1048,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
               </thead>
               <tbody>
                 {applicants.map((app, idx) => {
-                  const report = getOrReconstructMindsetReport(app);
+                  const report = getOrReconstructMindsetReport(app, combinedExams);
                   const hasReport = !!report;
                   const indexVal = hasReport && report ? `${report.overallPercentile}%` : 'Pending';
                   const archVal = hasReport && report ? report.archetype : 'Not Taken';
@@ -1122,7 +1110,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
 
           {/* Psychometric Dossier Modal */}
           {selectedPsychometricApp && (() => {
-            const report = getOrReconstructMindsetReport(selectedPsychometricApp);
+            const report = getOrReconstructMindsetReport(selectedPsychometricApp, combinedExams);
 
             return (
               <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(3, 7, 18, 0.92)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>

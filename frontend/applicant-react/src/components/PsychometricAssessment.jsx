@@ -70,10 +70,9 @@ const PsychometricAssessment = ({ applicant, onComplete, onCancel }) => {
         if (submitting) return;
 
         const answeredCount = Object.keys(answers).length;
-        if (!isAutoSubmit && answeredCount < questions.length && answeredCount < 15) {
-            if (!window.confirm(`You have answered ${answeredCount} out of ${questions.length} questions. Are you sure you want to submit now?`)) {
-                return;
-            }
+        if (!isAutoSubmit && answeredCount < questions.length) {
+            alert(`Please complete all ${questions.length} questions before submitting. You have answered ${answeredCount}.`);
+            return;
         }
 
         setSubmitting(true);
