@@ -282,7 +282,51 @@ router.post('/schedule-exam', async (req, res) => {
 
 router.get('/exam-reports', async (req, res) => {
     try {
-        const results = await ExamResult.find();
+        let results = await ExamResult.find();
+        
+        // Auto-heal legacy glued scores before sending to UI
+        let needsSave = false;
+        results = results.map(r => {
+            let aScore = parseInt(r.autoScore, 10) || 0;
+            let mScore = parseInt(r.manualScore, 10) || 0;
+            let tScoreStr = String(r.totalScore);
+            
+            // Check if string concatenation glued the numbers (e.g. '98' instead of 17)
+            if (tScoreStr === String(aScore) + String(mScore)) {
+                r.totalScore = aScore + mScore;
+                needsSave = true;
+            } else if (typeof r.totalScore === 'string' || typeof r.autoScore === 'string') {
+                // Ensure integer types
+                r.autoScore = aScore;
+                r.manualScore = mScore;
+                r.totalScore = aScore + mScore;
+                needsSave = true;
+            }
+            
+            // Also ensure totalQuestions is properly parsed
+            if (typeof r.totalQuestions === 'string') {
+                r.totalQuestions = parseInt(r.totalQuestions, 10) || 20;
+                needsSave = true;
+            }
+            return r;
+        });
+        
+        // In the background, try to repair the DB records
+        if (needsSave) {
+            Promise.all(results.map(r => {
+                if (typeof r.totalScore === 'number' && typeof r.autoScore === 'number') {
+                    return ExamResult.updateOne({ _id: r._id }, {
+                        $set: {
+                            autoScore: r.autoScore,
+                            manualScore: r.manualScore,
+                            totalScore: r.totalScore,
+                            totalQuestions: r.totalQuestions
+                        }
+                    });
+                }
+            })).catch(e => console.error("Auto-heal DB save failed:", e));
+        }
+
         res.json({ success: true, results });
     } catch (e) {
         console.error('Fetch Exam Reports Error:', e);
@@ -2558,37 +2602,7 @@ router.post('/restore-legacy-db', async (req, res) => {
             }
         }
 
-        // 2. Restore heavy assets from MongoDB (both applicant files in emyris_assets and logos in emyris_db_assets)
-        try {
-            const { MongoClient } = require('mongodb');
-            const MONGODB_URI = "mongodb://impdaysaap:RPykhDyaiPDFwSJi@ac-4mjmqyy-shard-00-00.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-01.cquys3i.mongodb.net:27017,ac-4mjmqyy-shard-00-02.cquys3i.mongodb.net:27017/?ssl=true&authSource=admin&retryWrites=true&w=majority&appName=Cluster0";
-            let mongoClient = new MongoClient(MONGODB_URI);
-            await mongoClient.connect();
-            
-            const dbNames = ['emyris_assets', 'emyris_db_assets'];
-            for (const dbName of dbNames) {
-                const db = mongoClient.db(dbName);
-                const cursor = db.collection('assets').find({});
-                for await (const asset of cursor) {
-                    const assetId = asset._id.toString();
-                    const existing = await Asset.findById(assetId);
-                    if (!existing) {
-                        await Asset.create({
-                            _id: assetId,
-                            category: asset.category,
-                            name: asset.name,
-                            data: asset.data,
-                            active: asset.active !== false,
-                            uploadedAt: asset.uploadedAt ? new Date(asset.uploadedAt) : new Date()
-                        });
-                        restoredAssets++;
-                    }
-                }
-            }
-            await mongoClient.close();
-        } catch (mongoErr) {
-            console.error("Mongo Asset Restore Error:", mongoErr.message);
-        }
+        // 2. Asset restore from MongoDB removed as per user request
 
         res.json({ success: true, message: `Restored ${restoredApps} applicants and ${restoredAssets} assets!` });
     } catch (err) {
