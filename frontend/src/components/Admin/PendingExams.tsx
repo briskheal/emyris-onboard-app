@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/client';
 import ManualGrading from './ManualGrading';
+import { PsychometricDossierModal } from './PsychometricDossierModal';
 
 const PendingExams: React.FC = () => {
   const [exams, setExams] = useState<any[]>([]);
@@ -28,6 +29,12 @@ const PendingExams: React.FC = () => {
   }, [gradingExam]); // Refetch when grading modal is closed
 
   if (gradingExam) {
+    const isPsychometric = (gradingExam.testedProduct || '').toLowerCase().includes('psychometric') || (gradingExam.testedProduct || '').toLowerCase().includes('phase 2');
+    
+    if (isPsychometric) {
+      return <PsychometricDossierModal exam={gradingExam} onClose={() => { setGradingExam(null); fetchExams(); }} />;
+    }
+    
     return <ManualGrading exam={gradingExam} onBack={() => { setGradingExam(null); fetchExams(); }} />;
   }
 

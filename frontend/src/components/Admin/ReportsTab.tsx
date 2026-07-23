@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/client';
+import { PsychometricDossierModal } from './PsychometricDossierModal';
 import { 
   FileSpreadsheet, 
   Download, 
@@ -810,83 +811,91 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
           </div>
 
           {/* Exam Detail Drilldown Modal */}
-          {selectedExamDetail && (
-            <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(3, 7, 18, 0.92)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
-              <div style={{ width: '100%', maxWidth: '780px', maxHeight: '88vh', overflowY: 'auto', padding: '2.25rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '20px', boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.95)', borderTop: '6px solid #3b82f6' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '1.25rem' }}>
-                  <div>
-                    <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.4rem', fontWeight: 800 }}>📋 Exam Breakdown: {selectedExamDetail.fullName}</h3>
-                    <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '6px 0 0 0', fontWeight: 500 }}>
-                      Email: {selectedExamDetail.email} | Total Score: <span style={{ color: '#60a5fa', fontWeight: 800 }}>{selectedExamDetail.totalScore || 0} / {selectedExamDetail.totalQuestions || 20} Points</span>
+          {selectedExamDetail && (() => {
+            const isPsychometric = (selectedExamDetail.testedProduct || '').toLowerCase().includes('psychometric') || (selectedExamDetail.testedProduct || '').toLowerCase().includes('phase 2');
+            
+            if (isPsychometric) {
+              return <PsychometricDossierModal exam={selectedExamDetail} onClose={() => setSelectedExamDetail(null)} />;
+            }
+            
+            return (
+              <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(3, 7, 18, 0.92)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>
+                <div style={{ width: '100%', maxWidth: '780px', maxHeight: '88vh', overflowY: 'auto', padding: '2.25rem', background: '#0f172a', border: '1px solid #334155', borderRadius: '20px', boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.95)', borderTop: '6px solid #3b82f6' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #334155', paddingBottom: '1.25rem' }}>
+                    <div>
+                      <h3 style={{ margin: 0, color: '#ffffff', fontSize: '1.4rem', fontWeight: 800 }}>📋 Exam Breakdown: {selectedExamDetail.fullName}</h3>
+                      <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '6px 0 0 0', fontWeight: 500 }}>
+                        Email: {selectedExamDetail.email} | Total Score: <span style={{ color: '#60a5fa', fontWeight: 800 }}>{selectedExamDetail.totalScore || 0} / {selectedExamDetail.totalQuestions || 20} Points</span>
+                      </p>
+                    </div>
+                    <button onClick={() => setSelectedExamDetail(null)} className="btn btn-sm btn-outline" style={{ background: '#1e293b', borderColor: '#475569', color: '#f8fafc', fontWeight: 600, padding: '6px 16px' }}>Close</button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                    <div style={{ background: '#1e293b', border: '1px solid #3b82f6', padding: '1.25rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 15px rgba(59,130,246,0.15)' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#93c5fd', fontWeight: 700, letterSpacing: '0.5px' }}>MCQ SECTION (AUTO-SCORE)</div>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#60a5fa', marginTop: '6px' }}>{selectedExamDetail.autoScore || 0} / {selectedExamDetail.totalQuestions || 20} Points</div>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #f59e0b', padding: '1.25rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 15px rgba(245,158,11,0.15)' }}>
+                      <div style={{ fontSize: '0.82rem', color: '#fde68a', fontWeight: 700, letterSpacing: '0.5px' }}>DESCRIPTIVE SECTION (MANUAL)</div>
+                      <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fbbf24', marginTop: '6px' }}>{selectedExamDetail.manualScore || 0} Points</div>
+                    </div>
+                  </div>
+
+                  {/* Manual Grading Section */}
+                  <div style={{ background: '#18182b', border: '1px solid #f59e0b', borderRadius: '14px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                    <h4 style={{ color: '#fbbf24', margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      ✏️ Manual Evaluation & Grading Studio
+                    </h4>
+                    <p style={{ color: '#cbd5e1', fontSize: '0.92rem', margin: '0 0 14px 0', lineHeight: '1.5' }}>
+                      Assign points for descriptive responses (or enter <strong style={{ color: '#fbbf24' }}>0</strong> if answers were skipped/not descriptive).
                     </p>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <input
+                        type="number"
+                        value={manualScoreInput}
+                        onChange={e => setManualScoreInput(e.target.value)}
+                        className="form-input-sm"
+                        placeholder="e.g. 0"
+                        style={{ width: '130px', height: '42px', fontWeight: 'bold', fontSize: '1.15rem', background: '#0b0f19', color: '#fff', border: '1px solid #475569', borderRadius: '8px', padding: '0 12px' }}
+                      />
+                      <button
+                        onClick={handleFinalizeGrade}
+                        className="btn btn-sm btn-primary"
+                        style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#000', fontWeight: 800, height: '42px', padding: '0 20px', fontSize: '0.95rem' }}
+                      >
+                        Finalize Grade & Submit
+                      </button>
+                    </div>
                   </div>
-                  <button onClick={() => setSelectedExamDetail(null)} className="btn btn-sm btn-outline" style={{ background: '#1e293b', borderColor: '#475569', color: '#f8fafc', fontWeight: 600, padding: '6px 16px' }}>Close</button>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                  <div style={{ background: '#1e293b', border: '1px solid #3b82f6', padding: '1.25rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 15px rgba(59,130,246,0.15)' }}>
-                    <div style={{ fontSize: '0.82rem', color: '#93c5fd', fontWeight: 700, letterSpacing: '0.5px' }}>MCQ SECTION (AUTO-SCORE)</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#60a5fa', marginTop: '6px' }}>{selectedExamDetail.autoScore || 0} / {selectedExamDetail.totalQuestions || 20} Points</div>
-                  </div>
-                  <div style={{ background: '#1e293b', border: '1px solid #f59e0b', padding: '1.25rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 15px rgba(245,158,11,0.15)' }}>
-                    <div style={{ fontSize: '0.82rem', color: '#fde68a', fontWeight: 700, letterSpacing: '0.5px' }}>DESCRIPTIVE SECTION (MANUAL)</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#fbbf24', marginTop: '6px' }}>{selectedExamDetail.manualScore || 0} Points</div>
-                  </div>
-                </div>
+                  {/* Answers review if present */}
+                  <h4 style={{ color: 'var(--primary)', marginBottom: '0.75rem' }}>Submitted Responses</h4>
+                  {(() => {
+                    const descAns = selectedExamDetail.descriptiveAnswers && Object.keys(selectedExamDetail.descriptiveAnswers).length > 0
+                      ? selectedExamDetail.descriptiveAnswers
+                      : (selectedExamDetail.answers && typeof selectedExamDetail.answers === 'object' ? selectedExamDetail.answers : null);
 
-                {/* Manual Grading Section */}
-                <div style={{ background: '#18182b', border: '1px solid #f59e0b', borderRadius: '14px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                  <h4 style={{ color: '#fbbf24', margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    ✏️ Manual Evaluation & Grading Studio
-                  </h4>
-                  <p style={{ color: '#cbd5e1', fontSize: '0.92rem', margin: '0 0 14px 0', lineHeight: '1.5' }}>
-                    Assign points for descriptive responses (or enter <strong style={{ color: '#fbbf24' }}>0</strong> if answers were skipped/not descriptive).
-                  </p>
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input
-                      type="number"
-                      value={manualScoreInput}
-                      onChange={e => setManualScoreInput(e.target.value)}
-                      className="form-input-sm"
-                      placeholder="e.g. 0"
-                      style={{ width: '130px', height: '42px', fontWeight: 'bold', fontSize: '1.15rem', background: '#0b0f19', color: '#fff', border: '1px solid #475569', borderRadius: '8px', padding: '0 12px' }}
-                    />
-                    <button
-                      onClick={handleFinalizeGrade}
-                      className="btn btn-sm btn-primary"
-                      style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#000', fontWeight: 800, height: '42px', padding: '0 20px', fontSize: '0.95rem' }}
-                    >
-                      Finalize Grade & Submit
-                    </button>
-                  </div>
-                </div>
-
-                {/* Answers review if present */}
-                <h4 style={{ color: 'var(--primary)', marginBottom: '0.75rem' }}>Submitted Responses</h4>
-                {(() => {
-                  const descAns = selectedExamDetail.descriptiveAnswers && Object.keys(selectedExamDetail.descriptiveAnswers).length > 0
-                    ? selectedExamDetail.descriptiveAnswers
-                    : (selectedExamDetail.answers && typeof selectedExamDetail.answers === 'object' ? selectedExamDetail.answers : null);
-
-                  if (descAns && Object.keys(descAns).length > 0) {
-                    return (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {Object.entries(descAns).map(([qId, ans]: any, i: number) => (
-                          <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', padding: '1rem', borderRadius: '8px' }}>
-                            <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>Question #{i+1} ({qId})</div>
-                            <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
-                              {typeof ans === 'object' ? JSON.stringify(ans) : (ans || 'No response entered.')}
+                    if (descAns && Object.keys(descAns).length > 0) {
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                          {Object.entries(descAns).map(([qId, ans]: any, i: number) => (
+                            <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', padding: '1rem', borderRadius: '8px' }}>
+                              <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>Question #{i+1} ({qId})</div>
+                              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
+                                {typeof ans === 'object' ? JSON.stringify(ans) : (ans || 'No response entered.')}
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  }
-                  return <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No descriptive responses stored for this exam.</div>;
-                })()}
+                          ))}
+                        </div>
+                      );
+                    }
+                    return <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No descriptive responses stored for this exam.</div>;
+                  })()}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       )}
 
@@ -1191,3 +1200,4 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
 };
 
 export default ReportsTab;
+
