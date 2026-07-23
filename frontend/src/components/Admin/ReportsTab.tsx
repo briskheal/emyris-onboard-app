@@ -311,7 +311,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
 
   const filteredExams = combinedExams.filter(exam => {
     // 1. Filter by Test Category Toggle
-    const isScreening = (exam.testedProduct || '').toLowerCase().includes('rapid fire') || (exam.testedProduct || '').toLowerCase().includes('psychometric') || (exam.testedProduct || '').toLowerCase().includes('phase 1') || (exam.testedProduct || '').toLowerCase().includes('phase 2');
+    const p = (exam.testedProduct || '').toLowerCase(); if (p.includes('psychometric') || p.includes('phase 2')) return false; const isScreening = p.includes('rapid fire') || p.includes('phase 1');
     const matchesCategory = testCategory === 'screening' ? isScreening : !isScreening;
     if (!matchesCategory) return false;
 
@@ -1200,4 +1200,5 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
 };
 
 export default ReportsTab;
+
 

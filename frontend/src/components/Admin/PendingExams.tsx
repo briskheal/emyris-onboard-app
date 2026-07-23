@@ -38,9 +38,15 @@ const PendingExams: React.FC = () => {
     return <ManualGrading exam={gradingExam} onBack={() => { setGradingExam(null); fetchExams(); }} />;
   }
 
+  // Filter out Psychometric/Phase 2 completely (they belong in Psychometric Dossier)
+  const nonPsychoExams = exams.filter(e => {
+    const p = (e.testedProduct || '').toLowerCase();
+    return !p.includes('psychometric') && !p.includes('phase 2');
+  });
+
   // Filter exams by category
-  const filteredByCategory = exams.filter(e => {
-    const isScreening = (e.testedProduct || '').toLowerCase().includes('rapid fire') || (e.testedProduct || '').toLowerCase().includes('psychometric') || (e.testedProduct || '').toLowerCase().includes('phase 1') || (e.testedProduct || '').toLowerCase().includes('phase 2');
+  const filteredByCategory = nonPsychoExams.filter(e => {
+    const isScreening = (e.testedProduct || '').toLowerCase().includes('rapid fire') || (e.testedProduct || '').toLowerCase().includes('phase 1');
     return testCategory === 'screening' ? isScreening : !isScreening;
   });
 
