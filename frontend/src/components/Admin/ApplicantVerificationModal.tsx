@@ -603,7 +603,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Internal Assignment</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  <label className="form-label" style={{ marginBottom: '4px' }}>Assigned Employee Code</label>
+                  <label className="form-label" style={{ marginBottom: '4px' }}>Employee Code</label>
                   <input type="text" className="form-input" value={empCode} onChange={e => setEmpCode(e.target.value)} />
                 </div>
 
@@ -660,15 +660,21 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gridColumn: '1 / -1' }}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px', gap: '10px' }}>
-                    <label className="form-label" style={{ margin: 0 }}>Approved Annual CTC</label>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                      Asked Salary (Expected): <strong style={{ color: 'var(--text)' }}>₹{applicant.formData?.salary || applicant.expectedSalary || 'N/A'}</strong>
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <input type="number" className="form-input" style={{ flex: 1 }} value={salary} onChange={e => setSalary(e.target.value)} />
-                    <button type="button" className="btn btn-outline" onClick={autoDistributeSalary} style={{ height: '42px', padding: '0 15px', whiteSpace: 'nowrap' }}>Calculate Breakup</button>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label className="form-label" style={{ marginBottom: '4px' }}>Approved Annual CTC</label>
+                      <div style={{ display: 'flex', gap: '10px' }}>
+                        <input type="number" className="form-input" style={{ flex: 1, minWidth: '100px' }} value={salary} onChange={e => setSalary(e.target.value)} />
+                        <button type="button" className="btn btn-outline" onClick={autoDistributeSalary} style={{ height: '42px', padding: '0 15px', whiteSpace: 'nowrap' }}>Calculate Breakup</button>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <label className="form-label" style={{ marginBottom: '4px' }}>Asked Salary (Expected)</label>
+                      <div className="form-input" style={{ background: 'rgba(255,255,255,0.02)', display: 'flex', alignItems: 'center', color: 'var(--text-muted)', height: '42px' }}>
+                        <strong style={{ color: 'var(--text)' }}>₹{applicant.formData?.salary || applicant.expectedSalary || 'N/A'}</strong>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
