@@ -933,7 +933,19 @@ router.post('/submit-exam', async (req, res) => {
         const { email, name, hq, division, examDate, targetProduct, answers, totalQuestions } = req.body;
         
         let autoScore = 0;
+        let mcqTotal = 0;
+        let descTotal = 0;
+        
         const questions = await Question.find({ active: true });
+        const examQuestions = questions.filter(q => q.targetProduct === targetProduct);
+        
+        // Safely calculate total possible marks by type for this product
+        if (examQuestions.length > 0) {
+            examQuestions.forEach(q => {
+                if (q.questionType === 'mcq') mcqTotal++;
+                else descTotal++;
+            });
+        }
         
         for (const [qId, selectedIdxOrText] of Object.entries(answers || {})) {
             const q = questions.find(qu => qu._id === qId);
@@ -942,6 +954,11 @@ router.post('/submit-exam', async (req, res) => {
             }
         }
         
+        // Fallback if no questions found (e.g. legacy or deleted product)
+        if (mcqTotal === 0 && descTotal === 0 && totalQuestions > 0) {
+            mcqTotal = totalQuestions; // Assume all were MCQ for legacy point tracking
+        }
+
         await ExamResult.create({
             email,
             name,
@@ -950,6 +967,8 @@ router.post('/submit-exam', async (req, res) => {
             examDate,
             testedProduct: targetProduct || '',
             totalQuestions,
+            mcqTotal,
+            descTotal,
             autoScore,
             manualScore: 0,
             totalScore: autoScore,

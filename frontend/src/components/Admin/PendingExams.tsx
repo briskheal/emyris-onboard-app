@@ -98,10 +98,10 @@ const PendingExams: React.FC = () => {
                   <td style={{ padding: '15px' }}>{ex.email}</td>
                   <td style={{ padding: '15px', color: 'var(--text-muted)' }}>{new Date(ex.submittedAt).toLocaleDateString()}</td>
                   <td style={{ padding: '15px' }}>
-                    <span className="badge" style={{ background: 'rgba(255,255,255,0.1)' }}>{ex.autoScore} / {ex.totalQuestions || 20} Points</span>
+                    <span className="badge" style={{ background: 'rgba(255,255,255,0.1)' }}>{ex.autoScore} / {ex.mcqTotal || ex.totalQuestions || 20}</span>
                   </td>
-                  {activeTab === 'graded' && <td style={{ padding: '15px' }}>{ex.manualScore || 0} Points</td>}
-                  {activeTab === 'graded' && <td style={{ padding: '15px', fontWeight: 'bold', color: 'var(--primary)' }}>{ex.totalScore || 0} / {ex.totalQuestions || 20} Points</td>}
+                  {activeTab === 'graded' && <td style={{ padding: '15px' }}>{ex.manualScore || 0} / {ex.descTotal || 0}</td>}
+                  {activeTab === 'graded' && <td style={{ padding: '15px', fontWeight: 'bold', color: 'var(--primary)' }}>{ex.totalScore || 0} / {ex.totalQuestions || 20}</td>}
                   <td style={{ padding: '15px' }}>
                     <button className={`btn btn-sm ${activeTab === 'pending' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setGradingExam(ex)}>
                       {activeTab === 'pending' ? 'Grade Now' : 'View Grade'}

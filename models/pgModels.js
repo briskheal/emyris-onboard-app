@@ -202,6 +202,8 @@ const OnboardExamResult = sequelize.define('onboard_exam_result', {
     examDate: { type: DataTypes.STRING, allowNull: false },
     testedProduct: { type: DataTypes.STRING, defaultValue: "" },
     totalQuestions: { type: DataTypes.INTEGER, defaultValue: 0 },
+    mcqTotal: { type: DataTypes.INTEGER, defaultValue: 0 },
+    descTotal: { type: DataTypes.INTEGER, defaultValue: 0 },
     autoScore: { type: DataTypes.INTEGER, defaultValue: 0 },
     manualScore: { type: DataTypes.INTEGER, defaultValue: 0 },
     totalScore: { type: DataTypes.INTEGER, defaultValue: 0 },

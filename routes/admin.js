@@ -311,18 +311,44 @@ router.get('/exam-reports', async (req, res) => {
             return r;
         });
         
+        // Dynamically calculate mcqTotal and descTotal for legacy records based on current questions
+        const questions = await Question.find();
+        results = results.map(r => {
+            r = r.toObject ? r.toObject() : r;
+            if (!r.mcqTotal && !r.descTotal && r.testedProduct) {
+                let mcqCount = 0;
+                let descCount = 0;
+                const examQs = questions.filter(q => q.targetProduct === r.testedProduct);
+                examQs.forEach(q => {
+                    if (q.questionType === 'mcq') mcqCount++;
+                    else descCount++;
+                });
+                
+                if (mcqCount === 0 && descCount === 0 && r.totalQuestions > 0) {
+                    mcqCount = r.totalQuestions; // fallback assumption
+                }
+                
+                r.mcqTotal = mcqCount;
+                r.descTotal = descCount;
+                needsSave = true;
+            }
+            return r;
+        });
+
         // In the background, try to repair the DB records
         if (needsSave) {
             Promise.all(results.map(r => {
                 if (typeof r.totalScore === 'number' && typeof r.autoScore === 'number') {
-                    return ExamResult.updateOne({ _id: r._id }, {
-                        $set: {
-                            autoScore: r.autoScore,
-                            manualScore: r.manualScore,
-                            totalScore: r.totalScore,
-                            totalQuestions: r.totalQuestions
-                        }
-                    });
+                    const updateDoc = {
+                        autoScore: r.autoScore,
+                        manualScore: r.manualScore,
+                        totalScore: r.totalScore,
+                        totalQuestions: r.totalQuestions
+                    };
+                    if (r.mcqTotal !== undefined) updateDoc.mcqTotal = r.mcqTotal;
+                    if (r.descTotal !== undefined) updateDoc.descTotal = r.descTotal;
+                    
+                    return ExamResult.updateOne({ _id: r._id }, { $set: updateDoc });
                 }
             })).catch(e => console.error("Auto-heal DB save failed:", e));
         }
@@ -2973,10 +2999,44 @@ router.get('/pending-exams', async (req, res) => {
             if (ex) {
                 const a = isNaN(parseInt(ex.autoScore, 10)) ? 0 : parseInt(ex.autoScore, 10);
                 const m = isNaN(parseInt(ex.manualScore, 10)) ? 0 : parseInt(ex.manualScore, 10);
+                
+                const updateDoc = {};
+                let needsUpdate = false;
+                
                 if (ex.totalScore !== (a + m)) {
                    ex.totalScore = a + m;
-                   // Save corrected score back to DB asynchronously
-                   ExamResult.updateOne({ _id: ex._id }, { $set: { totalScore: a + m, autoScore: a, manualScore: m } }).exec().catch(()=>{});
+                   updateDoc.totalScore = a + m;
+                   updateDoc.autoScore = a;
+                   updateDoc.manualScore = m;
+                   needsUpdate = true;
+                }
+                
+                // Dynamically calculate missing mcqTotal / descTotal
+                if (ex.testedProduct && !ex.mcqTotal && !ex.descTotal) {
+                    let mcqCount = 0;
+                    let descCount = 0;
+                    const examQs = questions.filter(q => q.targetProduct === ex.testedProduct);
+                    examQs.forEach(q => {
+                        if (q.questionType === 'mcq') mcqCount++;
+                        else descCount++;
+                    });
+                    
+                    if (mcqCount === 0 && descCount === 0 && ex.totalQuestions > 0) {
+                        mcqCount = ex.totalQuestions; // fallback assumption
+                    }
+                    
+                    ex.mcqTotal = mcqCount;
+                    ex.descTotal = descCount;
+                    updateDoc.mcqTotal = mcqCount;
+                    updateDoc.descTotal = descCount;
+                    needsUpdate = true;
+                }
+
+                if (needsUpdate && typeof ex.updateOne === 'function') {
+                    // Save corrected score back to DB asynchronously
+                    ExamResult.updateOne({ _id: ex._id }, { $set: updateDoc }).exec().catch(()=>{});
+                } else if (needsUpdate && ex._id) {
+                    ExamResult.updateOne({ _id: ex._id }, { $set: updateDoc }).exec().catch(()=>{});
                 }
             }
             return ex;
