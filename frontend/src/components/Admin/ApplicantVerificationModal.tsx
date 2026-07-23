@@ -18,7 +18,10 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   // Local state for internal assignment
   const [bloodGroup, setBloodGroup] = useState(initialApplicant.formData?.bloodGroup || initialApplicant.bloodGroup || '');
   const [maritalStatus, setMaritalStatus] = useState(initialApplicant.maritalStatus || initialApplicant.formData?.maritalStatus || '');
-  const [anniversaryDate, setAnniversaryDate] = useState(initialApplicant.anniversaryDate || initialApplicant.formData?.anniversaryDate || '');
+  const [anniversaryDate, setAnniversaryDate] = useState(() => {
+    const val = initialApplicant.anniversaryDate || initialApplicant.formData?.anniversaryDate || '';
+    return val === 'undefined-undefined' ? '' : val;
+  });
   const [empCode, setEmpCode] = useState(initialApplicant.empCode || '');
   const [designation, setDesignation] = useState(initialApplicant.designation || '');
   const [division, setDivision] = useState(initialApplicant.division || '');
@@ -98,7 +101,9 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
 
       setBloodGroup(fullApp.formData?.bloodGroup || fullApp.bloodGroup || '');
       setMaritalStatus(fullApp.maritalStatus || fullApp.formData?.maritalStatus || '');
-      setAnniversaryDate(fullApp.anniversaryDate || fullApp.formData?.anniversaryDate || '');
+      let fetchedAnniversary = fullApp.anniversaryDate || fullApp.formData?.anniversaryDate || '';
+      if (fetchedAnniversary === 'undefined-undefined') fetchedAnniversary = '';
+      setAnniversaryDate(fetchedAnniversary);
 
       try {
         setActualJoiningDate(fullApp.actualJoiningDate && !isNaN(new Date(fullApp.actualJoiningDate).getTime()) 
