@@ -112,7 +112,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
     try {
       setLoading(true);
       const [appsRes, examsRes] = await Promise.all([
-        api.get('/admin/applicants?month=all&year=all'),
+        api.get('/admin/applicants?month=all&year=all&reports=true'),
         api.get('/admin/exam-reports')
       ]);
 

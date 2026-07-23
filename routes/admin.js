@@ -688,10 +688,17 @@ router.get('/applicants', async (req, res) => {
         // Optimization: Exclude Large Document Data from the Main List
         // Optimization: Exclude heavy JSON columns (documents, test answers, reports) from the Main List query so Admin Portal opens instantly (< 10ms)
         // Note: formData is KEPT so that ReportsTab can generate CSVs and Print Dossiers properly.
+        const isReports = req.query.reports === 'true';
+        let selectStr = '-pendingExams -salaryBreakup -verificationChecks -tasks -offerLetterData -apptLetterData -answers -mindsetReport -psychometricScores -detailingScripts -issuedLetters -templateSettings -customAssetCategories -targetProductsList -designations -requiredDocs -miscLetters';
+        
+        if (!isReports) {
+            selectStr += ' -documents -formData';
+        }
+
         const applicants = await Applicant.find(query)
-            .select('-pendingExams -salaryBreakup -verificationChecks -tasks -offerLetterData -apptLetterData -answers -mindsetReport -psychometricScores -detailingScripts -issuedLetters -templateSettings -customAssetCategories -targetProductsList -designations -requiredDocs -miscLetters')
+            .select(selectStr)
             .sort({ registeredAt: -1 })
-            .lean(); // Fetch only lightweight summary fields (_id, email, fullName, phone, designation, status, etc.)
+            .lean(); // Fetch summary fields
 
         res.status(200).json({ success: true, applicants });
     } catch (error) {
