@@ -109,7 +109,7 @@ const ManualGrading: React.FC<ManualGradingProps> = ({ exam, onBack }) => {
       </div>
 
       <div style={{ marginTop: '2rem', textAlign: 'right' }}>
-        <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting || descriptiveAnswers.length === 0}>
+        <button className="btn btn-primary" onClick={handleSubmit} disabled={submitting}>
           {submitting ? 'Saving...' : 'Finalize Grade'}
         </button>
       </div>
