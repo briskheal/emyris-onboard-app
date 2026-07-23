@@ -154,7 +154,8 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
         status: 'graded'
       });
       if (res.data.success) {
-        const updated = { ...selectedExamDetail, manualScore: scoreNum, status: 'graded', totalScore: (selectedExamDetail.autoScore || 0) + scoreNum };
+        const parsedAutoScore = isNaN(parseInt(selectedExamDetail.autoScore as any, 10)) ? 0 : parseInt(selectedExamDetail.autoScore as any, 10);
+        const updated = { ...selectedExamDetail, manualScore: scoreNum, status: 'graded', totalScore: parsedAutoScore + scoreNum };
         setSelectedExamDetail(updated);
         setExamReports(prev => prev.map(e => e.id === updated.id ? updated : e));
         alert(`Grade finalized successfully with score: ${scoreNum} Points.`);
