@@ -7,6 +7,7 @@ const PendingExams: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [gradingExam, setGradingExam] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'pending' | 'graded'>('pending');
+  const [testCategory, setTestCategory] = useState<'screening' | 'product'>('screening');
 
   const fetchExams = async () => {
     try {
@@ -30,13 +31,37 @@ const PendingExams: React.FC = () => {
     return <ManualGrading exam={gradingExam} onBack={() => { setGradingExam(null); fetchExams(); }} />;
   }
 
-  const pendingExams = exams.filter(e => e.status !== 'graded');
-  const gradedExams = exams.filter(e => e.status === 'graded');
+  // Filter exams by category
+  const filteredByCategory = exams.filter(e => {
+    const isScreening = (e.testedProduct || '').toLowerCase().includes('rapid fire') || (e.testedProduct || '').toLowerCase().includes('psychometric') || (e.testedProduct || '').toLowerCase().includes('phase 1') || (e.testedProduct || '').toLowerCase().includes('phase 2');
+    return testCategory === 'screening' ? isScreening : !isScreening;
+  });
+
+  const pendingExams = filteredByCategory.filter(e => e.status !== 'graded');
+  const gradedExams = filteredByCategory.filter(e => e.status === 'graded');
 
   const displayedExams = activeTab === 'pending' ? pendingExams : gradedExams;
 
   return (
     <div>
+      {/* Category Toggle */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.2)', padding: '5px', borderRadius: '8px', width: 'fit-content' }}>
+        <button 
+          className={`btn ${testCategory === 'screening' ? 'btn-primary' : 'btn-outline'}`} 
+          style={{ border: 'none' }}
+          onClick={() => setTestCategory('screening')}
+        >
+          Screening Tests
+        </button>
+        <button 
+          className={`btn ${testCategory === 'product' ? 'btn-primary' : 'btn-outline'}`} 
+          style={{ border: 'none' }}
+          onClick={() => setTestCategory('product')}
+        >
+          Product Tests
+        </button>
+      </div>
+
       <div style={{ display: 'flex', gap: '20px', marginBottom: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}>
         <h3 
           style={{ cursor: 'pointer', paddingBottom: '0.5rem', color: activeTab === 'pending' ? '#f59e0b' : 'var(--text-muted)', borderBottom: activeTab === 'pending' ? '2px solid #f59e0b' : 'none' }}

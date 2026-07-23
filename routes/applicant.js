@@ -876,14 +876,32 @@ router.post('/exam-questions', async (req, res) => {
         
         const questions = await Question.find({ active: true });
         
-        // ONLY fetch Product questions for the activeProduct selected
         let allProductQs = questions.filter(q => {
-            if (q.category === 'exam_product') return true;
-            if (!activeProduct || activeProduct === 'General') {
-                return q.category.toLowerCase() === 'emystein' || q.targetProduct === 'Emystein'; // Fallback for legacy DB structure
+            const qCat = (q.category || '').toLowerCase().trim();
+            const qTarget = (q.targetProduct || '').toLowerCase().trim();
+            const actProd = (activeProduct || '').toLowerCase().trim();
+
+            // 1. Strict Isolation for Rapid Fire
+            if (actProd === 'rapid fire' || actProd === 'rapid_fire') {
+                return qCat === 'rapid fire' || qCat === 'rapid_fire' || qTarget === 'rapid fire' || qTarget === 'rapid_fire';
             }
-            return q.targetProduct === activeProduct || 
-                   q.category.toLowerCase() === activeProduct.toLowerCase();
+
+            // 2. Strict Isolation for Psychometric
+            if (actProd === 'psychometric') {
+                return qCat === 'psychometric' || qTarget === 'psychometric';
+            }
+
+            // 3. Fallback for Product Tests (Ignore isolated screening tests)
+            if (qCat === 'rapid fire' || qCat === 'rapid_fire' || qCat === 'psychometric') {
+                return false; // Never mix screening tests into general product tests
+            }
+
+            // Only fetch Product questions for the activeProduct selected
+            if (!activeProduct || activeProduct === 'General') {
+                return qCat === 'emystein' || qTarget === 'emystein' || qCat === 'exam_product'; // Legacy fallback
+            }
+
+            return qCat === actProd || qTarget === actProd || qCat === 'exam_product';
         });
         
         // Strict slice for MCQ based on mcqCount, NO slice for Descriptive

@@ -90,6 +90,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
   const [applicants, setApplicants] = useState<any[]>([]);
   const [examReports, setExamReports] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [testCategory, setTestCategory] = useState<'screening' | 'product'>('screening');
 
   // Sub-report 1 state: Applicant Complete Details
   const [selectedEmail, setSelectedEmail] = useState<string>('');
@@ -303,6 +304,12 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
   });
 
   const filteredExams = combinedExams.filter(exam => {
+    // 1. Filter by Test Category Toggle
+    const isScreening = (exam.testedProduct || '').toLowerCase().includes('rapid fire') || (exam.testedProduct || '').toLowerCase().includes('psychometric') || (exam.testedProduct || '').toLowerCase().includes('phase 1') || (exam.testedProduct || '').toLowerCase().includes('phase 2');
+    const matchesCategory = testCategory === 'screening' ? isScreening : !isScreening;
+    if (!matchesCategory) return false;
+
+    // 2. Filter by Search Query
     if (!examSearch.trim()) return true;
     const q = examSearch.toLowerCase().trim();
     return (
@@ -689,6 +696,25 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
       {activeTab === 'exam' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <div className="dash-card" style={{ padding: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+            
+            {/* Category Toggle */}
+            <div style={{ display: 'flex', gap: '10px', background: 'rgba(0,0,0,0.2)', padding: '5px', borderRadius: '8px' }}>
+              <button 
+                className={`btn ${testCategory === 'screening' ? 'btn-primary' : 'btn-outline'}`} 
+                style={{ border: 'none' }}
+                onClick={() => setTestCategory('screening')}
+              >
+                Screening Tests
+              </button>
+              <button 
+                className={`btn ${testCategory === 'product' ? 'btn-primary' : 'btn-outline'}`} 
+                style={{ border: 'none' }}
+                onClick={() => setTestCategory('product')}
+              >
+                Product Tests
+              </button>
+            </div>
+
             <div style={{ position: 'relative', minWidth: '300px', flex: 1, maxWidth: '400px' }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
               <input
