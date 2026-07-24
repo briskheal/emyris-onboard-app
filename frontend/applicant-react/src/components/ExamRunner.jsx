@@ -225,7 +225,7 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
         : 'linear-gradient(90deg, #f59e0b, #ec4899)';
 
     return (
-        <div style={{ background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', color: '#f8fafc', maxWidth: '850px', margin: '0 auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
+        <div style={{ background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', color: '#f8fafc', maxWidth: '850px', margin: '0 auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', position: 'relative' }}>
 
             {/* ── Sticky Floating Timer Bar ── */}
             <div style={{
@@ -234,7 +234,9 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
                 zIndex: 100,
                 background: 'rgba(15,23,42,0.97)',
                 backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 borderBottom: '1px solid #1e293b',
+                borderRadius: '12px 12px 0 0',
                 padding: '14px 24px 0 24px',
                 display: 'flex',
                 flexDirection: 'column',
