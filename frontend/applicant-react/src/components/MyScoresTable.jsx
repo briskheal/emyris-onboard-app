@@ -251,15 +251,39 @@ const MyScoresTable = ({ applicant }) => {
                         <h4 style={{ color: '#fff', fontSize: '1.05rem', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '14px' }}>📝 Itemized Answer Review</h4>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                             {Object.entries(selectedExam.answers || {}).map(([qId, ans], qIdx) => {
-                                if (['Overall Readiness Index', 'Executive Archetype Badge', 'Clinical Integrity & Ethics', 'Resilience & Grit Under Pressure', 'Empathy & Relationship Building', 'Autonomy & Self-Motivation', 'Scientific Adaptability', 'Collaborative Communication', 'Coaching & Mentorship Tips', 'mindsetReport', 'traitPercentiles', 'archetype', 'overallPercentile'].includes(qId)) {
+                                if (['Overall Readiness Index', 'Executive Archetype Badge', 'Clinical Integrity & Ethics', 'Resilience & Grit Under Pressure', 'Empathy & Relationship Building', 'Autonomy & Self-Motivation', 'Scientific Adaptability', 'Collaborative Communication', 'Coaching & Mentorship Tips', 'mindsetReport', 'traitPercentiles', 'archetype', 'overallPercentile', 'riskLevel', 'isRedFlag', 'completedAt'].includes(qId)) {
                                     return null;
                                 }
                                 const q = questions.find(qu => qu._id === qId || qu.text === qId);
                                 const qText = q?.text || qId;
-                                
+
+                                // Determine if this is a psychometric/phase 2 exam — no right/wrong
+                                const isPsychometricExam = selectedExam.testedProduct &&
+                                    (selectedExam.testedProduct.toLowerCase().includes('psychometric') ||
+                                     selectedExam.testedProduct.toLowerCase().includes('phase 2'));
+
+                                const displayAns = typeof ans === 'object' ? JSON.stringify(ans) : String(ans);
+
+                                if (isPsychometricExam) {
+                                    // Neutral display for psychometric — no correct/incorrect judgement
+                                    return (
+                                        <div key={qId} style={{ background: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #3b82f6' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                                                <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.92rem', flex: '1' }}>Q{qIdx + 1}: {qText}</span>
+                                                <span style={{ padding: '2px 10px', borderRadius: '4px', fontSize: '0.73rem', fontWeight: '700', background: 'rgba(59,130,246,0.18)', color: '#93c5fd', whiteSpace: 'nowrap' }}>
+                                                    🎯 Selected Response
+                                                </span>
+                                            </div>
+                                            <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
+                                                <strong>Your Response:</strong> {displayAns}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+
+                                // MCQ exam — show correct/incorrect
                                 let isCorrect = true;
                                 let idealAnswerText = '';
-                                
                                 if (q) {
                                     const actualCorrectIndex = q.correctAnswerIndex !== undefined ? q.correctAnswerIndex : q.correctAnswer;
                                     idealAnswerText = q.options ? q.options[actualCorrectIndex] : actualCorrectIndex;
@@ -271,14 +295,12 @@ const MyScoresTable = ({ applicant }) => {
                                     }
                                 }
 
-                                const displayAns = typeof ans === 'object' ? JSON.stringify(ans) : String(ans);
-
                                 return (
                                     <div key={qId} style={{ background: '#1e293b', padding: '16px', borderRadius: '12px', border: `1px solid ${isCorrect ? '#10b981' : '#ef4444'}` }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                            <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.95rem' }}>Q{qIdx + 1}: {qText}</span>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                                            <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.92rem', flex: '1' }}>Q{qIdx + 1}: {qText}</span>
                                             <span style={{ padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '700', background: isCorrect ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)', color: isCorrect ? '#34d399' : '#f87171' }}>
-                                                {isCorrect ? '✓ CORRECT' : '✗ INCORRECT'}
+                                                {isCorrect ? '✅ CORRECT' : '❌ INCORRECT'}
                                             </span>
                                         </div>
                                         <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
@@ -286,7 +308,7 @@ const MyScoresTable = ({ applicant }) => {
                                         </div>
                                         {q && !isCorrect && idealAnswerText !== undefined && (
                                             <div style={{ fontSize: '0.85rem', color: '#34d399', marginTop: '4px' }}>
-                                                <strong>Ideal/Correct Answer:</strong> {idealAnswerText}
+                                                <strong>Correct Answer:</strong> {idealAnswerText}
                                             </div>
                                         )}
                                     </div>
