@@ -212,40 +212,102 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
     }
 
     const currentQs = phase === 1 ? mcqQuestions : descQuestions;
+    const answeredCount = phase === 1 ? Object.keys(mcqAnswers).length : Object.keys(descAnswers).length;
+    const totalQs = currentQs.length;
+    const progressPercent = totalQs > 0 ? Math.round((answeredCount / totalQs) * 100) : 0;
+    const isLow = timeLeft < 180;
+    const isCritical = timeLeft < 60;
+    const timerBg = isCritical ? 'rgba(239,68,68,0.22)' : isLow ? 'rgba(245,158,11,0.18)' : 'rgba(16,185,129,0.18)';
+    const timerBorder = isCritical ? '#ef4444' : isLow ? '#f59e0b' : '#10b981';
+    const timerColor = isCritical ? '#f87171' : isLow ? '#fbbf24' : '#34d399';
+    const progressGradient = phase === 1
+        ? 'linear-gradient(90deg, #10b981, #3b82f6)'
+        : 'linear-gradient(90deg, #f59e0b, #ec4899)';
 
     return (
-        <div style={{ background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', padding: '28px', color: '#f8fafc', maxWidth: '850px', margin: '0 auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-            {/* Header / Timer Bar */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '18px', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-                <div>
-                    <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#fff' }}>
-                        {isRapidFire ? '⚡ Phase 1: Rapid Fire Screening Test' : `📋 ${examData?.targetProduct || 'Assigned Examination'} (${phase === 1 ? 'Part I: MCQ' : 'Part II: Descriptive'})`}
-                    </h2>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '4px' }}>
-                        {phase === 1 ? 'Select the single most appropriate answer for each question.' : 'Provide comprehensive, structured explanations for clinical/field scenarios.'}
+        <div style={{ background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', color: '#f8fafc', maxWidth: '850px', margin: '0 auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', overflow: 'hidden' }}>
+
+            {/* ── Sticky Floating Timer Bar ── */}
+            <div style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                background: 'rgba(15,23,42,0.97)',
+                backdropFilter: 'blur(12px)',
+                borderBottom: '1px solid #1e293b',
+                padding: '14px 24px 0 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+            }}>
+                {/* Top row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingBottom: '12px' }}>
+                    {/* Title */}
+                    <div>
+                        <div style={{ fontWeight: '800', fontSize: '1.05rem', color: '#fff' }}>
+                            {isRapidFire
+                                ? '⚡ Phase 1: Rapid Fire Screening Test'
+                                : `📋 ${examData?.targetProduct || 'Assigned Examination'} — ${phase === 1 ? 'Part I: MCQ' : 'Part II: Descriptive'}`}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                            {phase === 1
+                                ? 'Select the single most appropriate answer for each question.'
+                                : 'Provide comprehensive, structured explanations for each scenario.'}
+                        </div>
+                    </div>
+
+                    {/* Controls */}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                        {/* Answered pill */}
+                        <div style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)', padding: '5px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#818cf8', fontWeight: '700' }}>
+                            {answeredCount} / {totalQs} answered
+                        </div>
+
+                        {/* Countdown timer */}
+                        <div style={{
+                            background: timerBg,
+                            border: `2px solid ${timerBorder}`,
+                            padding: '6px 18px',
+                            borderRadius: '10px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            animation: isCritical ? 'examPulse 1s infinite' : 'none'
+                        }}>
+                            <span style={{ fontSize: '1.1rem' }}>⏱️</span>
+                            <span style={{ fontWeight: '900', fontSize: '1.2rem', color: timerColor, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}>
+                                {formatTime(timeLeft)}
+                            </span>
+                        </div>
+
+                        {/* Cancel button */}
+                        <button
+                            onClick={onCancel}
+                            disabled={submitting}
+                            style={{ background: 'transparent', border: '1px solid #475569', color: '#cbd5e1', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
+                        >
+                            Save &amp; Exit
+                        </button>
                     </div>
                 </div>
 
-                {/* Floating Timer */}
-                <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                    <div style={{ background: timeLeft < 180 ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', border: `1px solid ${timeLeft < 180 ? '#ef4444' : '#10b981'}`, padding: '8px 16px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '1.1rem' }}>⏱️</span>
-                        <span style={{ fontWeight: '800', fontSize: '1.15rem', color: timeLeft < 180 ? '#f87171' : '#34d399', fontVariantNumeric: 'tabular-nums' }}>
-                            {formatTime(timeLeft)}
-                        </span>
-                    </div>
-                    <button
-                        onClick={onCancel}
-                        disabled={submitting}
-                        style={{ background: 'transparent', border: '1px solid #475569', color: '#cbd5e1', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
-                    >
-                        Abort Exam
-                    </button>
+                {/* Progress bar — full-width flush to bottom of bar */}
+                <div style={{ height: '4px', width: '100%', background: '#1e293b', borderRadius: '0' }}>
+                    <div style={{ width: `${progressPercent}%`, height: '100%', background: progressGradient, transition: 'width 0.4s ease', borderRadius: '0' }}></div>
                 </div>
             </div>
 
-            {/* Questions Section */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
+            {/* Pulse animation */}
+            <style>{`
+                @keyframes examPulse {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+                    50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+                }
+            `}</style>
+
+            {/* ── Questions Section ── */}
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '0' }}>
                 {currentQs.map((q, idx) => {
                     return (
                         <div key={idx} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '14px', padding: '22px' }}>
@@ -312,8 +374,8 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
                 })}
             </div>
 
-            {/* Footer Buttons */}
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', borderTop: '1px solid #334155', paddingTop: '24px' }}>
+            {/* ── Footer Buttons ── */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px', borderTop: '1px solid #334155', padding: '20px 24px', background: 'rgba(15,23,42,0.8)' }}>
                 <button
                     onClick={onCancel}
                     disabled={submitting}
@@ -344,3 +406,4 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
 };
 
 export default ExamRunner;
+
