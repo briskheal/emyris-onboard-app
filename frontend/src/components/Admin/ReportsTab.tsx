@@ -46,20 +46,31 @@ const getOrReconstructMindsetReport = (app: any, combinedExams: any[] = []) => {
 
   if (scores && typeof scores === 'object' && Object.keys(scores).length > 0) {
     const vals = Object.values(scores).map((v: any) => Number(v) || 0);
-    const avg = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 85;
-    let archetype = "⚡ The Balanced Professional";
-    if (avg >= 85) archetype = "🌟 The Scientific Strategist";
-    else if (avg >= 75) archetype = "🤝 The Empathetic Relationship Builder";
-    else archetype = "🚀 The Autonomous Pioneer";
+    const avg = vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
+
+    // 5-tier archetype system (matches backend logic)
+    const ethicsScore = (scores as any)['Clinical Integrity & Ethics'] || 0;
+    const traitsBelowThreshold = vals.filter(v => v < 40).length;
+    const isRedFlag = ethicsScore < 45 || traitsBelowThreshold >= 3 || avg < 40;
+
+    let archetype = '⚡ The Balanced Professional';
+    if (isRedFlag) archetype = '🚨 Coaching Required — HR Review Recommended';
+    else if (avg >= 80 && (scores as any)['Scientific Adaptability'] >= 78 && ethicsScore >= 78) archetype = '🌟 The Scientific Strategist';
+    else if (avg >= 78 && (scores as any)['Empathy & Relationship Building'] >= 78) archetype = '🤝 The Empathetic Relationship Builder';
+    else if (avg >= 75 && (scores as any)['Autonomy & Self-Motivation'] >= 80) archetype = '🚀 The Autonomous Pioneer';
+    else if (avg >= 68 && (scores as any)['Collaborative Communication'] >= 72) archetype = '🤜 The Collaborative Team Builder';
+    else if (avg >= 60) archetype = '⚡ The Balanced Professional';
+    else archetype = '⚠️ Developing Candidate — Structured Onboarding Advised';
 
     return {
       overallPercentile: avg,
-      archetype: archetype,
+      archetype,
       traitPercentiles: scores,
+      riskLevel: isRedFlag ? 'red' : avg >= 65 ? 'green' : 'amber',
       coachingTips: [
         `Key Strength: Exhibits solid readiness across clinical and ethical dimensions (${avg}% overall index).`,
-        `Development Area: Provide structured mentorship and field role-play during initial onboarding.`,
-        `Overall Readiness: Achieved an executive mindset rating of ${avg}%. Highly recommended for supervisory check-ins and autonomous territory planning.`
+        `Development Area: Provide structured mentorship and field role-play during the initial 60-day onboarding period.`,
+        `Overall Readiness: Executive Mindset Index of ${avg}%. ${avg >= 75 ? 'Recommended for autonomous territory onboarding.' : avg >= 60 ? 'Recommended for supervised onboarding with weekly check-ins.' : 'Requires intensive onboarding before independent field deployment.'}`
       ]
     };
   }
@@ -278,23 +289,30 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
   };
 
   // --- SUB-REPORT 2: TEST EXAM BREAKDOWN ---
+  // MCQ/Descriptive exams only (psychometric excluded) — used for Test Results tab
   const combinedExams = examReports
     .filter(exam => {
       const p = (exam.testedProduct || '').toLowerCase();
       return !p.includes('psychometric') && !p.includes('phase 2');
     })
     .map(exam => {
-    const matchedApp = applicants.find(a => a.email === exam.email);
-    return {
-      ...exam,
-      fullName: matchedApp ? matchedApp.fullName : (exam.fullName || exam.email.split('@')[0]),
-      empCode: matchedApp ? (matchedApp.empCode || 'N/A') : 'N/A',
-      designation: matchedApp ? (matchedApp.designation || 'N/A') : 'N/A',
-      hq: matchedApp ? (matchedApp.hq || 'N/A') : 'N/A',
-      autoScore: exam.autoScore || 0,
-      manualScore: exam.manualScore || 0,
-      totalScore: exam.totalScore || ((exam.autoScore || 0) + (exam.manualScore || 0))
-    };
+      const matchedApp = applicants.find(a => a.email === exam.email);
+      return {
+        ...exam,
+        fullName: matchedApp ? matchedApp.fullName : (exam.fullName || exam.email.split('@')[0]),
+        empCode: matchedApp ? (matchedApp.empCode || 'N/A') : 'N/A',
+        designation: matchedApp ? (matchedApp.designation || 'N/A') : 'N/A',
+        hq: matchedApp ? (matchedApp.hq || 'N/A') : 'N/A',
+        autoScore: exam.autoScore || 0,
+        manualScore: exam.manualScore || 0,
+        totalScore: exam.totalScore || ((exam.autoScore || 0) + (exam.manualScore || 0))
+      };
+    });
+
+  // Psychometric exams ONLY — used for Dossier tab lookup (kept separate from combinedExams)
+  const psychometricExams = examReports.filter(exam => {
+    const p = (exam.testedProduct || '').toLowerCase();
+    return p.includes('psychometric') || p.includes('phase 2');
   });
 
   const filteredExams = combinedExams.filter(exam => {
@@ -1048,10 +1066,12 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
               </thead>
               <tbody>
                 {applicants.map((app, idx) => {
-                  const report = getOrReconstructMindsetReport(app, combinedExams);
-                  const hasReport = !!report;
-                  const indexVal = hasReport && report ? `${report.overallPercentile}%` : 'Pending';
-                  const archVal = hasReport && report ? report.archetype : 'Not Taken';
+                  // Pass psychometricExams (not combinedExams) so the lookup can find psychometric records
+                  const report = getOrReconstructMindsetReport(app, psychometricExams);
+                  // A candidate has completed if report exists OR psychometricTestCompleted flag is set
+                  const hasReport = !!report || !!app.psychometricTestCompleted;
+                  const indexVal = report ? `${report.overallPercentile}%` : (app.psychometricTestCompleted ? 'Completed' : 'Pending');
+                  const archVal = report ? report.archetype : (app.psychometricTestCompleted ? '⏳ Report Processing' : 'Not Taken');
 
                   return (
                     <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
@@ -1110,7 +1130,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
 
           {/* Psychometric Dossier Modal */}
           {selectedPsychometricApp && (() => {
-            const report = getOrReconstructMindsetReport(selectedPsychometricApp, combinedExams);
+            const report = getOrReconstructMindsetReport(selectedPsychometricApp, psychometricExams);
 
             return (
               <div className="modal-backdrop" style={{ position: 'fixed', inset: 0, background: 'rgba(3, 7, 18, 0.92)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1.5rem' }}>

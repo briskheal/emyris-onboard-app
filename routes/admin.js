@@ -755,15 +755,19 @@ router.get('/applicants', async (req, res) => {
             };
         }
 
-        // Optimization: Exclude Large Document Data from the Main List
-        // Optimization: Exclude heavy JSON columns (documents, test answers, reports) from the Main List query so Admin Portal opens instantly (< 10ms)
-        // Note: formData is KEPT so that ReportsTab can generate CSVs and Print Dossiers properly.
+        // Optimization: Exclude heavy fields from the main list to keep API fast.
+        // When reports=true (ReportsTab), include psychometric fields so the Dossier tab works.
         const isReports = req.query.reports === 'true';
-        let selectStr = '-pendingExams -salaryBreakup -verificationChecks -tasks -offerLetterData -apptLetterData -answers -mindsetReport -psychometricScores -detailingScripts -issuedLetters -templateSettings -customAssetCategories -targetProductsList -designations -requiredDocs -miscLetters';
-        
+
+        // Base exclusions — always strip these heavy unused fields
+        let selectStr = '-pendingExams -salaryBreakup -verificationChecks -tasks -offerLetterData -apptLetterData -answers -detailingScripts -issuedLetters -templateSettings -customAssetCategories -targetProductsList -designations -requiredDocs -miscLetters';
+
         if (!isReports) {
-            selectStr += ' -documents -formData';
+            // Non-reports views: also strip psychometric data and document/form data for speed
+            selectStr += ' -mindsetReport -psychometricScores -documents -formData';
         }
+        // When isReports=true: mindsetReport, psychometricScores, psychometricTestCompleted
+        // are intentionally KEPT so the Psychometric Dossier tab can read them.
 
         const applicants = await Applicant.find(query)
             .select(selectStr)
