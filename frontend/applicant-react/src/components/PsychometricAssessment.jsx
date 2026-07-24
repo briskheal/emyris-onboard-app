@@ -134,44 +134,86 @@ const PsychometricAssessment = ({ applicant, onComplete, onCancel }) => {
     const progressPercent = Math.round((answeredCount / questions.length) * 100) || 0;
 
     return (
-        <div style={{ background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', padding: '28px', color: '#f8fafc', maxWidth: '850px', margin: '0 auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-            {/* Header / Top Bar */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '18px', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ background: '#0f172a', borderRadius: '16px', border: '1px solid #334155', padding: '28px', color: '#f8fafc', maxWidth: '850px', margin: '0 auto', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', position: 'relative' }}>
+
+            {/* ── STICKY FLOATING TIMER BAR ── */}
+            <div style={{
+                position: 'sticky',
+                top: 0,
+                zIndex: 100,
+                background: 'rgba(15, 23, 42, 0.96)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                borderBottom: '1px solid #334155',
+                borderRadius: '12px 12px 0 0',
+                padding: '12px 20px',
+                marginBottom: '0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
+            }}>
+                {/* Title */}
                 <div>
-                    <h2 style={{ margin: 0, fontSize: '1.4rem', color: '#fff' }}>🧠 Phase 2: Candidate Mindset Assessment</h2>
-                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '4px' }}>
-                        Answer honestly based on your clinical and professional instincts.
-                    </div>
+                    <div style={{ fontWeight: '800', fontSize: '1.05rem', color: '#fff' }}>🧠 Phase 2: Candidate Mindset Assessment</div>
+                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>Answer honestly based on your clinical and professional instincts.</div>
                 </div>
 
-                {/* Floating Timer & Progress Badge */}
-                <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                    <div style={{ background: timeLeft < 300 ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.2)', border: `1px solid ${timeLeft < 300 ? '#ef4444' : '#6366f1'}`, padding: '8px 16px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Timer + Progress + Exit */}
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {/* Answered progress pill */}
+                    <div style={{ background: 'rgba(168,85,247,0.15)', border: '1px solid rgba(168,85,247,0.4)', padding: '5px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#d8b4fe', fontWeight: '700' }}>
+                        {answeredCount} / {questions.length} answered
+                    </div>
+
+                    {/* Countdown timer */}
+                    <div style={{
+                        background: timeLeft < 300 ? 'rgba(239,68,68,0.2)' : 'rgba(99,102,241,0.18)',
+                        border: `2px solid ${timeLeft < 300 ? '#ef4444' : '#6366f1'}`,
+                        padding: '6px 18px',
+                        borderRadius: '10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '7px',
+                        animation: timeLeft < 120 ? 'pulse 1s infinite' : 'none'
+                    }}>
                         <span style={{ fontSize: '1.1rem' }}>⏱️</span>
-                        <span style={{ fontWeight: '800', fontSize: '1.15rem', color: timeLeft < 300 ? '#f87171' : '#818cf8', fontVariantNumeric: 'tabular-nums' }}>
+                        <span style={{ fontWeight: '900', fontSize: '1.2rem', color: timeLeft < 300 ? '#f87171' : '#818cf8', fontVariantNumeric: 'tabular-nums', letterSpacing: '0.04em' }}>
                             {formatTime(timeLeft)}
                         </span>
                     </div>
+
+                    {/* Save & Exit */}
                     <button
                         onClick={onCancel}
                         disabled={submitting}
-                        style={{ background: 'transparent', border: '1px solid #475569', color: '#cbd5e1', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}
+                        style={{ background: 'transparent', border: '1px solid #475569', color: '#cbd5e1', padding: '6px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
                     >
-                        Save Exit
+                        Save &amp; Exit
                     </button>
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            <div style={{ marginBottom: '28px', background: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #334155' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px', color: '#cbd5e1', fontWeight: '600' }}>
-                    <span>Progress: {answeredCount} / {questions.length} Questions Answered</span>
+            {/* Progress bar — directly under sticky bar */}
+            <div style={{ background: '#1e293b', padding: '10px 20px', borderRadius: '0', borderBottom: '1px solid #1e293b', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '6px', color: '#94a3b8', fontWeight: '600' }}>
+                    <span>Progress</span>
                     <span style={{ color: '#a855f7' }}>{progressPercent}% Complete</span>
                 </div>
-                <div style={{ width: '100%', height: '8px', background: '#0f172a', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #a855f7, #ec4899)', transition: 'width 0.3s' }}></div>
+                <div style={{ width: '100%', height: '6px', background: '#0f172a', borderRadius: '4px', overflow: 'hidden' }}>
+                    <div style={{ width: `${progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, #6366f1, #a855f7, #ec4899)', transition: 'width 0.4s ease', borderRadius: '4px' }}></div>
                 </div>
             </div>
+
+            {/* Pulse animation for critical time */}
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+                    50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+                }
+            `}</style>
 
             {/* Questions List */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
