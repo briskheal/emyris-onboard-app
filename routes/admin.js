@@ -313,6 +313,20 @@ router.get('/exam-reports', async (req, res) => {
         
         // Dynamically calculate mcqTotal and descTotal for legacy records based on current questions
         const questions = await Question.find();
+
+        // Build a global question lookup map: { [_id]: { text, options, correctAnswerIndex, questionType } }
+        // This allows the frontend breakdown view to show real question text instead of raw DB IDs
+        const questionMap = {};
+        questions.forEach(q => {
+            const qObj = q.toObject ? q.toObject() : q;
+            questionMap[String(qObj._id)] = {
+                text: qObj.text || qObj.question || '',
+                options: qObj.options || [],
+                correctAnswerIndex: qObj.correctAnswerIndex !== undefined ? qObj.correctAnswerIndex : qObj.correctAnswer,
+                questionType: qObj.questionType || 'mcq'
+            };
+        });
+
         results = results.map(r => {
             r = r.toObject ? r.toObject() : r;
             if (!r.mcqTotal && !r.descTotal && r.testedProduct) {
@@ -332,6 +346,8 @@ router.get('/exam-reports', async (req, res) => {
                 r.descTotal = descCount;
                 needsSave = true;
             }
+            // Attach questionMap to every result so frontend can resolve IDs → question text
+            r.questionMap = questionMap;
             return r;
         });
 

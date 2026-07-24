@@ -848,36 +848,70 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                     </div>
                   </div>
 
-                  {/* Manual Grading Section */}
-                  <div style={{ background: '#18182b', border: '1px solid #f59e0b', borderRadius: '14px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                    <h4 style={{ color: '#fbbf24', margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      ✏️ Manual Evaluation & Grading Studio
-                    </h4>
-                    <p style={{ color: '#cbd5e1', fontSize: '0.92rem', margin: '0 0 14px 0', lineHeight: '1.5' }}>
-                      Assign points for descriptive responses (or enter <strong style={{ color: '#fbbf24' }}>0</strong> if answers were skipped/not descriptive).
-                    </p>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <input
-                        type="number"
-                        value={manualScoreInput}
-                        onChange={e => setManualScoreInput(e.target.value)}
-                        className="form-input-sm"
-                        placeholder="e.g. 0"
-                        style={{ width: '130px', height: '42px', fontWeight: 'bold', fontSize: '1.15rem', background: '#0b0f19', color: '#fff', border: '1px solid #475569', borderRadius: '8px', padding: '0 12px' }}
-                      />
-                      <button
-                        onClick={handleFinalizeGrade}
-                        className="btn btn-sm btn-primary"
-                        style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#000', fontWeight: 800, height: '42px', padding: '0 20px', fontSize: '0.95rem' }}
-                      >
-                        Finalize Grade & Submit
-                      </button>
+                  {/* Manual Grading Section — only show if exam has descriptive questions */}
+                  {(selectedExamDetail.descTotal > 0) && (
+                    <div style={{ background: '#18182b', border: `1px solid ${selectedExamDetail.status === 'graded' ? '#10b981' : '#f59e0b'}`, borderRadius: '14px', padding: '1.5rem', marginBottom: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                      {selectedExamDetail.status === 'graded' ? (
+                        // Already graded — show read-only locked badge
+                        <>
+                          <h4 style={{ color: '#10b981', margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            ✅ Descriptive Section — Already Graded
+                          </h4>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                            <div style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid #10b981', padding: '10px 20px', borderRadius: '10px', fontSize: '1.4rem', fontWeight: 900, color: '#34d399' }}>
+                              {selectedExamDetail.manualScore || 0} Points Awarded
+                            </div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.88rem' }}>
+                              To update the score, use the input below and re-submit.
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                              <input
+                                type="number"
+                                value={manualScoreInput}
+                                onChange={e => setManualScoreInput(e.target.value)}
+                                style={{ width: '110px', height: '38px', fontWeight: 'bold', fontSize: '1.1rem', background: '#0b0f19', color: '#fff', border: '1px solid #334155', borderRadius: '8px', padding: '0 10px' }}
+                              />
+                              <button onClick={handleFinalizeGrade} style={{ background: '#10b981', border: 'none', color: '#fff', fontWeight: 800, height: '38px', padding: '0 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '0.88rem' }}>
+                                Update Score
+                              </button>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        // Not yet graded — show full grading input
+                        <>
+                          <h4 style={{ color: '#fbbf24', margin: '0 0 10px 0', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            ✏️ Manual Evaluation & Grading Studio
+                          </h4>
+                          <p style={{ color: '#cbd5e1', fontSize: '0.92rem', margin: '0 0 14px 0', lineHeight: '1.5' }}>
+                            Assign points for descriptive responses (or enter <strong style={{ color: '#fbbf24' }}>0</strong> if answers were skipped).
+                          </p>
+                          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input
+                              type="number"
+                              value={manualScoreInput}
+                              onChange={e => setManualScoreInput(e.target.value)}
+                              className="form-input-sm"
+                              placeholder="e.g. 0"
+                              style={{ width: '130px', height: '42px', fontWeight: 'bold', fontSize: '1.15rem', background: '#0b0f19', color: '#fff', border: '1px solid #475569', borderRadius: '8px', padding: '0 12px' }}
+                            />
+                            <button
+                              onClick={handleFinalizeGrade}
+                              className="btn btn-sm btn-primary"
+                              style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#000', fontWeight: 800, height: '42px', padding: '0 20px', fontSize: '0.95rem' }}
+                            >
+                              Finalize Grade & Submit
+                            </button>
+                          </div>
+                        </>
+                      )}
                     </div>
-                  </div>
+                  )}
 
-                  {/* Answers review if present */}
-                  <h4 style={{ color: 'var(--primary)', marginBottom: '0.75rem' }}>Submitted Responses</h4>
+                  {/* Submitted Responses — question text resolved from questionMap */}
+                  <h4 style={{ color: 'var(--primary)', marginBottom: '0.75rem' }}>📝 Submitted Responses</h4>
                   {(() => {
+                    const qMap = selectedExamDetail.questionMap || {};
                     const descAns = selectedExamDetail.descriptiveAnswers && Object.keys(selectedExamDetail.descriptiveAnswers).length > 0
                       ? selectedExamDetail.descriptiveAnswers
                       : (selectedExamDetail.answers && typeof selectedExamDetail.answers === 'object' ? selectedExamDetail.answers : null);
@@ -885,18 +919,57 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                     if (descAns && Object.keys(descAns).length > 0) {
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                          {Object.entries(descAns).map(([qId, ans]: any, i: number) => (
-                            <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', padding: '1rem', borderRadius: '8px' }}>
-                              <div style={{ fontWeight: 600, color: '#e2e8f0', marginBottom: '6px' }}>Question #{i+1} ({qId})</div>
-                              <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
-                                {typeof ans === 'object' ? JSON.stringify(ans) : (ans || 'No response entered.')}
+                          {Object.entries(descAns).map(([qId, ans]: any, i: number) => {
+                            const qInfo = qMap[qId];
+                            const questionText = qInfo?.text || null;
+                            const isMCQ = qInfo?.questionType === 'mcq' || typeof ans === 'number' || !isNaN(parseInt(ans));
+                            const selectedIdx = typeof ans === 'number' ? ans : parseInt(ans);
+                            const correctIdx = qInfo?.correctAnswerIndex;
+                            const isCorrect = isMCQ && !isNaN(selectedIdx) && correctIdx !== undefined && selectedIdx === correctIdx;
+                            const selectedOptionText = isMCQ && qInfo?.options ? (qInfo.options[selectedIdx] ?? `Option ${selectedIdx + 1}`) : null;
+                            const correctOptionText = isMCQ && qInfo?.options && correctIdx !== undefined ? qInfo.options[correctIdx] : null;
+
+                            // Skip internal metadata keys stored in answers
+                            if (!questionText && !isMCQ && typeof ans === 'object') return null;
+
+                            return (
+                              <div key={i} style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${isMCQ ? (isCorrect ? 'rgba(16,185,129,0.4)' : 'rgba(239,68,68,0.3)') : 'var(--glass-border)'}`, padding: '1rem', borderRadius: '10px' }}>
+                                {/* Question Text */}
+                                <div style={{ fontWeight: 700, color: '#e2e8f0', marginBottom: '8px', fontSize: '0.92rem' }}>
+                                  <span style={{ color: '#6366f1', marginRight: '6px' }}>Q{i + 1}.</span>
+                                  {questionText || <span style={{ color: '#64748b', fontStyle: 'italic' }}>Question text not found (ID: {qId})</span>}
+                                </div>
+
+                                {/* MCQ: show selected option with correct/incorrect badge */}
+                                {isMCQ ? (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                      <span style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 700, background: isCorrect ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: isCorrect ? '#34d399' : '#f87171', border: `1px solid ${isCorrect ? '#10b981' : '#ef4444'}` }}>
+                                        {isCorrect ? '✅ CORRECT' : '❌ INCORRECT'}
+                                      </span>
+                                      <span style={{ color: '#cbd5e1', fontSize: '0.88rem' }}>
+                                        Selected: <strong style={{ color: '#f8fafc' }}>{selectedOptionText || `Option ${selectedIdx + 1}`}</strong>
+                                      </span>
+                                    </div>
+                                    {!isCorrect && correctOptionText && (
+                                      <div style={{ fontSize: '0.85rem', color: '#34d399' }}>
+                                        ✔ Correct Answer: <strong>{correctOptionText}</strong>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  // Descriptive: show full text response
+                                  <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
+                                    {typeof ans === 'object' ? JSON.stringify(ans) : (ans || 'No response entered.')}
+                                  </div>
+                                )}
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       );
                     }
-                    return <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No descriptive responses stored for this exam.</div>;
+                    return <div style={{ color: 'var(--text-muted)', fontSize: '0.88rem' }}>No responses stored for this exam.</div>;
                   })()}
                 </div>
               </div>
