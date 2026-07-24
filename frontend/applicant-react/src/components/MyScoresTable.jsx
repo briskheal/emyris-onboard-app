@@ -99,11 +99,14 @@ const MyScoresTable = ({ applicant }) => {
 
                                     let scoreElement = null;
                                     if (isPsychometric) {
-                                        const badge = exam.answers?.['Executive Archetype Badge'] || '🌟 The Scientific Strategist';
+                                        // Read real archetype from mindsetReport — no hardcoded fallback
+                                        const mindsetReport = exam.answers?.mindsetReport;
+                                        const badge = mindsetReport?.archetype || exam.answers?.archetype || '⏳ Processing';
+                                        const indexScore = exam.autoScore ?? mindsetReport?.overallPercentile ?? '—';
                                         scoreElement = (
                                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                                                 <span style={{ padding: '3px 10px', background: 'rgba(168,85,247,0.18)', border: '1px solid rgba(168,85,247,0.4)', color: '#d8b4fe', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem' }}>
-                                                    Index: {exam.autoScore || 85}%
+                                                    Index: {indexScore}%
                                                 </span>
                                                 <span style={{ padding: '3px 10px', background: 'rgba(236,72,153,0.18)', border: '1px solid rgba(236,72,153,0.4)', color: '#f472b6', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem' }}>
                                                     {badge}
@@ -182,14 +185,25 @@ const MyScoresTable = ({ applicant }) => {
                         <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
                             {selectedExam.testedProduct && selectedExam.testedProduct.toLowerCase().includes('psychometric') ? (
                                 <>
-                                    <div style={{ background: '#18132e', border: '1px solid #a855f7', padding: '12px 20px', borderRadius: '12px', flex: '1 1 200px' }}>
-                                        <div style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: '600' }}>Mindset Index</div>
-                                        <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#d8b4fe' }}>{selectedExam.autoScore || 85}%</div>
-                                    </div>
-                                    <div style={{ background: '#1f132b', border: '1px solid #ec4899', padding: '12px 20px', borderRadius: '12px', flex: '1 1 200px' }}>
-                                        <div style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: '600' }}>Executive Archetype Badge</div>
-                                        <div style={{ fontSize: '1.1rem', fontWeight: '800', color: '#f472b6' }}>{selectedExam.answers?.['Executive Archetype Badge'] || '🌟 The Scientific Strategist'}</div>
-                                    </div>
+                                    {/* Read real archetype from mindsetReport — never hardcode a fallback */}
+                                    {(() => {
+                                        const mr = selectedExam.answers?.mindsetReport;
+                                        const realArchetype = mr?.archetype || selectedExam.answers?.archetype || '⏳ Report Processing';
+                                        const realIndex = selectedExam.autoScore ?? mr?.overallPercentile ?? '—';
+                                        const riskColor = mr?.riskLevel === 'red' ? '#ef4444' : mr?.riskLevel === 'amber' ? '#f59e0b' : '#a855f7';
+                                        return (
+                                            <>
+                                                <div style={{ background: '#18132e', border: `1px solid ${riskColor}`, padding: '12px 20px', borderRadius: '12px', flex: '1 1 200px' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: '600' }}>Mindset Index</div>
+                                                    <div style={{ fontSize: '1.4rem', fontWeight: '800', color: '#d8b4fe' }}>{realIndex}%</div>
+                                                </div>
+                                                <div style={{ background: '#1f132b', border: `1px solid ${riskColor}`, padding: '12px 20px', borderRadius: '12px', flex: '1 1 200px' }}>
+                                                    <div style={{ fontSize: '0.75rem', color: '#cbd5e1', fontWeight: '600' }}>Executive Archetype</div>
+                                                    <div style={{ fontSize: '1.05rem', fontWeight: '800', color: '#f472b6' }}>{realArchetype}</div>
+                                                </div>
+                                            </>
+                                        );
+                                    })()}
                                 </>
                             ) : (
                                 <>
@@ -220,7 +234,15 @@ const MyScoresTable = ({ applicant }) => {
                                         'Scientific Adaptability',
                                         'Collaborative Communication'
                                     ].map(dim => {
-                                        const num = parseInt(selectedExam.answers[dim] || selectedExam.answers?.traitPercentiles?.[dim] || selectedExam.answers?.mindsetReport?.traitPercentiles?.[dim] || '85') || 85;
+                                        // Read dimension score from mindsetReport.traitPercentiles (correct path)
+                                        // No hardcoded 85 fallback — show 0 if genuinely not found
+                                        const mr = selectedExam.answers?.mindsetReport;
+                                        const num = parseInt(
+                                            mr?.traitPercentiles?.[dim] ||
+                                            selectedExam.answers?.traitPercentiles?.[dim] ||
+                                            selectedExam.answers?.[dim] ||
+                                            '0'
+                                        ) || 0;
                                         return (
                                             <div key={dim} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -234,16 +256,25 @@ const MyScoresTable = ({ applicant }) => {
                                         );
                                     })}
                                 </div>
-                                {(selectedExam.answers['Coaching & Mentorship Tips'] || selectedExam.answers?.mindsetReport?.['Coaching & Mentorship Tips']) && (
-                                    <>
-                                        <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: '700', margin: '14px 0 8px 0' }}>💡 Coaching & Mentorship Tips</h4>
-                                        <div style={{ background: '#131929', borderLeft: '4px solid #a855f7', padding: '12px 16px', borderRadius: '8px', color: '#e2e8f0', fontSize: '0.9rem', lineHeight: '1.6' }}>
-                                            {(selectedExam.answers['Coaching & Mentorship Tips'] || selectedExam.answers?.mindsetReport?.['Coaching & Mentorship Tips']).split(' | ').map((t, i) => (
-                                                <div key={i} style={{ marginBottom: '6px' }}>• {t}</div>
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
+                                {/* Coaching tips — read from mindsetReport.coachingTips array (correct path) */}
+                                {(() => {
+                                    const mr = selectedExam.answers?.mindsetReport;
+                                    const tips = mr?.coachingTips ||
+                                        (selectedExam.answers?.['Coaching & Mentorship Tips']
+                                            ? selectedExam.answers['Coaching & Mentorship Tips'].split(' | ')
+                                            : null);
+                                    if (!tips || tips.length === 0) return null;
+                                    return (
+                                        <>
+                                            <h4 style={{ color: '#fff', fontSize: '1rem', fontWeight: '700', margin: '14px 0 8px 0' }}>💡 Coaching & Mentorship Guidance</h4>
+                                            <div style={{ background: '#131929', borderLeft: '4px solid #a855f7', padding: '12px 16px', borderRadius: '8px', color: '#e2e8f0', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                                                {tips.map((t, i) => (
+                                                    <div key={i} style={{ marginBottom: '6px' }}>• {t}</div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    );
+                                })()}
                             </div>
                         )}
 
