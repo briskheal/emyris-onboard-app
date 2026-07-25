@@ -167,11 +167,15 @@ export default function SetupAndLetters() {
       const applicant = applicants.find(a => a.email === targetApplicant);
       if (applicant) {
         const filled = fillLetterPlaceholders(templateContent, targetApplicantData || applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
-        editorRef.current.innerHTML = filled;
+        if (editorRef.current.innerHTML !== filled) {
+          editorRef.current.innerHTML = filled;
+        }
       }
     } else {
       // Revert back to master template
-      editorRef.current.innerHTML = templateContent;
+      if (editorRef.current.innerHTML !== templateContent) {
+        editorRef.current.innerHTML = templateContent;
+      }
     }
   }, [targetApplicant, targetApplicantData, templateContent, applicants, companyData, signatoryName, signatoryDesg]);
   const fetchDbStats = async () => {
