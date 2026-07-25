@@ -11,7 +11,7 @@ export default function SetupAndLetters() {
   // Template State
   const [activeTemplate, setActiveTemplate] = useState('offerLetterBody');
   const [allTemplatesMap, setAllTemplatesMap] = useState<Record<string, string>>({});
-  const [templateContent, setTemplateContent] = useState('');
+  const masterContentRef = useRef<string>('');
   const [savingTemplate, setSavingTemplate] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const printContainerRef = useRef<HTMLDivElement>(null);
@@ -128,7 +128,7 @@ export default function SetupAndLetters() {
       if (allLetters) {
         setAllTemplatesMap(allLetters);
         const newContent = allLetters[activeTemplate] !== undefined ? allLetters[activeTemplate] : '';
-        setTemplateContent(newContent);
+        masterContentRef.current = newContent;
         if (editorRef.current) {
           editorRef.current.innerHTML = newContent;
         }
@@ -166,18 +166,18 @@ export default function SetupAndLetters() {
     if (targetApplicant) {
       const applicant = applicants.find(a => a.email === targetApplicant);
       if (applicant) {
-        const filled = fillLetterPlaceholders(templateContent, targetApplicantData || applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
-        if (editorRef.current.innerHTML !== filled) {
+        const filled = fillLetterPlaceholders(masterContentRef.current, targetApplicantData || applicant, { ...companyData, signatoryName, signatoryDesignation: signatoryDesg });
+        if (document.activeElement !== editorRef.current && editorRef.current.innerHTML !== filled) {
           editorRef.current.innerHTML = filled;
         }
       }
     } else {
       // Revert back to master template
-      if (editorRef.current.innerHTML !== templateContent) {
-        editorRef.current.innerHTML = templateContent;
+      if (document.activeElement !== editorRef.current && editorRef.current.innerHTML !== masterContentRef.current) {
+        editorRef.current.innerHTML = masterContentRef.current;
       }
     }
-  }, [targetApplicant, targetApplicantData, templateContent, applicants, companyData, signatoryName, signatoryDesg]);
+  }, [targetApplicant, targetApplicantData, applicants, companyData, signatoryName, signatoryDesg]);
   const fetchDbStats = async () => {
     try {
       const res = await api.get('/admin/db-stats');
@@ -189,7 +189,7 @@ export default function SetupAndLetters() {
 
   const handleEditorInput = () => {
     if (editorRef.current && !targetApplicant) {
-      setTemplateContent(editorRef.current.innerHTML);
+      masterContentRef.current = editorRef.current.innerHTML;
     }
   };
 
@@ -198,7 +198,7 @@ export default function SetupAndLetters() {
     if (editorRef.current) {
       editorRef.current.focus();
       if (!targetApplicant) {
-        setTemplateContent(editorRef.current.innerHTML);
+        masterContentRef.current = editorRef.current.innerHTML;
       }
     }
   };
@@ -214,7 +214,7 @@ export default function SetupAndLetters() {
 
   const handleClearEditor = () => {
     if (!window.confirm("This will COMPLETELY ERASE all text, images, and formatting from the current letter template. Continue?")) return;
-    setTemplateContent('');
+    masterContentRef.current = '';
     if (editorRef.current) {
       editorRef.current.innerHTML = '';
     }
@@ -222,8 +222,8 @@ export default function SetupAndLetters() {
 
   const handleClearImages = () => {
     if (!window.confirm("This will permanently remove all manually pasted images from the current letter template. Continue?")) return;
-    const cleanContent = templateContent.replace(/<img[^>]*>/gi, '');
-    setTemplateContent(cleanContent);
+    const cleanContent = masterContentRef.current.replace(/<img[^>]*>/gi, '');
+    masterContentRef.current = cleanContent;
     if (editorRef.current) {
       editorRef.current.innerHTML = cleanContent;
     }
@@ -246,18 +246,18 @@ export default function SetupAndLetters() {
         const newMiscLetters = [...(companyData?.miscLetters || [])];
         const idx = newMiscLetters.findIndex((m: any) => m.id === miscId);
         if (idx > -1) {
-          newMiscLetters[idx].body = templateContent;
+          newMiscLetters[idx].body = masterContentRef.current;
         }
         updatePayload.miscLetters = newMiscLetters;
       } else {
-        updatePayload[activeTemplate] = templateContent;
+        updatePayload[activeTemplate] = masterContentRef.current;
       }
 
       await api.post('/company-profile', updatePayload);
       
       setAllTemplatesMap(prev => ({
         ...prev,
-        [activeTemplate]: templateContent
+        [activeTemplate]: masterContentRef.current
       }));
       
       alert('Template Master saved successfully!');
@@ -458,7 +458,7 @@ export default function SetupAndLetters() {
         setCompanyData({ ...companyData, miscLetters: newMiscLetters });
         setActiveTemplate(`misc_${newId}`);
         const newContent = '';
-        setTemplateContent(newContent);
+        masterContentRef.current = newContent;
         if (editorRef.current) {
           editorRef.current.innerHTML = newContent;
         }
@@ -468,7 +468,7 @@ export default function SetupAndLetters() {
     } else {
       setActiveTemplate(val);
       const newContent = allTemplatesMap[val] !== undefined ? allTemplatesMap[val] : '';
-      setTemplateContent(newContent);
+      masterContentRef.current = newContent;
       if (editorRef.current) {
         editorRef.current.innerHTML = newContent;
       }
