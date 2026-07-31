@@ -76,7 +76,7 @@ async function syncDatabase() {
                 if (typeof report === 'string') {
                     try { report = JSON.parse(report); } catch(e) {}
                 }
-                if (report && report.overallPercentile === 20) {
+                if (report && (report.overallPercentile === 20 || report.overallPercentile === 0 || report.archetype.includes('NOT APPEARED'))) {
                     await Applicant.updateOne({ _id: app._id }, { 
                         $set: { psychometricTestCompleted: false },
                         $unset: { psychometricScores: 1, mindsetReport: 1 }
