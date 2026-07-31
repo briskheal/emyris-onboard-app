@@ -695,12 +695,13 @@ router.post('/submit-psychometric', async (req, res) => {
 
         let totalPointsEarned = 0;
         let totalPointsMax = 0;
-
+        let answeredQuestions = 0;
 
         PSYCHOMETRIC_QUESTIONS_30.forEach(q => {
             const candidateAnswer = answers && answers[q._id] !== undefined ? answers[q._id] : null;
             let selectedIdx = -1;
-            if (candidateAnswer !== null) {
+            if (candidateAnswer !== null && candidateAnswer !== "") {
+                answeredQuestions++;
                 if (typeof candidateAnswer === 'number') {
                     selectedIdx = candidateAnswer;
                 } else if (typeof candidateAnswer === 'string') {
@@ -719,6 +720,34 @@ router.post('/submit-psychometric', async (req, res) => {
             totalPointsEarned += pts;
             totalPointsMax += 5; // max weight per question is 5
         });
+
+        if (answeredQuestions === 0) {
+            // Do not grade. Save as Not Appeared.
+            const traitPercentiles = {
+                'Clinical Integrity & Ethics': 0,
+                'Resilience & Grit Under Pressure': 0,
+                'Empathy & Relationship Building': 0,
+                'Autonomy & Self-Motivation': 0,
+                'Scientific Adaptability': 0,
+                'Collaborative Communication': 0
+            };
+            const mindsetReport = {
+                archetype: '❌ NOT APPEARED (No answers submitted)',
+                riskLevel: 'amber',
+                traitPercentiles,
+                overallPercentile: 0,
+                coachingTips: ['Candidate launched the exam but did not submit any answers. Retake required.']
+            };
+            
+            await Applicant.updateOne({ _id: applicant._id }, {
+                $set: {
+                    psychometricScores: traitPercentiles,
+                    mindsetReport: mindsetReport,
+                    psychometricTestCompleted: true
+                }
+            });
+            return res.json({ success: true, warning: 'Submitted empty' });
+        }
 
         // Convert to percentages
         const traitPercentiles = {};
