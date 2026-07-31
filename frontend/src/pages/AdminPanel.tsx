@@ -122,7 +122,7 @@ const AdminPanel: React.FC = () => {
             { id: 'reports', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Reports & Analytics' },
           ].map(item => {
             const adminRole = sessionStorage.getItem('admin_role') || 'superadmin';
-            const isRestricted = adminRole === 'subadmin' && !['questions', 'voice-studio', 'pending', 'psychometric'].includes(item.id);
+            const isRestricted = adminRole === 'subadmin' && !['questions', 'voice-studio', 'pending', 'psychometric', 'applicants'].includes(item.id);
 
             return (
             <button

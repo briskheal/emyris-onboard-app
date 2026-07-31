@@ -5,6 +5,7 @@ import ExistingStaffModal from './ExistingStaffModal';
 import ApplicantVerificationModal from './ApplicantVerificationModal';
 
 const ApplicantManager: React.FC = () => {
+  const adminRole = sessionStorage.getItem('admin_role') || 'superadmin';
   const [applicants, setApplicants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [pdfTask, setPdfTask] = useState<{app: any, type: 'offer' | 'appointment'} | null>(null);
@@ -118,7 +119,9 @@ const ApplicantManager: React.FC = () => {
             value={searchTerm} 
             onChange={e => setSearchTerm(e.target.value)} 
           />
-          <button className="btn btn-sm btn-primary" onClick={() => setShowStaffModal(true)}>Add Existing Staff</button>
+          {adminRole !== 'subadmin' && (
+            <button className="btn btn-sm btn-primary" onClick={() => setShowStaffModal(true)}>Add Existing Staff</button>
+          )}
         </div>
       </div>
 
@@ -147,7 +150,7 @@ const ApplicantManager: React.FC = () => {
                   </td>
                   <td style={{ padding: '15px' }}>
                     <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '22px' }}>
-                      <input type="checkbox" checked={app.canLogin !== false} onChange={() => handleToggleLogin(app.email, app.canLogin !== false)} style={{ opacity: 0, width: 0, height: 0 }} />
+                      <input type="checkbox" disabled={adminRole === 'subadmin'} checked={app.canLogin !== false} onChange={() => handleToggleLogin(app.email, app.canLogin !== false)} style={{ opacity: 0, width: 0, height: 0 }} />
                       <span style={{
                         position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0,
                         backgroundColor: app.canLogin !== false ? 'var(--accent)' : '#ccc',
@@ -164,13 +167,15 @@ const ApplicantManager: React.FC = () => {
                   <td style={{ padding: '15px' }}>
                     <div style={{ display: 'flex', gap: '5px', width: '100%', alignItems: 'center' }}>
                       <button className="btn btn-sm btn-outline" onClick={() => setVerificationApp(app)}>Review / View</button>
-                      {app.status === 'approved' && !app.offerLetterData && (
+                      {app.status === 'approved' && !app.offerLetterData && adminRole !== 'subadmin' && (
                         <button className="btn btn-sm btn-primary" onClick={() => setPdfTask({app, type: 'offer'})}>Offer Letter</button>
                       )}
-                      {app.status === 'joined' && !app.apptLetterData && (
+                      {app.status === 'joined' && !app.apptLetterData && adminRole !== 'subadmin' && (
                         <button className="btn btn-sm btn-primary" style={{background: '#10b981', color: 'white'}} onClick={() => setPdfTask({app, type: 'appointment'})}>Appt Letter</button>
                       )}
-                      <button className="btn btn-sm btn-outline" title="Delete Applicant" style={{ borderColor: '#ef4444', color: '#ef4444', padding: '0.25rem 0.5rem', marginLeft: 'auto' }} onClick={() => handleDelete(app.email)}>🗑️</button>
+                      {adminRole !== 'subadmin' && (
+                        <button className="btn btn-sm btn-outline" title="Delete Applicant" style={{ borderColor: '#ef4444', color: '#ef4444', padding: '0.25rem 0.5rem', marginLeft: 'auto' }} onClick={() => handleDelete(app.email)}>🗑️</button>
+                      )}
                     </div>
                   </td>
                 </tr>

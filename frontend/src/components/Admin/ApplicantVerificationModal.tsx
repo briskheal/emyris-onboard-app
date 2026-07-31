@@ -11,6 +11,7 @@ interface ApplicantVerificationModalProps {
 }
 
 export default function ApplicantVerificationModal({ applicant: initialApplicant, managersList, onClose, onSuccess, onRefresh }: ApplicantVerificationModalProps) {
+  const adminRole = sessionStorage.getItem('admin_role') || 'superadmin';
   const [applicant, setApplicant] = useState<any>(initialApplicant);
   const [loadingDetails, setLoadingDetails] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -599,6 +600,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
               </div>
             </div>
             
+            {adminRole !== 'subadmin' && (
+              <>
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Internal Assignment</h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
@@ -728,7 +731,10 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                 <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#10b981' }}>₹{totalMonthly}</span>
               </div>
             </div>
+            </>
+            )}
 
+            {adminRole !== 'subadmin' && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
               <button type="button" className="btn btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={handleReject} disabled={loading}>
                 Reject Application
@@ -740,6 +746,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                 <CheckCircle size={18} /> Approve & Generate
               </button>
             </div>
+            )}
           </div>
 
         </div>
