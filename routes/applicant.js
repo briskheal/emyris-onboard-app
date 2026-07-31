@@ -975,7 +975,15 @@ router.post('/exam-questions', async (req, res) => {
 
 router.post('/submit-exam', async (req, res) => {
     try {
-        const { email, name, hq, division, examDate, targetProduct, answers, totalQuestions } = req.body;
+        const { email, answers, totalQuestions, testedProduct } = req.body;
+        
+        // Fetch missing fields dynamically from applicant record if frontend omitted them
+        const applicantData = await Applicant.findOne({ email });
+        const name = req.body.name || (applicantData ? applicantData.fullName : email);
+        const hq = req.body.hq || (applicantData ? applicantData.hq : '');
+        const division = req.body.division || (applicantData ? applicantData.division : '');
+        const targetProduct = req.body.targetProduct || testedProduct || 'General';
+        const examDate = req.body.examDate || new Date().toISOString().split('T')[0];
         
         let autoScore = 0;
         let mcqTotal = 0;
