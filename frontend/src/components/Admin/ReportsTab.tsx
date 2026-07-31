@@ -1146,6 +1146,35 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                   const indexVal = report ? `${report.overallPercentile}%` : (app.psychometricTestCompleted ? 'Completed' : 'Pending');
                   const archVal = report ? report.archetype : (app.psychometricTestCompleted ? '⏳ Report Processing' : 'Not Taken');
 
+                  let statusBadgeText = '⏳ Pending';
+                  let statusBadgeBg = 'rgba(245,158,11,0.15)';
+                  let statusBadgeColor = '#fbbf24';
+                  let statusBadgeBorder = '1px solid rgba(245,158,11,0.3)';
+
+                  if (hasReport) {
+                    if (report && report.archetype && report.archetype.includes('NOT APPEARED')) {
+                      statusBadgeText = '❌ NOT APPEARED';
+                      statusBadgeBg = 'rgba(239,68,68,0.15)';
+                      statusBadgeColor = '#ef4444';
+                      statusBadgeBorder = '1px solid rgba(239,68,68,0.3)';
+                    } else if (report && report.riskLevel === 'red') {
+                      statusBadgeText = '🚨 High Risk';
+                      statusBadgeBg = 'rgba(239,68,68,0.15)';
+                      statusBadgeColor = '#ef4444';
+                      statusBadgeBorder = '1px solid rgba(239,68,68,0.3)';
+                    } else if (report && report.riskLevel === 'amber') {
+                      statusBadgeText = '⚠️ Review Needed';
+                      statusBadgeBg = 'rgba(245,158,11,0.15)';
+                      statusBadgeColor = '#fbbf24';
+                      statusBadgeBorder = '1px solid rgba(245,158,11,0.3)';
+                    } else {
+                      statusBadgeText = '✅ Completed';
+                      statusBadgeBg = '#10b981';
+                      statusBadgeColor = '#fff';
+                      statusBadgeBorder = 'none';
+                    }
+                  }
+
                   return (
                     <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                       <td style={{ padding: '16px' }}>
@@ -1174,8 +1203,8 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                         )}
                       </td>
                       <td style={{ padding: '16px' }}>
-                        <span className={`badge ${hasReport ? 'approved' : 'pending'}`} style={hasReport ? { background: '#10b981', color: '#fff' } : { background: 'rgba(245,158,11,0.15)', color: '#fbbf24', border: '1px solid rgba(245,158,11,0.3)' }}>
-                          {hasReport ? '✅ Completed' : '⏳ Pending'}
+                        <span className="badge" style={{ background: statusBadgeBg, color: statusBadgeColor, border: statusBadgeBorder, fontWeight: 700 }}>
+                          {statusBadgeText}
                         </span>
                       </td>
                       <td style={{ padding: '16px', textAlign: 'right' }}>
