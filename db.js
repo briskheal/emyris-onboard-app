@@ -69,7 +69,7 @@ async function syncDatabase() {
 
         // ---- AUTO HEAL LEGACY 20% PSYCHOMETRIC SCORES ----
         try {
-            const apps = await Applicant.find({ psychometricTestCompleted: true });
+            const apps = await Applicant.find();
             let healedCount = 0;
             for (const app of apps) {
                 let report = app.mindsetReport;

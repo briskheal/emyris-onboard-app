@@ -8,7 +8,7 @@ async function runPatch() {
     console.log('🔍 Scanning for legacy 20% Psychometric Records...');
     
     try {
-        const applicants = await Applicant.find({ psychometricTestCompleted: true });
+        const applicants = await Applicant.find();
         let patchedCount = 0;
 
         for (const app of applicants) {
