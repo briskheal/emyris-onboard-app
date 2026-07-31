@@ -312,6 +312,15 @@ function applyUpdate(instance, updateObj) {
         }
     }
 
+    if (updateObj.$unset) {
+        for (const [key] of Object.entries(updateObj.$unset)) {
+            instance[key] = null;
+            if (typeof instance.changed === 'function') {
+                instance.changed(key, true);
+            }
+        }
+    }
+
     if (updateObj.$push) {
         for (const [key, val] of Object.entries(updateObj.$push)) {
             const arr = Array.isArray(instance[key]) ? [...instance[key]] : [];
