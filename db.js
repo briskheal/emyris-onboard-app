@@ -67,6 +67,34 @@ async function syncDatabase() {
         }
         console.log('✅ Synchronized onboard_* tables in database.');
 
+        // ---- AUTO HEAL LEGACY 20% PSYCHOMETRIC SCORES ----
+        try {
+            const apps = await Applicant.find({ psychometricTestCompleted: true });
+            let healedCount = 0;
+            for (const app of apps) {
+                let report = app.mindsetReport;
+                if (typeof report === 'string') {
+                    try { report = JSON.parse(report); } catch(e) {}
+                }
+                if (report && report.overallPercentile === 20) {
+                    const traitPercentiles = {
+                        'Clinical Integrity & Ethics': 0, 'Resilience & Grit Under Pressure': 0,
+                        'Empathy & Relationship Building': 0, 'Autonomy & Self-Motivation': 0,
+                        'Scientific Adaptability': 0, 'Collaborative Communication': 0
+                    };
+                    const mindsetReport = {
+                        archetype: '❌ NOT APPEARED (No answers submitted)',
+                        riskLevel: 'amber', traitPercentiles, overallPercentile: 0,
+                        coachingTips: ['Candidate launched the exam but did not submit any answers. Retake required.']
+                    };
+                    await Applicant.updateOne({ _id: app._id }, { $set: { psychometricScores: traitPercentiles, mindsetReport: mindsetReport } });
+                    healedCount++;
+                }
+            }
+            if (healedCount > 0) console.log(`🔧 Auto-healed ${healedCount} legacy 20% psychometric records.`);
+        } catch (healErr) { console.error('Failed to auto-heal records:', healErr.message); }
+        // ----------------------------------------------------
+
         // Seed Default Company only if missing. Never overwrite existing targetProductsList if admin deleted/edited items.
         let c = await Company.findOne();
         let defaultProducts = ['General', 'Emystein', 'ALOMOS HP ADVANCED', 'Alomos DM', 'ALOMOS GOLD', 'Alomos MAMA', 'GLOWVIT-60K', 'GulpCDZ'];
