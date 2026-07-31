@@ -77,17 +77,10 @@ async function syncDatabase() {
                     try { report = JSON.parse(report); } catch(e) {}
                 }
                 if (report && report.overallPercentile === 20) {
-                    const traitPercentiles = {
-                        'Clinical Integrity & Ethics': 0, 'Resilience & Grit Under Pressure': 0,
-                        'Empathy & Relationship Building': 0, 'Autonomy & Self-Motivation': 0,
-                        'Scientific Adaptability': 0, 'Collaborative Communication': 0
-                    };
-                    const mindsetReport = {
-                        archetype: '❌ NOT APPEARED (No answers submitted)',
-                        riskLevel: 'amber', traitPercentiles, overallPercentile: 0,
-                        coachingTips: ['Candidate launched the exam but did not submit any answers. Retake required.']
-                    };
-                    await Applicant.updateOne({ _id: app._id }, { $set: { psychometricScores: traitPercentiles, mindsetReport: mindsetReport } });
+                    await Applicant.updateOne({ _id: app._id }, { 
+                        $set: { psychometricTestCompleted: false },
+                        $unset: { psychometricScores: 1, mindsetReport: 1 }
+                    });
                     healedCount++;
                 }
             }
