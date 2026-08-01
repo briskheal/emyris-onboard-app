@@ -4,6 +4,15 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, sequelize } = require('../db');
+const rateLimit = require('express-rate-limit');
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 15,
+    message: { success: false, message: 'Too many login attempts, please try again after 15 minutes' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
@@ -376,7 +385,7 @@ router.get('/exam-reports', async (req, res) => {
     }
 });
 
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
     console.log(`[LOGIN ATTEMPT] username: ${req.body.username}`);
     const { username, password } = req.body;
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();

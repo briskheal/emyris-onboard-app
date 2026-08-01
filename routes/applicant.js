@@ -10,6 +10,15 @@ const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 const { sendEmail } = require('../utils/mailer');
 const { syncActiveExamForApplicant } = require('../utils/examSync');
 const sharp = require('sharp');
+const rateLimit = require('express-rate-limit');
+
+const uploadLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 30, // Limit each IP to 30 uploads per `window`
+    message: { success: false, message: 'Too many documents uploaded from this IP, please try again after an hour' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
 // Shared file helper (Converts images to WebP using sharp; leaves PDF documents intact)
 async function saveBase64ToFile(email, category, base64Data) {
@@ -27,6 +36,13 @@ async function saveBase64ToFile(email, category, base64Data) {
         if (mimeType.includes('wordprocessingml')) ext = 'docx';
         if (mimeType.includes('spreadsheetml')) ext = 'xlsx';
         if (mimeType.includes('presentationml')) ext = 'pptx';
+        
+        // Strict Extension Whitelisting
+        const allowedExts = ['png', 'jpg', 'jpeg', 'webp', 'pdf', 'docx', 'xlsx', 'pptx', 'doc', 'xls', 'csv', 'txt'];
+        if (!allowedExts.includes(ext)) {
+            console.warn(`[SECURITY WARNING] Attempted upload of forbidden extension: ${ext}`);
+            ext = 'bin'; // Force safe fallback
+        }
         
         const dir = path.join(__dirname, '..', 'uploads', email.replace('@', '_'));
         if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
@@ -1126,7 +1142,7 @@ router.post('/save-draft', async (req, res) => {
 // In-memory mutex for preventing race conditions during simultaneous document uploads
 const documentUploadLocks = {};
 
-router.post('/upload-document', async (req, res) => {
+router.post('/upload-document', uploadLimiter, async (req, res) => {
     try {
         const { email, category, fileName, fileData } = req.body;
         if (!email || !category || !fileData) {
