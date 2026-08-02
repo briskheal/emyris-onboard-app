@@ -5,6 +5,33 @@ interface ApplicantScoreboardProps {
   email: string;
 }
 
+const getFailedDimensions = (mindsetReport: any): string[] => {
+  if (!mindsetReport || !mindsetReport.traitPercentiles) return [];
+  const traits = mindsetReport.traitPercentiles;
+  const failed: string[] = [];
+  
+  // 1. Critical Ethics Failure
+  if (traits['Clinical Integrity & Ethics'] < 45) {
+    failed.push('CLINICAL INTEGRITY & ETHICS');
+  }
+  
+  // 2. General Competency Failure
+  Object.entries(traits).forEach(([traitName, score]) => {
+    if (traitName !== 'Clinical Integrity & Ethics' && (score as number) < 40) {
+      failed.push(traitName.toUpperCase());
+    }
+  });
+  
+  // 3. Catastrophic Overall Failure (if no specific trait is below threshold but overall is < 40)
+  if (failed.length === 0 && mindsetReport.overallPercentile < 40) {
+    const sortedTraits = Object.entries(traits).sort((a, b) => (a[1] as number) - (b[1] as number));
+    failed.push(sortedTraits[0][0].toUpperCase());
+    failed.push(sortedTraits[1][0].toUpperCase());
+  }
+  
+  return failed;
+};
+
 const ApplicantScoreboard: React.FC<ApplicantScoreboardProps> = ({ email }) => {
   const [exams, setExams] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -66,14 +93,22 @@ const ApplicantScoreboard: React.FC<ApplicantScoreboardProps> = ({ email }) => {
                 Auto-Score: {exam.autoScore} (Waiting for Manual Review)
               </div>
             )}
-            {((exam.testedProduct || '').toLowerCase().includes('psychometric') || (exam.testedProduct || '').toLowerCase().includes('phase 2')) && exam.answers?.mindsetReport?.riskLevel === 'red' && (
-              <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px' }}>
-                <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>?? Action Required: HR Review</strong>
-                <span style={{ color: '#fca5a5', fontSize: '0.9rem', lineHeight: '1.4', display: 'block' }}>
-                  Your Psychometric Analysis on INTEGRITY AND CLINICAL ETHICS needs a proper re-evaluation by an HR Partner. You will be contacted shortly to understand your responses in this category.
-                </span>
-              </div>
-            )}
+            {((exam.testedProduct || '').toLowerCase().includes('psychometric') || (exam.testedProduct || '').toLowerCase().includes('phase 2')) && exam.answers?.mindsetReport?.riskLevel === 'red' && (() => {
+              const failedCategories = getFailedDimensions(exam.answers.mindsetReport);
+              const formattedCategories = failedCategories.length > 1 
+                ? failedCategories.slice(0, -1).join(', ') + ' and ' + failedCategories[failedCategories.length - 1]
+                : failedCategories[0] || 'CRITICAL COMPETENCIES';
+              const isPlural = failedCategories.length > 1;
+
+              return (
+                <div style={{ marginTop: '15px', padding: '12px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px' }}>
+                  <strong style={{ color: '#ef4444', display: 'block', marginBottom: '4px' }}>?? Action Required: HR Review</strong>
+                  <span style={{ color: '#fca5a5', fontSize: '0.9rem', lineHeight: '1.4', display: 'block' }}>
+                    Your Psychometric Analysis on <strong style={{color: '#f87171'}}>{formattedCategories}</strong> needs a proper re-evaluation by an HR Partner. You will be contacted shortly to understand your responses in {isPlural ? 'these categories' : 'this category'}.
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         ))}
       </div>
