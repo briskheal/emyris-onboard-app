@@ -4,6 +4,19 @@ const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, sequelize } = require('../db');
+const { z } = require('zod');
+
+const submitExamSchema = z.object({
+    email: z.string().email(),
+    answers: z.record(z.any()).refine(val => !Array.isArray(val), { message: "Answers must be an object, not an array" }).default({}),
+    totalQuestions: z.number().optional().default(0),
+    testedProduct: z.string().optional(),
+    name: z.string().optional(),
+    hq: z.string().optional(),
+    division: z.string().optional(),
+    targetProduct: z.string().optional(),
+    examDate: z.string().optional()
+});
 
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 
@@ -1006,15 +1019,21 @@ router.post('/exam-questions', async (req, res) => {
 
 router.post('/submit-exam', async (req, res) => {
     try {
-        const { email, answers, totalQuestions, testedProduct } = req.body;
+        const parsedBody = submitExamSchema.safeParse(req.body);
+        if (!parsedBody.success) {
+            console.error('Validation failed for /submit-exam:', parsedBody.error.format());
+            return res.status(400).json({ error: 'Invalid payload structure', details: parsedBody.error.format() });
+        }
+        
+        const { email, answers, totalQuestions, testedProduct } = parsedBody.data;
         
         // Fetch missing fields dynamically from applicant record if frontend omitted them
         const applicantData = await Applicant.findOne({ email });
-        const name = req.body.name || (applicantData ? applicantData.fullName : email);
-        const hq = req.body.hq || (applicantData ? applicantData.hq : '');
-        const division = req.body.division || (applicantData ? applicantData.division : '');
-        const targetProduct = req.body.targetProduct || testedProduct || 'General';
-        const examDate = req.body.examDate || new Date().toISOString().split('T')[0];
+        const name = parsedBody.data.name || (applicantData ? applicantData.fullName : email);
+        const hq = parsedBody.data.hq || (applicantData ? applicantData.hq : '');
+        const division = parsedBody.data.division || (applicantData ? applicantData.division : '');
+        const targetProduct = parsedBody.data.targetProduct || testedProduct || 'General';
+        const examDate = parsedBody.data.examDate || new Date().toISOString().split('T')[0];
         
         let autoScore = 0;
         let mcqTotal = 0;

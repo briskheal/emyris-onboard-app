@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/client';
 import DoctorDetailingStudio from '../Dashboard/DoctorDetailingStudio';
+import type { SubmitExamPayload } from '../../types/api';
 
 interface ApplicantExamProps {
   applicant: any;
@@ -45,10 +46,11 @@ const ApplicantExam: React.FC<ApplicantExamProps> = ({ applicant, onComplete }) 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await api.post('/applicant/submit-exam', {
+      const payload: SubmitExamPayload = {
         email: applicant.email,
         answers: answers
-      });
+      };
+      await api.post('/applicant/submit-exam', payload);
       alert('Exam submitted successfully!');
       onComplete();
     } catch (err) {

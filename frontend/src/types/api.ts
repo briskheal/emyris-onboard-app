@@ -1,0 +1,1 @@
+export interface SubmitExamPayload { email: string; answers: Record<string, string | number>; totalQuestions?: number; testedProduct?: string; name?: string; hq?: string; division?: string; targetProduct?: string; examDate?: string; }
