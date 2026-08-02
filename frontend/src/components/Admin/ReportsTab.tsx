@@ -392,7 +392,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
         a.status || "Draft",
         a.registeredAt ? new Date(a.registeredAt).toLocaleDateString() : "",
         a.submittedAt ? new Date(a.submittedAt).toLocaleDateString() : "",
-        a.joinedAt ? new Date(a.joinedAt).toLocaleDateString() : ""
+        (a.actualJoiningDate || a.joinedAt) ? new Date(a.actualJoiningDate || a.joinedAt).toLocaleDateString('en-GB').replace(/\//g, '-') : ""
       ]);
     });
     const mName = filterMonth === 'all' ? 'AllMonths' : new Date(2000, parseInt(filterMonth), 1).toLocaleString('default', { month: 'short' });
@@ -568,7 +568,9 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                     <tbody>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Date of Birth:</td>
-                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.dob || 'N/A'}</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>
+                          {currentApplicant.formData?.dob ? currentApplicant.formData.dob.split('-').reverse().join('-') : 'N/A'}
+                        </td>
                       </tr>
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Gender:</td>
@@ -642,6 +644,10 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>PAN Number:</td>
                         <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.panNumber || 'N/A'}</td>
                       </tr>
+                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                        <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Aadhar Number:</td>
+                        <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>{currentApplicant.formData?.aadharNumber || 'N/A'}</td>
+                      </tr>
                     </tbody>
                   </table>
                 </div>
@@ -668,7 +674,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                       <tr>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Joined At:</td>
                         <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right' }}>
-                          {currentApplicant.joinedAt ? new Date(currentApplicant.joinedAt).toLocaleDateString() : 'N/A'}
+                          {(currentApplicant.actualJoiningDate || currentApplicant.joinedAt) ? new Date(currentApplicant.actualJoiningDate || currentApplicant.joinedAt).toLocaleDateString('en-GB').replace(/\//g, '-') : 'N/A'}
                         </td>
                       </tr>
                     </tbody>
@@ -1112,7 +1118,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                       {app.registeredAt || app.createdAt ? new Date(app.registeredAt || app.createdAt).toLocaleDateString() : 'N/A'}
                     </td>
                     <td style={{ padding: '16px', color: '#10b981', fontSize: '0.85rem', fontWeight: 500 }}>
-                      {app.joinedAt ? new Date(app.joinedAt).toLocaleDateString() : 'In Pipeline'}
+                      {(app.actualJoiningDate || app.joinedAt) ? new Date(app.actualJoiningDate || app.joinedAt).toLocaleDateString('en-GB').replace(/\//g, '-') : 'In Pipeline'}
                     </td>
                   </tr>
                 ))}
