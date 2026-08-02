@@ -219,6 +219,8 @@ router.delete('/target-product/:prod', async (req, res) => {
 router.post('/schedule-exam', async (req, res) => {
     try {
         const { examDate, targetProduct, mcqTime, descTime, mcqCount, rapidTime } = req.body;
+
+        if (!examDate || !targetProduct) return res.status(400).json({ error: 'Missing required fields' });
         const company = await Company.findOne();
         if (company) {
             await Company.updateOne({ _id: company._id }, { 
@@ -286,6 +288,26 @@ router.post('/schedule-exam', async (req, res) => {
     } catch (e) {
         console.error('Schedule Exam Error:', e);
         res.status(500).json({ error: 'Failed to schedule exam' });
+    }
+});
+
+// Auto-heal route to fix rapidTestScore bug
+router.get('/heal-scores', async (req, res) => {
+    try {
+        const applicants = await Applicant.find({ rapidTestCompleted: true });
+        let healedCount = 0;
+        let details = [];
+        for (const app of applicants) {
+            const rapidExam = await ExamResult.findOne({ email: app.email, testedProduct: { $regex: /Rapid Fire/i } });
+            if (rapidExam && rapidExam.autoScore !== app.rapidTestScore) {
+                await Applicant.updateOne({ _id: app._id }, { $set: { rapidTestScore: rapidExam.autoScore } });
+                details.push(`${app.email}: changed from ${app.rapidTestScore} to ${rapidExam.autoScore}`);
+                healedCount++;
+            }
+        }
+        res.json({ success: true, healedCount, details });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 

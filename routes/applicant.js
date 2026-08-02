@@ -1070,7 +1070,7 @@ router.post('/submit-exam', async (req, res) => {
             const updatedPending = pending.filter(e => 
                 !(e.targetProduct === targetProduct && e.examDate === examDate)
             );
-            await Applicant.updateOne({ _id: applicant._id }, { $set: { pendingExams: updatedPending, rapidTestScore: autoScore } });
+            await Applicant.updateOne({ _id: applicant._id }, { $set: { pendingExams: updatedPending } });
         }
         
         res.json({ success: true });
