@@ -45,13 +45,9 @@ const ApplicantExam: React.FC<ApplicantExamProps> = ({ applicant, onComplete }) 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const answersArray = Object.entries(answers).map(([questionId, answerText]) => ({
-        questionId,
-        answerText
-      }));
       await api.post('/applicant/submit-exam', {
         email: applicant.email,
-        answers: answersArray
+        answers: answers
       });
       alert('Exam submitted successfully!');
       onComplete();

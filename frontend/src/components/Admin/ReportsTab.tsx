@@ -922,11 +922,31 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                           {Object.entries(descAns).map(([qId, ans]: any, i: number) => {
                             const qInfo = qMap[qId];
                             const questionText = qInfo?.text || null;
-                            const isMCQ = qInfo?.questionType === 'mcq' || typeof ans === 'number' || !isNaN(parseInt(ans));
-                            const selectedIdx = typeof ans === 'number' ? ans : parseInt(ans);
+                            const isMCQ = qInfo?.questionType === 'mcq' || typeof ans === 'number' || (!isNaN(parseInt(ans)) && ans.length < 3);
+                            
+                            // Determine selected index if possible
+                            let selectedIdx = typeof ans === 'number' ? ans : parseInt(ans);
+                            if (isNaN(selectedIdx) && qInfo?.options && typeof ans === 'string') {
+                              selectedIdx = qInfo.options.indexOf(ans);
+                            }
+                            
                             const correctIdx = qInfo?.correctAnswerIndex;
-                            const isCorrect = isMCQ && !isNaN(selectedIdx) && correctIdx !== undefined && selectedIdx === correctIdx;
-                            const selectedOptionText = isMCQ && qInfo?.options ? (qInfo.options[selectedIdx] ?? `Option ${selectedIdx + 1}`) : null;
+                            const isCorrect = isMCQ && (
+                              (selectedIdx !== -1 && correctIdx !== undefined && selectedIdx === correctIdx) ||
+                              (typeof ans === 'string' && qInfo?.options && qInfo.options[correctIdx] === ans)
+                            );
+                            
+                            // Determine text to show for what was selected
+                            let selectedOptionText = null;
+                            if (isMCQ) {
+                              if (selectedIdx >= 0 && qInfo?.options) {
+                                selectedOptionText = qInfo.options[selectedIdx];
+                              } else if (typeof ans === 'string') {
+                                selectedOptionText = ans;
+                              } else {
+                                selectedOptionText = `Option ${selectedIdx + 1}`;
+                              }
+                            }
                             const correctOptionText = isMCQ && qInfo?.options && correctIdx !== undefined ? qInfo.options[correctIdx] : null;
 
                             // Skip internal metadata keys stored in answers
