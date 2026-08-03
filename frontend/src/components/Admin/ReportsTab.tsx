@@ -792,7 +792,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center' }}>
                       <span className="badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', fontWeight: 'bold', fontSize: '0.9rem' }}>
-                        {exam.totalScore || 0} / {exam.totalQuestions || 20}
+                        {exam.totalScore || 0} / {(exam.mcqTotal || 0) + (exam.descTotal || 0) || exam.totalQuestions || 20}
                       </span>
                     </td>
                     <td style={{ padding: '16px', textAlign: 'center' }}>

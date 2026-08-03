@@ -295,14 +295,16 @@ const MyScoresTable = ({ applicant }) => {
 
                                 const displayAns = typeof ans === 'object' ? JSON.stringify(ans) : String(ans);
 
-                                if (isPsychometricExam) {
-                                    // Neutral display for psychometric — no correct/incorrect judgement
+                                const isDescriptive = (q && q.questionType === 'descriptive') || (!q && ans && typeof ans === 'string' && ans.length > 20);
+
+                                if (isPsychometricExam || isDescriptive) {
+                                    // Neutral display for psychometric or descriptive — no correct/incorrect judgement
                                     return (
                                         <div key={qId} style={{ background: '#1e293b', padding: '16px', borderRadius: '12px', border: '1px solid #3b82f6' }}>
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                                                 <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.92rem', flex: '1' }}>Q{qIdx + 1}: {qText}</span>
                                                 <span style={{ padding: '2px 10px', borderRadius: '4px', fontSize: '0.73rem', fontWeight: '700', background: 'rgba(59,130,246,0.18)', color: '#93c5fd', whiteSpace: 'nowrap' }}>
-                                                    🎯 Selected Response
+                                                    {isDescriptive ? '⏳ Pending Admin Grading' : '🎯 Selected Response'}
                                                 </span>
                                             </div>
                                             <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
