@@ -346,9 +346,9 @@ async function syncDatabase() {
                         if (changed) {
                             const newTotalScore = actualAutoScore + (exam.manualScore || 0);
                             await sequelize.query(
-                                "UPDATE onboard_exam_results SET mcqTotal = :mcq, descTotal = :desc, totalQuestions = :totalQs, autoScore = :autoS, totalScore = :totalS WHERE email = :email",
+                                "UPDATE onboard_exam_results SET mcqTotal = :mcq, descTotal = :desc, totalQuestions = :totalQs, autoScore = :autoS, totalScore = :totalS WHERE _id = :id",
                                 {
-                                    replacements: { mcq: actualMcq, desc: actualDesc, totalQs: qIds.length, autoS: actualAutoScore, totalS: newTotalScore, email: exam.email }
+                                    replacements: { mcq: actualMcq, desc: actualDesc, totalQs: qIds.length, autoS: actualAutoScore, totalS: newTotalScore, id: exam._id }
                                 }
                             );
                             
