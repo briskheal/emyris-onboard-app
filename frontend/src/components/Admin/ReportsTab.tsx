@@ -150,7 +150,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
     try {
       const scoreNum = Number(manualScoreInput) || 0;
       const res = await api.post('/admin/grade-exam', {
-        examId: selectedExamDetail.id,
+        examId: selectedExamDetail.id || selectedExamDetail._id,
         manualScore: scoreNum,
         status: 'graded'
       });
@@ -158,7 +158,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
         const parsedAutoScore = isNaN(parseInt(selectedExamDetail.autoScore as any, 10)) ? 0 : parseInt(selectedExamDetail.autoScore as any, 10);
         const updated = { ...selectedExamDetail, manualScore: scoreNum, status: 'graded', totalScore: parsedAutoScore + scoreNum };
         setSelectedExamDetail(updated);
-        setExamReports(prev => prev.map(e => e.id === updated.id ? updated : e));
+        setExamReports(prev => prev.map(e => (e.id || e._id) === (updated.id || updated._id) ? updated : e));
         alert(`Grade finalized successfully with score: ${scoreNum} Points.`);
       } else {
         alert('Failed to save grade: ' + (res.data.error || res.data.message || 'Unknown error'));
