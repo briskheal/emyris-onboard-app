@@ -1045,7 +1045,8 @@ router.post('/submit-exam', async (req, res) => {
             if (q) {
                 if (q.questionType === 'mcq') {
                     mcqTotal++;
-                    if (q.correctAnswerIndex === Number(selectedIdxOrText) || (q.options && q.options[q.correctAnswerIndex] === selectedIdxOrText)) {
+                    const isSkipped = selectedIdxOrText === "" || selectedIdxOrText === null || selectedIdxOrText === undefined;
+                    if (!isSkipped && (q.correctAnswerIndex === Number(selectedIdxOrText) || (q.options && q.options[q.correctAnswerIndex] === selectedIdxOrText))) {
                         autoScore++;
                     }
                 } else {

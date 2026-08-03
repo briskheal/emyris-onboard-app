@@ -326,16 +326,29 @@ async function syncDatabase() {
                     }
                     
                     if (actualMcq > 0 || actualDesc > 0) {
+                        let actualAutoScore = 0;
+                        for (let [qId, selectedIdxOrText] of Object.entries(answers)) {
+                            const q = questions.find(qu => qu._id === qId || qu.text === qId);
+                            if (q && q.questionType === 'mcq') {
+                                const isSkipped = selectedIdxOrText === "" || selectedIdxOrText === null || selectedIdxOrText === undefined;
+                                if (!isSkipped && (q.correctAnswerIndex === Number(selectedIdxOrText) || (q.options && q.options[q.correctAnswerIndex] === selectedIdxOrText))) {
+                                    actualAutoScore++;
+                                }
+                            }
+                        }
+
                         let changed = false;
                         if (exam.mcqTotal !== actualMcq) changed = true;
                         if (exam.descTotal !== actualDesc) changed = true;
                         if (exam.totalQuestions !== qIds.length) changed = true;
+                        if (exam.autoScore !== actualAutoScore) changed = true;
                         
                         if (changed) {
+                            const newTotalScore = actualAutoScore + (exam.manualScore || 0);
                             await sequelize.query(
-                                "UPDATE onboard_exam_results SET mcqTotal = :mcq, descTotal = :desc, totalQuestions = :totalQs WHERE email = :email",
+                                "UPDATE onboard_exam_results SET mcqTotal = :mcq, descTotal = :desc, totalQuestions = :totalQs, autoScore = :autoS, totalScore = :totalS WHERE email = :email",
                                 {
-                                    replacements: { mcq: actualMcq, desc: actualDesc, totalQs: qIds.length, email: exam.email }
+                                    replacements: { mcq: actualMcq, desc: actualDesc, totalQs: qIds.length, autoS: actualAutoScore, totalS: newTotalScore, email: exam.email }
                                 }
                             );
                             fixedCount++;
