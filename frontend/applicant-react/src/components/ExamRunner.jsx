@@ -79,8 +79,8 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
         };
     }, [loading, questions, submitting, phase]);
 
-    const mcqQuestions = questions.filter(q => q.type !== 'descriptive');
-    const descQuestions = questions.filter(q => q.type === 'descriptive');
+    const mcqQuestions = questions.filter(q => q.questionType !== 'descriptive');
+    const descQuestions = questions.filter(q => q.questionType === 'descriptive');
 
     const handlePhaseEnd = () => {
         if (isRapidFire || descQuestions.length === 0 || phase === 2) {
@@ -145,6 +145,7 @@ const ExamRunner = ({ applicant, examData, isRapidFire = false, onComplete, onCa
                 : {
                     email: applicant.email,
                     testedProduct: examData?.targetProduct || 'Assigned Assessment',
+                    examDate: examData?.examDate,
                     answers: payloadAnswers,
                     totalQuestions: totalQs,
                     mcqScore: typeof calculateLocalAutoScore === 'function' ? calculateLocalAutoScore() : 0
