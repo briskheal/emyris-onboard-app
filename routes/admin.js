@@ -3123,26 +3123,30 @@ router.post('/grade-exam', async (req, res) => {
         
         const company = await Company.findOne() || { name: 'Emyris Biolifesciences' };
         
-        await sendEmail({
-            to: exam.email,
-            subject: `Your Exam Results are In! - ${company.name}`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; line-height: 1.6;">
-                    <h2 style="color: #6366f1;">Exam Graded</h2>
-                    <p>Dear ${exam.name},</p>
-                    <p>Your recent assessment for <strong>${exam.testedProduct}</strong> has been manually reviewed and graded by our Admin team.</p>
-                    <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                        <h3 style="margin: 0 0 10px 0;">Your Score</h3>
-                        <p style="margin: 0;"><strong>MCQ Auto-Score:</strong> ${exam.autoScore}</p>
-                        <p style="margin: 5px 0 0 0;"><strong>Descriptive Manual Score:</strong> ${manualScore}</p>
-                        <p style="margin: 5px 0 0 0; font-size: 1.2em; color: #6366f1;"><strong>Total Final Score: ${total} / ${exam.totalQuestions}</strong></p>
+        try {
+            await sendEmail({
+                to: exam.email,
+                subject: `Your Exam Results are In! - ${company.name}`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; line-height: 1.6;">
+                        <h2 style="color: #6366f1;">Exam Graded</h2>
+                        <p>Dear ${exam.name},</p>
+                        <p>Your recent assessment for <strong>${exam.testedProduct}</strong> has been manually reviewed and graded by our Admin team.</p>
+                        <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                            <h3 style="margin: 0 0 10px 0;">Your Score</h3>
+                            <p style="margin: 0;"><strong>MCQ Auto-Score:</strong> ${exam.autoScore}</p>
+                            <p style="margin: 5px 0 0 0;"><strong>Descriptive Manual Score:</strong> ${manualScore}</p>
+                            <p style="margin: 5px 0 0 0; font-size: 1.2em; color: #6366f1;"><strong>Total Final Score: ${total} / ${exam.totalQuestions}</strong></p>
+                        </div>
+                        <p>You can review your detailed answers and performance by logging into the Applicant Portal and visiting the <strong>My Exam Scores</strong> tab.</p>
+                        <br>
+                        <p>Best regards,<br>The ${company.name} Team</p>
                     </div>
-                    <p>You can review your detailed answers and performance by logging into the Applicant Portal and visiting the <strong>My Exam Scores</strong> tab.</p>
-                    <br>
-                    <p>Best regards,<br>The ${company.name} Team</p>
-                </div>
-            `
-        });
+                `
+            });
+        } catch (emailErr) {
+            console.error('Failed to send grading notification email:', emailErr.message);
+        }
         
         res.json({ success: true, totalScore: total });
     } catch (e) {
