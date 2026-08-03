@@ -304,7 +304,7 @@ const MyScoresTable = ({ applicant }) => {
                                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
                                                 <span style={{ fontWeight: '700', color: '#f8fafc', fontSize: '0.92rem', flex: '1' }}>Q{qIdx + 1}: {qText}</span>
                                                 <span style={{ padding: '2px 10px', borderRadius: '4px', fontSize: '0.73rem', fontWeight: '700', background: 'rgba(59,130,246,0.18)', color: '#93c5fd', whiteSpace: 'nowrap' }}>
-                                                    {isDescriptive ? '⏳ Pending Admin Grading' : '🎯 Selected Response'}
+                                                    {isDescriptive ? (selectedExam.status === 'graded' ? '✔️ Graded' : '⏳ Pending Admin Grading') : '🎯 Selected Response'}
                                                 </span>
                                             </div>
                                             <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
