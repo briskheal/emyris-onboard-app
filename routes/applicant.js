@@ -299,7 +299,8 @@ router.post(['/submit-test', '/submit-rapid-fire'], async (req, res) => {
         for (const [qId, selectedIdx] of Object.entries(answers || {})) {
             const q = questions.find(qu => qu._id === qId);
             if (q) {
-                if (q.correctAnswerIndex === Number(selectedIdx) || (q.options && q.options[q.correctAnswerIndex] === selectedIdx)) {
+                const isSkipped = selectedIdx === "" || selectedIdx === null || selectedIdx === undefined;
+                if (!isSkipped && (q.correctAnswerIndex === Number(selectedIdx) || (q.options && q.options[q.correctAnswerIndex] === selectedIdx))) {
                     score++;
                 }
             }
