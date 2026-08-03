@@ -345,17 +345,15 @@ async function syncDatabase() {
                         
                         if (changed) {
                             const newTotalScore = actualAutoScore + (exam.manualScore || 0);
-                            await sequelize.query(
-                                "UPDATE onboard_exam_results SET mcqTotal = :mcq, descTotal = :desc, totalQuestions = :totalQs, autoScore = :autoS, totalScore = :totalS WHERE _id = :id",
-                                {
-                                    replacements: { mcq: actualMcq, desc: actualDesc, totalQs: qIds.length, autoS: actualAutoScore, totalS: newTotalScore, id: exam._id }
-                                }
+                            await sequelize.models.onboard_exam_result.update(
+                                { mcqTotal: actualMcq, descTotal: actualDesc, totalQuestions: qIds.length, autoScore: actualAutoScore, totalScore: newTotalScore },
+                                { where: { _id: exam._id } }
                             );
                             
                             if (exam.testedProduct && exam.testedProduct.toLowerCase().includes('rapid')) {
-                                await sequelize.query(
-                                    "UPDATE onboard_applicants SET rapidTestScore = :autoS WHERE email = :email",
-                                    { replacements: { autoS: actualAutoScore, email: exam.email } }
+                                await sequelize.models.onboard_applicant.update(
+                                    { rapidTestScore: actualAutoScore },
+                                    { where: { email: exam.email } }
                                 );
                             }
                             
@@ -366,8 +364,11 @@ async function syncDatabase() {
             }
             if (fixedCount > 0) console.log(`✅ Fixed ${fixedCount} historical exam records.`);
             
-            // Hard reset briskheal's corrupted rapid score since they have no ExamResult to trigger the auto-migration
-            await sequelize.query("UPDATE onboard_applicants SET rapidTestScore = 0 WHERE email = 'briskheal@gmail.com'");
+            // Hard reset briskheal's corrupted rapid score using ORM to avoid Postgres table name mismatches
+            await sequelize.models.onboard_applicant.update(
+                { rapidTestScore: 0 },
+                { where: { email: 'briskheal@gmail.com' } }
+            );
             
         } catch (err) {
             console.error('⚠️ DB fix failed:', err.message);
