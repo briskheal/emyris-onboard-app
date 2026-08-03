@@ -944,8 +944,11 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                             
                             // Determine text to show for what was selected
                             let selectedOptionText = null;
+                            const isSkipped = (ans === null || ans === undefined || ans === '');
                             if (isMCQ) {
-                              if (selectedIdx >= 0 && qInfo?.options) {
+                              if (isSkipped) {
+                                selectedOptionText = "Not Attempted";
+                              } else if (selectedIdx >= 0 && qInfo?.options) {
                                 selectedOptionText = qInfo.options[selectedIdx];
                               } else if (typeof ans === 'string') {
                                 selectedOptionText = ans;
@@ -986,7 +989,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                                 ) : (
                                   // Descriptive: show full text response
                                   <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '6px' }}>
-                                    {typeof ans === 'object' ? JSON.stringify(ans) : (ans || 'No response entered.')}
+                                    {isSkipped ? 'Not Attempted' : (typeof ans === 'object' ? JSON.stringify(ans) : ans)}
                                   </div>
                                 )}
                               </div>
