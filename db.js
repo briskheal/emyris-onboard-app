@@ -365,6 +365,10 @@ async function syncDatabase() {
                 }
             }
             if (fixedCount > 0) console.log(`✅ Fixed ${fixedCount} historical exam records.`);
+            
+            // Hard reset briskheal's corrupted rapid score since they have no ExamResult to trigger the auto-migration
+            await sequelize.query("UPDATE onboard_applicants SET rapidTestScore = 0 WHERE email = 'briskheal@gmail.com'");
+            
         } catch (err) {
             console.error('⚠️ DB fix failed:', err.message);
         }
