@@ -1040,26 +1040,21 @@ router.post('/submit-exam', async (req, res) => {
         let descTotal = 0;
         
         const questions = await Question.find({ active: true });
-        const examQuestions = questions.filter(q => q.targetProduct === targetProduct);
-        
-        // Safely calculate total possible marks by type for this product
-        if (examQuestions.length > 0) {
-            examQuestions.forEach(q => {
-                if (q.questionType === 'mcq') mcqTotal++;
-                else descTotal++;
-            });
-        }
-        
         for (const [qId, selectedIdxOrText] of Object.entries(answers || {})) {
             const q = questions.find(qu => qu._id === qId);
-            if (q && q.questionType === 'mcq') {
-                if (q.correctAnswerIndex === Number(selectedIdxOrText) || (q.options && q.options[q.correctAnswerIndex] === selectedIdxOrText)) {
-                    autoScore++;
+            if (q) {
+                if (q.questionType === 'mcq') {
+                    mcqTotal++;
+                    if (q.correctAnswerIndex === Number(selectedIdxOrText) || (q.options && q.options[q.correctAnswerIndex] === selectedIdxOrText)) {
+                        autoScore++;
+                    }
+                } else {
+                    descTotal++;
                 }
             }
         }
         
-        // Fallback if no questions found (e.g. legacy or deleted product)
+        // Fallback if no questions found (e.g. legacy or deleted product where questions don't match DB anymore)
         if (mcqTotal === 0 && descTotal === 0 && totalQuestions > 0) {
             mcqTotal = totalQuestions; // Assume all were MCQ for legacy point tracking
         }
