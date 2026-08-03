@@ -39,7 +39,7 @@ const Settings: React.FC = () => {
           </div>
           <div className="form-group">
             <label>Active Exam Product</label>
-            <input type="text" value={company?.activeExamProduct || 'General'} readOnly className="form-input-sm" style={{ opacity: 0.7 }} />
+            <input type="text" value={company?.activeExamProduct || ''} readOnly className="form-input-sm" style={{ opacity: 0.7 }} />
           </div>
           
           <button className="btn btn-primary" style={{ marginTop: '1rem', width: 'fit-content' }}>Edit Configuration</button>

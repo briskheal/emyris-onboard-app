@@ -14,7 +14,7 @@ export default function QuestionBank() {
 
   // Exam Schedule Config
   const [examDate, setExamDate] = useState('');
-  const [targetProduct, setTargetProduct] = useState('General');
+  const [targetProduct, setTargetProduct] = useState('');
   const [mcqTime, setMcqTime] = useState(15);
   const [descTime, setDescTime] = useState(15);
   const [rapidTime, setRapidTime] = useState(25);
@@ -45,7 +45,7 @@ export default function QuestionBank() {
       if (cRes.data) {
         const comp = cRes.data.company || cRes.data;
         setExamDate(comp.activeExamDate || '');
-        setTargetProduct(comp.activeExamProduct || 'General');
+        setTargetProduct(comp.activeExamProduct || '');
         setMcqTime(comp.examMcqTime || 15);
         setDescTime(comp.examDescriptiveTime || 15);
         setRapidTime(comp.rapidTestTime || 25);
@@ -132,7 +132,7 @@ export default function QuestionBank() {
   };
 
   const allUniqueCategories = Array.from(new Set(questions.map(q => q.category))).sort();
-  const coreSubjects = ['math', 'english', 'gk', 'current_affairs', 'general'];
+  const coreSubjects = ['math', 'english', 'gk', 'current_affairs'];
   const coreCategories = allUniqueCategories.filter(cat => coreSubjects.includes(cat.toLowerCase()));
   
   // Create a combined list of products from both database questions AND available setup products
