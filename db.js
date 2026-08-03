@@ -351,6 +351,14 @@ async function syncDatabase() {
                                     replacements: { mcq: actualMcq, desc: actualDesc, totalQs: qIds.length, autoS: actualAutoScore, totalS: newTotalScore, email: exam.email }
                                 }
                             );
+                            
+                            if (exam.testedProduct && exam.testedProduct.toLowerCase().includes('rapid')) {
+                                await sequelize.query(
+                                    "UPDATE onboard_applicants SET rapidTestScore = :autoS WHERE email = :email",
+                                    { replacements: { autoS: actualAutoScore, email: exam.email } }
+                                );
+                            }
+                            
                             fixedCount++;
                         }
                     }
