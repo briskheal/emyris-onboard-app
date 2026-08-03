@@ -300,6 +300,54 @@ async function syncDatabase() {
             console.error('⚠️ Question seeding check failed:', err.message);
         }
 
+        // ONE-TIME FIX for buggy scores
+        try {
+            const [exams] = await sequelize.query("SELECT * FROM onboard_exam_results");
+            let fixedCount = 0;
+            const [questions] = await sequelize.query("SELECT * FROM onboard_questions");
+            
+            for (let exam of exams) {
+                let answers = exam.answers;
+                if (typeof answers === 'string') {
+                    try { answers = JSON.parse(answers); } catch(e){}
+                }
+                
+                if (answers && Object.keys(answers).length > 0) {
+                    let actualMcq = 0;
+                    let actualDesc = 0;
+                    const qIds = Object.keys(answers);
+                    
+                    for (let qId of qIds) {
+                        const q = questions.find(qu => qu._id === qId || qu.text === qId);
+                        if (q) {
+                            if (q.questionType === 'mcq') actualMcq++;
+                            else actualDesc++;
+                        }
+                    }
+                    
+                    if (actualMcq > 0 || actualDesc > 0) {
+                        let changed = false;
+                        if (exam.mcqTotal !== actualMcq) changed = true;
+                        if (exam.descTotal !== actualDesc) changed = true;
+                        if (exam.totalQuestions !== qIds.length) changed = true;
+                        
+                        if (changed) {
+                            await sequelize.query(
+                                "UPDATE onboard_exam_results SET mcqTotal = :mcq, descTotal = :desc, totalQuestions = :totalQs WHERE email = :email",
+                                {
+                                    replacements: { mcq: actualMcq, desc: actualDesc, totalQs: qIds.length, email: exam.email }
+                                }
+                            );
+                            fixedCount++;
+                        }
+                    }
+                }
+            }
+            if (fixedCount > 0) console.log(`✅ Fixed ${fixedCount} historical exam records.`);
+        } catch (err) {
+            console.error('⚠️ DB fix failed:', err.message);
+        }
+
     } catch (err) {
         console.error('❌ Database connection error:', err.message);
     }
