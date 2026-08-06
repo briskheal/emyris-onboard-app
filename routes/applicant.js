@@ -956,6 +956,7 @@ router.post('/exam-questions', async (req, res) => {
         if (applicant && applicant.pendingExams) {
             let pending = [];
             try { pending = typeof applicant.pendingExams === 'string' ? JSON.parse(applicant.pendingExams) : applicant.pendingExams; } catch(e){}
+            if (!Array.isArray(pending)) pending = [];
             const examConfig = pending.find(e => e.targetProduct === activeProduct);
             if (examConfig) {
                 mcqTime = examConfig.mcqTime || mcqTime;
@@ -1083,6 +1084,7 @@ router.post('/submit-exam', async (req, res) => {
         if (applicant && applicant.pendingExams) {
             let pending = [];
             try { pending = typeof applicant.pendingExams === 'string' ? JSON.parse(applicant.pendingExams) : applicant.pendingExams; } catch(e){}
+            if (!Array.isArray(pending)) pending = [];
             const updatedPending = pending.filter(e => 
                 !(e.targetProduct === targetProduct && e.examDate === examDate)
             );
