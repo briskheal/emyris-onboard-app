@@ -818,7 +818,7 @@ router.get('/applicants', async (req, res) => {
 
         const applicants = await Applicant.find(query)
             .select(selectStr)
-            .sort({ registeredAt: -1 })
+            .sort({ submittedAt: -1, registeredAt: -1 })
             .lean(); // Fetch summary fields
 
         res.status(200).json({ success: true, applicants });
