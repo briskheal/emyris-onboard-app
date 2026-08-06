@@ -412,11 +412,13 @@ router.post('/login', loginLimiter, (req, res) => {
     const { username, password } = req.body;
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
+    const subAdminUser = (process.env.SUBADMIN_USER || 'ADMIN2').toUpperCase();
+    const subAdminPass = process.env.SUBADMIN_PASS || '1234';
 
     if (username && username.toUpperCase() === adminUser && password === adminPass) {
         console.log(`[LOGIN SUCCESS] ${req.body.username} (superadmin)`);
         res.status(200).json({ success: true, role: 'superadmin' });
-    } else if (username && username.toUpperCase() === 'ADMIN2' && password === '1234') {
+    } else if (username && username.toUpperCase() === subAdminUser && password === subAdminPass) {
         console.log(`[LOGIN SUCCESS] ${req.body.username} (subadmin)`);
         res.status(200).json({ success: true, role: 'subadmin' });
     } else {
