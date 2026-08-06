@@ -85,7 +85,7 @@ const ApplicantScoreboard: React.FC<ApplicantScoreboardProps> = ({ email }) => {
               <div style={{ fontSize: '1.5rem', color: 'var(--primary)', fontWeight: 'bold' }}>
                 {((exam.testedProduct || '').toLowerCase().includes('psychometric') || (exam.testedProduct || '').toLowerCase().includes('phase 2'))
                   ? `${exam.totalScore}% Readiness Index`
-                  : `${exam.totalScore} / ${exam.totalQuestions}`
+                  : `${exam.totalScore} / ${(exam.mcqTotal || 0) + (exam.descTotal || 0) || exam.totalQuestions || 20}`
                 }
               </div>
             ) : (

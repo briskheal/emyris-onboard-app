@@ -48,7 +48,8 @@ const ApplicantExam: React.FC<ApplicantExamProps> = ({ applicant, onComplete }) 
     try {
       const payload: SubmitExamPayload = {
         email: applicant.email,
-        answers: answers
+        answers: answers,
+        totalQuestions: questions.length
       };
       await api.post('/applicant/submit-exam', payload);
       alert('Exam submitted successfully!');
