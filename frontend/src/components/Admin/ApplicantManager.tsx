@@ -36,7 +36,7 @@ const ApplicantManager: React.FC = () => {
   
     const handleToggleLogin = async (email: string, currentStatus: boolean) => {
       try {
-        const res = await api.post('/admin/toggle-login', { email, canLogin: !currentStatus });
+        const res = await api.post('/admin/toggle-access', { email, canLogin: !currentStatus });
         if (res.data.success) {
           setApplicants(prev => prev.map(a => a.email === email ? { ...a, canLogin: !currentStatus } : a));
         } else {
