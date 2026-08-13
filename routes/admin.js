@@ -1742,7 +1742,10 @@ router.post('/update-workflow-data', async (req, res) => {
         if (detailHq !== undefined) update.hq = detailHq;
         if (empCode !== undefined) update.empCode = empCode;
         if (refNo !== undefined) update.refNo = refNo;
-        if (dob !== undefined) update.dob = dob;
+        if (dob !== undefined) {
+            update.dob = dob;
+            update['formData.dob'] = dob;
+        }
         if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
         if (address !== undefined) update.address = address;
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
@@ -2400,7 +2403,10 @@ router.post('/update-workflow-data', async (req, res) => {
         if (detailHq !== undefined) update.hq = detailHq;
         if (empCode !== undefined) update.empCode = empCode;
         if (refNo !== undefined) update.refNo = refNo;
-        if (dob !== undefined) update.dob = dob;
+        if (dob !== undefined) {
+            update.dob = dob;
+            update['formData.dob'] = dob;
+        }
         if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
         if (address !== undefined) update.address = address;
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
