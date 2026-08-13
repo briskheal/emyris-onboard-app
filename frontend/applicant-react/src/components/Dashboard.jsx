@@ -12,6 +12,7 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [pendingExams, setPendingExams] = useState([]);
+    const [completedProducts, setCompletedProducts] = useState([]);
     const [activeExamContext, setActiveExamContext] = useState(null);
     const [isRapidLaunch, setIsRapidLaunch] = useState(false);
 
@@ -364,18 +365,29 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                     )}
 
                     {/* Step 4: Assigned Division Exams */}
-                    {pendingExams.length > 0 && (
+                    {(pendingExams.length > 0 || completedProducts.length > 0) && (
                         <div style={{ marginTop: '24px' }}>
                             <h3 style={styles.sectionTitle}>📚 Assigned Division Assessment Sessions</h3>
                             <div style={{ display: 'grid', gap: '14px' }}>
                                 {pendingExams.map((exam, index) => (
-                                    <div key={index} style={styles.examCard}>
+                                    <div key={`pending-${index}`} style={styles.examCard}>
                                         <div>
-                                            <h4 style={styles.examTitle}>{exam.targetProduct || 'Division Product Assessment'}</h4>
+                                            <h4 style={styles.examTitle}>{exam.targetProduct || 'Division Product Assessment'} <span className="status-blink" style={{ color: '#f59e0b', fontSize: '0.85rem', marginLeft: '6px' }}>[Pending]</span></h4>
                                             <p style={styles.examDetail}>Scheduled / Assigned Date: {exam.examDate || 'Today'}</p>
                                         </div>
                                         <button onClick={() => handleLaunchExam(exam)} style={styles.actionButtonGreen}>
                                             🚀 Start Assessment Session
+                                        </button>
+                                    </div>
+                                ))}
+                                {completedProducts.map((exam, index) => (
+                                    <div key={`completed-${index}`} style={{...styles.examCard, opacity: 0.6}}>
+                                        <div>
+                                            <h4 style={{...styles.examTitle, color: '#94a3b8'}}>{exam.testedProduct || 'Division Product Assessment'} <span style={{ color: '#10b981', fontSize: '0.85rem', marginLeft: '6px' }}>[Finished]</span></h4>
+                                            <p style={styles.examDetail}>Completed On: {new Date(exam.submittedAt || exam.examDate).toLocaleDateString()}</p>
+                                        </div>
+                                        <button disabled style={{...styles.actionButtonGreen, background: '#334155', color: '#94a3b8', cursor: 'not-allowed', boxShadow: 'none'}}>
+                                            ✅ Assessment Submitted
                                         </button>
                                     </div>
                                 ))}
@@ -393,40 +405,51 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                     <div style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
                         <div style={styles.examCard}>
                             <div>
-                                <h4 style={styles.examTitle}>⚡ Phase 1: Rapid Fire Screening Test</h4>
+                                <h4 style={styles.examTitle}>⏱️ Phase 1: Rapid Fire Screening Test {applicant?.rapidTestCompleted ? <span style={{ color: '#10b981', fontSize: '0.85rem', marginLeft: '6px' }}>[Finished]</span> : <span className="status-blink" style={{ color: '#f59e0b', fontSize: '0.85rem', marginLeft: '6px' }}>[Pending]</span>}</h4>
                                 <p style={styles.examDetail}>20 screening questions covering logical reasoning, math & english.</p>
                             </div>
-                            <button onClick={handleLaunchRapidFire} style={styles.actionButtonGreen}>
-                                Launch Rapid Fire Test
+                            <button onClick={handleLaunchRapidFire} style={applicant?.rapidTestCompleted ? {...styles.actionButtonGreen, background: '#334155', color: '#94a3b8'} : styles.actionButtonGreen}>
+                                {applicant?.rapidTestCompleted ? '✅ Submitted' : 'Launch Rapid Fire Test'}
                             </button>
                         </div>
 
                         <div style={styles.examCard}>
                             <div>
-                                <h4 style={{ color: '#d8b4fe', margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: '700' }}>🧠 Phase 2: Candidate Mindset Assessment</h4>
+                                <h4 style={{ color: '#d8b4fe', margin: '0 0 6px 0', fontSize: '1.1rem', fontWeight: '700' }}>🧠 Phase 2: Candidate Mindset Assessment {applicant?.psychometricTestCompleted ? <span style={{ color: '#10b981', fontSize: '0.85rem', marginLeft: '6px' }}>[Finished]</span> : <span className="status-blink" style={{ color: '#f59e0b', fontSize: '0.85rem', marginLeft: '6px' }}>[Pending]</span>}</h4>
                                 <p style={styles.examDetail}>30 situational mindset items generating your 6-dimension competency profile.</p>
                             </div>
-                            <button onClick={() => setActiveTab('runningPsychometric')} style={styles.actionButtonPurple}>
-                                Launch Psychometric Assessment
+                            <button onClick={() => { if (!applicant?.psychometricTestCompleted) setActiveTab('runningPsychometric'); }} style={applicant?.psychometricTestCompleted ? {...styles.actionButtonPurple, background: '#334155', color: '#94a3b8', border: '1px solid #475569'} : styles.actionButtonPurple}>
+                                {applicant?.psychometricTestCompleted ? '✅ Submitted' : 'Launch Psychometric Assessment'}
                             </button>
                         </div>
                     </div>
 
-                    <h4 style={{ color: '#fff', fontSize: '1.05rem', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '14px' }}>📚 Division Product Exams ({pendingExams.length})</h4>
-                    {pendingExams.length === 0 ? (
+                    <h4 style={{ color: '#fff', fontSize: '1.05rem', borderBottom: '1px solid #334155', paddingBottom: '8px', marginBottom: '14px' }}>📚 Division Product Exams ({pendingExams.length + completedProducts.length})</h4>
+                    {pendingExams.length === 0 && completedProducts.length === 0 ? (
                         <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', border: '1px dashed #334155' }}>
                             No division product exams assigned to your profile currently.
                         </div>
                     ) : (
                         <div style={{ display: 'grid', gap: '14px' }}>
                             {pendingExams.map((exam, idx) => (
-                                <div key={idx} style={styles.examCard}>
+                                <div key={`pending-${idx}`} style={styles.examCard}>
                                     <div>
-                                        <h4 style={styles.examTitle}>{exam.targetProduct || 'Assigned Product Exam'}</h4>
+                                        <h4 style={styles.examTitle}>{exam.targetProduct || 'Assigned Product Exam'} <span className="status-blink" style={{ color: '#f59e0b', fontSize: '0.85rem', marginLeft: '6px' }}>[Pending]</span></h4>
                                         <p style={styles.examDetail}>Assigned Date: {exam.examDate || 'Today'}</p>
                                     </div>
                                     <button onClick={() => handleLaunchExam(exam)} style={styles.actionButtonGreen}>
                                         🚀 Start Assessment
+                                    </button>
+                                </div>
+                            ))}
+                            {completedProducts.map((exam, idx) => (
+                                <div key={`completed-${idx}`} style={{...styles.examCard, opacity: 0.6}}>
+                                    <div>
+                                        <h4 style={{...styles.examTitle, color: '#94a3b8'}}>{exam.testedProduct || 'Assigned Product Exam'} <span style={{ color: '#10b981', fontSize: '0.85rem', marginLeft: '6px' }}>[Finished]</span></h4>
+                                        <p style={styles.examDetail}>Completed On: {new Date(exam.submittedAt || exam.examDate).toLocaleDateString()}</p>
+                                    </div>
+                                    <button disabled style={{...styles.actionButtonGreen, background: '#334155', color: '#94a3b8', cursor: 'not-allowed', boxShadow: 'none'}}>
+                                        ✅ Assessment Submitted
                                     </button>
                                 </div>
                             ))}
