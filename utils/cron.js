@@ -127,11 +127,101 @@ async function runExamReminderCron() {
     }
 }
 
+async function runBirthdayCron() {
+    try {
+        console.log('🎉 Running 8 AM Birthday Cron Job...');
+        const today = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+        const currentMonth = today.getMonth();
+        const currentDay = today.getDate();
+
+        const applicants = await Applicant.find({ status: { $nin: ['rejected'] } });
+        let birthdayKids = [];
+
+        for (let app of applicants) {
+            if (!app.dob) continue;
+            try {
+                const dobDate = new Date(app.dob);
+                if (!isNaN(dobDate) && dobDate.getMonth() === currentMonth && dobDate.getDate() === currentDay) {
+                    birthdayKids.push(app);
+                }
+            } catch (e) {}
+        }
+
+        if (birthdayKids.length === 0) {
+            console.log('ℹ️ No birthdays today.');
+            return { success: true, birthdaysFound: 0 };
+        }
+
+        let adminReportRows = '';
+
+        for (let app of birthdayKids) {
+            const firstName = (app.fullName || app.name || 'Applicant').split(' ')[0];
+            const emailHtml = `
+                <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 40px 20px; text-align: center; background-color: #f8fafc; border-radius: 16px;">
+                    <div style="background: #ffffff; padding: 40px 30px; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🎂🎉</div>
+                        <h1 style="color: #4f46e5; margin: 0 0 15px 0; font-size: 28px;">Happy Birthday, ${firstName}!</h1>
+                        <p style="color: #475569; font-size: 18px; line-height: 1.6; margin: 0 0 25px 0;">
+                            Wishing you a fantastic birthday filled with joy, success, and great moments. We hope this year brings you closer to your dreams!
+                        </p>
+                        <p style="color: #64748b; font-size: 16px; line-height: 1.5; margin: 0;">
+                            Warmest wishes from all of us at<br>
+                            <strong style="color: #1e293b; font-size: 18px;">Emyris Biolifesciences</strong>
+                        </p>
+                    </div>
+                </div>
+            `;
+
+            try {
+                await sendEmail({
+                    to: app.email,
+                    subject: `🎉 Happy Birthday from Emyris Biolifesciences!`,
+                    html: emailHtml
+                });
+                console.log(`🎂 Sent birthday email to: ${app.email}`);
+                adminReportRows += `<li>${app.fullName || app.name} (${app.email})</li>`;
+            } catch (err) {
+                console.error('Failed to send birthday email to:', app.email, err.message);
+                adminReportRows += `<li><span style="color: red;">[FAILED]</span> ${app.fullName || app.name} (${app.email})</li>`;
+            }
+        }
+
+        const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in';
+        const adminHtml = `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+                <h2 style="color: #4f46e5;">🎂 Daily Birthday Report</h2>
+                <p>Birthday greetings were automatically sent to the following <strong>${birthdayKids.length}</strong> applicant(s) today:</p>
+                <ul>${adminReportRows}</ul>
+            </div>
+        `;
+
+        await sendEmail({
+            to: adminEmail,
+            subject: `🎂 Birthday Report: ${birthdayKids.length} greetings sent`,
+            html: adminHtml
+        });
+
+        console.log(`✅ Birthday cron completed. Sent ${birthdayKids.length} greetings.`);
+        return { success: true, birthdaysFound: birthdayKids.length };
+    } catch (error) {
+        console.error('Error in birthday cron:', error);
+        return { success: false, error: error.message };
+    }
+}
+
 function startCronJobs() {
     // Run every 8 hours (0 0,8,16 * * *)
     cron.schedule('0 0,8,16 * * *', async () => {
         await runExamReminderCron();
     });
+
+    // Run every day at 8:00 AM IST for birthdays
+    cron.schedule('0 8 * * *', async () => {
+        await runBirthdayCron();
+    }, {
+        scheduled: true,
+        timezone: "Asia/Kolkata"
+    });
 }
 
-module.exports = { startCronJobs, runExamReminderCron };
+module.exports = { startCronJobs, runExamReminderCron, runBirthdayCron };
