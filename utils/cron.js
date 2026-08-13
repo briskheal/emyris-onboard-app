@@ -5,7 +5,7 @@ const { syncActiveExamForApplicant } = require('./examSync');
 
 async function runExamReminderCron() {
     try {
-        console.log('⏰ Running 8-hourly exam reminder and report cron job...');
+        console.log('⏰ Running 48-hourly exam report cron job...');
         const applicants = await Applicant.find({ status: { $nin: ['rejected'] } });
         
         let reportRows = '';
@@ -38,43 +38,7 @@ async function runExamReminderCron() {
             }
 
             if (pending.length > 0) {
-                // Send reminder
-                try {
-                    const productNames = pending.map(p => p.targetProduct).join(', ');
-                    const emailHtml = `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 25px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-                            <div style="text-align: center; margin-bottom: 20px;">
-                                <h2 style="color: #4f46e5; margin: 0; font-size: 22px;">⏰ Action Required: Mandatory Assessment Pending</h2>
-                            </div>
-                            <p style="color: #334155; font-size: 16px;">Dear ${app.fullName || app.name || 'Applicant'},</p>
-                            <p style="color: #334155; font-size: 16px; line-height: 1.5;">
-                                Whether your offer letter is pending, issued, or already accepted, completing your scheduled <strong>${productNames} Assessment</strong> is a mandatory requirement to confirm and finalize your onboarding workflow with Emyris Biolifesciences.
-                            </p>
-                            <div style="background-color: #f8fafc; padding: 18px; border-left: 4px solid #4f46e5; border-radius: 6px; margin: 20px 0;">
-                                <p style="margin: 0; font-size: 15px; color: #1e293b;"><strong>Pending Exam(s):</strong> ${productNames}</p>
-                                <p style="margin: 8px 0 0 0; font-size: 14px; color: #64748b;">Please log in to your dashboard and complete your assessment right away.</p>
-                            </div>
-                            <div style="text-align: center; margin: 30px 0;">
-                                <a href="${process.env.BASE_URL || 'https://emyrishr.in'}/" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #4f46e5, #3b82f6); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);">
-                                    🚀 Launch Assessment Now
-                                </a>
-                            </div>
-                            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 25px 0;" />
-                            <p style="font-size: 13px; color: #94a3b8; text-align: center; margin: 0;">
-                                Emyris Biolifesciences HR Compliance Team • Automated 8-Hourly Reminder
-                            </p>
-                        </div>
-                    `;
-                    await sendEmail({
-                        to: app.email,
-                        subject: `Reminder: Mandatory Assessment Pending (${productNames})`,
-                        html: emailHtml
-                    });
-                    remindersSent++;
-                    console.log(`📧 Sent 8-hourly exam reminder to: ${app.email}`);
-                } catch (err) {
-                    console.error('Failed to send reminder to:', app.email, err.message);
-                }
+                remindersSent++; // Keep count for the admin report of how many are pending
             }
 
             reportRows += `
@@ -93,8 +57,8 @@ async function runExamReminderCron() {
         const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER || 'hradmin@emyrishr.in';
         const reportHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 800px; margin: auto;">
-                <h2 style="color: #6366f1;">8-Hourly Exam Status Report</h2>
-                <p><strong>Total Applicants Checked:</strong> ${applicants.length} | <strong>Reminders Sent:</strong> ${remindersSent}</p>
+                <h2 style="color: #6366f1;">48-Hourly Exam Status Report</h2>
+                <p><strong>Total Applicants Checked:</strong> ${applicants.length} | <strong>Total Pending Assessments:</strong> ${remindersSent}</p>
                 <table style="border-collapse: collapse; width: 100%; font-size: 14px;">
                     <thead>
                         <tr style="background-color: #f3f4f6; color: #000;">
@@ -115,12 +79,12 @@ async function runExamReminderCron() {
 
         await sendEmail({
             to: adminEmail,
-            subject: `Exam Status Report (Multi-Exam Queue) - ${remindersSent} Reminders Sent`,
+            subject: `Exam Status Report (Multi-Exam Queue) - ${remindersSent} Pending`,
             html: reportHtml
         });
 
-        console.log(`✅ 8-hourly exam reminder and report completed. Total Checked: ${applicants.length}, Reminders Sent: ${remindersSent}`);
-        return { success: true, totalChecked: applicants.length, remindersSent };
+        console.log(`✅ 48-hourly exam report completed. Total Checked: ${applicants.length}, Pending: ${remindersSent}`);
+        return { success: true, totalChecked: applicants.length, pendingFound: remindersSent };
     } catch (error) {
         console.error('Error in exam reminder cron:', error);
         return { success: false, error: error.message };
@@ -210,8 +174,8 @@ async function runBirthdayCron() {
 }
 
 function startCronJobs() {
-    // Run every 8 hours (0 0,8,16 * * *)
-    cron.schedule('0 0,8,16 * * *', async () => {
+    // Run exam reminder every 48 hours (every 2 days at 8:00 AM)
+    cron.schedule('0 8 */2 * *', async () => {
         await runExamReminderCron();
     });
 
