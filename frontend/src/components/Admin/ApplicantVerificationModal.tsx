@@ -17,7 +17,15 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [loading, setLoading] = useState(false);
   
   // Local state for internal assignment
-  const [dob, setDob] = useState(initialApplicant.formData?.dob || initialApplicant.dob || '');
+  const [dob, setDob] = useState(() => {
+    const rawDob = initialApplicant.formData?.dob || initialApplicant.dob || '';
+    if (!rawDob) return '';
+    try {
+      const d = new Date(rawDob);
+      if (isNaN(d.getTime())) return rawDob;
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    } catch { return rawDob; }
+  });
   const [bloodGroup, setBloodGroup] = useState(initialApplicant.formData?.bloodGroup || initialApplicant.bloodGroup || '');
   const [maritalStatus, setMaritalStatus] = useState(initialApplicant.maritalStatus || initialApplicant.formData?.maritalStatus || '');
   const [anniversaryDate, setAnniversaryDate] = useState(() => {
@@ -103,7 +111,17 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       if (fullApp) {
         setVerificationChecks(fullApp.verificationChecks || {});
 
-        setDob(fullApp.formData?.dob || fullApp.dob || '');
+        let fetchedDob = fullApp.formData?.dob || fullApp.dob || '';
+        if (fetchedDob) {
+          try {
+            const d = new Date(fetchedDob);
+            if (!isNaN(d.getTime())) {
+              fetchedDob = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            }
+          } catch(e) {}
+        }
+        setDob(fetchedDob);
+        
         setBloodGroup(fullApp.formData?.bloodGroup || fullApp.bloodGroup || '');
         setMaritalStatus(fullApp.maritalStatus || fullApp.formData?.maritalStatus || '');
         let fetchedAnniversary = fullApp.anniversaryDate || fullApp.formData?.anniversaryDate || '';
