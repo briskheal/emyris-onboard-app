@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
-import CompanyProfile from '../components/Admin/CompanyProfile';
-import ApplicantManager from '../components/Admin/ApplicantManager';
-import SetupAndLetters from '../components/Admin/SetupAndLetters';
-import QuestionBank from '../components/Admin/QuestionBank';
-import PendingExams from '../components/Admin/PendingExams';
-import ReportsTab from '../components/Admin/ReportsTab';
-import DoctorDetailingStudio from '../components/Dashboard/DoctorDetailingStudio';
+import React, { useState, Suspense, lazy } from 'react';
 import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X } from 'lucide-react';
 import api from '../api/client';
+
+const CompanyProfile = lazy(() => import('../components/Admin/CompanyProfile'));
+const ApplicantManager = lazy(() => import('../components/Admin/ApplicantManager'));
+const SetupAndLetters = lazy(() => import('../components/Admin/SetupAndLetters'));
+const QuestionBank = lazy(() => import('../components/Admin/QuestionBank'));
+const PendingExams = lazy(() => import('../components/Admin/PendingExams'));
+const ReportsTab = lazy(() => import('../components/Admin/ReportsTab'));
+const DoctorDetailingStudio = lazy(() => import('../components/Dashboard/DoctorDetailingStudio'));
 
 type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric';
 
@@ -185,18 +186,27 @@ const AdminPanel: React.FC = () => {
 
       {/* Main Content */}
       <main style={{ flex: 1, padding: '2rem', overflowY: 'auto' }}>
-        {activeView === 'company' && <CompanyProfile />}
-        {activeView === 'applicants' && <ApplicantManager />}
-        {activeView === 'setup' && <SetupAndLetters />}
-        {activeView === 'questions' && <QuestionBank />}
-        {activeView === 'voice-studio' && (
-          <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-            <DoctorDetailingStudio isAdmin={true} />
+        <Suspense fallback={
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-secondary)' }}>
+            <div style={{ padding: '2rem', background: 'var(--glass-bg)', borderRadius: '12px', border: '1px solid var(--glass-border)' }}>
+              <h3>Loading Module...</h3>
+              <p style={{ margin: 0, fontSize: '0.9rem' }}>Please wait while the module is fetched.</p>
+            </div>
           </div>
-        )}
-        {activeView === 'pending' && <PendingExams />}
-        {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" isStandalone={true} />}
-        {activeView === 'reports' && <ReportsTab initialTab="details" isStandalone={false} />}
+        }>
+          {activeView === 'company' && <CompanyProfile />}
+          {activeView === 'applicants' && <ApplicantManager />}
+          {activeView === 'setup' && <SetupAndLetters />}
+          {activeView === 'questions' && <QuestionBank />}
+          {activeView === 'voice-studio' && (
+            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+              <DoctorDetailingStudio isAdmin={true} />
+            </div>
+          )}
+          {activeView === 'pending' && <PendingExams />}
+          {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" isStandalone={true} />}
+          {activeView === 'reports' && <ReportsTab initialTab="details" isStandalone={false} />}
+        </Suspense>
       </main>
       </div>
     </div>
