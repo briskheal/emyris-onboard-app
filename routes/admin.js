@@ -19,6 +19,7 @@ const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
 const { sendEmail } = require('../utils/mailer');
 const { numberToWords, resolveTemplate } = require('../utils/templateHelpers');
 const { purgeApplicantAndAllAssociatedRecords } = require('../utils/applicantPurge');
+const { runBirthdayCron } = require('../utils/cron');
 const sharp = require('sharp');
 
 // Shared file helper (Converts images to WebP using sharp; leaves PDF documents intact)
@@ -407,7 +408,17 @@ router.get('/exam-reports', async (req, res) => {
     }
 });
 
-router.post('/login', loginLimiter, (req, res) => {
+// Manual trigger for Birthday Cron Job
+router.get('/force-birthday-cron', async (req, res) => {
+    try {
+        const result = await runBirthdayCron();
+        res.json(result);
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+router.post('/login', loginLimiter, async (req, res) => {
     console.log(`[LOGIN ATTEMPT] username: ${req.body.username}`);
     const { username, password } = req.body;
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
