@@ -171,7 +171,7 @@ const PayrunSystem: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                                     <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                                                        {p.payableDays} / {p.totalWorkingDays}
+                                                        {p.payableDays} / {p.totalMonthDays}
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">

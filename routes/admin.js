@@ -3216,16 +3216,19 @@ router.get('/payrun-preview', async (req, res) => {
         if (testApplicant && testApplicant.salaryBreakup) {
             const row = data.find(r => r["Employee Code"] === "EMYFE143" || r["Employee Name"] === "Gohel Hiteshbhai");
             if (row) {
-                const totalWorkingDays = parseInt(row["Total working Days"]) || 31; // Using fixed length as requested
+                const totalWorkingDays = parseInt(row["Total working Days"]) || 27; 
                 const present = parseInt(row["Present"]) || 0;
                 const holiday = parseInt(row["Holiday"]) || 0;
                 const leave = parseInt(row["Leave"]) || 0;
                 const absent = parseInt(row["Absent"]) || 0;
                 
+                // User logic: Total Month Days = Total working Days + Holidays
+                const totalMonthDays = totalWorkingDays + holiday;
+
                 // Payable Days = Present + Holiday + Leave - Absent
                 let payableDays = present + holiday + leave - absent;
                 if (payableDays < 0) payableDays = 0;
-                if (payableDays > totalWorkingDays) payableDays = totalWorkingDays;
+                if (payableDays > totalMonthDays) payableDays = totalMonthDays;
                 
                 const sb = testApplicant.salaryBreakup;
                 const basic = parseFloat(sb.v_salBasic || sb.basic || 0);
@@ -3236,7 +3239,7 @@ router.get('/payrun-preview', async (req, res) => {
                 const special = parseFloat(sb.v_salSpecial || sb.special || 0);
                 
                 const grossSalary = basic + hra + conv + med + lta + special;
-                const factor = payableDays / totalWorkingDays;
+                const factor = payableDays / totalMonthDays;
                 
                 const calcBreakup = {
                     basic: (basic * factor).toFixed(2),
@@ -3250,10 +3253,10 @@ router.get('/payrun-preview', async (req, res) => {
                 const finalSalary = Object.values(calcBreakup).reduce((a, b) => a + parseFloat(b), 0);
                 
                 previews.push({
-                    empName: "Dileep Chaturvedi",
+                    empName: testApplicant.fullName,
                     email: testApplicant.email,
                     present, absent, leave, holiday,
-                    payableDays, totalWorkingDays,
+                    payableDays, totalMonthDays, // updated field name
                     originalGross: grossSalary.toFixed(2),
                     finalSalary: finalSalary.toFixed(2),
                     calcBreakup
@@ -3280,7 +3283,7 @@ router.post('/generate-payslips', async (req, res) => {
                 month: new Date().toLocaleString('default', { month: 'long' }),
                 year: new Date().getFullYear().toString(),
                 payableDays: p.payableDays,
-                totalDays: p.totalWorkingDays,
+                totalDays: p.totalMonthDays,
                 grossSalary: parseFloat(p.finalSalary),
                 calculatedSalaryBreakup: p.calcBreakup
             });
