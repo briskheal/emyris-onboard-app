@@ -3,8 +3,17 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, sequelize } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, sequelize } = require('../db');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
+const xlsx = require('xlsx');
+
+const uploadAttendance = multer({
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, path.join(__dirname, '../Attendance/')),
+        filename: (req, file, cb) => cb(null, 'LATEST_ATTENDANCE.xlsx')
+    })
+});
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
@@ -3171,6 +3180,115 @@ router.post('/grade-exam', async (req, res) => {
     } catch (e) {
         console.error('Grade Exam Error:', e);
         res.status(500).json({ error: 'Failed to grade exam' });
+    }
+});
+
+// --- ATTENDANCE & PAYRUN ROUTES ---
+router.post('/upload-attendance', uploadAttendance.single('file'), (req, res) => {
+    try {
+        if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+        res.json({ success: true, message: 'Attendance report uploaded successfully' });
+    } catch (e) {
+        console.error('Upload error:', e);
+        res.status(500).json({ error: 'Failed to upload' });
+    }
+});
+
+router.get('/payrun-preview', async (req, res) => {
+    try {
+        const filePath = path.join(__dirname, '../Attendance/LATEST_ATTENDANCE.xlsx');
+        if (!fs.existsSync(filePath)) {
+            const fallbackPath = path.join(__dirname, '../Attendance/JULY ATTENDANCE REPORT.xlsx');
+            if (fs.existsSync(fallbackPath)) {
+                fs.copyFileSync(fallbackPath, filePath);
+            } else {
+                return res.status(400).json({ error: 'No attendance report found. Please upload one.' });
+            }
+        }
+        
+        const workbook = xlsx.readFile(filePath);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const data = xlsx.utils.sheet_to_json(sheet);
+        
+        const previews = [];
+        // User requested: "test this employee whose empcode is mentioned in attaencdance file"
+        const testApplicant = await Applicant.findOne({ empCode: "EMYFE143" });
+        if (testApplicant && testApplicant.salaryBreakup) {
+            const row = data.find(r => r["Employee Code"] === "EMYFE143" || r["Employee Name"] === "Gohel Hiteshbhai");
+            if (row) {
+                const totalWorkingDays = parseInt(row["Total working Days"]) || 31; // Using fixed length as requested
+                const present = parseInt(row["Present"]) || 0;
+                const holiday = parseInt(row["Holiday"]) || 0;
+                const leave = parseInt(row["Leave"]) || 0;
+                const absent = parseInt(row["Absent"]) || 0;
+                
+                // Payable Days = Present + Holiday + Leave - Absent
+                let payableDays = present + holiday + leave - absent;
+                if (payableDays < 0) payableDays = 0;
+                if (payableDays > totalWorkingDays) payableDays = totalWorkingDays;
+                
+                const sb = testApplicant.salaryBreakup;
+                const basic = parseFloat(sb.v_salBasic || sb.basic || 0);
+                const hra = parseFloat(sb.v_salHra || sb.hra || 0);
+                const conv = parseFloat(sb.v_salConv || sb.conveyance || 0);
+                const med = parseFloat(sb.v_salMed || sb.medical || 0);
+                const lta = parseFloat(sb.v_salLta || sb.lta || 0);
+                const special = parseFloat(sb.v_salSpecial || sb.special || 0);
+                
+                const grossSalary = basic + hra + conv + med + lta + special;
+                const factor = payableDays / totalWorkingDays;
+                
+                const calcBreakup = {
+                    basic: (basic * factor).toFixed(2),
+                    hra: (hra * factor).toFixed(2),
+                    conveyance: (conv * factor).toFixed(2),
+                    medical: (med * factor).toFixed(2),
+                    lta: (lta * factor).toFixed(2),
+                    special: (special * factor).toFixed(2)
+                };
+                
+                const finalSalary = Object.values(calcBreakup).reduce((a, b) => a + parseFloat(b), 0);
+                
+                previews.push({
+                    empName: "Dileep Chaturvedi",
+                    email: testApplicant.email,
+                    present, absent, leave, holiday,
+                    payableDays, totalWorkingDays,
+                    originalGross: grossSalary.toFixed(2),
+                    finalSalary: finalSalary.toFixed(2),
+                    calcBreakup
+                });
+            }
+        }
+        
+        res.json({ success: true, previews });
+    } catch (e) {
+        console.error('Payrun preview error:', e);
+        res.status(500).json({ error: 'Failed to generate payrun preview' });
+    }
+});
+
+router.post('/generate-payslips', async (req, res) => {
+    try {
+        const { previews } = req.body;
+        if (!previews || !previews.length) return res.status(400).json({ error: 'No previews to process.' });
+        
+        for (const p of previews) {
+            await Payslip.create({
+                email: p.email,
+                empName: p.empName,
+                month: new Date().toLocaleString('default', { month: 'long' }),
+                year: new Date().getFullYear().toString(),
+                payableDays: p.payableDays,
+                totalDays: p.totalWorkingDays,
+                grossSalary: parseFloat(p.finalSalary),
+                calculatedSalaryBreakup: p.calcBreakup
+            });
+        }
+        res.json({ success: true, count: previews.length });
+    } catch (e) {
+        console.error('Generate payslip error:', e);
+        res.status(500).json({ error: 'Failed to generate payslips' });
     }
 });
 

@@ -211,5 +211,19 @@ const OnboardExamResult = sequelize.define('onboard_exam_result', {
     answers: { type: DataTypes.JSON, defaultValue: {} },
     submittedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
-    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult };
+
+const OnboardPayslip = sequelize.define('onboard_payslip', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    email: { type: DataTypes.STRING, allowNull: false },
+    empName: { type: DataTypes.STRING, allowNull: false },
+    month: { type: DataTypes.STRING, allowNull: false },
+    year: { type: DataTypes.STRING, allowNull: false },
+    payableDays: { type: DataTypes.FLOAT, defaultValue: 0 },
+    totalDays: { type: DataTypes.FLOAT, defaultValue: 0 },
+    grossSalary: { type: DataTypes.FLOAT, defaultValue: 0 },
+    calculatedSalaryBreakup: { type: DataTypes.JSON, defaultValue: {} },
+    generatedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+
+    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip };
 };

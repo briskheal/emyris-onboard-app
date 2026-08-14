@@ -9,8 +9,9 @@ const QuestionBank = lazy(() => import('../components/Admin/QuestionBank'));
 const PendingExams = lazy(() => import('../components/Admin/PendingExams'));
 const ReportsTab = lazy(() => import('../components/Admin/ReportsTab'));
 const DoctorDetailingStudio = lazy(() => import('../components/Dashboard/DoctorDetailingStudio'));
+const PayrunSystem = lazy(() => import('../components/Admin/PayrunSystem'));
 
-type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric';
+type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -115,6 +116,7 @@ const AdminPanel: React.FC = () => {
           {[
             { id: 'company', icon: <Building2 size={16} style={{ flexShrink: 0 }} />, label: 'Company Profile' },
             { id: 'applicants', icon: <Users size={16} style={{ flexShrink: 0 }} />, label: 'Applicant Manager' },
+            { id: 'payrun', icon: <FileSpreadsheet size={16} style={{ flexShrink: 0 }} />, label: 'Payrun & Attendance' },
             { id: 'setup', icon: <FileSignature size={16} style={{ flexShrink: 0 }} />, label: 'Setup & Letters' },
             { id: 'questions', icon: <HelpCircle size={16} style={{ flexShrink: 0 }} />, label: 'Question Bank' },
             { id: 'voice-studio', icon: <Mic size={16} style={{ flexShrink: 0, color: '#a855f7' }} />, label: '🎙️ Voice Studio' },
@@ -196,6 +198,7 @@ const AdminPanel: React.FC = () => {
         }>
           {activeView === 'company' && <CompanyProfile />}
           {activeView === 'applicants' && <ApplicantManager />}
+          {activeView === 'payrun' && <PayrunSystem />}
           {activeView === 'setup' && <SetupAndLetters />}
           {activeView === 'questions' && <QuestionBank />}
           {activeView === 'voice-studio' && (
