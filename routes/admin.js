@@ -3216,16 +3216,27 @@ router.get('/payrun-preview', async (req, res) => {
         if (testApplicant && testApplicant.salaryBreakup) {
             const row = data.find(r => r["Employee Code"] === "EMYFE143" || r["Employee Name"] === "Gohel Hiteshbhai");
             if (row) {
-                const totalWorkingDays = parseInt(row["Total working Days"]) || 27; 
-                const present = parseInt(row["Present"]) || 0;
-                const holiday = parseInt(row["Holiday"]) || 0;
-                const leave = parseInt(row["Leave"]) || 0;
-                const absent = parseInt(row["Absent"]) || 0;
+                // Tally directly from day columns to avoid Excel summary errors
+                let present = 0, holiday = 0, leave = 0, absent = 0, totalMonthDays = 0;
+                const dateRegex = /^\d{2} [A-Za-z]{3}/; // e.g. "01 Jul"
                 
-                // User logic: Total Month Days = Total working Days + Holidays
-                const totalMonthDays = totalWorkingDays + holiday;
+                for (const key of Object.keys(row)) {
+                    if (dateRegex.test(key)) {
+                        totalMonthDays++;
+                        const val = (row[key] || '').toString().trim().toUpperCase();
+                        if (val === 'P') present++;
+                        else if (val === 'H') holiday++;
+                        else if (val === 'L') leave++;
+                        else if (val === 'A') absent++;
+                    }
+                }
+                
+                // Fallback if no day columns found
+                if (totalMonthDays === 0) {
+                    totalMonthDays = 31;
+                }
 
-                // Payable Days = Present + Holiday + Leave - Absent
+                // Payable Days Formula
                 let payableDays = present + holiday + leave - absent;
                 if (payableDays < 0) payableDays = 0;
                 if (payableDays > totalMonthDays) payableDays = totalMonthDays;
