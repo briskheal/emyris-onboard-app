@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
-import { Upload, Play, CheckCircle, AlertCircle, FileSpreadsheet, Download } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Upload, Play, CheckCircle, AlertCircle, FileSpreadsheet, Download, Mail } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import api from '../../api/client';
+import SalarySlipTemplate from './SalarySlipTemplate';
 
 const PayrunSystem: React.FC = () => {
     const [file, setFile] = useState<File | null>(null);
@@ -13,6 +16,13 @@ const PayrunSystem: React.FC = () => {
     const [loadingPreview, setLoadingPreview] = useState(false);
     const [generating, setGenerating] = useState(false);
     const [generationSuccess, setGenerationSuccess] = useState(false);
+
+    const [emailMessage, setEmailMessage] = useState('Please find attached your salary slip for this month.');
+    const [preparedBy, setPreparedBy] = useState('Medorn HRMS Software');
+    const [sanctionedBy, setSanctionedBy] = useState('Rishita Dash');
+    const [sendingEmails, setSendingEmails] = useState(false);
+    const [emailSuccess, setEmailSuccess] = useState('');
+    const hiddenTemplatesRef = useRef<HTMLDivElement>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -62,7 +72,8 @@ const PayrunSystem: React.FC = () => {
                         ...p,
                         penaltyDays: 0,
                         salDed: salDed.toFixed(2),
-                        finalSalary: finalNet
+                        finalSalary: finalNet,
+                        sendEmail: true
                     };
                 });
                 setPreviews(initializedPreviews);
@@ -83,6 +94,12 @@ const PayrunSystem: React.FC = () => {
         p.penaltyDays = days;
         p.salDed = (days * parseFloat(p.dailyRate)).toFixed(2);
         p.finalSalary = (parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - (p.ptDed || 0) - (p.pfDed || 0)).toFixed(2);
+        setPreviews(updated);
+    };
+
+    const handleEmailToggle = (index: number, checked: boolean) => {
+        const updated = [...previews];
+        updated[index].sendEmail = checked;
         setPreviews(updated);
     };
 
@@ -124,6 +141,62 @@ const PayrunSystem: React.FC = () => {
             setError(err.response?.data?.error || 'Failed to generate payslips.');
         } finally {
             setGenerating(false);
+        }
+    };
+
+    const sendEmails = async () => {
+        const targets = previews.filter(p => p.sendEmail);
+        if (targets.length === 0) {
+            setError("No employees selected for email.");
+            return;
+        }
+
+        setSendingEmails(true);
+        setError('');
+        setEmailSuccess('');
+
+        try {
+            const payloadEmails = [];
+
+            for (const p of targets) {
+                const element = document.getElementById(`salary-slip-${p.empCode}`);
+                if (!element) continue;
+
+                // Temporarily ensure it is visible for html2canvas
+                element.style.display = 'block';
+                const canvas = await html2canvas(element, { scale: 2 });
+                element.style.display = 'none';
+
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                const pdfBase64 = pdf.output('datauristring');
+
+                payloadEmails.push({
+                    email: p.email,
+                    empName: p.empName,
+                    pdfBase64
+                });
+            }
+
+            const res = await api.post('/admin/email-payslips', {
+                emails: payloadEmails,
+                message: emailMessage
+            });
+
+            if (res.data.success) {
+                setEmailSuccess(`Successfully sent ${res.data.count} emails!`);
+            } else {
+                setError(res.data.error || 'Failed to send emails.');
+            }
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.error || 'Failed to send emails due to an error.');
+        } finally {
+            setSendingEmails(false);
         }
     };
 
@@ -202,6 +275,7 @@ const PayrunSystem: React.FC = () => {
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
+                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
                                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance<br/><span className="text-[10px] text-gray-400">(P / A / L / H)</span></th>
                                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Payable Days</th>
@@ -214,6 +288,14 @@ const PayrunSystem: React.FC = () => {
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {previews.map((p, idx) => (
                                             <tr key={idx} className="hover:bg-gray-50">
+                                                <td className="px-4 py-4 whitespace-nowrap text-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        checked={!!p.sendEmail} 
+                                                        onChange={(e) => handleEmailToggle(idx, e.target.checked)}
+                                                        className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
+                                                    />
+                                                </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900">{p.empName}</div>
                                                     <div className="text-sm text-gray-500">{p.email}</div>
@@ -273,6 +355,53 @@ const PayrunSystem: React.FC = () => {
                                     </button>
                                 )}
                             </div>
+
+                            <div className="mt-8 pt-6 border-t border-gray-200">
+                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center"><Mail className="w-5 h-5 mr-2 text-indigo-600" /> Email Configurations</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Message Body</label>
+                                        <textarea
+                                            value={emailMessage}
+                                            onChange={(e) => setEmailMessage(e.target.value)}
+                                            rows={3}
+                                            className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                        />
+                                    </div>
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Prepared By (Signature)</label>
+                                            <input
+                                                type="text"
+                                                value={preparedBy}
+                                                onChange={(e) => setPreparedBy(e.target.value)}
+                                                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Sanctioned By (Signature)</label>
+                                            <input
+                                                type="text"
+                                                value={sanctionedBy}
+                                                onChange={(e) => setSanctionedBy(e.target.value)}
+                                                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="flex justify-end items-center mt-4">
+                                    {emailSuccess && <span className="text-green-600 font-medium mr-4 flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> {emailSuccess}</span>}
+                                    <button
+                                        onClick={sendEmails}
+                                        disabled={sendingEmails}
+                                        className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium shadow-sm transition-colors disabled:opacity-50 flex items-center"
+                                    >
+                                        <Mail className="w-5 h-5 mr-2" />
+                                        {sendingEmails ? 'Generating PDFs & Sending...' : 'Email Selected Slips'}
+                                    </button>
+                                </div>
+                            </div>
+
                         </div>
                     ) : (
                         <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
@@ -283,6 +412,16 @@ const PayrunSystem: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Hidden Templates for PDF Generation */}
+            <div ref={hiddenTemplatesRef} style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -100 }}>
+                {previews.map((p, idx) => (
+                    <div key={idx} style={{ display: 'none' }} id={`salary-slip-${p.empCode}`}>
+                        <SalarySlipTemplate data={p} preparedBy={preparedBy} sanctionedBy={sanctionedBy} />
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
 };

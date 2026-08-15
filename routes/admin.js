@@ -3331,4 +3331,50 @@ router.post('/generate-payslips', async (req, res) => {
     }
 });
 
+router.post('/email-payslips', async (req, res) => {
+    try {
+        const { emails, message } = req.body;
+        if (!emails || !emails.length) return res.status(400).json({ error: 'No emails provided.' });
+
+        const transporter = require('nodemailer').createTransport({
+            host: process.env.EMAIL_HOST,
+            port: parseInt(process.env.EMAIL_PORT),
+            secure: process.env.EMAIL_SECURE === 'true',
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            }
+        });
+
+        let sentCount = 0;
+        for (const item of emails) {
+            if (!item.email || !item.pdfBase64) continue;
+            
+            const pdfBuffer = Buffer.from(item.pdfBase64.replace(/^data:application\/pdf;base64,/, ''), 'base64');
+            
+            const mailOptions = {
+                from: process.env.EMAIL_FROM || '"Emyris HR" <hradmin@emyrishr.in>',
+                to: item.email,
+                subject: `Salary Slip - ${new Date().toLocaleString('default', { month: 'long' })} ${new Date().getFullYear()}`,
+                text: message || 'Please find attached your salary slip for this month.',
+                attachments: [
+                    {
+                        filename: `Salary_Slip_${item.empName.replace(/\s+/g, '_')}.pdf`,
+                        content: pdfBuffer,
+                        contentType: 'application/pdf'
+                    }
+                ]
+            };
+            
+            await transporter.sendMail(mailOptions);
+            sentCount++;
+        }
+        
+        res.json({ success: true, count: sentCount });
+    } catch (e) {
+        console.error('Email payslips error:', e);
+        res.status(500).json({ error: 'Failed to send emails' });
+    }
+});
+
 module.exports = router;
