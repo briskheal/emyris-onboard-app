@@ -53,7 +53,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '10px' }}>
         {logoId ? (
-          <img src={`/api/public/asset/${logoId}`} alt="Company Logo" style={{ maxWidth: '120px', maxHeight: '60px', marginRight: '20px' }} />
+          <img src={`${window.location.origin}/api/public/asset/${logoId}`} alt="Company Logo" style={{ maxWidth: '120px', maxHeight: '60px', marginRight: '20px' }} crossOrigin="anonymous" />
         ) : (
           <div style={{ width: '120px', marginRight: '20px' }}></div>
         )}
@@ -236,7 +236,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
           </div>
           <div style={{ textAlign: 'center' }}>
             {signatureId ? (
-              <img src={`/api/public/asset/${signatureId}`} alt="Authorized Signature" style={{ maxWidth: '150px', maxHeight: '60px', marginBottom: '5px', mixBlendMode: 'multiply' }} />
+              <img src={`${window.location.origin}/api/public/asset/${signatureId}`} alt="Authorized Signature" style={{ maxWidth: '150px', maxHeight: '60px', marginBottom: '5px', mixBlendMode: 'multiply' }} crossOrigin="anonymous" />
             ) : (
               <div style={{ height: '65px' }}></div>
             )}
@@ -254,7 +254,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
       {/* Footer Note */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '12px' }}>
         <span>Computer generated Slip. No signature required.</span>
-        <span>Powered By: Medorn Ventures Private Limited</span>
+        <span>Powered By: Emyris IT Dept</span>
       </div>
       <div style={{ marginTop: '20px', fontSize: '12px', fontWeight: 'bold' }}>
         NOTE : All amounts displayed in this payment slip are in INR
