@@ -416,33 +416,33 @@ const PayrunSystem: React.FC = () => {
                             </table>
                         </div>
 
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: '1rem' }}>
-                            <div style={{ flex: 1, padding: '15px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginTop: '1rem' }}>
+                            <div style={{ width: '100%', padding: '15px', border: '1px solid #334155', borderRadius: '8px', background: 'transparent' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                    <h3 style={{ fontSize: '1rem', margin: 0 }}>Mail Configurations</h3>
+                                    <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: '600' }}>Mail Configurations</h3>
                                     <button onClick={saveMailConfig} className="btn btn-sm btn-outline-primary" style={{ padding: '2px 8px', fontSize: '0.8rem' }}>Save Config</button>
                                 </div>
                                 <div style={{ marginBottom: '10px' }}>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Message Body</label>
-                                    <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} className="form-input" style={{ width: '100%', padding: '6px' }}/>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', opacity: 0.8 }}>Message Body</label>
+                                    <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} className="form-input" style={{ width: '100%', padding: '8px', background: 'transparent', border: '1px solid #334155', borderRadius: '4px', color: 'inherit' }}/>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Prepared By</label>
-                                        <input type="text" value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} className="form-input-sm" style={{ width: '100%' }}/>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', opacity: 0.8 }}>Prepared By</label>
+                                        <input type="text" value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} className="form-input-sm" style={{ width: '100%', padding: '8px', background: 'transparent', border: '1px solid #334155', borderRadius: '4px', color: 'inherit' }}/>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Sanctioned By</label>
-                                        <input type="text" value={sanctionedBy} onChange={(e) => setSanctionedBy(e.target.value)} className="form-input-sm" style={{ width: '100%' }}/>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', opacity: 0.8 }}>Sanctioned By</label>
+                                        <input type="text" value={sanctionedBy} onChange={(e) => setSanctionedBy(e.target.value)} className="form-input-sm" style={{ width: '100%', padding: '8px', background: 'transparent', border: '1px solid #334155', borderRadius: '4px', color: 'inherit' }}/>
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ flex: '0 0 auto', display: 'flex', gap: '10px' }}>
-                                <button onClick={finalizePayrun} disabled={finalizing || previews.length === 0} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#28a745', color: '#fff', border: 'none' }}>
+                            <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                                <button onClick={finalizePayrun} disabled={finalizing || previews.length === 0} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px' }}>
                                     <Save size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                                     {finalizing ? 'Saving...' : 'Finalize & Save Payrun'}
                                 </button>
-                                <button onClick={sendEmails} disabled={sendingEmails} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold' }}>
+                                <button onClick={sendEmails} disabled={sendingEmails} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px' }}>
                                     <Mail size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                                     {sendingEmails ? 'Processing & Sending...' : 'Process All Selected'}
                                 </button>
