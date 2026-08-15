@@ -3210,13 +3210,45 @@ router.post('/upload-attendance', uploadAttendance.single('file'), (req, res) =>
 
 router.get('/payrun-preview', async (req, res) => {
     try {
+        const { month, year } = req.query;
+
+        // Check if payslips already exist in DB
+        const savedPayslips = await Payslip.findAll({ where: { month, year } });
+        if (savedPayslips && savedPayslips.length > 0) {
+            const previews = savedPayslips.map(ps => {
+                if (ps.calculatedSalaryBreakup && ps.calculatedSalaryBreakup.empName) {
+                    return ps.calculatedSalaryBreakup;
+                } else {
+                    return {
+                        empName: ps.empName,
+                        email: ps.email,
+                        totalMonthDays: ps.totalDays,
+                        payableDays: ps.payableDays,
+                        finalSalary: ps.grossSalary,
+                        calcBreakup: ps.calculatedSalaryBreakup || {},
+                        sendEmail: true
+                    };
+                }
+            });
+            
+            const company = await Company.findOne() || {};
+            const mailConfig = {
+                emailMessage: company.templateSettings?.payrunEmailMessage || 'Please find attached your salary slip for this month.',
+                preparedBy: company.templateSettings?.payrunPreparedBy || 'Medorn HRMS Software',
+                sanctionedBy: company.templateSettings?.payrunSanctionedBy || 'Rishita Dash',
+                logoId: company.activePayslipLogoId || company.activeLogoId || null,
+                signatureId: company.activeSignatureId || null
+            };
+            return res.json({ success: true, previews, mailConfig, loadedFromDb: true });
+        }
+
         const filePath = path.join(__dirname, '../Attendance/LATEST_ATTENDANCE.xlsx');
         if (!fs.existsSync(filePath)) {
             const fallbackPath = path.join(__dirname, '../Attendance/JULY ATTENDANCE REPORT.xlsx');
             if (fs.existsSync(fallbackPath)) {
                 fs.copyFileSync(fallbackPath, filePath);
             } else {
-                return res.status(400).json({ error: 'No attendance report found. Please upload one.' });
+                return res.json({ success: true, previews: [], message: 'No attendance report found. Please upload one.' });
             }
         }
         
@@ -3418,7 +3450,7 @@ router.post('/finalize-payrun', async (req, res) => {
             payableDays: p.payableDays,
             totalDays: p.totalMonthDays,
             grossSalary: parseFloat(p.finalSalary) || 0,
-            calculatedSalaryBreakup: p.calcBreakup || {}
+            calculatedSalaryBreakup: p
         }));
 
         await Payslip.bulkCreate(toInsert);

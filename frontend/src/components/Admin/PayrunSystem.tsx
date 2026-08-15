@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Play, CheckCircle, Download, Mail, Eye, X, AlertCircle, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
@@ -29,6 +29,10 @@ const PayrunSystem: React.FC = () => {
 
     const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any | null>(null);
+
+    useEffect(() => {
+        fetchPreview();
+    }, [payrunMonth, payrunYear]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -72,14 +76,14 @@ const PayrunSystem: React.FC = () => {
             const res = await api.get(`/admin/payrun-preview?month=${payrunMonth}&year=${payrunYear}`);
             if (res.data.success) {
                 const initializedPreviews = res.data.previews.map((p: any) => {
-                    const salDed = 0;
-                    const finalNet = (parseFloat(p.baseNetSalary) - (p.ptDed || 0) - (p.pfDed || 0) - salDed).toFixed(2);
+                    const salDed = p.salDed !== undefined ? p.salDed : 0;
+                    const finalNet = p.finalSalary !== undefined ? p.finalSalary : (parseFloat(p.baseNetSalary) - (p.ptDed || 0) - (p.pfDed || 0) - salDed).toFixed(2);
                     return {
                         ...p,
-                        penaltyDays: 0,
-                        salDed: salDed.toFixed(2),
+                        penaltyDays: p.penaltyDays !== undefined ? p.penaltyDays : 0,
+                        salDed: typeof salDed === 'number' ? salDed.toFixed(2) : salDed,
                         finalSalary: finalNet,
-                        sendEmail: true
+                        sendEmail: p.sendEmail !== undefined ? p.sendEmail : true
                     };
                 });
                 setPreviews(initializedPreviews);

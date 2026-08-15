@@ -68,26 +68,30 @@ export const SalaryReportTab: React.FC = () => {
         if (reportType === 'employee') {
             reportData.forEach(p => {
                 const b = p.calculatedSalaryBreakup || {};
+                const calc = b.calcBreakup || b;
+                const ptDed = parseFloat(b.ptDed) || p.ptDed || 0;
+                const pfDed = parseFloat(b.pfDed) || p.pfDed || 0;
+                const salDed = parseFloat(b.salDed) || p.salDed || 0;
                 const r = {
                     period: `${p.month} ${p.year}`,
-                    basic: b.basic || 0,
-                    conv: b.conv || 0,
-                    edu: b.edu || 0,
-                    fixed: b.fixed || 0,
-                    hra: b.hra || 0,
-                    lta: b.lta || 0,
-                    med: b.med || 0,
-                    special: b.special || 0,
-                    gross: p.grossSalary || 0,
+                    basic: parseFloat(calc.basic) || 0,
+                    conv: parseFloat(calc.conveyance) || parseFloat(calc.conv) || 0,
+                    edu: parseFloat(calc.edu) || 0,
+                    fixed: parseFloat(calc.fixed) || 0,
+                    hra: parseFloat(calc.hra) || 0,
+                    lta: parseFloat(calc.lta) || 0,
+                    med: parseFloat(calc.medical) || parseFloat(calc.med) || 0,
+                    special: parseFloat(calc.special) || 0,
+                    gross: parseFloat(p.grossSalary) || 0,
                     tax: 0,
-                    pt: p.ptDed || 0,
-                    dedTotal: (p.ptDed || 0) + (p.pfDed || 0) + (p.salDed || 0),
-                    expense: b.reimbursement || 0,
-                    reimbTotal: b.reimbursement || 0,
-                    net: b.finalSalary || 0,
-                    lop: (p.totalDays || 0) - (p.payableDays || 0),
-                    payableDays: p.payableDays || 0,
-                    totalDays: p.totalDays || 0
+                    pt: ptDed,
+                    dedTotal: ptDed + pfDed + salDed,
+                    expense: parseFloat(calc.reimbursement) || parseFloat(b.reimbursement) || 0,
+                    reimbTotal: parseFloat(calc.reimbursement) || parseFloat(b.reimbursement) || 0,
+                    net: parseFloat(b.finalSalary) || parseFloat(p.grossSalary) - (ptDed + pfDed + salDed) || 0,
+                    lop: parseFloat(p.totalDays || 0) - parseFloat(p.payableDays || 0),
+                    payableDays: parseFloat(p.payableDays) || 0,
+                    totalDays: parseFloat(p.totalDays) || 0
                 };
                 rows.push(r);
                 Object.keys(totals).forEach(k => { if (k !== 'period') (totals as any)[k] += r[k as keyof typeof r] || 0; });
@@ -104,13 +108,30 @@ export const SalaryReportTab: React.FC = () => {
                     };
                 }
                 const b = p.calculatedSalaryBreakup || {};
+                const calc = b.calcBreakup || b;
+                const ptDed = parseFloat(b.ptDed) || p.ptDed || 0;
+                const pfDed = parseFloat(b.pfDed) || p.pfDed || 0;
+                const salDed = parseFloat(b.salDed) || p.salDed || 0;
+                
                 const r = periodMap[key];
-                r.basic += b.basic || 0; r.conv += b.conv || 0; r.edu += b.edu || 0; r.fixed += b.fixed || 0;
-                r.hra += b.hra || 0; r.lta += b.lta || 0; r.med += b.med || 0; r.special += b.special || 0;
-                r.gross += p.grossSalary || 0; r.tax += 0; r.pt += p.ptDed || 0; 
-                r.dedTotal += (p.ptDed || 0) + (p.pfDed || 0) + (p.salDed || 0);
-                r.expense += b.reimbursement || 0; r.reimbTotal += b.reimbursement || 0; r.net += b.finalSalary || 0;
-                r.lop += (p.totalDays || 0) - (p.payableDays || 0); r.payableDays += p.payableDays || 0; r.totalDays += p.totalDays || 0;
+                r.basic += parseFloat(calc.basic) || 0; 
+                r.conv += parseFloat(calc.conveyance) || parseFloat(calc.conv) || 0; 
+                r.edu += parseFloat(calc.edu) || 0; 
+                r.fixed += parseFloat(calc.fixed) || 0;
+                r.hra += parseFloat(calc.hra) || 0; 
+                r.lta += parseFloat(calc.lta) || 0; 
+                r.med += parseFloat(calc.medical) || parseFloat(calc.med) || 0; 
+                r.special += parseFloat(calc.special) || 0;
+                r.gross += parseFloat(p.grossSalary) || 0; 
+                r.tax += 0; 
+                r.pt += ptDed; 
+                r.dedTotal += ptDed + pfDed + salDed;
+                r.expense += parseFloat(calc.reimbursement) || parseFloat(b.reimbursement) || 0;
+                r.reimbTotal += parseFloat(calc.reimbursement) || parseFloat(b.reimbursement) || 0;
+                r.net += parseFloat(b.finalSalary) || parseFloat(p.grossSalary) - (ptDed + pfDed + salDed) || 0;
+                r.lop += parseFloat(p.totalDays || 0) - parseFloat(p.payableDays || 0);
+                r.payableDays += parseFloat(p.payableDays) || 0;
+                r.totalDays += parseFloat(p.totalDays) || 0;
             });
             rows = Object.values(periodMap);
             rows.forEach(r => {
