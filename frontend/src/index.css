@@ -3529,6 +3529,9 @@ body.onboarding-inactive .header-logo img { height: 28px !important; }
     color: #ffffff;
 }
 .data-table th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     background-color: #000000;
     color: #ffffff;
     font-weight: 600;
