@@ -3211,11 +3211,10 @@ router.get('/payrun-preview', async (req, res) => {
         const data = xlsx.utils.sheet_to_json(sheet);
         
         const previews = [];
-        const allApplicants = await Applicant.find({ salaryBreakup: { $exists: true } });
+        const allApplicants = await Applicant.find({});
         
         for (const applicant of allApplicants) {
-            const sb = applicant.salaryBreakup;
-            if (!sb) continue;
+            const sb = applicant.salaryBreakup || {};
 
             const row = data.find(r => {
                 const rowEmpCode = (r["Employee Code"] || r["Emp Code"] || r["Emp. Code"] || r["EmpCode"] || r["Code"] || '').toString().trim().toLowerCase();
