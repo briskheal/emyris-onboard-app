@@ -121,6 +121,13 @@ const PayrunSystem: React.FC = () => {
         setPreviews(updated);
     };
 
+    const handleSelectAll = (checked: boolean) => {
+        const updated = previews.map(p => ({ ...p, sendEmail: checked }));
+        setPreviews(updated);
+    };
+
+    const isAllSelected = previews.length > 0 && previews.every(p => p.sendEmail);
+
     const exportToExcel = () => {
         if (previews.length === 0) return;
         const exportData = previews.map(p => ({
@@ -281,7 +288,17 @@ const PayrunSystem: React.FC = () => {
                             <table className="data-table" style={{ width: '100%', minWidth: '1000px' }}>
                                 <thead>
                                     <tr>
-                                        <th style={{ width: '50px', textAlign: 'center' }}>Select</th>
+                                        <th style={{ width: '50px', textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isAllSelected} 
+                                                    onChange={(e) => handleSelectAll(e.target.checked)} 
+                                                    style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
+                                                />
+                                                <span style={{ fontSize: '10px', marginTop: '4px', color: '#555' }}>All</span>
+                                            </div>
+                                        </th>
                                         <th>Employee Details</th>
                                         <th style={{ textAlign: 'center' }}>Attendance (P/A/L/H)</th>
                                         <th style={{ textAlign: 'center', width: '100px' }}>PT Ded</th>
