@@ -18,9 +18,9 @@ export const SalaryReportTab: React.FC = () => {
     const years = ['2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'];
 
     useEffect(() => {
-        api.get('/admin/applicants').then(res => {
-            if (res.data.success) {
-                setApplicants(res.data.data.filter((a: any) => a.applicantStatus === 'Verified' || a.applicantStatus === 'Employed'));
+        api.get('/admin/applicants?month=all&year=all').then(res => {
+            if (res.data.success && res.data.applicants) {
+                setApplicants(res.data.applicants.filter((a: any) => a.applicantStatus === 'Verified' || a.applicantStatus === 'Employed'));
             }
         });
     }, []);
