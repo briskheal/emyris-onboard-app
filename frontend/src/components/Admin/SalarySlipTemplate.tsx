@@ -53,12 +53,12 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '10px' }}>
         {logoId ? (
-          <img src={`${window.location.origin}/api/public/asset/${logoId}`} alt="Company Logo" style={{ maxWidth: '120px', maxHeight: '60px', marginRight: '20px' }} crossOrigin="anonymous" />
+          <img src={`${window.location.origin}/api/admin/api/public/asset/${logoId}`} alt="Company Logo" style={{ maxWidth: '120px', maxHeight: '60px', marginRight: '20px' }} crossOrigin="anonymous" />
         ) : (
           <div style={{ width: '120px', marginRight: '20px' }}></div>
         )}
         <div style={{ flex: 1, textAlign: 'center' }}>
-          <h1 style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>EMYRIS BIOLIFESCIENCES PVT LTD</h1>
+          <h1 style={{ margin: '0', fontSize: '20px', fontWeight: 'bold' }}>EMYRIS BIOLIFESCIENCES PVT LTD</h1>
           <p style={{ margin: '5px 0', fontSize: '14px' }}>Sumadhura Pragati Chambers, Park Ln, Kalasiguda, Secunderabad, Telangana, 500003</p>
           <h2 style={{ margin: '20px 0 0', fontSize: '16px', fontWeight: 'normal' }}>SALARY SLIP FOR THE MONTH OF {currentMonth}, {currentYear}</h2>
         </div>
@@ -236,7 +236,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
           </div>
           <div style={{ textAlign: 'center' }}>
             {signatureId ? (
-              <img src={`${window.location.origin}/api/public/asset/${signatureId}`} alt="Authorized Signature" style={{ maxWidth: '150px', maxHeight: '60px', marginBottom: '5px', mixBlendMode: 'multiply' }} crossOrigin="anonymous" />
+              <img src={`${window.location.origin}/api/admin/api/public/asset/${signatureId}`} alt="Authorized Signature" style={{ maxWidth: '150px', maxHeight: '60px', marginBottom: '5px', mixBlendMode: 'multiply' }} crossOrigin="anonymous" />
             ) : (
               <div style={{ height: '65px' }}></div>
             )}
