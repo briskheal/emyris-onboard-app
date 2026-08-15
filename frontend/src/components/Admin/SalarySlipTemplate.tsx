@@ -6,9 +6,11 @@ interface Props {
   sanctionedBy?: string;
   month?: string;
   year?: string;
+  logoId?: string | null;
+  signatureId?: string | null;
 }
 
-const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, month, year }) => {
+const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, month, year, logoId, signatureId }) => {
   if (!data) return null;
 
   const currentMonth = month || new Date().toLocaleString('default', { month: 'long' }).toUpperCase();
@@ -49,10 +51,18 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
     <div id={`salary-slip-${data.empCode}`} style={{ width: '210mm', minHeight: '297mm', padding: '15mm', backgroundColor: '#fff', color: '#000', fontFamily: 'Arial, sans-serif', boxSizing: 'border-box', position: 'relative' }}>
       
       {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h1 style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>EMYRIS BIOLIFESCIENCES PVT LTD</h1>
-        <p style={{ margin: '5px 0', fontSize: '14px' }}>Sumadhura Pragati Chambers, Park Ln, Kalasiguda, Secunderabad, Telangana, 500003</p>
-        <h2 style={{ margin: '20px 0 10px', fontSize: '16px', fontWeight: 'normal' }}>SALARY SLIP FOR THE MONTH OF {currentMonth}, {currentYear}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '10px' }}>
+        {logoId ? (
+          <img src={`/api/public/asset/${logoId}`} alt="Company Logo" style={{ maxWidth: '120px', maxHeight: '60px', marginRight: '20px' }} />
+        ) : (
+          <div style={{ width: '120px', marginRight: '20px' }}></div>
+        )}
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <h1 style={{ margin: '0', fontSize: '24px', fontWeight: 'bold' }}>EMYRIS BIOLIFESCIENCES PVT LTD</h1>
+          <p style={{ margin: '5px 0', fontSize: '14px' }}>Sumadhura Pragati Chambers, Park Ln, Kalasiguda, Secunderabad, Telangana, 500003</p>
+          <h2 style={{ margin: '20px 0 0', fontSize: '16px', fontWeight: 'normal' }}>SALARY SLIP FOR THE MONTH OF {currentMonth}, {currentYear}</h2>
+        </div>
+        <div style={{ width: '120px', marginLeft: '20px' }}></div>
       </div>
 
       {/* Main Box */}
@@ -219,17 +229,22 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
         </div>
 
         {/* Signatures */}
-        <div style={{ borderTop: borderStyle, padding: '15px 10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
+        <div style={{ borderTop: borderStyle, padding: '15px 10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'flex-end' }}>
           <div>
-            <div>Prepared By:</div>
-            <div style={{ fontWeight: 'normal', marginTop: '5px' }}>{preparedBy}</div>
+            <div style={{ marginBottom: '40px' }}>Prepared By:</div>
+            <div style={{ fontWeight: 'normal' }}>{preparedBy}</div>
           </div>
-          <div>
-            <div>Sanctioned By:</div>
-            <div style={{ fontWeight: 'normal', marginTop: '5px' }}>{sanctionedBy}</div>
+          <div style={{ textAlign: 'center' }}>
+            {signatureId ? (
+              <img src={`/api/public/asset/${signatureId}`} alt="Authorized Signature" style={{ maxWidth: '150px', maxHeight: '60px', marginBottom: '5px', mixBlendMode: 'multiply' }} />
+            ) : (
+              <div style={{ height: '65px' }}></div>
+            )}
+            <div>Authorized Signatory</div>
+            <div style={{ fontWeight: 'normal', fontSize: '12px', marginTop: '4px' }}>{sanctionedBy}</div>
           </div>
-          <div>
-            <div>Received By:</div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ marginBottom: '40px' }}>Received By:</div>
             <div style={{ fontWeight: 'normal', marginTop: '5px' }}>{data.empName}</div>
           </div>
         </div>

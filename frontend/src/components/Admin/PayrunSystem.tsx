@@ -18,6 +18,9 @@ const PayrunSystem: React.FC = () => {
     const [emailMessage, setEmailMessage] = useState('Please find attached your salary slip for this month.');
     const [preparedBy, setPreparedBy] = useState('Medorn HRMS Software');
     const [sanctionedBy, setSanctionedBy] = useState('Rishita Dash');
+    const [logoId, setLogoId] = useState<string | null>(null);
+    const [signatureId, setSignatureId] = useState<string | null>(null);
+    const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [sendingEmails, setSendingEmails] = useState(false);
     const [emailSuccess, setEmailSuccess] = useState('');
     
@@ -84,6 +87,8 @@ const PayrunSystem: React.FC = () => {
                     if (res.data.mailConfig.emailMessage) setEmailMessage(res.data.mailConfig.emailMessage);
                     if (res.data.mailConfig.preparedBy) setPreparedBy(res.data.mailConfig.preparedBy);
                     if (res.data.mailConfig.sanctionedBy) setSanctionedBy(res.data.mailConfig.sanctionedBy);
+                    if (res.data.mailConfig.logoId) setLogoId(res.data.mailConfig.logoId);
+                    if (res.data.mailConfig.signatureId) setSignatureId(res.data.mailConfig.signatureId);
                 }
             } else {
                 setError(res.data.error || 'Failed to fetch preview');
@@ -288,20 +293,20 @@ const PayrunSystem: React.FC = () => {
                     </div>
                 )}
 
-                <div className="input-group input-group-sm" style={{ marginBottom: '1rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
-                    <input type="file" className="form-control" accept=".xlsx, .xls" onChange={handleFileChange} style={{ minWidth: '180px', fontSize: '0.875rem' }}/>
-                    <select className="form-control" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ maxWidth: '110px', fontSize: '0.875rem' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '1rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
+                    <input type="file" className="form-control form-control-sm" accept=".xlsx, .xls" onChange={handleFileChange} style={{ maxWidth: '250px', fontSize: '0.875rem' }}/>
+                    <select className="form-control form-control-sm" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: 'auto', fontSize: '0.875rem' }}>
                         {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ maxWidth: '80px', fontSize: '0.875rem' }}>
+                    <select className="form-control form-control-sm" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: 'auto', fontSize: '0.875rem' }}>
                         {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.875rem', padding: '0.25rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
                         <Upload size={14} style={{ marginRight: '4px' }} />
                         {uploading ? 'Wait...' : 'Upload'}
                     </button>
                     {uploadSuccess && (
-                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm btn-success" style={{ whiteSpace: 'nowrap', fontSize: '0.875rem', padding: '0.25rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTopRightRadius: '0.2rem', borderBottomRightRadius: '0.2rem' }}>
+                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm btn-success" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
                             <Play size={14} style={{ marginRight: '4px' }} />
                             {loadingPreview ? 'Wait...' : 'Run Preview'}
                         </button>
@@ -413,8 +418,8 @@ const PayrunSystem: React.FC = () => {
             {/* Hidden Templates purely for html2canvas to fetch */}
             <div style={{ display: 'none' }}>
                 {previews.map((p, idx) => (
-                    <div key={idx} id={`salary-slip-${p.empCode}`}>
-                        <SalarySlipTemplate data={p} preparedBy={preparedBy} sanctionedBy={sanctionedBy} month={payrunMonth} year={payrunYear} />
+                    <div key={idx} id={`salary-slip-${p.empCode}`} style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+                        <SalarySlipTemplate data={p} preparedBy={preparedBy} sanctionedBy={sanctionedBy} month={payrunMonth} year={payrunYear} logoId={logoId} signatureId={signatureId} />
                     </div>
                 ))}
             </div>
@@ -430,8 +435,8 @@ const PayrunSystem: React.FC = () => {
                             </button>
                         </div>
                         <div style={{ flex: 1, overflow: 'auto', background: '#e9ecef', padding: '2rem', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-                                <SalarySlipTemplate data={previewData} preparedBy={preparedBy} sanctionedBy={sanctionedBy} month={payrunMonth} year={payrunYear} />
+                            <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center', marginBottom: '-50px' }}>
+                                <SalarySlipTemplate data={previewData} preparedBy={preparedBy} sanctionedBy={sanctionedBy} month={payrunMonth} year={payrunYear} logoId={logoId} signatureId={signatureId} />
                             </div>
                         </div>
                     </div>

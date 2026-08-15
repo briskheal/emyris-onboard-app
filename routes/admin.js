@@ -3328,7 +3328,9 @@ router.get('/payrun-preview', async (req, res) => {
         const mailConfig = {
             emailMessage: company.templateSettings?.payrunEmailMessage || 'Please find attached your salary slip for this month.',
             preparedBy: company.templateSettings?.payrunPreparedBy || 'Medorn HRMS Software',
-            sanctionedBy: company.templateSettings?.payrunSanctionedBy || 'Rishita Dash'
+            sanctionedBy: company.templateSettings?.payrunSanctionedBy || 'Rishita Dash',
+            logoId: company.activeLogoId || null,
+            signatureId: company.activeSignatureId || null
         };
 
         res.json({ success: true, previews, mailConfig });
