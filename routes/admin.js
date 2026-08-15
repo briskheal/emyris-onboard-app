@@ -3213,7 +3213,7 @@ router.get('/payrun-preview', async (req, res) => {
         const { month, year } = req.query;
 
         // Check if payslips already exist in DB
-        const savedPayslips = await Payslip.findAll({ where: { month, year } });
+        const savedPayslips = await Payslip.find({ month, year });
         if (savedPayslips && savedPayslips.length > 0) {
             const previews = savedPayslips.map(ps => {
                 if (ps.calculatedSalaryBreakup && ps.calculatedSalaryBreakup.empName) {
