@@ -10,7 +10,13 @@ const xlsx = require('xlsx');
 
 const uploadAttendance = multer({
     storage: multer.diskStorage({
-        destination: (req, file, cb) => cb(null, path.join(__dirname, '../Attendance/')),
+        destination: (req, file, cb) => {
+            const dir = path.join(__dirname, '../Attendance/');
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            cb(null, dir);
+        },
         filename: (req, file, cb) => cb(null, 'LATEST_ATTENDANCE.xlsx')
     })
 });
@@ -3225,12 +3231,13 @@ router.get('/payrun-preview', async (req, res) => {
                     if (k === 'employeename' || k === 'empname' || k === 'name' || k === 'employee') rowEmpName = (r[key] || '').toString().trim().toLowerCase();
                 }
                 
-                const appEmpCode = (applicant.empCode || '').toString().trim().toLowerCase();
+                const appEmpCode = (applicant.empCode || '').toString().toLowerCase().replace(/\s+/g, '');
                 const appFullName = (applicant.fullName || '').toString().trim().toLowerCase();
+                rowEmpCode = rowEmpCode.replace(/\s+/g, '');
                 
-                // Match by either exact Employee Code, or exact Full Name
-                return (rowEmpCode && appEmpCode && rowEmpCode === appEmpCode) || 
-                       (rowEmpName && appFullName && rowEmpName === appFullName);
+                // Match by either exact Employee Code, partial Employee Code, exact Full Name, or partial Full Name
+                return (rowEmpCode && appEmpCode && (rowEmpCode === appEmpCode || rowEmpCode.includes(appEmpCode) || appEmpCode.includes(rowEmpCode))) || 
+                       (rowEmpName && appFullName && (rowEmpName === appFullName || rowEmpName.includes(appFullName) || appFullName.includes(rowEmpName)));
             });
             
             if (row) {
