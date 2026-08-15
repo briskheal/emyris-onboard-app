@@ -17,7 +17,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
   const currentYear = year || new Date().getFullYear().toString();
 
   // Helper to format currency
-  const f = (val: any) => parseFloat(val || '0').toFixed(2);
+  const f = (val: any) => Math.round(parseFloat(val || '0')).toString();
 
   // Computed Values
   const basic = f(data.calcBreakup?.basic);
@@ -59,8 +59,10 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
         )}
         <div style={{ flex: 1, textAlign: 'center' }}>
           <h1 style={{ margin: '0', fontSize: '20px', fontWeight: 'bold' }}>EMYRIS BIOLIFESCIENCES PVT LTD</h1>
-          <p style={{ margin: '5px 0', fontSize: '14px' }}>Sumadhura Pragati Chambers, Park Ln, Kalasiguda, Secunderabad, Telangana, 500003</p>
-          <h2 style={{ margin: '20px 0 0', fontSize: '16px', fontWeight: 'normal' }}>SALARY SLIP FOR THE MONTH OF {currentMonth}, {currentYear}</h2>
+          <p style={{ margin: '5px 0', fontSize: '10px' }}>Sumadhura pragati chambers, Park ln, kalasiguda, Secunderabad, 500003</p>
+          <h2 style={{ textAlign: 'center', margin: '0', fontSize: '14px', backgroundColor: '#e2e8f0', padding: '5px', fontWeight: 'bold' }}>
+            PAYSLIP FOR THE MONTH OF {String(currentMonth).toUpperCase()} {currentYear}
+          </h2>
         </div>
         <div style={{ width: '120px', marginLeft: '20px' }}></div>
       </div>
@@ -187,13 +189,13 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
           <h3 style={{ margin: '0 0 10px 0', textDecoration: 'underline', fontSize: '16px' }}>REIMBURSEMENTS</h3>
           <div style={{ display: 'flex' }}>
             <span style={{ fontWeight: 'bold', width: '200px' }}>Expense</span>
-            <span>: 0.00</span>
+            <span>: 0</span>
           </div>
         </div>
 
         <div style={{ borderTop: borderStyle, padding: '10px', fontWeight: 'bold', display: 'flex' }}>
           <span style={{ width: '200px' }}>Reimbursement Total</span>
-          <span>: 0.00</span>
+          <span>: 0</span>
         </div>
 
         {/* Payment Summary */}
@@ -216,7 +218,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
                 <td style={{ padding: '4px 0' }}>Bank Name</td>
                 <td style={{ padding: '4px 0' }}>: {data.bankName || 'NA'}</td>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Reimbursement</td>
-                <td style={{ padding: '4px 0' }}>: 0.00</td>
+                <td style={{ padding: '4px 0' }}>: 0</td>
               </tr>
               <tr>
                 <td style={{ padding: '10px 0 4px 0' }}>IFSC Code</td>

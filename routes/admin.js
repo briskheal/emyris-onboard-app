@@ -3308,6 +3308,8 @@ router.get('/payrun-preview', async (req, res) => {
                     empName: applicant.fullName,
                     empCode: applicant.empCode,
                     email: applicant.email,
+                    designation: applicant.designation || 'NA',
+                    department: applicant.department || 'NA',
                     division: applicant.division || 'NA',
                     uanNumber: applicant.uanNumber || 'NA',
                     epfNumber: applicant.epfNumber || 'NA',
@@ -3395,6 +3397,85 @@ router.post('/generate-payslips', async (req, res) => {
     } catch (e) {
         console.error('Generate payslip error:', e);
         res.status(500).json({ error: 'Failed to generate payslips' });
+    }
+});
+
+// ===== PAYRUN FINALIZATION AND REPORTING ENGINE =====
+
+router.post('/finalize-payrun', async (req, res) => {
+    try {
+        const { month, year, previews } = req.body;
+        if (!month || !year || !previews || !previews.length) return res.status(400).json({ error: 'Missing data payload' });
+
+        // Safely overwrite: delete any previously finalized runs for this month/year combination
+        await Payslip.destroy({ where: { month, year } });
+
+        const toInsert = previews.map((p) => ({
+            email: p.email,
+            empName: p.empName,
+            month,
+            year,
+            payableDays: p.payableDays,
+            totalDays: p.totalMonthDays,
+            grossSalary: parseFloat(p.finalSalary) || 0,
+            calculatedSalaryBreakup: p.calcBreakup || {}
+        }));
+
+        await Payslip.bulkCreate(toInsert);
+        res.json({ success: true, message: `Successfully finalized payrun for ${month} ${year}` });
+    } catch (e) {
+        console.error('Finalize payrun error:', e);
+        res.status(500).json({ error: 'Failed to finalize payrun' });
+    }
+});
+
+router.get('/salary-report', async (req, res) => {
+    try {
+        const { startMonth, startYear, endMonth, endYear, reportType, empCode } = req.query;
+        if (!startMonth || !startYear || !endMonth || !endYear || !reportType) return res.status(400).json({ error: 'Missing required parameters' });
+
+        // Query all payslips from the relevant years to filter in memory for month ranges
+        const yearCondition = (startYear === endYear) ? { year: startYear } : { year: { [require('sequelize').Op.between]: [startYear, endYear] } };
+        
+        let query = { ...yearCondition };
+        
+        if (reportType === 'employee') {
+            if (!empCode) return res.status(400).json({ error: 'empCode required for employee report' });
+            // We use empName or email in Payslip since empCode might not be stored. Wait, Payslip doesn't store empCode. We need to fetch applicant.
+            const applicant = await Applicant.findOne({ empCode });
+            if (!applicant) return res.status(404).json({ error: 'Employee not found' });
+            query.email = applicant.email;
+        }
+
+        const payslips = await Payslip.findAll({ where: query, raw: true });
+
+        const monthMap = { 'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6, 'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12 };
+
+        const startIdx = parseInt(startYear) * 12 + monthMap[startMonth.toLowerCase()];
+        const endIdx = parseInt(endYear) * 12 + monthMap[endMonth.toLowerCase()];
+
+        const filtered = payslips.filter(p => {
+            const pIdx = parseInt(p.year) * 12 + monthMap[p.month.toLowerCase()];
+            return pIdx >= startIdx && pIdx <= endIdx;
+        });
+
+        // Add empCode to results to match excel layout if we can
+        let applicantMap = {};
+        if (reportType === 'company') {
+            const applicants = await Applicant.findAll();
+            applicants.forEach(a => { applicantMap[a.email] = a.empCode; });
+        }
+
+        const formatted = filtered.map(p => ({
+            ...p,
+            empCode: reportType === 'employee' ? empCode : (applicantMap[p.email] || 'NA'),
+            calculatedSalaryBreakup: typeof p.calculatedSalaryBreakup === 'string' ? JSON.parse(p.calculatedSalaryBreakup) : p.calculatedSalaryBreakup
+        }));
+
+        res.json({ success: true, data: formatted });
+    } catch (e) {
+        console.error('Salary report error:', e);
+        res.status(500).json({ error: 'Failed to generate salary report' });
     }
 });
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../api/client';
 import { PsychometricDossierModal } from './PsychometricDossierModal';
+import { SalaryReportTab } from './SalaryReportTab';
 import { 
   FileSpreadsheet, 
   Download, 
@@ -17,7 +18,7 @@ import {
   FileText
 } from 'lucide-react';
 
-type ReportTabType = 'details' | 'exam' | 'monthly' | 'psychometric';
+type ReportTabType = 'details' | 'exam' | 'monthly' | 'psychometric' | 'salary';
 
 const getOrReconstructMindsetReport = (app: any, combinedExams: any[] = []) => {
   if (!app) return null;
@@ -458,6 +459,13 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
               style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'monthly' ? 'none' : '1px solid transparent' }}
             >
               <Calendar size={15} /> 3. Monthly Onboarding Summary
+            </button>
+            <button
+              onClick={() => setActiveTab('salary')}
+              className={`btn btn-sm ${activeTab === 'salary' ? 'btn-primary' : 'btn-outline'}`}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', border: activeTab === 'salary' ? 'none' : '1px solid transparent' }}
+            >
+              <FileSpreadsheet size={15} /> 4. Salary Statements
             </button>
           </div>
         </div>
@@ -1333,6 +1341,13 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
             );
           })()}
         </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* SUB-REPORT 5: SALARY STATEMENTS */}
+      {/* ========================================================= */}
+      {activeTab === 'salary' && (
+        <SalaryReportTab />
       )}
     </div>
   );

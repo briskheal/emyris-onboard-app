@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Upload, Play, CheckCircle, Download, Mail, Eye, X, AlertCircle } from 'lucide-react';
+import { Upload, Play, CheckCircle, Download, Mail, Eye, X, AlertCircle, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -22,6 +22,7 @@ const PayrunSystem: React.FC = () => {
     const [signatureId, setSignatureId] = useState<string | null>(null);
     const [sendingEmails, setSendingEmails] = useState(false);
     const [emailSuccess, setEmailSuccess] = useState('');
+    const [finalizing, setFinalizing] = useState(false);
     
     const [payrunMonth, setPayrunMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
     const [payrunYear, setPayrunYear] = useState(new Date().getFullYear().toString());
@@ -267,6 +268,35 @@ const PayrunSystem: React.FC = () => {
         }
     };
 
+    const finalizePayrun = async () => {
+        if (!confirm(`Are you sure you want to finalize the payrun for ${payrunMonth} ${payrunYear}? This will permanently save the data for annual reports. Any existing saved data for this month will be overwritten.`)) {
+            return;
+        }
+        
+        setFinalizing(true);
+        setError('');
+        setEmailSuccess('');
+
+        try {
+            const res = await api.post('/admin/finalize-payrun', {
+                month: payrunMonth,
+                year: payrunYear,
+                previews
+            });
+
+            if (res.data.success) {
+                setEmailSuccess(`Successfully finalized payrun for ${payrunMonth} ${payrunYear}!`);
+            } else {
+                setError(res.data.error || 'Failed to finalize payrun.');
+            }
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.error || 'Failed to finalize payrun due to an error.');
+        } finally {
+            setFinalizing(false);
+        }
+    };
+
     return (
         <div style={{ padding: '0', width: '100%', maxWidth: '100%', margin: '0' }}>
             <div className="dash-card" style={{ padding: '1rem' }}>
@@ -403,7 +433,11 @@ const PayrunSystem: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ flex: '0 0 auto' }}>
+                            <div style={{ flex: '0 0 auto', display: 'flex', gap: '10px' }}>
+                                <button onClick={finalizePayrun} disabled={finalizing || previews.length === 0} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#28a745', color: '#fff', border: 'none' }}>
+                                    <Save size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                                    {finalizing ? 'Saving...' : 'Finalize & Save Payrun'}
+                                </button>
                                 <button onClick={sendEmails} disabled={sendingEmails} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold' }}>
                                     <Mail size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                                     {sendingEmails ? 'Processing & Sending...' : 'Process All Selected'}
