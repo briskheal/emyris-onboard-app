@@ -271,19 +271,19 @@ const PayrunSystem: React.FC = () => {
                 )}
 
                 <div className="input-group input-group-sm" style={{ marginBottom: '1rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
-                    <input type="file" className="form-control" accept=".xlsx, .xls" onChange={handleFileChange} style={{ minWidth: '180px' }}/>
-                    <select className="form-control" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ maxWidth: '110px' }}>
+                    <input type="file" className="form-control" accept=".xlsx, .xls" onChange={handleFileChange} style={{ minWidth: '180px', fontSize: '0.875rem' }}/>
+                    <select className="form-control" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ maxWidth: '110px', fontSize: '0.875rem' }}>
                         {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ maxWidth: '80px' }}>
+                    <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ maxWidth: '80px', fontSize: '0.875rem' }}>
                         {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap', fontSize: '0.875rem', padding: '0.25rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <Upload size={14} style={{ marginRight: '4px' }} />
                         {uploading ? 'Wait...' : 'Upload'}
                     </button>
                     {uploadSuccess && (
-                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-success" style={{ whiteSpace: 'nowrap', borderTopRightRadius: '0.2rem', borderBottomRightRadius: '0.2rem' }}>
+                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm btn-success" style={{ whiteSpace: 'nowrap', fontSize: '0.875rem', padding: '0.25rem 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTopRightRadius: '0.2rem', borderBottomRightRadius: '0.2rem' }}>
                             <Play size={14} style={{ marginRight: '4px' }} />
                             {loadingPreview ? 'Wait...' : 'Run Preview'}
                         </button>
