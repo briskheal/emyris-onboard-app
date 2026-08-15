@@ -3325,6 +3325,7 @@ router.get('/payrun-preview', async (req, res) => {
             }
         }
 
+        const company = await Company.findOne() || {};
         const mailConfig = {
             emailMessage: company.templateSettings?.payrunEmailMessage || 'Please find attached your salary slip for this month.',
             preparedBy: company.templateSettings?.payrunPreparedBy || 'Medorn HRMS Software',

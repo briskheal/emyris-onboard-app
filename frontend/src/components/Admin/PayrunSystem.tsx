@@ -20,7 +20,6 @@ const PayrunSystem: React.FC = () => {
     const [sanctionedBy, setSanctionedBy] = useState('Rishita Dash');
     const [logoId, setLogoId] = useState<string | null>(null);
     const [signatureId, setSignatureId] = useState<string | null>(null);
-    const [previewModalOpen, setPreviewModalOpen] = useState(false);
     const [sendingEmails, setSendingEmails] = useState(false);
     const [emailSuccess, setEmailSuccess] = useState('');
     
