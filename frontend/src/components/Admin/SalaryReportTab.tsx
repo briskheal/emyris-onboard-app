@@ -26,14 +26,25 @@ export const SalaryReportTab: React.FC = () => {
     }, []);
 
     const generateReport = async () => {
-        if (reportType === 'employee' && !empCode) {
-            alert('Please select an employee.');
-            return;
+        let finalEmpCode = empCode;
+        if (reportType === 'employee') {
+            if (!empCode) {
+                alert('Please select an employee.');
+                return;
+            }
+            const match = empCode.match(/\(([^)]+)\)$/);
+            if (match) {
+                finalEmpCode = match[1];
+            } else {
+                const found = applicants.find(a => a.fullName.toLowerCase() === empCode.toLowerCase() || a.empCode.toLowerCase() === empCode.toLowerCase());
+                if (found) finalEmpCode = found.empCode;
+            }
         }
+
         setLoading(true);
         try {
             const res = await api.get('/admin/salary-report', {
-                params: { startMonth, startYear, endMonth, endYear, reportType, empCode }
+                params: { startMonth, startYear, endMonth, endYear, reportType, empCode: finalEmpCode }
             });
             if (res.data.success) {
                 setReportData(res.data.data);
@@ -112,7 +123,16 @@ export const SalaryReportTab: React.FC = () => {
     const { rows, totals } = processData();
 
     const exportToExcel = () => {
-        const emp = reportType === 'employee' ? applicants.find(a => a.empCode === empCode) : null;
+        let finalEmpCode = empCode;
+        const match = empCode.match(/\(([^)]+)\)$/);
+        if (match) {
+            finalEmpCode = match[1];
+        } else {
+            const found = applicants.find(a => a.fullName.toLowerCase() === empCode.toLowerCase() || a.empCode.toLowerCase() === empCode.toLowerCase());
+            if (found) finalEmpCode = found.empCode;
+        }
+
+        const emp = reportType === 'employee' ? applicants.find(a => a.empCode === finalEmpCode) : null;
         
         let excelData = [];
         excelData.push([null, "             EMYRIS BIOLIFESCIENCES PVT LTD"]);
@@ -157,7 +177,7 @@ export const SalaryReportTab: React.FC = () => {
                             <select value={startMonth} onChange={e => setStartMonth(e.target.value)} className="form-input-sm" style={{ width: '100px' }}>
                                 {months.map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
-                            <select value={startYear} onChange={e => setStartYear(e.target.value)} className="form-input-sm" style={{ width: '80px' }}>
+                            <select value={startYear} onChange={e => setStartYear(e.target.value)} className="form-input-sm" style={{ width: '90px' }}>
                                 {years.map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
                         </div>
@@ -168,7 +188,7 @@ export const SalaryReportTab: React.FC = () => {
                             <select value={endMonth} onChange={e => setEndMonth(e.target.value)} className="form-input-sm" style={{ width: '100px' }}>
                                 {months.map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
-                            <select value={endYear} onChange={e => setEndYear(e.target.value)} className="form-input-sm" style={{ width: '80px' }}>
+                            <select value={endYear} onChange={e => setEndYear(e.target.value)} className="form-input-sm" style={{ width: '90px' }}>
                                 {years.map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
                         </div>
@@ -183,10 +203,17 @@ export const SalaryReportTab: React.FC = () => {
                     {reportType === 'employee' && (
                         <div>
                             <label className="form-label" style={{ fontSize: '12px' }}>Select Employee</label>
-                            <select value={empCode} onChange={e => setEmpCode(e.target.value)} className="form-input-sm" style={{ width: '200px' }}>
-                                <option value="">-- Select Employee --</option>
-                                {applicants.map(a => <option key={a.empCode} value={a.empCode}>{a.fullName} ({a.empCode})</option>)}
-                            </select>
+                            <input 
+                                list="employee-list" 
+                                value={empCode} 
+                                onChange={e => setEmpCode(e.target.value)} 
+                                className="form-input-sm" 
+                                style={{ width: '250px' }}
+                                placeholder="Search by name or code..."
+                            />
+                            <datalist id="employee-list">
+                                {applicants.map(a => <option key={a.empCode} value={`${a.fullName} (${a.empCode})`} />)}
+                            </datalist>
                         </div>
                     )}
                     <button onClick={generateReport} disabled={loading} className="btn btn-primary" style={{ padding: '6px 15px', height: '32px' }}>
