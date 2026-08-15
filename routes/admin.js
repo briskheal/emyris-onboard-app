@@ -3489,7 +3489,7 @@ router.post('/finalize-payrun', async (req, res) => {
             calculatedSalaryBreakup: p
         }));
 
-        await Payslip.bulkCreate(toInsert);
+        await Payslip.create(toInsert);
         res.json({ success: true, message: `Successfully finalized payrun for ${month} ${year}` });
     } catch (e) {
         console.error('Finalize payrun error:', e);
