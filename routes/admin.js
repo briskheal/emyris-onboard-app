@@ -3211,14 +3211,20 @@ router.get('/payrun-preview', async (req, res) => {
         const data = xlsx.utils.sheet_to_json(sheet);
         
         const previews = [];
-        // User requested: "test this employee whose empcode is mentioned in attaencdance file"
-        const testApplicant = await Applicant.findOne({ empCode: "EMYFE143" });
-        if (testApplicant && testApplicant.salaryBreakup) {
-            const row = data.find(r => r["Employee Code"] === "EMYFE143" || r["Employee Name"] === "Gohel Hiteshbhai");
+        const allApplicants = await Applicant.find({ salaryBreakup: { $exists: true } });
+        
+        for (const applicant of allApplicants) {
+            const sb = applicant.salaryBreakup;
+            if (!sb) continue;
+
+            const row = data.find(r => 
+                (r["Employee Code"] && applicant.empCode && r["Employee Code"].toString().toLowerCase() === applicant.empCode.toLowerCase()) || 
+                (r["Employee Name"] && applicant.fullName && r["Employee Name"].toString().toLowerCase() === applicant.fullName.toLowerCase())
+            );
+            
             if (row) {
-                // Tally directly from day columns to avoid Excel summary errors
                 let present = 0, holiday = 0, leave = 0, absent = 0, totalMonthDays = 0;
-                const dateRegex = /^\d{2} [A-Za-z]{3}/; // e.g. "01 Jul"
+                const dateRegex = /^\d{2} [A-Za-z]{3}/; 
                 
                 for (const key of Object.keys(row)) {
                     if (dateRegex.test(key)) {
@@ -3231,17 +3237,12 @@ router.get('/payrun-preview', async (req, res) => {
                     }
                 }
                 
-                // Fallback if no day columns found
-                if (totalMonthDays === 0) {
-                    totalMonthDays = 31;
-                }
+                if (totalMonthDays === 0) totalMonthDays = 31;
 
-                // Simpler Payable Days Formula as requested
                 let payableDays = totalMonthDays - absent;
                 if (payableDays < 0) payableDays = 0;
                 if (payableDays > totalMonthDays) payableDays = totalMonthDays;
                 
-                const sb = testApplicant.salaryBreakup;
                 const basic = parseFloat(sb.v_salBasic || sb.basic || 0);
                 const hra = parseFloat(sb.v_salHra || sb.hra || 0);
                 const conv = parseFloat(sb.v_salConv || sb.conveyance || 0);
@@ -3253,7 +3254,6 @@ router.get('/payrun-preview', async (req, res) => {
                 const originalGross = basic + hra + conv + med + lta + edu + special;
                 const factor = payableDays / totalMonthDays;
                 
-                // PT and PF logic based on user rules
                 let ptDed = 0;
                 let pfDed = 0;
                 if (sb.applyPt !== false) {
@@ -3265,16 +3265,13 @@ router.get('/payrun-preview', async (req, res) => {
                     else pfDed = 1200;
                 }
 
-                // Fixed vs Prorated logic
-                // Fixed: Medical, Conveyance, Edu
-                // Prorated: Basic, HRA, LTA, Special
                 const calcBreakup = {
                     basic: (basic * factor).toFixed(2),
                     hra: (hra * factor).toFixed(2),
-                    conveyance: (conv).toFixed(2), // Fixed
-                    medical: (med).toFixed(2), // Fixed
+                    conveyance: (conv).toFixed(2), 
+                    medical: (med).toFixed(2), 
                     lta: (lta * factor).toFixed(2),
-                    edu: (edu).toFixed(2), // Fixed
+                    edu: (edu).toFixed(2), 
                     special: (special * factor).toFixed(2)
                 };
                 
@@ -3282,9 +3279,9 @@ router.get('/payrun-preview', async (req, res) => {
                 const dailyRate = originalGross / totalMonthDays;
                 
                 previews.push({
-                    empName: testApplicant.fullName,
-                    empCode: testApplicant.empCode,
-                    email: testApplicant.email,
+                    empName: applicant.fullName,
+                    empCode: applicant.empCode,
+                    email: applicant.email,
                     present, absent, leave, holiday,
                     payableDays, totalMonthDays, 
                     originalGross: originalGross.toFixed(2),
@@ -3296,7 +3293,7 @@ router.get('/payrun-preview', async (req, res) => {
                 });
             }
         }
-        
+
         res.json({ success: true, previews });
     } catch (e) {
         console.error('Payrun preview error:', e);
@@ -3378,3 +3375,5 @@ router.post('/email-payslips', async (req, res) => {
 });
 
 module.exports = router;
+
+
