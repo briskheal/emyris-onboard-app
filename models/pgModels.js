@@ -12,6 +12,7 @@ const OnboardCompany = sequelize.define('onboard_company', {
     website: DataTypes.STRING,
     email: DataTypes.STRING,
     activeLogoId: DataTypes.STRING,
+    activePayslipLogoId: DataTypes.STRING,
     activeStampId: DataTypes.STRING,
     activeSignatureId: DataTypes.STRING,
     activeLetterheadId: DataTypes.STRING,

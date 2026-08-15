@@ -143,6 +143,7 @@ export default function SetupAndLetters() {
         if (comp.footerHeight !== undefined) setFooterHeight(Number(comp.footerHeight) || 25);
         setActiveAssets({
           logo: comp.activeLogoId || '',
+          payslipLogo: comp.activePayslipLogoId || '',
           stamp: comp.activeStampId || '',
           digitalSignature: comp.activeSignatureId || '',
           letterheadImage: comp.activeLetterheadId || ''
@@ -763,7 +764,8 @@ export default function SetupAndLetters() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
             {[
-              { id: 'logo', label: 'Company Logos' },
+              { id: 'logo', label: 'Website Logos' },
+              { id: 'payslipLogo', label: 'Salary Slip Logos' },
               { id: 'stamp', label: 'Company Stamps' },
               { id: 'digitalSignature', label: 'Digital Signatures' },
               { id: 'letterheadImage', label: 'Letterhead Backgrounds' }

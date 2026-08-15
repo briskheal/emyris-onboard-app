@@ -2110,6 +2110,7 @@ router.get('/company-profile', async (req, res) => {
         if (req.query.light !== 'true') {
             const assetMap = {
                 activeLogoId: 'logo',
+                activePayslipLogoId: 'payslipLogo',
                 activeStampId: 'stamp',
                 activeSignatureId: 'digitalSignature',
                 activeLetterheadId: 'letterheadImage'
@@ -2305,13 +2306,18 @@ router.get('/api/company-data', async (req, res) => {
             divisions: enrichedDivisions,
             hqs: hqs,
             detailingScripts: (company.detailingScripts && Object.keys(company.detailingScripts).length > 0) ? company.detailingScripts : DEFAULT_DETAILING_SCRIPTS,
-            logo: "" // Logo logic handled by asset hydration if needed
+            logo: "",
+            payslipLogo: ""
         };
 
-        // Hydrate logo and letterhead
+        // Hydrate assets
         if (company.activeLogoId) {
             const asset = await Asset.findById(company.activeLogoId).lean();
             if (asset) data.logo = asset.data;
+        }
+        if (company.activePayslipLogoId) {
+            const asset = await Asset.findById(company.activePayslipLogoId).lean();
+            if (asset) data.payslipLogo = asset.data;
         }
         if (company.activeLetterheadId) {
             const asset = await Asset.findById(company.activeLetterheadId).lean();
@@ -2750,6 +2756,7 @@ router.post('/upload-asset', async (req, res) => {
             if (company) {
                 const map = {
                     'logo': 'activeLogoId',
+                    'payslipLogo': 'activePayslipLogoId',
                     'stamp': 'activeStampId',
                     'digitalSignature': 'activeSignatureId',
                     'letterheadImage': 'activeLetterheadId'
@@ -2775,7 +2782,7 @@ router.post('/delete-asset', async (req, res) => {
         // Remove from active pointers if it was the active one
         const company = await Company.findOne();
         if (company) {
-            const keys = ['activeLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'];
+            const keys = ['activeLogoId', 'activePayslipLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'];
             const updates = {};
             let changed = false;
             keys.forEach(k => {
@@ -2801,6 +2808,7 @@ router.post('/set-active-asset', async (req, res) => {
 
         const map = {
             'logo': 'activeLogoId',
+            'payslipLogo': 'activePayslipLogoId',
             'stamp': 'activeStampId',
             'digitalSignature': 'activeSignatureId',
             'letterheadImage': 'activeLetterheadId'
@@ -3001,7 +3009,7 @@ router.post('/system/vacuum', async (req, res) => {
         
         // From Company Branding
         if (company) {
-            ['activeLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'].forEach(key => {
+            ['activeLogoId', 'activePayslipLogoId', 'activeStampId', 'activeSignatureId', 'activeLetterheadId'].forEach(key => {
                 if (company[key]) {
                     const cleanId = String(company[key]).split('/').pop().trim();
                     if (cleanId) inUseIds.add(cleanId);
@@ -3330,7 +3338,7 @@ router.get('/payrun-preview', async (req, res) => {
             emailMessage: company.templateSettings?.payrunEmailMessage || 'Please find attached your salary slip for this month.',
             preparedBy: company.templateSettings?.payrunPreparedBy || 'Medorn HRMS Software',
             sanctionedBy: company.templateSettings?.payrunSanctionedBy || 'Rishita Dash',
-            logoId: company.activeLogoId || null,
+            logoId: company.activePayslipLogoId || company.activeLogoId || null,
             signatureId: company.activeSignatureId || null
         };
 
