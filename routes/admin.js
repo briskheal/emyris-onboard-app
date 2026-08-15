@@ -3247,29 +3247,51 @@ router.get('/payrun-preview', async (req, res) => {
                 const conv = parseFloat(sb.v_salConv || sb.conveyance || 0);
                 const med = parseFloat(sb.v_salMed || sb.medical || 0);
                 const lta = parseFloat(sb.v_salLta || sb.lta || 0);
+                const edu = parseFloat(sb.v_salEdu || sb.edu || 0);
                 const special = parseFloat(sb.v_salSpecial || sb.special || 0);
                 
-                const grossSalary = basic + hra + conv + med + lta + special;
+                const originalGross = basic + hra + conv + med + lta + edu + special;
                 const factor = payableDays / totalMonthDays;
                 
+                // PT and PF logic based on user rules
+                let ptDed = 0;
+                let pfDed = 0;
+                if (sb.applyPt !== false) {
+                    if (originalGross > 20000) ptDed = 200;
+                    else if (originalGross > 15000) ptDed = 150;
+                }
+                if (sb.applyPf !== false) {
+                    if (originalGross >= 15000) pfDed = 1800;
+                    else pfDed = 1200;
+                }
+
+                // Fixed vs Prorated logic
+                // Fixed: Medical, Conveyance, Edu
+                // Prorated: Basic, HRA, LTA, Special
                 const calcBreakup = {
                     basic: (basic * factor).toFixed(2),
                     hra: (hra * factor).toFixed(2),
-                    conveyance: (conv * factor).toFixed(2),
-                    medical: (med * factor).toFixed(2),
+                    conveyance: (conv).toFixed(2), // Fixed
+                    medical: (med).toFixed(2), // Fixed
                     lta: (lta * factor).toFixed(2),
+                    edu: (edu).toFixed(2), // Fixed
                     special: (special * factor).toFixed(2)
                 };
                 
-                const finalSalary = Object.values(calcBreakup).reduce((a, b) => a + parseFloat(b), 0);
+                const baseNetSalary = Object.values(calcBreakup).reduce((a, b) => a + parseFloat(b), 0);
+                const dailyRate = originalGross / totalMonthDays;
                 
                 previews.push({
                     empName: testApplicant.fullName,
+                    empCode: testApplicant.empCode,
                     email: testApplicant.email,
                     present, absent, leave, holiday,
-                    payableDays, totalMonthDays, // updated field name
-                    originalGross: grossSalary.toFixed(2),
-                    finalSalary: finalSalary.toFixed(2),
+                    payableDays, totalMonthDays, 
+                    originalGross: originalGross.toFixed(2),
+                    baseNetSalary: baseNetSalary.toFixed(2),
+                    dailyRate: dailyRate.toFixed(2),
+                    ptDed,
+                    pfDed,
                     calcBreakup
                 });
             }
@@ -3295,8 +3317,11 @@ router.post('/generate-payslips', async (req, res) => {
                 year: new Date().getFullYear().toString(),
                 payableDays: p.payableDays,
                 totalDays: p.totalMonthDays,
-                grossSalary: parseFloat(p.finalSalary),
-                calculatedSalaryBreakup: p.calcBreakup
+                grossSalary: parseFloat(p.finalSalary), // Final salary calculated from frontend
+                calculatedSalaryBreakup: p.calcBreakup,
+                ptDed: p.ptDed,
+                pfDed: p.pfDed,
+                salDed: p.salDed
             });
         }
         res.json({ success: true, count: previews.length });

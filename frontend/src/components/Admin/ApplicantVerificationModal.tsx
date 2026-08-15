@@ -55,6 +55,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [salSpecial, setSalSpecial] = useState<string>(initialApplicant.salaryBreakup?.special?.toString() || '0');
   const [salFixed, setSalFixed] = useState<string>(initialApplicant.salaryBreakup?.fixed?.toString() || '0');
   const [salRoundoff, setSalRoundoff] = useState<string>(initialApplicant.salaryBreakup?.roundoff?.toString() || '0');
+  const [applyPt, setApplyPt] = useState<boolean>(initialApplicant.salaryBreakup?.applyPt ?? true);
+  const [applyPf, setApplyPf] = useState<boolean>(initialApplicant.salaryBreakup?.applyPf ?? true);
 
   const [epfNumber, setEpfNumber] = useState<string>(initialApplicant.epfNumber || initialApplicant.formData?.epfNumber || '');
   const [uanNumber, setUanNumber] = useState<string>(initialApplicant.uanNumber || initialApplicant.formData?.uanNumber || '');
@@ -93,6 +95,8 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       setSalEdu(fullApp.salaryBreakup?.edu?.toString() || '0');
       setSalFixed(fullApp.salaryBreakup?.fixed?.toString() || '0');
       setSalRoundoff(fullApp.salaryBreakup?.roundoff?.toString() || '0');
+      setApplyPt(fullApp.salaryBreakup?.applyPt ?? true);
+      setApplyPf(fullApp.salaryBreakup?.applyPf ?? true);
       
       setEmpCode(fullApp.empCode || '');
       setDesignation(fullApp.designation || '');
@@ -299,7 +303,9 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
         special: parseFloat(salSpecial) || 0, 
         edu: parseFloat(salEdu) || 0, 
         fixed: parseFloat(salFixed) || 0,
-        roundoff: parseFloat(salRoundoff) || 0
+        roundoff: parseFloat(salRoundoff) || 0,
+        applyPt,
+        applyPf
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
@@ -337,7 +343,9 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
         special: parseFloat(salSpecial) || 0, 
         edu: parseFloat(salEdu) || 0, 
         fixed: parseFloat(salFixed) || 0,
-        roundoff: parseFloat(salRoundoff) || 0
+        roundoff: parseFloat(salRoundoff) || 0,
+        applyPt,
+        applyPf
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
@@ -508,7 +516,19 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
                   <input type="file" style={{ display: 'none' }} onChange={(e) => handleUploadMissingDoc(e)} />
                 </label>
               </div>
-              <div className="custom-scrollbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '15px', maxHeight: '400px', overflowY: 'auto', paddingRight: '10px' }}>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.03)', borderRadius: '6px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <input type="checkbox" checked={applyPt} onChange={e => setApplyPt(e.target.checked)} />
+                  Deduct PT
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.85rem' }}>
+                  <input type="checkbox" checked={applyPf} onChange={e => setApplyPf(e.target.checked)} />
+                  Deduct PF
+                </label>
+              </div>
+
+              <div className="custom-scrollbar" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '15px', maxHeight: '400px', overflowY: 'auto', paddingRight: '10px', marginTop: '15px' }}>
                 {(requiredDocsList.length > 0 ? requiredDocsList : ["Aadhaar Card", "PAN Card", "Degree/Provisional Certificate", "Previous Company Appointment Letter", "Last Month Salary Slip", "Cancel Cheque", "Passport Photo", "Resume"]).map(dName => {
                   const categoryFiles = (applicant.documents || []).filter((u: any) => (u.docType || u.category || 'Document') === dName);
                   const isVerified = !!verificationChecks[dName];

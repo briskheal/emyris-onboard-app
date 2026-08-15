@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Upload, Play, CheckCircle, AlertCircle, FileSpreadsheet } from 'lucide-react';
+import { Upload, Play, CheckCircle, AlertCircle, FileSpreadsheet, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import api from '../../api/client';
 
 const PayrunSystem: React.FC = () => {
@@ -54,7 +55,17 @@ const PayrunSystem: React.FC = () => {
         try {
             const res = await api.get('/admin/payrun-preview');
             if (res.data.success) {
-                setPreviews(res.data.previews);
+                const initializedPreviews = res.data.previews.map((p: any) => {
+                    const salDed = 0;
+                    const finalNet = (parseFloat(p.baseNetSalary) - (p.ptDed || 0) - (p.pfDed || 0) - salDed).toFixed(2);
+                    return {
+                        ...p,
+                        penaltyDays: 0,
+                        salDed: salDed.toFixed(2),
+                        finalSalary: finalNet
+                    };
+                });
+                setPreviews(initializedPreviews);
             } else {
                 setError(res.data.error || 'Failed to fetch preview');
             }
@@ -63,6 +74,39 @@ const PayrunSystem: React.FC = () => {
         } finally {
             setLoadingPreview(false);
         }
+    };
+
+    const handlePenaltyChange = (index: number, daysStr: string) => {
+        const days = parseFloat(daysStr) || 0;
+        const updated = [...previews];
+        const p = updated[index];
+        p.penaltyDays = days;
+        p.salDed = (days * parseFloat(p.dailyRate)).toFixed(2);
+        p.finalSalary = (parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - (p.ptDed || 0) - (p.pfDed || 0)).toFixed(2);
+        setPreviews(updated);
+    };
+
+    const exportToExcel = () => {
+        if (previews.length === 0) return;
+        const exportData = previews.map(p => ({
+            "Employee Name": p.empName,
+            "Employee Code": p.empCode,
+            "Total Days in Month": p.totalMonthDays,
+            "Total Days Present": p.present,
+            "Total Holidays": p.holiday,
+            "Total Leave": p.leave,
+            "Total Absent": p.absent,
+            "Total Earnings": p.baseNetSalary,
+            "Sal Ded": parseFloat(p.salDed) || 0,
+            "PT Ded": p.ptDed || 0,
+            "PF Ded": p.pfDed || 0,
+            "Net Payable Salary": parseFloat(p.finalSalary)
+        }));
+
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Payrun Report");
+        XLSX.writeFile(wb, `Payrun_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
     const generatePayslips = async () => {
@@ -145,6 +189,15 @@ const PayrunSystem: React.FC = () => {
 
                     {previews.length > 0 ? (
                         <div className="space-y-4">
+                            <div className="flex justify-end mb-2">
+                                <button
+                                    onClick={exportToExcel}
+                                    className="px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 flex items-center font-medium text-sm transition-colors"
+                                >
+                                    <Download className="w-4 h-4 mr-2" />
+                                    Export to Excel
+                                </button>
+                            </div>
                             <div className="overflow-x-auto rounded-lg border border-gray-200">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
@@ -152,8 +205,10 @@ const PayrunSystem: React.FC = () => {
                                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
                                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance<br/><span className="text-[10px] text-gray-400">(P / A / L / H)</span></th>
                                             <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Payable Days</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Gross (Original)</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Calculated Net</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Base Net Earnings</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Penalty Days</th>
+                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sal Ded / PT / PF</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Final Net</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -174,10 +229,25 @@ const PayrunSystem: React.FC = () => {
                                                         {p.payableDays} / {p.totalMonthDays}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-500">
-                                                    ₹{p.originalGross}
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-medium">
+                                                    ₹{p.baseNetSalary}
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900">
+                                                <td className="px-4 py-4 whitespace-nowrap text-center">
+                                                    <input 
+                                                        type="number" 
+                                                        min="0" 
+                                                        step="0.5"
+                                                        value={p.penaltyDays} 
+                                                        onChange={(e) => handlePenaltyChange(idx, e.target.value)}
+                                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:ring-indigo-500 focus:border-indigo-500"
+                                                    />
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-right text-sm text-red-500">
+                                                    -₹{p.salDed} <br/>
+                                                    -₹{p.ptDed || 0} (PT) <br/>
+                                                    -₹{p.pfDed || 0} (PF)
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900 bg-gray-50">
                                                     ₹{p.finalSalary}
                                                 </td>
                                             </tr>
