@@ -3217,10 +3217,16 @@ router.get('/payrun-preview', async (req, res) => {
             const sb = applicant.salaryBreakup;
             if (!sb) continue;
 
-            const row = data.find(r => 
-                (r["Employee Code"] && applicant.empCode && r["Employee Code"].toString().toLowerCase() === applicant.empCode.toLowerCase()) || 
-                (r["Employee Name"] && applicant.fullName && r["Employee Name"].toString().toLowerCase() === applicant.fullName.toLowerCase())
-            );
+            const row = data.find(r => {
+                const rowEmpCode = (r["Employee Code"] || r["Emp Code"] || r["Emp. Code"] || r["EmpCode"] || r["Code"] || '').toString().trim().toLowerCase();
+                const rowEmpName = (r["Employee Name"] || r["Emp Name"] || r["Name"] || r["Employee"] || '').toString().trim().toLowerCase();
+                const appEmpCode = (applicant.empCode || '').toString().trim().toLowerCase();
+                const appFullName = (applicant.fullName || '').toString().trim().toLowerCase();
+                
+                // Match by either exact Employee Code, or exact Full Name
+                return (rowEmpCode && appEmpCode && rowEmpCode === appEmpCode) || 
+                       (rowEmpName && appFullName && rowEmpName === appFullName);
+            });
             
             if (row) {
                 let present = 0, holiday = 0, leave = 0, absent = 0, totalMonthDays = 0;
