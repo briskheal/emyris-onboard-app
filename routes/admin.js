@@ -3263,7 +3263,31 @@ router.get('/payrun-preview', async (req, res) => {
         const previews = [];
         const allApplicants = await Applicant.find({});
         
+        const payrunStart = new Date(parseInt(year), new Date(`${month} 1, ${year}`).getMonth(), 1);
+        const payrunEnd = new Date(parseInt(year), new Date(`${month} 1, ${year}`).getMonth() + 1, 0);
+
+        const parseDMY = (dateString) => {
+            if (!dateString) return null;
+            const parts = dateString.split(/[-/]/);
+            if (parts.length !== 3) {
+                const d = new Date(dateString);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            if (parts[0].length === 4) {
+                const d = new Date(dateString);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        };
+        
         for (const applicant of allApplicants) {
+            let adoj = applicant.actualJoiningDate ? parseDMY(applicant.actualJoiningDate) : null;
+            
+            // If the employee joined AFTER the payrun month ended, completely exclude them
+            if (adoj && !isNaN(adoj.getTime()) && adoj > payrunEnd) {
+                continue;
+            }
+
             const sb = applicant.salaryBreakup || {};
 
             const row = data.find(r => {
@@ -3303,6 +3327,14 @@ router.get('/payrun-preview', async (req, res) => {
 
                 let payableDays = totalMonthDays - absent;
                 if (payableDays < 0) payableDays = 0;
+                
+                // If they joined in the middle of this payrun month, cap their max payable days
+                let maxPayableDays = totalMonthDays;
+                if (adoj && !isNaN(adoj.getTime()) && adoj >= payrunStart && adoj <= payrunEnd) {
+                    maxPayableDays = payrunEnd.getDate() - adoj.getDate() + 1;
+                }
+                
+                if (payableDays > maxPayableDays) payableDays = maxPayableDays;
                 if (payableDays > totalMonthDays) payableDays = totalMonthDays;
                 
                 const basic = parseFloat(sb.v_salBasic || sb.basic || 0);
