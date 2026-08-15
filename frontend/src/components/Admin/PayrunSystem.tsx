@@ -312,7 +312,7 @@ const PayrunSystem: React.FC = () => {
                                         <th style={{ textAlign: 'center', width: '100px' }}>PT Ded</th>
                                         <th style={{ textAlign: 'center', width: '100px' }}>PF Ded</th>
                                         <th style={{ textAlign: 'center', width: '100px' }}>Penalty Days</th>
-                                        <th style={{ textAlign: 'right' }}>Final Net (?)</th>
+                                        <th style={{ textAlign: 'right' }}>Final Net (₹)</th>
                                         <th style={{ textAlign: 'center' }}>Actions</th>
                                     </tr>
                                 </thead>
