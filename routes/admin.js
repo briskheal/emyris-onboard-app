@@ -3300,6 +3300,15 @@ router.get('/payrun-preview', async (req, res) => {
                     empName: applicant.fullName,
                     empCode: applicant.empCode,
                     email: applicant.email,
+                    division: applicant.division || 'NA',
+                    uanNumber: applicant.uanNumber || 'NA',
+                    epfNumber: applicant.epfNumber || 'NA',
+                    esiNumber: applicant.esiNumber || 'NA',
+                    fatherName: applicant.formData?.fatherName || 'NA',
+                    panNumber: applicant.formData?.panNumber || 'NA',
+                    bankName: applicant.formData?.bankName || 'NA',
+                    accNo: applicant.formData?.accNo || 'NA',
+                    ifsc: applicant.formData?.ifsc || 'NA',
                     present, absent, leave, holiday,
                     payableDays, totalMonthDays, 
                     originalGross: originalGross.toFixed(2),
@@ -3307,15 +3316,47 @@ router.get('/payrun-preview', async (req, res) => {
                     dailyRate: dailyRate.toFixed(2),
                     ptDed,
                     pfDed,
+                    penaltyDays: 0,
+                    salDed: 0,
+                    finalSalary: (baseNetSalary - ptDed - pfDed).toFixed(2),
+                    sendEmail: true,
                     calcBreakup
                 });
             }
         }
 
-        res.json({ success: true, previews });
+        const mailConfig = {
+            emailMessage: company.templateSettings?.payrunEmailMessage || 'Please find attached your salary slip for this month.',
+            preparedBy: company.templateSettings?.payrunPreparedBy || 'Medorn HRMS Software',
+            sanctionedBy: company.templateSettings?.payrunSanctionedBy || 'Rishita Dash'
+        };
+
+        res.json({ success: true, previews, mailConfig });
     } catch (e) {
         console.error('Payrun preview error:', e);
         res.status(500).json({ error: 'Failed to generate payrun preview' });
+    }
+});
+
+router.post('/save-payrun-config', async (req, res) => {
+    try {
+        const { emailMessage, preparedBy, sanctionedBy } = req.body;
+        const company = await Company.findOne();
+        if (!company) return res.status(404).json({ error: 'Company not found' });
+        
+        const currentSettings = company.templateSettings || {};
+        const updatedSettings = {
+            ...currentSettings,
+            payrunEmailMessage: emailMessage,
+            payrunPreparedBy: preparedBy,
+            payrunSanctionedBy: sanctionedBy
+        };
+        
+        await Company.updateOne({ _id: company._id }, { $set: { templateSettings: updatedSettings } });
+        res.json({ success: true, message: 'Payrun configuration saved successfully' });
+    } catch (e) {
+        console.error('Error saving payrun config:', e);
+        res.status(500).json({ error: 'Failed to save configuration' });
     }
 });
 

@@ -80,6 +80,11 @@ const PayrunSystem: React.FC = () => {
                     };
                 });
                 setPreviews(initializedPreviews);
+                if (res.data.mailConfig) {
+                    if (res.data.mailConfig.emailMessage) setEmailMessage(res.data.mailConfig.emailMessage);
+                    if (res.data.mailConfig.preparedBy) setPreparedBy(res.data.mailConfig.preparedBy);
+                    if (res.data.mailConfig.sanctionedBy) setSanctionedBy(res.data.mailConfig.sanctionedBy);
+                }
             } else {
                 setError(res.data.error || 'Failed to fetch preview');
             }
@@ -87,6 +92,19 @@ const PayrunSystem: React.FC = () => {
             setError(err.response?.data?.error || 'Failed to fetch payrun preview.');
         } finally {
             setLoadingPreview(false);
+        }
+    };
+
+    const saveMailConfig = async () => {
+        try {
+            const res = await api.post('/admin/save-payrun-config', { emailMessage, preparedBy, sanctionedBy });
+            if (res.data.success) {
+                alert('Mail configuration saved securely.');
+            } else {
+                alert('Failed to save configuration: ' + res.data.error);
+            }
+        } catch (err: any) {
+            alert('Failed to save configuration. Please try again.');
         }
     };
 
@@ -304,7 +322,7 @@ const PayrunSystem: React.FC = () => {
                                                     onChange={(e) => handleSelectAll(e.target.checked)} 
                                                     style={{ cursor: 'pointer', transform: 'scale(1.2)' }}
                                                 />
-                                                <span style={{ fontSize: '10px', marginTop: '4px', color: '#555' }}>All</span>
+                                                <span style={{ fontSize: '10px', marginTop: '4px' }}>All</span>
                                             </div>
                                         </th>
                                         <th>Employee Details</th>
@@ -323,14 +341,14 @@ const PayrunSystem: React.FC = () => {
                                                 <input type="checkbox" checked={!!p.sendEmail} onChange={(e) => handleEmailToggle(idx, e.target.checked)} style={{ cursor: 'pointer', transform: 'scale(1.2)' }}/>
                                             </td>
                                             <td>
-                                                <div style={{ fontWeight: '600', color: '#333' }}>{p.empName}</div>
-                                                <div style={{ fontSize: '0.8rem', color: '#777' }}>{p.empCode}</div>
+                                                <div style={{ fontWeight: '600' }}>{p.empName}</div>
+                                                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{p.empCode}</div>
                                             </td>
                                             <td style={{ textAlign: 'center', fontSize: '0.9rem' }}>
-                                                <span style={{ color: '#28a745', fontWeight: 'bold' }}>{p.present}</span> / 
-                                                <span style={{ color: '#dc3545' }}> {p.absent}</span> / 
-                                                <span style={{ color: '#ffc107' }}> {p.leave}</span> / 
-                                                <span style={{ color: '#17a2b8' }}> {p.holiday}</span>
+                                                <span style={{ fontWeight: 'bold' }}>{p.present}</span> / 
+                                                <span> {p.absent}</span> / 
+                                                <span> {p.leave}</span> / 
+                                                <span> {p.holiday}</span>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 <input type="number" min="0" value={p.ptDed} onChange={(e) => handlePTChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
@@ -341,8 +359,8 @@ const PayrunSystem: React.FC = () => {
                                             <td style={{ textAlign: 'center' }}>
                                                 <input type="number" min="0" step="0.5" value={p.penaltyDays} onChange={(e) => handlePenaltyChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
                                             </td>
-                                            <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.05rem', color: '#111' }}>
-                                                ?{p.finalSalary}
+                                            <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.05rem' }}>
+                                                ₹{p.finalSalary}
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
@@ -361,19 +379,22 @@ const PayrunSystem: React.FC = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: '1rem' }}>
-                            <div style={{ flex: '0 1 450px' }}>
-                                <h3 style={{ fontSize: '1rem', marginBottom: '10px', color: '#333' }}>Mail Configurations</h3>
+                            <div style={{ flex: 1, padding: '15px', border: '1px solid #ddd', borderRadius: '8px', background: '#fff' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                                    <h3 style={{ fontSize: '1rem', margin: 0 }}>Mail Configurations</h3>
+                                    <button onClick={saveMailConfig} className="btn btn-sm btn-outline-primary" style={{ padding: '2px 8px', fontSize: '0.8rem' }}>Save Config</button>
+                                </div>
                                 <div style={{ marginBottom: '10px' }}>
-                                    <label style={{ display: 'block', fontSize: '0.85rem', color: '#555', marginBottom: '4px' }}>Message Body</label>
+                                    <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Message Body</label>
                                     <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} className="form-input" style={{ width: '100%', padding: '6px' }}/>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#555', marginBottom: '4px' }}>Prepared By</label>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Prepared By</label>
                                         <input type="text" value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} className="form-input-sm" style={{ width: '100%' }}/>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', color: '#555', marginBottom: '4px' }}>Sanctioned By</label>
+                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px' }}>Sanctioned By</label>
                                         <input type="text" value={sanctionedBy} onChange={(e) => setSanctionedBy(e.target.value)} className="form-input-sm" style={{ width: '100%' }}/>
                                     </div>
                                 </div>

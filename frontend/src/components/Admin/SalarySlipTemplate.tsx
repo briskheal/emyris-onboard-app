@@ -73,7 +73,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Name</td>
                 <td style={{ padding: '4px 0' }}>: {data.empName}</td>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Father's Name</td>
-                <td style={{ padding: '4px 0' }}>: NA</td>
+                <td style={{ padding: '4px 0' }}>: {data.fatherName || 'NA'}</td>
               </tr>
               <tr>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Department</td>
@@ -83,15 +83,15 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
               </tr>
               <tr>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>E.P.F. Number</td>
-                <td style={{ padding: '4px 0' }}>: NA</td>
+                <td style={{ padding: '4px 0' }}>: {data.epfNumber || 'NA'}</td>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>E.S.I.C Number</td>
-                <td style={{ padding: '4px 0' }}>: NA</td>
+                <td style={{ padding: '4px 0' }}>: {data.esiNumber || 'NA'}</td>
               </tr>
               <tr>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>UAN</td>
-                <td style={{ padding: '4px 0' }}>: NA</td>
-                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Additional Details</td>
-                <td style={{ padding: '4px 0' }}>: NA</td>
+                <td style={{ padding: '4px 0' }}>: {data.uanNumber || 'NA'}</td>
+                <td style={{ padding: '4px 0', fontWeight: 'bold' }}>PAN Number</td>
+                <td style={{ padding: '4px 0' }}>: {data.panNumber || 'NA'}</td>
               </tr>
             </tbody>
           </table>
@@ -198,19 +198,19 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
               </tr>
               <tr>
                 <td style={{ padding: '4px 0' }}>A/c. No.</td>
-                <td style={{ padding: '4px 0' }}>: NA</td>
+                <td style={{ padding: '4px 0' }}>: {data.accNo || 'NA'}</td>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Less Deductions</td>
                 <td style={{ padding: '4px 0' }}>: {totalDeductions}</td>
               </tr>
               <tr>
                 <td style={{ padding: '4px 0' }}>Bank Name</td>
-                <td style={{ padding: '4px 0' }}>: NA</td>
+                <td style={{ padding: '4px 0' }}>: {data.bankName || 'NA'}</td>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Reimbursement</td>
                 <td style={{ padding: '4px 0' }}>: 0.00</td>
               </tr>
               <tr>
                 <td style={{ padding: '10px 0 4px 0' }}>IFSC Code</td>
-                <td style={{ padding: '10px 0 4px 0' }}>: NA</td>
+                <td style={{ padding: '10px 0 4px 0' }}>: {data.ifsc || 'NA'}</td>
                 <td style={{ borderTop: borderStyle, padding: '10px 0 4px 0', fontWeight: 'bold' }}>Total Salary Payable</td>
                 <td style={{ borderTop: borderStyle, padding: '10px 0 4px 0', fontWeight: 'bold' }}>: {totalSalaryPayable}</td>
               </tr>
