@@ -53,9 +53,9 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '10px' }}>
         {logoId ? (
-          <img src={`${window.location.origin}/api/admin/api/public/asset/${logoId}`} alt="Company Logo" style={{ maxWidth: '120px', maxHeight: '60px', marginRight: '20px' }} crossOrigin="anonymous" />
+          <img src={`${window.location.origin}/api/admin/api/public/asset/${logoId}`} alt="Company Logo" style={{ maxWidth: '180px', maxHeight: '90px', marginRight: '20px' }} crossOrigin="anonymous" />
         ) : (
-          <div style={{ width: '120px', marginRight: '20px' }}></div>
+          <div style={{ width: '180px', marginRight: '20px' }}></div>
         )}
         <div style={{ flex: 1, textAlign: 'center' }}>
           <h1 style={{ margin: '0', fontSize: '20px', fontWeight: 'bold' }}>EMYRIS BIOLIFESCIENCES PVT LTD</h1>
@@ -229,22 +229,22 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
         </div>
 
         {/* Signatures */}
-        <div style={{ borderTop: borderStyle, padding: '15px 10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'flex-end' }}>
+        <div style={{ borderTop: borderStyle, padding: '10px 10px', display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'flex-end' }}>
           <div>
-            <div style={{ marginBottom: '40px' }}>Prepared By:</div>
+            <div style={{ marginBottom: '30px' }}>Prepared By:</div>
             <div style={{ fontWeight: 'normal' }}>{preparedBy}</div>
           </div>
           <div style={{ textAlign: 'center' }}>
             {signatureId ? (
               <img src={`${window.location.origin}/api/admin/api/public/asset/${signatureId}`} alt="Authorized Signature" style={{ maxWidth: '150px', maxHeight: '60px', marginBottom: '5px', mixBlendMode: 'multiply' }} crossOrigin="anonymous" />
             ) : (
-              <div style={{ height: '65px' }}></div>
+              <div style={{ height: '50px' }}></div>
             )}
             <div>Authorized Signatory</div>
             <div style={{ fontWeight: 'normal', fontSize: '12px', marginTop: '4px' }}>{sanctionedBy}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ marginBottom: '40px' }}>Received By:</div>
+            <div style={{ marginBottom: '30px' }}>Received By:</div>
             <div style={{ fontWeight: 'normal', marginTop: '5px' }}>{data.empName}</div>
           </div>
         </div>
@@ -252,12 +252,12 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
       </div>
 
       {/* Footer Note */}
-      <div style={{ position: 'absolute', bottom: '10mm', left: '10mm', right: '10mm' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '12px' }}>
+      <div style={{ marginTop: '15px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '10px' }}>
           <span>Computer generated Slip. No signature required.</span>
           <span>Powered By: Emyris IT Dept</span>
         </div>
-        <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 'bold' }}>
+        <div style={{ marginTop: '5px', fontSize: '10px', fontWeight: 'bold' }}>
           NOTE : All amounts displayed in this payment slip are in INR
         </div>
       </div>
