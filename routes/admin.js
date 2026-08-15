@@ -3443,8 +3443,8 @@ router.post('/finalize-payrun', async (req, res) => {
         await Payslip.destroy({ where: { month, year } });
 
         const toInsert = previews.map((p) => ({
-            email: p.email,
-            empName: p.empName,
+            email: p.email || 'no-email@example.com',
+            empName: p.empName || 'Unknown Employee',
             month,
             year,
             payableDays: p.payableDays,
