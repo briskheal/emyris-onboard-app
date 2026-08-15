@@ -3360,13 +3360,13 @@ router.get('/payrun-preview', async (req, res) => {
                 }
 
                 const calcBreakup = {
-                    basic: (basic * factor).toFixed(2),
-                    hra: (hra * factor).toFixed(2),
-                    conveyance: (conv).toFixed(2), 
-                    medical: (med).toFixed(2), 
-                    lta: (lta * factor).toFixed(2),
-                    edu: (edu).toFixed(2), 
-                    special: (special * factor).toFixed(2)
+                    basic: Math.round(basic * factor),
+                    hra: Math.round(hra * factor),
+                    conveyance: Math.round(conv), 
+                    medical: Math.round(med), 
+                    lta: Math.round(lta * factor),
+                    edu: Math.round(edu), 
+                    special: Math.round(special * factor)
                 };
                 
                 const baseNetSalary = Object.values(calcBreakup).reduce((a, b) => a + parseFloat(b), 0);
@@ -3389,14 +3389,14 @@ router.get('/payrun-preview', async (req, res) => {
                     ifsc: applicant.formData?.ifsc || 'NA',
                     present, absent, leave, holiday,
                     payableDays, totalMonthDays, 
-                    originalGross: originalGross.toFixed(2),
-                    baseNetSalary: baseNetSalary.toFixed(2),
-                    dailyRate: dailyRate.toFixed(2),
-                    ptDed,
-                    pfDed,
+                    originalGross: Math.round(originalGross),
+                    baseNetSalary: Math.round(baseNetSalary),
+                    dailyRate: Math.round(dailyRate),
+                    ptDed: Math.round(ptDed),
+                    pfDed: Math.round(pfDed),
                     penaltyDays: 0,
                     salDed: 0,
-                    finalSalary: (baseNetSalary - ptDed - pfDed).toFixed(2),
+                    finalSalary: Math.round(baseNetSalary - ptDed - pfDed),
                     sendEmail: true,
                     calcBreakup
                 });

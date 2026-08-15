@@ -77,11 +77,11 @@ const PayrunSystem: React.FC = () => {
             if (res.data.success) {
                 const initializedPreviews = res.data.previews.map((p: any) => {
                     const salDed = p.salDed !== undefined ? p.salDed : 0;
-                    const finalNet = p.finalSalary !== undefined ? p.finalSalary : (parseFloat(p.baseNetSalary) - (p.ptDed || 0) - (p.pfDed || 0) - salDed).toFixed(2);
+                    const finalNet = p.finalSalary !== undefined ? p.finalSalary : Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - salDed);
                     return {
                         ...p,
                         penaltyDays: p.penaltyDays !== undefined ? p.penaltyDays : 0,
-                        salDed: typeof salDed === 'number' ? salDed.toFixed(2) : salDed,
+                        salDed: typeof salDed === 'number' ? Math.round(salDed) : salDed,
                         finalSalary: finalNet,
                         sendEmail: p.sendEmail !== undefined ? p.sendEmail : true
                     };
@@ -122,8 +122,8 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.penaltyDays = days;
-        p.salDed = (days * parseFloat(p.dailyRate)).toFixed(2);
-        p.finalSalary = (parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0)).toFixed(2);
+        p.salDed = Math.round(days * parseFloat(p.dailyRate));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0));
         setPreviews(updated);
     };
 
@@ -132,7 +132,7 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.ptDed = val;
-        p.finalSalary = (parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0)).toFixed(2);
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0));
         setPreviews(updated);
     };
 
@@ -141,7 +141,7 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.pfDed = val;
-        p.finalSalary = (parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0)).toFixed(2);
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0));
         setPreviews(updated);
     };
 
