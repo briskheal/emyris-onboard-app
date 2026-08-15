@@ -3242,6 +3242,10 @@ router.get('/payrun-preview', async (req, res) => {
             return res.json({ success: true, previews, mailConfig, loadedFromDb: true });
         }
 
+        if (req.query.forceCsv !== 'true') {
+            return res.json({ success: true, previews: [], message: 'No saved records found for this month.' });
+        }
+
         const filePath = path.join(__dirname, '../Attendance/LATEST_ATTENDANCE.xlsx');
         if (!fs.existsSync(filePath)) {
             const fallbackPath = path.join(__dirname, '../Attendance/JULY ATTENDANCE REPORT.xlsx');

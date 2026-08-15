@@ -1,4 +1,4 @@
-import{c as Xi}from"./index-CvMPiX2R.js";/**
+import{c as Xi}from"./index-BXR1HNMi.js";/**
  * @license lucide-react v0.469.0 - ISC
  *
  * This source code is licensed under the ISC license.

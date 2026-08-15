@@ -31,7 +31,7 @@ const PayrunSystem: React.FC = () => {
     const [previewData, setPreviewData] = useState<any | null>(null);
 
     useEffect(() => {
-        fetchPreview();
+        fetchPreview(false);
     }, [payrunMonth, payrunYear]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,11 +69,11 @@ const PayrunSystem: React.FC = () => {
         }
     };
 
-    const fetchPreview = async () => {
+    const fetchPreview = async (forceCsv = false) => {
         setLoadingPreview(true);
         setError('');
         try {
-            const res = await api.get(`/admin/payrun-preview?month=${payrunMonth}&year=${payrunYear}`);
+            const res = await api.get(`/admin/payrun-preview?month=${payrunMonth}&year=${payrunYear}&forceCsv=${forceCsv}`);
             if (res.data.success) {
                 const initializedPreviews = res.data.previews.map((p: any) => {
                     const salDed = p.salDed !== undefined ? p.salDed : 0;
@@ -339,7 +339,7 @@ const PayrunSystem: React.FC = () => {
                         {uploading ? 'Wait...' : 'Upload'}
                     </button>
                     {uploadSuccess && (
-                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm btn-success" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                        <button onClick={() => fetchPreview(true)} disabled={loadingPreview} className="btn btn-sm btn-success" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
                             <Play size={14} style={{ marginRight: '4px' }} />
                             {loadingPreview ? 'Wait...' : 'Run Preview'}
                         </button>
