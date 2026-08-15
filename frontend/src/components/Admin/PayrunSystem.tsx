@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Play, CheckCircle, AlertCircle, FileSpreadsheet, Download, Mail, Eye, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Upload, Play, CheckCircle, Download, Mail, Eye, X, ChevronRight, ChevronLeft, AlertCircle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -7,6 +7,8 @@ import api from '../../api/client';
 import SalarySlipTemplate from './SalarySlipTemplate';
 
 const PayrunSystem: React.FC = () => {
+    const [step, setStep] = useState(1);
+    
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadSuccess, setUploadSuccess] = useState(false);
@@ -14,18 +16,15 @@ const PayrunSystem: React.FC = () => {
 
     const [previews, setPreviews] = useState<any[]>([]);
     const [loadingPreview, setLoadingPreview] = useState(false);
-    const [generating, setGenerating] = useState(false);
-    const [generationSuccess, setGenerationSuccess] = useState(false);
 
     const [emailMessage, setEmailMessage] = useState('Please find attached your salary slip for this month.');
     const [preparedBy, setPreparedBy] = useState('Medorn HRMS Software');
     const [sanctionedBy, setSanctionedBy] = useState('Rishita Dash');
     const [sendingEmails, setSendingEmails] = useState(false);
     const [emailSuccess, setEmailSuccess] = useState('');
-    const hiddenTemplatesRef = useRef<HTMLDivElement>(null);
-
-    const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
-    const [previewingId, setPreviewingId] = useState<string | null>(null);
+    
+    const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
+    const [previewData, setPreviewData] = useState<any | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -80,6 +79,7 @@ const PayrunSystem: React.FC = () => {
                     };
                 });
                 setPreviews(initializedPreviews);
+                setStep(2); // Auto-advance to Review
             } else {
                 setError(res.data.error || 'Failed to fetch preview');
             }
@@ -129,21 +129,53 @@ const PayrunSystem: React.FC = () => {
         XLSX.writeFile(wb, `Payrun_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
     };
 
-    const generatePayslips = async () => {
-        if (previews.length === 0) return;
-        setGenerating(true);
-        setError('');
+    // Robust HTML to Base64 PDF function
+    const generatePdfBase64 = async (empCode: string) => {
+        const element = document.getElementById(`salary-slip-${empCode}`);
+        if (!element) throw new Error("Template not found");
+        
+        // Temporarily append to body to ensure it is rendered by html2canvas
+        const originalParent = element.parentElement;
+        document.body.appendChild(element);
+        
+        element.style.display = 'block';
+        element.style.position = 'absolute';
+        element.style.top = '0';
+        element.style.left = '0';
+        element.style.zIndex = '-9999';
+        
         try {
-            const res = await api.post('/admin/generate-payslips', { previews });
-            if (res.data.success) {
-                setGenerationSuccess(true);
-            } else {
-                setError(res.data.error || 'Failed to generate payslips');
-            }
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to generate payslips.');
+            const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false });
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            return pdf.output('datauristring');
         } finally {
-            setGenerating(false);
+            element.style.display = 'none';
+            if (originalParent) {
+                originalParent.appendChild(element);
+            }
+        }
+    };
+
+    const downloadPdf = async (p: any) => {
+        setGeneratingPdf(p.empCode);
+        try {
+            const pdfBase64 = await generatePdfBase64(p.empCode);
+            const a = document.createElement('a');
+            a.href = pdfBase64;
+            a.download = `Salary_Slip_${p.empName.replace(/\s+/g, '_')}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to download PDF");
+        } finally {
+            setGeneratingPdf(null);
         }
     };
 
@@ -162,22 +194,7 @@ const PayrunSystem: React.FC = () => {
             const payloadEmails = [];
 
             for (const p of targets) {
-                const element = document.getElementById(`salary-slip-${p.empCode}`);
-                if (!element) continue;
-
-                // Temporarily ensure it is visible for html2canvas
-                element.style.display = 'block';
-                const canvas = await html2canvas(element, { scale: 2 });
-                element.style.display = 'none';
-
-                const imgData = canvas.toDataURL('image/png');
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-                
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                const pdfBase64 = pdf.output('datauristring');
-
+                const pdfBase64 = await generatePdfBase64(p.empCode);
                 payloadEmails.push({
                     email: p.email,
                     empName: p.empName,
@@ -203,285 +220,215 @@ const PayrunSystem: React.FC = () => {
         }
     };
 
-    const handlePreviewPdf = async (empCode: string) => {
-        setPreviewingId(empCode);
-        try {
-            const element = document.getElementById(`salary-slip-${empCode}`);
-            if (!element) return;
-
-            element.style.display = 'block';
-            const canvas = await html2canvas(element, { scale: 2 });
-            element.style.display = 'none';
-
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-            
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            
-            // Generate Blob URL for iframe viewing
-            const blobUrl = pdf.output('bloburl');
-            setPreviewPdfUrl(blobUrl.toString());
-        } catch (e) {
-            console.error("Preview PDF error", e);
-        } finally {
-            setPreviewingId(null);
-        }
-    };
-
     return (
         <div className="p-6 max-w-6xl mx-auto space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold text-gray-800 flex items-center">
-                    <FileSpreadsheet className="w-8 h-8 mr-3 text-indigo-600" />
-                    Attendance & Payrun System
-                </h1>
+            {/* Header */}
+            <div className="flex justify-between items-center mb-6 border-b pb-4">
+                <h1 className="text-2xl font-bold text-gray-900">Payrun Wizard</h1>
+                <div className="flex items-center space-x-2 text-sm font-medium">
+                    <span className={`px-3 py-1 rounded-full ${step >= 1 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>1. Upload</span>
+                    <span className="text-gray-300">?</span>
+                    <span className={`px-3 py-1 rounded-full ${step >= 2 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>2. Review</span>
+                    <span className="text-gray-300">?</span>
+                    <span className={`px-3 py-1 rounded-full ${step >= 3 ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-600'}`}>3. Distribute</span>
+                </div>
             </div>
 
             {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg flex items-center">
+                <div className="p-4 mb-6 text-sm text-red-700 bg-red-100 rounded-lg flex items-center shadow-sm">
                     <AlertCircle className="w-5 h-5 mr-2" />
                     {error}
                 </div>
             )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Step 1: Upload Attendance Report</h2>
-                    <div className="flex items-center space-x-4">
-                        <input 
-                            type="file" 
-                            accept=".xlsx, .xls" 
-                            onChange={handleFileChange}
-                            className="block w-full text-sm text-gray-500
-                                file:mr-4 file:py-2 file:px-4
-                                file:rounded-md file:border-0
-                                file:text-sm file:font-semibold
-                                file:bg-indigo-50 file:text-indigo-700
-                                hover:file:bg-indigo-100"
-                        />
-                        <button
-                            onClick={handleUpload}
-                            disabled={!file || uploading}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 flex items-center whitespace-nowrap"
-                        >
+            {/* STEP 1: UPLOAD */}
+            {step === 1 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-6">Step 1: Upload Monthly Attendance (.xlsx)</h2>
+                    
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-10 flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} className="mb-4 block w-full max-w-xs text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                        <button onClick={handleUpload} disabled={uploading || !file} className="mt-2 px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center">
                             <Upload className="w-4 h-4 mr-2" />
-                            {uploading ? 'Uploading...' : 'Upload File'}
+                            {uploading ? 'Uploading...' : 'Upload Data'}
                         </button>
                     </div>
+
                     {uploadSuccess && (
-                        <p className="mt-3 text-green-600 flex items-center text-sm font-medium">
-                            <CheckCircle className="w-4 h-4 mr-1" /> File uploaded successfully!
-                        </p>
+                        <div className="mt-8 pt-6 border-t flex items-center justify-between">
+                            <div className="text-green-600 font-medium flex items-center">
+                                <CheckCircle className="w-5 h-5 mr-2" />
+                                File Uploaded Successfully. Ready for Engine.
+                            </div>
+                            <button onClick={fetchPreview} disabled={loadingPreview} className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium shadow-sm transition-colors flex items-center disabled:opacity-50">
+                                <Play className="w-5 h-5 mr-2" />
+                                {loadingPreview ? 'Running Engine...' : 'Run Preview Engine'}
+                            </button>
+                        </div>
                     )}
                 </div>
+            )}
 
-                <div className="p-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold text-gray-800">Step 2: Payrun Preview</h2>
-                        <button
-                            onClick={fetchPreview}
-                            disabled={loadingPreview}
-                            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 flex items-center"
-                        >
-                            <Play className="w-4 h-4 mr-2" />
-                            {loadingPreview ? 'Calculating...' : 'Run Preview Engine'}
+            {/* STEP 2: REVIEW */}
+            {step === 2 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-semibold text-gray-800">Step 2: Review Math & Apply Penalties</h2>
+                        <div className="space-x-3 flex">
+                            <button onClick={() => setStep(1)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center text-sm font-medium">
+                                <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                            </button>
+                            <button onClick={exportToExcel} className="px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 flex items-center font-medium text-sm transition-colors">
+                                <Download className="w-4 h-4 mr-2" /> Export to Excel
+                            </button>
+                            <button onClick={() => setStep(3)} className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium shadow-sm transition-colors flex items-center text-sm">
+                                Next: Distribute <ChevronRight className="w-4 h-4 ml-1" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Tally (P/A/L/H)</th>
+                                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase">Penalty Days</th>
+                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Final Net</th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                                {previews.map((p, idx) => (
+                                    <tr key={idx} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="text-sm font-medium text-gray-900">{p.empName}</div>
+                                            <div className="text-sm text-gray-500">{p.empCode}</div>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
+                                            <span className="text-green-600 font-medium">{p.present}</span> / 
+                                            <span className="text-red-500"> {p.absent}</span> / 
+                                            <span className="text-yellow-600"> {p.leave}</span> / 
+                                            <span className="text-blue-500"> {p.holiday}</span>
+                                        </td>
+                                        <td className="px-4 py-4 whitespace-nowrap text-center">
+                                            <input 
+                                                type="number" min="0" step="0.5"
+                                                value={p.penaltyDays} 
+                                                onChange={(e) => handlePenaltyChange(idx, e.target.value)}
+                                                className="w-20 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:ring-indigo-500 focus:border-indigo-500"
+                                            />
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900 bg-gray-50">
+                                            ?{p.finalSalary}
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-center flex justify-center space-x-2">
+                                            <button onClick={() => setPreviewData(p)} className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors" title="View Slip HTML">
+                                                <Eye className="w-5 h-5" />
+                                            </button>
+                                            <button onClick={() => downloadPdf(p)} disabled={generatingPdf === p.empCode} className="p-2 text-green-600 hover:bg-green-50 rounded-full transition-colors disabled:opacity-50" title="Download PDF">
+                                                <Download className="w-5 h-5" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* STEP 3: DISTRIBUTE */}
+            {step === 3 && (
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-lg font-semibold text-gray-800">Step 3: Mail Distribution</h2>
+                        <button onClick={() => setStep(2)} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 flex items-center text-sm font-medium">
+                            <ChevronLeft className="w-4 h-4 mr-1" /> Back to Review
                         </button>
                     </div>
 
-                    {previews.length > 0 ? (
-                        <div className="space-y-4">
-                            <div className="flex justify-end mb-2">
-                                <button
-                                    onClick={exportToExcel}
-                                    className="px-4 py-2 bg-green-50 text-green-700 border border-green-200 rounded-md hover:bg-green-100 flex items-center font-medium text-sm transition-colors"
-                                >
-                                    <Download className="w-4 h-4 mr-2" />
-                                    Export to Excel
-                                </button>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* Email Form */}
+                        <div className="lg:col-span-1 space-y-4">
+                            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <h3 className="font-medium text-gray-900 flex items-center mb-4"><Mail className="w-4 h-4 mr-2 text-indigo-600"/> Mail Content</h3>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Message Body</label>
+                                        <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={3} className="w-full border border-gray-300 rounded text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Prepared By Signature</label>
+                                        <input type="text" value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} className="w-full border border-gray-300 rounded text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Sanctioned By Signature</label>
+                                        <input type="text" value={sanctionedBy} onChange={(e) => setSanctionedBy(e.target.value)} className="w-full border border-gray-300 rounded text-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"/>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="overflow-x-auto rounded-lg border border-gray-200">
+
+                            <button onClick={sendEmails} disabled={sendingEmails} className="w-full py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium shadow-sm transition-colors disabled:opacity-50 flex justify-center items-center">
+                                <Mail className="w-5 h-5 mr-2" />
+                                {sendingEmails ? 'Generating & Sending...' : 'Send Mails to Selected'}
+                            </button>
+                            {emailSuccess && <div className="text-center text-green-600 text-sm font-medium mt-2"><CheckCircle className="w-4 h-4 inline mr-1"/> {emailSuccess}</div>}
+                        </div>
+
+                        {/* Mail Targets List */}
+                        <div className="lg:col-span-2">
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance<br/><span className="text-[10px] text-gray-400">(P / A / L / H)</span></th>
-                                            <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Payable Days</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Base Net Earnings</th>
-                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Penalty Days</th>
-                                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sal Ded / PT / PF</th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Final Net</th>
-                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Send?</th>
+                                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Employee Email</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {previews.map((p, idx) => (
                                             <tr key={idx} className="hover:bg-gray-50">
-                                                <td className="px-4 py-4 whitespace-nowrap text-center">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        checked={!!p.sendEmail} 
-                                                        onChange={(e) => handleEmailToggle(idx, e.target.checked)}
-                                                        className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"
-                                                    />
+                                                <td className="px-4 py-2 whitespace-nowrap text-center">
+                                                    <input type="checkbox" checked={!!p.sendEmail} onChange={(e) => handleEmailToggle(idx, e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer"/>
                                                 </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                <td className="px-4 py-2 whitespace-nowrap">
                                                     <div className="text-sm font-medium text-gray-900">{p.empName}</div>
-                                                    <div className="text-sm text-gray-500">{p.email}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                                    <span className="text-green-600 font-medium">{p.present}</span> / 
-                                                    <span className="text-red-500"> {p.absent}</span> / 
-                                                    <span className="text-yellow-600"> {p.leave}</span> / 
-                                                    <span className="text-blue-500"> {p.holiday}</span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                                                        {p.payableDays} / {p.totalMonthDays}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900 font-medium">
-                                                    ₹{p.baseNetSalary}
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-center">
-                                                    <input 
-                                                        type="number" 
-                                                        min="0" 
-                                                        step="0.5"
-                                                        value={p.penaltyDays} 
-                                                        onChange={(e) => handlePenaltyChange(idx, e.target.value)}
-                                                        className="w-20 px-2 py-1 text-sm border border-gray-300 rounded text-center focus:ring-indigo-500 focus:border-indigo-500"
-                                                    />
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-right text-sm text-red-500">
-                                                    -₹{p.salDed} <br/>
-                                                    -₹{p.ptDed || 0} (PT) <br/>
-                                                    -₹{p.pfDed || 0} (PF)
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900 bg-gray-50">
-                                                    ₹{p.finalSalary}
-                                                </td>
-                                                <td className="px-4 py-4 whitespace-nowrap text-center">
-                                                    <button
-                                                        onClick={() => handlePreviewPdf(p.empCode)}
-                                                        disabled={previewingId === p.empCode}
-                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors disabled:opacity-50"
-                                                        title="Preview PDF"
-                                                    >
-                                                        <Eye className="w-5 h-5" />
-                                                    </button>
+                                                    <div className="text-xs text-gray-500">{p.email || 'No email found!'}</div>
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
-
-                            <div className="flex justify-end pt-4">
-                                {generationSuccess ? (
-                                    <div className="px-6 py-3 bg-green-50 text-green-700 rounded-md font-medium flex items-center">
-                                        <CheckCircle className="w-5 h-5 mr-2" />
-                                        Payslips Generated Successfully!
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={generatePayslips}
-                                        disabled={generating}
-                                        className="px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium shadow-sm transition-colors disabled:opacity-50 flex items-center"
-                                    >
-                                        <CheckCircle className="w-5 h-5 mr-2" />
-                                        {generating ? 'Generating Payslips...' : 'Approve & Generate Payslips'}
-                                    </button>
-                                )}
-                            </div>
-
-                            <div className="mt-8 pt-6 border-t border-gray-200">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center"><Mail className="w-5 h-5 mr-2 text-indigo-600" /> Email Configurations</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Message Body</label>
-                                        <textarea
-                                            value={emailMessage}
-                                            onChange={(e) => setEmailMessage(e.target.value)}
-                                            rows={3}
-                                            className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                        />
-                                    </div>
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Prepared By (Signature)</label>
-                                            <input
-                                                type="text"
-                                                value={preparedBy}
-                                                onChange={(e) => setPreparedBy(e.target.value)}
-                                                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">Sanctioned By (Signature)</label>
-                                            <input
-                                                type="text"
-                                                value={sanctionedBy}
-                                                onChange={(e) => setSanctionedBy(e.target.value)}
-                                                className="w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="flex justify-end items-center mt-4">
-                                    {emailSuccess && <span className="text-green-600 font-medium mr-4 flex items-center"><CheckCircle className="w-4 h-4 mr-1" /> {emailSuccess}</span>}
-                                    <button
-                                        onClick={sendEmails}
-                                        disabled={sendingEmails}
-                                        className="px-6 py-3 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 font-medium shadow-sm transition-colors disabled:opacity-50 flex items-center"
-                                    >
-                                        <Mail className="w-5 h-5 mr-2" />
-                                        {sendingEmails ? 'Generating PDFs & Sending...' : 'Email Selected Slips'}
-                                    </button>
-                                </div>
-                            </div>
-
                         </div>
-                    ) : (
-                        <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-300">
-                            <FileSpreadsheet className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                            <h3 className="text-sm font-medium text-gray-900">No Preview Data</h3>
-                            <p className="text-sm text-gray-500 mt-1">Upload a file and click "Run Preview Engine" to calculate salaries.</p>
-                        </div>
-                    )}
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {/* Hidden Templates for PDF Generation */}
-            <div ref={hiddenTemplatesRef} style={{ position: 'absolute', top: '-9999px', left: '-9999px', zIndex: -100 }}>
+            {/* Hidden Templates purely for html2canvas to fetch */}
+            <div style={{ display: 'none' }}>
                 {previews.map((p, idx) => (
-                    <div key={idx} style={{ display: 'none' }} id={`salary-slip-${p.empCode}`}>
+                    <div key={idx} id={`salary-slip-${p.empCode}`}>
                         <SalarySlipTemplate data={p} preparedBy={preparedBy} sanctionedBy={sanctionedBy} />
                     </div>
                 ))}
             </div>
 
-            {/* PDF Preview Modal */}
-            {previewPdfUrl && (
+            {/* HTML Preview Modal */}
+            {previewData && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
-                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
-                            <h3 className="text-lg font-medium text-gray-900">Salary Slip Preview</h3>
-                            <button 
-                                onClick={() => setPreviewPdfUrl(null)}
-                                className="text-gray-400 hover:text-gray-500 hover:bg-gray-200 rounded-full p-2 transition-colors"
-                            >
+                    <div className="bg-white rounded-lg shadow-xl overflow-hidden flex flex-col" style={{ width: '220mm', height: '95vh' }}>
+                        <div className="px-6 py-3 border-b border-gray-200 flex justify-between items-center bg-gray-50 flex-shrink-0">
+                            <h3 className="text-lg font-medium text-gray-900">HTML Live Preview</h3>
+                            <button onClick={() => setPreviewData(null)} className="text-gray-400 hover:text-gray-500 hover:bg-gray-200 rounded-full p-2">
                                 <X className="w-6 h-6" />
                             </button>
                         </div>
-                        <div className="flex-1 w-full bg-gray-100">
-                            <iframe 
-                                src={previewPdfUrl} 
-                                className="w-full h-full border-none" 
-                                title="PDF Preview"
-                            />
+                        <div className="flex-1 overflow-auto bg-gray-300 p-6 flex justify-center">
+                            <div className="shadow-lg">
+                                <SalarySlipTemplate data={previewData} preparedBy={preparedBy} sanctionedBy={sanctionedBy} />
+                            </div>
                         </div>
                     </div>
                 </div>
