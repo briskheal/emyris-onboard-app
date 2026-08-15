@@ -3217,8 +3217,14 @@ router.get('/payrun-preview', async (req, res) => {
             const sb = applicant.salaryBreakup || {};
 
             const row = data.find(r => {
-                const rowEmpCode = (r["Employee Code"] || r["Emp Code"] || r["Emp. Code"] || r["EmpCode"] || r["Code"] || '').toString().trim().toLowerCase();
-                const rowEmpName = (r["Employee Name"] || r["Emp Name"] || r["Name"] || r["Employee"] || '').toString().trim().toLowerCase();
+                let rowEmpCode = '';
+                let rowEmpName = '';
+                for (const key of Object.keys(r)) {
+                    const k = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+                    if (k === 'employeecode' || k === 'empcode' || k === 'code') rowEmpCode = (r[key] || '').toString().trim().toLowerCase();
+                    if (k === 'employeename' || k === 'empname' || k === 'name' || k === 'employee') rowEmpName = (r[key] || '').toString().trim().toLowerCase();
+                }
+                
                 const appEmpCode = (applicant.empCode || '').toString().trim().toLowerCase();
                 const appFullName = (applicant.fullName || '').toString().trim().toLowerCase();
                 

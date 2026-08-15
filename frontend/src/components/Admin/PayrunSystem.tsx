@@ -270,27 +270,25 @@ const PayrunSystem: React.FC = () => {
                     </div>
                 )}
 
-                <div style={{ padding: '0.5rem 1rem', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <p style={{ margin: 0, color: '#555', fontWeight: '500', whiteSpace: 'nowrap' }}>Upload Monthly Attendance (.xlsx)</p>
-                    <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} style={{ margin: 0, padding: '5px' }}/>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <select className="form-control form-control-sm" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: '120px' }}>
-                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
-                        </select>
-                        <select className="form-control form-control-sm" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: '80px' }}>
-                            {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                        <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap' }}>
-                            <Upload size={14} style={{ marginRight: '5px' }} />
-                            {uploading ? 'Uploading...' : 'Upload Data'}
+                <div style={{ padding: '0.25rem 0.5rem', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap' }}>
+                    <span style={{ color: '#555', fontWeight: 'bold', fontSize: '0.85rem' }}>Attendance:</span>
+                    <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} style={{ margin: 0, padding: '2px', fontSize: '0.85rem', maxWidth: '200px' }}/>
+                    <select className="form-control form-control-sm" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: '90px', padding: '2px', fontSize: '0.85rem' }}>
+                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <select className="form-control form-control-sm" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: '70px', padding: '2px', fontSize: '0.85rem' }}>
+                        {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ padding: '2px 8px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                        <Upload size={12} style={{ marginRight: '4px' }} />
+                        {uploading ? 'Up...' : 'Upload'}
+                    </button>
+                    {uploadSuccess && (
+                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm" style={{ background: '#28a745', color: '#fff', padding: '2px 8px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                            <Play size={12} style={{ marginRight: '4px' }} />
+                            {loadingPreview ? 'Wait...' : 'Run Preview'}
                         </button>
-                        {uploadSuccess && (
-                            <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm" style={{ background: '#28a745', color: '#fff', whiteSpace: 'nowrap' }}>
-                                <Play size={14} style={{ marginRight: '5px' }} />
-                                {loadingPreview ? 'Running Engine...' : 'Run Preview Engine'}
-                            </button>
-                        )}
-                    </div>
+                    )}
                 </div>
 
                 {previews.length > 0 && (
