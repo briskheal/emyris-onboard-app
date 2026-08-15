@@ -48,7 +48,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
   const borderStyle = "1px solid #000";
 
   return (
-    <div id={`salary-slip-${data.empCode}`} style={{ width: '210mm', minHeight: '297mm', padding: '15mm', backgroundColor: '#fff', color: '#000', fontFamily: 'Arial, sans-serif', boxSizing: 'border-box', position: 'relative' }}>
+    <div id={`salary-slip-${data.empCode}`} style={{ width: '210mm', height: '297mm', overflow: 'hidden', padding: '10mm', backgroundColor: '#fff', color: '#000', fontFamily: 'Arial, sans-serif', boxSizing: 'border-box', position: 'relative' }}>
       
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '10px' }}>
@@ -252,12 +252,14 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
       </div>
 
       {/* Footer Note */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '12px' }}>
-        <span>Computer generated Slip. No signature required.</span>
-        <span>Powered By: Emyris IT Dept</span>
-      </div>
-      <div style={{ marginTop: '20px', fontSize: '12px', fontWeight: 'bold' }}>
-        NOTE : All amounts displayed in this payment slip are in INR
+      <div style={{ position: 'absolute', bottom: '10mm', left: '10mm', right: '10mm' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px', fontSize: '12px' }}>
+          <span>Computer generated Slip. No signature required.</span>
+          <span>Powered By: Emyris IT Dept</span>
+        </div>
+        <div style={{ marginTop: '10px', fontSize: '12px', fontWeight: 'bold' }}>
+          NOTE : All amounts displayed in this payment slip are in INR
+        </div>
       </div>
     </div>
   );
