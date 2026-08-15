@@ -3420,7 +3420,7 @@ router.post('/email-payslips', async (req, res) => {
         for (const item of emails) {
             if (!item.email || !item.pdfBase64) continue;
             
-            const pdfBuffer = Buffer.from(item.pdfBase64.replace(/^data:application\/pdf;base64,/, ''), 'base64');
+            const pdfBuffer = Buffer.from(item.pdfBase64.split('base64,')[1] || '', 'base64');
             
             const mailOptions = {
                 from: process.env.EMAIL_FROM || '"Emyris HR" <hradmin@emyrishr.in>',
