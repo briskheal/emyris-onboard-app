@@ -241,9 +241,9 @@ const PayrunSystem: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: '0.5rem', width: '100%', maxWidth: '100%', margin: '0' }}>
-            <div className="dash-card" style={{ padding: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div style={{ padding: '0', width: '100%', maxWidth: '100%', margin: '0' }}>
+            <div className="dash-card" style={{ padding: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                     <h2>Payrun & Attendance Module</h2>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                         <button className="btn btn-sm" style={{ background: '#f8f9fa', border: '1px solid #ddd', color: '#333' }} onClick={exportToExcel}>
@@ -265,16 +265,16 @@ const PayrunSystem: React.FC = () => {
                     </div>
                 )}
 
-                <div style={{ padding: '1rem', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '15px' }}>
-                    <p style={{ margin: 0, color: '#555', fontWeight: '500' }}>Upload Monthly Attendance (.xlsx)</p>
-                    <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} style={{ margin: 0, flex: 1, minWidth: '200px', maxWidth: '300px' }}/>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary">
+                <div style={{ padding: '0.5rem 1rem', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <p style={{ margin: 0, color: '#555', fontWeight: '500', whiteSpace: 'nowrap' }}>Upload Monthly Attendance (.xlsx)</p>
+                    <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} style={{ margin: 0, padding: '5px' }}/>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap' }}>
                             <Upload size={14} style={{ marginRight: '5px' }} />
                             {uploading ? 'Uploading...' : 'Upload Data'}
                         </button>
                         {uploadSuccess && (
-                            <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm" style={{ background: '#28a745', color: '#fff' }}>
+                            <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm" style={{ background: '#28a745', color: '#fff', whiteSpace: 'nowrap' }}>
                                 <Play size={14} style={{ marginRight: '5px' }} />
                                 {loadingPreview ? 'Running Engine...' : 'Run Preview Engine'}
                             </button>
