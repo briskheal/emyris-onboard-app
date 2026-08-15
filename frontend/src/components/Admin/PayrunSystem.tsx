@@ -270,21 +270,21 @@ const PayrunSystem: React.FC = () => {
                     </div>
                 )}
 
-                <div style={{ padding: '0.25rem 0.5rem', background: '#f8f9fa', border: '1px dashed #ccc', borderRadius: '8px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '3px', flexWrap: 'wrap' }}>
-                    <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} style={{ margin: 0, padding: '2px', fontSize: '0.85rem', maxWidth: '210px' }}/>
-                    <select className="form-control form-control-sm" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: '90px', padding: '2px', fontSize: '0.85rem', margin: 0 }}>
+                <div className="input-group input-group-sm" style={{ marginBottom: '1rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
+                    <input type="file" className="form-control" accept=".xlsx, .xls" onChange={handleFileChange} style={{ minWidth: '180px' }}/>
+                    <select className="form-control" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ maxWidth: '110px' }}>
                         {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <select className="form-control form-control-sm" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: '70px', padding: '2px', fontSize: '0.85rem', margin: 0 }}>
+                    <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ maxWidth: '80px' }}>
                         {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ padding: '2px 8px', fontSize: '0.85rem', whiteSpace: 'nowrap', margin: 0 }}>
-                        <Upload size={12} style={{ marginRight: '4px' }} />
+                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-primary" style={{ whiteSpace: 'nowrap' }}>
+                        <Upload size={14} style={{ marginRight: '4px' }} />
                         {uploading ? 'Wait...' : 'Upload'}
                     </button>
                     {uploadSuccess && (
-                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-sm" style={{ background: '#28a745', color: '#fff', padding: '2px 8px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                            <Play size={12} style={{ marginRight: '4px' }} />
+                        <button onClick={fetchPreview} disabled={loadingPreview} className="btn btn-success" style={{ whiteSpace: 'nowrap', borderTopRightRadius: '0.2rem', borderBottomRightRadius: '0.2rem' }}>
+                            <Play size={14} style={{ marginRight: '4px' }} />
                             {loadingPreview ? 'Wait...' : 'Run Preview'}
                         </button>
                     )}
