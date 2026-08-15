@@ -3236,8 +3236,8 @@ router.get('/payrun-preview', async (req, res) => {
                     totalMonthDays = 31;
                 }
 
-                // Payable Days Formula
-                let payableDays = present + holiday + leave - absent;
+                // Simpler Payable Days Formula as requested
+                let payableDays = totalMonthDays - absent;
                 if (payableDays < 0) payableDays = 0;
                 if (payableDays > totalMonthDays) payableDays = totalMonthDays;
                 
