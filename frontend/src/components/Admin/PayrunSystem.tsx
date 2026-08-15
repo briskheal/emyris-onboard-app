@@ -21,6 +21,9 @@ const PayrunSystem: React.FC = () => {
     const [sendingEmails, setSendingEmails] = useState(false);
     const [emailSuccess, setEmailSuccess] = useState('');
     
+    const [payrunMonth, setPayrunMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
+    const [payrunYear, setPayrunYear] = useState(new Date().getFullYear().toString());
+
     const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any | null>(null);
 
@@ -63,7 +66,7 @@ const PayrunSystem: React.FC = () => {
         setLoadingPreview(true);
         setError('');
         try {
-            const res = await api.get('/admin/payrun-preview');
+            const res = await api.get(`/admin/payrun-preview?month=${payrunMonth}&year=${payrunYear}`);
             if (res.data.success) {
                 const initializedPreviews = res.data.previews.map((p: any) => {
                     const salDed = 0;
@@ -224,7 +227,9 @@ const PayrunSystem: React.FC = () => {
 
             const res = await api.post('/admin/email-payslips', {
                 emails: payloadEmails,
-                message: emailMessage
+                message: emailMessage,
+                month: payrunMonth,
+                year: payrunYear
             });
 
             if (res.data.success) {
@@ -269,6 +274,12 @@ const PayrunSystem: React.FC = () => {
                     <p style={{ margin: 0, color: '#555', fontWeight: '500', whiteSpace: 'nowrap' }}>Upload Monthly Attendance (.xlsx)</p>
                     <input type="file" accept=".xlsx, .xls" onChange={handleFileChange} style={{ margin: 0, padding: '5px' }}/>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                        <select className="form-control form-control-sm" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: '120px' }}>
+                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
+                        </select>
+                        <select className="form-control form-control-sm" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: '80px' }}>
+                            {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
                         <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap' }}>
                             <Upload size={14} style={{ marginRight: '5px' }} />
                             {uploading ? 'Uploading...' : 'Upload Data'}
@@ -352,12 +363,12 @@ const PayrunSystem: React.FC = () => {
                             </table>
                         </div>
 
-                        <div style={{ background: '#f8f9fa', padding: '1.5rem', borderRadius: '8px', border: '1px solid #e9ecef', display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start' }}>
-                            <div style={{ flex: '1 1 300px' }}>
-                                <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#333' }}>Mail Configurations</h3>
-                                <div style={{ marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-end', justifyContent: 'flex-start', marginTop: '1rem' }}>
+                            <div style={{ flex: '0 1 450px' }}>
+                                <h3 style={{ fontSize: '1rem', marginBottom: '10px', color: '#333' }}>Mail Configurations</h3>
+                                <div style={{ marginBottom: '10px' }}>
                                     <label style={{ display: 'block', fontSize: '0.85rem', color: '#555', marginBottom: '4px' }}>Message Body</label>
-                                    <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={3} className="form-input" style={{ width: '100%' }}/>
+                                    <textarea value={emailMessage} onChange={(e) => setEmailMessage(e.target.value)} rows={2} className="form-input" style={{ width: '100%', padding: '6px' }}/>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <div style={{ flex: 1 }}>
@@ -370,9 +381,9 @@ const PayrunSystem: React.FC = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div style={{ flex: '0 0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%' }}>
-                                <button onClick={sendEmails} disabled={sendingEmails} className="btn btn-primary" style={{ padding: '12px 24px', fontSize: '1rem', fontWeight: 'bold' }}>
-                                    <Mail size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                            <div style={{ flex: '0 0 auto' }}>
+                                <button onClick={sendEmails} disabled={sendingEmails} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold' }}>
+                                    <Mail size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                                     {sendingEmails ? 'Processing & Sending...' : 'Process All Selected'}
                                 </button>
                             </div>
@@ -385,7 +396,7 @@ const PayrunSystem: React.FC = () => {
             <div style={{ display: 'none' }}>
                 {previews.map((p, idx) => (
                     <div key={idx} id={`salary-slip-${p.empCode}`}>
-                        <SalarySlipTemplate data={p} preparedBy={preparedBy} sanctionedBy={sanctionedBy} />
+                        <SalarySlipTemplate data={p} preparedBy={preparedBy} sanctionedBy={sanctionedBy} month={payrunMonth} year={payrunYear} />
                     </div>
                 ))}
             </div>
@@ -402,7 +413,7 @@ const PayrunSystem: React.FC = () => {
                         </div>
                         <div style={{ flex: 1, overflow: 'auto', background: '#e9ecef', padding: '2rem', display: 'flex', justifyContent: 'center' }}>
                             <div style={{ boxShadow: '0 10px 30px rgba(0,0,0,0.2)' }}>
-                                <SalarySlipTemplate data={previewData} preparedBy={preparedBy} sanctionedBy={sanctionedBy} />
+                                <SalarySlipTemplate data={previewData} preparedBy={preparedBy} sanctionedBy={sanctionedBy} month={payrunMonth} year={payrunYear} />
                             </div>
                         </div>
                     </div>

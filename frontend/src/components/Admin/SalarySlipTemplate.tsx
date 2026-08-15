@@ -2,15 +2,17 @@ import React from 'react';
 
 interface Props {
   data: any;
-  preparedBy: string;
-  sanctionedBy: string;
+  preparedBy?: string;
+  sanctionedBy?: string;
+  month?: string;
+  year?: string;
 }
 
-const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy }) => {
+const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, month, year }) => {
   if (!data) return null;
 
-  const currentMonth = new Date().toLocaleString('default', { month: 'long' }).toUpperCase();
-  const currentYear = new Date().getFullYear();
+  const currentMonth = month || new Date().toLocaleString('default', { month: 'long' }).toUpperCase();
+  const currentYear = year || new Date().getFullYear().toString();
 
   // Helper to format currency
   const f = (val: any) => parseFloat(val || '0').toFixed(2);

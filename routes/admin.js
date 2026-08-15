@@ -3335,8 +3335,11 @@ router.post('/generate-payslips', async (req, res) => {
 
 router.post('/email-payslips', async (req, res) => {
     try {
-        const { emails, message } = req.body;
+        const { emails, message, month, year } = req.body;
         if (!emails || !emails.length) return res.status(400).json({ error: 'No emails provided.' });
+
+        const emailMonth = month || new Date().toLocaleString('default', { month: 'long' });
+        const emailYear = year || new Date().getFullYear().toString();
 
         const transporter = require('nodemailer').createTransport({
             host: process.env.EMAIL_HOST,
@@ -3357,7 +3360,7 @@ router.post('/email-payslips', async (req, res) => {
             const mailOptions = {
                 from: process.env.EMAIL_FROM || '"Emyris HR" <hradmin@emyrishr.in>',
                 to: item.email,
-                subject: `Salary Slip - ${new Date().toLocaleString('default', { month: 'long' })} ${new Date().getFullYear()}`,
+                subject: `Salary Slip - ${emailMonth} ${emailYear}`,
                 text: message || 'Please find attached your salary slip for this month.',
                 attachments: [
                     {
