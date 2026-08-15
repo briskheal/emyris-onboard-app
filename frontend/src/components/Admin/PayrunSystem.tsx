@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, Play, CheckCircle, AlertCircle, FileSpreadsheet, Download, Mail } from 'lucide-react';
+import { Upload, Play, CheckCircle, AlertCircle, FileSpreadsheet, Download, Mail, Eye, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -23,6 +23,9 @@ const PayrunSystem: React.FC = () => {
     const [sendingEmails, setSendingEmails] = useState(false);
     const [emailSuccess, setEmailSuccess] = useState('');
     const hiddenTemplatesRef = useRef<HTMLDivElement>(null);
+
+    const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null);
+    const [previewingId, setPreviewingId] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -200,6 +203,33 @@ const PayrunSystem: React.FC = () => {
         }
     };
 
+    const handlePreviewPdf = async (empCode: string) => {
+        setPreviewingId(empCode);
+        try {
+            const element = document.getElementById(`salary-slip-${empCode}`);
+            if (!element) return;
+
+            element.style.display = 'block';
+            const canvas = await html2canvas(element, { scale: 2 });
+            element.style.display = 'none';
+
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+            
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            
+            // Generate Blob URL for iframe viewing
+            const blobUrl = pdf.output('bloburl');
+            setPreviewPdfUrl(blobUrl.toString());
+        } catch (e) {
+            console.error("Preview PDF error", e);
+        } finally {
+            setPreviewingId(null);
+        }
+    };
+
     return (
         <div className="p-6 max-w-6xl mx-auto space-y-6">
             <div className="flex justify-between items-center">
@@ -283,6 +313,7 @@ const PayrunSystem: React.FC = () => {
                                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Penalty Days</th>
                                             <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Sal Ded / PT / PF</th>
                                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Final Net</th>
+                                            <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
@@ -331,6 +362,16 @@ const PayrunSystem: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-gray-900 bg-gray-50">
                                                     ₹{p.finalSalary}
+                                                </td>
+                                                <td className="px-4 py-4 whitespace-nowrap text-center">
+                                                    <button
+                                                        onClick={() => handlePreviewPdf(p.empCode)}
+                                                        disabled={previewingId === p.empCode}
+                                                        className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors disabled:opacity-50"
+                                                        title="Preview PDF"
+                                                    >
+                                                        <Eye className="w-5 h-5" />
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -421,6 +462,30 @@ const PayrunSystem: React.FC = () => {
                     </div>
                 ))}
             </div>
+
+            {/* PDF Preview Modal */}
+            {previewPdfUrl && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-medium text-gray-900">Salary Slip Preview</h3>
+                            <button 
+                                onClick={() => setPreviewPdfUrl(null)}
+                                className="text-gray-400 hover:text-gray-500 hover:bg-gray-200 rounded-full p-2 transition-colors"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="flex-1 w-full bg-gray-100">
+                            <iframe 
+                                src={previewPdfUrl} 
+                                className="w-full h-full border-none" 
+                                title="PDF Preview"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
         </div>
     );
