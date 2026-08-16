@@ -83,9 +83,9 @@ const CreateLeaveType: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {/* Form Section */}
             <div className="dash-card" style={{ padding: '2rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', alignItems: 'end' }}>
-                    <div>
-                        <label className="form-label" style={{ color: 'var(--text-muted)' }}>ENTER LEAVE TYPE <span style={{ color: '#ef4444' }}>*</span></label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>ENTER LEAVE TYPE <span style={{ color: '#ef4444' }}>*</span></label>
                         <input
                             type="text"
                             className="form-input"
@@ -94,8 +94,8 @@ const CreateLeaveType: React.FC = () => {
                             placeholder="Enter Leave Type"
                         />
                     </div>
-                    <div>
-                        <label className="form-label" style={{ color: 'var(--text-muted)' }}>ENTER CODE <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>ENTER CODE <span style={{ color: '#ef4444' }}>*</span></label>
                         <input
                             type="text"
                             className="form-input"
@@ -104,8 +104,8 @@ const CreateLeaveType: React.FC = () => {
                             placeholder="Enter Code"
                         />
                     </div>
-                    <div>
-                        <label className="form-label" style={{ color: 'var(--text-muted)' }}>ENTER DESCRIPTION</label>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>ENTER DESCRIPTION</label>
                         <input
                             type="text"
                             className="form-input"
