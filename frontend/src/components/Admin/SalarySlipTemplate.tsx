@@ -218,7 +218,7 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
                 <td style={{ padding: '4px 0' }}>Bank Name</td>
                 <td style={{ padding: '4px 0' }}>: {data.bankName || 'NA'}</td>
                 <td style={{ padding: '4px 0', fontWeight: 'bold' }}>Reimbursement</td>
-                <td style={{ padding: '4px 0' }}>: 0</td>
+                <td style={{ padding: '4px 0' }}>: {data.expense || 0}</td>
               </tr>
               <tr>
                 <td style={{ padding: '10px 0 4px 0' }}>IFSC Code</td>
