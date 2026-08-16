@@ -170,7 +170,7 @@ const ManageLeavePortal = ({ applicant }) => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', overflowX: 'hidden', maxWidth: '100%' }}>
 
       {/* ── Page Header ── */}
       <div>
@@ -184,7 +184,7 @@ const ManageLeavePortal = ({ applicant }) => {
 
       {/* ── Balance Pills ── */}
       {balances.length > 0 && (
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '6px', WebkitOverflowScrolling: 'touch' }}>
           {balances.map(b => {
             const lwp = b.leaveTypeName.toLowerCase().includes('lwp') || b.leaveTypeName.toLowerCase().includes('leave without pay');
             const rem = (b.assignedLeaves || 0) - (b.usedLeaves || 0);
@@ -197,7 +197,7 @@ const ManageLeavePortal = ({ applicant }) => {
                 borderRadius: '12px',
                 padding: '12px 18px',
                 minWidth: '150px',
-                flex: '1',
+                flexShrink: 0,
               }}>
                 <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '4px' }}>{b.leaveTypeName}</div>
                 <div style={{ fontSize: '1.4rem', fontWeight: '800', color: pillColor }}>
@@ -434,10 +434,12 @@ const ManageLeavePortal = ({ applicant }) => {
           <h3 style={{ ...sectionTitle, marginBottom: '20px' }}>
             📖 Understanding Your Leave Entitlements
           </h3>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          <div className="leave-defs-scroll" style={{
+            display: 'flex',
             gap: '16px',
+            overflowX: 'auto',
+            paddingBottom: '8px',
+            WebkitOverflowScrolling: 'touch',
           }}>
             {leaveTypes.filter(t => t.status === 'Active').map(lt => {
               const lwp = lt.name?.toLowerCase().includes('lwp') || lt.name?.toLowerCase().includes('without pay');
@@ -447,6 +449,9 @@ const ManageLeavePortal = ({ applicant }) => {
                   border: '1px solid #334155',
                   borderRadius: '12px',
                   padding: '16px',
+                  minWidth: '220px',
+                  maxWidth: '280px',
+                  flexShrink: 0,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <span style={{ fontWeight: '700', color: '#e2e8f0', fontSize: '0.95rem' }}>{lt.name}</span>
@@ -485,10 +490,28 @@ const ManageLeavePortal = ({ applicant }) => {
             grid-template-columns: 1fr !important;
           }
         }
-        ::-webkit-scrollbar { width: 5px; }
+        /* Prevent horizontal page overflow on mobile */
+        .leave-portal-root {
+          overflow-x: hidden;
+          max-width: 100%;
+          box-sizing: border-box;
+        }
+        /* Horizontal scroll for leave definition cards */
+        .leave-defs-scroll {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .leave-defs-scroll::-webkit-scrollbar { display: none; }
+        /* Thin scrollbar for history table */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        /* Prevent table overflow on mobile */
+        @media (max-width: 768px) {
+          table { font-size: 0.78rem !important; }
+          table td, table th { padding: 7px 6px !important; }
+        }
       `}</style>
     </div>
   );
