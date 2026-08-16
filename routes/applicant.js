@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, sequelize } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, LeaveRequest, LeaveBalance, sequelize } = require('../db');
 const { z } = require('zod');
 
 const submitExamSchema = z.object({
@@ -1839,6 +1839,76 @@ router.post('/submit-onboarding', async (req, res) => {
     } catch (error) {
         console.error("Submission Error:", error);
         res.status(500).json({ success: false, message: 'Submission failed: ' + error.message });
+    }
+});
+
+// Leave Management (Employee Side)
+router.get('/leave-balances', async (req, res) => {
+    try {
+        const { email, year } = req.query;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+        
+        const filter = { employeeEmail: email };
+        if (year) filter.year = year;
+        
+        const balances = await LeaveBalance.find(filter);
+        res.json({ success: true, balances });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch leave balances' });
+    }
+});
+
+router.get('/leave-requests', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+        
+        const requests = await LeaveRequest.find({ employeeEmail: email });
+        res.json({ success: true, requests });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch leave requests' });
+    }
+});
+
+router.post('/leave-requests', async (req, res) => {
+    try {
+        const { email, leaveTypeId, leaveTypeName, fromDate, toDate, days, reason, year } = req.body;
+        if (!email || !leaveTypeId || !fromDate || !toDate || !days) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+
+        // Leave validation
+        const isLWP = leaveTypeName.toLowerCase().includes('leave without pay') || leaveTypeName.toLowerCase().includes('lwp');
+        
+        if (!isLWP) {
+            const balance = await LeaveBalance.findOne({ employeeEmail: email, leaveTypeId, year: year || new Date().getFullYear().toString() });
+            if (!balance) {
+                return res.status(400).json({ success: false, message: 'No leave balance found for this category.' });
+            }
+            
+            const remaining = (balance.assignedLeaves || 0) - (balance.usedLeaves || 0);
+            if (days > remaining) {
+                return res.status(400).json({ success: false, message: `Cannot apply more than available balance (${remaining} days).` });
+            }
+        }
+
+        const request = await LeaveRequest.create({
+            employeeEmail: email,
+            leaveTypeId,
+            leaveTypeName,
+            fromDate,
+            toDate,
+            days,
+            reason,
+            status: 'Pending'
+        });
+
+        res.json({ success: true, request });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to submit leave request' });
     }
 });
 

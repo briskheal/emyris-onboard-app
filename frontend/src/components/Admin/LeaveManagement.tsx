@@ -3,6 +3,7 @@ import React, { Suspense, lazy } from 'react';
 const CreateLeaveType = lazy(() => import('./LeaveTabs/CreateLeaveType'));
 const AssignLeave = lazy(() => import('./LeaveTabs/AssignLeave'));
 const AssignedLeaves = lazy(() => import('./LeaveTabs/AssignedLeaves'));
+const LeaveRequests = lazy(() => import('./LeaveTabs/LeaveRequests'));
 
 interface LeaveManagementProps {
     activeSubTab: string;
@@ -26,6 +27,7 @@ const LeaveManagement: React.FC<LeaveManagementProps> = ({ activeSubTab }) => {
                 {activeSubTab === 'create_type' && <CreateLeaveType />}
                 {activeSubTab === 'assign_leave' && <AssignLeave />}
                 {activeSubTab === 'assigned_leaves' && <AssignedLeaves />}
+                {activeSubTab === 'leave_requests' && <LeaveRequests />}
             </Suspense>
 
         </div>

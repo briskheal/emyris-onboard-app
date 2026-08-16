@@ -246,5 +246,18 @@ const OnboardLeaveBalance = sequelize.define('onboard_leave_balance', {
     usedLeaves: { type: DataTypes.FLOAT, defaultValue: 0 }
 });
 
-    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip, OnboardLeaveType, OnboardLeaveBalance };
+const OnboardLeaveRequest = sequelize.define('onboard_leave_request', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    leaveTypeId: { type: DataTypes.STRING, allowNull: false },
+    leaveTypeName: { type: DataTypes.STRING, allowNull: false },
+    fromDate: { type: DataTypes.STRING, allowNull: false },
+    toDate: { type: DataTypes.STRING, allowNull: false },
+    days: { type: DataTypes.FLOAT, allowNull: false },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending, Approved, Rejected
+    reason: { type: DataTypes.TEXT },
+    appliedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+
+    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip, OnboardLeaveType, OnboardLeaveBalance, OnboardLeaveRequest };
 };

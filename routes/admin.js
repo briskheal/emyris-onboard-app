@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, sequelize } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, sequelize } = require('../db');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -3675,6 +3675,57 @@ router.post('/leave-balances', async (req, res) => {
     } catch (e) {
         console.log(e);
         res.status(500).json({ success: false, error: 'Failed' });
+    }
+});
+
+// Admin Leave Requests
+router.get('/leave-requests', async (req, res) => {
+    try {
+        const requests = await LeaveRequest.find({});
+        res.json({ success: true, requests });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch leave requests' });
+    }
+});
+
+router.put('/leave-requests/:id/status', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status, year } = req.body;
+        
+        if (!status) return res.status(400).json({ success: false, message: 'Status is required' });
+
+        const request = await LeaveRequest.findById(id);
+        if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
+
+        const oldStatus = request.status;
+        request.status = status;
+        await request.save();
+
+        // If newly approved, we need to increment the usedLeaves balance
+        if (status === 'Approved' && oldStatus !== 'Approved') {
+            const isLWP = request.leaveTypeName.toLowerCase().includes('leave without pay') || request.leaveTypeName.toLowerCase().includes('lwp');
+            
+            if (!isLWP) {
+                const targetYear = year || new Date().getFullYear().toString();
+                const balance = await LeaveBalance.findOne({
+                    employeeEmail: request.employeeEmail,
+                    leaveTypeId: request.leaveTypeId,
+                    year: targetYear
+                });
+                
+                if (balance) {
+                    balance.usedLeaves = (balance.usedLeaves || 0) + request.days;
+                    await balance.save();
+                }
+            }
+        }
+
+        res.json({ success: true, request });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update request status' });
     }
 });
 
