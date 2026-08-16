@@ -19,7 +19,11 @@ const ManageLeavePortal = ({ applicant }) => {
 
   const fetchData = async () => {
     try {
-      const year = new Date().getFullYear().toString();
+      const now = new Date();
+      const calYear = now.getFullYear();
+      const month = now.getMonth(); // 0-indexed, April = 3
+      const fyStart = month >= 3 ? calYear : calYear - 1;
+      const year = `${fyStart}-${fyStart + 1}`;
       const balRes = await fetch(`/api/applicant/leave-balances?email=${encodeURIComponent(email)}&year=${year}`);
       const balData = await balRes.json();
       if (balData.success) {
