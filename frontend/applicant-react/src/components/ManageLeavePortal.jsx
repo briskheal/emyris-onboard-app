@@ -81,12 +81,19 @@ const ManageLeavePortal = ({ applicant }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: email,
+          leaveTypeId: selectedBalance.leaveTypeId,
           leaveBalanceId: selectedBalanceId,
           leaveTypeName: selectedBalance.leaveTypeName,
           fromDate,
           toDate,
           days,
-          reason
+          reason,
+          year: (() => {
+            const now = new Date();
+            const calYear = now.getFullYear();
+            const fyStart = now.getMonth() >= 3 ? calYear : calYear - 1;
+            return `${fyStart}-${fyStart + 1}`;
+          })()
         })
       });
       const data = await res.json();
