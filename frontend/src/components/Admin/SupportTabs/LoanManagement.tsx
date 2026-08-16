@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, Search } from 'lucide-react';
+import { Trash2, Search, Eye, X } from 'lucide-react';
 import api from '../../../api/client';
 
 const LoanManagement: React.FC = () => {
@@ -33,6 +33,7 @@ const LoanManagement: React.FC = () => {
   const [searchEmployeeName, setSearchEmployeeName] = useState('');
   const [searchStatus, setSearchStatus] = useState('');
   const [showSearch, setShowSearch] = useState({ typeLoanName: false, loanName: false, employeeName: false, status: false });
+  const [viewLoan, setViewLoan] = useState<any>(null);
   
   const [loading, setLoading] = useState(false);
 
@@ -467,9 +468,14 @@ const LoanManagement: React.FC = () => {
                           </span>
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
-                          <button className="btn btn-sm" onClick={() => handleDeleteAssignedLoan(loan._id)} style={{ background: 'transparent', color: '#ef4444', padding: '4px' }}>
-                            <Trash2 size={16} />
-                          </button>
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                            <button className="btn btn-sm" onClick={() => setViewLoan(loan)} style={{ background: 'transparent', color: '#10b981', padding: '4px' }}>
+                              <Eye size={16} />
+                            </button>
+                            <button className="btn btn-sm" onClick={() => handleDeleteAssignedLoan(loan._id)} style={{ background: 'transparent', color: '#ef4444', padding: '4px' }}>
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -485,6 +491,31 @@ const LoanManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {viewLoan && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
+          <div style={{ background: '#1e293b', width: '100%', maxWidth: '600px', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden' }}>
+            <div style={{ padding: '1.2rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>Loan Details</h3>
+              <button onClick={() => setViewLoan(null)} style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Employee Name</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.employeeName}</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loan Sanction Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.sanctionDate}</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loan Deduction Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.deductionDate}</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Loan Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.loanAmount}</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Interest Rate</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.interestRate}%</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Amount Paid</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.amountPaid}</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Balance Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.balanceAmount}</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Installment Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.installmentAmount}</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Taxable Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>0</div></div>
+              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Next Installment Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.deductionDate}</div></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
