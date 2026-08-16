@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../api/client';
-import { Eye, Search } from 'lucide-react';
+import { Eye, Search, ChevronLeft, Pencil } from 'lucide-react';
 
 interface LeaveBalance {
     _id: string;
@@ -41,6 +41,11 @@ const AssignedLeaves: React.FC = () => {
     const [applicants, setApplicants] = useState<Applicant[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [showSearch, setShowSearch] = useState(false);
+    
+    // Detail view state
+    const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState<string | null>(null);
+    const [detailSearchTerm, setDetailSearchTerm] = useState('');
+    const [showDetailSearch, setShowDetailSearch] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -97,6 +102,139 @@ const AssignedLeaves: React.FC = () => {
     const filteredList = aggregatedList.filter(item => 
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleUpdateAssigned = async (balanceId: string, currentAssigned: number, leaveTypeId: string, leaveTypeName: string) => {
+        const newVal = prompt(`Update assigned leaves for ${leaveTypeName}:`, currentAssigned.toString());
+        if (newVal !== null) {
+            const parsed = parseFloat(newVal);
+            if (!isNaN(parsed)) {
+                try {
+                    // We need to fetch the specific balance to know usedLeaves or just send the update
+                    // However, our POST /admin/leave-balances creates or updates based on email, year, leaveTypeId
+                    const res = await api.post('/admin/leave-balances', {
+                        employeeEmail: selectedEmployeeEmail,
+                        year: selectedYear,
+                        leaveTypeId: leaveTypeId,
+                        leaveTypeName: leaveTypeName,
+                        assignedLeaves: parsed,
+                        usedLeaves: balances.find(b => b._id === balanceId)?.usedLeaves || 0
+                    });
+                    if (res.data.success) {
+                        alert('Updated successfully');
+                        fetchData();
+                    } else {
+                        alert('Failed to update');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    alert('Error updating');
+                }
+            }
+        }
+    };
+
+    if (selectedEmployeeEmail) {
+        const employeeName = aggregatedList.find(a => a.email === selectedEmployeeEmail)?.name || selectedEmployeeEmail;
+        const employeeBalances = balances.filter(b => b.employeeEmail === selectedEmployeeEmail);
+        
+        const filteredEmployeeBalances = employeeBalances.filter(b => 
+            b.leaveTypeName.toLowerCase().includes(detailSearchTerm.toLowerCase())
+        );
+
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+                <div 
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--primary)', cursor: 'pointer', fontWeight: 600, fontSize: '1rem', padding: '0.5rem 0' }}
+                    onClick={() => {
+                        setSelectedEmployeeEmail(null);
+                        setDetailSearchTerm('');
+                        setShowDetailSearch(false);
+                    }}
+                >
+                    <ChevronLeft size={20} /> ASSIGNED LEAVES
+                </div>
+
+                <div className="dash-card">
+                    <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>
+                            SHOWING ({filteredEmployeeBalances.length}) ENTRIES FOR {employeeName.toUpperCase()}
+                        </h3>
+                    </div>
+
+                    <div style={{ overflowX: 'auto' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center' }}>
+                            <thead style={{ background: 'rgba(255, 255, 255, 0.02)', borderBottom: '1px solid var(--glass-border)' }}>
+                                <tr>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem' }}>Sr no.</th>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                                        {showDetailSearch ? (
+                                            <input 
+                                                autoFocus
+                                                type="text" 
+                                                placeholder="Search type..."
+                                                value={detailSearchTerm}
+                                                onChange={(e) => setDetailSearchTerm(e.target.value)}
+                                                onBlur={() => !detailSearchTerm && setShowDetailSearch(false)}
+                                                style={{ 
+                                                    background: 'var(--glass-bg)', 
+                                                    border: '1px solid var(--glass-border)', 
+                                                    color: 'white', 
+                                                    padding: '4px 8px',
+                                                    borderRadius: '4px',
+                                                    outline: 'none',
+                                                    width: '120px'
+                                                }}
+                                            />
+                                        ) : (
+                                            <>
+                                                <Search 
+                                                    size={14} 
+                                                    style={{ cursor: 'pointer', opacity: 0.7 }} 
+                                                    onClick={() => setShowDetailSearch(true)} 
+                                                />
+                                                Leave Types
+                                            </>
+                                        )}
+                                    </th>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem' }}>Assigned Leaves</th>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem' }}>Used Leaves</th>
+                                    <th style={{ padding: '1rem', color: 'var(--text-muted)', fontWeight: 600, fontSize: '0.9rem' }}>Remaining Leaves</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {filteredEmployeeBalances.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                                            No leave types assigned.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filteredEmployeeBalances.map((item, index) => (
+                                        <tr key={item._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                                            <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{index + 1}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>{item.leaveTypeName}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+                                                    {item.assignedLeaves}
+                                                    <Pencil 
+                                                        size={14} 
+                                                        style={{ color: '#10b981', cursor: 'pointer' }} 
+                                                        onClick={() => handleUpdateAssigned(item._id, item.assignedLeaves, item.leaveTypeId, item.leaveTypeName)}
+                                                    />
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>{item.usedLeaves || 0}</td>
+                                            <td style={{ padding: '1rem', color: 'var(--text-primary)' }}>{(item.assignedLeaves || 0) - (item.usedLeaves || 0)}</td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
@@ -187,7 +325,7 @@ const AssignedLeaves: React.FC = () => {
                                                 className="btn" 
                                                 style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', padding: '5px', cursor: 'pointer' }}
                                                 title="View Details"
-                                                onClick={() => alert(`View details for ${item.name} (Coming Soon)`)}
+                                                onClick={() => setSelectedEmployeeEmail(item.email)}
                                             >
                                                 <Eye size={18} />
                                             </button>
