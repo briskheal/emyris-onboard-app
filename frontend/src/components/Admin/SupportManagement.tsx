@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { HandCoins, Landmark } from 'lucide-react';
+
+const LoanManagement = lazy(() => import('./SupportTabs/LoanManagement'));
+const AdvanceSalaryManagement = lazy(() => import('./SupportTabs/AdvanceSalaryManagement'));
 
 interface SupportManagementProps {
   activeSubTab: string;
@@ -13,7 +16,7 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ activeSubTab, set
   ];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', height: '100%' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <HandCoins size={22} style={{ color: 'var(--primary)' }} />
@@ -56,16 +59,11 @@ const SupportManagement: React.FC<SupportManagementProps> = ({ activeSubTab, set
       </div>
 
       {/* Content Area */}
-      <div className="dash-card" style={{ padding: '3rem', textAlign: 'center' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-          {activeSubTab === 'loan' ? '🏦' : '💰'}
-        </div>
-        <h3 style={{ color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '1.1rem' }}>
-          {activeSubTab === 'loan' ? 'Loan Management' : 'Advance Salary Management'}
-        </h3>
-        <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.9rem' }}>
-          This section is being set up. Details will be configured shortly.
-        </p>
+      <div style={{ flex: 1 }}>
+        <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading module...</div>}>
+          {activeSubTab === 'loan' && <LoanManagement />}
+          {activeSubTab === 'adv_salary' && <AdvanceSalaryManagement />}
+        </Suspense>
       </div>
     </div>
   );

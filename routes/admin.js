@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, sequelize } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, LoanType, AssignedLoan, AssignedAdvance, sequelize } = require('../db');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -3745,6 +3745,171 @@ router.put('/leave-requests/:id/status', async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to update request status' });
+    }
+});
+
+// ==========================================
+// SUPPORT MANAGEMENT (LOANS & ADV. SALARY)
+// ==========================================
+
+// --- LOAN TYPES ---
+router.get('/loan-types', async (req, res) => {
+    try {
+        const types = await LoanType.find();
+        res.json({ success: true, types });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch loan types' });
+    }
+});
+
+router.post('/loan-types', async (req, res) => {
+    try {
+        const { name, type, interestRate } = req.body;
+        if (!name || !type) {
+            return res.status(400).json({ success: false, message: 'Name and Type are required' });
+        }
+        const loanType = await LoanType.create({ name, type, interestRate: parseFloat(interestRate) || 0 });
+        res.json({ success: true, loanType });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to create loan type' });
+    }
+});
+
+router.put('/loan-types/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, type, interestRate, status } = req.body;
+        const loanType = await LoanType.findById(id);
+        if (!loanType) return res.status(404).json({ success: false, message: 'Loan type not found' });
+        
+        if (name) loanType.name = name;
+        if (type) loanType.type = type;
+        if (interestRate !== undefined) loanType.interestRate = parseFloat(interestRate);
+        if (status) loanType.status = status;
+        
+        await loanType.save();
+        res.json({ success: true, loanType });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update loan type' });
+    }
+});
+
+// --- ASSIGNED LOANS ---
+router.get('/assigned-loans', async (req, res) => {
+    try {
+        const loans = await AssignedLoan.find();
+        res.json({ success: true, loans });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch assigned loans' });
+    }
+});
+
+router.post('/assigned-loans', async (req, res) => {
+    try {
+        const data = req.body;
+        if (!data.employeeEmail || !data.employeeName || !data.loanName || !data.loanAmount || !data.installmentAmount || !data.deductionType || !data.deductionDate || !data.sanctionDate) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+        const assignedLoan = await AssignedLoan.create({
+            employeeEmail: data.employeeEmail,
+            employeeName: data.employeeName,
+            loanName: data.loanName,
+            interestRate: parseFloat(data.interestRate) || 0,
+            nameOnPayslip: data.nameOnPayslip || 'Loan',
+            loanAmount: parseFloat(data.loanAmount),
+            installmentAmount: parseFloat(data.installmentAmount),
+            deductionType: data.deductionType,
+            deductionDate: data.deductionDate,
+            sanctionDate: data.sanctionDate,
+            amountPaid: 0,
+            balanceAmount: parseFloat(data.loanAmount),
+            status: 'Ongoing'
+        });
+        res.json({ success: true, assignedLoan });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to assign loan' });
+    }
+});
+
+router.put('/assigned-loans/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        const loan = await AssignedLoan.findById(id);
+        if (!loan) return res.status(404).json({ success: false, message: 'Assigned loan not found' });
+        
+        Object.keys(updates).forEach(key => {
+            if (updates[key] !== undefined) {
+                loan[key] = updates[key];
+            }
+        });
+        await loan.save();
+        res.json({ success: true, loan });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update assigned loan' });
+    }
+});
+
+// --- ASSIGNED ADVANCES ---
+router.get('/assigned-advances', async (req, res) => {
+    try {
+        const advances = await AssignedAdvance.find();
+        res.json({ success: true, advances });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch assigned advances' });
+    }
+});
+
+router.post('/assigned-advances', async (req, res) => {
+    try {
+        const data = req.body;
+        if (!data.employeeEmail || !data.employeeName || !data.advanceAmount || !data.installmentAmount || !data.deductionType || !data.deductionMonth || !data.sanctionDate) {
+            return res.status(400).json({ success: false, message: 'Missing required fields' });
+        }
+        const advance = await AssignedAdvance.create({
+            employeeEmail: data.employeeEmail,
+            employeeName: data.employeeName,
+            nameOnPayslip: data.nameOnPayslip || 'Salary Advance',
+            advanceAmount: parseFloat(data.advanceAmount),
+            installmentAmount: parseFloat(data.installmentAmount),
+            deductionType: data.deductionType,
+            deductionMonth: data.deductionMonth,
+            sanctionDate: data.sanctionDate,
+            amountPaid: 0,
+            balanceAmount: parseFloat(data.advanceAmount),
+            status: 'Ongoing'
+        });
+        res.json({ success: true, advance });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to assign advance' });
+    }
+});
+
+router.put('/assigned-advances/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        const advance = await AssignedAdvance.findById(id);
+        if (!advance) return res.status(404).json({ success: false, message: 'Assigned advance not found' });
+        
+        Object.keys(updates).forEach(key => {
+            if (updates[key] !== undefined) {
+                advance[key] = updates[key];
+            }
+        });
+        await advance.save();
+        res.json({ success: true, advance });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update assigned advance' });
     }
 });
 

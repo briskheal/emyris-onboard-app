@@ -31,7 +31,10 @@ const {
     OnboardPayslip,
     OnboardLeaveType,
     OnboardLeaveBalance,
-    OnboardLeaveRequest
+    OnboardLeaveRequest,
+    OnboardLoanType,
+    OnboardAssignedLoan,
+    OnboardAssignedAdvance
 } = initModels(sequelize);
 
 // Initialize Adapters
@@ -47,6 +50,9 @@ const Payslip = new MongooseAdapter(OnboardPayslip);
 const LeaveType = new MongooseAdapter(OnboardLeaveType);
 const LeaveBalance = new MongooseAdapter(OnboardLeaveBalance);
 const LeaveRequest = new MongooseAdapter(OnboardLeaveRequest);
+const LoanType = new MongooseAdapter(OnboardLoanType);
+const AssignedLoan = new MongooseAdapter(OnboardAssignedLoan);
+const AssignedAdvance = new MongooseAdapter(OnboardAssignedAdvance);
 
 // Database Sync and Seed Function
 async function syncDatabase() {
@@ -402,5 +408,8 @@ module.exports = {
     LeaveType, 
     LeaveBalance,
     LeaveRequest,
+    LoanType,
+    AssignedLoan,
+    AssignedAdvance,
     generateId 
 };

@@ -259,5 +259,51 @@ const OnboardLeaveRequest = sequelize.define('onboard_leave_request', {
     appliedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 
-    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip, OnboardLeaveType, OnboardLeaveBalance, OnboardLeaveRequest };
+// Support Management Models
+const OnboardLoanType = sequelize.define('onboard_loan_type', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    name: { type: DataTypes.STRING, allowNull: false },
+    type: { type: DataTypes.STRING, allowNull: false },
+    interestRate: { type: DataTypes.FLOAT, defaultValue: 0 },
+    status: { type: DataTypes.STRING, defaultValue: 'Active' }
+});
+
+const OnboardAssignedLoan = sequelize.define('onboard_assigned_loan', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    employeeName: { type: DataTypes.STRING, allowNull: false },
+    loanName: { type: DataTypes.STRING, allowNull: false },
+    interestRate: { type: DataTypes.FLOAT, defaultValue: 0 },
+    nameOnPayslip: { type: DataTypes.STRING, defaultValue: 'Loan' },
+    loanAmount: { type: DataTypes.FLOAT, allowNull: false },
+    installmentAmount: { type: DataTypes.FLOAT, allowNull: false },
+    deductionType: { type: DataTypes.STRING, allowNull: false },
+    deductionDate: { type: DataTypes.STRING, allowNull: false },
+    sanctionDate: { type: DataTypes.STRING, allowNull: false },
+    amountPaid: { type: DataTypes.FLOAT, defaultValue: 0 },
+    balanceAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
+    status: { type: DataTypes.STRING, defaultValue: 'Ongoing' }
+});
+
+const OnboardAssignedAdvance = sequelize.define('onboard_assigned_advance', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    employeeName: { type: DataTypes.STRING, allowNull: false },
+    nameOnPayslip: { type: DataTypes.STRING, defaultValue: 'Salary Advance' },
+    advanceAmount: { type: DataTypes.FLOAT, allowNull: false },
+    installmentAmount: { type: DataTypes.FLOAT, allowNull: false },
+    deductionType: { type: DataTypes.STRING, allowNull: false },
+    deductionMonth: { type: DataTypes.STRING, allowNull: false },
+    sanctionDate: { type: DataTypes.STRING, allowNull: false },
+    amountPaid: { type: DataTypes.FLOAT, defaultValue: 0 },
+    balanceAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
+    status: { type: DataTypes.STRING, defaultValue: 'Ongoing' }
+});
+
+    return { 
+        OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, 
+        OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip, 
+        OnboardLeaveType, OnboardLeaveBalance, OnboardLeaveRequest,
+        OnboardLoanType, OnboardAssignedLoan, OnboardAssignedAdvance
+    };
 };
