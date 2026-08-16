@@ -192,6 +192,45 @@ const LoanManagement: React.FC = () => {
     return true;
   });
 
+  const generateSchedule = (totalAmount: number, installmentAmount: number, amountPaid: number, startDateStr: string, deductionType: string) => {
+    if (!totalAmount || !installmentAmount || !startDateStr) return [];
+    const schedule = [];
+    const numInstallments = Math.ceil(totalAmount / installmentAmount);
+    let currentPaid = amountPaid || 0;
+    
+    let currentDate = new Date(startDateStr);
+    if (isNaN(currentDate.getTime())) return [];
+
+    for (let i = 0; i < numInstallments; i++) {
+      const instAmount = Math.min(installmentAmount, totalAmount - (i * installmentAmount));
+      let status = 'Pending';
+      
+      if (currentPaid >= instAmount) {
+        status = 'Paid';
+        currentPaid -= instAmount;
+      } else if (currentPaid > 0) {
+        status = `Partial (${Math.round(currentPaid)})`;
+        currentPaid -= currentPaid;
+      }
+
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const period = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+      
+      schedule.push({
+        period,
+        installment: Math.round(instAmount),
+        status
+      });
+
+      if (deductionType === 'Quarterly') {
+        currentDate.setMonth(currentDate.getMonth() + 3);
+      } else {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+      }
+    }
+    return schedule;
+  };
+
   return (
     <div style={{ display: 'flex', gap: '2rem', height: '100%', minHeight: '600px' }}>
       
@@ -513,6 +552,33 @@ const LoanManagement: React.FC = () => {
               <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Taxable Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>0</div></div>
               <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Next Installment Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewLoan.deductionDate}</div></div>
             </div>
+            
+            <div style={{ padding: '1.5rem', borderTop: '1px solid #334155' }}>
+              <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: 'bold' }}>Repayment Schedule</h4>
+              <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>PERIOD</th>
+                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>INSTALLMENT</th>
+                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>STATUS</th>
+                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>ACTION</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {generateSchedule(viewLoan.loanAmount, viewLoan.installmentAmount, viewLoan.amountPaid, viewLoan.deductionDate, viewLoan.deductionType).map((row, idx) => (
+                      <tr key={idx}>
+                        <td style={{ padding: '0.8rem', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px solid #334155' }}>{row.period}</td>
+                        <td style={{ padding: '0.8rem', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px solid #334155' }}>{row.installment}</td>
+                        <td style={{ padding: '0.8rem', fontSize: '0.85rem', border: '1px solid #334155', color: row.status === 'Paid' ? '#10b981' : row.status === 'Pending' ? '#f59e0b' : '#3b82f6' }}>{row.status}</td>
+                        <td style={{ padding: '0.8rem', border: '1px solid #334155', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{row.status !== 'Paid' ? 'Pending' : ''}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
           </div>
         </div>
       )}
