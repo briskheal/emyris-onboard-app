@@ -196,9 +196,7 @@ const AdminPanel: React.FC = () => {
                 {[
                   { id: 'create_type', label: 'Create Leave Type' },
                   { id: 'assign_leave', label: 'Assign Leave' },
-                  { id: 'assigned_leaves', label: 'Assigned Leaves' },
-                  { id: 'create_template', label: 'Create Leave Template' },
-                  { id: 'assign_template', label: 'Assign Leave Templates' }
+                  { id: 'assigned_leaves', label: 'Assigned Leaves' }
                 ].map(subItem => (
                   <button
                     key={subItem.id}
