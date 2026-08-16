@@ -28,6 +28,11 @@ const LoanManagement: React.FC = () => {
   
   // Filters
   const [filterEmployee, setFilterEmployee] = useState('');
+  const [searchTypeLoanName, setSearchTypeLoanName] = useState('');
+  const [searchLoanName, setSearchLoanName] = useState('');
+  const [searchEmployeeName, setSearchEmployeeName] = useState('');
+  const [searchStatus, setSearchStatus] = useState('');
+  const [showSearch, setShowSearch] = useState({ typeLoanName: false, loanName: false, employeeName: false, status: false });
   
   const [loading, setLoading] = useState(false);
 
@@ -173,9 +178,18 @@ const LoanManagement: React.FC = () => {
     }
   }, [assignLoanName, loanTypes]);
 
-  const filteredLoans = filterEmployee
-    ? assignedLoans.filter(l => l.employeeEmail === filterEmployee)
-    : assignedLoans;
+  const filteredLoans = assignedLoans.filter(l => {
+    if (filterEmployee && l.employeeEmail !== filterEmployee) return false;
+    if (searchLoanName && !l.loanName?.toLowerCase().includes(searchLoanName.toLowerCase())) return false;
+    if (searchEmployeeName && !l.employeeName?.toLowerCase().includes(searchEmployeeName.toLowerCase())) return false;
+    if (searchStatus && !l.status?.toLowerCase().includes(searchStatus.toLowerCase())) return false;
+    return true;
+  });
+
+  const filteredLoanTypes = loanTypes.filter(t => {
+    if (searchTypeLoanName && !t.name?.toLowerCase().includes(searchTypeLoanName.toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <div style={{ display: 'flex', gap: '2rem', height: '100%', minHeight: '600px' }}>
@@ -267,14 +281,19 @@ const LoanManagement: React.FC = () => {
                 <thead>
                   <tr>
                     <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
-                      <span style={{ display: 'flex', alignItems: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> LOAN NAME</span>
+                      <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, typeLoanName: !p.typeLoanName}))}>
+                        <Search size={14} style={{ marginRight: '6px' }} /> LOAN NAME
+                      </div>
+                      {showSearch.typeLoanName && (
+                        <input type="text" autoFocus placeholder="Search..." value={searchTypeLoanName} onChange={e => setSearchTypeLoanName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                      )}
                     </th>
                     <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>INTEREST RATE</th>
                     <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {loanTypes.map((type) => (
+                  {filteredLoanTypes.map((type) => (
                     <tr key={type._id}>
                       <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{type.name}</td>
                       <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', border: '1px solid #334155' }}>{type.interestRate} %</td>
@@ -405,16 +424,31 @@ const LoanManagement: React.FC = () => {
                   <thead>
                     <tr>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
-                        <span style={{ display: 'flex', alignItems: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> LOAN NAME</span>
+                        <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, loanName: !p.loanName}))}>
+                          <Search size={14} style={{ marginRight: '6px' }} /> LOAN NAME
+                        </div>
+                        {showSearch.loanName && (
+                          <input type="text" autoFocus placeholder="Search..." value={searchLoanName} onChange={e => setSearchLoanName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                        )}
                       </th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
-                        <span style={{ display: 'flex', alignItems: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> EMPLOYEE NAME</span>
+                        <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, employeeName: !p.employeeName}))}>
+                          <Search size={14} style={{ marginRight: '6px' }} /> EMPLOYEE NAME
+                        </div>
+                        {showSearch.employeeName && (
+                          <input type="text" autoFocus placeholder="Search..." value={searchEmployeeName} onChange={e => setSearchEmployeeName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                        )}
                       </th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>LOAN AMOUNT</th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID</th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT</th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> STATUS</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, status: !p.status}))}>
+                          <Search size={14} style={{ marginRight: '6px' }} /> STATUS
+                        </div>
+                        {showSearch.status && (
+                          <input type="text" autoFocus placeholder="Search..." value={searchStatus} onChange={e => setSearchStatus(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                        )}
                       </th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                     </tr>

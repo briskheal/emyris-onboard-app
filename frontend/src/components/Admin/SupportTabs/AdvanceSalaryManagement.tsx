@@ -20,6 +20,9 @@ const AdvanceSalaryManagement: React.FC = () => {
   
   // Filters
   const [filterEmployee, setFilterEmployee] = useState('');
+  const [searchEmployeeName, setSearchEmployeeName] = useState('');
+  const [searchStatus, setSearchStatus] = useState('');
+  const [showSearch, setShowSearch] = useState({ employeeName: false, status: false });
   
   const [loading, setLoading] = useState(false);
 
@@ -114,9 +117,12 @@ const AdvanceSalaryManagement: React.FC = () => {
     }
   };
 
-  const filteredAdvances = filterEmployee
-    ? assignedAdvances.filter(a => a.employeeEmail === filterEmployee)
-    : assignedAdvances;
+  const filteredAdvances = assignedAdvances.filter(a => {
+    if (filterEmployee && a.employeeEmail !== filterEmployee) return false;
+    if (searchEmployeeName && !a.employeeName?.toLowerCase().includes(searchEmployeeName.toLowerCase())) return false;
+    if (searchStatus && !a.status?.toLowerCase().includes(searchStatus.toLowerCase())) return false;
+    return true;
+  });
 
   return (
     <div style={{ display: 'flex', gap: '2rem', height: '100%', minHeight: '600px' }}>
@@ -258,14 +264,24 @@ const AdvanceSalaryManagement: React.FC = () => {
                   <thead>
                     <tr>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
-                        <span style={{ display: 'flex', alignItems: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> EMPLOYEE NAME</span>
+                        <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, employeeName: !p.employeeName}))}>
+                          <Search size={14} style={{ marginRight: '6px' }} /> EMPLOYEE NAME
+                        </div>
+                        {showSearch.employeeName && (
+                          <input type="text" autoFocus placeholder="Search..." value={searchEmployeeName} onChange={e => setSearchEmployeeName(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                        )}
                       </th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>PAYSLIP NAME</th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>ADVANCE AMOUNT</th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID</th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT</th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> STATUS</div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }} onClick={() => setShowSearch(p => ({...p, status: !p.status}))}>
+                          <Search size={14} style={{ marginRight: '6px' }} /> STATUS
+                        </div>
+                        {showSearch.status && (
+                          <input type="text" autoFocus placeholder="Search..." value={searchStatus} onChange={e => setSearchStatus(e.target.value)} onClick={e => e.stopPropagation()} style={{ marginTop: '8px', width: '100%', padding: '4px 8px', fontSize: '0.8rem', borderRadius: '4px', border: '1px solid #475569', background: '#1e293b', color: '#fff' }} />
+                        )}
                       </th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                     </tr>
