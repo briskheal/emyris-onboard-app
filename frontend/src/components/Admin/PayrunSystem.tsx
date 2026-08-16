@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Play, CheckCircle, Download, Mail, Eye, X, AlertCircle, Save } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import api from '../../api/client';
@@ -188,6 +188,20 @@ const PayrunSystem: React.FC = () => {
         }));
 
         const ws = XLSX.utils.json_to_sheet(exportData);
+        
+        // Add styling to header row
+        const range = XLSX.utils.decode_range(ws['!ref'] as string);
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cell_address = {c: C, r: 0}; // Row 0 is the header
+            const cell_ref = XLSX.utils.encode_cell(cell_address);
+            if (ws[cell_ref]) {
+                ws[cell_ref].s = {
+                    fill: { fgColor: { rgb: "3B82F6" } },
+                    font: { color: { rgb: "FFFFFF" }, bold: true }
+                };
+            }
+        }
+
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Payrun Report");
         XLSX.writeFile(wb, `Payrun_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -358,7 +372,7 @@ const PayrunSystem: React.FC = () => {
 
                 {previews.length > 0 && (
                     <>
-                        <div className="table-responsive" style={{ maxHeight: '650px', overflowY: 'auto', marginBottom: '1.5rem' }}>
+                        <div className="table-responsive" style={{ marginBottom: '1.5rem', overflow: 'visible' }}>
                             <table className="data-table" style={{ width: '100%' }}>
                                 <thead>
                                     <tr>
