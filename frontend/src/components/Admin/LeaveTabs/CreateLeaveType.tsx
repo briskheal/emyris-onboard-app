@@ -89,6 +89,7 @@ const CreateLeaveType: React.FC = () => {
                         <input
                             type="text"
                             className="form-input"
+                            style={{ minHeight: '45px' }}
                             value={name}
                             onChange={(e) => setName(e.target.value)}
                             placeholder="Enter Leave Type"
@@ -99,6 +100,7 @@ const CreateLeaveType: React.FC = () => {
                         <input
                             type="text"
                             className="form-input"
+                            style={{ minHeight: '45px' }}
                             value={code}
                             onChange={(e) => setCode(e.target.value)}
                             placeholder="Enter Code"
@@ -109,6 +111,7 @@ const CreateLeaveType: React.FC = () => {
                         <input
                             type="text"
                             className="form-input"
+                            style={{ minHeight: '45px' }}
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Enter Remarks"
@@ -131,7 +134,7 @@ const CreateLeaveType: React.FC = () => {
                         className="btn btn-primary" 
                         onClick={handleAddLeaveType}
                         disabled={submitting}
-                        style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '0.5rem 2rem' }}
+                        style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', padding: '0.5rem 2rem', minHeight: '45px' }}
                     >
                         {submitting ? 'Adding...' : 'Add Leave Type'}
                     </button>
