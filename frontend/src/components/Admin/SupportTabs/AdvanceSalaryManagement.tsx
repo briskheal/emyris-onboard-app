@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Search } from 'lucide-react';
 import api from '../../../api/client';
 
 const AdvanceSalaryManagement: React.FC = () => {
@@ -257,12 +257,16 @@ const AdvanceSalaryManagement: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
                   <thead>
                     <tr>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>Q EMPLOYEE NAME ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>PAYSLIP NAME ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>ADVANCE AMOUNT ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>Q STATUS ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>
+                        <span style={{ display: 'flex', alignItems: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> EMPLOYEE NAME</span>
+                      </th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>PAYSLIP NAME</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>ADVANCE AMOUNT</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Search size={14} style={{ marginRight: '6px' }} /> STATUS</div>
+                      </th>
                       <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                     </tr>
                   </thead>
