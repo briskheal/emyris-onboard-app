@@ -33,6 +33,7 @@ const AssignLeave: React.FC = () => {
     const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState('');
     
     const [numberOfLeaves, setNumberOfLeaves] = useState('');
+    const [usedLeaves, setUsedLeaves] = useState('');
     
     const [balances, setBalances] = useState<LeaveBalance[]>([]);
     const [loadingBalances, setLoadingBalances] = useState(false);
@@ -115,11 +116,13 @@ const AssignLeave: React.FC = () => {
                 year: selectedYear,
                 leaveTypeId: selectedLeaveTypeId,
                 leaveTypeName,
-                assignedLeaves: numberOfLeaves
+                assignedLeaves: numberOfLeaves,
+                usedLeaves: usedLeaves || '0'
             });
             if (res.data.success) {
                 alert('Leave assigned successfully');
                 setNumberOfLeaves('');
+                setUsedLeaves('');
                 fetchBalances(selectedEmployeeEmail);
             } else {
                 alert('Failed to assign leave');
@@ -219,6 +222,20 @@ const AssignLeave: React.FC = () => {
                                 onChange={(e) => setNumberOfLeaves(e.target.value)}
                                 placeholder="Enter Number of Leaves"
                                 required
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>USED LEAVES (OPTIONAL) <span style={{ color: '#ef4444' }}></span></label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                className="form-input"
+                                style={{ minHeight: '48px', padding: '0.5rem 1rem' }}
+                                value={usedLeaves}
+                                onChange={(e) => setUsedLeaves(e.target.value)}
+                                placeholder="E.g. Old db used leaves"
                             />
                         </div>
 

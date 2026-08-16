@@ -3648,11 +3648,17 @@ router.get('/leave-balances', async (req, res) => {
 
 router.post('/leave-balances', async (req, res) => {
     try {
-        const { employeeEmail, year, leaveTypeId, leaveTypeName, assignedLeaves } = req.body;
+        const { employeeEmail, year, leaveTypeId, leaveTypeName, assignedLeaves, usedLeaves } = req.body;
         
         let existing = await LeaveBalance.findOne({ employeeEmail, year, leaveTypeId });
         if (existing) {
-            await LeaveBalance.updateOne({ _id: existing._id }, { $set: { assignedLeaves: parseFloat(assignedLeaves) } });
+            await LeaveBalance.updateOne(
+                { _id: existing._id }, 
+                { $set: { 
+                    assignedLeaves: parseFloat(assignedLeaves),
+                    usedLeaves: parseFloat(usedLeaves) || 0
+                } }
+            );
         } else {
             await LeaveBalance.create({
                 employeeEmail,
@@ -3660,7 +3666,7 @@ router.post('/leave-balances', async (req, res) => {
                 leaveTypeId,
                 leaveTypeName,
                 assignedLeaves: parseFloat(assignedLeaves),
-                usedLeaves: 0
+                usedLeaves: parseFloat(usedLeaves) || 0
             });
         }
         res.json({ success: true });
