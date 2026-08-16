@@ -23,6 +23,33 @@ const AdvanceSalaryManagement: React.FC = () => {
   
   const [loading, setLoading] = useState(false);
 
+  const inputBase = {
+    height: '45px',
+    background: 'rgba(15,23,42,0.8)',
+    border: '1px solid #334155',
+    color: '#fff',
+    borderRadius: '8px',
+    padding: '0 14px',
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    fontSize: '0.9rem',
+    appearance: 'none' as const,
+    WebkitAppearance: 'none' as const,
+    MozAppearance: 'none' as const,
+    outline: 'none',
+    transition: 'border-color 0.2s',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    marginBottom: '7px',
+    color: '#64748b',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.07em',
+    textTransform: 'uppercase' as const,
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -140,8 +167,8 @@ const AdvanceSalaryManagement: React.FC = () => {
               <form onSubmit={handleAssignAdvance} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>EMPLOYEE NAME *</label>
-                  <select className="form-input" value={assignEmpEmail} onChange={e => setAssignEmpEmail(e.target.value)} required>
+                  <label style={labelStyle}>EMPLOYEE NAME *</label>
+                  <select style={inputBase} value={assignEmpEmail} onChange={e => setAssignEmpEmail(e.target.value)} required>
                     <option value="">Select Name</option>
                     {employees.map(emp => (
                       <option key={emp.email} value={emp.email}>{emp.fullName}</option>
@@ -150,23 +177,23 @@ const AdvanceSalaryManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>NAME ON PAYSLIP *</label>
-                  <input type="text" className="form-input" value={assignNameOnPayslip} onChange={e => setAssignNameOnPayslip(e.target.value)} required />
+                  <label style={labelStyle}>NAME ON PAYSLIP *</label>
+                  <input type="text" style={inputBase} value={assignNameOnPayslip} onChange={e => setAssignNameOnPayslip(e.target.value)} required />
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>ADVANCE AMOUNT *</label>
-                  <input type="number" className="form-input" placeholder="Enter Amount" value={assignAdvanceAmount} onChange={e => setAssignAdvanceAmount(e.target.value)} required />
+                  <label style={labelStyle}>ADVANCE AMOUNT *</label>
+                  <input type="number" style={inputBase} placeholder="Enter Amount" value={assignAdvanceAmount} onChange={e => setAssignAdvanceAmount(e.target.value)} required />
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>INSTALLMENT AMOUNT *</label>
-                  <input type="number" className="form-input" placeholder="Enter Amount" value={assignInstallmentAmount} onChange={e => setAssignInstallmentAmount(e.target.value)} required />
+                  <label style={labelStyle}>INSTALLMENT AMOUNT *</label>
+                  <input type="number" style={inputBase} placeholder="Enter Amount" value={assignInstallmentAmount} onChange={e => setAssignInstallmentAmount(e.target.value)} required />
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>DEDUCTION TYPE</label>
-                  <select className="form-input" value={assignDeductionType} onChange={e => setAssignDeductionType(e.target.value)}>
+                  <label style={labelStyle}>DEDUCTION TYPE</label>
+                  <select style={inputBase} value={assignDeductionType} onChange={e => setAssignDeductionType(e.target.value)}>
                     <option value="">Select Type</option>
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
@@ -174,17 +201,17 @@ const AdvanceSalaryManagement: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>DEDUCTION MONTH *</label>
-                  <input type="date" className="form-input" value={assignDeductionMonth} onChange={e => setAssignDeductionMonth(e.target.value)} required />
+                  <label style={labelStyle}>DEDUCTION MONTH *</label>
+                  <input type="month" style={inputBase} value={assignDeductionMonth} onChange={e => setAssignDeductionMonth(e.target.value)} required />
                 </div>
 
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>ADVANCE SANCTION DATE *</label>
-                  <input type="date" className="form-input" value={assignSanctionDate} onChange={e => setAssignSanctionDate(e.target.value)} required />
+                  <label style={labelStyle}>ADVANCE SANCTION DATE *</label>
+                  <input type="date" style={inputBase} value={assignSanctionDate} onChange={e => setAssignSanctionDate(e.target.value)} required />
                 </div>
 
                 <div style={{ gridColumn: 'span 3', marginTop: '1rem' }}>
-                  <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: '42px', padding: '0 2.5rem' }}>
+                  <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: '45px', padding: '0 2.5rem' }}>
                     {loading ? 'Assigning...' : 'Assign Advance'}
                   </button>
                 </div>
@@ -202,9 +229,9 @@ const AdvanceSalaryManagement: React.FC = () => {
             </div>
             
             <div style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1.5rem', width: '250px' }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>SELECT EMPLOYEE</label>
-                <select className="form-input" value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
+              <div style={{ marginBottom: '1.5rem', width: '300px' }}>
+                <label style={labelStyle}>SELECT EMPLOYEE</label>
+                <select style={inputBase} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
                   <option value="">All Employees</option>
                   {employees.map(emp => (
                     <option key={emp.email} value={emp.email}>{emp.fullName}</option>

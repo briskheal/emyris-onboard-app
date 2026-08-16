@@ -31,6 +31,33 @@ const LoanManagement: React.FC = () => {
   
   const [loading, setLoading] = useState(false);
 
+  const inputBase = {
+    height: '45px',
+    background: 'rgba(15,23,42,0.8)',
+    border: '1px solid #334155',
+    color: '#fff',
+    borderRadius: '8px',
+    padding: '0 14px',
+    width: '100%',
+    boxSizing: 'border-box' as const,
+    fontSize: '0.9rem',
+    appearance: 'none' as const,
+    WebkitAppearance: 'none' as const,
+    MozAppearance: 'none' as const,
+    outline: 'none',
+    transition: 'border-color 0.2s',
+  };
+
+  const labelStyle = {
+    display: 'block',
+    marginBottom: '7px',
+    color: '#64748b',
+    fontSize: '0.72rem',
+    fontWeight: 700,
+    letterSpacing: '0.07em',
+    textTransform: 'uppercase' as const,
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -187,12 +214,12 @@ const LoanManagement: React.FC = () => {
             <div style={{ padding: '2rem' }}>
               <form onSubmit={handleCreateLoan} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '1.5rem', alignItems: 'end', marginBottom: '3rem' }}>
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>LOAN NAME *</label>
-                  <input type="text" className="form-input" placeholder="Enter Loan Name" value={loanName} onChange={e => setLoanName(e.target.value)} required />
+                  <label style={labelStyle}>LOAN NAME *</label>
+                  <input type="text" style={inputBase} placeholder="Enter Loan Name" value={loanName} onChange={e => setLoanName(e.target.value)} required />
                 </div>
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>LOAN TYPE *</label>
-                  <select className="form-input" value={loanType} onChange={e => setLoanType(e.target.value)} required>
+                  <label style={labelStyle}>LOAN TYPE *</label>
+                  <select style={inputBase} value={loanType} onChange={e => setLoanType(e.target.value)} required>
                     <option value="">Select Type</option>
                     <option value="Interest Free Loan">Interest Free Loan</option>
                     <option value="Concessional Loan">Concessional Loan</option>
@@ -200,11 +227,11 @@ const LoanManagement: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>INTEREST RATE</label>
-                  <input type="number" className="form-input" placeholder="Enter Interest Rate (%)" value={interestRate} onChange={e => setInterestRate(e.target.value)} />
+                  <label style={labelStyle}>INTEREST RATE</label>
+                  <input type="number" style={inputBase} placeholder="Enter Interest Rate (%)" value={interestRate} onChange={e => setInterestRate(e.target.value)} />
                 </div>
                 <div>
-                  <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: '42px', padding: '0 2rem' }}>
+                  <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: '45px', padding: '0 2rem', width: '100%' }}>
                     {loading ? 'Adding...' : 'Add Loan'}
                   </button>
                 </div>
@@ -255,8 +282,8 @@ const LoanManagement: React.FC = () => {
               <form onSubmit={handleAssignLoan} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>EMPLOYEE NAME *</label>
-                  <select className="form-input" value={assignEmpEmail} onChange={e => setAssignEmpEmail(e.target.value)} required>
+                  <label style={labelStyle}>EMPLOYEE NAME *</label>
+                  <select style={inputBase} value={assignEmpEmail} onChange={e => setAssignEmpEmail(e.target.value)} required>
                     <option value="">Select Name</option>
                     {employees.map(emp => (
                       <option key={emp.email} value={emp.email}>{emp.fullName}</option>
@@ -265,8 +292,8 @@ const LoanManagement: React.FC = () => {
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>LOAN NAME *</label>
-                  <select className="form-input" value={assignLoanName} onChange={e => setAssignLoanName(e.target.value)} required>
+                  <label style={labelStyle}>LOAN NAME *</label>
+                  <select style={inputBase} value={assignLoanName} onChange={e => setAssignLoanName(e.target.value)} required>
                     <option value="">Select Name</option>
                     {loanTypes.map(t => (
                       <option key={t._id} value={t.name}>{t.name}</option>
@@ -275,31 +302,31 @@ const LoanManagement: React.FC = () => {
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>INTEREST RATE</label>
+                  <label style={labelStyle}>INTEREST RATE</label>
                   <div style={{ position: 'relative' }}>
-                    <input type="number" className="form-input" value={assignInterestRate} onChange={e => setAssignInterestRate(e.target.value)} style={{ paddingLeft: '2rem' }} />
+                    <input type="number" style={{...inputBase, paddingLeft: '2rem'}} value={assignInterestRate} onChange={e => setAssignInterestRate(e.target.value)} />
                     <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>%</span>
                   </div>
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>NAME ON PAYSLIP</label>
-                  <input type="text" className="form-input" value={assignNameOnPayslip} onChange={e => setAssignNameOnPayslip(e.target.value)} />
+                  <label style={labelStyle}>NAME ON PAYSLIP</label>
+                  <input type="text" style={inputBase} value={assignNameOnPayslip} onChange={e => setAssignNameOnPayslip(e.target.value)} />
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>LOAN AMOUNT *</label>
-                  <input type="number" className="form-input" placeholder="Enter Amount" value={assignLoanAmount} onChange={e => setAssignLoanAmount(e.target.value)} required />
+                  <label style={labelStyle}>LOAN AMOUNT *</label>
+                  <input type="number" style={inputBase} placeholder="Enter Amount" value={assignLoanAmount} onChange={e => setAssignLoanAmount(e.target.value)} required />
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>INSTALLMENT AMOUNT *</label>
-                  <input type="number" className="form-input" placeholder="Enter Amount" value={assignInstallmentAmount} onChange={e => setAssignInstallmentAmount(e.target.value)} required />
+                  <label style={labelStyle}>INSTALLMENT AMOUNT *</label>
+                  <input type="number" style={inputBase} placeholder="Enter Amount" value={assignInstallmentAmount} onChange={e => setAssignInstallmentAmount(e.target.value)} required />
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>DEDUCTION TYPE</label>
-                  <select className="form-input" value={assignDeductionType} onChange={e => setAssignDeductionType(e.target.value)}>
+                  <label style={labelStyle}>DEDUCTION TYPE</label>
+                  <select style={inputBase} value={assignDeductionType} onChange={e => setAssignDeductionType(e.target.value)}>
                     <option value="">Select Type</option>
                     <option value="Monthly">Monthly</option>
                     <option value="Quarterly">Quarterly</option>
@@ -307,17 +334,17 @@ const LoanManagement: React.FC = () => {
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>DEDUCTION DATE</label>
-                  <input type="date" className="form-input" value={assignDeductionDate} onChange={e => setAssignDeductionDate(e.target.value)} />
+                  <label style={labelStyle}>DEDUCTION DATE</label>
+                  <input type="date" style={inputBase} value={assignDeductionDate} onChange={e => setAssignDeductionDate(e.target.value)} />
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>LOAN SANCTION DATE *</label>
-                  <input type="date" className="form-input" value={assignSanctionDate} onChange={e => setAssignSanctionDate(e.target.value)} required />
+                  <label style={labelStyle}>LOAN SANCTION DATE *</label>
+                  <input type="date" style={inputBase} value={assignSanctionDate} onChange={e => setAssignSanctionDate(e.target.value)} required />
                 </div>
 
                 <div style={{ gridColumn: 'span 4', marginTop: '1rem' }}>
-                  <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: '42px', padding: '0 2.5rem' }}>
+                  <button type="submit" className="btn btn-primary" disabled={loading} style={{ height: '45px', padding: '0 2.5rem' }}>
                     {loading ? 'Assigning...' : 'Assign Loan'}
                   </button>
                 </div>
@@ -335,9 +362,9 @@ const LoanManagement: React.FC = () => {
             </div>
             
             <div style={{ padding: '1.5rem' }}>
-              <div style={{ marginBottom: '1.5rem', width: '250px' }}>
-                <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-muted)' }}>SELECT EMPLOYEE</label>
-                <select className="form-input" value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
+              <div style={{ marginBottom: '1.5rem', width: '300px' }}>
+                <label style={labelStyle}>SELECT EMPLOYEE</label>
+                <select style={inputBase} value={filterEmployee} onChange={e => setFilterEmployee(e.target.value)}>
                   <option value="">All Employees</option>
                   {employees.map(emp => (
                     <option key={emp.email} value={emp.email}>{emp.fullName}</option>
