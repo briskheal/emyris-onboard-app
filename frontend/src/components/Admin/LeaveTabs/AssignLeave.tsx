@@ -136,29 +136,29 @@ const AssignLeave: React.FC = () => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div className="dash-card" style={{ padding: '2rem' }}>
-                <form onSubmit={handleAssign} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <form onSubmit={handleAssign} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem', alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                         <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT YEAR <span style={{ color: '#ef4444' }}>*</span></label>
                         <select className="form-input" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} required>
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
                     
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', position: 'relative' }} ref={dropdownRef}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', position: 'relative' }} ref={dropdownRef}>
                         <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT EMPLOYEE <span style={{ color: '#ef4444' }}>*</span></label>
                         <div 
                             className="form-input" 
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '42px', padding: '0.4rem 1rem' }}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '52px', padding: '0.5rem 1rem' }}
                             onClick={() => setEmployeeDropdownOpen(!employeeDropdownOpen)}
                         >
                             {selectedApplicant ? (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 'bold' }}>
                                         {selectedApplicant.fullName.charAt(0).toUpperCase()}
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontSize: '0.9rem', lineHeight: '1.2' }}>{selectedApplicant.fullName}</span>
-                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', lineHeight: '1' }}>{selectedApplicant.designation || 'Employee'}</span>
+                                        <span style={{ fontSize: '0.95rem', lineHeight: '1.2' }}>{selectedApplicant.fullName}</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.2' }}>{selectedApplicant.designation || 'Employee'}</span>
                                     </div>
                                 </div>
                             ) : (
