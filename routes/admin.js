@@ -3396,6 +3396,7 @@ router.get('/payrun-preview', async (req, res) => {
                     pfDed: Math.round(pfDed),
                     penaltyDays: 0,
                     salDed: 0,
+                    expense: 0,
                     finalSalary: Math.round(baseNetSalary - ptDed - pfDed),
                     sendEmail: true,
                     calcBreakup

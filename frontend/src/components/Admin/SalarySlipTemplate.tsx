@@ -184,18 +184,18 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
           </tbody>
         </table>
 
-        {/* Reimbursements (Placeholder for format) */}
+        {/* Reimbursements */}
         <div style={{ borderTop: borderStyle, padding: '10px' }}>
           <h3 style={{ margin: '0 0 10px 0', textDecoration: 'underline', fontSize: '16px' }}>REIMBURSEMENTS</h3>
           <div style={{ display: 'flex' }}>
             <span style={{ fontWeight: 'bold', width: '200px' }}>Expense</span>
-            <span>: 0</span>
+            <span>: {data.expense || 0}</span>
           </div>
         </div>
 
         <div style={{ borderTop: borderStyle, padding: '10px', fontWeight: 'bold', display: 'flex' }}>
           <span style={{ width: '200px' }}>Reimbursement Total</span>
-          <span>: 0</span>
+          <span>: {data.expense || 0}</span>
         </div>
 
         {/* Payment Summary */}

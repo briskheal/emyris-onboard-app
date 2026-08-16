@@ -77,11 +77,13 @@ const PayrunSystem: React.FC = () => {
             if (res.data.success) {
                 const initializedPreviews = res.data.previews.map((p: any) => {
                     const salDed = p.salDed !== undefined ? p.salDed : 0;
-                    const finalNet = p.finalSalary !== undefined ? p.finalSalary : Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - salDed);
+                    const expense = p.expense !== undefined ? p.expense : 0;
+                    const finalNet = p.finalSalary !== undefined ? p.finalSalary : Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - salDed + parseFloat(expense as any));
                     return {
                         ...p,
                         penaltyDays: p.penaltyDays !== undefined ? p.penaltyDays : 0,
                         salDed: typeof salDed === 'number' ? Math.round(salDed) : salDed,
+                        expense: typeof expense === 'number' ? Math.round(expense) : expense,
                         finalSalary: finalNet,
                         sendEmail: p.sendEmail !== undefined ? p.sendEmail : true
                     };
@@ -123,7 +125,7 @@ const PayrunSystem: React.FC = () => {
         const p = updated[index];
         p.penaltyDays = days;
         p.salDed = Math.round(days * parseFloat(p.dailyRate));
-        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
         setPreviews(updated);
     };
 
@@ -132,7 +134,7 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.ptDed = val;
-        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
         setPreviews(updated);
     };
 
@@ -141,7 +143,16 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.pfDed = val;
-        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
+        setPreviews(updated);
+    };
+
+    const handleExpenseChange = (index: number, valStr: string) => {
+        const val = parseFloat(valStr) || 0;
+        const updated = [...previews];
+        const p = updated[index];
+        p.expense = val;
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
         setPreviews(updated);
     };
 
@@ -172,6 +183,7 @@ const PayrunSystem: React.FC = () => {
             "Sal Ded": parseFloat(p.salDed) || 0,
             "PT Ded": p.ptDed || 0,
             "PF Ded": p.pfDed || 0,
+            "Expense": p.expense || 0,
             "Net Payable Salary": parseFloat(p.finalSalary)
         }));
 
@@ -366,7 +378,8 @@ const PayrunSystem: React.FC = () => {
                                         <th style={{ textAlign: 'center', width: '100px' }}>PT Ded</th>
                                         <th style={{ textAlign: 'center', width: '100px' }}>PF Ded</th>
                                         <th style={{ textAlign: 'center', width: '100px' }}>Penalty Days</th>
-                                        <th style={{ textAlign: 'right' }}>Final Net (₹)</th>
+                                        <th style={{ textAlign: 'center', width: '100px' }}>Expense</th>
+                                        <th style={{ textAlign: 'right' }}>Final Net</th>
                                         <th style={{ textAlign: 'center' }}>Actions</th>
                                     </tr>
                                 </thead>
@@ -395,8 +408,11 @@ const PayrunSystem: React.FC = () => {
                                             <td style={{ textAlign: 'center' }}>
                                                 <input type="number" min="0" step="0.5" value={p.penaltyDays} onChange={(e) => handlePenaltyChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
                                             </td>
+                                            <td style={{ textAlign: 'center' }}>
+                                                <input type="number" min="0" value={p.expense} onChange={(e) => handleExpenseChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
+                                            </td>
                                             <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.05rem' }}>
-                                                ₹{p.finalSalary}
+                                                {p.finalSalary}
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
