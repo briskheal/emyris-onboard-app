@@ -304,13 +304,8 @@ const PayrunSystem: React.FC = () => {
     return (
         <div style={{ padding: '0', width: '100%', maxWidth: '100%', margin: '0' }}>
             <div className="dash-card" style={{ padding: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                    <h2>Payrun & Attendance Module</h2>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                        <button className="btn btn-sm" style={{ background: '#f8f9fa', border: '1px solid #ddd', color: '#333' }} onClick={exportToExcel}>
-                            <Download size={14} style={{ marginRight: '5px' }}/> Export Excel
-                        </button>
-                    </div>
+                <div style={{ textAlign: 'center', marginBottom: '1.5rem', width: '100%' }}>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: '0 0 1rem 0' }}>Payrun & Attendance Module</h2>
                 </div>
 
                 {error && (
@@ -326,24 +321,27 @@ const PayrunSystem: React.FC = () => {
                     </div>
                 )}
 
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '1rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
-                    <input type="file" className="form-control form-control-sm" accept=".xlsx, .xls" onChange={handleFileChange} style={{ maxWidth: '250px', fontSize: '0.875rem' }}/>
-                    <select className="form-control form-control-sm" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: 'auto', fontSize: '0.875rem' }}>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
+                    <input type="file" className="form-control" accept=".xlsx, .xls" onChange={handleFileChange} style={{ maxWidth: '250px', fontSize: '1rem', padding: '8px' }}/>
+                    <select className="form-control" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: 'auto', fontSize: '1rem', padding: '8px' }}>
                         {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
-                    <select className="form-control form-control-sm" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: 'auto', fontSize: '0.875rem' }}>
+                    <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: 'auto', fontSize: '1rem', padding: '8px' }}>
                         {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-sm btn-primary" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
-                        <Upload size={14} style={{ marginRight: '4px' }} />
-                        {uploading ? 'Wait...' : 'Upload'}
+                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                        <Upload size={16} style={{ marginRight: '8px' }} />
+                        {uploading ? 'Uploading...' : 'Upload Data'}
                     </button>
                     {uploadSuccess && (
-                        <button onClick={() => fetchPreview(true)} disabled={loadingPreview} className="btn btn-sm btn-success" style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
-                            <Play size={14} style={{ marginRight: '4px' }} />
-                            {loadingPreview ? 'Wait...' : 'Run Preview'}
+                        <button onClick={() => fetchPreview(true)} disabled={loadingPreview} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                            <Play size={16} style={{ marginRight: '8px' }} />
+                            {loadingPreview ? 'Loading...' : 'Run Preview'}
                         </button>
                     )}
+                    <button className="btn" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ddd', borderRadius: '6px', display: 'flex', alignItems: 'center' }} onClick={exportToExcel}>
+                        <Download size={16} style={{ marginRight: '8px' }}/> Export Excel
+                    </button>
                 </div>
 
                 {previews.length > 0 && (
@@ -428,12 +426,10 @@ const PayrunSystem: React.FC = () => {
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem' }}>
                                     <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', opacity: 0.8 }}>Prepared By</label>
-                                        <input type="text" value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} className="form-input-sm" style={{ width: '100%', padding: '8px', background: 'transparent', border: '1px solid #334155', borderRadius: '4px', color: 'inherit' }}/>
+                                        <input type="text" value={preparedBy} onChange={(e) => setPreparedBy(e.target.value)} placeholder="Prepared By - Name" className="form-input-sm" style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid #334155', borderRadius: '4px', color: 'inherit', fontSize: '1rem' }}/>
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', opacity: 0.8 }}>Sanctioned By</label>
-                                        <input type="text" value={sanctionedBy} onChange={(e) => setSanctionedBy(e.target.value)} className="form-input-sm" style={{ width: '100%', padding: '8px', background: 'transparent', border: '1px solid #334155', borderRadius: '4px', color: 'inherit' }}/>
+                                        <input type="text" value={sanctionedBy} onChange={(e) => setSanctionedBy(e.target.value)} placeholder="Sanctioned By - Name" className="form-input-sm" style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.02)', border: '1px solid #334155', borderRadius: '4px', color: 'inherit', fontSize: '1rem' }}/>
                                     </div>
                                 </div>
                             </div>
