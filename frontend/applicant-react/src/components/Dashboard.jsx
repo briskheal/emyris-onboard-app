@@ -6,6 +6,7 @@ import OnboardingForm from './OnboardingForm';
 import { OfferLetterView } from './OfferLetterView';
 import VoiceStudio from './VoiceStudio';
 import MyLettersView from './MyLettersView';
+import ManageLeavePortal from './ManageLeavePortal';
 
 const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
     const [applicant, setApplicant] = useState(initialApplicant);
@@ -162,6 +163,20 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
         );
     }
 
+    // If viewing Manage Leave full screen
+    if (activeTab === 'manage-leave') {
+        return (
+            <div style={styles.dashboardContainer}>
+                <div style={{ marginBottom: '16px' }}>
+                    <button onClick={() => setActiveTab('overview')} style={styles.backButton}>
+                        ⬅️ Back to Dashboard Overview
+                    </button>
+                </div>
+                <ManageLeavePortal applicant={applicant} />
+            </div>
+        );
+    }
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-main)', color: 'var(--text-main)', flexDirection: 'column' }}>
             {/* Mobile Hamburger Header */}
@@ -211,6 +226,9 @@ const Dashboard = ({ applicant: initialApplicant, onLogout, companyData }) => {
                                 </button>
                                 <button style={{ ...(activeTab === 'letters' ? styles.sidebarBtnActive : styles.sidebarBtn), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }} onClick={() => handleTabClick('letters')}>
                                     📄 <span style={styles.sidebarBtnText}>My Official Letters</span> {isScreeningPending ? '🔒' : ''}
+                                </button>
+                                <button style={{ ...(activeTab === 'manage-leave' ? styles.sidebarBtnActive : styles.sidebarBtn), opacity: isScreeningPending ? 0.45 : 1, cursor: isScreeningPending ? 'not-allowed' : 'pointer' }} onClick={() => handleTabClick('manage-leave')}>
+                                    📅 <span style={styles.sidebarBtnText}>Manage Leave</span> {isScreeningPending ? '🔒' : ''}
                                 </button>
                             </nav>
                             {onLogout && (
