@@ -108,10 +108,12 @@ const AdminPanel: React.FC = () => {
           display: 'flex', 
           flexDirection: 'column', 
           flexShrink: 0,
-          height: '100%',
+          height: '100vh',
+          maxHeight: '100vh',
           position: 'sticky',
           top: 0,
-          overflowY: 'auto'
+          overflowY: 'auto',
+          overflowX: 'hidden'
         }}>
         <h2 style={{ marginBottom: '0.25rem', paddingLeft: '0.5rem', color: 'var(--primary)', fontSize: '1.1rem' }}>Admin Portal</h2>
         <p style={{ paddingLeft: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', marginBottom: '1.75rem' }}>Emyris Biolifesciences</p>
@@ -184,7 +186,7 @@ const AdminPanel: React.FC = () => {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <Calendar size={16} style={{ flexShrink: 0 }} />
-                MANAGE LEAVE
+                Manage Leave
               </div>
               {leaveMenuExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
@@ -192,11 +194,11 @@ const AdminPanel: React.FC = () => {
             {leaveMenuExpanded && (
               <div style={{ paddingLeft: '2rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.4rem' }}>
                 {[
-                  { id: 'create_type', label: 'CREATE LEAVE TYPE' },
-                  { id: 'assign_leave', label: 'ASSIGN LEAVE' },
-                  { id: 'assigned_leaves', label: 'ASSIGNED LEAVES' },
-                  { id: 'create_template', label: 'CREATE LEAVE TEMPLATE' },
-                  { id: 'assign_template', label: 'ASSIGN LEAVE TEMPLATES' }
+                  { id: 'create_type', label: 'Create Leave Type' },
+                  { id: 'assign_leave', label: 'Assign Leave' },
+                  { id: 'assigned_leaves', label: 'Assigned Leaves' },
+                  { id: 'create_template', label: 'Create Leave Template' },
+                  { id: 'assign_template', label: 'Assign Leave Templates' }
                 ].map(subItem => (
                   <button
                     key={subItem.id}
