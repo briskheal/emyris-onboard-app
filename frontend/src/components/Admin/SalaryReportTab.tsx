@@ -224,17 +224,15 @@ export const SalaryReportTab: React.FC = () => {
                     {reportType === 'employee' && (
                         <div>
                             <label className="form-label" style={{ fontSize: '12px' }}>Select Employee</label>
-                            <input 
-                                list="employee-list" 
+                            <select 
                                 value={empCode} 
                                 onChange={e => setEmpCode(e.target.value)} 
                                 className="form-input-sm" 
                                 style={{ width: '250px' }}
-                                placeholder="Search by name or code..."
-                            />
-                            <datalist id="employee-list">
-                                {applicants.map(a => <option key={a.empCode} value={`${a.fullName} (${a.empCode})`} />)}
-                            </datalist>
+                            >
+                                <option value="">-- Select Employee --</option>
+                                {applicants.map(a => <option key={a.empCode} value={a.empCode}>{a.fullName} ({a.empCode})</option>)}
+                            </select>
                         </div>
                     )}
                     <button onClick={generateReport} disabled={loading} className="btn btn-primary" style={{ padding: '6px 15px', height: '32px' }}>
