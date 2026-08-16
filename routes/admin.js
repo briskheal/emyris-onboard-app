@@ -3276,12 +3276,14 @@ router.get('/debug-loans', async (req, res) => {
 
 router.get('/payrun-preview', async (req, res) => {
     try {
-        const { month, year } = req.query;
+        const { month, year, forceCsv } = req.query;
 
         // Check if payslips already exist in DB
-        const savedPayslips = await Payslip.find({ month, year });
-        if (savedPayslips && savedPayslips.length > 0) {
-            const previews = savedPayslips.map(ps => {
+        // If forceCsv is true, we skip this to force recalculation from the uploaded file
+        if (forceCsv !== 'true') {
+            const savedPayslips = await Payslip.find({ month, year });
+            if (savedPayslips && savedPayslips.length > 0) {
+                const previews = savedPayslips.map(ps => {
                 if (ps.calculatedSalaryBreakup && ps.calculatedSalaryBreakup.empName) {
                     return ps.calculatedSalaryBreakup;
                 } else {
@@ -3307,9 +3309,6 @@ router.get('/payrun-preview', async (req, res) => {
             };
             return res.json({ success: true, previews, mailConfig, loadedFromDb: true });
         }
-
-        if (req.query.forceCsv !== 'true') {
-            return res.json({ success: true, previews: [], message: 'No saved records found for this month.' });
         }
 
         const filePath = path.join(__dirname, '../Attendance/LATEST_ATTENDANCE.xlsx');
