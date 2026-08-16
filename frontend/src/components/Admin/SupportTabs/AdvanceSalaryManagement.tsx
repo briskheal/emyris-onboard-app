@@ -366,49 +366,51 @@ const AdvanceSalaryManagement: React.FC = () => {
 
       {viewAdv && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div style={{ background: '#1e293b', width: '100%', maxWidth: '600px', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden' }}>
-            <div style={{ padding: '1.2rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: '#1e293b', width: '100%', maxWidth: '850px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', borderRadius: '12px', border: '1px solid #334155', overflow: 'hidden' }}>
+            <div style={{ padding: '1.2rem', borderBottom: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
               <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold' }}>Salary Advance Details</h3>
-              <button onClick={() => setViewAdv(null)} style={{ background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>
-                <X size={20} />
+              <button onClick={() => setViewAdv(null)} style={{ background: '#ef4444', color: '#fff', border: 'none', cursor: 'pointer', padding: '6px 12px', borderRadius: '4px', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 'bold', fontSize: '0.85rem' }}>
+                <X size={16} /> CLOSE
               </button>
             </div>
-            <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Employee Name</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.employeeName}</div></div>
-              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sanction Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.sanctionDate}</div></div>
-              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Deduction Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.deductionDate}</div></div>
-              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Advance Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.advanceAmount}</div></div>
-              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Amount Paid</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.amountPaid}</div></div>
-              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Balance Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.balanceAmount}</div></div>
-              <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Installment Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.installmentAmount}</div></div>
-            </div>
             
-            <div style={{ padding: '1.5rem', borderTop: '1px solid #334155' }}>
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: 'bold' }}>Repayment Schedule</h4>
-              <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
-                  <thead>
-                    <tr>
-                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>PERIOD</th>
-                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>INSTALLMENT</th>
-                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>STATUS</th>
-                      <th style={{ padding: '0.8rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>ACTION</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {generateSchedule(viewAdv.advanceAmount, viewAdv.installmentAmount, viewAdv.amountPaid, viewAdv.deductionMonth || viewAdv.sanctionDate, viewAdv.deductionType).map((row, idx) => (
-                      <tr key={idx}>
-                        <td style={{ padding: '0.8rem', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px solid #334155' }}>{row.period}</td>
-                        <td style={{ padding: '0.8rem', color: 'var(--text-muted)', fontSize: '0.85rem', border: '1px solid #334155' }}>{row.installment}</td>
-                        <td style={{ padding: '0.8rem', fontSize: '0.85rem', border: '1px solid #334155', color: row.status === 'Paid' ? '#10b981' : row.status === 'Pending' ? '#f59e0b' : '#3b82f6' }}>{row.status}</td>
-                        <td style={{ padding: '0.8rem', border: '1px solid #334155', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{row.status !== 'Paid' ? 'Pending' : ''}</td>
+            <div style={{ overflowY: 'auto', flex: 1, paddingBottom: '2rem' }}>
+              <div style={{ padding: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+                <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Employee Name</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.employeeName}</div></div>
+                <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Sanction Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.sanctionDate}</div></div>
+                <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Deduction Date</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.deductionDate}</div></div>
+                <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Advance Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.advanceAmount}</div></div>
+                <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Amount Paid</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.amountPaid}</div></div>
+                <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Balance Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.balanceAmount}</div></div>
+                <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Installment Amount</span><div style={{ fontWeight: 'bold', marginTop: '4px' }}>{viewAdv.installmentAmount}</div></div>
+              </div>
+              
+              <div style={{ padding: '1.5rem', borderTop: '1px solid #334155' }}>
+                <h4 style={{ margin: '0 0 1rem 0', fontSize: '1rem', fontWeight: 'bold' }}>Repayment Schedule</h4>
+                <div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
+                    <thead>
+                      <tr>
+                        <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #334155', background: 'rgba(15,23,42,0.8)' }}>PERIOD</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #334155', background: 'rgba(15,23,42,0.8)' }}>INSTALLMENT</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #334155', background: 'rgba(15,23,42,0.8)' }}>STATUS</th>
+                        <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid #334155', background: 'rgba(15,23,42,0.8)' }}>ACTION</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {generateSchedule(viewAdv.advanceAmount, viewAdv.installmentAmount, viewAdv.amountPaid, viewAdv.deductionMonth || viewAdv.sanctionDate, viewAdv.deductionType).map((row, idx) => (
+                        <tr key={idx}>
+                          <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{row.period}</td>
+                          <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{row.installment}</td>
+                          <td style={{ padding: '1rem', fontSize: '0.9rem', border: '1px solid #334155', color: row.status === 'Paid' ? '#10b981' : row.status === 'Pending' ? '#f59e0b' : '#3b82f6', fontWeight: row.status === 'Paid' ? 'bold' : 'normal' }}>{row.status}</td>
+                          <td style={{ padding: '1rem', border: '1px solid #334155', color: 'var(--text-muted)', fontSize: '0.85rem' }}>{row.status !== 'Paid' ? 'Pending' : ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-
           </div>
         </div>
       )}
