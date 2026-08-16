@@ -3226,8 +3226,11 @@ router.get('/debug-loans', async (req, res) => {
     try {
         const { email, month = 'July', year = '2026' } = req.query;
         let loans;
+        let applicantTrace = null;
         if (email) {
-            loans = await AssignedLoan.find({ employeeEmail: email, status: 'Ongoing', deductionType: 'Monthly' });
+            const applicant = await Applicant.findOne({ email });
+            applicantTrace = applicant ? applicant.email : null;
+            loans = await AssignedLoan.find({ employeeEmail: applicantTrace || email, status: 'Ongoing', deductionType: 'Monthly' });
         } else {
             loans = await AssignedLoan.find({ status: 'Ongoing', deductionType: 'Monthly' });
         }
@@ -3442,8 +3445,10 @@ router.get('/payrun-preview', async (req, res) => {
                 let advDetails = [];
 
                 try {
-                    // 1. Fetch Active Loans for Monthly Deduction
-                    const activeLoans = await AssignedLoan.find({ employeeEmail: applicant.email, status: 'Ongoing', deductionType: 'Monthly' });
+                    // 1. Fetch Active Loans for Monthly Deduction (Memory-based case-insensitive match to avoid DB adapter issues)
+                    const allOngoingLoans = await AssignedLoan.find({ status: 'Ongoing', deductionType: 'Monthly' });
+                    const activeLoans = allOngoingLoans.filter(l => l.employeeEmail && applicant.email && l.employeeEmail.trim().toLowerCase() === applicant.email.trim().toLowerCase());
+
                     for (const loan of activeLoans) {
                         const dedDate = parseDMY(loan.deductionDate);
                         if (dedDate && payrunStart >= new Date(dedDate.getFullYear(), dedDate.getMonth(), 1)) {
@@ -3460,8 +3465,10 @@ router.get('/payrun-preview', async (req, res) => {
                         }
                     }
 
-                    // 2. Fetch Active Advances for Monthly Deduction
-                    const activeAdvances = await AssignedAdvance.find({ employeeEmail: applicant.email, status: 'Ongoing', deductionType: 'Monthly' });
+                    // 2. Fetch Active Advances for Monthly Deduction (Memory-based case-insensitive match)
+                    const allOngoingAdvances = await AssignedAdvance.find({ status: 'Ongoing', deductionType: 'Monthly' });
+                    const activeAdvances = allOngoingAdvances.filter(a => a.employeeEmail && applicant.email && a.employeeEmail.trim().toLowerCase() === applicant.email.trim().toLowerCase());
+
                     for (const adv of activeAdvances) {
                         let dStart = null;
                         if (adv.deductionMonth) {
