@@ -3224,14 +3224,48 @@ router.post('/upload-attendance', uploadAttendance.single('file'), (req, res) =>
 
 router.get('/debug-loans', async (req, res) => {
     try {
-        const { email } = req.query;
+        const { email, month = 'July', year = '2026' } = req.query;
         let loans;
         if (email) {
             loans = await AssignedLoan.find({ employeeEmail: email, status: 'Ongoing', deductionType: 'Monthly' });
         } else {
             loans = await AssignedLoan.find({ status: 'Ongoing', deductionType: 'Monthly' });
         }
-        res.json({ success: true, count: loans.length, loans });
+        
+        // Date parsing identical to payrun-preview
+        const parseDMY = (dateString) => {
+            if (!dateString) return null;
+            const parts = dateString.split(/[-/]/);
+            if (parts.length !== 3) {
+                const d = new Date(dateString);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            if (parts[0].length === 4) {
+                const d = new Date(dateString);
+                return isNaN(d.getTime()) ? null : d;
+            }
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`); // YYYY-MM-DD
+        };
+        const payrunStart = new Date(parseInt(year), new Date(`${month} 1, ${year}`).getMonth(), 1);
+        
+        const debugInfo = loans.map(loan => {
+            const dedDate = parseDMY(loan.deductionDate);
+            const compDate = dedDate ? new Date(dedDate.getFullYear(), dedDate.getMonth(), 1) : null;
+            const willDeduct = dedDate && payrunStart >= compDate;
+            return {
+                id: loan._id,
+                email: loan.employeeEmail,
+                deductionDateOriginal: loan.deductionDate,
+                dedDateParsed: dedDate,
+                payrunStart,
+                compDate,
+                willDeduct,
+                balance: loan.balanceAmount,
+                installment: loan.installmentAmount
+            };
+        });
+
+        res.json({ success: true, count: loans.length, payrunStart, debugInfo, loans });
     } catch (e) {
         res.status(500).json({ error: e.toString(), stack: e.stack });
     }
