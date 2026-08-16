@@ -147,6 +147,9 @@ const ManageLeavePortal = ({ applicant }) => {
     width: '100%',
     boxSizing: 'border-box',
     fontSize: '0.9rem',
+    appearance: 'none',
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
   };
 
   const labelStyle = {
@@ -511,6 +514,18 @@ const ManageLeavePortal = ({ applicant }) => {
         @media (max-width: 768px) {
           table { font-size: 0.78rem !important; }
           table td, table th { padding: 7px 6px !important; }
+        }
+        /* Fix native select white patches on iOS/Android */
+        select {
+          -webkit-appearance: none !important;
+          -moz-appearance: none !important;
+          appearance: none !important;
+          background-color: #0f172a !important;
+          color: #fff !important;
+        }
+        select option {
+          background-color: #1e293b !important;
+          color: #fff !important;
         }
       `}</style>
     </div>
