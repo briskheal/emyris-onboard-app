@@ -83,8 +83,8 @@ const CreateLeaveType: React.FC = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {/* Form Section */}
             <div className="dash-card" style={{ padding: '2rem' }}>
-                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-                    <div style={{ flex: '1', minWidth: '200px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', alignItems: 'end' }}>
+                    <div>
                         <label className="form-label" style={{ color: 'var(--text-muted)' }}>ENTER LEAVE TYPE <span style={{ color: '#ef4444' }}>*</span></label>
                         <input
                             type="text"
@@ -94,7 +94,7 @@ const CreateLeaveType: React.FC = () => {
                             placeholder="Enter Leave Type"
                         />
                     </div>
-                    <div style={{ flex: '1', minWidth: '200px' }}>
+                    <div>
                         <label className="form-label" style={{ color: 'var(--text-muted)' }}>ENTER CODE <span style={{ color: '#ef4444' }}>*</span></label>
                         <input
                             type="text"
@@ -104,14 +104,14 @@ const CreateLeaveType: React.FC = () => {
                             placeholder="Enter Code"
                         />
                     </div>
-                    <div style={{ flex: '2', minWidth: '300px' }}>
+                    <div>
                         <label className="form-label" style={{ color: 'var(--text-muted)' }}>ENTER DESCRIPTION</label>
-                        <textarea
+                        <input
+                            type="text"
                             className="form-input"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Enter Remarks"
-                            style={{ resize: 'vertical', minHeight: '40px' }}
                         />
                     </div>
                 </div>
@@ -180,7 +180,7 @@ const CreateLeaveType: React.FC = () => {
                                                 {lt.isPaid ? 'Paid' : 'Unpaid'}
                                             </span>
                                         </td>
-                                        <td style={{ padding: '1rem', color: 'var(--text-muted)', maxWidth: '250px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <td style={{ padding: '1rem', color: 'var(--text-muted)', maxWidth: '300px', whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.4' }}>
                                             {lt.description || '-'}
                                         </td>
                                         <td style={{ padding: '1rem' }}>
