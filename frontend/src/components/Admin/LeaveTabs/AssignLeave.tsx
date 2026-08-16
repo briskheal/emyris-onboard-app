@@ -142,7 +142,7 @@ const AssignLeave: React.FC = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.75rem', alignItems: 'flex-start' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                             <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT YEAR <span style={{ color: '#ef4444' }}>*</span></label>
-                            <select className="form-input" style={{ minHeight: '52px', padding: '0.5rem 1rem' }} value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} required>
+                            <select className="form-input" style={{ minHeight: '48px', padding: '0.5rem 1rem' }} value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} required>
                                 {years.map(y => <option key={y} value={y}>{y}</option>)}
                             </select>
                         </div>
@@ -151,7 +151,7 @@ const AssignLeave: React.FC = () => {
                         <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT EMPLOYEE <span style={{ color: '#ef4444' }}>*</span></label>
                         <div 
                             className="form-input" 
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '52px', padding: '0.5rem 1rem' }}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '48px', padding: '0.5rem 1rem' }}
                             onClick={() => setEmployeeDropdownOpen(!employeeDropdownOpen)}
                         >
                             {selectedApplicant ? (
@@ -198,7 +198,7 @@ const AssignLeave: React.FC = () => {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT LEAVE TYPE <span style={{ color: '#ef4444' }}>*</span></label>
-                            <select className="form-input" style={{ minHeight: '52px', padding: '0.5rem 1rem' }} value={selectedLeaveTypeId} onChange={(e) => setSelectedLeaveTypeId(e.target.value)} required>
+                            <select className="form-input" style={{ minHeight: '48px', padding: '0.5rem 1rem' }} value={selectedLeaveTypeId} onChange={(e) => setSelectedLeaveTypeId(e.target.value)} required>
                                 <option value="">Select Leave Type</option>
                                 {leaveTypes.map(lt => <option key={lt._id} value={lt._id}>{lt.name}</option>)}
                             </select>
@@ -214,7 +214,7 @@ const AssignLeave: React.FC = () => {
                                 min="0"
                                 step="0.5"
                                 className="form-input"
-                                style={{ minHeight: '52px', padding: '0.5rem 1rem' }}
+                                style={{ minHeight: '48px', padding: '0.5rem 1rem' }}
                                 value={numberOfLeaves}
                                 onChange={(e) => setNumberOfLeaves(e.target.value)}
                                 placeholder="Enter Number of Leaves"
@@ -223,7 +223,7 @@ const AssignLeave: React.FC = () => {
                         </div>
 
                         <div>
-                            <button type="submit" className="btn btn-primary" style={{ minHeight: '52px', width: '100%' }} disabled={submitting}>
+                            <button type="submit" className="btn btn-primary" style={{ minHeight: '48px', width: '100%' }} disabled={submitting}>
                                 {submitting ? 'Assigning...' : 'Assign Leave'}
                             </button>
                         </div>
