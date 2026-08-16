@@ -3222,6 +3222,21 @@ router.post('/upload-attendance', uploadAttendance.single('file'), (req, res) =>
     }
 });
 
+router.get('/debug-loans', async (req, res) => {
+    try {
+        const { email } = req.query;
+        let loans;
+        if (email) {
+            loans = await AssignedLoan.find({ employeeEmail: email, status: 'Ongoing', deductionType: 'Monthly' });
+        } else {
+            loans = await AssignedLoan.find({ status: 'Ongoing', deductionType: 'Monthly' });
+        }
+        res.json({ success: true, count: loans.length, loans });
+    } catch (e) {
+        res.status(500).json({ error: e.toString(), stack: e.stack });
+    }
+});
+
 router.get('/payrun-preview', async (req, res) => {
     try {
         const { month, year } = req.query;
