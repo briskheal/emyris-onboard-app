@@ -136,13 +136,16 @@ const AssignLeave: React.FC = () => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div className="dash-card" style={{ padding: '2rem' }}>
-                <form onSubmit={handleAssign} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.75rem', alignItems: 'flex-start' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                        <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT YEAR <span style={{ color: '#ef4444' }}>*</span></label>
-                        <select className="form-input" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} required>
-                            {years.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                    </div>
+                <form onSubmit={handleAssign} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                    
+                    {/* Row 1: Year, Employee, Leave Type */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.75rem', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT YEAR <span style={{ color: '#ef4444' }}>*</span></label>
+                            <select className="form-input" style={{ minHeight: '52px', padding: '0.5rem 1rem' }} value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} required>
+                                {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                        </div>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', position: 'relative' }} ref={dropdownRef}>
                         <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT EMPLOYEE <span style={{ color: '#ef4444' }}>*</span></label>
@@ -193,32 +196,37 @@ const AssignLeave: React.FC = () => {
                         )}
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT LEAVE TYPE <span style={{ color: '#ef4444' }}>*</span></label>
-                        <select className="form-input" value={selectedLeaveTypeId} onChange={(e) => setSelectedLeaveTypeId(e.target.value)} required>
-                            <option value="">Select Leave Type</option>
-                            {leaveTypes.map(lt => <option key={lt._id} value={lt._id}>{lt.name}</option>)}
-                        </select>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT LEAVE TYPE <span style={{ color: '#ef4444' }}>*</span></label>
+                            <select className="form-input" style={{ minHeight: '52px', padding: '0.5rem 1rem' }} value={selectedLeaveTypeId} onChange={(e) => setSelectedLeaveTypeId(e.target.value)} required>
+                                <option value="">Select Leave Type</option>
+                                {leaveTypes.map(lt => <option key={lt._id} value={lt._id}>{lt.name}</option>)}
+                            </select>
+                        </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>ENTER NUMBER OF LEAVES <span style={{ color: '#ef4444' }}>*</span></label>
-                        <input
-                            type="number"
-                            min="0"
-                            step="0.5"
-                            className="form-input"
-                            value={numberOfLeaves}
-                            onChange={(e) => setNumberOfLeaves(e.target.value)}
-                            placeholder="Enter Number of Leaves"
-                            required
-                        />
-                    </div>
+                    {/* Row 2: Number of leaves and button */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.75rem', alignItems: 'flex-end' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>ENTER NUMBER OF LEAVES <span style={{ color: '#ef4444' }}>*</span></label>
+                            <input
+                                type="number"
+                                min="0"
+                                step="0.5"
+                                className="form-input"
+                                style={{ minHeight: '52px', padding: '0.5rem 1rem' }}
+                                value={numberOfLeaves}
+                                onChange={(e) => setNumberOfLeaves(e.target.value)}
+                                placeholder="Enter Number of Leaves"
+                                required
+                            />
+                        </div>
 
-                    <div style={{ gridColumn: '1 / -1', marginTop: '0.5rem' }}>
-                        <button type="submit" className="btn btn-primary" disabled={submitting}>
-                            {submitting ? 'Assigning...' : 'Assign Leave'}
-                        </button>
+                        <div>
+                            <button type="submit" className="btn btn-primary" style={{ minHeight: '52px', width: '100%' }} disabled={submitting}>
+                                {submitting ? 'Assigning...' : 'Assign Leave'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
