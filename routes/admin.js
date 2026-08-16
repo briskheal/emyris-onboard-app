@@ -37,6 +37,20 @@ const { purgeApplicantAndAllAssociatedRecords } = require('../utils/applicantPur
 const { runBirthdayCron } = require('../utils/cron');
 const sharp = require('sharp');
 
+// Endpoint to force restart the server
+router.get('/restart', (req, res) => {
+    console.log('Restart triggered via browser link.');
+    res.send(`
+      <div style="font-family: sans-serif; text-align: center; margin-top: 20vh; background: #0f172a; color: white; padding: 50px; border-radius: 12px; height: 100vh;">
+        <h2 style="color: #10b981;">Server is restarting...</h2>
+        <p style="color: #94a3b8;">Please wait 5 seconds and navigate back to the admin portal.</p>
+      </div>
+    `);
+    setTimeout(() => {
+        process.exit(1);
+    }, 500);
+});
+
 // Shared file helper (Converts images to WebP using sharp; leaves PDF documents intact)
 async function saveBase64ToFile(email, category, base64Data) {
     if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:')) {
