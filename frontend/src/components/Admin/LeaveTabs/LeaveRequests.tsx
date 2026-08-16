@@ -66,6 +66,7 @@ const LeaveRequests: React.FC = () => {
     switch(status) {
       case 'Approved': return '#10b981';
       case 'Rejected': return '#ef4444';
+      case 'Revoked': return '#8b5cf6';
       default: return '#f59e0b';
     }
   };
@@ -74,6 +75,7 @@ const LeaveRequests: React.FC = () => {
     switch(status) {
       case 'Approved': return <CheckCircle size={16} />;
       case 'Rejected': return <XCircle size={16} />;
+      case 'Revoked': return <XCircle size={16} />;
       default: return <Clock size={16} />;
     }
   };
@@ -104,6 +106,7 @@ const LeaveRequests: React.FC = () => {
             <option value="Pending">Pending</option>
             <option value="Approved">Approved</option>
             <option value="Rejected">Rejected</option>
+            <option value="Revoked">Revoked</option>
           </select>
         </div>
       </div>
@@ -178,6 +181,16 @@ const LeaveRequests: React.FC = () => {
                             Reject
                           </button>
                         </div>
+                      )}
+                      {req.status === 'Approved' && (
+                        <button 
+                          onClick={() => handleUpdateStatus(req._id, 'Revoked')}
+                          className="btn btn-sm"
+                          title="Revoke this approved leave and restore the balance"
+                          style={{ background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '5px 12px', fontSize: '0.85rem' }}
+                        >
+                          ↩ Revoke
+                        </button>
                       )}
                     </td>
                   </tr>

@@ -3703,24 +3703,39 @@ router.put('/leave-requests/:id/status', async (req, res) => {
         request.status = status;
         await request.save();
 
-        // If newly approved, we need to increment the usedLeaves balance
+        const isLWP = request.leaveTypeName.toLowerCase().includes('leave without pay') || request.leaveTypeName.toLowerCase().includes('lwp');
+
+        const now = new Date();
+        const calYear = now.getFullYear();
+        const fyStart = now.getMonth() >= 3 ? calYear : calYear - 1;
+        const defaultYear = `${fyStart}-${fyStart + 1}`;
+        const targetYear = year || defaultYear;
+
+        // If newly approved → increment usedLeaves
         if (status === 'Approved' && oldStatus !== 'Approved') {
-            const isLWP = request.leaveTypeName.toLowerCase().includes('leave without pay') || request.leaveTypeName.toLowerCase().includes('lwp');
-            
             if (!isLWP) {
-                const now = new Date();
-                const calYear = now.getFullYear();
-                const fyStart = now.getMonth() >= 3 ? calYear : calYear - 1;
-                const defaultYear = `${fyStart}-${fyStart + 1}`;
-                const targetYear = year || defaultYear;
                 const balance = await LeaveBalance.findOne({
                     employeeEmail: request.employeeEmail,
                     leaveTypeId: request.leaveTypeId,
                     year: targetYear
                 });
-                
                 if (balance) {
                     balance.usedLeaves = (balance.usedLeaves || 0) + request.days;
+                    await balance.save();
+                }
+            }
+        }
+
+        // If revoked from Approved → decrement usedLeaves back
+        if (status === 'Revoked' && oldStatus === 'Approved') {
+            if (!isLWP) {
+                const balance = await LeaveBalance.findOne({
+                    employeeEmail: request.employeeEmail,
+                    leaveTypeId: request.leaveTypeId,
+                    year: targetYear
+                });
+                if (balance) {
+                    balance.usedLeaves = Math.max(0, (balance.usedLeaves || 0) - request.days);
                     await balance.save();
                 }
             }
