@@ -194,8 +194,9 @@ const LoanManagement: React.FC = () => {
                   <label className="form-label" style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-primary)' }}>LOAN TYPE *</label>
                   <select className="form-input" value={loanType} onChange={e => setLoanType(e.target.value)} required>
                     <option value="">Select Type</option>
-                    <option value="Flat Rate">Flat Rate</option>
-                    <option value="Reducing Balance">Reducing Balance</option>
+                    <option value="Interest Free Loan">Interest Free Loan</option>
+                    <option value="Concessional Loan">Concessional Loan</option>
+                    <option value="Loan at Market Rate">Loan at Market Rate</option>
                   </select>
                 </div>
                 <div>
