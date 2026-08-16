@@ -76,14 +76,22 @@ const PayrunSystem: React.FC = () => {
             const res = await api.get(`/admin/payrun-preview?month=${payrunMonth}&year=${payrunYear}&forceCsv=${forceCsv}`);
             if (res.data.success) {
                 const initializedPreviews = res.data.previews.map((p: any) => {
-                    const salDed = p.salDed !== undefined ? p.salDed : 0;
-                    const expense = p.expense !== undefined ? p.expense : 0;
-                    const finalNet = p.finalSalary !== undefined ? p.finalSalary : Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - salDed + parseFloat(expense as any));
+                    const salDed = p.salDed !== undefined ? Math.round(parseFloat(p.salDed)) : 0;
+                    const expense = p.expense !== undefined ? Math.round(parseFloat(p.expense)) : 0;
+                    const ptDed = p.ptDed !== undefined ? Math.round(parseFloat(p.ptDed)) : 0;
+                    const pfDed = p.pfDed !== undefined ? Math.round(parseFloat(p.pfDed)) : 0;
+                    const baseNetSalary = Math.round(parseFloat(p.baseNetSalary) || 0);
+                    
+                    let finalNet = Math.round(baseNetSalary - ptDed - pfDed - salDed + expense);
+
                     return {
                         ...p,
+                        baseNetSalary,
+                        ptDed,
+                        pfDed,
                         penaltyDays: p.penaltyDays !== undefined ? p.penaltyDays : 0,
-                        salDed: typeof salDed === 'number' ? Math.round(salDed) : salDed,
-                        expense: typeof expense === 'number' ? Math.round(expense) : expense,
+                        salDed,
+                        expense,
                         finalSalary: finalNet,
                         sendEmail: p.sendEmail !== undefined ? p.sendEmail : true
                     };
