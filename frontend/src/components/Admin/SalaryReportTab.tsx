@@ -20,7 +20,7 @@ export const SalaryReportTab: React.FC = () => {
     useEffect(() => {
         api.get('/admin/applicants?month=all&year=all').then(res => {
             if (res.data.success && res.data.applicants) {
-                setApplicants(res.data.applicants.filter((a: any) => a.applicantStatus === 'Verified' || a.applicantStatus === 'Employed'));
+                setApplicants(res.data.applicants.filter((a: any) => a.status === 'joined' || a.status === 'approved' || a.isExistingStaff));
             }
         });
     }, []);
