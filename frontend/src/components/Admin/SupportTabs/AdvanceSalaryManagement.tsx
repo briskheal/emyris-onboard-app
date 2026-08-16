@@ -61,7 +61,7 @@ const AdvanceSalaryManagement: React.FC = () => {
         api.get('/admin/assigned-advances')
       ]);
       if (empRes.data.success) {
-        setEmployees(empRes.data.data.filter((e: any) => e.status === 'approved'));
+        setEmployees(empRes.data.applicants || []);
       }
       if (advRes.data.success) setAssignedAdvances(advRes.data.advances);
     } catch (err) {
@@ -242,32 +242,32 @@ const AdvanceSalaryManagement: React.FC = () => {
               <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>SHOW ENTRIES ({filteredAdvances.length})</h4>
               
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', borderRadius: '8px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold' }}>SR NO</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold' }}>Q EMPLOYEE NAME ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right' }}>ADVANCE AMOUNT ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right' }}>AMOUNT PAID ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right' }}>BALANCE AMOUNT ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center' }}>Q STATUS ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center' }}>ACTION</th>
+                    <tr>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>Q EMPLOYEE NAME ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>PAYSLIP NAME ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>ADVANCE AMOUNT ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>Q STATUS ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAdvances.map((adv, i) => (
-                      <tr key={adv._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{i + 1}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{adv.employeeName}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>{adv.advanceAmount}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>{adv.amountPaid}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>{adv.balanceAmount}</td>
-                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                    {filteredAdvances.map((adv) => (
+                      <tr key={adv._id}>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{adv.employeeName}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{adv.nameOnPayslip}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{adv.advanceAmount}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{adv.amountPaid}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{adv.balanceAmount}</td>
+                        <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
                           <span style={{ color: adv.status === 'Ongoing' ? '#f59e0b' : '#10b981', fontWeight: 'bold', fontSize: '0.85rem' }}>
                             {adv.status}
                           </span>
                         </td>
-                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                        <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
                           <button className="btn btn-sm" style={{ background: 'transparent', color: '#3b82f6', padding: '4px' }}>
                             <Edit2 size={16} />
                           </button>
@@ -276,7 +276,7 @@ const AdvanceSalaryManagement: React.FC = () => {
                     ))}
                     {filteredAdvances.length === 0 && (
                       <tr>
-                        <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No salary advances found.</td>
+                        <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', border: '1px solid #334155' }}>No salary advances found.</td>
                       </tr>
                     )}
                   </tbody>

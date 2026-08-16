@@ -70,7 +70,7 @@ const LoanManagement: React.FC = () => {
         api.get('/admin/assigned-loans')
       ]);
       if (empRes.data.success) {
-        setEmployees(empRes.data.data.filter((e: any) => e.status === 'approved'));
+        setEmployees(empRes.data.applicants || []);
       }
       if (typesRes.data.success) setLoanTypes(typesRes.data.types);
       if (loansRes.data.success) setAssignedLoans(loansRes.data.loans);
@@ -239,20 +239,20 @@ const LoanManagement: React.FC = () => {
 
               <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>SHOW ENTRIES ({loanTypes.length})</h4>
               
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', borderRadius: '8px', overflow: 'hidden' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold' }}>Q LOAN NAME ↑</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center' }}>INTEREST RATE ↑</th>
-                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center' }}>ACTION</th>
+                  <tr>
+                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>Q LOAN NAME ↑</th>
+                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>INTEREST RATE ↑</th>
+                    <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                   </tr>
                 </thead>
                 <tbody>
                   {loanTypes.map((type) => (
-                    <tr key={type._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                      <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{type.name}</td>
-                      <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center' }}>{type.interestRate} %</td>
-                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                    <tr key={type._id}>
+                      <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{type.name}</td>
+                      <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', border: '1px solid #334155' }}>{type.interestRate} %</td>
+                      <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
                         <button className="btn btn-sm" style={{ background: 'transparent', color: '#3b82f6', padding: '4px' }}>
                           <Edit2 size={16} />
                         </button>
@@ -261,7 +261,7 @@ const LoanManagement: React.FC = () => {
                   ))}
                   {loanTypes.length === 0 && (
                     <tr>
-                      <td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No loan types created yet.</td>
+                      <td colSpan={3} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', border: '1px solid #334155' }}>No loan types created yet.</td>
                     </tr>
                   )}
                 </tbody>
@@ -320,7 +320,7 @@ const LoanManagement: React.FC = () => {
                 </div>
 
                 <div style={{ gridColumn: 'span 1' }}>
-                  <label style={labelStyle}>INSTALLMENT AMOUNT *</label>
+                  <label style={labelStyle}>INSTAL AMNT *</label>
                   <input type="number" style={inputBase} placeholder="Enter Amount" value={assignInstallmentAmount} onChange={e => setAssignInstallmentAmount(e.target.value)} required />
                 </div>
 
@@ -375,32 +375,32 @@ const LoanManagement: React.FC = () => {
               <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>SHOW ENTRIES ({filteredLoans.length})</h4>
               
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', borderRadius: '8px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', background: 'rgba(15,23,42,0.4)', border: '1px solid #334155' }}>
                   <thead>
-                    <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold' }}>Q LOAN NAME ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold' }}>Q EMPLOYEE NAME ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right' }}>LOAN AMOUNT ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right' }}>AMOUNT PAID ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right' }}>BALANCE AMOUNT ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center' }}>Q STATUS ↑</th>
-                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center' }}>ACTION</th>
+                    <tr>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>Q LOAN NAME ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', border: '1px solid #334155' }}>Q EMPLOYEE NAME ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>LOAN AMOUNT ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>AMOUNT PAID ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'right', border: '1px solid #334155' }}>BALANCE AMOUNT ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>Q STATUS ↑</th>
+                      <th style={{ padding: '1rem', color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 'bold', textAlign: 'center', border: '1px solid #334155' }}>ACTION</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredLoans.map((loan) => (
-                      <tr key={loan._id} style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{loan.loanName}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>{loan.employeeName}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>{loan.loanAmount}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>{loan.amountPaid}</td>
-                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right' }}>{loan.balanceAmount}</td>
-                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                      <tr key={loan._id}>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{loan.loanName}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{loan.employeeName}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.loanAmount}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.amountPaid}</td>
+                        <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'right', border: '1px solid #334155' }}>{loan.balanceAmount}</td>
+                        <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
                           <span style={{ color: loan.status === 'Ongoing' ? '#f59e0b' : '#10b981', fontWeight: 'bold', fontSize: '0.85rem' }}>
                             {loan.status}
                           </span>
                         </td>
-                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                        <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
                           <button className="btn btn-sm" style={{ background: 'transparent', color: '#3b82f6', padding: '4px' }}>
                             <Edit2 size={16} />
                           </button>
@@ -409,7 +409,7 @@ const LoanManagement: React.FC = () => {
                     ))}
                     {filteredLoans.length === 0 && (
                       <tr>
-                        <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No loans found.</td>
+                        <td colSpan={7} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', border: '1px solid #334155' }}>No loans found.</td>
                       </tr>
                     )}
                   </tbody>
