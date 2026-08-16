@@ -11,8 +11,9 @@ const ReportsTab = lazy(() => import('../components/Admin/ReportsTab'));
 const DoctorDetailingStudio = lazy(() => import('../components/Dashboard/DoctorDetailingStudio'));
 const PayrunSystem = lazy(() => import('../components/Admin/PayrunSystem'));
 const LeaveManagement = lazy(() => import('../components/Admin/LeaveManagement'));
+const ManageLeavePortal = lazy(() => import('../components/Dashboard/ManageLeavePortal'));
 
-type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave';
+type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave' | 'manage-leave';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -33,6 +34,7 @@ const AdminPanel: React.FC = () => {
       if (res.data.success) {
         sessionStorage.setItem('admin_logged_in', 'true');
         sessionStorage.setItem('admin_role', res.data.role || 'superadmin');
+        sessionStorage.setItem('admin_username', username);
         setIsLoggedIn(true);
         if (res.data.role === 'subadmin') {
           setActiveView('questions'); // Default allowed tab for subadmin
@@ -206,16 +208,7 @@ const AdminPanel: React.FC = () => {
                       setLeaveSubView(subItem.id);
                       setMobileMenuOpen(false);
                     }}
-                    style={{
-                      padding: '6px 0',
-                      background: 'transparent',
-                      border: 'none',
-                      color: activeView === 'leave' && leaveSubView === subItem.id ? 'var(--primary)' : 'rgba(255,255,255,0.6)',
-                      fontSize: '0.7rem',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontWeight: activeView === 'leave' && leaveSubView === subItem.id ? 'bold' : 'normal'
-                    }}
+                    style={{ padding: '6px 12px', fontSize: '0.8rem', textAlign: 'left', background: 'transparent', border: 'none', color: leaveSubView === subItem.id ? '#fff' : 'var(--text-muted)' }}
                   >
                     {subItem.label}
                   </button>
@@ -223,6 +216,28 @@ const AdminPanel: React.FC = () => {
               </div>
             )}
           </div>
+
+          <button
+              className={`btn ${activeView === 'manage-leave' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => {
+                setActiveView('manage-leave');
+                if (window.innerWidth <= 768) setMobileMenuOpen(false);
+              }}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '10px', 
+                justifyContent: 'flex-start', 
+                textAlign: 'left',
+                fontSize: '0.82rem',
+                padding: '10px 14px',
+                width: '100%',
+                marginTop: '1rem',
+                marginBottom: '0.5rem'
+              }}
+            >
+              <Calendar size={16} style={{ flexShrink: 0 }} /> <span>Manage leave</span>
+            </button>
         </nav>
         <button
           className="btn btn-outline"
@@ -270,6 +285,11 @@ const AdminPanel: React.FC = () => {
           {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" isStandalone={true} />}
           {activeView === 'reports' && <ReportsTab initialTab="details" isStandalone={false} />}
           {activeView === 'leave' && <LeaveManagement activeSubTab={leaveSubView} setSubTab={setLeaveSubView} />}
+          {activeView === 'manage-leave' && (
+            <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+              <ManageLeavePortal email={sessionStorage.getItem('admin_username') || ''} />
+            </div>
+          )}
         </Suspense>
       </main>
       </div>
