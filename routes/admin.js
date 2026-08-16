@@ -3637,9 +3637,11 @@ router.put('/leave-types/:id/status', async (req, res) => {
 
 router.get('/leave-balances', async (req, res) => {
     try {
-        const { email } = req.query;
-        if (!email) return res.json({ success: false, error: 'Email required' });
-        const balances = await LeaveBalance.find({ employeeEmail: email });
+        const { email, year } = req.query;
+        let query = {};
+        if (email) query.employeeEmail = email;
+        if (year) query.year = year;
+        const balances = await LeaveBalance.find(query);
         res.json({ success: true, balances });
     } catch (e) {
         res.status(500).json({ success: false, error: 'Failed' });
