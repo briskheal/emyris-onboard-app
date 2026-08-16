@@ -1,5 +1,5 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, Calendar } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, Calendar, HandCoins } from 'lucide-react';
 import api from '../api/client';
 
 const CompanyProfile = lazy(() => import('../components/Admin/CompanyProfile'));
@@ -11,8 +11,9 @@ const ReportsTab = lazy(() => import('../components/Admin/ReportsTab'));
 const DoctorDetailingStudio = lazy(() => import('../components/Dashboard/DoctorDetailingStudio'));
 const PayrunSystem = lazy(() => import('../components/Admin/PayrunSystem'));
 const LeaveManagement = lazy(() => import('../components/Admin/LeaveManagement'));
+const SupportManagement = lazy(() => import('../components/Admin/SupportManagement'));
 
-type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave';
+type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave' | 'support';
 
 const AdminPanel: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(() => sessionStorage.getItem('admin_logged_in') === 'true');
@@ -23,6 +24,8 @@ const AdminPanel: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>('applicants');
   const [leaveMenuExpanded, setLeaveMenuExpanded] = useState(false);
   const [leaveSubView, setLeaveSubView] = useState('create_type');
+  const [supportMenuExpanded, setSupportMenuExpanded] = useState(false);
+  const [supportSubView, setSupportSubView] = useState('loan');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,6 +226,59 @@ const AdminPanel: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* SUPPORT ACCORDION */}
+          <div style={{ marginTop: '0.2rem' }}>
+            <button
+              className={`btn ${activeView === 'support' ? 'btn-primary' : 'btn-outline'}`}
+              onClick={() => setSupportMenuExpanded(!supportMenuExpanded)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                fontSize: '0.82rem',
+                width: '100%',
+                textAlign: 'left'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <HandCoins size={16} style={{ flexShrink: 0 }} />
+                Support
+              </div>
+              {supportMenuExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+
+            {supportMenuExpanded && (
+              <div style={{ paddingLeft: '2rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.4rem' }}>
+                {[
+                  { id: 'loan', label: 'Loan' },
+                  { id: 'adv_salary', label: 'Adv. Salary' }
+                ].map(subItem => (
+                  <button
+                    key={subItem.id}
+                    onClick={() => {
+                      setActiveView('support');
+                      setSupportSubView(subItem.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    style={{
+                      padding: '6px 0',
+                      background: 'transparent',
+                      border: 'none',
+                      color: activeView === 'support' && supportSubView === subItem.id ? 'var(--primary)' : 'rgba(255,255,255,0.6)',
+                      fontSize: '0.7rem',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      fontWeight: activeView === 'support' && supportSubView === subItem.id ? 'bold' : 'normal'
+                    }}
+                  >
+                    {subItem.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
         <button
           className="btn btn-outline"
@@ -270,6 +326,7 @@ const AdminPanel: React.FC = () => {
           {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" isStandalone={true} />}
           {activeView === 'reports' && <ReportsTab initialTab="details" isStandalone={false} />}
           {activeView === 'leave' && <LeaveManagement activeSubTab={leaveSubView} setSubTab={setLeaveSubView} />}
+          {activeView === 'support' && <SupportManagement activeSubTab={supportSubView} setSubTab={setSupportSubView} />}
         </Suspense>
       </main>
       </div>
