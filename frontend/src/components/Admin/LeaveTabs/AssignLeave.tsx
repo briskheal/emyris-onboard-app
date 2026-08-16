@@ -135,7 +135,7 @@ const AssignLeave: React.FC = () => {
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            <div className="dash-card" style={{ padding: '2rem' }}>
+            <div className="dash-card" style={{ padding: '2rem', overflow: 'visible' }}>
                 <form onSubmit={handleAssign} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
                     
                     {/* Row 1: Year, Employee, Leave Type */}
@@ -151,7 +151,7 @@ const AssignLeave: React.FC = () => {
                         <label className="form-label" style={{ color: 'var(--text-muted)', margin: 0 }}>SELECT EMPLOYEE <span style={{ color: '#ef4444' }}>*</span></label>
                         <div 
                             className="form-input" 
-                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '48px', padding: '0.5rem 1rem' }}
+                            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', minHeight: '48px', padding: '0.5rem 1rem', border: '1px solid var(--glass-border)' }}
                             onClick={() => setEmployeeDropdownOpen(!employeeDropdownOpen)}
                         >
                             {selectedApplicant ? (
@@ -171,7 +171,7 @@ const AssignLeave: React.FC = () => {
                         </div>
                         
                         {employeeDropdownOpen && (
-                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: 'var(--bg-card)', border: '1px solid var(--glass-border)', borderRadius: '8px', zIndex: 50, maxHeight: '250px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '4px', background: '#0f172a', border: '1px solid var(--glass-border)', borderRadius: '8px', zIndex: 50, maxHeight: '250px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
                                 {applicants.map(app => (
                                     <div 
                                         key={app.email}
