@@ -111,7 +111,7 @@ const AdvanceSalaryManagement: React.FC = () => {
       
       {/* LEFT SIDEBAR (Vertical Tabs) */}
       <div style={{
-        width: '240px',
+        width: '180px',
         background: '#1e293b',
         borderRadius: '12px',
         border: '1px solid var(--glass-border)',
