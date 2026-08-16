@@ -226,5 +226,15 @@ const OnboardPayslip = sequelize.define('onboard_payslip', {
     generatedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 
-    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip };
+// Leave Management Models
+const OnboardLeaveType = sequelize.define('onboard_leave_type', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    name: { type: DataTypes.STRING, allowNull: false },
+    code: { type: DataTypes.STRING, allowNull: false },
+    description: { type: DataTypes.TEXT },
+    isPaid: { type: DataTypes.BOOLEAN, defaultValue: false },
+    status: { type: DataTypes.STRING, defaultValue: 'Active' }
+});
+
+    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip, OnboardLeaveType };
 };

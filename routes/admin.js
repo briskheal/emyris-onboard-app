@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, sequelize } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, sequelize } = require('../db');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -3594,6 +3594,44 @@ router.post('/email-payslips', async (req, res) => {
     } catch (e) {
         console.error('Email payslips error:', e);
         res.status(500).json({ error: 'Failed to send emails' });
+    }
+});
+
+// --- LEAVE MANAGEMENT ---
+router.get('/leave-types', async (req, res) => {
+    try {
+        const types = await LeaveType.find({});
+        res.json({ success: true, types });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Failed' });
+    }
+});
+
+router.post('/leave-types', async (req, res) => {
+    try {
+        const type = await LeaveType.create(req.body);
+        res.json({ success: true, type });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Failed' });
+    }
+});
+
+router.delete('/leave-types/:id', async (req, res) => {
+    try {
+        await LeaveType.deleteOne({ _id: req.params.id });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Failed' });
+    }
+});
+
+router.put('/leave-types/:id/status', async (req, res) => {
+    try {
+        const { status } = req.body;
+        await LeaveType.updateOne({ _id: req.params.id }, { $set: { status } });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Failed' });
     }
 });
 
