@@ -3386,6 +3386,63 @@ router.get('/payrun-preview', async (req, res) => {
                 const baseNetSalary = Object.values(calcBreakup).reduce((a, b) => a + parseFloat(b), 0);
                 const dailyRate = originalGross / totalMonthDays;
                 
+                // --- Loan & Advance Deduction Logic ---
+                let loanDed = 0;
+                let advDed = 0;
+                let loanDetails = [];
+                let advDetails = [];
+
+                try {
+                    // 1. Fetch Active Loans for Monthly Deduction
+                    const activeLoans = await AssignedLoan.find({ employeeEmail: applicant.email, status: 'Ongoing', deductionType: 'Monthly' });
+                    for (const loan of activeLoans) {
+                        const dedDate = parseDMY(loan.deductionDate);
+                        if (dedDate && payrunStart >= new Date(dedDate.getFullYear(), dedDate.getMonth(), 1)) {
+                            let availableDed = loan.installmentAmount;
+                            if (loan.balanceAmount < availableDed) availableDed = loan.balanceAmount;
+                            if (availableDed > 0) {
+                                loanDed += availableDed;
+                                loanDetails.push({
+                                    _id: loan._id,
+                                    name: loan.nameOnPayslip || 'Loan',
+                                    amount: Math.round(availableDed)
+                                });
+                            }
+                        }
+                    }
+
+                    // 2. Fetch Active Advances for Monthly Deduction
+                    const activeAdvances = await AssignedAdvance.find({ employeeEmail: applicant.email, status: 'Ongoing', deductionType: 'Monthly' });
+                    for (const adv of activeAdvances) {
+                        let dStart = null;
+                        if (adv.deductionMonth) {
+                            const parts = adv.deductionMonth.split('-');
+                            if (parts.length >= 2) {
+                                dStart = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
+                            } else {
+                                dStart = parseDMY(adv.deductionMonth);
+                            }
+                        } else if (adv.sanctionDate) {
+                            dStart = parseDMY(adv.sanctionDate);
+                        }
+                        
+                        if (dStart && payrunStart >= new Date(dStart.getFullYear(), dStart.getMonth(), 1)) {
+                            let availableDed = adv.installmentAmount;
+                            if (adv.balanceAmount < availableDed) availableDed = adv.balanceAmount;
+                            if (availableDed > 0) {
+                                advDed += availableDed;
+                                advDetails.push({
+                                    _id: adv._id,
+                                    name: adv.nameOnPayslip || 'Salary Advance',
+                                    amount: Math.round(availableDed)
+                                });
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.error("Error calculating loan/adv deductions:", err);
+                }
+                
                 previews.push({
                     empName: applicant.fullName,
                     empCode: applicant.empCode,
@@ -3408,10 +3465,14 @@ router.get('/payrun-preview', async (req, res) => {
                     dailyRate: Math.round(dailyRate),
                     ptDed: Math.round(ptDed),
                     pfDed: Math.round(pfDed),
+                    loanDed: Math.round(loanDed),
+                    advDed: Math.round(advDed),
+                    loanDetails,
+                    advDetails,
                     penaltyDays: 0,
                     salDed: 0,
                     expense: 0,
-                    finalSalary: Math.round(baseNetSalary - ptDed - pfDed),
+                    finalSalary: Math.round(baseNetSalary - ptDed - pfDed - loanDed - advDed),
                     sendEmail: true,
                     calcBreakup
                 });
@@ -3505,6 +3566,52 @@ router.post('/finalize-payrun', async (req, res) => {
         }));
 
         await Payslip.create(toInsert);
+
+        // --- Apply Loan and Advance Deductions ---
+        for (const p of previews) {
+            if (p.loanDetails && Array.isArray(p.loanDetails)) {
+                for (const ld of p.loanDetails) {
+                    if (ld._id && ld.amount) {
+                        try {
+                            const loan = await AssignedLoan.findById(ld._id);
+                            if (loan) {
+                                loan.amountPaid = (loan.amountPaid || 0) + ld.amount;
+                                loan.balanceAmount = (loan.balanceAmount || 0) - ld.amount;
+                                if (loan.balanceAmount <= 0) {
+                                    loan.balanceAmount = 0;
+                                    loan.status = 'Paid';
+                                }
+                                await loan.save();
+                            }
+                        } catch (err) {
+                            console.error(`Error updating loan ${ld._id} during payrun finalize:`, err);
+                        }
+                    }
+                }
+            }
+
+            if (p.advDetails && Array.isArray(p.advDetails)) {
+                for (const ad of p.advDetails) {
+                    if (ad._id && ad.amount) {
+                        try {
+                            const adv = await AssignedAdvance.findById(ad._id);
+                            if (adv) {
+                                adv.amountPaid = (adv.amountPaid || 0) + ad.amount;
+                                adv.balanceAmount = (adv.balanceAmount || 0) - ad.amount;
+                                if (adv.balanceAmount <= 0) {
+                                    adv.balanceAmount = 0;
+                                    adv.status = 'Paid';
+                                }
+                                await adv.save();
+                            }
+                        } catch (err) {
+                            console.error(`Error updating advance ${ad._id} during payrun finalize:`, err);
+                        }
+                    }
+                }
+            }
+        }
+
         res.json({ success: true, message: `Successfully finalized payrun for ${month} ${year}` });
     } catch (e) {
         console.error('Finalize payrun error:', e);

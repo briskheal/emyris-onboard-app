@@ -80,15 +80,19 @@ const PayrunSystem: React.FC = () => {
                     const expense = p.expense !== undefined ? Math.round(parseFloat(p.expense)) : 0;
                     const ptDed = p.ptDed !== undefined ? Math.round(parseFloat(p.ptDed)) : 0;
                     const pfDed = p.pfDed !== undefined ? Math.round(parseFloat(p.pfDed)) : 0;
+                    const loanDed = p.loanDed !== undefined ? Math.round(parseFloat(p.loanDed)) : 0;
+                    const advDed = p.advDed !== undefined ? Math.round(parseFloat(p.advDed)) : 0;
                     const baseNetSalary = Math.round(parseFloat(p.baseNetSalary) || 0);
                     
-                    let finalNet = Math.round(baseNetSalary - ptDed - pfDed - salDed + expense);
+                    let finalNet = Math.round(baseNetSalary - ptDed - pfDed - salDed - loanDed - advDed + expense);
 
                     return {
                         ...p,
                         baseNetSalary,
                         ptDed,
                         pfDed,
+                        loanDed,
+                        advDed,
                         penaltyDays: p.penaltyDays !== undefined ? p.penaltyDays : 0,
                         salDed,
                         expense,
@@ -133,7 +137,7 @@ const PayrunSystem: React.FC = () => {
         const p = updated[index];
         p.penaltyDays = days;
         p.salDed = Math.round(days * parseFloat(p.dailyRate));
-        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - parseFloat(p.loanDed || 0) - parseFloat(p.advDed || 0) + parseFloat(p.expense || 0));
         setPreviews(updated);
     };
 
@@ -142,7 +146,7 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.ptDed = val;
-        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - parseFloat(p.loanDed || 0) - parseFloat(p.advDed || 0) + parseFloat(p.expense || 0));
         setPreviews(updated);
     };
 
@@ -151,7 +155,7 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.pfDed = val;
-        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - parseFloat(p.loanDed || 0) - parseFloat(p.advDed || 0) + parseFloat(p.expense || 0));
         setPreviews(updated);
     };
 
@@ -160,7 +164,7 @@ const PayrunSystem: React.FC = () => {
         const updated = [...previews];
         const p = updated[index];
         p.expense = val;
-        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) + parseFloat(p.expense || 0));
+        p.finalSalary = Math.round(parseFloat(p.baseNetSalary) - parseFloat(p.salDed || 0) - parseFloat(p.ptDed || 0) - parseFloat(p.pfDed || 0) - parseFloat(p.loanDed || 0) - parseFloat(p.advDed || 0) + parseFloat(p.expense || 0));
         setPreviews(updated);
     };
 
@@ -191,6 +195,8 @@ const PayrunSystem: React.FC = () => {
             "Sal Ded": parseFloat(p.salDed) || 0,
             "PT Ded": p.ptDed || 0,
             "PF Ded": p.pfDed || 0,
+            "Loan Ded": p.loanDed || 0,
+            "Adv Ded": p.advDed || 0,
             "Expense": p.expense || 0,
             "Net Payable Salary": parseFloat(p.finalSalary)
         }));

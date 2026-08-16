@@ -41,7 +41,9 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
   const pt = f(data.ptDed);
   const pf = f(data.pfDed);
   const salDed = f(data.salDed);
-  const totalDeductions = f(parseFloat(pt) + parseFloat(pf) + parseFloat(salDed));
+  const loanDed = f(data.loanDed);
+  const advDed = f(data.advDed);
+  const totalDeductions = f(parseFloat(pt) + parseFloat(pf) + parseFloat(salDed) + parseFloat(loanDed) + parseFloat(advDed));
 
   const totalSalaryPayable = f(data.finalSalary);
 
@@ -167,6 +169,12 @@ const SalarySlipTemplate: React.FC<Props> = ({ data, preparedBy, sanctionedBy, m
                 {parseFloat(pt) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span style={{fontWeight:'bold'}}>Professional Tax (PT)</span> <span>: {pt}</span></div>}
                 {parseFloat(pf) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span style={{fontWeight:'bold'}}>Provident Fund (PF)</span> <span>: {pf}</span></div>}
                 {parseFloat(salDed) > 0 && <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span style={{fontWeight:'bold'}}>Salary Deduction</span> <span>: {salDed}</span></div>}
+                {data.loanDetails && data.loanDetails.map((ld: any, i: number) => (
+                  <div key={`loan-${i}`} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span style={{fontWeight:'bold'}}>{ld.name}</span> <span>: {f(ld.amount)}</span></div>
+                ))}
+                {data.advDetails && data.advDetails.map((ad: any, i: number) => (
+                  <div key={`adv-${i}`} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}><span style={{fontWeight:'bold'}}>{ad.name}</span> <span>: {f(ad.amount)}</span></div>
+                ))}
               </td>
             </tr>
             <tr>
