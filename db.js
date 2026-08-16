@@ -29,7 +29,8 @@ const {
     OnboardQuestion,
     OnboardExamResult,
     OnboardPayslip,
-    OnboardLeaveType
+    OnboardLeaveType,
+    OnboardLeaveBalance
 } = initModels(sequelize);
 
 // Initialize Adapters
@@ -43,6 +44,7 @@ const Question = new MongooseAdapter(OnboardQuestion);
 const ExamResult = new MongooseAdapter(OnboardExamResult);
 const Payslip = new MongooseAdapter(OnboardPayslip);
 const LeaveType = new MongooseAdapter(OnboardLeaveType);
+const LeaveBalance = new MongooseAdapter(OnboardLeaveBalance);
 
 // Database Sync and Seed Function
 async function syncDatabase() {
@@ -395,5 +397,6 @@ module.exports = {
     Question,
     ExamResult,
     Payslip,
-    LeaveType
+    LeaveType,
+    LeaveBalance
 };

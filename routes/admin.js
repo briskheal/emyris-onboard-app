@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, sequelize } = require('../db');
+const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, sequelize } = require('../db');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -3631,6 +3631,41 @@ router.put('/leave-types/:id/status', async (req, res) => {
         await LeaveType.updateOne({ _id: req.params.id }, { $set: { status } });
         res.json({ success: true });
     } catch (e) {
+        res.status(500).json({ success: false, error: 'Failed' });
+    }
+});
+
+router.get('/leave-balances', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.json({ success: false, error: 'Email required' });
+        const balances = await LeaveBalance.find({ employeeEmail: email });
+        res.json({ success: true, balances });
+    } catch (e) {
+        res.status(500).json({ success: false, error: 'Failed' });
+    }
+});
+
+router.post('/leave-balances', async (req, res) => {
+    try {
+        const { employeeEmail, year, leaveTypeId, leaveTypeName, assignedLeaves } = req.body;
+        
+        let existing = await LeaveBalance.findOne({ employeeEmail, year, leaveTypeId });
+        if (existing) {
+            await LeaveBalance.updateOne({ _id: existing._id }, { $set: { assignedLeaves: parseFloat(assignedLeaves) } });
+        } else {
+            await LeaveBalance.create({
+                employeeEmail,
+                year,
+                leaveTypeId,
+                leaveTypeName,
+                assignedLeaves: parseFloat(assignedLeaves),
+                usedLeaves: 0
+            });
+        }
+        res.json({ success: true });
+    } catch (e) {
+        console.log(e);
         res.status(500).json({ success: false, error: 'Failed' });
     }
 });

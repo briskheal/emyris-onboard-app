@@ -1,6 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 
 const CreateLeaveType = lazy(() => import('./LeaveTabs/CreateLeaveType'));
+const AssignLeave = lazy(() => import('./LeaveTabs/AssignLeave'));
 
 interface LeaveManagementProps {
     activeSubTab: string;
@@ -22,7 +23,7 @@ const LeaveManagement: React.FC<LeaveManagementProps> = ({ activeSubTab }) => {
             {/* Dynamic Content Area based on the active tab from sidebar */}
             <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>}>
                 {activeSubTab === 'create_type' && <CreateLeaveType />}
-                {activeSubTab === 'assign_leave' && <div className="dash-card" style={{ padding: '2rem', textAlign: 'center' }}>Assign Leave Module - Coming Soon</div>}
+                {activeSubTab === 'assign_leave' && <AssignLeave />}
                 {activeSubTab === 'assigned_leaves' && <div className="dash-card" style={{ padding: '2rem', textAlign: 'center' }}>Assigned Leaves Module - Coming Soon</div>}
                 {activeSubTab === 'create_template' && <div className="dash-card" style={{ padding: '2rem', textAlign: 'center' }}>Create Leave Template Module - Coming Soon</div>}
                 {activeSubTab === 'assign_template' && <div className="dash-card" style={{ padding: '2rem', textAlign: 'center' }}>Assign Leave Templates Module - Coming Soon</div>}

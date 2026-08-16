@@ -236,5 +236,15 @@ const OnboardLeaveType = sequelize.define('onboard_leave_type', {
     status: { type: DataTypes.STRING, defaultValue: 'Active' }
 });
 
-    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip, OnboardLeaveType };
+const OnboardLeaveBalance = sequelize.define('onboard_leave_balance', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    year: { type: DataTypes.STRING, allowNull: false },
+    leaveTypeId: { type: DataTypes.STRING, allowNull: false },
+    leaveTypeName: { type: DataTypes.STRING, allowNull: false },
+    assignedLeaves: { type: DataTypes.FLOAT, defaultValue: 0 },
+    usedLeaves: { type: DataTypes.FLOAT, defaultValue: 0 }
+});
+
+    return { OnboardCompany, OnboardAsset, OnboardApplicant, OnboardDivision, OnboardHQ, OnboardTemplateHistory, OnboardQuestion, OnboardExamResult, OnboardPayslip, OnboardLeaveType, OnboardLeaveBalance };
 };
