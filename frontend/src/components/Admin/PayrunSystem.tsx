@@ -130,7 +130,7 @@ const PayrunSystem: React.FC = () => {
     };
 
     const handlePTChange = (index: number, valStr: string) => {
-        const val = parseFloat(valStr) || 0;
+        const val = Math.round(parseFloat(valStr) || 0);
         const updated = [...previews];
         const p = updated[index];
         p.ptDed = val;
@@ -139,7 +139,7 @@ const PayrunSystem: React.FC = () => {
     };
 
     const handlePFChange = (index: number, valStr: string) => {
-        const val = parseFloat(valStr) || 0;
+        const val = Math.round(parseFloat(valStr) || 0);
         const updated = [...previews];
         const p = updated[index];
         p.pfDed = val;
@@ -148,7 +148,7 @@ const PayrunSystem: React.FC = () => {
     };
 
     const handleExpenseChange = (index: number, valStr: string) => {
-        const val = parseFloat(valStr) || 0;
+        const val = Math.round(parseFloat(valStr) || 0);
         const updated = [...previews];
         const p = updated[index];
         p.expense = val;
