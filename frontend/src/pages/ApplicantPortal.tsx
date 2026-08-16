@@ -5,8 +5,9 @@ import ApplicantDashboard from '../components/Dashboard/ApplicantDashboard';
 import ApplicantOnboarding from '../components/Onboarding/ApplicantOnboarding';
 import RapidTestEngine from '../components/Onboarding/RapidTestEngine';
 import DoctorDetailingStudio from '../components/Dashboard/DoctorDetailingStudio';
+import ManageLeavePortal from '../components/Dashboard/ManageLeavePortal';
 
-type PortalState = 'landing' | 'login' | 'register' | 'dashboard' | 'onboarding' | 'rapid-test';
+type PortalState = 'landing' | 'login' | 'register' | 'dashboard' | 'onboarding' | 'rapid-test' | 'manage-leave';
 
 const ApplicantPortal: React.FC = () => {
   const [view, setView] = useState<PortalState>('landing');
@@ -40,6 +41,33 @@ const ApplicantPortal: React.FC = () => {
         </div>
       </div>
       <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+        {currentApplicant && (
+          <button
+            onClick={() => {
+              if (view === 'manage-leave') {
+                setView(currentApplicant.status === 'approved' ? 'dashboard' : 'onboarding');
+              } else {
+                setView('manage-leave');
+              }
+            }}
+            className="btn btn-outline btn-sm"
+            style={{ 
+              background: view === 'manage-leave' ? '#a855f7' : 'rgba(168, 85, 247, 0.1)', 
+              borderColor: '#a855f7', 
+              color: view === 'manage-leave' ? '#fff' : '#e9d5ff', 
+              padding: '9px 18px', 
+              fontSize: '0.92rem', 
+              fontWeight: 700, 
+              borderRadius: '8px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              cursor: 'pointer' 
+            }}
+          >
+            <span>📅 {view === 'manage-leave' ? 'Back to Portal' : 'Manage Leave'}</span>
+          </button>
+        )}
         <button
           onClick={() => setShowPortalStudio(!showPortalStudio)}
           className="btn btn-primary btn-sm"
@@ -87,6 +115,18 @@ const ApplicantPortal: React.FC = () => {
               }} 
             />
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'manage-leave') {
+    return (
+      <div className="landing-screen" style={{ overflowY: 'auto', display: 'block' }}>
+        {renderTopCandidateBar()}
+        {renderStudioModal()}
+        <div style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+          <ManageLeavePortal email={currentApplicant?.email} />
         </div>
       </div>
     );

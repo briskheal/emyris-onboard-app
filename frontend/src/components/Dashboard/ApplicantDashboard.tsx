@@ -4,8 +4,7 @@ import ApplicantScoreboard from '../Exam/ApplicantScoreboard';
 import ApplicantExam from '../Exam/ApplicantExam';
 import LetterViewer from './LetterViewer';
 import DoctorDetailingStudio from './DoctorDetailingStudio';
-import ManageLeavePortal from './ManageLeavePortal';
-import { LogOut, Calendar } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 
 interface ApplicantDashboardProps {
   applicant: any;
@@ -16,7 +15,6 @@ const ApplicantDashboard: React.FC<ApplicantDashboardProps> = ({ applicant, onLo
   const [app] = useState(applicant);
   const [takingExam, setTakingExam] = useState(false);
   const [showStudio, setShowStudio] = useState(false);
-  const [showLeavePortal, setShowLeavePortal] = useState(false);
 
   if (takingExam) {
     return <ApplicantExam applicant={app} onComplete={() => setTakingExam(false)} />;
@@ -34,15 +32,8 @@ const ApplicantDashboard: React.FC<ApplicantDashboardProps> = ({ applicant, onLo
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button 
-              className={`btn btn-sm ${showLeavePortal ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => { setShowLeavePortal(!showLeavePortal); setShowStudio(false); }} 
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: showLeavePortal ? 'var(--primary)' : 'transparent', color: showLeavePortal ? '#fff' : 'var(--primary)', borderColor: 'var(--primary)', fontWeight: 600 }}
-            >
-              <Calendar size={16} /> Manage Leave
-            </button>
-            <button 
               className={`btn btn-sm ${showStudio ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => { setShowStudio(!showStudio); setShowLeavePortal(false); }} 
+              onClick={() => setShowStudio(!showStudio)} 
               style={{ display: 'flex', alignItems: 'center', gap: '6px', background: showStudio ? 'var(--primary)' : 'rgba(168, 85, 247, 0.15)', borderColor: '#a855f7', color: '#fff', fontWeight: 600 }}
             >
               🎙️ {showStudio ? 'Close Voice Studio' : 'Voice Studio (`AI Lab`)'}
@@ -57,19 +48,15 @@ const ApplicantDashboard: React.FC<ApplicantDashboardProps> = ({ applicant, onLo
       <main className="form-wrapper">
         <div style={{ display: 'grid', gap: '2rem' }}>
           
-          {showLeavePortal ? (
-            <ManageLeavePortal email={app.email} />
-          ) : (
-            <>
-              <Timeline app={app} />
+          <Timeline app={app} />
 
-              <div className="dash-card">
-                <h3>Document Verification Status</h3>
-                <p style={{ color: 'var(--text-muted)' }}>
-                  {app.status === 'submitted' ? 'Your documents are under review.' : 
-                   app.status === 'approved' ? 'All documents verified successfully.' : 'Please check your status.'}
-                </p>
-              </div>
+          <div className="dash-card">
+            <h3>Document Verification Status</h3>
+            <p style={{ color: 'var(--text-muted)' }}>
+              {app.status === 'submitted' ? 'Your documents are under review.' : 
+               app.status === 'approved' ? 'All documents verified successfully.' : 'Please check your status.'}
+            </p>
+          </div>
 
           {/* Unified Test Question Block & Voice Studio Block */}
           <div className="dash-card" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.95))', border: '1px solid rgba(168, 85, 247, 0.3)', borderRadius: '16px', padding: '1.8rem' }}>
@@ -164,8 +151,6 @@ const ApplicantDashboard: React.FC<ApplicantDashboardProps> = ({ applicant, onLo
               letterData={app.apptLetterData}
               isOffer={false}
             />
-          )}
-          </>
           )}
 
         </div>
