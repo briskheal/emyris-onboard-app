@@ -3811,6 +3811,16 @@ router.put('/loan-types/:id', async (req, res) => {
     }
 });
 
+router.delete('/loan-types/:id', async (req, res) => {
+    try {
+        await LoanType.deleteOne({ _id: req.params.id });
+        res.json({ success: true, message: 'Deleted successfully' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to delete' });
+    }
+});
+
 // --- ASSIGNED LOANS ---
 router.get('/assigned-loans', async (req, res) => {
     try {
@@ -3870,6 +3880,16 @@ router.put('/assigned-loans/:id', async (req, res) => {
     }
 });
 
+router.delete('/assigned-loans/:id', async (req, res) => {
+    try {
+        await AssignedLoan.deleteOne({ _id: req.params.id });
+        res.json({ success: true, message: 'Deleted successfully' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to delete' });
+    }
+});
+
 // --- ASSIGNED ADVANCES ---
 router.get('/assigned-advances', async (req, res) => {
     try {
@@ -3924,6 +3944,16 @@ router.put('/assigned-advances/:id', async (req, res) => {
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to update assigned advance' });
+    }
+});
+
+router.delete('/assigned-advances/:id', async (req, res) => {
+    try {
+        await AssignedAdvance.deleteOne({ _id: req.params.id });
+        res.json({ success: true, message: 'Deleted successfully' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to delete' });
     }
 });
 

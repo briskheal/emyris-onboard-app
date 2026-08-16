@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import api from '../../../api/client';
 
 const AdvanceSalaryManagement: React.FC = () => {
@@ -99,6 +99,18 @@ const AdvanceSalaryManagement: React.FC = () => {
       alert('Error assigning advance salary');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAssignedAdvance = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this salary advance?')) return;
+    try {
+      const res = await api.delete(`/admin/assigned-advances/${id}`);
+      if (res.data.success) {
+        fetchData();
+      }
+    } catch (err) {
+      alert('Error deleting salary advance');
     }
   };
 
@@ -268,8 +280,8 @@ const AdvanceSalaryManagement: React.FC = () => {
                           </span>
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
-                          <button className="btn btn-sm" style={{ background: 'transparent', color: '#3b82f6', padding: '4px' }}>
-                            <Edit2 size={16} />
+                          <button className="btn btn-sm" onClick={() => handleDeleteAssignedAdvance(adv._id)} style={{ background: 'transparent', color: '#ef4444', padding: '4px' }}>
+                            <Trash2 size={16} />
                           </button>
                         </td>
                       </tr>

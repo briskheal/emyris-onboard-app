@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Edit2 } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import api from '../../../api/client';
 
 const LoanManagement: React.FC = () => {
@@ -99,6 +99,30 @@ const LoanManagement: React.FC = () => {
       alert('Error creating loan type');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteLoanType = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this loan type?')) return;
+    try {
+      const res = await api.delete(`/admin/loan-types/${id}`);
+      if (res.data.success) {
+        fetchData();
+      }
+    } catch (err) {
+      alert('Error deleting loan type');
+    }
+  };
+
+  const handleDeleteAssignedLoan = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this assigned loan?')) return;
+    try {
+      const res = await api.delete(`/admin/assigned-loans/${id}`);
+      if (res.data.success) {
+        fetchData();
+      }
+    } catch (err) {
+      alert('Error deleting assigned loan');
     }
   };
 
@@ -253,8 +277,8 @@ const LoanManagement: React.FC = () => {
                       <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', border: '1px solid #334155' }}>{type.name}</td>
                       <td style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem', textAlign: 'center', border: '1px solid #334155' }}>{type.interestRate} %</td>
                       <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
-                        <button className="btn btn-sm" style={{ background: 'transparent', color: '#3b82f6', padding: '4px' }}>
-                          <Edit2 size={16} />
+                        <button className="btn btn-sm" onClick={() => handleDeleteLoanType(type._id)} style={{ background: 'transparent', color: '#ef4444', padding: '4px' }}>
+                          <Trash2 size={16} />
                         </button>
                       </td>
                     </tr>
@@ -401,8 +425,8 @@ const LoanManagement: React.FC = () => {
                           </span>
                         </td>
                         <td style={{ padding: '1rem', textAlign: 'center', border: '1px solid #334155' }}>
-                          <button className="btn btn-sm" style={{ background: 'transparent', color: '#3b82f6', padding: '4px' }}>
-                            <Edit2 size={16} />
+                          <button className="btn btn-sm" onClick={() => handleDeleteAssignedLoan(loan._id)} style={{ background: 'transparent', color: '#ef4444', padding: '4px' }}>
+                            <Trash2 size={16} />
                           </button>
                         </td>
                       </tr>
