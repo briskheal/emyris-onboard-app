@@ -3708,7 +3708,11 @@ router.put('/leave-requests/:id/status', async (req, res) => {
             const isLWP = request.leaveTypeName.toLowerCase().includes('leave without pay') || request.leaveTypeName.toLowerCase().includes('lwp');
             
             if (!isLWP) {
-                const targetYear = year || new Date().getFullYear().toString();
+                const now = new Date();
+                const calYear = now.getFullYear();
+                const fyStart = now.getMonth() >= 3 ? calYear : calYear - 1;
+                const defaultYear = `${fyStart}-${fyStart + 1}`;
+                const targetYear = year || defaultYear;
                 const balance = await LeaveBalance.findOne({
                     employeeEmail: request.employeeEmail,
                     leaveTypeId: request.leaveTypeId,

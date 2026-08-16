@@ -41,7 +41,7 @@ const LeaveRequests: React.FC = () => {
     try {
       const res = await api.put(`/admin/leave-requests/${id}/status`, {
         status: newStatus,
-        year: new Date().getFullYear().toString()
+        year: (() => { const now = new Date(); const fy = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1; return `${fy}-${fy + 1}`; })()
       });
       if (res.data.success) {
         alert(`Leave request ${newStatus.toLowerCase()} successfully!`);
