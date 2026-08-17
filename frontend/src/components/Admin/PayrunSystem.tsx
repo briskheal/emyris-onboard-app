@@ -408,6 +408,10 @@ const PayrunSystem: React.FC = () => {
                     <button className="btn" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ddd', borderRadius: '6px', display: 'flex', alignItems: 'center' }} onClick={exportToExcel}>
                         <Download size={16} style={{ marginRight: '8px' }}/> Export Excel
                     </button>
+                    <button onClick={wipePayrun} disabled={wiping || finalizing} className="btn btn-danger" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center' }}>
+                        <Trash2 size={16} style={{ marginRight: '8px' }} />
+                        {wiping ? 'Wiping...' : 'Wipe Data'}
+                    </button>
                 </div>
 
                 {previews.length > 0 && (
@@ -507,10 +511,6 @@ const PayrunSystem: React.FC = () => {
                                 <button onClick={finalizePayrun} disabled={finalizing || previews.length === 0} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px' }}>
                                     <Save size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                                     {finalizing ? 'Saving...' : 'Finalize & Save Payrun'}
-                                </button>
-                                <button onClick={wipePayrun} disabled={wiping || finalizing} className="btn btn-danger" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px' }}>
-                                    <Trash2 size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
-                                    {wiping ? 'Wiping...' : 'Wipe Payrun Data'}
                                 </button>
                                 <button onClick={sendEmails} disabled={sendingEmails} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px' }}>
                                     <Mail size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
