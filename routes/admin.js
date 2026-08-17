@@ -3680,7 +3680,7 @@ router.get('/salary-report', async (req, res) => {
         if (!startMonth || !startYear || !endMonth || !endYear || !reportType) return res.status(400).json({ error: 'Missing required parameters' });
 
         // Query all payslips from the relevant years to filter in memory for month ranges
-        const yearCondition = (startYear === endYear) ? { year: startYear } : { year: { [require('sequelize').Op.between]: [startYear, endYear] } };
+        const yearCondition = (startYear === endYear) ? { year: startYear } : { year: { $gte: startYear, $lte: endYear } };
         
         let query = { ...yearCondition };
         
@@ -3692,7 +3692,7 @@ router.get('/salary-report', async (req, res) => {
             query.email = applicant.email;
         }
 
-        const payslips = await Payslip.findAll({ where: query, raw: true });
+        const payslips = await Payslip.find(query);
 
         const monthMap = { 'january': 1, 'february': 2, 'march': 3, 'april': 4, 'may': 5, 'june': 6, 'july': 7, 'august': 8, 'september': 9, 'october': 10, 'november': 11, 'december': 12 };
 
@@ -3707,7 +3707,7 @@ router.get('/salary-report', async (req, res) => {
         // Add empCode to results to match excel layout if we can
         let applicantMap = {};
         if (reportType === 'company') {
-            const applicants = await Applicant.findAll();
+            const applicants = await Applicant.find();
             applicants.forEach(a => { applicantMap[a.email] = a.empCode; });
         }
 
