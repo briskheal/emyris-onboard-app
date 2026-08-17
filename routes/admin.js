@@ -3726,6 +3726,12 @@ router.get('/salary-report', async (req, res) => {
             calculatedSalaryBreakup: typeof p.calculatedSalaryBreakup === 'string' ? JSON.parse(p.calculatedSalaryBreakup) : p.calculatedSalaryBreakup
         }));
 
+        formatted.sort((a, b) => {
+            const aIdx = parseInt(a.year) * 12 + monthMap[a.month.toLowerCase()];
+            const bIdx = parseInt(b.year) * 12 + monthMap[b.month.toLowerCase()];
+            return aIdx - bIdx; // Ascending chronological order
+        });
+
         res.json({ success: true, data: formatted });
     } catch (e) {
         console.error('Salary report error:', e);
