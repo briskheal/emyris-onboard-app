@@ -371,7 +371,7 @@ const PayrunSystem: React.FC = () => {
         <div style={{ padding: '0', width: '100%', maxWidth: '100%', margin: '0' }}>
             <div className="dash-card" style={{ padding: '1rem' }}>
                 <div style={{ position: 'relative', textAlign: 'center', marginBottom: '1.5rem', width: '100%' }}>
-                    <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: '0 0 1rem 0' }}>Payrun & Attendance Module</h2>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: '0 0 1rem 0' }}>Payrun & Attendance Module (v2)</h2>
                     <button onClick={wipePayrun} disabled={wiping || finalizing} className="btn btn-danger" style={{ position: 'absolute', right: 0, top: 0, padding: '8px 15px', fontSize: '0.9rem', fontWeight: 'bold', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center' }}>
                         <Trash2 size={16} style={{ marginRight: '8px' }} />
                         {wiping ? 'Wiping...' : 'Test Mode: Wipe Data'}
