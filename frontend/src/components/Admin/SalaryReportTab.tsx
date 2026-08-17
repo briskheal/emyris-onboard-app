@@ -97,13 +97,14 @@ export const SalaryReportTab: React.FC = () => {
                 Object.keys(totals).forEach(k => { if (k !== 'period') (totals as any)[k] += r[k as keyof typeof r] || 0; });
             });
         } else {
-            // Aggregate across all employees for Company Report
-            const periodMap: Record<string, any> = {};
+            // Aggregate across the entire period, grouped by employee, for Company Report
+            const empMap: Record<string, any> = {};
             reportData.forEach(p => {
-                const key = `${p.month} ${p.year}`;
-                if (!periodMap[key]) {
-                    periodMap[key] = {
-                        period: key, basic: 0, conv: 0, edu: 0, fixed: 0, hra: 0, lta: 0, med: 0, special: 0,
+                const key = p.empCode || p.email || p.empName;
+                if (!empMap[key]) {
+                    empMap[key] = {
+                        empCode: p.empCode || 'NA', empName: p.empName || 'NA',
+                        basic: 0, conv: 0, edu: 0, fixed: 0, hra: 0, lta: 0, med: 0, special: 0,
                         gross: 0, tax: 0, pt: 0, dedTotal: 0, expense: 0, reimbTotal: 0, net: 0, lop: 0, payableDays: 0, totalDays: 0
                     };
                 }
@@ -113,7 +114,7 @@ export const SalaryReportTab: React.FC = () => {
                 const pfDed = parseFloat(b.pfDed) || p.pfDed || 0;
                 const salDed = parseFloat(b.salDed) || p.salDed || 0;
                 
-                const r = periodMap[key];
+                const r = empMap[key];
                 r.basic += parseFloat(calc.basic) || 0; 
                 r.conv += parseFloat(calc.conveyance) || parseFloat(calc.conv) || 0; 
                 r.edu += parseFloat(calc.edu) || 0; 
@@ -133,9 +134,9 @@ export const SalaryReportTab: React.FC = () => {
                 r.payableDays += parseFloat(p.payableDays) || 0;
                 r.totalDays += parseFloat(p.totalDays) || 0;
             });
-            rows = Object.values(periodMap);
+            rows = Object.values(empMap);
             rows.forEach(r => {
-                Object.keys(totals).forEach(k => { if (k !== 'period') (totals as any)[k] += r[k as keyof typeof r] || 0; });
+                Object.keys(totals).forEach(k => { if (k !== 'period' && k !== 'empCode' && k !== 'empName') (totals as any)[k] += r[k as keyof typeof r] || 0; });
             });
         }
         return { rows, totals };
@@ -173,14 +174,25 @@ export const SalaryReportTab: React.FC = () => {
         excelData.push([]);
         excelData.push(["", "Earnings", null, null, null, null, null, null, null, null, "Deductions", null, null, "Reimbursements", null, "      ", "", "", ""]);
         
-        const headers = ["Month/Particulars", "Basic Fixed", "Conveyance Allowance", "Educ Allowance", "Fixed Allowance", "HRA", "LTA", "Medical", "Special Allowance", "Gross Earning", "Income Tax", "Professional Tax", "Deduction Total", "Expense", "Reimbursement Total", "Net Salary", "LOP Days", "Payable Days", "Total Days"];
-        excelData.push(headers);
-        
-        rows.forEach(r => {
-            excelData.push([r.period, Math.round(r.basic), Math.round(r.conv), Math.round(r.edu), Math.round(r.fixed), Math.round(r.hra), Math.round(r.lta), Math.round(r.med), Math.round(r.special), Math.round(r.gross), Math.round(r.tax), Math.round(r.pt), Math.round(r.dedTotal), Math.round(r.expense), Math.round(r.reimbTotal), Math.round(r.net), Math.round(r.lop), Math.round(r.payableDays), Math.round(r.totalDays)]);
-        });
-        
-        excelData.push(["Total", Math.round(totals.basic), Math.round(totals.conv), Math.round(totals.edu), Math.round(totals.fixed), Math.round(totals.hra), Math.round(totals.lta), Math.round(totals.med), Math.round(totals.special), Math.round(totals.gross), Math.round(totals.tax), Math.round(totals.pt), Math.round(totals.dedTotal), Math.round(totals.expense), Math.round(totals.reimbTotal), Math.round(totals.net), Math.round(totals.lop), Math.round(totals.payableDays), Math.round(totals.totalDays)]);
+        if (reportType === 'company') {
+            const companyHeaders = ["Emp Code", "Employee Name", "Basic Fixed", "Conveyance Allowance", "Educ Allowance", "Fixed Allowance", "HRA", "LTA", "Medical", "Special Allowance", "Gross Earning", "Income Tax", "Professional Tax", "Deduction Total", "Expense", "Reimbursement Total", "Net Salary", "LOP Days", "Payable Days", "Total Days"];
+            excelData.push(companyHeaders);
+            
+            rows.forEach(r => {
+                excelData.push([r.empCode, r.empName, Math.round(r.basic), Math.round(r.conv), Math.round(r.edu), Math.round(r.fixed), Math.round(r.hra), Math.round(r.lta), Math.round(r.med), Math.round(r.special), Math.round(r.gross), Math.round(r.tax), Math.round(r.pt), Math.round(r.dedTotal), Math.round(r.expense), Math.round(r.reimbTotal), Math.round(r.net), Math.round(r.lop), Math.round(r.payableDays), Math.round(r.totalDays)]);
+            });
+            
+            excelData.push(["Total", "", Math.round(totals.basic), Math.round(totals.conv), Math.round(totals.edu), Math.round(totals.fixed), Math.round(totals.hra), Math.round(totals.lta), Math.round(totals.med), Math.round(totals.special), Math.round(totals.gross), Math.round(totals.tax), Math.round(totals.pt), Math.round(totals.dedTotal), Math.round(totals.expense), Math.round(totals.reimbTotal), Math.round(totals.net), Math.round(totals.lop), Math.round(totals.payableDays), Math.round(totals.totalDays)]);
+        } else {
+            const headers = ["Month/Particulars", "Basic Fixed", "Conveyance Allowance", "Educ Allowance", "Fixed Allowance", "HRA", "LTA", "Medical", "Special Allowance", "Gross Earning", "Income Tax", "Professional Tax", "Deduction Total", "Expense", "Reimbursement Total", "Net Salary", "LOP Days", "Payable Days", "Total Days"];
+            excelData.push(headers);
+            
+            rows.forEach(r => {
+                excelData.push([r.period, Math.round(r.basic), Math.round(r.conv), Math.round(r.edu), Math.round(r.fixed), Math.round(r.hra), Math.round(r.lta), Math.round(r.med), Math.round(r.special), Math.round(r.gross), Math.round(r.tax), Math.round(r.pt), Math.round(r.dedTotal), Math.round(r.expense), Math.round(r.reimbTotal), Math.round(r.net), Math.round(r.lop), Math.round(r.payableDays), Math.round(r.totalDays)]);
+            });
+            
+            excelData.push(["Total", Math.round(totals.basic), Math.round(totals.conv), Math.round(totals.edu), Math.round(totals.fixed), Math.round(totals.hra), Math.round(totals.lta), Math.round(totals.med), Math.round(totals.special), Math.round(totals.gross), Math.round(totals.tax), Math.round(totals.pt), Math.round(totals.dedTotal), Math.round(totals.expense), Math.round(totals.reimbTotal), Math.round(totals.net), Math.round(totals.lop), Math.round(totals.payableDays), Math.round(totals.totalDays)]);
+        }
 
         const ws = XLSX.utils.aoa_to_sheet(excelData);
         const wb = XLSX.utils.book_new();
@@ -251,7 +263,14 @@ export const SalaryReportTab: React.FC = () => {
                     <table className="table" style={{ fontSize: '12px', minWidth: '1500px' }}>
                         <thead>
                             <tr style={{ backgroundColor: 'rgba(0,0,0,0.2)' }}>
-                                <th>Month</th>
+                                {reportType === 'company' ? (
+                                    <>
+                                        <th>Emp Code</th>
+                                        <th>Employee Name</th>
+                                    </>
+                                ) : (
+                                    <th>Month</th>
+                                )}
                                 <th>Basic Fixed</th>
                                 <th>Conv. Allow</th>
                                 <th>Educ Allow</th>
@@ -275,7 +294,14 @@ export const SalaryReportTab: React.FC = () => {
                         <tbody>
                             {rows.map((r, i) => (
                                 <tr key={i}>
-                                    <td>{r.period}</td>
+                                    {reportType === 'company' ? (
+                                        <>
+                                            <td>{r.empCode}</td>
+                                            <td>{r.empName}</td>
+                                        </>
+                                    ) : (
+                                        <td>{r.period}</td>
+                                    )}
                                     <td>{Math.round(r.basic)}</td>
                                     <td>{Math.round(r.conv)}</td>
                                     <td>{Math.round(r.edu)}</td>
@@ -297,7 +323,11 @@ export const SalaryReportTab: React.FC = () => {
                                 </tr>
                             ))}
                             <tr style={{ fontWeight: 'bold', backgroundColor: 'rgba(255,255,255,0.1)' }}>
-                                <td>Total</td>
+                                {reportType === 'company' ? (
+                                    <td colSpan={2} style={{ textAlign: 'center' }}>Grand Total</td>
+                                ) : (
+                                    <td>Total</td>
+                                )}
                                 <td>{Math.round(totals.basic)}</td>
                                 <td>{Math.round(totals.conv)}</td>
                                 <td>{Math.round(totals.edu)}</td>
