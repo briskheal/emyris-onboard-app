@@ -163,9 +163,10 @@ export const SalaryReportTab: React.FC = () => {
         excelData.push([]);
         if (emp) {
             excelData.push(["Employee ID:", emp.empCode, "", "Employee Name:", emp.fullName]);
-            excelData.push(["Designation:", emp.designation || 'NA', "", "Department:", emp.department || 'NA']);
-            excelData.push(["Gender:", emp.formData?.gender || '--', "", "Date Of Birth:", emp.formData?.dob || '--']);
-            excelData.push(["Date Of Joining:", emp.dateOfJoining || '--']);
+            excelData.push(["Designation:", emp.designation || 'NA', "", "Department:", emp.department || emp.division || 'NA']);
+            const genderStr = ['Mr', 'Mr.'].includes(emp.title) ? 'Male' : ['Ms', 'Ms.', 'Mrs', 'Mrs.'].includes(emp.title) ? 'Female' : '--';
+            excelData.push(["Gender:", genderStr, "", "Date Of Birth:", emp.dob || '--']);
+            excelData.push(["Date Of Joining:", emp.actualJoiningDate || '--']);
         } else {
             excelData.push(["Report:", "Company Wide Consolidated Salary Statement"]);
             excelData.push(["Period:", `${startMonth} ${startYear} to ${endMonth} ${endYear}`]);
