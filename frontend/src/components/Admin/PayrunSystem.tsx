@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Play, CheckCircle, Download, Mail, Eye, X, AlertCircle, Save } from 'lucide-react';
+import { Upload, Play, CheckCircle, Download, Mail, Eye, X, AlertCircle, Save, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx-js-style';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -23,6 +23,7 @@ const PayrunSystem: React.FC = () => {
     const [sendingEmails, setSendingEmails] = useState(false);
     const [emailSuccess, setEmailSuccess] = useState('');
     const [finalizing, setFinalizing] = useState(false);
+    const [wiping, setWiping] = useState(false);
     
     const [payrunMonth, setPayrunMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
     const [payrunYear, setPayrunYear] = useState(new Date().getFullYear().toString());
@@ -341,6 +342,31 @@ const PayrunSystem: React.FC = () => {
         }
     };
 
+    const wipePayrun = async () => {
+        if (!confirm(`Are you sure you want to completely erase ALL finalized payslips for ${payrunMonth} ${payrunYear}? This action cannot be undone.`)) return;
+        setWiping(true);
+        setError('');
+        setUploadSuccess(false);
+        setEmailSuccess('');
+        try {
+            const res = await api.post('/admin/wipe-payrun', {
+                month: payrunMonth,
+                year: payrunYear
+            });
+            if (res.data.success) {
+                setEmailSuccess(`Successfully wiped payrun data for ${payrunMonth} ${payrunYear}!`);
+                setPreviews([]); 
+            } else {
+                setError(res.data.error || 'Failed to wipe payrun.');
+            }
+        } catch (err: any) {
+            console.error(err);
+            setError(err.response?.data?.error || 'Failed to wipe payrun due to an error.');
+        } finally {
+            setWiping(false);
+        }
+    };
+
     return (
         <div style={{ padding: '0', width: '100%', maxWidth: '100%', margin: '0' }}>
             <div className="dash-card" style={{ padding: '1rem' }}>
@@ -481,6 +507,10 @@ const PayrunSystem: React.FC = () => {
                                 <button onClick={finalizePayrun} disabled={finalizing || previews.length === 0} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px' }}>
                                     <Save size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                                     {finalizing ? 'Saving...' : 'Finalize & Save Payrun'}
+                                </button>
+                                <button onClick={wipePayrun} disabled={wiping || finalizing} className="btn btn-danger" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px' }}>
+                                    <Trash2 size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                                    {wiping ? 'Wiping...' : 'Wipe Payrun Data'}
                                 </button>
                                 <button onClick={sendEmails} disabled={sendingEmails} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px' }}>
                                     <Mail size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />

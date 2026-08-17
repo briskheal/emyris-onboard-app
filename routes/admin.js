@@ -3724,6 +3724,23 @@ router.get('/salary-report', async (req, res) => {
     }
 });
 
+router.post('/wipe-payrun', async (req, res) => {
+    try {
+        const { month, year } = req.body;
+        if (!month || !year) return res.status(400).json({ error: 'Month and year required' });
+
+        await Payslip.deleteMany({
+            month: { $regex: new RegExp(`^${month}$`, 'i') },
+            year: year
+        });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Failed to wipe payrun', e);
+        res.status(500).json({ error: 'Failed to wipe payrun' });
+    }
+});
+
 router.post('/email-payslips', async (req, res) => {
     try {
         const { emails, message, month, year } = req.body;
