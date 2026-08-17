@@ -230,7 +230,15 @@ export const SalaryReportTab: React.FC = () => {
                     </div>
                     <div>
                         <label className="form-label" style={{ fontSize: '12px' }}>Report Type</label>
-                        <select value={reportType} onChange={e => setReportType(e.target.value as 'company' | 'employee')} className="form-input-sm" style={{ width: '150px' }}>
+                        <select 
+                            value={reportType} 
+                            onChange={e => {
+                                setReportType(e.target.value as 'company' | 'employee');
+                                setReportData([]);
+                            }} 
+                            className="form-input-sm" 
+                            style={{ width: '150px' }}
+                        >
                             <option value="company">Company Wise</option>
                             <option value="employee">Employee Wise</option>
                         </select>
