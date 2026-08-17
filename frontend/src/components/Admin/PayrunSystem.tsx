@@ -355,7 +355,11 @@ const PayrunSystem: React.FC = () => {
             });
             if (res.data.success) {
                 setEmailSuccess(`Successfully wiped payrun data for ${payrunMonth} ${payrunYear}!`);
-                setPreviews([]); 
+                if (res.data.zeroedPreviews) {
+                    setPreviews(res.data.zeroedPreviews);
+                } else {
+                    setPreviews([]); 
+                }
             } else {
                 setError(res.data.error || 'Failed to wipe payrun.');
             }

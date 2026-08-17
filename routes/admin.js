@@ -3622,6 +3622,15 @@ router.post('/finalize-payrun', async (req, res) => {
 
         await Payslip.create(toInsert);
 
+        const filePath = path.join(__dirname, '../Attendance/LATEST_ATTENDANCE.xlsx');
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+            } catch(e) {
+                console.error("Failed to delete LATEST_ATTENDANCE.xlsx:", e);
+            }
+        }
+
         // --- Apply Loan and Advance Deductions ---
         for (const p of previews) {
             if (p.loanDetails && Array.isArray(p.loanDetails)) {
@@ -3734,7 +3743,55 @@ router.post('/wipe-payrun', async (req, res) => {
             year: year
         });
 
-        res.json({ success: true });
+        const filePath = path.join(__dirname, '../Attendance/LATEST_ATTENDANCE.xlsx');
+        if (fs.existsSync(filePath)) {
+            try {
+                fs.unlinkSync(filePath);
+            } catch(e) {
+                console.error("Failed to delete LATEST_ATTENDANCE.xlsx:", e);
+            }
+        }
+
+        const allApplicants = await Applicant.find({});
+        const zeroedPreviews = allApplicants.map(applicant => ({
+            empName: applicant.fullName,
+            empCode: applicant.empCode,
+            email: applicant.email,
+            designation: applicant.designation || 'NA',
+            department: applicant.department || 'NA',
+            division: applicant.division || 'NA',
+            uanNumber: applicant.uanNumber || 'NA',
+            epfNumber: applicant.epfNumber || 'NA',
+            esiNumber: applicant.esiNumber || 'NA',
+            fatherName: applicant.formData?.fatherName || 'NA',
+            panNumber: applicant.formData?.panNumber || 'NA',
+            bankName: applicant.formData?.bankName || 'NA',
+            accNo: applicant.formData?.accNo || 'NA',
+            ifsc: applicant.formData?.ifsc || 'NA',
+            present: 0, absent: 0, leave: 0, holiday: 0,
+            payableDays: 0, totalMonthDays: 0,
+            basicFixed: 0,
+            hra: 0,
+            specialAllow: 0,
+            convAllow: 0,
+            medical: 0,
+            educAllow: 0,
+            lta: 0,
+            fixedAllow: 0,
+            grossEarnings: 0,
+            ptDeduction: 0,
+            pfDeduction: 0,
+            salDed: 0,
+            expense: 0,
+            penaltyDays: 0,
+            finalSalary: 0,
+            baseNetSalary: 0,
+            loanDetails: [],
+            advanceDetails: [],
+            sendEmail: true
+        }));
+
+        res.json({ success: true, zeroedPreviews });
     } catch (e) {
         console.error('Failed to wipe payrun', e);
         res.status(500).json({ error: 'Failed to wipe payrun' });
