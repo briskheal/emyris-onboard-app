@@ -54,13 +54,34 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
       setSearchResults([]);
       return;
     }
+
+    let entityType = 'Product';
+    let label = 'Product';
+    if (kpiId === 'account') {
+      entityType = 'Hospital';
+      label = 'Hospital';
+    } else if (kpiId === 'keyCustomer' || kpiId === 'roi') {
+      entityType = 'Doctor';
+      label = 'Doctor';
+    } else if (kpiId === 'outstanding') {
+      entityType = 'Stockist';
+      label = 'Stockist';
+    }
+
     // Dummy search
     setSearchResults([
-      { id: `e_${searchQuery}_1`, name: `${searchQuery} Product A`, type: 'Product' },
-      { id: `e_${searchQuery}_2`, name: `${searchQuery} Product B`, type: 'Product' },
-      { id: `e_${searchQuery}_3`, name: `${searchQuery} Product C`, type: 'Product' },
+      { id: `e_${searchQuery}_1`, name: `${searchQuery} ${label} A`, type: entityType },
+      { id: `e_${searchQuery}_2`, name: `${searchQuery} ${label} B`, type: entityType },
+      { id: `e_${searchQuery}_3`, name: `${searchQuery} ${label} C`, type: entityType },
     ]);
-  }, [searchQuery]);
+  }, [searchQuery, kpiId]);
+
+  const getPlaceholder = () => {
+    if (kpiId === 'account') return 'Select Hospital...';
+    if (kpiId === 'keyCustomer' || kpiId === 'roi') return 'Select Doctor...';
+    if (kpiId === 'outstanding') return 'Select Stockist...';
+    return 'Select Product...';
+  };
 
   const handleSelectToAddList = () => {
     if (!selectedEntity) return;
@@ -167,7 +188,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
               </span>
               <input
                 type="text"
-                placeholder="Select Entity..."
+                placeholder={getPlaceholder()}
                 value={selectedEntity ? selectedEntity.name : searchQuery}
                 onChange={e => {
                   setSearchQuery(e.target.value);
