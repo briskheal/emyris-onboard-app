@@ -9,7 +9,7 @@ const USER_EMAIL = 'rep@emyris.in';
 const USER_NAME = 'Field Rep';
 const today = new Date().toISOString().split('T')[0];
 
-export default function DCRModal({ onClose }: { onClose: () => void }) {
+export default function DCRModal({ onClose, overrideDate }: { onClose: () => void; overrideDate?: string }) {
   const [step, setStep] = useState(1);
   const [entityType, setEntityType] = useState<'Doctor' | 'Chemist' | null>(null);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -26,6 +26,7 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [dcrDate] = useState(overrideDate || today);
 
   useEffect(() => {
     // Only prefetch entity lists — NO auto GPS
@@ -70,7 +71,7 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
     try {
       await axios.post('/api/xl/dcr', {
         employeeEmail: USER_EMAIL, employeeName: USER_NAME,
-        date: today, entityType,
+        date: dcrDate, entityType,
         entityId: selected.id, entityName: selected.name,
         discussion, checkInTime,
         latitude: lat, longitude: lng, geoAddress,

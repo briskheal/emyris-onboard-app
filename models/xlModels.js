@@ -131,6 +131,67 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    // Phase 3: Attendance
+    const XlAttendance = sequelize.define('xl_attendance', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        date: { type: DataTypes.STRING, allowNull: false }, // "YYYY-MM-DD"
+        punchInTime: { type: DataTypes.STRING },
+        punchInLat: { type: DataTypes.FLOAT },
+        punchInLng: { type: DataTypes.FLOAT },
+        punchOutTime: { type: DataTypes.STRING },
+        punchOutLat: { type: DataTypes.FLOAT },
+        punchOutLng: { type: DataTypes.FLOAT },
+        status: { type: DataTypes.STRING, defaultValue: 'Present' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 3: Leave Request
+    const XlLeave = sequelize.define('xl_leave', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        startDate: { type: DataTypes.STRING, allowNull: false },
+        endDate: { type: DataTypes.STRING, allowNull: false },
+        leaveType: { type: DataTypes.STRING }, // Sick, Casual, Paid
+        reason: { type: DataTypes.TEXT },
+        status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending / Approved / Rejected
+        adminRemarks: { type: DataTypes.TEXT },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 3: Expense
+    const XlExpense = sequelize.define('xl_expense', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        date: { type: DataTypes.STRING, allowNull: false },
+        amount: { type: DataTypes.FLOAT, allowNull: false },
+        category: { type: DataTypes.STRING }, // Travel, DA, Hotel, Misc
+        remarks: { type: DataTypes.TEXT },
+        receiptImage: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 3: Backlog Request
+    const XlBacklogRequest = sequelize.define('xl_backlog_request', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        date: { type: DataTypes.STRING, allowNull: false }, // The past date requested to unlock
+        reason: { type: DataTypes.TEXT },
+        status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending / Approved / Rejected
+        adminRemarks: { type: DataTypes.TEXT },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 3: Call Plan
+    const XlCallPlan = sequelize.define('xl_call_plan', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        date: { type: DataTypes.STRING, allowNull: false },
+        doctors: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of doctor IDs
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
         XlDoctor,
         XlChemist,
@@ -138,6 +199,11 @@ module.exports = function initXlModels(sequelize) {
         XlCity,
         XlRoute,
         XlTourProgram,
-        XlDCR
+        XlDCR,
+        XlAttendance,
+        XlLeave,
+        XlExpense,
+        XlBacklogRequest,
+        XlCallPlan
     };
 };

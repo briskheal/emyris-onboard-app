@@ -14,7 +14,7 @@ const extrasOptions = [
     bg: 'bg-sky-500/10',
   },
   {
-    path: '#',
+    path: '/extras/call-plan',
     icon: Route,
     label: 'Call Planning',
     description: 'Pre-call planning & objectives',
@@ -22,7 +22,7 @@ const extrasOptions = [
     bg: 'bg-amber-500/10',
   },
   {
-    path: '#',
+    path: '/extras/leave',
     icon: CalendarOff,
     label: 'Leave Request',
     description: 'Apply for leaves & track status',
@@ -30,7 +30,7 @@ const extrasOptions = [
     bg: 'bg-rose-500/10',
   },
   {
-    path: '#',
+    path: '/extras/geo-fencing',
     icon: MapPin,
     label: 'Geo Fencing',
     description: 'Geo-tag doctors & clinic locations',
@@ -38,7 +38,7 @@ const extrasOptions = [
     bg: 'bg-emerald-500/10',
   },
   {
-    path: '#',
+    path: '/extras/expense',
     icon: Receipt,
     label: 'Expense',
     description: 'Submit and track travel expenses',
@@ -46,7 +46,7 @@ const extrasOptions = [
     bg: 'bg-indigo-500/10',
   },
   {
-    path: '#',
+    path: '/extras/backlog',
     icon: History,
     label: 'Backlog Reporting',
     description: 'Submit missed call reports',
@@ -54,7 +54,7 @@ const extrasOptions = [
     bg: 'bg-orange-500/10',
   },
   {
-    path: '#',
+    path: '/extras/attendance',
     icon: UserCheck,
     label: 'Attendance',
     description: 'Daily attendance & punch-in',

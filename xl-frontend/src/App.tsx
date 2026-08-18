@@ -9,6 +9,12 @@ import CityForm from './pages/creation/CityForm';
 import RouteForm from './pages/creation/RouteForm';
 import Extras from './pages/Extras';
 import TourProgram from './pages/TourProgram';
+import Attendance from './pages/extras/Attendance';
+import CallPlan from './pages/extras/CallPlan';
+import Backlog from './pages/extras/Backlog';
+import LeaveRequest from './pages/extras/LeaveRequest';
+import Expense from './pages/extras/Expense';
+import GeoFencing from './pages/extras/GeoFencing';
 import Utilities from './pages/Utilities';
 
 function App() {
@@ -26,6 +32,12 @@ function App() {
           <Route path="creation/route" element={<RouteForm />} />
           <Route path="extras" element={<Extras />} />
           <Route path="extras/tour-program" element={<TourProgram />} />
+          <Route path="extras/attendance" element={<Attendance />} />
+          <Route path="extras/call-plan" element={<CallPlan />} />
+          <Route path="extras/backlog" element={<Backlog />} />
+          <Route path="extras/leave" element={<LeaveRequest />} />
+          <Route path="extras/expense" element={<Expense />} />
+          <Route path="extras/geo-fencing" element={<GeoFencing />} />
           <Route path="utilities" element={<Utilities />} />
         </Route>
       </Routes>

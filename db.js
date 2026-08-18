@@ -33,7 +33,12 @@ const {
     XlCity,
     XlRoute,
     XlTourProgram,
-    XlDCR
+    XlDCR,
+    XlAttendance,
+    XlLeave,
+    XlExpense,
+    XlBacklogRequest,
+    XlCallPlan
 } = initXlModels(sequelize);
 
 const {
@@ -435,5 +440,10 @@ module.exports = {
     XlRoute,
     XlTourProgram,
     XlDCR,
+    XlAttendance,
+    XlLeave,
+    XlExpense,
+    XlBacklogRequest,
+    XlCallPlan,
     generateId 
 };
