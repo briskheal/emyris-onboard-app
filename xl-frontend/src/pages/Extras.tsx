@@ -1,253 +1,72 @@
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Send, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { CalendarDays, Route, PlaySquare, CalendarOff, ChevronRight } from 'lucide-react';
 
-const VISIT_TYPES = [
-  { label: 'Local', color: 'bg-sky-500', text: 'text-sky-400', border: 'border-sky-500' },
-  { label: 'Ex-Station', color: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-500' },
-  { label: 'Out-Station', color: 'bg-violet-500', text: 'text-violet-400', border: 'border-violet-500' },
-  { label: 'Conference', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500' },
-  { label: 'Leave', color: 'bg-rose-500', text: 'text-rose-400', border: 'border-rose-500' },
-  { label: 'Holiday', color: 'bg-slate-500', text: 'text-slate-400', border: 'border-slate-500' },
+const extrasOptions = [
+  {
+    path: '/extras/tour-program',
+    icon: CalendarDays,
+    label: 'Tour Plan',
+    description: 'Plan your monthly visits & get approval',
+    color: 'text-sky-400',
+    bg: 'bg-sky-500/10',
+  },
+  {
+    path: '#', // Placeholder for Phase 3
+    icon: Route,
+    label: 'Call Planning',
+    description: 'Pre-call planning & objectives (Phase 3)',
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/10',
+  },
+  {
+    path: '#', // Placeholder for Phase 3
+    icon: PlaySquare,
+    label: 'E-Detailing',
+    description: 'Show visual aids to doctors (Phase 3)',
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+  },
+  {
+    path: '#', // Placeholder for Phase 3
+    icon: CalendarOff,
+    label: 'Leave Management',
+    description: 'Apply for leaves & track status (Phase 3)',
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/10',
+  },
 ];
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  Draft: { label: 'Draft', color: 'text-slate-400', icon: Clock },
-  Submitted: { label: 'Pending Approval', color: 'text-amber-400', icon: Clock },
-  Approved: { label: 'Approved', color: 'text-emerald-400', icon: CheckCircle2 },
-  Rejected: { label: 'Rejected', color: 'text-rose-400', icon: AlertCircle },
-};
-
-// Hardcoded for Phase 2 — will be replaced by login session in future
-const USER_EMAIL = 'rep@emyris.in';
-const USER_NAME = 'Field Rep';
-
 export default function Extras() {
-  const today = new Date();
-  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [entries, setEntries] = useState<Record<string, string>>({}); // { "2026-08-15": "Local" }
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [tpId, setTpId] = useState<string | null>(null);
-  const [tpStatus, setTpStatus] = useState('Draft');
-  const [adminRemarks, setAdminRemarks] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState('');
-
-  const month = currentDate.toLocaleString('en-US', { month: 'long' }).toLowerCase();
-  const year = String(currentDate.getFullYear());
-  const monthLabel = currentDate.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
-
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
-
-  useEffect(() => {
-    fetchTP();
-  }, [currentDate]);
-
-  const fetchTP = async () => {
-    try {
-      const res = await axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${month}&year=${year}`);
-      if (res.data.data) {
-        const tp = res.data.data;
-        setTpId(tp._id);
-        setTpStatus(tp.status);
-        setAdminRemarks(tp.adminRemarks || '');
-        const map: Record<string, string> = {};
-        JSON.parse(tp.entries || '[]').forEach((e: { date: string; visitType: string }) => {
-          map[e.date] = e.visitType;
-        });
-        setEntries(map);
-      } else {
-        setTpId(null);
-        setTpStatus('Draft');
-        setEntries({});
-        setAdminRemarks('');
-      }
-    } catch (_) {}
-  };
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
-  };
-
-  const handleDayTap = (dateStr: string) => {
-    if (tpStatus === 'Submitted' || tpStatus === 'Approved') return;
-    setSelectedDate(dateStr === selectedDate ? null : dateStr);
-  };
-
-  const assignVisitType = (type: string) => {
-    if (!selectedDate) return;
-    setEntries(prev => ({ ...prev, [selectedDate]: type }));
-    setSelectedDate(null);
-  };
-
-  const removeEntry = (dateStr: string) => {
-    setEntries(prev => { const n = { ...prev }; delete n[dateStr]; return n; });
-  };
-
-  const saveTP = async () => {
-    setSaving(true);
-    try {
-      const entriesArr = Object.entries(entries).map(([date, visitType]) => ({ date, visitType }));
-      const res = await axios.post('/api/xl/tour-program', {
-        employeeEmail: USER_EMAIL, employeeName: USER_NAME,
-        month, year, entries: entriesArr
-      });
-      setTpId(res.data.data._id);
-      showToast('Tour Program saved!');
-    } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Save failed');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const submitTP = async () => {
-    if (!tpId) { showToast('Save the TP first before submitting.'); return; }
-    if (Object.keys(entries).length === 0) { showToast('Please plan at least one day.'); return; }
-    setSubmitting(true);
-    try {
-      await saveTP();
-      await axios.put(`/api/xl/tour-program/${tpId}/submit`);
-      setTpStatus('Submitted');
-      showToast('Tour Program submitted for approval!');
-    } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Submission failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const visitTypeConfig = (type: string) => VISIT_TYPES.find(v => v.label === type);
-  const StatusIcon = STATUS_CONFIG[tpStatus]?.icon || Clock;
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-full bg-slate-900">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 bg-gradient-to-b from-slate-800 to-slate-900">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Extras</p>
-          {tpStatus && (
-            <div className={`flex items-center gap-1.5 ${STATUS_CONFIG[tpStatus]?.color}`}>
-              <StatusIcon size={13} />
-              <span className="text-xs font-semibold">{STATUS_CONFIG[tpStatus]?.label}</span>
+      <div className="px-4 pt-12 pb-6 bg-gradient-to-b from-slate-800 to-slate-900">
+        <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mb-1">Extras</p>
+        <h1 className="text-2xl font-bold text-white">Field Operations</h1>
+        <p className="text-sm text-slate-400 mt-1">Manage plans, calls, and activities</p>
+      </div>
+
+      {/* Options List */}
+      <div className="px-4 space-y-3">
+        {extrasOptions.map(({ path, icon: Icon, label, description, color, bg }) => (
+          <button
+            key={label}
+            onClick={() => path !== '#' && navigate(path)}
+            className={`w-full flex items-center gap-4 bg-slate-800 rounded-2xl px-4 py-4 border border-slate-700/50 transition-colors ${path !== '#' ? 'active:bg-slate-700' : 'opacity-70 cursor-not-allowed'}`}
+          >
+            <div className={`w-12 h-12 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
+              <Icon size={22} className={color} strokeWidth={1.8} />
             </div>
-          )}
-        </div>
-        <h1 className="text-2xl font-bold text-white">Tour Program</h1>
-        {adminRemarks && tpStatus === 'Rejected' && (
-          <p className="text-xs text-rose-400 mt-1">Remark: {adminRemarks}</p>
-        )}
-      </div>
-
-      {/* Month Navigator */}
-      <div className="flex items-center justify-between px-4 py-3">
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
-          className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center active:bg-slate-700">
-          <ChevronLeft size={18} className="text-white" />
-        </button>
-        <p className="text-base font-bold text-white">{monthLabel}</p>
-        <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-          className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center active:bg-slate-700">
-          <ChevronRight size={18} className="text-white" />
-        </button>
-      </div>
-
-      {/* Day Labels */}
-      <div className="grid grid-cols-7 px-4 mb-1">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-          <div key={i} className="text-center text-xs text-slate-500 font-semibold py-1">{d}</div>
+            <div className="text-left flex-1">
+              <p className="text-base font-semibold text-white">{label}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{description}</p>
+            </div>
+            {path !== '#' && <ChevronRight size={18} className="text-slate-600 flex-shrink-0" />}
+          </button>
         ))}
       </div>
-
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 px-4 gap-y-1 mb-4">
-        {Array.from({ length: firstDay }).map((_, i) => <div key={`empty-${i}`} />)}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const dateStr = `${year}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const visitType = entries[dateStr];
-          const vtConfig = visitType ? visitTypeConfig(visitType) : null;
-          const isSelected = selectedDate === dateStr;
-          const isToday = dateStr === today.toISOString().split('T')[0];
-          return (
-            <button
-              key={dateStr}
-              onClick={() => handleDayTap(dateStr)}
-              className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all
-                ${isSelected ? 'ring-2 ring-white scale-110' : ''}
-                ${vtConfig ? `${vtConfig.color} text-white` : 'bg-slate-800 text-slate-300'}
-                ${isToday && !vtConfig ? 'ring-1 ring-sky-400' : ''}`}
-            >
-              {day}
-              {visitType && (
-                <span className="text-[8px] font-normal opacity-80 leading-tight">{visitType.slice(0, 3)}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Visit Type Picker (shown when a date is selected) */}
-      {selectedDate && (
-        <div className="mx-4 mb-4 bg-slate-800 rounded-2xl p-4 border border-slate-700">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-white">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
-            {entries[selectedDate] && (
-              <button onClick={() => removeEntry(selectedDate)} className="text-xs text-rose-400">Remove</button>
-            )}
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {VISIT_TYPES.map(vt => (
-              <button key={vt.label} onClick={() => assignVisitType(vt.label)}
-                className={`py-2 rounded-xl text-xs font-semibold border ${entries[selectedDate] === vt.label ? `${vt.color} text-white border-transparent` : `bg-slate-900 ${vt.text} ${vt.border}`}`}>
-                {vt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Legend */}
-      <div className="px-4 mb-4 flex flex-wrap gap-2">
-        {VISIT_TYPES.map(vt => (
-          <div key={vt.label} className="flex items-center gap-1">
-            <div className={`w-2.5 h-2.5 rounded-full ${vt.color}`} />
-            <span className="text-[10px] text-slate-400">{vt.label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Summary count */}
-      <div className="px-4 mb-4">
-        <p className="text-xs text-slate-400">
-          {Object.keys(entries).length} days planned · {Object.values(entries).filter(v => v === 'Local').length} Local · {Object.values(entries).filter(v => v === 'Ex-Station').length} Ex · {Object.values(entries).filter(v => v === 'Out-Station').length} OS
-        </p>
-      </div>
-
-      {/* Action Buttons */}
-      {(tpStatus === 'Draft' || tpStatus === 'Rejected') && (
-        <div className="px-4 pb-8 flex gap-3">
-          <button onClick={saveTP} disabled={saving}
-            className="flex-1 h-[45px] rounded-xl bg-slate-700 text-white text-sm font-semibold active:bg-slate-600 disabled:opacity-50">
-            {saving ? 'Saving...' : 'Save Draft'}
-          </button>
-          <button onClick={submitTP} disabled={submitting}
-            className="flex-1 h-[45px] rounded-xl bg-sky-500 text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-sky-600 disabled:opacity-50">
-            <Send size={15} />
-            {submitting ? 'Submitting...' : 'Submit for Approval'}
-          </button>
-        </div>
-      )}
-
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-24 left-4 right-4 bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white text-center z-50 shadow-lg">
-          {toast}
-        </div>
-      )}
     </div>
   );
 }

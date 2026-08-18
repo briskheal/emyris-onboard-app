@@ -8,6 +8,7 @@ import StockistForm from './pages/creation/StockistForm';
 import CityForm from './pages/creation/CityForm';
 import RouteForm from './pages/creation/RouteForm';
 import Extras from './pages/Extras';
+import TourProgram from './pages/TourProgram';
 import Utilities from './pages/Utilities';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
           <Route path="creation/city" element={<CityForm />} />
           <Route path="creation/route" element={<RouteForm />} />
           <Route path="extras" element={<Extras />} />
+          <Route path="extras/tour-program" element={<TourProgram />} />
           <Route path="utilities" element={<Utilities />} />
         </Route>
       </Routes>
