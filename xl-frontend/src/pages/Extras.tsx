@@ -62,12 +62,12 @@ const extrasOptions = [
     bg: 'bg-teal-500/10',
   },
   {
-    path: '#',
+    path: '/extras/performance',
     icon: LineChart,
     label: 'User Performance Analysis',
     description: 'View sales & call metrics',
-    color: 'text-fuchsia-400',
-    bg: 'bg-fuchsia-500/10',
+    color: 'text-rose-500',
+    bg: 'bg-rose-500/10',
   },
   {
     path: '#',

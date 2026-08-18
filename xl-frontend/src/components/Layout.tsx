@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Layers, Wrench, FileText } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Layers, Wrench, FileText, AlertTriangle } from 'lucide-react';
+import axios from 'axios';
 import DCRModal from './DCRModal';
 
 const navItems = [
@@ -10,16 +11,64 @@ const navItems = [
   { path: '/utilities', icon: Wrench, label: 'Utilities' },
 ];
 
+const USER_EMAIL = 'rep@emyris.in';
+
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showDCR, setShowDCR] = useState(false);
+  
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockMessage, setLockMessage] = useState('');
+
+  // Check lockout status on mount and on route change
+  useEffect(() => {
+    // If we are already on the performance page, don't show the overlay (let them do the planning)
+    if (location.pathname.includes('/extras/performance')) {
+      setIsLocked(false);
+      return;
+    }
+
+    axios.get(`/api/xl/performance/status?email=${USER_EMAIL}`)
+      .then(res => {
+        if (res.data.locked) {
+          setIsLocked(true);
+          setLockMessage(res.data.message);
+        } else {
+          setIsLocked(false);
+        }
+      })
+      .catch(err => console.error("Failed to check lockout status", err));
+  }, [location.pathname]);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="flex flex-col h-dvh bg-slate-900 overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col h-dvh bg-slate-900 overflow-hidden relative" style={{ fontFamily: "'Inter', sans-serif" }}>
+      
+      {/* GLOBAL LOCKOUT OVERLAY */}
+      {isLocked && (
+        <div className="absolute inset-0 z-[9999] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+          <div className="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mb-6">
+            <AlertTriangle size={40} className="text-rose-500" />
+          </div>
+          <h2 className="text-2xl font-black text-white mb-2">Access Locked</h2>
+          <p className="text-slate-400 mb-8 max-w-[280px]">
+            {lockMessage || "You must submit your Monthly Planning to unlock the dashboard."}
+          </p>
+          <button
+            onClick={() => {
+              setIsLocked(false);
+              navigate('/extras/performance');
+            }}
+            className="w-full max-w-[280px] h-14 bg-rose-500 text-white font-bold rounded-2xl shadow-lg shadow-rose-500/30 active:scale-95 transition-transform"
+          >
+            Go to Performance Analysis
+          </button>
+        </div>
+      )}
+
       {/* DCR Modal (full-screen overlay) */}
       {showDCR && <DCRModal onClose={() => setShowDCR(false)} />}
 

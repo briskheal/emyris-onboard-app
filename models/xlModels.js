@@ -204,6 +204,24 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    // Phase 4: Performance Analysis
+    const XlPerformanceAnalysis = sequelize.define('xl_performance_analysis', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        month: { type: DataTypes.STRING, allowNull: false },
+        year: { type: DataTypes.STRING, allowNull: false },
+        
+        // JSON arrays storing [{ entityId, entityName, entityType, week1: { planned, achieved }, ... }]
+        brandData: { type: DataTypes.TEXT, defaultValue: '[]' },
+        roiData: { type: DataTypes.TEXT, defaultValue: '[]' },
+        accountData: { type: DataTypes.TEXT, defaultValue: '[]' },
+        keyCustomerData: { type: DataTypes.TEXT, defaultValue: '[]' },
+        outstandingData: { type: DataTypes.TEXT, defaultValue: '[]' },
+        
+        planningSubmittedAt: { type: DataTypes.DATE },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
         XlDoctor,
         XlChemist,
@@ -216,6 +234,7 @@ module.exports = function initXlModels(sequelize) {
         XlLeave,
         XlExpense,
         XlBacklogRequest,
-        XlCallPlan
+        XlCallPlan,
+        XlPerformanceAnalysis
     };
 };

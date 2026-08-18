@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, generateId } = require('../db');
+const { XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
@@ -406,6 +406,196 @@ router.get('/call-plan/my', async (req, res) => {
         res.json({ success: true, data: plan });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch call plan' });
+    }
+});
+
+// ─── PHASE 4: PERFORMANCE ANALYSIS ──────────────────────────────────────────
+
+// Lockout Status Check
+router.get('/performance/status', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).json({ error: 'Missing email' });
+
+        const today = new Date();
+        const dateNum = today.getDate();
+        
+        // If it's <= 3rd of the month, no lockout
+        if (dateNum <= 3) {
+            return res.json({ locked: false });
+        }
+
+        const monthStr = today.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+        const yearStr = String(today.getFullYear());
+
+        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeEmail: email, month: monthStr, year: yearStr } });
+        
+        // If they have submitted their plan, no lockout
+        if (perf && perf.planningSubmittedAt) {
+            return res.json({ locked: false });
+        }
+
+        // Mid-month joiner check: if they have NO DCRs from ANY previous month, they are new, don't lock them
+        // For simplicity, we just check if they have any DCR submitted prior to the 1st of this month
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const pastDcrs = await XlDCR.count({
+            where: {
+                employeeEmail: email,
+                date: { [Op.lt]: firstOfThisMonth }
+            }
+        });
+
+        if (pastDcrs === 0) {
+            return res.json({ locked: false }); // Mid-month joiner / fresh account
+        }
+
+        return res.json({ locked: true, message: `Planning for ${monthStr.charAt(0).toUpperCase() + monthStr.slice(1)} must be submitted to access the dashboard.` });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to check performance status' });
+    }
+});
+
+// Get/Create user's performance record for a month
+router.get('/performance/my', async (req, res) => {
+    try {
+        const { email, month, year } = req.query;
+        let perf = await XlPerformanceAnalysis.findOne({ where: { employeeEmail: email, month, year } });
+        
+        if (!perf) {
+            perf = await XlPerformanceAnalysis.create({
+                _id: generateId(),
+                employeeEmail: email,
+                month,
+                year
+            });
+        }
+        res.json({ success: true, data: perf });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch performance record' });
+    }
+});
+
+// Submit the monthly plan (locks in the planned targets)
+router.post('/performance/plan', async (req, res) => {
+    try {
+        const { id, brandData, roiData, accountData, keyCustomerData, outstandingData } = req.body;
+        
+        await XlPerformanceAnalysis.update({
+            brandData: JSON.stringify(brandData),
+            roiData: JSON.stringify(roiData),
+            accountData: JSON.stringify(accountData),
+            keyCustomerData: JSON.stringify(keyCustomerData),
+            outstandingData: JSON.stringify(outstandingData),
+            planningSubmittedAt: new Date()
+        }, { where: { _id: id } });
+
+        res.json({ success: true, message: 'Monthly Planning submitted successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to submit planning' });
+    }
+});
+
+// Update achieved targets for a specific week (or updating targets)
+router.put('/performance/achieve', async (req, res) => {
+    try {
+        const { id, brandData, roiData, accountData, keyCustomerData, outstandingData } = req.body;
+        
+        await XlPerformanceAnalysis.update({
+            brandData: JSON.stringify(brandData),
+            roiData: JSON.stringify(roiData),
+            accountData: JSON.stringify(accountData),
+            keyCustomerData: JSON.stringify(keyCustomerData),
+            outstandingData: JSON.stringify(outstandingData)
+        }, { where: { _id: id } });
+
+        res.json({ success: true, message: 'Achievements saved successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update achievements' });
+    }
+});
+
+// Auto-calculate Effort Analysis based on DCRs for a date range
+router.post('/performance/effort-analysis', async (req, res) => {
+    try {
+        const { email, startDate, endDate } = req.body;
+        
+        const myDcrs = await XlDCR.findAll({
+            where: {
+                employeeEmail: email,
+                date: { [Op.between]: [startDate, endDate] }
+            }
+        });
+
+        const myDoctors = await XlDoctor.findAll({ where: { allottedUser: email } });
+        const myChemists = await XlChemist.findAll({ where: { allottedUser: email } });
+        const myStockists = await XlStockist.findAll({ where: { allottedUser: email } });
+
+        // Calculate metrics
+        const totalDoctors = myDoctors.length;
+        const totalChemists = myChemists.length;
+        const totalStockists = myStockists.length;
+
+        let totalDrCalls = 0;
+        let totalChemCalls = 0;
+        let totalStockCalls = 0;
+        
+        const uniqueDrsVisited = new Set();
+        const workDays = new Set();
+
+        myDcrs.forEach(dcr => {
+            workDays.add(dcr.date);
+            if (dcr.entityType === 'Doctor') {
+                totalDrCalls++;
+                uniqueDrsVisited.add(dcr.entityId);
+            } else if (dcr.entityType === 'Chemist') {
+                totalChemCalls++;
+            } else if (dcr.entityType === 'Stockist') {
+                totalStockCalls++;
+            }
+        });
+
+        const totalUniqueDoctorsVisited = uniqueDrsVisited.size;
+        const totalMissedDoctors = totalDoctors - totalUniqueDoctorsVisited;
+        
+        const numWorkDays = workDays.size || 1; // avoid div by 0
+        const doctorCallAverage = (totalDrCalls / numWorkDays).toFixed(1);
+        const chemistCallAverage = (totalChemCalls / numWorkDays).toFixed(1);
+        
+        const coveragePercentage = totalDoctors > 0 ? Math.round((totalUniqueDoctorsVisited / totalDoctors) * 100) : 0;
+
+        // Dummy compliance percentage for now (needs more complex parsing of categories)
+        const compliancePercentage = coveragePercentage; 
+
+        const numNonCore = myDoctors.filter(d => d.category === 'C' || d.category === 'D').length;
+        const numCore = myDoctors.filter(d => d.category === 'B' || d.category === 'A').length;
+        const numSuperCore = myDoctors.filter(d => d.category === 'A+').length;
+
+        res.json({
+            success: true,
+            data: {
+                totalDoctors,
+                totalDrCalls,
+                totalUniqueDoctorsVisited,
+                totalMissedDoctors,
+                numNonCore,
+                numCore,
+                numSuperCore,
+                doctorCallAverage,
+                coveragePercentage,
+                compliancePercentage,
+                totalChemists,
+                totalChemCalls,
+                chemistCallAverage,
+                totalStockists,
+                totalStockCalls
+            }
+        });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to calculate effort analysis' });
     }
 });
 

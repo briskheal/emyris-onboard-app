@@ -17,6 +17,9 @@ import Expense from './pages/extras/Expense';
 import GeoFencingMenu from './pages/extras/GeoFencingMenu';
 import GeoFencingTag from './pages/extras/GeoFencingTag';
 import GeoFencingTagged from './pages/extras/GeoFencingTagged';
+import PerformanceMenu from './pages/extras/performance/PerformanceMenu';
+import TargetAnalysisReport from './pages/extras/performance/TargetAnalysisReport';
+import EffortAnalysisReport from './pages/extras/performance/EffortAnalysisReport';
 import Utilities from './pages/Utilities';
 
 function App() {
@@ -42,6 +45,9 @@ function App() {
           <Route path="extras/geo-fencing" element={<GeoFencingMenu />} />
           <Route path="extras/geo-fencing/tag/:type" element={<GeoFencingTag />} />
           <Route path="extras/geo-fencing/tagged" element={<GeoFencingTagged />} />
+          <Route path="extras/performance" element={<PerformanceMenu />} />
+          <Route path="extras/performance/targets/:kpiId" element={<TargetAnalysisReport />} />
+          <Route path="extras/performance/effort" element={<EffortAnalysisReport />} />
           <Route path="utilities" element={<Utilities />} />
         </Route>
       </Routes>
