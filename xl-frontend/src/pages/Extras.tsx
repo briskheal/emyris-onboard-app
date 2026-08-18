@@ -1,38 +1,81 @@
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, Route, PlaySquare, CalendarOff, ChevronRight } from 'lucide-react';
+import { 
+  CalendarDays, Route, CalendarOff, MapPin, Receipt, 
+  History, UserCheck, Settings, LineChart, ChevronRight 
+} from 'lucide-react';
 
 const extrasOptions = [
   {
     path: '/extras/tour-program',
     icon: CalendarDays,
-    label: 'Tour Plan',
+    label: 'Tour Program',
     description: 'Plan your monthly visits & get approval',
     color: 'text-sky-400',
     bg: 'bg-sky-500/10',
   },
   {
-    path: '#', // Placeholder for Phase 3
+    path: '#',
     icon: Route,
     label: 'Call Planning',
-    description: 'Pre-call planning & objectives (Phase 3)',
+    description: 'Pre-call planning & objectives',
     color: 'text-amber-400',
     bg: 'bg-amber-500/10',
   },
   {
-    path: '#', // Placeholder for Phase 3
-    icon: PlaySquare,
-    label: 'E-Detailing',
-    description: 'Show visual aids to doctors (Phase 3)',
+    path: '#',
+    icon: CalendarOff,
+    label: 'Leave Request',
+    description: 'Apply for leaves & track status',
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/10',
+  },
+  {
+    path: '#',
+    icon: MapPin,
+    label: 'Geo Fencing',
+    description: 'Geo-tag doctors & clinic locations',
     color: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
   },
   {
-    path: '#', // Placeholder for Phase 3
-    icon: CalendarOff,
-    label: 'Leave Management',
-    description: 'Apply for leaves & track status (Phase 3)',
-    color: 'text-rose-400',
-    bg: 'bg-rose-500/10',
+    path: '#',
+    icon: Receipt,
+    label: 'Expense',
+    description: 'Submit and track travel expenses',
+    color: 'text-indigo-400',
+    bg: 'bg-indigo-500/10',
+  },
+  {
+    path: '#',
+    icon: History,
+    label: 'Backlog Reporting',
+    description: 'Submit missed call reports',
+    color: 'text-orange-400',
+    bg: 'bg-orange-500/10',
+  },
+  {
+    path: '#',
+    icon: UserCheck,
+    label: 'Attendance',
+    description: 'Daily attendance & punch-in',
+    color: 'text-teal-400',
+    bg: 'bg-teal-500/10',
+  },
+  {
+    path: '#',
+    icon: LineChart,
+    label: 'User Performance Analysis',
+    description: 'View sales & call metrics',
+    color: 'text-fuchsia-400',
+    bg: 'bg-fuchsia-500/10',
+  },
+  {
+    path: '#',
+    icon: Settings,
+    label: 'Settings',
+    description: 'App preferences & account',
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/10',
   },
 ];
 
