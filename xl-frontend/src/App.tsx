@@ -14,7 +14,9 @@ import CallPlan from './pages/extras/CallPlan';
 import Backlog from './pages/extras/Backlog';
 import LeaveRequest from './pages/extras/LeaveRequest';
 import Expense from './pages/extras/Expense';
-import GeoFencing from './pages/extras/GeoFencing';
+import GeoFencingMenu from './pages/extras/GeoFencingMenu';
+import GeoFencingTag from './pages/extras/GeoFencingTag';
+import GeoFencingTagged from './pages/extras/GeoFencingTagged';
 import Utilities from './pages/Utilities';
 
 function App() {
@@ -37,7 +39,9 @@ function App() {
           <Route path="extras/backlog" element={<Backlog />} />
           <Route path="extras/leave" element={<LeaveRequest />} />
           <Route path="extras/expense" element={<Expense />} />
-          <Route path="extras/geo-fencing" element={<GeoFencing />} />
+          <Route path="extras/geo-fencing" element={<GeoFencingMenu />} />
+          <Route path="extras/geo-fencing/tag/:type" element={<GeoFencingTag />} />
+          <Route path="extras/geo-fencing/tagged" element={<GeoFencingTagged />} />
           <Route path="utilities" element={<Utilities />} />
         </Route>
       </Routes>
