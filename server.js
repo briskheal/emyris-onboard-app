@@ -307,11 +307,17 @@ app.get(['/admin', '/admin/'], (req, res) => {
 // Serve /xl Reporting Module (standalone React SPA - mobile first)
 app.use('/xl', express.static(path.join(__dirname, 'xl-frontend', 'dist')));
 
+// Serve /xla Admin Mobile Module
+app.use('/xla', express.static(path.join(__dirname, 'xla-frontend', 'dist')));
+
 // Serve Emyris Applicant Portal & Admin Catch-all
 app.use((req, res) => {
     if (req.url.startsWith('/api/')) {
         console.error(`[404] API route not found: ${req.method} ${req.url}`);
         res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
+    } else if (req.url.startsWith('/xla')) {
+        // SPA fallback for /xla admin module
+        res.sendFile(path.join(__dirname, 'xla-frontend', 'dist', 'index.html'));
     } else if (req.url.startsWith('/xl')) {
         // SPA fallback for /xl module (React Router)
         res.sendFile(path.join(__dirname, 'xl-frontend', 'dist', 'index.html'));
