@@ -10,7 +10,13 @@ const sequelize = new Sequelize(dbUrl, {
     logging: false,
     dialectOptions: isRemoteSslDb ? {
         ssl: { rejectUnauthorized: false }
-    } : {}
+    } : {},
+    pool: {
+        max: 50, // Expanded for high concurrency (/xl module)
+        min: 0,
+        acquire: 30000,
+        idle: 10000
+    }
 });
 
 const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
@@ -18,6 +24,15 @@ const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now(
 // Import schemas and adapter
 const { MongooseAdapter } = require('./models/adapter');
 const initModels = require('./models/pgModels');
+const initXlModels = require('./models/xlModels');
+
+const {
+    XlDoctor,
+    XlChemist,
+    XlStockist,
+    XlCity,
+    XlRoute
+} = initXlModels(sequelize);
 
 const {
     OnboardCompany,
@@ -411,5 +426,10 @@ module.exports = {
     LoanType,
     AssignedLoan,
     AssignedAdvance,
+    XlDoctor,
+    XlChemist,
+    XlStockist,
+    XlCity,
+    XlRoute,
     generateId 
 };

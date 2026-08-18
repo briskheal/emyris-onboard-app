@@ -128,10 +128,12 @@ app.get('/shared-utils.js', (req, res) => res.sendFile(path.join(__dirname, 'sha
 const applicantRouter = require('./routes/applicant');
 const adminRouter = require('./routes/admin');
 const authRouter = require('./routes/auth');
+const xlRouter = require('./routes/xl');
 
 app.use('/api/applicant', applicantRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/xl', xlRouter);
 app.all('/api/company-profile', (req, res, next) => { req.url = '/company-profile'; adminRouter(req, res, next); });
 
 // Legacy Route Aliases for original HTML portal (script.js)
@@ -302,11 +304,17 @@ app.get(['/admin', '/admin/'], (req, res) => {
     res.sendFile(path.join(__dirname, 'frontend', 'dist', 'index.html'));
 });
 
+// Serve /xl Reporting Module (standalone React SPA - mobile first)
+app.use('/xl', express.static(path.join(__dirname, 'xl-frontend', 'dist')));
+
 // Serve Emyris Applicant Portal & Admin Catch-all
 app.use((req, res) => {
     if (req.url.startsWith('/api/')) {
         console.error(`[404] API route not found: ${req.method} ${req.url}`);
         res.status(404).json({ success: false, message: `API route not found: ${req.method} ${req.url}` });
+    } else if (req.url.startsWith('/xl')) {
+        // SPA fallback for /xl module (React Router)
+        res.sendFile(path.join(__dirname, 'xl-frontend', 'dist', 'index.html'));
     } else if (req.url.startsWith('/admin')) {
         const urlWithoutQuery = req.url.split('?')[0];
         if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {
