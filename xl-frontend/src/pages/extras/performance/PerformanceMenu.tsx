@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert } from 'lucide-react';
+import axios from 'axios';
+
+const USER_EMAIL = 'rep@emyris.in';
 
 const TARGET_KPIS = [
   { id: 'brand', label: 'Brand Analysis', icon: Paperclip },
@@ -17,12 +20,24 @@ export default function PerformanceMenu() {
   // Default to current month
   const [selectedMonth, setSelectedMonth] = useState(today.toLocaleString('en-US', { month: 'long' }).toLowerCase());
   const [selectedYear, setSelectedYear] = useState(String(today.getFullYear()));
+  const [isPlanningPhase, setIsPlanningPhase] = useState(true);
 
   const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
   const years = ['2025', '2026', '2027'];
 
+  useEffect(() => {
+    // Fetch the performance record to see if planning is submitted
+    axios.get(`/api/xl/performance/my?email=${USER_EMAIL}&month=${selectedMonth}&year=${selectedYear}`)
+      .then(res => {
+        if (res.data.success && res.data.data) {
+          setIsPlanningPhase(!res.data.data.planningSubmittedAt);
+        }
+      })
+      .catch(console.error);
+  }, [selectedMonth, selectedYear]);
+
   return (
-    <div className="min-h-full bg-[#f4f4f4] flex flex-col font-sans">
+    <div className="min-h-full bg-[#f4f4f4] flex flex-col font-sans pb-10">
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-[#e9ecef]">
         <div className="flex items-center gap-3">
@@ -83,8 +98,10 @@ export default function PerformanceMenu() {
           <span className="text-base font-semibold text-slate-700 flex-1 text-left">Effort Analysis</span>
         </button>
 
-        {/* Add Achieved Targets section */}
-        <h3 className="text-sm font-bold text-slate-800 mb-4">Add Achieved Targets</h3>
+        {/* Add Targets section */}
+        <h3 className="text-sm font-bold text-slate-800 mb-4">
+          {isPlanningPhase ? "Add Planned Targets" : "Add Achieved Targets"}
+        </h3>
         
         <div className="space-y-4">
           {TARGET_KPIS.map(kpi => (
