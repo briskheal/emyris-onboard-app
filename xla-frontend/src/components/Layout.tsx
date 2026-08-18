@@ -14,7 +14,7 @@ export default function Layout() {
   ];
 
   return (
-    <div className="h-screen w-full flex flex-col bg-[#1e1e2d] overflow-hidden text-white font-sans relative">
+    <div className="h-screen w-full flex flex-col bg-slate-900 overflow-hidden text-slate-100 font-sans relative">
       
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto pb-20">
@@ -22,7 +22,7 @@ export default function Layout() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="h-20 bg-[#252538] fixed bottom-0 w-full flex justify-between items-center px-4 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-50">
+      <div className="h-20 bg-slate-800 fixed bottom-0 w-full flex justify-between items-center px-4 rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.3)] z-50">
         {navItems.map((item) => {
           const isActive = location.pathname.startsWith(item.path);
           
@@ -31,7 +31,7 @@ export default function Layout() {
               <div key={item.path} className="relative -top-6 flex flex-col items-center">
                 <button 
                   onClick={() => navigate(item.path)}
-                  className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${isActive ? 'bg-sky-500 shadow-sky-500/40' : 'bg-[#3b3d54] text-slate-300'}`}
+                  className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${isActive ? 'bg-sky-500 shadow-sky-500/40' : 'bg-slate-700 text-slate-300'}`}
                 >
                   <item.icon size={28} className={isActive ? 'text-white' : 'text-slate-300'} />
                 </button>
