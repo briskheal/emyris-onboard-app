@@ -1,17 +1,17 @@
-import { Menu, MessageSquare, Bell, UserPlus, Store, Building2, MapPin, Route, CheckSquare, TrendingUp, TrendingDown, Gift, Target, ChevronRight } from 'lucide-react';
+import { Menu, MessageSquare, Bell, UserPlus, Store, Building2, MapPin, Route, CheckSquare, TrendingUp, TrendingDown, Gift, Target } from 'lucide-react';
 
 export default function AdminMenu() {
   const adminItems = [
-    { label: 'Create Doctor', description: 'Add new doctor profiles', icon: UserPlus, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { label: 'Create Chemist', description: 'Add new chemist profiles', icon: Store, color: 'text-sky-400', bg: 'bg-sky-400/10' },
-    { label: 'Create Stockist', description: 'Add new stockist profiles', icon: Building2, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-    { label: 'Create City', description: 'Add and manage territories', icon: MapPin, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-    { label: 'Create Route', description: 'Define travel routes', icon: Route, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: 'Approvals', description: 'Pending request approvals', icon: CheckSquare, color: 'text-emerald-500', bg: 'bg-emerald-500/10', badge: '2' },
-    { label: 'Create Primary Sales', description: 'Log primary sales data', icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: 'Create Secondary Sales', description: 'Log secondary sales data', icon: TrendingDown, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
-    { label: 'Allot Gifts & Samples', description: 'Manage sample distribution', icon: Gift, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-    { label: 'Add Target', description: 'Set monthly KPIs', icon: Target, color: 'text-sky-500', bg: 'bg-sky-500/10' }
+    { label: 'Create Doctor', icon: UserPlus, color: 'text-emerald-400', bgColor: 'bg-emerald-400/10' },
+    { label: 'Create Chemist', icon: Store, color: 'text-sky-400', bgColor: 'bg-sky-400/10' },
+    { label: 'Create Stockist', icon: Building2, color: 'text-amber-400', bgColor: 'bg-amber-400/10' },
+    { label: 'Create City', icon: MapPin, color: 'text-rose-400', bgColor: 'bg-rose-400/10' },
+    { label: 'Create Route', icon: Route, color: 'text-purple-400', bgColor: 'bg-purple-400/10' },
+    { label: 'Approvals', icon: CheckSquare, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10', badge: '2' },
+    { label: 'Create Primary Sales', icon: TrendingUp, color: 'text-blue-400', bgColor: 'bg-blue-400/10' },
+    { label: 'Create Secondary Sales', icon: TrendingDown, color: 'text-indigo-400', bgColor: 'bg-indigo-400/10' },
+    { label: 'Allot Gifts & Samples', icon: Gift, color: 'text-rose-500', bgColor: 'bg-rose-500/10' },
+    { label: 'Add Target', icon: Target, color: 'text-sky-500', bgColor: 'bg-sky-500/10' }
   ];
 
   return (
@@ -38,29 +38,24 @@ export default function AdminMenu() {
         </div>
       </div>
 
-      <div className="px-4 mt-6">
+      <div className="px-5 mt-6">
         <h2 className="text-xl font-black text-white mb-6">Creation Menu</h2>
         
-        {/* Options List */}
-        <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-4">
           {adminItems.map((item, idx) => (
-            <button
+            <button 
               key={idx}
-              className="w-full flex items-center gap-4 bg-slate-800 rounded-2xl px-4 py-4 border border-slate-700/50 transition-colors active:bg-slate-700 relative"
+              className="bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg active:scale-95 transition-transform relative"
             >
               {item.badge && (
-                <span className="absolute top-3 right-10 bg-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md">
+                <span className="absolute top-3 right-3 bg-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md">
                   {item.badge}
                 </span>
               )}
-              <div className={`w-12 h-12 rounded-xl ${item.bg} flex items-center justify-center flex-shrink-0`}>
-                <item.icon size={22} className={item.color} strokeWidth={1.8} />
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.bgColor}`}>
+                <item.icon size={28} className={item.color} />
               </div>
-              <div className="text-left flex-1">
-                <p className="text-base font-semibold text-white">{item.label}</p>
-                <p className="text-xs text-slate-400 mt-0.5">{item.description}</p>
-              </div>
-              <ChevronRight size={18} className="text-slate-600 flex-shrink-0" />
+              <span className="text-xs font-bold text-slate-300 text-center px-2">{item.label}</span>
             </button>
           ))}
         </div>
