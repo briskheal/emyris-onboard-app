@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, UserRound, ShoppingBag, CheckCircle2, MapPin, Search } from 'lucide-react';
+import { X, UserRound, ShoppingBag, CheckCircle2, MapPin, Search, Navigation } from 'lucide-react';
 import axios from 'axios';
 
 interface Doctor { _id: string; name: string; degree: string; specialization: string; hospital: string; }
@@ -7,7 +7,6 @@ interface Chemist { _id: string; businessName: string; proprietorName: string; }
 
 const USER_EMAIL = 'rep@emyris.in';
 const USER_NAME = 'Field Rep';
-
 const today = new Date().toISOString().split('T')[0];
 
 export default function DCRModal({ onClose }: { onClose: () => void }) {
@@ -21,30 +20,44 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
   const [checkInTime] = useState(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
-  const [geoAddress, setGeoAddress] = useState('Capturing location...');
+  const [geoAddress, setGeoAddress] = useState('');
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Capture GPS
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        pos => {
-          setLat(pos.coords.latitude);
-          setLng(pos.coords.longitude);
-          setGeoAddress(`${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`);
-        },
-        () => setGeoAddress('Location not available')
-      );
-    } else {
-      setGeoAddress('GPS not supported');
-    }
-
-    // Fetch entity lists
+    // Only prefetch entity lists — NO auto GPS
     axios.get('/api/xl/doctors').then(r => setDoctors(r.data.data || [])).catch(() => {});
     axios.get('/api/xl/chemists').then(r => setChemists(r.data.data || [])).catch(() => {});
   }, []);
+
+  const captureLocation = () => {
+    if (!navigator.geolocation) {
+      setGeoError('GPS is not supported on this device.');
+      return;
+    }
+    setGeoLoading(true);
+    setGeoError('');
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        setLat(pos.coords.latitude);
+        setLng(pos.coords.longitude);
+        setGeoAddress(`${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+        setGeoLoading(false);
+      },
+      err => {
+        setGeoLoading(false);
+        if (err.code === 1) {
+          setGeoError('Access denied. Go to Settings → Safari → Location and allow this site.');
+        } else {
+          setGeoError('Could not get location. Please try again.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const filteredList = entityType === 'Doctor'
     ? doctors.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.specialization?.toLowerCase().includes(search.toLowerCase()))
@@ -56,17 +69,11 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
     setError('');
     try {
       await axios.post('/api/xl/dcr', {
-        employeeEmail: USER_EMAIL,
-        employeeName: USER_NAME,
-        date: today,
-        entityType,
-        entityId: selected.id,
-        entityName: selected.name,
-        discussion,
-        checkInTime,
-        latitude: lat,
-        longitude: lng,
-        geoAddress,
+        employeeEmail: USER_EMAIL, employeeName: USER_NAME,
+        date: today, entityType,
+        entityId: selected.id, entityName: selected.name,
+        discussion, checkInTime,
+        latitude: lat, longitude: lng, geoAddress,
       });
       setSuccess(true);
     } catch (e: any) {
@@ -81,7 +88,9 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
       <div className="fixed inset-0 z-50 bg-slate-900 flex flex-col items-center justify-center px-8" style={{ fontFamily: "'Inter', sans-serif" }}>
         <CheckCircle2 size={64} className="text-emerald-400 mb-4" strokeWidth={1.5} />
         <h2 className="text-xl font-bold text-white mb-2">Call Reported!</h2>
-        <p className="text-slate-400 text-sm text-center mb-8">Your visit to <span className="text-white font-semibold">{selected?.name}</span> has been recorded.</p>
+        <p className="text-slate-400 text-sm text-center mb-8">
+          Visit to <span className="text-white font-semibold">{selected?.name}</span> recorded.
+        </p>
         <button onClick={onClose} className="w-full h-[45px] bg-emerald-500 rounded-xl text-white font-semibold text-sm">Done</button>
       </div>
     );
@@ -96,15 +105,15 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
         </button>
         <div>
           <h1 className="text-lg font-bold text-white leading-tight">Daily Call Report</h1>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
-            <MapPin size={11} />
-            <span>{geoAddress}</span>
-          </div>
+          <p className="text-xs text-slate-400">
+            {new Date(today + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {checkInTime}
+          </p>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-5">
-        {/* Step 1: Entity Type */}
+
+        {/* ── STEP 1: Entity type ─────────────────────────────────── */}
         {step === 1 && (
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Who did you visit?</p>
@@ -119,6 +128,7 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
                   <p className="text-xs text-slate-400">Report a doctor visit</p>
                 </div>
               </button>
+
               <button onClick={() => { setEntityType('Chemist'); setStep(2); }}
                 className="w-full flex items-center gap-4 bg-slate-800 rounded-2xl px-4 py-4 border border-slate-700/50 active:bg-slate-700">
                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
@@ -133,10 +143,10 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* Step 2: Search & Select */}
+        {/* ── STEP 2: Search & Select ─────────────────────────────── */}
         {step === 2 && (
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-3 mb-4">
               <button onClick={() => setStep(1)} className="text-sky-400 text-sm font-medium">← Back</button>
               <p className="text-sm font-semibold text-white">Select {entityType}</p>
             </div>
@@ -153,18 +163,25 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
             </div>
             <div className="space-y-2">
               {filteredList.length === 0 && (
-                <p className="text-slate-400 text-sm text-center py-8">No {entityType?.toLowerCase()}s found.<br/>Add them from Creation Menu first.</p>
+                <p className="text-slate-400 text-sm text-center py-8">
+                  No {entityType?.toLowerCase()}s found.<br />Add them from Creation Menu first.
+                </p>
               )}
               {filteredList.map((item: any) => (
                 <button key={item._id}
                   onClick={() => { setSelected({ id: item._id, name: item.name || item.businessName }); setStep(3); }}
                   className="w-full flex items-center gap-3 bg-slate-800 rounded-xl px-4 py-3 border border-slate-700/50 active:bg-slate-700 text-left">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${entityType === 'Doctor' ? 'bg-sky-500/10' : 'bg-emerald-500/10'}`}>
-                    {entityType === 'Doctor' ? <UserRound size={16} className="text-sky-400" /> : <ShoppingBag size={16} className="text-emerald-400" />}
+                    {entityType === 'Doctor'
+                      ? <UserRound size={16} className="text-sky-400" />
+                      : <ShoppingBag size={16} className="text-emerald-400" />}
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">{item.name || item.businessName}</p>
-                    <p className="text-xs text-slate-400">{item.degree || item.proprietorName || ''} {item.specialization ? `· ${item.specialization}` : ''}</p>
+                    <p className="text-xs text-slate-400">
+                      {item.degree || item.proprietorName || ''}
+                      {item.specialization ? ` · ${item.specialization}` : ''}
+                    </p>
                   </div>
                 </button>
               ))}
@@ -172,26 +189,57 @@ export default function DCRModal({ onClose }: { onClose: () => void }) {
           </div>
         )}
 
-        {/* Step 3: Discussion & Submit */}
+        {/* ── STEP 3: Location + Discussion + Submit ───────────────── */}
         {step === 3 && (
           <div>
-            <div className="flex items-center gap-2 mb-4">
+            <div className="flex items-center gap-3 mb-4">
               <button onClick={() => setStep(2)} className="text-sky-400 text-sm font-medium">← Back</button>
               <p className="text-sm font-semibold text-white">{selected?.name}</p>
             </div>
 
+            {/* GPS Card — manual capture */}
             <div className="bg-slate-800 rounded-2xl p-4 border border-slate-700/50 mb-4">
-              <div className="flex justify-between text-xs text-slate-400 mb-1">
-                <span>Check-in Time</span><span className="text-white font-medium">{checkInTime}</span>
-              </div>
-              <div className="flex justify-between text-xs text-slate-400">
-                <span>Date</span><span className="text-white font-medium">{new Date(today + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-              </div>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Location Proof</p>
+
+              {geoAddress ? (
+                <div>
+                  <div className="flex items-start gap-2 mb-2">
+                    <MapPin size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" />
+                    <p className="text-xs text-emerald-400 font-medium">{geoAddress}</p>
+                  </div>
+                  <button onClick={() => { setGeoAddress(''); setLat(null); setLng(null); }}
+                    className="text-xs text-slate-500 underline">Retake location</button>
+                </div>
+              ) : (
+                <div>
+                  <button
+                    onClick={captureLocation}
+                    disabled={geoLoading}
+                    className="w-full h-[45px] rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center gap-2 text-sm font-semibold text-slate-300 active:border-sky-500 active:text-sky-400 transition-colors disabled:opacity-50"
+                  >
+                    <Navigation size={16} className={geoLoading ? 'animate-spin' : ''} />
+                    {geoLoading ? 'Getting location...' : 'Tap to Capture My Location'}
+                  </button>
+                  {geoError
+                    ? <p className="text-xs text-rose-400 mt-2 leading-relaxed">{geoError}</p>
+                    : <p className="text-[10px] text-slate-500 mt-2">Used only to verify your field visit.</p>
+                  }
+                </div>
+              )}
             </div>
 
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Discussion / Remarks</label>
+            {/* Check-in time */}
+            <div className="bg-slate-800 rounded-2xl px-4 py-3 border border-slate-700/50 mb-4 flex justify-between text-xs">
+              <span className="text-slate-400">Check-in Time</span>
+              <span className="text-white font-semibold">{checkInTime}</span>
+            </div>
+
+            {/* Discussion */}
+            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+              Discussion / Remarks
+            </label>
             <textarea
-              placeholder="What did you discuss? Products promoted, feedback received..."
+              placeholder="Products promoted, feedback received, next steps..."
               value={discussion}
               onChange={e => setDiscussion(e.target.value)}
               rows={4}
