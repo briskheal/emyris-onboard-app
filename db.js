@@ -31,7 +31,9 @@ const {
     XlChemist,
     XlStockist,
     XlCity,
-    XlRoute
+    XlRoute,
+    XlTourProgram,
+    XlDCR
 } = initXlModels(sequelize);
 
 const {
@@ -431,5 +433,7 @@ module.exports = {
     XlStockist,
     XlCity,
     XlRoute,
+    XlTourProgram,
+    XlDCR,
     generateId 
 };

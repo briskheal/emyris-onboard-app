@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, Layers, Wrench, FileText } from 'lucide-react';
+import DCRModal from './DCRModal';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
@@ -11,17 +13,16 @@ const navItems = [
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [showDCR, setShowDCR] = useState(false);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
 
-  const handleCallReport = () => {
-    // Phase 2: DCR submission — coming soon
-    alert('Call Report submission coming in Phase 2!');
-  };
-
   return (
     <div className="flex flex-col h-dvh bg-slate-900 overflow-hidden" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* DCR Modal (full-screen overlay) */}
+      {showDCR && <DCRModal onClose={() => setShowDCR(false)} />}
+
       {/* Main content area */}
       <main className="flex-1 overflow-y-auto pb-24">
         <Outlet />
@@ -55,7 +56,7 @@ export default function Layout() {
           {/* Centre FAB — Call Report (DCR) */}
           <div className="flex-1 flex items-center justify-center relative">
             <button
-              onClick={handleCallReport}
+              onClick={() => setShowDCR(true)}
               className="absolute -top-5 w-14 h-14 rounded-full bg-sky-500 shadow-lg shadow-sky-500/30 flex flex-col items-center justify-center active:bg-sky-600 transition-all"
             >
               <PlusCircle size={26} strokeWidth={1.8} className="text-white" />

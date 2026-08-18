@@ -86,11 +86,51 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    // Phase 2: Tour Program
+    const XlTourProgram = sequelize.define('xl_tour_program', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeName: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING },
+        month: { type: DataTypes.STRING, allowNull: false }, // e.g. "august"
+        year: { type: DataTypes.STRING, allowNull: false },  // e.g. "2026"
+        entries: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of {date, visitType, area}
+        status: { type: DataTypes.STRING, defaultValue: 'Draft' }, // Draft / Submitted / Approved / Rejected
+        adminRemarks: { type: DataTypes.TEXT },
+        submittedAt: { type: DataTypes.DATE },
+        approvedAt: { type: DataTypes.DATE },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 2: Daily Call Report (DCR)
+    const XlDCR = sequelize.define('xl_dcr', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeName: { type: DataTypes.STRING },
+        date: { type: DataTypes.STRING, allowNull: false },         // "YYYY-MM-DD"
+        tourProgramId: { type: DataTypes.STRING },                  // FK to xl_tour_program
+        entityType: { type: DataTypes.STRING },                     // "Doctor" or "Chemist"
+        entityId: { type: DataTypes.STRING },                       // FK to xl_doctor or xl_chemist
+        entityName: { type: DataTypes.STRING },
+        discussion: { type: DataTypes.TEXT },
+        samplesGiven: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON [{product, qty}]
+        gifts: { type: DataTypes.TEXT, defaultValue: '[]' },        // JSON [{item, qty}]
+        checkInTime: { type: DataTypes.STRING },
+        checkOutTime: { type: DataTypes.STRING },
+        latitude: { type: DataTypes.FLOAT },
+        longitude: { type: DataTypes.FLOAT },
+        geoAddress: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Submitted' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
         XlDoctor,
         XlChemist,
         XlStockist,
         XlCity,
-        XlRoute
+        XlRoute,
+        XlTourProgram,
+        XlDCR
     };
 };
