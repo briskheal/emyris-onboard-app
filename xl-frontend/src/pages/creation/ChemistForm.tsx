@@ -21,6 +21,7 @@ export default function ChemistForm() {
       endpoint="chemist"
       fields={fields}
       accentColor="emerald"
+      enableGeoTagging={true}
     />
   );
 }

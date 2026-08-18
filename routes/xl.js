@@ -40,6 +40,30 @@ router.put('/doctor/:id/geo', async (req, res) => {
     }
 });
 
+router.put('/chemist/:id/geo', async (req, res) => {
+    try {
+        const chemist = await XlChemist.findOne({ where: { _id: req.params.id } });
+        if (!chemist) return res.status(404).json({ error: 'Chemist not found' });
+        
+        await XlChemist.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true, message: 'Chemist location tagged successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update chemist location' });
+    }
+});
+
+router.put('/stockist/:id/geo', async (req, res) => {
+    try {
+        const stockist = await XlStockist.findOne({ where: { _id: req.params.id } });
+        if (!stockist) return res.status(404).json({ error: 'Stockist not found' });
+        
+        await XlStockist.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true, message: 'Stockist location tagged successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update stockist location' });
+    }
+});
+
 router.post('/chemist', async (req, res) => {
     try {
         const chemist = await XlChemist.create(req.body);
@@ -188,30 +212,34 @@ router.post('/dcr', async (req, res) => {
             }
         }
 
-        // ── Geo-fence check for Doctor visits ───────────────────────────────
-        if (entityType === 'Doctor') {
+        // ── Geo-fence check for Doctor, Chemist, and Stockist visits ────────────
+        if (entityType === 'Doctor' || entityType === 'Chemist' || entityType === 'Stockist') {
             const { latitude: mrLat, longitude: mrLng } = req.body;
 
             if (!mrLat || !mrLng) {
-                return res.status(400).json({ error: 'Your GPS location is required to submit a Doctor call report. Please capture your location first.' });
+                return res.status(400).json({ error: `Your GPS location is required to submit a ${entityType} call report. Please capture your location first.` });
             }
 
-            const doctor = await XlDoctor.findOne({ where: { _id: entityId } });
-            if (!doctor) return res.status(404).json({ error: 'Doctor not found.' });
+            let targetEntity = null;
+            if (entityType === 'Doctor') targetEntity = await XlDoctor.findOne({ where: { _id: entityId } });
+            else if (entityType === 'Chemist') targetEntity = await XlChemist.findOne({ where: { _id: entityId } });
+            else if (entityType === 'Stockist') targetEntity = await XlStockist.findOne({ where: { _id: entityId } });
 
-            if (!doctor.lat1 || !doctor.lng1) {
-                return res.status(403).json({ error: `Dr. ${doctor.name} has no registered location. Please re-create the doctor record and tag their location first.` });
+            if (!targetEntity) return res.status(404).json({ error: `${entityType} not found.` });
+
+            if (!targetEntity.lat1 || !targetEntity.lng1) {
+                return res.status(403).json({ error: `${targetEntity.name || targetEntity.businessName} has no registered location. Please tag their location in Geo Fencing Manager first.` });
             }
 
-            const dist1 = haversineMetres(mrLat, mrLng, doctor.lat1, doctor.lng1);
-            const dist2 = (doctor.lat2 && doctor.lng2)
-                ? haversineMetres(mrLat, mrLng, doctor.lat2, doctor.lng2)
+            const dist1 = haversineMetres(mrLat, mrLng, targetEntity.lat1, targetEntity.lng1);
+            const dist2 = (targetEntity.lat2 && targetEntity.lng2)
+                ? haversineMetres(mrLat, mrLng, targetEntity.lat2, targetEntity.lng2)
                 : Infinity;
 
             const nearest = Math.min(dist1, dist2);
             if (nearest > DEFAULT_RADIUS_METRES) {
                 return res.status(403).json({
-                    error: `You are ${Math.round(nearest)}m away from Dr. ${doctor.name}'s registered location. You must be within ${DEFAULT_RADIUS_METRES}m to submit this report.`
+                    error: `You are ${Math.round(nearest)}m away from ${targetEntity.name || targetEntity.businessName}'s registered location. You must be within ${DEFAULT_RADIUS_METRES}m to submit this report.`
                 });
             }
         }

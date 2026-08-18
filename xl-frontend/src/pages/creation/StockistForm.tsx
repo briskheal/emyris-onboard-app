@@ -23,6 +23,7 @@ export default function StockistForm() {
       endpoint="stockist"
       fields={fields}
       accentColor="amber"
+      enableGeoTagging={true}
     />
   );
 }

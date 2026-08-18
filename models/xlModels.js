@@ -47,6 +47,12 @@ module.exports = function initXlModels(sequelize) {
         extraInfo: { type: DataTypes.TEXT },
         imagePath: { type: DataTypes.STRING },
         allottedUser: { type: DataTypes.STRING },
+        lat1: { type: DataTypes.FLOAT },
+        lng1: { type: DataTypes.FLOAT },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.FLOAT },
+        lng2: { type: DataTypes.FLOAT },
+        geoAddress2: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -68,6 +74,12 @@ module.exports = function initXlModels(sequelize) {
         extraInfo: { type: DataTypes.TEXT },
         imagePath: { type: DataTypes.STRING },
         allottedUser: { type: DataTypes.STRING },
+        lat1: { type: DataTypes.FLOAT },
+        lng1: { type: DataTypes.FLOAT },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.FLOAT },
+        lng2: { type: DataTypes.FLOAT },
+        geoAddress2: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
