@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Zap, FileText, CalendarDays, Route, BarChart3, Receipt, MapPin, 
   BellRing, List, Clock, PackageSearch, TrendingUp, ShoppingCart, 
-  ClipboardList, CalendarRange, Box, Gift, Target, ChevronRight
+  ClipboardList, CalendarRange, Box, Gift, Target
 } from 'lucide-react';
 
 const utilitiesOptions = [
@@ -38,24 +38,21 @@ export default function Utilities() {
         <p className="text-sm text-slate-400 mt-1">Reports, analytics & management</p>
       </div>
 
-      {/* Options List */}
-      <div className="px-4 space-y-3">
-        {utilitiesOptions.map(({ id, path, icon: Icon, label, description, color, bg }) => (
-          <button
-            key={id}
-            onClick={() => path !== '#' && navigate(path)}
-            className={`w-full flex items-center gap-4 bg-slate-800 rounded-2xl px-4 py-4 border border-slate-700/50 transition-colors ${path !== '#' ? 'active:bg-slate-700' : 'opacity-80'}`}
-          >
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${bg}`}>
-              <Icon size={24} className={color} strokeWidth={1.5} />
-            </div>
-            <div className="flex-1 text-left">
-              <h3 className="text-[15px] font-semibold text-white mb-0.5">{label}</h3>
-              <p className="text-xs text-slate-400 leading-snug">{description}</p>
-            </div>
-            {path !== '#' && <ChevronRight size={18} className="text-slate-500" />}
-          </button>
-        ))}
+      <div className="px-5 mt-6">
+        <div className="grid grid-cols-2 gap-4">
+          {utilitiesOptions.map((item) => (
+            <button 
+              key={item.id}
+              onClick={() => item.path !== '#' && navigate(item.path)}
+              className={`bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg transition-transform relative ${item.path !== '#' ? 'active:scale-95' : 'opacity-70 cursor-not-allowed'}`}
+            >
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.bg}`}>
+                <item.icon size={28} className={item.color} />
+              </div>
+              <span className="text-xs font-bold text-slate-300 text-center px-2">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

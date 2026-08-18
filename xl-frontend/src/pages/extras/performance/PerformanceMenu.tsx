@@ -103,17 +103,17 @@ export default function PerformanceMenu() {
           {isPlanningPhase ? "Add Planned Targets" : "Add Achieved Targets"}
         </h3>
         
-        <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
           {TARGET_KPIS.map(kpi => (
             <button
               key={kpi.id}
               onClick={() => navigate(`/extras/performance/targets/${kpi.id}?month=${selectedMonth}&year=${selectedYear}`)}
-              className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.06)] active:scale-95 transition-transform border border-slate-50"
+              className="bg-white rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.06)] active:scale-95 transition-transform border border-slate-50"
             >
-              <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
-                <kpi.icon size={24} className="text-slate-600" />
+              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center">
+                <kpi.icon size={28} className="text-slate-600" />
               </div>
-              <span className="text-base font-semibold text-slate-700 flex-1 text-left">{kpi.label}</span>
+              <span className="text-xs font-bold text-slate-700 text-center px-2">{kpi.label}</span>
             </button>
           ))}
         </div>

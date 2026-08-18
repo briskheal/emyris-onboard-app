@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { UserRound, ShoppingBag, Building2, MapPin, Navigation, ChevronRight } from 'lucide-react';
+import { UserRound, ShoppingBag, Building2, MapPin, Navigation } from 'lucide-react';
 
 const creationOptions = [
   {
@@ -56,24 +56,21 @@ export default function CreationMenu() {
         <p className="text-sm text-slate-400 mt-1">Add new records to the CRM</p>
       </div>
 
-      {/* Options List */}
-      <div className="px-4 space-y-3">
-        {creationOptions.map(({ path, icon: Icon, label, description, color, bg }) => (
-          <button
-            key={path}
-            onClick={() => navigate(path)}
-            className="w-full flex items-center gap-4 bg-slate-800 rounded-2xl px-4 py-4 border border-slate-700/50 active:bg-slate-700 transition-colors"
-          >
-            <div className={`w-12 h-12 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>
-              <Icon size={22} className={color} strokeWidth={1.8} />
-            </div>
-            <div className="text-left flex-1">
-              <p className="text-base font-semibold text-white">{label}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{description}</p>
-            </div>
-            <ChevronRight size={18} className="text-slate-600 flex-shrink-0" />
-          </button>
-        ))}
+      <div className="px-5 mt-6">
+        <div className="grid grid-cols-2 gap-4">
+          {creationOptions.map((item, idx) => (
+            <button 
+              key={idx}
+              onClick={() => navigate(item.path)}
+              className="bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg transition-transform active:scale-95"
+            >
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.bg}`}>
+                <item.icon size={28} className={item.color} />
+              </div>
+              <span className="text-xs font-bold text-slate-300 text-center px-2">{item.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
