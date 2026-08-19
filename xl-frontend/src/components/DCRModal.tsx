@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, UserRound, ShoppingBag, CheckCircle2, MapPin, Search, Navigation } from 'lucide-react';
+import { X, UserRound, ShoppingBag, CheckCircle2, MapPin, Search, Navigation, Building2, Phone } from 'lucide-react';
 import axios from 'axios';
 
 interface Doctor { _id: string; name: string; degree: string; specialization: string; hospital: string; }
@@ -114,32 +114,104 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
 
       <div className="flex-1 overflow-y-auto px-4 py-5">
 
-        {/* ── STEP 1: Entity type ─────────────────────────────────── */}
+        {/* ── STEP 1: Entity type (Card Grid) ──────────────────────── */}
         {step === 1 && (
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Who did you visit?</p>
-            <div className="space-y-3">
-              <button onClick={() => { setEntityType('Doctor'); setStep(2); }}
-                className="w-full flex items-center gap-4 bg-slate-800 rounded-2xl px-4 py-4 border border-slate-700/50 active:bg-slate-700">
-                <div className="w-12 h-12 rounded-xl bg-sky-500/10 flex items-center justify-center">
-                  <UserRound size={22} className="text-sky-400" />
+          <div className="pb-24">
+            {/* Welcome Section */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-14 h-14 bg-slate-700 rounded-full border-2 border-sky-400 flex items-center justify-center overflow-hidden">
+                 <UserRound size={28} className="text-slate-400 mt-2" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Welcome,</p>
+                <h2 className="text-xl font-black text-white">{USER_NAME}</h2>
+              </div>
+            </div>
+
+            {/* Working Status */}
+            <div className="bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-lg mb-8">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-bold text-slate-300">Today's Working Area</h3>
+                <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">
+                  Working
+                </span>
+              </div>
+              <p className="text-sm font-medium text-slate-400 flex items-center gap-2">
+                <Navigation size={16} className="text-rose-400" />
+                Tour Program not found. Click to create!
+              </p>
+            </div>
+
+            {/* Action Grid */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Doctor Call */}
+              <button 
+                onClick={() => { setEntityType('Doctor'); setStep(2); }}
+                className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
+              >
+                <div className="w-16 h-16 rounded-full bg-emerald-400/10 flex items-center justify-center">
+                  <UserRound size={32} className="text-emerald-400" />
                 </div>
-                <div className="text-left">
-                  <p className="text-base font-semibold text-white">Doctor</p>
-                  <p className="text-xs text-slate-400">Report a doctor visit</p>
-                </div>
+                <span className="font-bold text-slate-300 text-sm">Doctor Call</span>
               </button>
 
-              <button onClick={() => { setEntityType('Chemist'); setStep(2); }}
-                className="w-full flex items-center gap-4 bg-slate-800 rounded-2xl px-4 py-4 border border-slate-700/50 active:bg-slate-700">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                  <ShoppingBag size={22} className="text-emerald-400" />
+              {/* Chemist Call */}
+              <button 
+                onClick={() => { setEntityType('Chemist'); setStep(2); }}
+                className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
+              >
+                <div className="w-16 h-16 rounded-full bg-sky-400/10 flex items-center justify-center">
+                  <ShoppingBag size={32} className="text-sky-400" />
                 </div>
-                <div className="text-left">
-                  <p className="text-base font-semibold text-white">Chemist</p>
-                  <p className="text-xs text-slate-400">Report a chemist visit</p>
-                </div>
+                <span className="font-bold text-slate-300 text-sm">Chemist Call</span>
               </button>
+
+              {/* Stockist Call */}
+              <button 
+                onClick={() => { alert('Stockist reporting coming soon!'); }}
+                className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
+              >
+                <div className="w-16 h-16 rounded-full bg-amber-400/10 flex items-center justify-center">
+                  <Building2 size={32} className="text-amber-400" />
+                </div>
+                <span className="font-bold text-slate-300 text-sm">Stockist Call</span>
+              </button>
+
+              {/* Reminder Call */}
+              <button 
+                onClick={() => { alert('Reminder Call coming soon!'); }}
+                className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
+              >
+                <div className="w-16 h-16 rounded-full bg-rose-400/10 flex items-center justify-center">
+                  <Phone size={32} className="text-rose-400" />
+                </div>
+                <span className="font-bold text-slate-300 text-sm text-center leading-tight">Reminder Call</span>
+              </button>
+            </div>
+
+            {/* Sticky Final Call Report Footer */}
+            <div className="fixed bottom-0 left-0 right-0 w-full bg-slate-800 border-t border-slate-700 px-5 py-4 flex items-center justify-between shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
+              <div>
+                <h4 className="font-bold text-white text-sm">Final Call Report List</h4>
+                <div className="flex gap-4 mt-1">
+                  <div className="flex items-center gap-1.5">
+                    <UserRound size={12} className="text-emerald-400" />
+                    <span className="text-[10px] font-bold text-slate-400">0</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <ShoppingBag size={12} className="text-sky-400" />
+                    <span className="text-[10px] font-bold text-slate-400">0</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Building2 size={12} className="text-amber-400" />
+                    <span className="text-[10px] font-bold text-slate-400">0</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-emerald-500 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <span className="text-white font-black text-xl">0</span>
+              </div>
             </div>
           </div>
         )}
