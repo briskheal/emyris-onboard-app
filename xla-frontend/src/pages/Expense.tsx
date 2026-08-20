@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowLeft, ChevronDown, CheckCircle2, Clock, Plus, Settings as SettingsIcon, Trash2, UserPlus, Eye, XCircle, Info, DollarSign } from 'lucide-react';
+import { ArrowLeft, ChevronDown, CheckCircle2, Clock, Plus, Settings as SettingsIcon, Trash2, UserPlus, Eye, Info, DollarSign } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Expense() {
