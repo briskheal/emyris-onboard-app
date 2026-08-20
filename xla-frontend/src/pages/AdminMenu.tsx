@@ -1,27 +1,27 @@
 import { useOutletContext } from 'react-router-dom';
-import { Menu, MessageSquare, Bell, UserPlus, Store, Building2, MapPin, Route, CheckSquare, TrendingUp, TrendingDown, Gift, Target } from 'lucide-react';
+import { Menu, MessageSquare, Bell, Building2, Users, ClipboardList, FileBarChart, DollarSign, Stethoscope, Gift, CheckSquare, CalendarDays, Settings as SettingsIcon } from 'lucide-react';
 
 export default function AdminMenu() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   
   const adminItems = [
-    { label: 'Create Doctor', description: 'Add new doctor profiles', icon: UserPlus, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { label: 'Create Chemist', description: 'Add new chemist profiles', icon: Store, color: 'text-sky-400', bg: 'bg-sky-400/10' },
-    { label: 'Create Stockist', description: 'Add new stockist profiles', icon: Building2, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-    { label: 'Create City', description: 'Add and manage territories', icon: MapPin, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-    { label: 'Create Route', description: 'Define travel routes', icon: Route, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: 'Approvals', description: 'Pending request approvals', icon: CheckSquare, color: 'text-emerald-500', bg: 'bg-emerald-500/10', badge: '2' },
-    { label: 'Create Primary Sales', description: 'Log primary sales data', icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: 'Create Secondary Sales', description: 'Log secondary sales data', icon: TrendingDown, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
-    { label: 'Allot Gifts & Samples', description: 'Manage sample distribution', icon: Gift, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-    { label: 'Add Target', description: 'Set monthly KPIs', icon: Target, color: 'text-sky-500', bg: 'bg-sky-500/10' }
+    { label: 'MANAGE LOCATIONS', icon: Building2 },
+    { label: 'MANAGE USERS', icon: Users },
+    { label: 'MANAGE PRODUCTS', icon: ClipboardList },
+    { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart },
+    { label: 'ALLOWANCES', icon: DollarSign },
+    { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope },
+    { label: 'SAMPLES & GIFTS', icon: Gift },
+    { label: 'APPROVALS', icon: CheckSquare },
+    { label: 'MANAGE LEAVE', icon: CalendarDays },
+    { label: 'SETTINGS', icon: SettingsIcon }
   ];
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col pb-24 text-slate-100 font-sans">
+    <div className="min-h-full bg-slate-900 flex flex-col font-sans pb-24 text-slate-100">
       
-      {/* Sticky Header */}
-      <div className="flex items-center justify-between px-5 pt-12 pb-4 sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
+      {/* Sticky Header (Mobile Only) */}
+      <div className="md:hidden flex items-center justify-between px-5 pt-12 pb-4 sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
         <div className="flex items-center gap-4">
           <button onClick={openDrawer} className="text-white active:scale-95 transition-transform">
             <Menu size={26} />
@@ -41,25 +41,31 @@ export default function AdminMenu() {
         </div>
       </div>
 
-      <div className="px-5 mt-6">
-        <h2 className="text-xl font-black text-white mb-6">Creation Menu</h2>
+      <div className="px-5 mt-6 md:p-8">
         
-        <div className="grid grid-cols-2 gap-4">
-          {adminItems.map((item, idx) => (
-            <button key={idx} className="bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform">
-              
-              {item.badge && (
-                <div className="absolute top-4 right-4 bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md">
-                  {item.badge}
-                </div>
-              )}
+        {/* Desktop Banner */}
+        <div className="hidden md:block bg-slate-800 border-l-4 border-emerald-500 rounded-r-xl p-6 mb-8 shadow-lg">
+          <h2 className="text-xl font-black text-white mb-2 uppercase tracking-wide">Welcome to the Admin Panel</h2>
+          <p className="text-sm text-slate-400 leading-relaxed max-w-4xl">
+            Admins sometime refuse editing, deleting or making some changes in the software. You can always reach out to us in case anything goes wrong. Anything that you edit or modify can be rolled back to the previous version.
+          </p>
+        </div>
 
-              <div className={`w-14 h-14 rounded-full ${item.bg} flex items-center justify-center mb-1`}>
-                <item.icon size={28} className={item.color} />
+        {/* Mobile Title */}
+        <h2 className="md:hidden text-xl font-black text-white mb-6 uppercase tracking-wide">Admin Panel</h2>
+        
+        {/* Grid Layout */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
+          {adminItems.map((item, idx) => (
+            <button 
+              key={idx} 
+              className="group bg-slate-800/80 border border-slate-700/80 hover:border-sky-500/50 rounded-3xl md:rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center gap-4 md:gap-5 relative shadow-lg hover:bg-slate-800 transition-all active:scale-95 min-h-[140px] md:min-h-[200px]"
+            >
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-slate-700/50 group-hover:bg-sky-500/10 flex items-center justify-center transition-colors">
+                <item.icon size={32} strokeWidth={1.5} className="text-white group-hover:text-sky-400 transition-colors" />
               </div>
-              <div className="text-center">
-                <h3 className="font-bold text-slate-200 text-sm leading-tight">{item.label}</h3>
-                <p className="text-[10px] text-slate-500 mt-1 leading-snug">{item.description}</p>
+              <div className="text-center w-full px-2">
+                <h3 className="font-bold text-white text-xs md:text-sm leading-tight tracking-wider uppercase">{item.label}</h3>
               </div>
             </button>
           ))}
