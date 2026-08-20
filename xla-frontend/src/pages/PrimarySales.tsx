@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { ArrowLeft, ChevronDown, Upload, FileText, CheckSquare, Plus, PenSquare, Trash2, Tag, Percent, DollarSign, CalendarDays } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Upload, FileText, PenSquare, Trash2, Tag, Percent, DollarSign, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function PrimarySales() {
