@@ -34,51 +34,53 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="px-5 mt-2 space-y-6">
+      <div className="px-5 mt-2 space-y-6 md:space-y-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6">
         
         {/* Filters Section */}
-        <div>
-          <h2 className="text-xl font-bold text-sky-400 mb-4">Stats for the Month</h2>
+        <div className="md:col-span-2 lg:col-span-3 lg:flex lg:items-center lg:justify-between mb-2">
+          <h2 className="text-xl font-bold text-sky-400 mb-4 lg:mb-0">Stats for the Month</h2>
           
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-sky-400" />
-                <span className="font-semibold">{selectedMonth}</span>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="grid grid-cols-2 sm:flex gap-3">
+              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 min-w-[120px]">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-sky-400" />
+                  <span className="font-semibold">{selectedMonth}</span>
+                </div>
+                <ChevronDown size={18} className="text-slate-400 ml-2" />
+              </button>
+              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 min-w-[120px]">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-sky-400" />
+                  <span className="font-semibold">{selectedYear}</span>
+                </div>
+                <ChevronDown size={18} className="text-slate-400 ml-2" />
+              </button>
+            </div>
+
+            <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 min-w-[200px]">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sky-400">
+                  <User size={16} />
+                </div>
+                <span className="font-semibold text-slate-300">Select User</span>
               </div>
-              <ChevronDown size={18} className="text-slate-400" />
-            </button>
-            <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-sky-400" />
-                <span className="font-semibold">{selectedYear}</span>
+              <div className="flex items-center gap-2 ml-4">
+                <span className="text-xs font-bold text-emerald-400">37</span>
+                <ChevronDown size={18} className="text-slate-400" />
               </div>
-              <ChevronDown size={18} className="text-slate-400" />
             </button>
           </div>
-
-          <button className="w-full flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-sky-400">
-                <User size={16} />
-              </div>
-              <span className="font-semibold text-slate-300">Select User</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-emerald-400">37</span>
-              <ChevronDown size={18} className="text-slate-400" />
-            </div>
-          </button>
         </div>
 
         {/* Top Performers */}
-        <div>
+        <div className="flex flex-col h-full">
           <div className="flex items-center gap-2 mb-4">
             <Trophy size={20} className="text-amber-400" />
             <h3 className="text-lg font-bold text-white">Top Performers</h3>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1">
             {/* Rank 1 */}
             <div className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-lg shadow-black/20">
               <div className="flex items-center gap-4">
@@ -139,19 +141,19 @@ export default function Dashboard() {
         </div>
 
         {/* Sales Performance */}
-        <div>
+        <div className="flex flex-col h-full lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={20} className="text-sky-400" />
             <h3 className="text-lg font-bold text-white">Sales Performance</h3>
           </div>
           
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-lg shadow-black/20 space-y-5">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-lg shadow-black/20 space-y-5 flex-1 lg:grid lg:grid-cols-3 lg:space-y-0 lg:gap-6 lg:items-center">
+            <div className="bg-slate-900/50 p-4 rounded-2xl border border-slate-700/50">
+              <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-slate-400"></div>
-                <span className="text-xs font-bold text-slate-400">Monthly Target</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Monthly Target</span>
               </div>
-              <p className="text-2xl font-black text-white pl-4">₹700000.00</p>
+              <p className="text-3xl font-black text-white pl-4">₹700k</p>
             </div>
 
             <div>
@@ -165,7 +167,7 @@ export default function Dashboard() {
               <div className="h-3 w-full bg-slate-700 rounded-full overflow-hidden mb-2">
                 <div className="h-full bg-emerald-400 rounded-full" style={{ width: '58.07%' }}></div>
               </div>
-              <p className="text-lg font-black text-sky-400 pl-4">₹406484.92</p>
+              <p className="text-lg font-black text-emerald-400 pl-4">₹406,484.92</p>
             </div>
 
             <div>
@@ -179,86 +181,109 @@ export default function Dashboard() {
               <div className="h-3 w-full bg-slate-700 rounded-full overflow-hidden mb-2">
                 <div className="h-full bg-blue-500 rounded-full" style={{ width: '20.40%' }}></div>
               </div>
-              <p className="text-lg font-black text-sky-400 pl-4">₹142766.00</p>
+              <p className="text-lg font-black text-blue-400 pl-4">₹142,766.00</p>
             </div>
           </div>
         </div>
 
         {/* Calls Section */}
-        <div>
-          <h3 className="text-lg font-bold text-white mb-4">Calls</h3>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
-              <User size={24} className="text-emerald-400" />
-              <span className="text-xs font-bold text-emerald-400">11 / 4127</span>
+        <div className="md:col-span-2 lg:col-span-3">
+          <h3 className="text-lg font-bold text-white mb-4">Calls vs Targets</h3>
+          <div className="grid grid-cols-3 gap-3 md:gap-6">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <User size={32} className="text-emerald-400" />
+              </div>
+              <div className="text-center mt-2">
+                <span className="text-2xl font-black text-emerald-400 block mb-1">11 <span className="text-sm font-semibold text-slate-500">/ 4127</span></span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Doctor Calls</span>
+              </div>
             </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
-              <User size={24} className="text-amber-400" />
-              <span className="text-xs font-bold text-amber-400">1 / 0</span>
+            
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-amber-500/10 flex items-center justify-center">
+                <User size={32} className="text-amber-400" />
+              </div>
+              <div className="text-center mt-2">
+                <span className="text-2xl font-black text-amber-400 block mb-1">1 <span className="text-sm font-semibold text-slate-500">/ 0</span></span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chemist Calls</span>
+              </div>
             </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
-              <User size={24} className="text-rose-400" />
-              <span className="text-xs font-bold text-rose-400">1 / 0</span>
+
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-lg">
+              <div className="w-16 h-16 rounded-full bg-rose-500/10 flex items-center justify-center">
+                <User size={32} className="text-rose-400" />
+              </div>
+              <div className="text-center mt-2">
+                <span className="text-2xl font-black text-rose-400 block mb-1">1 <span className="text-sm font-semibold text-slate-500">/ 0</span></span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stockist Calls</span>
+              </div>
             </div>
           </div>
         </div>
 
         {/* POB Section */}
-        <div>
-          <h3 className="text-lg font-bold text-white mb-4">POB</h3>
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
-              <User size={24} className="text-emerald-400" />
-              <span className="text-xs font-bold text-emerald-400">0</span>
+        <div className="md:col-span-1 lg:col-span-2">
+          <h3 className="text-lg font-bold text-white mb-4">Personal Order Booking (POB)</h3>
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center shadow-lg col-span-2">
+              <User size={28} className="text-emerald-400 mb-2" />
+              <span className="text-3xl font-black text-emerald-400 mb-1">11</span>
+              <span className="text-xs font-bold text-slate-400 uppercase text-center">Doctors Met</span>
             </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
-              <User size={24} className="text-amber-400" />
-              <span className="text-xs font-bold text-amber-400">0</span>
-            </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 shadow-lg">
-              <User size={24} className="text-rose-400" />
-              <span className="text-xs font-bold text-rose-400">0</span>
+            
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center shadow-lg col-span-2">
+              <User size={28} className="text-amber-400 mb-2" />
+              <span className="text-3xl font-black text-amber-400 mb-1">2086</span>
+              <span className="text-xs font-bold text-slate-400 uppercase text-center">Total Doctors</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center shadow-lg">
-              <User size={24} className="text-emerald-400 mb-2" />
-              <span className="text-2xl font-black text-emerald-400 mb-1">11</span>
-              <span className="text-[11px] font-bold text-slate-400 uppercase text-center">Doctors Met</span>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-1 shadow-lg">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Doctor POB</span>
+              <span className="text-lg font-black text-emerald-400">₹0</span>
             </div>
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center shadow-lg">
-              <User size={24} className="text-amber-400 mb-2" />
-              <span className="text-2xl font-black text-amber-400 mb-1">2086</span>
-              <span className="text-[11px] font-bold text-slate-400 uppercase text-center">Total Doctors</span>
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-1 shadow-lg">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Chemist POB</span>
+              <span className="text-lg font-black text-amber-400">₹0</span>
+            </div>
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 flex flex-col items-center justify-center gap-1 shadow-lg">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Stockist POB</span>
+              <span className="text-lg font-black text-rose-400">₹0</span>
             </div>
           </div>
         </div>
 
         {/* Call Averages */}
-        <div>
+        <div className="md:col-span-1 lg:col-span-1">
           <h3 className="text-lg font-bold text-white mb-4">Call Averages</h3>
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-lg flex justify-between">
-            <div className="space-y-4 flex-1">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 shadow-lg h-[calc(100%-2rem)] flex flex-col justify-between">
+            <div className="space-y-6">
               <div>
-                <span className="text-2xl font-black text-sky-400">0.9</span>
-                <p className="text-xs font-bold text-slate-400">Doctor's Call Average</p>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                  <span className="text-3xl font-black text-emerald-400">0.9</span>
+                </div>
+                <p className="text-xs font-bold text-slate-400 ml-6 uppercase tracking-wider">Doctor Call Average</p>
               </div>
+              
               <div>
-                <span className="text-2xl font-black text-sky-400">0.1</span>
-                <p className="text-xs font-bold text-slate-400">Chemist's Call Average</p>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                  <span className="text-3xl font-black text-amber-400">0.1</span>
+                </div>
+                <p className="text-xs font-bold text-slate-400 ml-6 uppercase tracking-wider">Chemist Call Average</p>
               </div>
+              
               <div>
-                <span className="text-2xl font-black text-sky-400">0.3</span>
-                <p className="text-xs font-bold text-slate-400">Stockist's Call Average</p>
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-3 h-3 rounded-full bg-rose-400"></div>
+                  <span className="text-3xl font-black text-rose-400">0.3</span>
+                </div>
+                <p className="text-xs font-bold text-slate-400 ml-6 uppercase tracking-wider">Stockist Call Average</p>
               </div>
-            </div>
-            
-            {/* Visual Bar Graph */}
-            <div className="flex items-end gap-2 h-36 pt-4 pr-2">
-              <div className="w-3 bg-emerald-500 rounded-full h-[90%]"></div>
-              <div className="w-3 bg-amber-400 rounded-full h-[10%]"></div>
-              <div className="w-3 bg-rose-400 rounded-full h-[30%]"></div>
             </div>
           </div>
         </div>
