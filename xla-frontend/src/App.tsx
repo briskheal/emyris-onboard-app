@@ -22,6 +22,9 @@ import PrimarySales from './pages/PrimarySales';
 import SecondarySales from './pages/SecondarySales';
 import Attendance from './pages/Attendance';
 import Reminders from './pages/Reminders';
+import CRM from './pages/CRM';
+import ProfitAnalysis from './pages/ProfitAnalysis';
+import SampleManagement from './pages/SampleManagement';
 
 function App() {
   return (
@@ -51,6 +54,9 @@ function App() {
           <Route path="consolidated-activity" element={<ConsolidatedActivity />} />
           <Route path="extras/attendance" element={<Attendance />} />
           <Route path="extras/reminders" element={<Reminders />} />
+          <Route path="extras/crm" element={<CRM />} />
+          <Route path="extras/profit" element={<ProfitAnalysis />} />
+          <Route path="extras/samples" element={<SampleManagement />} />
         </Route>
       </Routes>
     </BrowserRouter>
