@@ -19,6 +19,7 @@ import TodaysActivity from './pages/TodaysActivity';
 import ConsolidatedActivity from './pages/ConsolidatedActivity';
 import EDetailing from './pages/EDetailing';
 import PrimarySales from './pages/PrimarySales';
+import SecondarySales from './pages/SecondarySales';
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
           <Route path="extras/performance" element={<PerformanceMenu />} />
           <Route path="extras/e-detailing" element={<EDetailing />} />
           <Route path="extras/primary-sales" element={<PrimarySales />} />
+          <Route path="extras/secondary" element={<SecondarySales />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
           <Route path="utilities" element={<Utilities />} />
