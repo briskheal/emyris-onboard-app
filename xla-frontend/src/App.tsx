@@ -17,6 +17,8 @@ import CallReport from './pages/CallReport';
 import Hierarchy from './pages/Hierarchy';
 import TodaysActivity from './pages/TodaysActivity';
 import ConsolidatedActivity from './pages/ConsolidatedActivity';
+import EDetailing from './pages/EDetailing';
+import PrimarySales from './pages/PrimarySales';
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
           <Route path="extras/backlog" element={<Backlog />} />
           <Route path="extras/settings" element={<Settings />} />
           <Route path="extras/performance" element={<PerformanceMenu />} />
+          <Route path="extras/e-detailing" element={<EDetailing />} />
+          <Route path="extras/primary-sales" element={<PrimarySales />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
           <Route path="utilities" element={<Utilities />} />

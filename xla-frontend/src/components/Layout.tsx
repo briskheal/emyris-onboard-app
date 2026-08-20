@@ -10,7 +10,7 @@ const navItems = [
   { path: '/extras/call-plan', icon: CalendarDays, label: 'Call Planning' },
   { path: '/extras/expense', icon: Receipt, label: 'Expenses' },
   { path: '/extras/e-detailing', icon: MonitorPlay, label: 'E-Detailing' },
-  { path: '/extras/performance', icon: Target, label: 'Primary Sales' },
+  { path: '/extras/primary-sales', icon: Target, label: 'Primary Sales' },
   { path: '/extras/secondary', icon: BarChart3, label: 'Secondary Sales' },
   { path: '/utilities', icon: ClipboardList, label: 'Reports' },
   { path: '/extras/attendance', icon: Clock, label: 'Attendance' },
