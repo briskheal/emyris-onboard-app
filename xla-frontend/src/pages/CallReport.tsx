@@ -1,13 +1,16 @@
+import { useOutletContext } from 'react-router-dom';
 import { Menu, MessageSquare, Bell, Calendar, Lock, User, Store, Building2, Phone } from 'lucide-react';
 
 export default function CallReport() {
+  const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
+
   return (
     <div className="min-h-full bg-slate-900 flex flex-col pb-40 text-slate-100 font-sans">
       
       {/* Sticky Header */}
       <div className="flex items-center justify-between px-5 pt-12 pb-4 sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
         <div className="flex items-center gap-4">
-          <button className="text-white active:scale-95 transition-transform">
+          <button onClick={openDrawer} className="text-white active:scale-95 transition-transform">
             <Menu size={26} />
           </button>
           <div>

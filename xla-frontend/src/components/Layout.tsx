@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutGrid, Calendar, FileText, Shield, FileCog } from 'lucide-react';
+import NavigationDrawer from './NavigationDrawer';
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
   const navItems = [
     { path: '/dashboard', icon: LayoutGrid, label: 'Dashboard' },
@@ -15,10 +18,11 @@ export default function Layout() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-slate-900 overflow-hidden text-slate-100 font-sans relative">
+      <NavigationDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
       
       {/* Main Content Area */}
       <div className="flex-1 overflow-y-auto pb-20">
-        <Outlet />
+        <Outlet context={{ openDrawer: () => setIsDrawerOpen(true) }} />
       </div>
 
       {/* Bottom Navigation */}
