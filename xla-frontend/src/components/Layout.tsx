@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, MapPin, CalendarDays, Receipt, Target } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, MapPin, CalendarDays, Receipt, MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, Users, History, CheckSquare } from 'lucide-react';
 import NavigationDrawer from './NavigationDrawer';
 
 const navItems = [
@@ -9,9 +9,18 @@ const navItems = [
   { path: '/extras/tour-program', icon: MapPin, label: 'Tour Program' },
   { path: '/extras/call-plan', icon: CalendarDays, label: 'Call Planning' },
   { path: '/extras/expense', icon: Receipt, label: 'Expenses' },
+  { path: '/extras/e-detailing', icon: MonitorPlay, label: 'E-Detailing' },
   { path: '/extras/performance', icon: Target, label: 'Primary Sales' },
-  { path: '/extras/secondary', icon: Target, label: 'Secondary Sales' },
-  { path: '/utilities', icon: Wrench, label: 'Reports' },
+  { path: '/extras/secondary', icon: BarChart3, label: 'Secondary Sales' },
+  { path: '/utilities', icon: ClipboardList, label: 'Reports' },
+  { path: '/extras/attendance', icon: Clock, label: 'Attendance' },
+  { path: '/extras/reminders', icon: Bell, label: 'Reminders' },
+  { path: '/extras/leave', icon: CheckSquare, label: 'Leave Request' },
+  { path: '/extras/samples', icon: Gift, label: 'Sample Management' },
+  { path: '/extras/gifts', icon: Gift, label: 'Gift Management' },
+  { path: '/extras/profit', icon: PieChart, label: 'Profit Analysis' },
+  { path: '/extras/crm', icon: Users, label: 'CRM' },
+  { path: '/extras/backlog', icon: History, label: 'Backlog Report' },
 ];
 
 export default function Layout() {
