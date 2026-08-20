@@ -1,4 +1,4 @@
-import { ArrowLeft, UserRound, ShoppingBag, Building2, MapPin, Youtube } from 'lucide-react';
+import { ArrowLeft, UserRound, ShoppingBag, Building2, MapPin, PlayCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function GeoFencing() {
@@ -23,7 +23,7 @@ export default function GeoFencing() {
           <h1 className="text-lg font-black text-white tracking-tight leading-none">Geo Fencing - Tag for DCR</h1>
         </div>
         <button className="text-rose-500 active:scale-95 transition-transform">
-          <Youtube size={26} />
+          <PlayCircle size={26} />
         </button>
       </div>
 
