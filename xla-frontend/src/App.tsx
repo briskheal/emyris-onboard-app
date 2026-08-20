@@ -20,6 +20,8 @@ import ConsolidatedActivity from './pages/ConsolidatedActivity';
 import EDetailing from './pages/EDetailing';
 import PrimarySales from './pages/PrimarySales';
 import SecondarySales from './pages/SecondarySales';
+import Attendance from './pages/Attendance';
+import Reminders from './pages/Reminders';
 
 function App() {
   return (
@@ -47,6 +49,8 @@ function App() {
           <Route path="hierarchy" element={<Hierarchy />} />
           <Route path="todays-activity" element={<TodaysActivity />} />
           <Route path="consolidated-activity" element={<ConsolidatedActivity />} />
+          <Route path="extras/attendance" element={<Attendance />} />
+          <Route path="extras/reminders" element={<Reminders />} />
         </Route>
       </Routes>
     </BrowserRouter>
