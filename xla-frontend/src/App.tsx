@@ -5,6 +5,9 @@ import Extras from './pages/Extras';
 import AdminMenu from './pages/AdminMenu';
 import Utilities from './pages/Utilities';
 import CallReport from './pages/CallReport';
+import Hierarchy from './pages/Hierarchy';
+import TodaysActivity from './pages/TodaysActivity';
+import ConsolidatedActivity from './pages/ConsolidatedActivity';
 
 function App() {
   return (
@@ -17,6 +20,9 @@ function App() {
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
           <Route path="utilities" element={<Utilities />} />
+          <Route path="hierarchy" element={<Hierarchy />} />
+          <Route path="todays-activity" element={<TodaysActivity />} />
+          <Route path="consolidated-activity" element={<ConsolidatedActivity />} />
         </Route>
       </Routes>
     </BrowserRouter>

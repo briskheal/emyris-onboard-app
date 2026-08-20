@@ -1,8 +1,7 @@
-import { Menu, MessageSquare, Bell, CalendarDays, MapPin, Receipt, History, UserCheck, MonitorPlay, Shield, Target, ChevronRight } from 'lucide-react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { Menu, MessageSquare, Bell, CalendarDays, MapPin, Receipt, History, UserCheck, MonitorPlay, Shield, Target } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 
 export default function Extras() {
-  const navigate = useNavigate();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
 
   const extrasOptions = [
@@ -47,7 +46,7 @@ export default function Extras() {
         <h2 className="text-xl font-black text-white mb-6">Extras</h2>
         
         <div className="grid grid-cols-2 gap-4">
-          {menuItems.map((item, idx) => (
+          {extrasOptions.map((item, idx) => (
             <button 
               key={idx}
               className="bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg active:scale-95 transition-transform relative"
@@ -57,7 +56,7 @@ export default function Extras() {
                   New
                 </span>
               )}
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.bgColor}`}>
+              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.bg}`}>
                 <item.icon size={28} className={item.color} />
               </div>
               <span className="text-xs font-bold text-slate-300 text-center px-2">{item.label}</span>

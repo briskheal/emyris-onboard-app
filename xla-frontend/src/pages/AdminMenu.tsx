@@ -1,5 +1,5 @@
 import { useOutletContext } from 'react-router-dom';
-import { Menu, MessageSquare, Bell, UserPlus, Store, Building2, MapPin, Route, CheckSquare, TrendingUp, TrendingDown, Gift, Target, ChevronRight } from 'lucide-react';
+import { Menu, MessageSquare, Bell, UserPlus, Store, Building2, MapPin, Route, CheckSquare, TrendingUp, TrendingDown, Gift, Target } from 'lucide-react';
 
 export default function AdminMenu() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
@@ -46,19 +46,21 @@ export default function AdminMenu() {
         
         <div className="grid grid-cols-2 gap-4">
           {adminItems.map((item, idx) => (
-            <button 
-              key={idx}
-              className="bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg active:scale-95 transition-transform relative"
-            >
+            <button key={idx} className="bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform">
+              
               {item.badge && (
-                <span className="absolute top-3 right-3 bg-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md">
+                <div className="absolute top-4 right-4 bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow-md">
                   {item.badge}
-                </span>
+                </div>
               )}
-              <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.bgColor}`}>
+
+              <div className={`w-14 h-14 rounded-full ${item.bg} flex items-center justify-center mb-1`}>
                 <item.icon size={28} className={item.color} />
               </div>
-              <span className="text-xs font-bold text-slate-300 text-center px-2">{item.label}</span>
+              <div className="text-center">
+                <h3 className="font-bold text-slate-200 text-sm leading-tight">{item.label}</h3>
+                <p className="text-[10px] text-slate-500 mt-1 leading-snug">{item.description}</p>
+              </div>
             </button>
           ))}
         </div>
