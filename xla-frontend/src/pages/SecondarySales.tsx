@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronDown, Upload, FileText, PenSquare, Trash2, Tag, DollarSign, CalendarDays } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Upload, FileText, CalendarDays } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function SecondarySales() {
