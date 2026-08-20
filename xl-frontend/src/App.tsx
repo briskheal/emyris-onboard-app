@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreationMenu from './pages/CreationMenu';
 import DoctorForm from './pages/creation/DoctorForm';
@@ -26,9 +27,10 @@ function App() {
   return (
     <BrowserRouter basename="/xl">
       <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/" element={<Layout />}>
+            <Route path="dashboard" element={<Dashboard />} />
           <Route path="creation" element={<CreationMenu />} />
           <Route path="creation/doctor" element={<DoctorForm />} />
           <Route path="creation/chemist" element={<ChemistForm />} />

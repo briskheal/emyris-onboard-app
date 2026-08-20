@@ -1,0 +1,95 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
+
+export default function Login() {
+  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Simulate login for now
+    if (email && password) {
+      // In a real app, you would set a token here
+      navigate('/dashboard');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
+      
+      {/* Background decorations */}
+      <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-sky-500/20 rounded-full blur-[80px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px]" />
+
+      <div className="w-full max-w-sm relative z-10">
+        
+        {/* Logo Area */}
+        <div className="text-center mb-10">
+          <div className="w-20 h-20 bg-gradient-to-br from-sky-400 to-sky-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-sky-500/30 mb-6">
+            <h1 className="text-3xl font-black text-white tracking-tighter">EM</h1>
+          </div>
+          <h1 className="text-2xl font-black text-white tracking-tight leading-none mb-1">EMYRIS</h1>
+          <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Biolifesciences</p>
+        </div>
+
+        {/* Login Form */}
+        <form onSubmit={handleLogin} className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+          <h2 className="text-lg font-bold text-white mb-6">Welcome back,</h2>
+          
+          <div className="space-y-4 mb-6">
+            <div className="relative">
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email Address"
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                required
+              />
+            </div>
+            
+            <div className="relative">
+              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-800" />
+              <span className="text-xs font-medium text-slate-400">Remember me</span>
+            </label>
+            <button type="button" className="text-xs font-bold text-sky-400">Forgot Password?</button>
+          </div>
+
+          <button 
+            type="submit"
+            className="w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30 active:scale-95 transition-transform"
+          >
+            <LogIn size={20} />
+            LOGIN TO PORTAL
+          </button>
+        </form>
+        
+        {/* Switch Portal Link */}
+        <div className="mt-8 flex items-center justify-center">
+          <a href="/xla" className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors">
+            Switch to Admin Portal
+            <ArrowRight size={14} />
+          </a>
+        </div>
+
+      </div>
+    </div>
+  );
+}
