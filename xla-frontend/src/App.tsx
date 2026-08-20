@@ -2,6 +2,14 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Extras from './pages/Extras';
+import TourProgram from './pages/TourProgram';
+import CallPlan from './pages/CallPlan';
+import LeaveRequest from './pages/LeaveRequest';
+import GeoFencing from './pages/GeoFencing';
+import Expense from './pages/Expense';
+import Backlog from './pages/Backlog';
+import Settings from './pages/Settings';
+import PerformanceMenu from './pages/PerformanceMenu';
 import AdminMenu from './pages/AdminMenu';
 import Utilities from './pages/Utilities';
 import CallReport from './pages/CallReport';
@@ -17,6 +25,14 @@ function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />
+          <Route path="extras/tour-program" element={<TourProgram />} />
+          <Route path="extras/call-plan" element={<CallPlan />} />
+          <Route path="extras/leave" element={<LeaveRequest />} />
+          <Route path="extras/geo-fencing" element={<GeoFencing />} />
+          <Route path="extras/expense" element={<Expense />} />
+          <Route path="extras/backlog" element={<Backlog />} />
+          <Route path="extras/settings" element={<Settings />} />
+          <Route path="extras/performance" element={<PerformanceMenu />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
           <Route path="utilities" element={<Utilities />} />
