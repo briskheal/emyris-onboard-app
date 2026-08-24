@@ -1,0 +1,454 @@
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Trash2, Edit } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+// Reusable Table Footer Component
+function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, setPageSize }: any) {
+  const totalPages = Math.ceil(data.length / pageSize) || 1;
+  const handleExport = () => {
+    if (data.length === 0) return;
+    const keys = Object.keys(data[0]).filter(k => !['_id', '__v', 'createdAt', 'updatedAt'].includes(k));
+    const csvContent = [
+      keys.join(','),
+      ...data.map((row: any) => keys.map(k => `"${row[k] || ''}"`).join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.setAttribute('download', `${fileName}.csv`);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+  };
+  return (
+    <div className="flex flex-wrap items-center justify-between bg-slate-800 p-4 border-t border-slate-700">
+      <div className="flex items-center gap-4">
+        <button onClick={handleExport} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors">Export to CSV</button>
+        <div className="flex items-center gap-2 text-sm text-slate-300 font-bold">
+          <span>Show</span>
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:outline-none">
+            {[10, 25, 50, 100, 1000].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <span>records</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-4 text-sm font-bold text-slate-300">
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">&lt; Previous</button>
+        <span>Page {currentPage} of {totalPages}</span>
+        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Next &gt;</button>
+      </div>
+    </div>
+  );
+}
+
+export default function ManageUsers() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<'create_user' | 'create_admin' | 'user_info' | 'admin_info' | 'divisions' | 'designations'>('create_user');
+  
+  return (
+    <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
+      <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={24} /> <span className="font-bold text-lg tracking-wide uppercase">Back to Admin Menu</span>
+        </button>
+      </div>
+      <div className="flex flex-1 overflow-hidden">
+        <div className="w-72 bg-slate-800/50 border-r border-slate-800 flex flex-col py-6 overflow-y-auto">
+          <h2 className="px-6 text-emerald-400 font-black text-xl tracking-wider mb-6 uppercase">Manage Users</h2>
+          <div className="flex flex-col space-y-2 px-4">
+            <button onClick={() => setActiveTab('create_user')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'create_user' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>CREATE USER</button>
+            <button onClick={() => setActiveTab('create_admin')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'create_admin' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>CREATE ADMIN</button>
+            <button onClick={() => setActiveTab('user_info')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'user_info' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>USER INFO</button>
+            <button onClick={() => setActiveTab('admin_info')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'admin_info' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>ADMIN INFO</button>
+            <button onClick={() => setActiveTab('divisions')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'divisions' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>MANAGE DIVISIONS</button>
+            <button onClick={() => setActiveTab('designations')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'designations' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>MANAGE DESIGNATIONS</button>
+          </div>
+        </div>
+        <div className="flex-1 bg-slate-900 p-8 overflow-y-auto">
+          {activeTab === 'create_user' && <CreateProfileTab isAdmin={false} />}
+          {activeTab === 'create_admin' && <CreateProfileTab isAdmin={true} />}
+          {activeTab === 'user_info' && <ProfileInfoTab isAdmin={false} />}
+          {activeTab === 'admin_info' && <ProfileInfoTab isAdmin={true} />}
+          {activeTab === 'divisions' && <DivisionsTab />}
+          {activeTab === 'designations' && <DesignationsTab />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
+  const [formData, setFormData] = useState<any>({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '' });
+  const [hqs, setHqs] = useState<any[]>([]);
+  const [designations, setDesignations] = useState<any[]>([]);
+  const [divisions, setDivisions] = useState<any[]>([]);
+  const [managers, setManagers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    Promise.all([
+      axios.get('/api/admin/locations/hqs'),
+      axios.get('/api/admin/locations/designations'),
+      axios.get('/api/admin/locations/divisions'),
+      axios.get('/api/admin/users')
+    ]).then(([hqRes, dsgRes, divRes, usrRes]) => {
+      if (hqRes.data.success) setHqs(hqRes.data.hqs);
+      if (dsgRes.data.success) setDesignations(dsgRes.data.designations);
+      if (divRes.data.success) setDivisions(divRes.data.divisions);
+      if (usrRes.data.success) setManagers(usrRes.data.users);
+    }).catch(console.error);
+  }, []);
+
+  const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const url = isAdmin ? '/api/admin/admins' : '/api/admin/users';
+      const res = await axios.post(url, formData);
+      if (res.data.success) {
+        alert('Created successfully!');
+        setFormData({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '' });
+      } else alert(res.data.message);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="max-w-4xl">
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE {isAdmin ? 'ADMIN' : 'USER'}</h2>
+      <form onSubmit={handleSubmit} className="space-y-8 bg-slate-800/50 p-8 rounded-2xl border border-slate-700">
+        
+        {/* Basic Info */}
+        <div>
+          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">User Info</h3>
+          <div className="grid grid-cols-3 gap-6">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">FIRST NAME *</label><input required name="firstName" value={formData.firstName || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">MIDDLE NAME</label><input name="middleName" value={formData.middleName || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME *</label><input required name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option>Male</option><option>Female</option></select></div>
+          </div>
+        </div>
+
+        {/* Login Credentials */}
+        <div>
+          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Login Credentials</h3>
+          <div className="grid grid-cols-3 gap-6">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL *</label><input required type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PHONE *</label><input required name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PASSWORD *</label><input required type="text" name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+          </div>
+        </div>
+
+        {/* Employee Details */}
+        <div>
+          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Employee Details</h3>
+          <div className="grid grid-cols-3 gap-6">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOB</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">HEADQUARTER</label><select name="hq" value={formData.hq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select HQ</option>{hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DESIGNATION</label><select name="designation" value={formData.designation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DIVISION</label><select name="division" value={formData.division || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Division</option>{divisions.map(d => <option key={d._id} value={d.divisionName}>{d.divisionName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMPLOYEE ID</label><input name="employeeId" value={formData.employeeId || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF JOINING</label><input type="date" name="doj" value={formData.doj || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER</label><select name="reportingManager" value={formData.reportingManager || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Manager</option>{managers.map(m => <option key={m._id} value={m.firstName}>{m.firstName} {m.lastName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">AADHAR NUMBER</label><input name="aadhar" value={formData.aadhar || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PAN NUMBER</label><input name="pan" value={formData.pan || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+          </div>
+        </div>
+
+        {/* Allowances */}
+        <div>
+          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Allowances</h3>
+          <div className="grid grid-cols-3 gap-6">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DAILY ALLOWANCE</label><input type="number" name="dailyAllowance" value={formData.dailyAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EX-STATION ALLOWANCE</label><input type="number" name="exStationAllowance" value={formData.exStationAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">OUT-STATION ALLOWANCE</label><input type="number" name="outStationAllowance" value={formData.outStationAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+          </div>
+        </div>
+
+        {/* Address */}
+        <div>
+          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Address</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STREET ADDRESS 1</label><input name="streetAddress1" value={formData.streetAddress1 || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STREET ADDRESS 2</label><input name="streetAddress2" value={formData.streetAddress2 || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CITY</label><input name="city" value={formData.city || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STATE</label><input name="state" value={formData.state || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-4 pt-4 border-t border-slate-700">
+          <button type="button" className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">Save As Draft</button>
+          <button disabled={loading} type="submit" className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">{loading ? 'Submitting...' : 'Submit'}</button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchProfiles = async () => {
+    try {
+      const url = isAdmin ? '/api/admin/admins' : '/api/admin/users';
+      const res = await axios.get(url);
+      if (res.data.success) setProfiles(isAdmin ? res.data.admins : res.data.users);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchProfiles(); }, []);
+
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Deactivated' : 'Active';
+      const url = isAdmin ? `/api/admin/admins/${id}` : `/api/admin/users/${id}`;
+      const res = await axios.put(url, { status: newStatus });
+      if (res.data.success) fetchProfiles();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete this profile?')) return;
+    try {
+      const url = isAdmin ? `/api/admin/admins/${id}` : `/api/admin/users/${id}`;
+      const res = await axios.delete(url);
+      if (res.data.success) fetchProfiles();
+    } catch (e) { console.error(e); }
+  };
+
+  const paginated = profiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div className="max-w-full">
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; {isAdmin ? 'ADMIN' : 'USER'} INFO</h2>
+      <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
+      
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative whitespace-nowrap">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Sr No.</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Name</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">UID</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Division</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">HQ</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Reporting Mgr</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Status</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginated.map((p, i) => (
+                <tr key={p._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
+                  <td className="p-4 text-emerald-400 font-bold">{p.uid || '-'}</td>
+                  <td className="p-4 text-slate-300">{p.designation || '-'}</td>
+                  <td className="p-4 text-slate-300">{p.division || '-'}</td>
+                  <td className="p-4 text-slate-300">{p.hq || '-'}</td>
+                  <td className="p-4 text-slate-300">{p.reportingManager || '-'}</td>
+                  <td className="p-4 text-center">
+                    <button onClick={() => handleToggleStatus(p._id, p.status)} className={`px-3 py-1 rounded-full text-xs font-bold ${p.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
+                      {p.status === 'Active' ? 'Activated' : 'Deactivated'}
+                    </button>
+                  </td>
+                  <td className="p-4 text-center flex justify-center gap-2">
+                    <button onClick={() => handleDelete(p._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {profiles.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-slate-500 font-bold">No records found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={profiles} fileName={isAdmin ? "Admins" : "Users"} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+      </div>
+    </div>
+  );
+}
+
+function DivisionsTab() {
+  const [divs, setDivs] = useState<any[]>([]);
+  const [divisionName, setDivisionName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchDivs = async () => {
+    try {
+      const res = await axios.get('/api/admin/locations/divisions');
+      if (res.data.success) setDivs(res.data.divisions);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchDivs(); }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await axios.post('/api/admin/locations/divisions', { divisionName });
+      if (res.data.success) { setDivisionName(''); fetchDivs(); } else alert(res.data.message);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  const handleEdit = async (id: string, currentName: string) => {
+    const newName = window.prompt("Edit Division Name:", currentName);
+    if (!newName || newName.trim() === currentName) return;
+    try {
+      const res = await axios.put(`/api/admin/locations/divisions/${id}`, { divisionName: newName.trim() });
+      if (res.data.success) fetchDivs();
+    } catch (e) { console.error(e); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete?')) return;
+    try {
+      const res = await axios.delete(`/api/admin/locations/divisions/${id}`);
+      if (res.data.success) fetchDivs();
+    } catch (e) { console.error(e); }
+  };
+
+  const paginated = divs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div className="max-w-4xl">
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE DIVISION</h2>
+      <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
+        <div className="flex-1">
+          <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER DIVISION *</label>
+          <input required value={divisionName} onChange={e => setDivisionName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Division Name" />
+        </div>
+        <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">Add Division</button>
+      </form>
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Division</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginated.map((d, i) => (
+                <tr key={d._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-5 text-white font-bold">{d.divisionName}</td>
+                  <td className="p-5 text-slate-300">{d.uid || '-'}</td>
+                  <td className="p-5 text-center flex justify-center gap-2">
+                    <button onClick={() => handleEdit(d._id, d.divisionName)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-2 rounded-lg"><Edit size={20}/></button>
+                    <button onClick={() => handleDelete(d._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={20}/></button>
+                  </td>
+                </tr>
+              ))}
+              {divs.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-bold">No divisions found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={divs} fileName="Divisions" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+      </div>
+    </div>
+  );
+}
+
+function DesignationsTab() {
+  const [dsgs, setDsgs] = useState<any[]>([]);
+  const [designationName, setDesignationName] = useState('');
+  const [level, setLevel] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchDsgs = async () => {
+    try {
+      const res = await axios.get('/api/admin/locations/designations');
+      if (res.data.success) setDsgs(res.data.designations);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchDsgs(); }, []);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await axios.post('/api/admin/locations/designations', { designationName, level });
+      if (res.data.success) { setDesignationName(''); setLevel(1); fetchDsgs(); } else alert(res.data.message);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Delete?')) return;
+    try {
+      const res = await axios.delete(`/api/admin/locations/designations/${id}`);
+      if (res.data.success) fetchDsgs();
+    } catch (e) { console.error(e); }
+  };
+
+  const paginated = dsgs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div className="max-w-4xl">
+      <h2 className="text-2xl font-black text-white mb-4 tracking-wide uppercase">&lt; CREATE DESIGNATION</h2>
+      
+      <div className="bg-emerald-900/40 border border-emerald-500/30 p-4 rounded-xl mb-8">
+        <h3 className="text-emerald-400 font-bold text-sm mb-2 uppercase">Usage Instructions</h3>
+        <p className="text-xs text-emerald-300/80 leading-relaxed">
+          The designation Level is based on the hierarchy rank of your company's hierarchy. So please select 'First Manager' or 'Second Manager'. Level 1 is the highest rank of any user, meaning nobody is superior to your company's hierarchy chain. The hierarchical level rises from 1 to 5 as the user designates merely moving upwards in your company's hierarchy chain.
+        </p>
+      </div>
+
+      <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
+        <div className="flex-1">
+          <label className="text-sm text-slate-400 font-bold mb-2 block">SELECT LEVEL *</label>
+          <select required value={level} onChange={e => setLevel(Number(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
+            {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div className="flex-[2]">
+          <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER DESIGNATION *</label>
+          <input required value={designationName} onChange={e => setDesignationName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="e.g. Sales Manager" />
+        </div>
+        <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">Add Designation</button>
+      </form>
+      
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Designation</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">Level</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginated.map((d, i) => (
+                <tr key={d._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-5 text-white font-bold">{d.designationName}</td>
+                  <td className="p-5 text-emerald-400 font-bold text-center">{d.level}</td>
+                  <td className="p-5 text-center flex justify-center gap-2">
+                    <button onClick={() => handleDelete(d._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={20}/></button>
+                  </td>
+                </tr>
+              ))}
+              {dsgs.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={dsgs} fileName="Designations" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+      </div>
+    </div>
+  );
+}

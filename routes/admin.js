@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, LoanType, AssignedLoan, AssignedAdvance, sequelize } = require('../db');
+const { XlDivision, XlDesignation, XlUser, XlAdmin, XlState, XlHQ, XlCity, XlRoute, Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, LoanType, AssignedLoan, AssignedAdvance, sequelize } = require('../db');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -4377,6 +4377,134 @@ router.delete('/locations/routes/:id', async (req, res) => {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to delete route' });
     }
+});
+
+// =========================================================================
+// XLA - Manage Users Endpoints (Divisions, Designations, Users, Admins)
+// =========================================================================
+
+// ---- Divisions ----
+router.get('/locations/divisions', async (req, res) => {
+    try {
+        const divs = await XlDivision.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, divisions: divs });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.post('/locations/divisions', async (req, res) => {
+    try {
+        const count = await XlDivision.count();
+        const uid = 'DIV' + (count + 1);
+        const div = await XlDivision.create({ ...req.body, uid });
+        res.json({ success: true, division: div });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.put('/locations/divisions/:id', async (req, res) => {
+    try {
+        await XlDivision.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.delete('/locations/divisions/:id', async (req, res) => {
+    try {
+        await XlDivision.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ---- Designations ----
+router.get('/locations/designations', async (req, res) => {
+    try {
+        const dsgs = await XlDesignation.findAll({ order: [['level', 'ASC'], ['createdAt', 'DESC']] });
+        res.json({ success: true, designations: dsgs });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.post('/locations/designations', async (req, res) => {
+    try {
+        const count = await XlDesignation.count();
+        const uid = 'DSG' + (count + 1);
+        const dsg = await XlDesignation.create({ ...req.body, uid });
+        res.json({ success: true, designation: dsg });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.put('/locations/designations/:id', async (req, res) => {
+    try {
+        await XlDesignation.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.delete('/locations/designations/:id', async (req, res) => {
+    try {
+        await XlDesignation.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ---- Users ----
+router.get('/users', async (req, res) => {
+    try {
+        const users = await XlUser.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, users });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.post('/users', async (req, res) => {
+    try {
+        const count = await XlUser.count();
+        const uid = 'USR' + (count + 1);
+        const user = await XlUser.create({ ...req.body, uid });
+        res.json({ success: true, user });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.put('/users/:id', async (req, res) => {
+    try {
+        await XlUser.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.delete('/users/:id', async (req, res) => {
+    try {
+        await XlUser.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ---- Admins ----
+router.get('/admins', async (req, res) => {
+    try {
+        const admins = await XlAdmin.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, admins });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.post('/admins', async (req, res) => {
+    try {
+        const count = await XlAdmin.count();
+        const uid = 'ADM' + (count + 1);
+        const admin = await XlAdmin.create({ ...req.body, uid });
+        res.json({ success: true, admin });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.put('/admins/:id', async (req, res) => {
+    try {
+        await XlAdmin.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.delete('/admins/:id', async (req, res) => {
+    try {
+        await XlAdmin.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 module.exports = router;

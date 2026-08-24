@@ -26,6 +26,7 @@ import CRM from './pages/CRM';
 import ProfitAnalysis from './pages/ProfitAnalysis';
 import SampleManagement from './pages/SampleManagement';
 import ManageLocations from './pages/ManageLocations';
+import ManageUsers from './pages/ManageUsers';
 
 function App() {
   return (
@@ -33,7 +34,7 @@ function App() {
       <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/admin/locations" element={<ManageLocations />} />
+          <Route path="/admin/locations" element={<ManageLocations />} />`n          <Route path="/admin/users" element={<ManageUsers />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />

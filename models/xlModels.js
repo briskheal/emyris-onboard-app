@@ -125,6 +125,83 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlDivision = sequelize.define('xl_division', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        divisionName: { type: DataTypes.STRING, allowNull: false },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlDesignation = sequelize.define('xl_designation', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        designationName: { type: DataTypes.STRING, allowNull: false },
+        level: { type: DataTypes.INTEGER, allowNull: false },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlUser = sequelize.define('xl_user', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        firstName: { type: DataTypes.STRING, allowNull: false },
+        middleName: { type: DataTypes.STRING },
+        lastName: { type: DataTypes.STRING },
+        gender: { type: DataTypes.STRING },
+        phone: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        password: { type: DataTypes.STRING },
+        dob: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING },
+        designation: { type: DataTypes.STRING },
+        division: { type: DataTypes.STRING },
+        employeeId: { type: DataTypes.STRING },
+        doj: { type: DataTypes.STRING },
+        reportingManager: { type: DataTypes.STRING },
+        aadhar: { type: DataTypes.STRING },
+        pan: { type: DataTypes.STRING },
+        dailyAllowance: { type: DataTypes.FLOAT },
+        exStationAllowance: { type: DataTypes.FLOAT },
+        outStationAllowance: { type: DataTypes.FLOAT },
+        streetAddress1: { type: DataTypes.STRING },
+        streetAddress2: { type: DataTypes.STRING },
+        city: { type: DataTypes.STRING },
+        state: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlAdmin = sequelize.define('xl_admin', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        firstName: { type: DataTypes.STRING, allowNull: false },
+        middleName: { type: DataTypes.STRING },
+        lastName: { type: DataTypes.STRING },
+        gender: { type: DataTypes.STRING },
+        phone: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        password: { type: DataTypes.STRING },
+        dob: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING },
+        designation: { type: DataTypes.STRING },
+        division: { type: DataTypes.STRING },
+        employeeId: { type: DataTypes.STRING },
+        doj: { type: DataTypes.STRING },
+        reportingManager: { type: DataTypes.STRING },
+        aadhar: { type: DataTypes.STRING },
+        pan: { type: DataTypes.STRING },
+        dailyAllowance: { type: DataTypes.FLOAT },
+        exStationAllowance: { type: DataTypes.FLOAT },
+        outStationAllowance: { type: DataTypes.FLOAT },
+        streetAddress1: { type: DataTypes.STRING },
+        streetAddress2: { type: DataTypes.STRING },
+        city: { type: DataTypes.STRING },
+        state: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     // Phase 2: Tour Program
     const XlTourProgram = sequelize.define('xl_tour_program', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
@@ -250,6 +327,10 @@ module.exports = function initXlModels(sequelize) {
         XlHQ,
         XlCity,
         XlRoute,
+        XlDivision,
+        XlDesignation,
+        XlUser,
+        XlAdmin,
         XlTourProgram,
         XlDCR,
         XlAttendance,
