@@ -25,6 +25,7 @@ import Reminders from './pages/Reminders';
 import CRM from './pages/CRM';
 import ProfitAnalysis from './pages/ProfitAnalysis';
 import SampleManagement from './pages/SampleManagement';
+import ManageLocations from './pages/ManageLocations';
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
           <Route path="extras/secondary" element={<SecondarySales />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
+          <Route path="admin/locations" element={<ManageLocations />} />
           <Route path="utilities" element={<Utilities />} />
           <Route path="hierarchy" element={<Hierarchy />} />
           <Route path="todays-activity" element={<TodaysActivity />} />

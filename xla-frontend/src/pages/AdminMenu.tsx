@@ -1,11 +1,13 @@
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Menu, MessageSquare, Bell, Building2, Users, ClipboardList, FileBarChart, DollarSign, Stethoscope, Gift, CheckSquare, CalendarDays, Settings as SettingsIcon } from 'lucide-react';
 
 export default function AdminMenu() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   
+  const navigate = useNavigate();
+
   const adminItems = [
-    { label: 'MANAGE LOCATIONS', icon: Building2 },
+    { label: 'MANAGE LOCATIONS', icon: Building2, path: '/admin/locations' },
     { label: 'MANAGE USERS', icon: Users },
     { label: 'MANAGE PRODUCTS', icon: ClipboardList },
     { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart },
@@ -59,6 +61,7 @@ export default function AdminMenu() {
           {adminItems.map((item, idx) => (
             <button 
               key={idx} 
+              onClick={() => item.path && navigate(item.path)}
               className="group bg-slate-800/80 border border-slate-700/80 hover:border-sky-500/50 rounded-3xl md:rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center gap-4 md:gap-5 relative shadow-lg hover:bg-slate-800 transition-all active:scale-95 min-h-[140px] md:min-h-[200px]"
             >
               <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-slate-700/50 group-hover:bg-sky-500/10 flex items-center justify-center transition-colors">

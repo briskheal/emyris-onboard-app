@@ -84,24 +84,44 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlState = sequelize.define('xl_state', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, // e.g. STE1
+        stateName: { type: DataTypes.STRING, allowNull: false },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlHQ = sequelize.define('xl_hq', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, // e.g. HQS1
+        state: { type: DataTypes.STRING, allowNull: false },
+        hqName: { type: DataTypes.STRING, allowNull: false },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     const XlCity = sequelize.define('xl_city', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, // e.g. CTY1
         state: { type: DataTypes.STRING, allowNull: false },
         hq: { type: DataTypes.STRING, allowNull: false },
         cityName: { type: DataTypes.STRING, allowNull: false },
-        status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        areaType: { type: DataTypes.STRING, defaultValue: 'City' },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
     const XlRoute = sequelize.define('xl_route', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, 
         state: { type: DataTypes.STRING, allowNull: false },
         hq: { type: DataTypes.STRING, allowNull: false },
         fromCity: { type: DataTypes.STRING, allowNull: false },
         toCity: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING }, // Local, Ex-Station, Out-Station
         distance: { type: DataTypes.FLOAT },
-        status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -226,6 +246,8 @@ module.exports = function initXlModels(sequelize) {
         XlDoctor,
         XlChemist,
         XlStockist,
+        XlState,
+        XlHQ,
         XlCity,
         XlRoute,
         XlTourProgram,

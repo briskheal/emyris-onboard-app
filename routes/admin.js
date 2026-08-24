@@ -4199,6 +4199,138 @@ router.delete('/assigned-advances/:id', async (req, res) => {
     }
 });
 
+// --- AREA CREATION (LOCATIONS) ROUTES ---
+
+const { XlState, XlHQ, XlCity, XlRoute } = require('../db');
+
+// State CRUD
+router.get('/locations/states', async (req, res) => {
+    try {
+        const states = await XlState.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, states });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch states' });
+    }
+});
+
+router.post('/locations/states', async (req, res) => {
+    try {
+        const { stateName, uid } = req.body;
+        const newState = await XlState.create({ stateName, uid });
+        res.json({ success: true, state: newState });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to create state' });
+    }
+});
+
+router.delete('/locations/states/:id', async (req, res) => {
+    try {
+        await XlState.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to delete state' });
+    }
+});
+
+// HQ CRUD
+router.get('/locations/hqs', async (req, res) => {
+    try {
+        const hqs = await XlHQ.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, hqs });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch HQs' });
+    }
+});
+
+router.post('/locations/hqs', async (req, res) => {
+    try {
+        const { state, hqName, uid } = req.body;
+        const newHQ = await XlHQ.create({ state, hqName, uid });
+        res.json({ success: true, hq: newHQ });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to create HQ' });
+    }
+});
+
+router.delete('/locations/hqs/:id', async (req, res) => {
+    try {
+        await XlHQ.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to delete HQ' });
+    }
+});
+
+// City CRUD
+router.get('/locations/cities', async (req, res) => {
+    try {
+        const cities = await XlCity.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, cities });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch cities' });
+    }
+});
+
+router.post('/locations/cities', async (req, res) => {
+    try {
+        const { state, hq, cityName, uid, areaType } = req.body;
+        const newCity = await XlCity.create({ state, hq, cityName, uid, areaType });
+        res.json({ success: true, city: newCity });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to create city' });
+    }
+});
+
+router.delete('/locations/cities/:id', async (req, res) => {
+    try {
+        await XlCity.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to delete city' });
+    }
+});
+
+// Route CRUD
+router.get('/locations/routes', async (req, res) => {
+    try {
+        const routes = await XlRoute.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, routes });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to fetch routes' });
+    }
+});
+
+router.post('/locations/routes', async (req, res) => {
+    try {
+        const { state, hq, fromCity, toCity, areaType, distance } = req.body;
+        const newRoute = await XlRoute.create({ state, hq, fromCity, toCity, areaType, distance });
+        res.json({ success: true, route: newRoute });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to create route' });
+    }
+});
+
+router.delete('/locations/routes/:id', async (req, res) => {
+    try {
+        await XlRoute.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to delete route' });
+    }
+});
+
 module.exports = router;
 
 
