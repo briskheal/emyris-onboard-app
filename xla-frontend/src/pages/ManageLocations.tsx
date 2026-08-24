@@ -3,6 +3,63 @@ import { ArrowLeft, Trash2, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+// Reusable Table Footer Component for Pagination and Export
+function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, setPageSize }: any) {
+  const totalPages = Math.ceil(data.length / pageSize) || 1;
+  
+  const handleExport = () => {
+    if (data.length === 0) return;
+    const keys = Object.keys(data[0]).filter(k => k !== '_id' && k !== '__v' && k !== 'createdAt' && k !== 'updatedAt');
+    const csvContent = [
+      keys.join(','),
+      ...data.map((row: any) => keys.map(k => `"${row[k] || ''}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${fileName}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center justify-between bg-slate-800 p-4 border-t border-slate-700">
+      <div className="flex items-center gap-4">
+        <button onClick={handleExport} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors">
+          Export to CSV
+        </button>
+        <div className="flex items-center gap-2 text-sm text-slate-300 font-bold">
+          <span>Show</span>
+          <select 
+            value={pageSize} 
+            onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+            className="bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:outline-none"
+          >
+            {[10, 25, 50, 100, 1000].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+          <span>records</span>
+        </div>
+      </div>
+      <div className="flex items-center gap-4 text-sm font-bold text-slate-300">
+        <button 
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
+          className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        >&lt; Previous</button>
+        <span>Page {currentPage} of {totalPages}</span>
+        <button 
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))}
+          className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        >Next &gt;</button>
+      </div>
+    </div>
+  );
+}
+
 export default function ManageLocations() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'state' | 'hq' | 'city' | 'route'>('state');
@@ -72,6 +129,8 @@ function StateTab() {
   const [states, setStates] = useState<any[]>([]);
   const [stateName, setStateName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchStates = async () => {
     try {
@@ -110,6 +169,8 @@ function StateTab() {
     } catch (e) { console.error(e); }
   };
 
+  const paginatedStates = states.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="max-w-6xl">
       <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE STATE</h2>
@@ -126,37 +187,40 @@ function StateTab() {
       
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({states.length}) ENTRIES</h3>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-800 border-b border-slate-700 text-slate-300">
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">Sr No.</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">State</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">UID</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-700/50">
-            {states.map((s, i) => (
-              <tr key={s._id} className="hover:bg-slate-700/30 transition-colors">
-                <td className="p-5 text-slate-300">{i + 1}</td>
-                <td className="p-5 text-white font-bold">{s.stateName}</td>
-                <td className="p-5 text-slate-300">{s.uid || '-'}</td>
-                <td className="p-5 text-center flex justify-center gap-2">
-                  <button onClick={() => handleEdit(s._id, s.stateName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
-                    <Edit size={20} />
-                  </button>
-                  <button onClick={() => handleDelete(s._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
-                    <Trash2 size={20} />
-                  </button>
-                </td>
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
-            ))}
-            {states.length === 0 && (
-              <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-bold">No states found.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginatedStates.map((s, i) => (
+                <tr key={s._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-5 text-white font-bold">{s.stateName}</td>
+                  <td className="p-5 text-slate-300">{s.uid || '-'}</td>
+                  <td className="p-5 text-center flex justify-center gap-2">
+                    <button onClick={() => handleEdit(s._id, s.stateName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                      <Edit size={20} />
+                    </button>
+                    <button onClick={() => handleDelete(s._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
+                      <Trash2 size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {states.length === 0 && (
+                <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-bold">No states found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={states} fileName="States" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
@@ -168,6 +232,8 @@ function HQTab() {
   const [stateName, setStateName] = useState('');
   const [hqName, setHqName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchData = async () => {
     try {
@@ -205,6 +271,8 @@ function HQTab() {
     } catch (e) { console.error(e); }
   };
 
+  const paginatedHqs = hqs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="max-w-6xl">
       <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE HEADQUARTER</h2>
@@ -228,39 +296,42 @@ function HQTab() {
       
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({hqs.length}) ENTRIES</h3>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-800 border-b border-slate-700 text-slate-300">
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">Sr No.</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">HQ</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">UID</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">State</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-700/50">
-            {hqs.map((h, i) => (
-              <tr key={h._id} className="hover:bg-slate-700/30 transition-colors">
-                <td className="p-5 text-slate-300">{i + 1}</td>
-                <td className="p-5 text-white font-bold">{h.hqName}</td>
-                <td className="p-5 text-slate-300">{h.uid || '-'}</td>
-                <td className="p-5 text-slate-300">{h.state}</td>
-                <td className="p-5 text-center flex justify-center gap-2">
-                  <button onClick={() => handleEdit(h._id, h.hqName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
-                    <Edit size={20} />
-                  </button>
-                  <button onClick={() => handleDelete(h._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
-                    <Trash2 size={20} />
-                  </button>
-                </td>
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
-            ))}
-            {hqs.length === 0 && (
-              <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-bold">No HQs found.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginatedHqs.map((h, i) => (
+                <tr key={h._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-5 text-white font-bold">{h.hqName}</td>
+                  <td className="p-5 text-slate-300">{h.uid || '-'}</td>
+                  <td className="p-5 text-slate-300">{h.state}</td>
+                  <td className="p-5 text-center flex justify-center gap-2">
+                    <button onClick={() => handleEdit(h._id, h.hqName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                      <Edit size={20} />
+                    </button>
+                    <button onClick={() => handleDelete(h._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
+                      <Trash2 size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {hqs.length === 0 && (
+                <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-bold">No HQs found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={hqs} fileName="Headquarters" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
@@ -276,6 +347,8 @@ function CityTab() {
   const [cityName, setCityName] = useState('');
   const [type, setType] = useState('City');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchData = async () => {
     try {
@@ -315,6 +388,8 @@ function CityTab() {
     } catch (e) { console.error(e); }
   };
 
+  const paginatedCities = cities.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   return (
     <div className="max-w-6xl">
       <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE CITY / AREA</h2>
@@ -351,44 +426,47 @@ function CityTab() {
       
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({cities.length}) CITIES</h3>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-800 border-b border-slate-700 text-slate-300">
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">Sr No.</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">City</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">UID</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">HQ</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">State</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-700/50">
-            {cities.map((c, i) => (
-              <tr key={c._id} className="hover:bg-slate-700/30 transition-colors">
-                <td className="p-5 text-slate-300">{i + 1}</td>
-                <td className="p-5 text-white font-bold">
-                  {c.cityName}
-                  <span className="ml-2 text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300 font-normal">{c.areaType}</span>
-                </td>
-                <td className="p-5 text-slate-300">{c.uid || '-'}</td>
-                <td className="p-5 text-slate-300">{c.hq}</td>
-                <td className="p-5 text-slate-300">{c.state}</td>
-                <td className="p-5 text-center flex justify-center gap-2">
-                  <button onClick={() => handleEdit(c._id, c.cityName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
-                    <Edit size={20} />
-                  </button>
-                  <button onClick={() => handleDelete(c._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
-                    <Trash2 size={20} />
-                  </button>
-                </td>
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">City</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
-            ))}
-            {cities.length === 0 && (
-              <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No cities found.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginatedCities.map((c, i) => (
+                <tr key={c._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-5 text-white font-bold">
+                    {c.cityName}
+                    <span className="ml-2 text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300 font-normal">{c.areaType}</span>
+                  </td>
+                  <td className="p-5 text-slate-300">{c.uid || '-'}</td>
+                  <td className="p-5 text-slate-300">{c.hq}</td>
+                  <td className="p-5 text-slate-300">{c.state}</td>
+                  <td className="p-5 text-center flex justify-center gap-2">
+                    <button onClick={() => handleEdit(c._id, c.cityName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                      <Edit size={20} />
+                    </button>
+                    <button onClick={() => handleDelete(c._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
+                      <Trash2 size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {cities.length === 0 && (
+                <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No cities found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={cities} fileName="Cities" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
@@ -407,6 +485,8 @@ function RouteTab() {
   const [areaType, setAreaType] = useState('Local');
   const [distance, setDistance] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchData = async () => {
     try {
@@ -447,6 +527,8 @@ function RouteTab() {
       if (res.data.success) fetchData();
     } catch (e) { console.error(e); }
   };
+
+  const paginatedRoutes = routes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-6xl">
@@ -501,43 +583,46 @@ function RouteTab() {
       
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({routes.length}) ROUTES</h3>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-800 border-b border-slate-700 text-slate-300">
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">Sr No.</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">From City</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">To City</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">Distance</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">Type</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm">UID</th>
-              <th className="p-5 font-bold uppercase tracking-wider text-sm text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-700/50">
-            {routes.map((r, i) => (
-              <tr key={r._id} className="hover:bg-slate-700/30 transition-colors">
-                <td className="p-5 text-slate-300">{i + 1}</td>
-                <td className="p-5 text-white font-bold">{r.fromCity}</td>
-                <td className="p-5 text-white font-bold">{r.toCity}</td>
-                <td className="p-5 text-slate-300">{r.distance} km</td>
-                <td className="p-5 text-slate-300">{r.areaType}</td>
-                <td className="p-5 text-slate-300">{r.uid || '-'}</td>
-                <td className="p-5 text-center flex justify-center gap-2">
-                  <button onClick={() => handleEdit(r._id, r.distance)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
-                    <Edit size={20} />
-                  </button>
-                  <button onClick={() => handleDelete(r._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
-                    <Trash2 size={20} />
-                  </button>
-                </td>
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">From City</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">To City</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Distance</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Type</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
-            ))}
-            {routes.length === 0 && (
-              <tr><td colSpan={7} className="p-8 text-center text-slate-500 font-bold">No routes found.</td></tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginatedRoutes.map((r, i) => (
+                <tr key={r._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-5 text-white font-bold">{r.fromCity}</td>
+                  <td className="p-5 text-white font-bold">{r.toCity}</td>
+                  <td className="p-5 text-slate-300">{r.distance} km</td>
+                  <td className="p-5 text-slate-300">{r.areaType}</td>
+                  <td className="p-5 text-slate-300">{r.uid || '-'}</td>
+                  <td className="p-5 text-center flex justify-center gap-2">
+                    <button onClick={() => handleEdit(r._id, r.distance)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                      <Edit size={20} />
+                    </button>
+                    <button onClick={() => handleDelete(r._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
+                      <Trash2 size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {routes.length === 0 && (
+                <tr><td colSpan={7} className="p-8 text-center text-slate-500 font-bold">No routes found.</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={routes} fileName="Routes" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );

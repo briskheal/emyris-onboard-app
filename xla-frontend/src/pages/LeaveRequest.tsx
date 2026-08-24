@@ -1,4 +1,4 @@
-import { ArrowLeft, ChevronDown, CheckCircle2, XCircle, Clock, CalendarDays, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, CalendarDays, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function LeaveRequest() {

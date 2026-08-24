@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { ArrowLeft, Stethoscope, FileText, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
