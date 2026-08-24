@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -27,25 +27,25 @@ export default function ManageLocations() {
           <div className="flex flex-col space-y-2 px-4">
             <button 
               onClick={() => setActiveTab('state')} 
-              className={`text-left px-6 py-4 rounded-xl font-bold transition-all ${activeTab === 'state' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'state' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             >
               CREATE STATE
             </button>
             <button 
               onClick={() => setActiveTab('hq')} 
-              className={`text-left px-6 py-4 rounded-xl font-bold transition-all ${activeTab === 'hq' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'hq' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             >
               CREATE HEADQUARTERS
             </button>
             <button 
               onClick={() => setActiveTab('city')} 
-              className={`text-left px-6 py-4 rounded-xl font-bold transition-all ${activeTab === 'city' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'city' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             >
               CREATE CITY / AREA
             </button>
             <button 
               onClick={() => setActiveTab('route')} 
-              className={`text-left px-6 py-4 rounded-xl font-bold transition-all ${activeTab === 'route' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
+              className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'route' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}
             >
               CREATE ROUTE
             </button>
@@ -71,7 +71,6 @@ export default function ManageLocations() {
 function StateTab() {
   const [states, setStates] = useState<any[]>([]);
   const [stateName, setStateName] = useState('');
-  const [uid, setUid] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchStates = async () => {
@@ -87,11 +86,20 @@ function StateTab() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('/api/admin/locations/states', { stateName, uid });
+      const res = await axios.post('/api/admin/locations/states', { stateName });
       if (res.data.success) {
-        setStateName(''); setUid(''); fetchStates();
+        setStateName(''); fetchStates();
       } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  const handleEdit = async (id: string, currentName: string) => {
+    const newName = window.prompt("Edit State Name:", currentName);
+    if (!newName || newName.trim() === currentName) return;
+    try {
+      const res = await axios.put(`/api/admin/locations/states/${id}`, { stateName: newName.trim() });
+      if (res.data.success) fetchStates();
+    } catch (e) { console.error(e); }
   };
 
   const handleDelete = async (id: string) => {
@@ -110,10 +118,6 @@ function StateTab() {
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER STATE *</label>
           <input type="text" required value={stateName} onChange={e => setStateName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="State Name" />
-        </div>
-        <div className="flex-1">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">UID</label>
-          <input type="text" value={uid} onChange={e => setUid(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="e.g. STE1" />
         </div>
         <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
           {loading ? 'Adding...' : 'Add State'}
@@ -138,7 +142,10 @@ function StateTab() {
                 <td className="p-5 text-slate-300">{i + 1}</td>
                 <td className="p-5 text-white font-bold">{s.stateName}</td>
                 <td className="p-5 text-slate-300">{s.uid || '-'}</td>
-                <td className="p-5 text-center">
+                <td className="p-5 text-center flex justify-center gap-2">
+                  <button onClick={() => handleEdit(s._id, s.stateName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                    <Edit size={20} />
+                  </button>
                   <button onClick={() => handleDelete(s._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
                     <Trash2 size={20} />
                   </button>
@@ -160,7 +167,6 @@ function HQTab() {
   const [states, setStates] = useState<any[]>([]);
   const [stateName, setStateName] = useState('');
   const [hqName, setHqName] = useState('');
-  const [uid, setUid] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
@@ -177,9 +183,18 @@ function HQTab() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('/api/admin/locations/hqs', { state: stateName, hqName, uid });
-      if (res.data.success) { setHqName(''); setUid(''); fetchData(); } else alert(res.data.message);
+      const res = await axios.post('/api/admin/locations/hqs', { state: stateName, hqName });
+      if (res.data.success) { setHqName(''); fetchData(); } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  const handleEdit = async (id: string, currentName: string) => {
+    const newName = window.prompt("Edit HQ Name:", currentName);
+    if (!newName || newName.trim() === currentName) return;
+    try {
+      const res = await axios.put(`/api/admin/locations/hqs/${id}`, { hqName: newName.trim() });
+      if (res.data.success) fetchData();
+    } catch (e) { console.error(e); }
   };
 
   const handleDelete = async (id: string) => {
@@ -206,10 +221,6 @@ function HQTab() {
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER HEADQUARTER *</label>
           <input type="text" required value={hqName} onChange={e => setHqName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="HQ Name" />
         </div>
-        <div className="flex-1">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">UID</label>
-          <input type="text" value={uid} onChange={e => setUid(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="e.g. HQS1" />
-        </div>
         <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
           {loading ? 'Adding...' : 'Add HQ'}
         </button>
@@ -235,7 +246,10 @@ function HQTab() {
                 <td className="p-5 text-white font-bold">{h.hqName}</td>
                 <td className="p-5 text-slate-300">{h.uid || '-'}</td>
                 <td className="p-5 text-slate-300">{h.state}</td>
-                <td className="p-5 text-center">
+                <td className="p-5 text-center flex justify-center gap-2">
+                  <button onClick={() => handleEdit(h._id, h.hqName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                    <Edit size={20} />
+                  </button>
                   <button onClick={() => handleDelete(h._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
                     <Trash2 size={20} />
                   </button>
@@ -261,7 +275,6 @@ function CityTab() {
   const [hqName, setHqName] = useState('');
   const [cityName, setCityName] = useState('');
   const [type, setType] = useState('City');
-  const [uid, setUid] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
@@ -280,9 +293,18 @@ function CityTab() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('/api/admin/locations/cities', { state: stateName, hq: hqName, cityName, areaType: type, uid });
-      if (res.data.success) { setCityName(''); setUid(''); fetchData(); } else alert(res.data.message);
+      const res = await axios.post('/api/admin/locations/cities', { state: stateName, hq: hqName, cityName, areaType: type });
+      if (res.data.success) { setCityName(''); fetchData(); } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  const handleEdit = async (id: string, currentName: string) => {
+    const newName = window.prompt("Edit City/Area Name:", currentName);
+    if (!newName || newName.trim() === currentName) return;
+    try {
+      const res = await axios.put(`/api/admin/locations/cities/${id}`, { cityName: newName.trim() });
+      if (res.data.success) fetchData();
+    } catch (e) { console.error(e); }
   };
 
   const handleDelete = async (id: string) => {
@@ -322,10 +344,6 @@ function CityTab() {
           <label className="text-sm text-slate-400 font-bold mb-2 block">CITY / AREA NAME *</label>
           <input type="text" required value={cityName} onChange={e => setCityName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Name" />
         </div>
-        <div className="w-32">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">UID</label>
-          <input type="text" value={uid} onChange={e => setUid(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="CTY1" />
-        </div>
         <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
           {loading ? 'Adding...' : 'Add'}
         </button>
@@ -356,7 +374,10 @@ function CityTab() {
                 <td className="p-5 text-slate-300">{c.uid || '-'}</td>
                 <td className="p-5 text-slate-300">{c.hq}</td>
                 <td className="p-5 text-slate-300">{c.state}</td>
-                <td className="p-5 text-center">
+                <td className="p-5 text-center flex justify-center gap-2">
+                  <button onClick={() => handleEdit(c._id, c.cityName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                    <Edit size={20} />
+                  </button>
                   <button onClick={() => handleDelete(c._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
                     <Trash2 size={20} />
                   </button>
@@ -385,7 +406,6 @@ function RouteTab() {
   const [toCity, setToCity] = useState('');
   const [areaType, setAreaType] = useState('Local');
   const [distance, setDistance] = useState(0);
-  const [uid, setUid] = useState('');
   const [loading, setLoading] = useState(false);
 
   const fetchData = async () => {
@@ -406,9 +426,18 @@ function RouteTab() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('/api/admin/locations/routes', { state: stateName, hq: hqName, fromCity, toCity, areaType, distance, uid });
-      if (res.data.success) { setFromCity(''); setToCity(''); setDistance(0); setUid(''); fetchData(); } else alert(res.data.message);
+      const res = await axios.post('/api/admin/locations/routes', { state: stateName, hq: hqName, fromCity, toCity, areaType, distance });
+      if (res.data.success) { setFromCity(''); setToCity(''); setDistance(0); fetchData(); } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  const handleEdit = async (id: string, currentDistance: number) => {
+    const newDistance = window.prompt("Edit Distance (km):", currentDistance.toString());
+    if (!newDistance || isNaN(Number(newDistance)) || Number(newDistance) === currentDistance) return;
+    try {
+      const res = await axios.put(`/api/admin/locations/routes/${id}`, { distance: Number(newDistance) });
+      if (res.data.success) fetchData();
+    } catch (e) { console.error(e); }
   };
 
   const handleDelete = async (id: string) => {
@@ -465,10 +494,6 @@ function RouteTab() {
           <label className="text-sm text-slate-400 font-bold mb-2 block">DISTANCE *</label>
           <input type="number" required value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
         </div>
-        <div className="w-32">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">UID</label>
-          <input type="text" value={uid} onChange={e => setUid(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="RTE1" />
-        </div>
         <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
           {loading ? 'Adding...' : 'Add'}
         </button>
@@ -498,7 +523,10 @@ function RouteTab() {
                 <td className="p-5 text-slate-300">{r.distance} km</td>
                 <td className="p-5 text-slate-300">{r.areaType}</td>
                 <td className="p-5 text-slate-300">{r.uid || '-'}</td>
-                <td className="p-5 text-center">
+                <td className="p-5 text-center flex justify-center gap-2">
+                  <button onClick={() => handleEdit(r._id, r.distance)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
+                    <Edit size={20} />
+                  </button>
                   <button onClick={() => handleDelete(r._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
                     <Trash2 size={20} />
                   </button>

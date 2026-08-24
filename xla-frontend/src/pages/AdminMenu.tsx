@@ -68,7 +68,7 @@ export default function AdminMenu() {
                 <item.icon size={32} strokeWidth={1.5} className="text-white group-hover:text-sky-400 transition-colors" />
               </div>
               <div className="text-center w-full px-2">
-                <h3 className="font-bold text-white text-xs md:text-sm leading-tight tracking-wider uppercase">{item.label}</h3>
+                <h3 className="font-bold text-white text-xs leading-tight tracking-wide">{item.label}</h3>
               </div>
             </button>
           ))}

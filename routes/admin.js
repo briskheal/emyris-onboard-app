@@ -4216,12 +4216,24 @@ router.get('/locations/states', async (req, res) => {
 
 router.post('/locations/states', async (req, res) => {
     try {
-        const { stateName, uid } = req.body;
+        const { stateName } = req.body;
+        const count = await XlState.count();
+        const uid = 'STE' + (count + 1);
         const newState = await XlState.create({ stateName, uid });
         res.json({ success: true, state: newState });
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to create state' });
+    }
+});
+
+router.put('/locations/states/:id', async (req, res) => {
+    try {
+        await XlState.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update state' });
     }
 });
 
@@ -4248,12 +4260,24 @@ router.get('/locations/hqs', async (req, res) => {
 
 router.post('/locations/hqs', async (req, res) => {
     try {
-        const { state, hqName, uid } = req.body;
+        const { state, hqName } = req.body;
+        const count = await XlHQ.count();
+        const uid = 'HQS' + (count + 1);
         const newHQ = await XlHQ.create({ state, hqName, uid });
         res.json({ success: true, hq: newHQ });
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to create HQ' });
+    }
+});
+
+router.put('/locations/hqs/:id', async (req, res) => {
+    try {
+        await XlHQ.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update HQ' });
     }
 });
 
@@ -4280,12 +4304,24 @@ router.get('/locations/cities', async (req, res) => {
 
 router.post('/locations/cities', async (req, res) => {
     try {
-        const { state, hq, cityName, uid, areaType } = req.body;
+        const { state, hq, cityName, areaType } = req.body;
+        const count = await XlCity.count();
+        const uid = 'CTY' + (count + 1);
         const newCity = await XlCity.create({ state, hq, cityName, uid, areaType });
         res.json({ success: true, city: newCity });
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to create city' });
+    }
+});
+
+router.put('/locations/cities/:id', async (req, res) => {
+    try {
+        await XlCity.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update city' });
     }
 });
 
@@ -4313,11 +4349,23 @@ router.get('/locations/routes', async (req, res) => {
 router.post('/locations/routes', async (req, res) => {
     try {
         const { state, hq, fromCity, toCity, areaType, distance } = req.body;
-        const newRoute = await XlRoute.create({ state, hq, fromCity, toCity, areaType, distance });
+        const count = await XlRoute.count();
+        const uid = 'RTE' + (count + 1);
+        const newRoute = await XlRoute.create({ state, hq, fromCity, toCity, areaType, distance, uid });
         res.json({ success: true, route: newRoute });
     } catch (e) {
         console.error(e);
         res.status(500).json({ success: false, message: 'Failed to create route' });
+    }
+});
+
+router.put('/locations/routes/:id', async (req, res) => {
+    try {
+        await XlRoute.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: 'Failed to update route' });
     }
 });
 

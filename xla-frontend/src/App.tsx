@@ -33,6 +33,7 @@ function App() {
       <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/admin/locations" element={<ManageLocations />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />
@@ -49,7 +50,6 @@ function App() {
           <Route path="extras/secondary" element={<SecondarySales />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
-          <Route path="admin/locations" element={<ManageLocations />} />
           <Route path="utilities" element={<Utilities />} />
           <Route path="hierarchy" element={<Hierarchy />} />
           <Route path="todays-activity" element={<TodaysActivity />} />
