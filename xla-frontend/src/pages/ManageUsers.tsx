@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -42,7 +42,7 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
 
 export default function ManageUsers() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'create_user' | 'create_admin' | 'user_info' | 'admin_info' | 'divisions' | 'designations'>('create_user');
+  const [activeTab, setActiveTab] = useState<'create_user' | 'create_admin' | 'user_info' | 'admin_info' | 'divisions' | 'designations' | 'ta_da'>('create_user');
   
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
@@ -61,6 +61,7 @@ export default function ManageUsers() {
             <button onClick={() => setActiveTab('admin_info')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'admin_info' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>ADMIN INFO</button>
             <button onClick={() => setActiveTab('divisions')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'divisions' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>MANAGE DIVISIONS</button>
             <button onClick={() => setActiveTab('designations')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'designations' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>MANAGE DESIGNATIONS</button>
+            <button onClick={() => setActiveTab('ta_da')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'ta_da' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>TA, DA MANAGE</button>
           </div>
         </div>
         <div className="flex-1 bg-slate-900 p-8 overflow-y-auto">
@@ -70,6 +71,7 @@ export default function ManageUsers() {
           {activeTab === 'admin_info' && <ProfileInfoTab isAdmin={true} />}
           {activeTab === 'divisions' && <DivisionsTab />}
           {activeTab === 'designations' && <DesignationsTab />}
+          {activeTab === 'ta_da' && <TADAManageTab />}
         </div>
       </div>
     </div>
@@ -98,7 +100,23 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
     }).catch(console.error);
   }, []);
 
-  const handleChange = (e: any) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    
+    // Auto-fill TA/DA based on Designation
+    if (name === 'designation') {
+      const selectedDsg = designations.find(d => d.designationName === value);
+      setFormData((prev: any) => ({
+        ...prev,
+        [name]: value,
+        dailyAllowance: selectedDsg?.dailyAllowance || prev.dailyAllowance || '',
+        exStationAllowance: selectedDsg?.exStationAllowance || prev.exStationAllowance || '',
+        outStationAllowance: selectedDsg?.outStationAllowance || prev.outStationAllowance || ''
+      }));
+    } else {
+      setFormData((prev: any) => ({ ...prev, [name]: value }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +130,14 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
       } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
+
+  // Hierarchy Logic: Level 1 is entry, Level 9 is higher.
+  // Meaning Employee Level N can only report to Manager Level M where M > N
+  const selectedLevel = designations.find(d => d.designationName === formData.designation)?.level || 0;
+  const eligibleManagers = managers.filter(m => {
+    const mLevel = designations.find(d => d.designationName === m.designation)?.level || 0;
+    return mLevel > selectedLevel;
+  });
 
   return (
     <div className="max-w-4xl">
@@ -145,11 +171,11 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
           <div className="grid grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOB</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">HEADQUARTER</label><select name="hq" value={formData.hq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select HQ</option>{hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DESIGNATION</label><select name="designation" value={formData.designation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DESIGNATION</label><select name="designation" value={formData.designation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName} (Lvl {d.level})</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DIVISION</label><select name="division" value={formData.division || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Division</option>{divisions.map(d => <option key={d._id} value={d.divisionName}>{d.divisionName}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMPLOYEE ID</label><input name="employeeId" value={formData.employeeId || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF JOINING</label><input type="date" name="doj" value={formData.doj || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER</label><select name="reportingManager" value={formData.reportingManager || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Manager</option>{managers.map(m => <option key={m._id} value={m.firstName}>{m.firstName} {m.lastName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER</label><select name="reportingManager" value={formData.reportingManager || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Manager</option>{eligibleManagers.map(m => <option key={m._id} value={`${m.firstName} ${m.lastName}`}>{m.firstName} {m.lastName} - {m.designation}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">AADHAR NUMBER</label><input name="aadhar" value={formData.aadhar || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">PAN NUMBER</label><input name="pan" value={formData.pan || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
           </div>
@@ -386,6 +412,18 @@ function DesignationsTab() {
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
+  const handleEdit = async (id: string, currentName: string, currentLevel: number) => {
+    const newName = window.prompt("Edit Designation Name:", currentName);
+    if (!newName || newName.trim() === '') return;
+    const newLevelStr = window.prompt("Edit Level:", currentLevel.toString());
+    const newLevel = parseInt(newLevelStr || '0', 10);
+    if (!newLevel) return;
+    try {
+      const res = await axios.put(`/api/admin/locations/designations/${id}`, { designationName: newName.trim(), level: newLevel });
+      if (res.data.success) fetchDsgs();
+    } catch (e) { console.error(e); }
+  };
+
   const handleDelete = async (id: string) => {
     if (!window.confirm('Delete?')) return;
     try {
@@ -403,7 +441,7 @@ function DesignationsTab() {
       <div className="bg-emerald-900/40 border border-emerald-500/30 p-4 rounded-xl mb-8">
         <h3 className="text-emerald-400 font-bold text-sm mb-2 uppercase">Usage Instructions</h3>
         <p className="text-xs text-emerald-300/80 leading-relaxed">
-          The designation Level is based on the hierarchy rank of your company's hierarchy. So please select 'First Manager' or 'Second Manager'. Level 1 is the highest rank of any user, meaning nobody is superior to your company's hierarchy chain. The hierarchical level rises from 1 to 5 as the user designates merely moving upwards in your company's hierarchy chain.
+          The designation Level is based on the hierarchy rank. Level 1 is considered entry level, and higher numbers (e.g. Level 9) indicate a higher position in the company hierarchy. An employee can only report to a manager with a higher level number.
         </p>
       </div>
 
@@ -439,6 +477,7 @@ function DesignationsTab() {
                   <td className="p-5 text-white font-bold">{d.designationName}</td>
                   <td className="p-5 text-emerald-400 font-bold text-center">{d.level}</td>
                   <td className="p-5 text-center flex justify-center gap-2">
+                    <button onClick={() => handleEdit(d._id, d.designationName, d.level)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-2 rounded-lg"><Edit size={20}/></button>
                     <button onClick={() => handleDelete(d._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={20}/></button>
                   </td>
                 </tr>
@@ -448,6 +487,86 @@ function DesignationsTab() {
           </table>
         </div>
         <TableFooter data={dsgs} fileName="Designations" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+      </div>
+    </div>
+  );
+}
+
+function TADAManageTab() {
+  const [dsgs, setDsgs] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  const fetchDsgs = async () => {
+    try {
+      const res = await axios.get('/api/admin/locations/designations');
+      if (res.data.success) setDsgs(res.data.designations);
+    } catch (e) { console.error(e); }
+  };
+
+  useEffect(() => { fetchDsgs(); }, []);
+
+  const handleChange = (id: string, field: string, value: string) => {
+    setDsgs(prev => prev.map(d => d._id === id ? { ...d, [field]: value } : d));
+  };
+
+  const handleSave = async (d: any) => {
+    try {
+      const res = await axios.put(`/api/admin/locations/designations/${d._id}`, {
+        dailyAllowance: Number(d.dailyAllowance || 0),
+        exStationAllowance: Number(d.exStationAllowance || 0),
+        outStationAllowance: Number(d.outStationAllowance || 0)
+      });
+      if (res.data.success) {
+        alert(`${d.designationName} allowances saved successfully!`);
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  const paginated = dsgs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  return (
+    <div className="max-w-6xl">
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; TA, DA MANAGE</h2>
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="overflow-y-auto max-h-[60vh]">
+          <table className="w-full text-left border-collapse relative">
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+              <tr className="border-b border-slate-700 text-slate-300">
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Level</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Daily Allowance</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Ex-Station Allowance</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Out-Station Allowance</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/50">
+              {paginated.map((d) => (
+                <tr key={d._id} className="hover:bg-slate-700/30 transition-colors">
+                  <td className="p-4 text-white font-bold">{d.designationName}</td>
+                  <td className="p-4 text-emerald-400 font-bold text-center">{d.level}</td>
+                  <td className="p-4">
+                    <input type="number" value={d.dailyAllowance || ''} onChange={e => handleChange(d._id, 'dailyAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
+                  </td>
+                  <td className="p-4">
+                    <input type="number" value={d.exStationAllowance || ''} onChange={e => handleChange(d._id, 'exStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
+                  </td>
+                  <td className="p-4">
+                    <input type="number" value={d.outStationAllowance || ''} onChange={e => handleChange(d._id, 'outStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
+                  </td>
+                  <td className="p-4 text-center">
+                    <button onClick={() => handleSave(d)} className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 mx-auto transition-colors">
+                      <Save size={16} /> Save
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {dsgs.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+        <TableFooter data={dsgs} fileName="Allowances" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );

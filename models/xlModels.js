@@ -138,6 +138,9 @@ module.exports = function initXlModels(sequelize) {
         uid: { type: DataTypes.STRING },
         designationName: { type: DataTypes.STRING, allowNull: false },
         level: { type: DataTypes.INTEGER, allowNull: false },
+        dailyAllowance: { type: DataTypes.FLOAT },
+        exStationAllowance: { type: DataTypes.FLOAT },
+        outStationAllowance: { type: DataTypes.FLOAT },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
