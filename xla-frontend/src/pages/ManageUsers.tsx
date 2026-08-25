@@ -168,9 +168,21 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
         const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
         const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
         
+        const rawHq = (app.hq || app.formData?.hq || '').trim();
+        const matchedHq = hqs.find(h => h.hqName?.toLowerCase() === rawHq.toLowerCase())?.hqName || rawHq;
+
+        const rawDsg = (app.designation || app.formData?.designation || '').trim();
+        const matchedDsg = designations.find(d => d.designationName?.toLowerCase() === rawDsg.toLowerCase())?.designationName || rawDsg;
+
+        const rawDiv = (app.division || app.formData?.division || '').trim();
+        const matchedDiv = divisions.find(d => d.divisionName?.toLowerCase() === rawDiv.toLowerCase())?.divisionName || rawDiv;
+
+        const rawRep = (app.reportingTo || app.formData?.reportingTo || '').trim();
+        const matchedRep = designations.find(d => d.designationName?.toLowerCase() === rawRep.toLowerCase())?.designationName || rawRep;
+
         let da = '', ex = '', out = '';
-        if (app.designation) {
-            const dsg = designations.find(d => d.designationName === app.designation);
+        if (matchedDsg) {
+            const dsg = designations.find(d => d.designationName === matchedDsg);
             if (dsg) {
                 da = dsg.dailyAllowance || '';
                 ex = dsg.exStationAllowance || '';
@@ -186,10 +198,10 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
             email: app.email || '',
             phone: app.phone || '',
             dob: app.dob || app.formData?.dob || '',
-            hq: app.hq || app.formData?.hq || '',
-            designation: app.designation || app.formData?.designation || '',
-            division: app.division || app.formData?.division || '',
-            reportingManager: app.reportingTo || app.formData?.reportingTo || '',
+            hq: matchedHq,
+            designation: matchedDsg,
+            division: matchedDiv,
+            reportingManager: matchedRep,
             employeeId: app.empCode || app.formData?.empCode || '',
             doj: app.actualJoiningDate || app.formData?.joiningDate || '',
             streetAddress1: app.address || app.formData?.address || '',
