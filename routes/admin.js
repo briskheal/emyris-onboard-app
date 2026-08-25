@@ -4718,8 +4718,6 @@ router.get('/dcs/controls', async (req, res) => { try { const controls = await X
 router.post('/dcs/controls', async (req, res) => { try { const c = await XlDoctorControl.create(req.body); res.json({ success: true, control: c }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
-const multer = require('multer');
-const xlsx = require('xlsx');
 const upload = multer({ dest: 'uploads/' });
 
 router.post('/dcs/upload', upload.single('file'), async (req, res) => {
