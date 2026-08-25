@@ -39,7 +39,7 @@ const {
     XlAttendance,
     XlLeave,
     XlExpense,
-    XlBacklogRequest,
+    XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory,
     XlCallPlan
 } = initXlModels(sequelize);
 
@@ -448,6 +448,6 @@ module.exports = {
     XlLeave,
     XlExpense,
     XlBacklogRequest,
-    XlCallPlan,
+    XlCallPlan, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory,
     generateId 
 };

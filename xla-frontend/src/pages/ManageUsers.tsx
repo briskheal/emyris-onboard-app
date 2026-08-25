@@ -83,20 +83,18 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
   const [hqs, setHqs] = useState<any[]>([]);
   const [designations, setDesignations] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
-  const [managers, setManagers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
       axios.get('/api/admin/locations/hqs'),
       axios.get('/api/admin/locations/designations'),
-      axios.get('/api/admin/locations/divisions'),
-      axios.get('/api/admin/users')
-    ]).then(([hqRes, dsgRes, divRes, usrRes]) => {
+      axios.get('/api/admin/locations/divisions')
+    ]).then(([hqRes, dsgRes, divRes]) => {
       if (hqRes.data.success) setHqs(hqRes.data.hqs);
       if (dsgRes.data.success) setDesignations(dsgRes.data.designations);
       if (divRes.data.success) setDivisions(divRes.data.divisions);
-      if (usrRes.data.success) setManagers(usrRes.data.users);
+      
     }).catch(console.error);
   }, []);
 
@@ -134,48 +132,42 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
   // Hierarchy Logic: Level 1 is entry, Level 9 is higher.
   // Meaning Employee Level N can only report to Manager Level M where M > N
   const selectedLevel = designations.find(d => d.designationName === formData.designation)?.level || 0;
-  const eligibleManagers = managers.filter(m => {
-    const mLevel = designations.find(d => d.designationName === m.designation)?.level || 0;
-    return mLevel > selectedLevel;
-  });
+  const eligibleDesignations = designations.filter(d => d.level > selectedLevel);
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE {isAdmin ? 'ADMIN' : 'USER'}</h2>
-      <form onSubmit={handleSubmit} className="space-y-8 bg-slate-800/50 p-8 rounded-2xl border border-slate-700">
-        
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE USER PROFILE</h2>
+      <form onSubmit={handleSubmit} className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl">
         {/* Basic Info */}
-        <div>
-          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">User Info</h3>
-          <div className="grid grid-cols-3 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">FIRST NAME *</label><input required name="firstName" value={formData.firstName || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">MIDDLE NAME</label><input name="middleName" value={formData.middleName || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME *</label><input required name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option>Male</option><option>Female</option></select></div>
+        <div className="mb-10">
+          <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-sm mb-6 border-b border-slate-700 pb-2">Personal Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">FIRST NAME *</label><input required name="firstName" value={formData.firstName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">MIDDLE NAME</label><input name="middleName" value={formData.middleName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME</label><input name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PHONE NUMBER *</label><input required name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL ADDRESS *</label><input type="email" required name="email" value={formData.email || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PASSWORD *</label><input type="password" required name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF BIRTH</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
           </div>
         </div>
 
-        {/* Login Credentials */}
-        <div>
-          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Login Credentials</h3>
-          <div className="grid grid-cols-3 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL *</label><input required type="email" name="email" value={formData.email || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PHONE *</label><input required name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PASSWORD *</label><input required type="text" name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-          </div>
-        </div>
-
-        {/* Employee Details */}
-        <div>
-          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Employee Details</h3>
-          <div className="grid grid-cols-3 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOB</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+        {/* Company Info */}
+        <div className="mb-10">
+          <h3 className="text-sky-400 font-bold uppercase tracking-wider text-sm mb-6 border-b border-slate-700 pb-2">Employment Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">HEADQUARTER</label><select name="hq" value={formData.hq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select HQ</option>{hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DESIGNATION</label><select name="designation" value={formData.designation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName} (Lvl {d.level})</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DIVISION</label><select name="division" value={formData.division || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Division</option>{divisions.map(d => <option key={d._id} value={d.divisionName}>{d.divisionName}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMPLOYEE ID</label><input name="employeeId" value={formData.employeeId || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF JOINING</label><input type="date" name="doj" value={formData.doj || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER</label><select name="reportingManager" value={formData.reportingManager || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Manager</option>{eligibleManagers.map(m => <option key={m._id} value={`${m.firstName} ${m.lastName}`}>{m.firstName} {m.lastName} - {m.designation}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER</label>
+              <select name="reportingManager" value={formData.reportingManager || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
+                <option value="">Select Designation</option>
+                {eligibleDesignations.map(d => <option key={d._id} value={d.designationName}>{d.designationName} (Lvl {d.level})</option>)}
+              </select>
+            </div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">AADHAR NUMBER</label><input name="aadhar" value={formData.aadhar || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">PAN NUMBER</label><input name="pan" value={formData.pan || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
           </div>
