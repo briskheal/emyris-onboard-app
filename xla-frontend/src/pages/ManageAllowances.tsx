@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 export default function ManageAllowances() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'travel' | 'outstation' | 'rates'>('travel');
   
   // States for dropdowns
@@ -351,7 +353,10 @@ export default function ManageAllowances() {
       
       {/* Sidebar */}
       <div className="w-80 bg-slate-900/80 border-r border-slate-800 flex flex-col relative z-10 backdrop-blur-xl">
-        <div className="p-8 border-b border-slate-800">
+        <div className="p-8 border-b border-slate-800 flex flex-col gap-4">
+          <button onClick={() => navigate('/admin')} className="text-sky-400 hover:text-white transition-colors flex items-center gap-2 w-fit font-bold text-sm uppercase tracking-wider">
+            <ArrowLeft size={18} /> Back to Admin Panel
+          </button>
           <h2 className="text-white font-black text-xl tracking-widest uppercase">MANAGE EXPENSES</h2>
         </div>
         <div className="flex-1 overflow-y-auto py-6">
