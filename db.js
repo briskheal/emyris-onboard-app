@@ -412,6 +412,22 @@ async function syncDatabase() {
             console.error('⚠️ DB fix failed:', err.message);
         }
 
+        try {
+            const prodCount = await XlProduct.count();
+            if (prodCount === 0) {
+                const fs = require('fs');
+                const path = require('path');
+                const seedPath = path.join(__dirname, 'product_seed.json');
+                if (fs.existsSync(seedPath)) {
+                    const seedData = require(seedPath);
+                    await XlProduct.bulkCreate(seedData);
+                    console.log(`✅ Dynamically seeded ${seedData.length} products into the live database from Excel data!`);
+                }
+            }
+        } catch (e) {
+            console.error('⚠️ Product seed failed:', e.message);
+        }
+
     } catch (err) {
         console.error('❌ Database connection error:', err.message);
     }
