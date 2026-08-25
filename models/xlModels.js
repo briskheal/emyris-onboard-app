@@ -322,6 +322,60 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlProductCategory = sequelize.define('xl_product_category', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        categoryName: { type: DataTypes.STRING, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlProductType = sequelize.define('xl_product_type', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        typeName: { type: DataTypes.STRING, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlProduct = sequelize.define('xl_product', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        productName: { type: DataTypes.STRING, allowNull: false },
+        composition: { type: DataTypes.STRING },
+        category: { type: DataTypes.STRING },
+        type: { type: DataTypes.STRING },
+        manufacturer: { type: DataTypes.STRING },
+        packaging: { type: DataTypes.STRING },
+        mrp: { type: DataTypes.FLOAT },
+        pts: { type: DataTypes.FLOAT },
+        ptr: { type: DataTypes.FLOAT },
+        division: { type: DataTypes.STRING },
+        gst: { type: DataTypes.FLOAT },
+        stock: { type: DataTypes.INTEGER, defaultValue: 0 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlProductSupplier = sequelize.define('xl_product_supplier', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        supplierName: { type: DataTypes.STRING, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlInventory = sequelize.define('xl_inventory', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        date: { type: DataTypes.DATE },
+        supplier: { type: DataTypes.STRING },
+        product: { type: DataTypes.STRING },
+        unitPrice: { type: DataTypes.FLOAT },
+        quantity: { type: DataTypes.INTEGER },
+        totalPrice: { type: DataTypes.FLOAT },
+        batchNumber: { type: DataTypes.STRING },
+        expiryDate: { type: DataTypes.DATE },
+        fileUrl: { type: DataTypes.STRING },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
         XlDoctor,
         XlChemist,
@@ -341,6 +395,11 @@ module.exports = function initXlModels(sequelize) {
         XlExpense,
         XlBacklogRequest,
         XlCallPlan,
-        XlPerformanceAnalysis
+        XlPerformanceAnalysis,
+        XlProductCategory,
+        XlProductType,
+        XlProduct,
+        XlProductSupplier,
+        XlInventory
     };
 };

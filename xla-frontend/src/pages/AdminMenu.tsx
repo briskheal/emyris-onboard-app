@@ -9,7 +9,7 @@ export default function AdminMenu() {
   const adminItems = [
     { label: 'MANAGE LOCATIONS', icon: Building2, path: '/admin/locations' },
     { label: 'MANAGE USERS', icon: Users, path: '/admin/users' },
-    { label: 'MANAGE PRODUCTS', icon: ClipboardList },
+    { label: 'MANAGE PRODUCTS', icon: ClipboardList, path: '/admin/products' },
     { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart },
     { label: 'ALLOWANCES', icon: DollarSign },
     { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope },

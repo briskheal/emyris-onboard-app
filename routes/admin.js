@@ -4507,6 +4507,141 @@ router.delete('/admins/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+// --- MANAGE PRODUCTS ---
+const { XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory } = require('../db');
+
+// Category
+router.get('/products/categories', async (req, res) => {
+    try {
+        const categories = await XlProductCategory.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, categories });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.post('/products/categories', async (req, res) => {
+    try {
+        const count = await XlProductCategory.count();
+        const uid = `CAT${count + 1}`;
+        const category = await XlProductCategory.create({ ...req.body, uid });
+        res.json({ success: true, category });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.put('/products/categories/:id', async (req, res) => {
+    try {
+        await XlProductCategory.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.delete('/products/categories/:id', async (req, res) => {
+    try {
+        await XlProductCategory.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// Type
+router.get('/products/types', async (req, res) => {
+    try {
+        const types = await XlProductType.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, types });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.post('/products/types', async (req, res) => {
+    try {
+        const count = await XlProductType.count();
+        const uid = `TYP${count + 1}`;
+        const type = await XlProductType.create({ ...req.body, uid });
+        res.json({ success: true, type });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.put('/products/types/:id', async (req, res) => {
+    try {
+        await XlProductType.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.delete('/products/types/:id', async (req, res) => {
+    try {
+        await XlProductType.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// Supplier
+router.get('/products/suppliers', async (req, res) => {
+    try {
+        const suppliers = await XlProductSupplier.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, suppliers });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.post('/products/suppliers', async (req, res) => {
+    try {
+        const count = await XlProductSupplier.count();
+        const uid = `SUP${count + 1}`;
+        const supplier = await XlProductSupplier.create({ ...req.body, uid });
+        res.json({ success: true, supplier });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.put('/products/suppliers/:id', async (req, res) => {
+    try {
+        await XlProductSupplier.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.delete('/products/suppliers/:id', async (req, res) => {
+    try {
+        await XlProductSupplier.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// Product
+router.get('/products', async (req, res) => {
+    try {
+        const products = await XlProduct.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, products });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.post('/products', async (req, res) => {
+    try {
+        const count = await XlProduct.count();
+        const uid = `PDT${count + 1}`;
+        const product = await XlProduct.create({ ...req.body, uid, stock: 0 });
+        res.json({ success: true, product });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.put('/products/:id', async (req, res) => {
+    try {
+        await XlProduct.update(req.body, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.delete('/products/:id', async (req, res) => {
+    try {
+        await XlProduct.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// Inventory
+router.get('/products/inventory', async (req, res) => {
+    try {
+        const inventory = await XlInventory.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, inventory });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+router.post('/products/inventory', async (req, res) => {
+    try {
+        const inv = await XlInventory.create(req.body);
+        if (req.body.product && req.body.quantity) {
+            const product = await XlProduct.findOne({ where: { productName: req.body.product } });
+            if (product) {
+                await product.update({ stock: product.stock + parseInt(req.body.quantity) });
+            }
+        }
+        res.json({ success: true, inventory: inv });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
 module.exports = router;
 
 
