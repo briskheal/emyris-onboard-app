@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit, Save } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Save, RefreshCw, Key, Mail } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -129,6 +129,13 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
+  const generatePassword = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$";
+    let pwd = "";
+    for(let i=0; i<8; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    setFormData((prev: any) => ({ ...prev, password: pwd }));
+  };
+
   // Hierarchy Logic: Level 1 is entry, Level 9 is higher.
   // Meaning Employee Level N can only report to Manager Level M where M > N
   const selectedLevel = designations.find(d => d.designationName === formData.designation)?.level || 0;
@@ -147,9 +154,31 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME</label><input name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">PHONE NUMBER *</label><input required name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL ADDRESS *</label><input type="email" required name="email" value={formData.email || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PASSWORD *</label><input type="password" required name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF BIRTH</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+          </div>
+        </div>
+
+        {/* Login Credentials */}
+        <div className="mb-10 bg-slate-900/50 p-6 rounded-xl border border-slate-700">
+          <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-2">
+            <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm">Login Credentials</h3>
+            <button type="button" onClick={generatePassword} className="text-xs bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1">
+              <RefreshCw size={14} /> Auto-Generate
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="text-xs text-slate-400 font-bold mb-1 flex items-center gap-2">
+                <Mail size={14} className="text-slate-500"/> LOGIN ID (EMAIL) *
+              </label>
+              <input type="email" required name="email" value={formData.email || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-amber-500 focus:outline-none transition-colors" placeholder="user@company.com" />
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 font-bold mb-1 flex items-center gap-2">
+                <Key size={14} className="text-slate-500"/> PASSWORD *
+              </label>
+              <input type="text" required name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-amber-400 font-mono focus:border-amber-500 focus:outline-none transition-colors" placeholder="Click Auto-Generate" />
+            </div>
           </div>
         </div>
 
