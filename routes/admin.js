@@ -4642,6 +4642,51 @@ router.post('/products/inventory', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+// --- MANAGE ALLOWANCES ---
+const { XlTravelAllowance, XlOutStationAllowance } = require('../db');
+
+router.get('/allowances/travel', async (req, res) => {
+    try {
+        const allowances = await XlTravelAllowance.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, allowances });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.post('/allowances/travel', async (req, res) => {
+    try {
+        const allowance = await XlTravelAllowance.create(req.body);
+        res.json({ success: true, allowance });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.delete('/allowances/travel/:id', async (req, res) => {
+    try {
+        await XlTravelAllowance.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.get('/allowances/outstation', async (req, res) => {
+    try {
+        const allowances = await XlOutStationAllowance.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, allowances });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.post('/allowances/outstation', async (req, res) => {
+    try {
+        const allowance = await XlOutStationAllowance.create(req.body);
+        res.json({ success: true, allowance });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+router.delete('/allowances/outstation/:id', async (req, res) => {
+    try {
+        await XlOutStationAllowance.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
 module.exports = router;
 
 

@@ -376,6 +376,25 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlTravelAllowance = sequelize.define('xl_travel_allowance', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        state: { type: DataTypes.STRING, allowNull: false },
+        designation: { type: DataTypes.STRING, allowNull: false },
+        fromDistance: { type: DataTypes.INTEGER, allowNull: false },
+        toDistance: { type: DataTypes.INTEGER, allowNull: false },
+        allowancePerKm: { type: DataTypes.FLOAT, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlOutStationAllowance = sequelize.define('xl_out_station_allowance', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        state: { type: DataTypes.STRING, allowNull: false },
+        designation: { type: DataTypes.STRING, allowNull: false },
+        category: { type: DataTypes.STRING, allowNull: false }, // e.g., 'Hotel', 'Food'
+        amount: { type: DataTypes.FLOAT, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
         XlDoctor,
         XlChemist,
@@ -400,6 +419,8 @@ module.exports = function initXlModels(sequelize) {
         XlProductType,
         XlProduct,
         XlProductSupplier,
-        XlInventory
+        XlInventory,
+        XlTravelAllowance,
+        XlOutStationAllowance
     };
 };

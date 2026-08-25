@@ -28,6 +28,7 @@ import SampleManagement from './pages/SampleManagement';
 import ManageLocations from './pages/ManageLocations';
 import ManageUsers from './pages/ManageUsers';
 import ManageProducts from './pages/ManageProducts';
+import ManageAllowances from './pages/ManageAllowances';
 
 function App() {
   return (
@@ -35,7 +36,10 @@ function App() {
       <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/admin/locations" element={<ManageLocations />} />`n          <Route path="/admin/users" element={<ManageUsers />} />`n          <Route path="/admin/products" element={<ManageProducts />} />
+          <Route path="/admin/locations" element={<ManageLocations />} />
+          <Route path="/admin/users" element={<ManageUsers />} />
+          <Route path="/admin/products" element={<ManageProducts />} />
+          <Route path="/admin/expenses" element={<ManageAllowances />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />

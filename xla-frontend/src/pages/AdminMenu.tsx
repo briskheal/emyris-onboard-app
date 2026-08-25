@@ -11,7 +11,7 @@ export default function AdminMenu() {
     { label: 'MANAGE USERS', icon: Users, path: '/admin/users' },
     { label: 'MANAGE PRODUCTS', icon: ClipboardList, path: '/admin/products' },
     { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart },
-    { label: 'ALLOWANCES', icon: DollarSign },
+    { label: 'ALLOWANCES', icon: DollarSign, path: '/admin/expenses' },
     { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope },
     { label: 'SAMPLES & GIFTS', icon: Gift },
     { label: 'APPROVALS', icon: CheckSquare },
