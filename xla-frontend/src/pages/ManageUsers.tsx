@@ -150,7 +150,10 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
 
   const handleImport = async (e: any) => {
     const email = e.target.value;
-    if (!email) return;
+    if (!email) {
+        setFormData({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '' });
+        return;
+    }
     try {
       const res = await axios.get('/api/admin/applicant/' + email);
       if (res.data.success) {
@@ -180,24 +183,24 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
             firstName,
             middleName,
             lastName,
-            email: app.email,
-            phone: app.phone,
-            dob: app.dob || app.formData?.dob || prev.dob,
-            hq: app.hq || app.formData?.hq || prev.hq,
-            designation: app.designation || app.formData?.designation || prev.designation,
-            division: app.division || app.formData?.division || prev.division,
-            reportingManager: app.reportingTo || app.formData?.reportingTo || prev.reportingManager,
-            employeeId: app.empCode || app.formData?.empCode || prev.employeeId,
-            doj: app.actualJoiningDate || app.formData?.joiningDate || prev.doj,
-            streetAddress1: app.address || app.formData?.address || prev.streetAddress1,
-            city: app.city || app.formData?.city || prev.city,
-            state: app.state || app.formData?.state || prev.state,
-            aadhar: app.formData?.aadharNumber || prev.aadhar,
-            pan: app.formData?.panNumber || prev.pan,
+            email: app.email || '',
+            phone: app.phone || '',
+            dob: app.dob || app.formData?.dob || '',
+            hq: app.hq || app.formData?.hq || '',
+            designation: app.designation || app.formData?.designation || '',
+            division: app.division || app.formData?.division || '',
+            reportingManager: app.reportingTo || app.formData?.reportingTo || '',
+            employeeId: app.empCode || app.formData?.empCode || '',
+            doj: app.actualJoiningDate || app.formData?.joiningDate || '',
+            streetAddress1: app.address || app.formData?.address || '',
+            city: app.city || app.formData?.city || '',
+            state: app.state || app.formData?.state || '',
+            aadhar: app.formData?.aadharNumber || '',
+            pan: app.formData?.panNumber || '',
             password: pwd,
-            dailyAllowance: da || prev.dailyAllowance,
-            exStationAllowance: ex || prev.exStationAllowance,
-            outStationAllowance: out || prev.outStationAllowance
+            dailyAllowance: da || '',
+            exStationAllowance: ex || '',
+            outStationAllowance: out || ''
         }));
         
         alert('Applicant Data Imported Successfully! Please review and save.');
