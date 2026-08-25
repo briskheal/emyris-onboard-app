@@ -56,6 +56,36 @@ async function initializeApp() {
     console.log('🚀 Server starting - Shared PostgreSQL Clean Slate protocol active (NO MONGODB IMPORT).');
     await syncDatabase();
     await seedData();
+
+    // AUTO SEED STATE EXCEL
+    try {
+        const { XlState } = require('./db');
+        const xlsx = require('xlsx');
+        const fs = require('fs');
+        if (fs.existsSync('REPORTING MODULE/state.xlsx')) {
+            const wb = xlsx.readFile('REPORTING MODULE/state.xlsx');
+            const data = xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+            let newCount = 0;
+            let updCount = 0;
+            for (let d of data) {
+                const stateName = d.States || d.state || '';
+                const uid = d.UID || d.uid || '';
+                if (stateName && uid) {
+                    const ex = await XlState.findOne({ where: { uid } });
+                    if (ex) {
+                        await ex.update({ stateName });
+                        updCount++;
+                    } else {
+                        await XlState.create({ stateName, uid });
+                        newCount++;
+                    }
+                }
+            }
+            console.log(`✅ States synchronized with state.xlsx. Inserted: ${newCount}, Updated: ${updCount}`);
+        }
+    } catch (e) {
+        console.error('Error seeding states:', e.message);
+    }
 }
 
 async function seedData() {

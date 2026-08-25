@@ -247,34 +247,34 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Sr No.</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Name</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">UID</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Division</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">HQ</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Reporting Mgr</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Status</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Name</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">UID</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Division</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">HQ</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Reporting Mgr</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Status</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((p, i) => (
-                <tr key={p._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
-                  <td className="p-4 text-emerald-400 font-bold">{p.uid || '-'}</td>
-                  <td className="p-4 text-slate-300">{p.designation || '-'}</td>
-                  <td className="p-4 text-slate-300">{p.division || '-'}</td>
-                  <td className="p-4 text-slate-300">{p.hq || '-'}</td>
-                  <td className="p-4 text-slate-300">{p.reportingManager || '-'}</td>
-                  <td className="p-4 text-center">
+                <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
+                  <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold">{p.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.designation || '-'}</td>
+                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.division || '-'}</td>
+                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.hq || '-'}</td>
+                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.reportingManager || '-'}</td>
+                  <td className="border-r border-slate-700 p-4 text-center">
                     <button onClick={() => handleToggleStatus(p._id, p.status)} className={`px-3 py-1 rounded-full text-xs font-bold ${p.status === 'Active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'}`}>
                       {p.status === 'Active' ? 'Activated' : 'Deactivated'}
                     </button>
                   </td>
-                  <td className="p-4 text-center flex justify-center gap-2">
+                  <td className="border-r border-slate-700 p-4 text-center flex justify-center gap-2">
                     <button onClick={() => handleDelete(p._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg">
                       <Trash2 size={16} />
                     </button>
@@ -349,20 +349,20 @@ function DivisionsTab() {
         <div className="overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Division</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Division</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((d, i) => (
-                <tr key={d._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="p-5 text-white font-bold">{d.divisionName}</td>
-                  <td className="p-5 text-slate-300">{d.uid || '-'}</td>
-                  <td className="p-5 text-center flex justify-center gap-2">
+                <tr key={d._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-5 text-white font-bold">{d.divisionName}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{d.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
                     <button onClick={() => handleEdit(d._id, d.divisionName)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-2 rounded-lg"><Edit size={20}/></button>
                     <button onClick={() => handleDelete(d._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={20}/></button>
                   </td>
@@ -455,20 +455,20 @@ function DesignationsTab() {
         <div className="overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Designation</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">Level</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Designation</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">Level</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((d, i) => (
-                <tr key={d._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="p-5 text-white font-bold">{d.designationName}</td>
-                  <td className="p-5 text-emerald-400 font-bold text-center">{d.level}</td>
-                  <td className="p-5 text-center flex justify-center gap-2">
+                <tr key={d._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-5 text-white font-bold">{d.designationName}</td>
+                  <td className="border-r border-slate-700 p-5 text-emerald-400 font-bold text-center">{d.level}</td>
+                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
                     <button onClick={() => handleEdit(d._id, d.designationName, d.level)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-2 rounded-lg"><Edit size={20}/></button>
                     <button onClick={() => handleDelete(d._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={20}/></button>
                   </td>
@@ -524,30 +524,30 @@ function TADAManageTab() {
         <div className="overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Level</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Daily Allowance</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Ex-Station Allowance</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Out-Station Allowance</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Level</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Daily Allowance</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Ex-Station Allowance</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Out-Station Allowance</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((d) => (
-                <tr key={d._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-4 text-white font-bold">{d.designationName}</td>
-                  <td className="p-4 text-emerald-400 font-bold text-center">{d.level}</td>
-                  <td className="p-4">
+                <tr key={d._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-4 text-white font-bold">{d.designationName}</td>
+                  <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold text-center">{d.level}</td>
+                  <td className="border-r border-slate-700 p-4">
                     <input type="number" value={d.dailyAllowance || ''} onChange={e => handleChange(d._id, 'dailyAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
                   </td>
-                  <td className="p-4">
+                  <td className="border-r border-slate-700 p-4">
                     <input type="number" value={d.exStationAllowance || ''} onChange={e => handleChange(d._id, 'exStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
                   </td>
-                  <td className="p-4">
+                  <td className="border-r border-slate-700 p-4">
                     <input type="number" value={d.outStationAllowance || ''} onChange={e => handleChange(d._id, 'outStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
                   </td>
-                  <td className="p-4 text-center">
+                  <td className="border-r border-slate-700 p-4 text-center">
                     <button onClick={() => handleSave(d)} className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 mx-auto transition-colors">
                       <Save size={16} /> Save
                     </button>

@@ -191,20 +191,20 @@ function StateTab() {
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginatedStates.map((s, i) => (
-                <tr key={s._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="p-5 text-white font-bold">{s.stateName}</td>
-                  <td className="p-5 text-slate-300">{s.uid || '-'}</td>
-                  <td className="p-5 text-center flex justify-center gap-2">
+                <tr key={s._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-5 text-white font-bold">{s.stateName}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{s.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
                     <button onClick={() => handleEdit(s._id, s.stateName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
                       <Edit size={20} />
                     </button>
@@ -300,22 +300,22 @@ function HQTab() {
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginatedHqs.map((h, i) => (
-                <tr key={h._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="p-5 text-white font-bold">{h.hqName}</td>
-                  <td className="p-5 text-slate-300">{h.uid || '-'}</td>
-                  <td className="p-5 text-slate-300">{h.state}</td>
-                  <td className="p-5 text-center flex justify-center gap-2">
+                <tr key={h._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-5 text-white font-bold">{h.hqName}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{h.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{h.state}</td>
+                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
                     <button onClick={() => handleEdit(h._id, h.hqName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
                       <Edit size={20} />
                     </button>
@@ -430,27 +430,27 @@ function CityTab() {
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">City</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">City</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginatedCities.map((c, i) => (
-                <tr key={c._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="p-5 text-white font-bold">
+                <tr key={c._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-5 text-white font-bold">
                     {c.cityName}
                     <span className="ml-2 text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300 font-normal">{c.areaType}</span>
                   </td>
-                  <td className="p-5 text-slate-300">{c.uid || '-'}</td>
-                  <td className="p-5 text-slate-300">{c.hq}</td>
-                  <td className="p-5 text-slate-300">{c.state}</td>
-                  <td className="p-5 text-center flex justify-center gap-2">
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{c.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{c.hq}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{c.state}</td>
+                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
                     <button onClick={() => handleEdit(c._id, c.cityName)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
                       <Edit size={20} />
                     </button>
@@ -587,26 +587,26 @@ function RouteTab() {
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700 text-slate-300">
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">From City</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">To City</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Distance</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Type</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+              <tr className="border-b border-slate-700/50 text-slate-300">
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">From City</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">To City</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Distance</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Type</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginatedRoutes.map((r, i) => (
-                <tr key={r._id} className="hover:bg-slate-700/30 transition-colors">
-                  <td className="p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="p-5 text-white font-bold">{r.fromCity}</td>
-                  <td className="p-5 text-white font-bold">{r.toCity}</td>
-                  <td className="p-5 text-slate-300">{r.distance} km</td>
-                  <td className="p-5 text-slate-300">{r.areaType}</td>
-                  <td className="p-5 text-slate-300">{r.uid || '-'}</td>
-                  <td className="p-5 text-center flex justify-center gap-2">
+                <tr key={r._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-5 text-white font-bold">{r.fromCity}</td>
+                  <td className="border-r border-slate-700 p-5 text-white font-bold">{r.toCity}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.distance} km</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.areaType}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
                     <button onClick={() => handleEdit(r._id, r.distance)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
                       <Edit size={20} />
                     </button>

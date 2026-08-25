@@ -106,27 +106,27 @@ export default function ManageAllowances() {
             <table className="w-full text-left border-collapse relative">
               <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
                 <tr className="border-b border-slate-700 text-slate-400 text-sm uppercase">
-                  <th className="p-4 font-bold">Sr no.</th>
-                  <th className="p-4 font-bold">State</th>
-                  <th className="p-4 font-bold">Designation</th>
-                  <th className="p-4 font-bold">From Distance</th>
-                  <th className="p-4 font-bold">To Distance</th>
-                  <th className="p-4 font-bold">Travel Allowance</th>
-                  <th className="p-4 font-bold text-center">Delete</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">Sr no.</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">State</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">Designation</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">From Distance</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">To Distance</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">Travel Allowance</th>
+                  <th className="border-r border-slate-700 p-4 font-bold text-center">Delete</th>
                 </tr>
               </thead>
               <tbody>
                 {displayedData.length === 0 ? (
                   <tr><td colSpan={7} className="p-8 text-center text-slate-500">No data found</td></tr>
                 ) : displayedData.map((a, i) => (
-                  <tr key={a._id} className="border-b border-slate-700/50 hover:bg-slate-700/20 text-white">
-                    <td className="p-4">{(travelPage - 1) * travelRows + i + 1}</td>
-                    <td className="p-4">{a.state}</td>
-                    <td className="p-4">{a.designation}</td>
-                    <td className="p-4">{a.fromDistance}</td>
-                    <td className="p-4">{a.toDistance}</td>
-                    <td className="p-4">{a.allowancePerKm}</td>
-                    <td className="p-4 text-center"><button onClick={() => handleDelete(a._id)} className="text-rose-400 hover:text-rose-300"><Trash2 size={18} /></button></td>
+                  <tr key={a._id} className="border-b border-slate-700/50 border-b border-slate-700/50 hover:bg-slate-700/20 text-white">
+                    <td className="border-r border-slate-700 p-4">{(travelPage - 1) * travelRows + i + 1}</td>
+                    <td className="border-r border-slate-700 p-4">{a.state}</td>
+                    <td className="border-r border-slate-700 p-4">{a.designation}</td>
+                    <td className="border-r border-slate-700 p-4">{a.fromDistance}</td>
+                    <td className="border-r border-slate-700 p-4">{a.toDistance}</td>
+                    <td className="border-r border-slate-700 p-4">{a.allowancePerKm}</td>
+                    <td className="border-r border-slate-700 p-4 text-center"><button onClick={() => handleDelete(a._id)} className="text-rose-400 hover:text-rose-300"><Trash2 size={18} /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -199,25 +199,25 @@ export default function ManageAllowances() {
             <table className="w-full text-left border-collapse relative">
               <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
                 <tr className="border-b border-slate-700 text-slate-400 text-sm uppercase">
-                  <th className="p-4 font-bold">Sr no.</th>
-                  <th className="p-4 font-bold">State</th>
-                  <th className="p-4 font-bold">Designation</th>
-                  <th className="p-4 font-bold">Category</th>
-                  <th className="p-4 font-bold">Amount</th>
-                  <th className="p-4 font-bold text-center">Delete</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">Sr no.</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">State</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">Designation</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">Category</th>
+                  <th className="border-r border-slate-700 p-4 font-bold">Amount</th>
+                  <th className="border-r border-slate-700 p-4 font-bold text-center">Delete</th>
                 </tr>
               </thead>
               <tbody>
                 {displayedData.length === 0 ? (
                   <tr><td colSpan={6} className="p-8 text-center text-slate-500">No data found</td></tr>
                 ) : displayedData.map((a, i) => (
-                  <tr key={a._id} className="border-b border-slate-700/50 hover:bg-slate-700/20 text-white">
-                    <td className="p-4">{(outStationPage - 1) * outStationRows + i + 1}</td>
-                    <td className="p-4">{a.state}</td>
-                    <td className="p-4">{a.designation}</td>
-                    <td className="p-4">{a.category}</td>
-                    <td className="p-4">{a.amount}</td>
-                    <td className="p-4 text-center"><button onClick={() => handleDelete(a._id)} className="text-rose-400 hover:text-rose-300"><Trash2 size={18} /></button></td>
+                  <tr key={a._id} className="border-b border-slate-700/50 border-b border-slate-700/50 hover:bg-slate-700/20 text-white">
+                    <td className="border-r border-slate-700 p-4">{(outStationPage - 1) * outStationRows + i + 1}</td>
+                    <td className="border-r border-slate-700 p-4">{a.state}</td>
+                    <td className="border-r border-slate-700 p-4">{a.designation}</td>
+                    <td className="border-r border-slate-700 p-4">{a.category}</td>
+                    <td className="border-r border-slate-700 p-4">{a.amount}</td>
+                    <td className="border-r border-slate-700 p-4 text-center"><button onClick={() => handleDelete(a._id)} className="text-rose-400 hover:text-rose-300"><Trash2 size={18} /></button></td>
                   </tr>
                 ))}
               </tbody>
@@ -301,21 +301,21 @@ export default function ManageAllowances() {
                 <table className="w-full text-left border-collapse relative">
                   <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
                     <tr className="border-b border-slate-700 text-slate-400 text-sm uppercase">
-                      <th className="p-4 font-bold">Sr no.</th>
-                      <th className="p-4 font-bold">Ex-Station</th>
-                      <th className="p-4 font-bold">Distance</th>
-                      <th className="p-4 font-bold">Travel Allowance</th>
+                      <th className="border-r border-slate-700 p-4 font-bold">Sr no.</th>
+                      <th className="border-r border-slate-700 p-4 font-bold">Ex-Station</th>
+                      <th className="border-r border-slate-700 p-4 font-bold">Distance</th>
+                      <th className="border-r border-slate-700 p-4 font-bold">Travel Allowance</th>
                     </tr>
                   </thead>
                   <tbody>
                     {displayedData.length === 0 ? (
                       <tr><td colSpan={4} className="p-8 text-center text-slate-500">No data found</td></tr>
                     ) : displayedData.map((r, i) => (
-                      <tr key={r._id} className="border-b border-slate-700/50 hover:bg-slate-700/20 text-white">
-                        <td className="p-4">{(ratesPage - 1) * ratesRows + i + 1}</td>
-                        <td className="p-4">{r.routeName}</td>
-                        <td className="p-4">{r.distance}</td>
-                        <td className="p-4">{r.calculatedAllowance}</td>
+                      <tr key={r._id} className="border-b border-slate-700/50 border-b border-slate-700/50 hover:bg-slate-700/20 text-white">
+                        <td className="border-r border-slate-700 p-4">{(ratesPage - 1) * ratesRows + i + 1}</td>
+                        <td className="border-r border-slate-700 p-4">{r.routeName}</td>
+                        <td className="border-r border-slate-700 p-4">{r.distance}</td>
+                        <td className="border-r border-slate-700 p-4">{r.calculatedAllowance}</td>
                       </tr>
                     ))}
                   </tbody>
