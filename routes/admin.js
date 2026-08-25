@@ -4201,7 +4201,7 @@ router.delete('/assigned-advances/:id', async (req, res) => {
 
 // --- AREA CREATION (LOCATIONS) ROUTES ---
 
-const { XlState, XlHQ, XlCity, XlRoute } = require('../db');
+
 
 // State CRUD
 router.get('/locations/states', async (req, res) => {
