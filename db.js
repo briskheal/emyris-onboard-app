@@ -469,7 +469,7 @@ module.exports = {
     AssignedAdvance,
     XlDoctor,
     XlChemist,
-    XlStockist,
+    XlStockist, XlDoctorControl,
     XlState,
     XlHQ,
     XlCity,
