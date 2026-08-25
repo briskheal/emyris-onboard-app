@@ -29,6 +29,7 @@ import ManageLocations from './pages/ManageLocations';
 import ManageUsers from './pages/ManageUsers';
 import ManageProducts from './pages/ManageProducts';
 import ManageAllowances from './pages/ManageAllowances';
+import ManageDCS from './pages/ManageDCS';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
           <Route path="/admin/users" element={<ManageUsers />} />
           <Route path="/admin/products" element={<ManageProducts />} />
           <Route path="/admin/expenses" element={<ManageAllowances />} />
+          <Route path="/admin/dcs" element={<ManageDCS />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />

@@ -12,7 +12,7 @@ export default function AdminMenu() {
     { label: 'MANAGE PRODUCTS', icon: ClipboardList, path: '/admin/products' },
     { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart },
     { label: 'ALLOWANCES', icon: DollarSign, path: '/admin/expenses' },
-    { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope },
+    { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope, path: '/admin/dcs' },
     { label: 'SAMPLES & GIFTS', icon: Gift },
     { label: 'APPROVALS', icon: CheckSquare },
     { label: 'MANAGE LEAVE', icon: CalendarDays },

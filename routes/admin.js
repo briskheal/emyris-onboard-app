@@ -4687,6 +4687,25 @@ router.delete('/allowances/outstation/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+// --- DCS MANAGEMENT ---
+const { XlDoctor, XlChemist, XlStockist, XlDoctorControl } = require('../db');
+
+router.get('/dcs/doctors', async (req, res) => { try { const docs = await XlDoctor.findAll({ order: [['createdAt', 'DESC']] }); res.json({ success: true, doctors: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.post('/dcs/doctors', async (req, res) => { try { const doc = await XlDoctor.create(req.body); res.json({ success: true, doctor: doc }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.delete('/dcs/doctors/:id', async (req, res) => { try { await XlDoctor.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+
+router.get('/dcs/chemists', async (req, res) => { try { const docs = await XlChemist.findAll({ order: [['createdAt', 'DESC']] }); res.json({ success: true, chemists: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.post('/dcs/chemists', async (req, res) => { try { const doc = await XlChemist.create(req.body); res.json({ success: true, chemist: doc }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.delete('/dcs/chemists/:id', async (req, res) => { try { await XlChemist.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+
+router.get('/dcs/stockists', async (req, res) => { try { const docs = await XlStockist.findAll({ order: [['createdAt', 'DESC']] }); res.json({ success: true, stockists: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.post('/dcs/stockists', async (req, res) => { try { const doc = await XlStockist.create(req.body); res.json({ success: true, stockist: doc }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.delete('/dcs/stockists/:id', async (req, res) => { try { await XlStockist.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+
+router.get('/dcs/controls', async (req, res) => { try { const controls = await XlDoctorControl.findAll(); res.json({ success: true, controls }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.post('/dcs/controls', async (req, res) => { try { const c = await XlDoctorControl.create(req.body); res.json({ success: true, control: c }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.delete('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+
 module.exports = router;
 
 

@@ -3,6 +3,13 @@ const { DataTypes } = require('sequelize');
 const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
 module.exports = function initXlModels(sequelize) {
+    const XlDoctorControl = sequelize.define('xl_doctor_control', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        type: { type: DataTypes.STRING, allowNull: false }, // Degree, Specialization, Hospital, Category
+        name: { type: DataTypes.STRING, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     const XlDoctor = sequelize.define('xl_doctor', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         name: { type: DataTypes.STRING, allowNull: false },
@@ -11,25 +18,20 @@ module.exports = function initXlModels(sequelize) {
         hospital: { type: DataTypes.STRING },
         birthday: { type: DataTypes.STRING },
         anniversary: { type: DataTypes.STRING },
-        mobileNumber: { type: DataTypes.STRING },
-        contactNumber: { type: DataTypes.STRING },
+        mobile: { type: DataTypes.STRING },
+        clinicContact: { type: DataTypes.STRING },
+        contact: { type: DataTypes.STRING },
         doctorCode: { type: DataTypes.STRING },
-        emailAddress: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
         category: { type: DataTypes.STRING },
+        uid: { type: DataTypes.STRING },
         address: { type: DataTypes.TEXT },
-        hq: { type: DataTypes.STRING },
+        headquarter: { type: DataTypes.STRING },
         workingArea: { type: DataTypes.STRING },
-        extraInfo: { type: DataTypes.TEXT },
-        imagePath: { type: DataTypes.STRING },
-        allottedUser: { type: DataTypes.STRING },
+        extraInformation: { type: DataTypes.TEXT },
+        userAllotted: { type: DataTypes.STRING },
+        updateAt: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
-        // Geo-tagging — tagged by MR at first visit
-        lat1: { type: DataTypes.FLOAT },
-        lng1: { type: DataTypes.FLOAT },
-        geoAddress1: { type: DataTypes.STRING },
-        lat2: { type: DataTypes.FLOAT },
-        lng2: { type: DataTypes.FLOAT },
-        geoAddress2: { type: DataTypes.STRING },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -37,22 +39,15 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         businessName: { type: DataTypes.STRING, allowNull: false },
         proprietorName: { type: DataTypes.STRING },
-        certification: { type: DataTypes.STRING },
+        certifications: { type: DataTypes.STRING },
         birthday: { type: DataTypes.STRING },
-        mobileNumber: { type: DataTypes.STRING },
-        emailAddress: { type: DataTypes.STRING },
+        mobile: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
         address: { type: DataTypes.TEXT },
-        hq: { type: DataTypes.STRING },
+        headquarter: { type: DataTypes.STRING },
         workingArea: { type: DataTypes.STRING },
-        extraInfo: { type: DataTypes.TEXT },
-        imagePath: { type: DataTypes.STRING },
-        allottedUser: { type: DataTypes.STRING },
-        lat1: { type: DataTypes.FLOAT },
-        lng1: { type: DataTypes.FLOAT },
-        geoAddress1: { type: DataTypes.STRING },
-        lat2: { type: DataTypes.FLOAT },
-        lng2: { type: DataTypes.FLOAT },
-        geoAddress2: { type: DataTypes.STRING },
+        extraInformation: { type: DataTypes.TEXT },
+        userAllotted: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -60,26 +55,19 @@ module.exports = function initXlModels(sequelize) {
     const XlStockist = sequelize.define('xl_stockist', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         businessName: { type: DataTypes.STRING, allowNull: false },
-        proprietorName: { type: DataTypes.STRING },
-        certification: { type: DataTypes.STRING },
-        gstNumber: { type: DataTypes.STRING },
-        drugLicenseNumber: { type: DataTypes.STRING },
-        drugLicenseExpiry: { type: DataTypes.STRING },
+        name: { type: DataTypes.STRING },
+        certifications: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        gst: { type: DataTypes.STRING },
+        drugLicense: { type: DataTypes.STRING },
+        drugExpiryDate: { type: DataTypes.STRING },
         establishmentDate: { type: DataTypes.STRING },
-        mobileNumber: { type: DataTypes.STRING },
-        emailAddress: { type: DataTypes.STRING },
+        mobile: { type: DataTypes.STRING },
         address: { type: DataTypes.TEXT },
-        hq: { type: DataTypes.STRING },
+        headquarter: { type: DataTypes.STRING },
         workingArea: { type: DataTypes.STRING },
-        extraInfo: { type: DataTypes.TEXT },
-        imagePath: { type: DataTypes.STRING },
-        allottedUser: { type: DataTypes.STRING },
-        lat1: { type: DataTypes.FLOAT },
-        lng1: { type: DataTypes.FLOAT },
-        geoAddress1: { type: DataTypes.STRING },
-        lat2: { type: DataTypes.FLOAT },
-        lng2: { type: DataTypes.FLOAT },
-        geoAddress2: { type: DataTypes.STRING },
+        extraInformation: { type: DataTypes.TEXT },
+        userAllotted: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -398,7 +386,7 @@ module.exports = function initXlModels(sequelize) {
     return {
         XlDoctor,
         XlChemist,
-        XlStockist,
+        XlStockist, XlDoctorControl,
         XlState,
         XlHQ,
         XlCity,

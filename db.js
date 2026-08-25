@@ -29,7 +29,7 @@ const initXlModels = require('./models/xlModels');
 const {
     XlDoctor,
     XlChemist,
-    XlStockist,
+    XlStockist, XlDoctorControl, XlDoctorControl,
     XlState,
     XlHQ,
     XlCity,
@@ -426,6 +426,22 @@ async function syncDatabase() {
             }
         } catch (e) {
             console.error('⚠️ Product seed failed:', e.message);
+        }
+
+        try {
+            const docCount = await XlDoctor.count();
+            if (docCount === 0) {
+                const fs = require('fs');
+                const path = require('path');
+                const seedPath = path.join(__dirname, 'doctor_seed.json');
+                if (fs.existsSync(seedPath)) {
+                    const seedData = require(seedPath);
+                    await XlDoctor.bulkCreate(seedData);
+                    console.log(`✅ Dynamically seeded ${seedData.length} doctors into the live database from Excel data!`);
+                }
+            }
+        } catch (e) {
+            console.error('⚠️ Doctor seed failed:', e.message);
         }
 
     } catch (err) {
