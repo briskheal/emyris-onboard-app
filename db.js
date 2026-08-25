@@ -29,7 +29,7 @@ const initXlModels = require('./models/xlModels');
 const {
     XlDoctor,
     XlChemist,
-    XlStockist, XlDoctorControl, XlDoctorControl,
+    XlStockist, XlDoctorControl,
     XlState,
     XlHQ,
     XlCity,
