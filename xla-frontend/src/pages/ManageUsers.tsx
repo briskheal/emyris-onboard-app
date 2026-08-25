@@ -96,7 +96,7 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
       if (hqRes.data.success) setHqs(hqRes.data.hqs);
       if (dsgRes.data.success) setDesignations(dsgRes.data.designations);
       if (divRes.data.success) setDivisions(divRes.data.divisions);
-      if (appRes?.data?.success) setApplicants(appRes.data.results.filter((a: any) => a.empCode || a.offerAccepted));
+      if (appRes?.data?.success) setApplicants(appRes.data.applicants.filter((a: any) => a.empCode || a.offerAccepted));
     }).catch(console.error);
   }, []);
 
