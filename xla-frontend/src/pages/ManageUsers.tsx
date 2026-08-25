@@ -83,18 +83,20 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
   const [hqs, setHqs] = useState<any[]>([]);
   const [designations, setDesignations] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
+  const [applicants, setApplicants] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     Promise.all([
       axios.get('/api/admin/locations/hqs'),
       axios.get('/api/admin/locations/designations'),
-      axios.get('/api/admin/locations/divisions')
-    ]).then(([hqRes, dsgRes, divRes]) => {
+      axios.get('/api/admin/locations/divisions'),
+      axios.get('/api/admin/applicants')
+    ]).then(([hqRes, dsgRes, divRes, appRes]) => {
       if (hqRes.data.success) setHqs(hqRes.data.hqs);
       if (dsgRes.data.success) setDesignations(dsgRes.data.designations);
       if (divRes.data.success) setDivisions(divRes.data.divisions);
-      
+      if (appRes?.data?.success) setApplicants(appRes.data.results.filter((a: any) => a.empCode || a.offerAccepted));
     }).catch(console.error);
   }, []);
 
@@ -136,6 +138,65 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
     setFormData((prev: any) => ({ ...prev, password: pwd }));
   };
 
+
+  const handleImport = async (e: any) => {
+    const email = e.target.value;
+    if (!email) return;
+    try {
+      const res = await axios.get('/api/admin/applicant/' + email);
+      if (res.data.success) {
+        const app = res.data.applicant;
+        
+        const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$";
+        let pwd = "";
+        for(let i=0; i<8; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+
+        const nameParts = (app.fullName || '').split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+        const middleName = nameParts.length > 2 ? nameParts.slice(1, -1).join(' ') : '';
+        
+        let da = '', ex = '', out = '';
+        if (app.designation) {
+            const dsg = designations.find(d => d.designationName === app.designation);
+            if (dsg) {
+                da = dsg.dailyAllowance || '';
+                ex = dsg.exStationAllowance || '';
+                out = dsg.outStationAllowance || '';
+            }
+        }
+
+        setFormData((prev: any) => ({
+            ...prev,
+            firstName,
+            middleName,
+            lastName,
+            email: app.email,
+            phone: app.phone,
+            dob: app.dob || prev.dob,
+            hq: app.hq || prev.hq,
+            designation: app.designation || prev.designation,
+            division: app.division || prev.division,
+            reportingManager: app.reportingTo || prev.reportingManager,
+            employeeId: app.empCode || prev.employeeId,
+            doj: app.actualJoiningDate || prev.doj,
+            streetAddress1: app.address || prev.streetAddress1,
+            aadhar: app.formData?.aadhar || prev.aadhar,
+            pan: app.formData?.pan || prev.pan,
+            password: pwd,
+            dailyAllowance: da || prev.dailyAllowance,
+            exStationAllowance: ex || prev.exStationAllowance,
+            outStationAllowance: out || prev.outStationAllowance
+        }));
+        
+        alert('Applicant Data Imported Successfully! Please review and save.');
+      }
+    } catch(err) {
+      console.error(err);
+      alert('Failed to import applicant');
+    }
+  };
+
   // Hierarchy Logic: Level 1 is entry, Level 9 is higher.
   // Meaning Employee Level N can only report to Manager Level M where M > N
   const selectedLevel = designations.find(d => d.designationName === formData.designation)?.level || 0;
@@ -145,7 +206,21 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
     <div className="max-w-4xl">
       <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE USER PROFILE</h2>
       <form onSubmit={handleSubmit} className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl">
+
+        {/* Import HR Applicant */}
+        <div className="mb-10 bg-emerald-900/40 border border-emerald-500/50 p-6 rounded-xl">
+          <label className="text-xs text-emerald-400 font-bold mb-2 block flex items-center gap-2">
+            IMPORT FROM HR SYSTEM (AUTO-FILL)
+          </label>
+          <select onChange={handleImport} className="w-full bg-slate-900 border border-emerald-500/50 rounded-lg p-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-colors">
+            <option value="">-- Select Approved Applicant --</option>
+            {applicants.map(a => <option key={a._id} value={a.email}>{a.fullName} ({a.email})</option>)}
+          </select>
+          <p className="text-xs text-emerald-300/70 mt-2">Selecting an applicant will instantly auto-fill their Name, Email, DOB, Phone, Address, Aadhar, PAN, Employee Code, and ADOJ from the HR database.</p>
+        </div>
+
         {/* Basic Info */}
+
         <div className="mb-10">
           <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-sm mb-6 border-b border-slate-700 pb-2">Personal Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
