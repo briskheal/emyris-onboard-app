@@ -4744,18 +4744,38 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.clinicContact = String(d['Clinic Contact'] || d.clinicContact || '');
         row.doctorCode = String(d['Doctor Code'] || d.doctorCode || '');
         row.category = d.Category || d.category || '';
+        row.address = d.Address || d.address || '';
+        row.workingArea = d['Working Area'] || d.workingArea || '';
+        row.birthday = d.Birthday || d.birthday || '';
+        row.anniversary = d.Anniversary || d.anniversary || '';
+        row.email = d.Email || d.email || '';
+        row.contact = String(d.Contact || d.contact || '');
+        row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
       if (type === 'Chemist') {
         if (!row.uid) row.uid = await generateUID(XlChemist, 'CHM');
         row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
+        row.proprietorName = d['Proprietor Name'] || d.proprietorName || '';
         row.mobile = String(d.Mobile || d.mobile || '');
+        row.email = d.Email || d.email || '';
+        row.address = d.Address || d.address || '';
+        row.workingArea = d['Working Area'] || d.workingArea || '';
+        row.birthday = d.Birthday || d.birthday || '';
+        row.certifications = d.Certifications || d.certifications || '';
+        row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
       if (type === 'Stockist') {
         if (!row.uid) row.uid = await generateUID(XlStockist, 'STK');
         row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
+        row.name = d['Proprietor Name'] || d.name || '';
         row.mobile = String(d.Mobile || d.mobile || '');
+        row.email = d.Email || d.email || '';
         row.gst = String(d.GST || d.gst || '');
         row.drugLicense = String(d['Drug License'] || d.drugLicense || '');
+        row.address = d.Address || d.address || '';
+        row.workingArea = d['Working Area'] || d.workingArea || '';
+        row.certifications = d.Certifications || d.certifications || '';
+        row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
       docs.push(row);
       // Hack to advance the max without refetching constantly inside the loop
