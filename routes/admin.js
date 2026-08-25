@@ -4760,15 +4760,17 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
       docs.push(row);
       // Hack to advance the max without refetching constantly inside the loop
       if (row.uid) {
-        try {
-          if (type === 'Doctor') await XlDoctor.create(row);
-          if (type === 'Chemist') await XlChemist.create(row);
-          if (type === 'Stockist') await XlStockist.create(row);
-        } catch (err) {
-          // If it fails due to unique constraint, update it instead!
-          if (type === 'Doctor') await XlDoctor.update(row, { where: { uid: row.uid } });
-          if (type === 'Chemist') await XlChemist.update(row, { where: { uid: row.uid } });
-          if (type === 'Stockist') await XlStockist.update(row, { where: { uid: row.uid } });
+        if (type === 'Doctor') {
+          const ex = await XlDoctor.findOne({ where: { uid: row.uid } });
+          if (ex) await ex.update(row); else await XlDoctor.create(row);
+        }
+        if (type === 'Chemist') {
+          const ex = await XlChemist.findOne({ where: { uid: row.uid } });
+          if (ex) await ex.update(row); else await XlChemist.create(row);
+        }
+        if (type === 'Stockist') {
+          const ex = await XlStockist.findOne({ where: { uid: row.uid } });
+          if (ex) await ex.update(row); else await XlStockist.create(row);
         }
       }
     }
