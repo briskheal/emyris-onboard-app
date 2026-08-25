@@ -4706,6 +4706,57 @@ router.get('/dcs/controls', async (req, res) => { try { const controls = await X
 router.post('/dcs/controls', async (req, res) => { try { const c = await XlDoctorControl.create(req.body); res.json({ success: true, control: c }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
+const multer = require('multer');
+const xlsx = require('xlsx');
+const upload = multer({ dest: 'uploads/' });
+
+router.post('/dcs/upload', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) throw new Error('No file uploaded');
+    const type = req.body.type;
+    const targetHq = req.body.hq;
+    if (!type || !targetHq) throw new Error('Missing type or HQ');
+    
+    const wb = xlsx.readFile(req.file.path);
+    const data = xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    if (!data || data.length === 0) throw new Error('Empty or invalid excel file');
+
+    const docs = [];
+    for (let d of data) {
+      let row = { headquarter: targetHq, status: 'Pending' };
+      if (type === 'Doctor') {
+        row.name = d.Name || d.name || '';
+        row.degree = d.Degree || d.degree || '';
+        row.specialization = d.Specialization || d.specialization || '';
+        row.hospital = d.Hospital || d.hospital || '';
+        row.mobile = String(d.Mobile || d.mobile || '');
+        row.clinicContact = String(d['Clinic Contact'] || d.clinicContact || '');
+        row.doctorCode = String(d['Doctor Code'] || d.doctorCode || '');
+        row.category = d.Category || d.category || '';
+      }
+      if (type === 'Chemist') {
+        row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
+        row.mobile = String(d.Mobile || d.mobile || '');
+      }
+      if (type === 'Stockist') {
+        row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
+        row.mobile = String(d.Mobile || d.mobile || '');
+        row.gst = String(d.GST || d.gst || '');
+        row.drugLicense = String(d['Drug License'] || d.drugLicense || '');
+      }
+      docs.push(row);
+    }
+
+    if (type === 'Doctor') await XlDoctor.bulkCreate(docs);
+    if (type === 'Chemist') await XlChemist.bulkCreate(docs);
+    if (type === 'Stockist') await XlStockist.bulkCreate(docs);
+
+    res.json({ success: true, count: docs.length });
+  } catch (e) {
+    res.status(500).json({ success: false, message: e.message });
+  }
+});
+
 module.exports = router;
 
 

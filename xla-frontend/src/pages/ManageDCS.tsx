@@ -266,6 +266,37 @@ export default function ManageDCS() {
 
   // --- UPLOAD DCS TAB ---
   const UploadDCSTab = () => {
+    const [uploadType, setUploadType] = useState('Doctor');
+    const [uploadHq, setUploadHq] = useState('');
+    const [uploadFile, setUploadFile] = useState<File | null>(null);
+
+    const handleUpload = async () => {
+      if (!uploadHq) return alert('Please select a Headquarter.');
+      if (!uploadFile) return alert('Please select an Excel file.');
+      
+      const formData = new FormData();
+      formData.append('file', uploadFile);
+      formData.append('type', uploadType);
+      formData.append('hq', uploadHq);
+      
+      setLoading(true);
+      try {
+        const res = await axios.post('/api/admin/dcs/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (res.data.success) {
+          alert('Upload successful!');
+          fetchData();
+        } else {
+          alert('Upload failed: ' + res.data.message);
+        }
+      } catch (e: any) {
+        alert('Error uploading file: ' + (e.response?.data?.message || e.message));
+      } finally {
+        setLoading(false);
+      }
+    };
+
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
         <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; UPLOAD DOCTOR / CHEMIST / STOCKIST / CITY OR AREA</h2>
@@ -275,10 +306,10 @@ export default function ManageDCS() {
             The UID is a system-generated unique identifier assigned to each entity (for example, DOC1, HOS1, CTY1). These UIDs are automatically created by the system and are used to uniquely identify records. You can find the UID for a specific entity in its corresponding list or management section within the system.
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end max-w-3xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-end max-w-4xl">
             <div>
               <label className="text-xs text-slate-400 font-bold mb-2 block">SELECT TYPE *</label>
-              <select className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white">
+              <select value={uploadType} onChange={e => setUploadType(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white">
                 <option value="Doctor">Doctor</option>
                 <option value="Chemist">Chemist</option>
                 <option value="Stockist">Stockist</option>
@@ -286,13 +317,20 @@ export default function ManageDCS() {
               </select>
             </div>
             <div>
+              <label className="text-xs text-slate-400 font-bold mb-2 block">SELECT HQ *</label>
+              <select value={uploadHq} onChange={e => setUploadHq(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white">
+                <option value="">Select Headquarter</option>
+                {hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+              </select>
+            </div>
+            <div>
               <label className="text-xs text-slate-400 font-bold mb-2 block">UPLOAD EXCEL *</label>
-              <input type="file" accept=".xlsx,.csv" className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-500/20 file:text-sky-400 hover:file:bg-sky-500/30" />
+              <input type="file" accept=".xlsx,.csv" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-500/20 file:text-sky-400 hover:file:bg-sky-500/30" />
             </div>
           </div>
           
           <div className="mt-8 flex justify-between items-center">
-            <button className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors flex items-center gap-2"><Upload size={20}/> Upload List</button>
+            <button onClick={handleUpload} disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors flex items-center gap-2"><Upload size={20}/> Upload List</button>
             <button className="text-emerald-400 font-semibold text-sm hover:underline border border-emerald-500/30 px-6 py-3 rounded-lg hover:bg-emerald-500/10 transition-colors">Download Format</button>
           </div>
         </div>
