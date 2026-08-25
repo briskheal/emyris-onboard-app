@@ -91,12 +91,21 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
       axios.get('/api/admin/locations/hqs'),
       axios.get('/api/admin/locations/designations'),
       axios.get('/api/admin/locations/divisions'),
-      axios.get('/api/admin/applicants')
-    ]).then(([hqRes, dsgRes, divRes, appRes]) => {
+      axios.get('/api/admin/applicants'),
+      axios.get('/api/admin/users'),
+      axios.get('/api/admin/admins')
+    ]).then(([hqRes, dsgRes, divRes, appRes, usersRes, adminsRes]) => {
       if (hqRes.data.success) setHqs(hqRes.data.hqs);
       if (dsgRes.data.success) setDesignations(dsgRes.data.designations);
       if (divRes.data.success) setDivisions(divRes.data.divisions);
-      if (appRes?.data?.success) setApplicants(appRes.data.applicants.filter((a: any) => a.empCode || a.offerAccepted));
+      
+      let existingEmails = new Set();
+      if (usersRes?.data?.success && usersRes.data.users) usersRes.data.users.forEach((u: any) => existingEmails.add(u.email));
+      if (adminsRes?.data?.success && adminsRes.data.admins) adminsRes.data.admins.forEach((u: any) => existingEmails.add(u.email));
+
+      if (appRes?.data?.success) {
+          setApplicants(appRes.data.applicants.filter((a: any) => (a.empCode || a.offerAccepted) && !existingEmails.has(a.email)));
+      }
     }).catch(console.error);
   }, []);
 
