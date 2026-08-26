@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MessageSquare, Bell, TrendingUp, User, ChevronDown, CheckCircle2, LayoutDashboard } from 'lucide-react';
+import { TrendingUp, User, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 export default function Dashboard() {
   const [selectedMonth] = useState('August');
@@ -8,31 +8,10 @@ export default function Dashboard() {
   return (
     <div className="min-h-full bg-slate-900 flex flex-col font-sans pb-24 text-slate-100">
       
-      {/* Sticky Header */}
-      <div className="flex items-center justify-between px-5 pt-12 pb-4 sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
-        <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center">
-            <LayoutDashboard size={20} className="text-sky-400" />
-          </div>
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight leading-none">EMYRIS</h1>
-            <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="text-sky-400 relative active:scale-95 transition-transform">
-            <MessageSquare size={22} />
-          </button>
-          <button className="text-emerald-400 relative active:scale-95 transition-transform">
-            <Bell size={22} />
-            <span className="absolute -top-1 -right-1.5 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-              3
-            </span>
-          </button>
-        </div>
-      </div>
-
-      <div className="px-5 mt-6 space-y-8">
+            {/* Placeholder for future Backlog Reporting & Messages */}
+      <div id="dashboard-message-placeholder" className="hidden"></div>
+      
+      <div className="px-5 mt-4 space-y-8">
         
         {/* Filters Section */}
         <div>
