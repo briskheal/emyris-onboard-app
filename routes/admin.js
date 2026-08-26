@@ -2145,6 +2145,10 @@ router.get('/company-profile', async (req, res) => {
         profile.divisions = divisions;
         const hqs = await HQ.find({ active: true }).sort({ name: 1 }).lean();
         profile.hqs = hqs;
+        
+        // Link XLA Designations globally across all portals
+        const xlDsgs = await XlDesignation.findAll({ order: [['level', 'ASC']] });
+        profile.designations = xlDsgs.map(d => ({ title: d.designationName, department: 'SALES' }));
 
         // Strip heavy HTML template bodies for the main profile endpoint to prevent 4MB payload
         delete profile.offerLetterBody;
