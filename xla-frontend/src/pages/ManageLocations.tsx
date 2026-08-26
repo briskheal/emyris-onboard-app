@@ -65,7 +65,7 @@ export default function ManageLocations() {
   const [activeTab, setActiveTab] = useState<'state' | 'hq' | 'city' | 'route'>('state');
   
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
+    <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
       
       {/* Header */}
       <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">

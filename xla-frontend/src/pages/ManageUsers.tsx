@@ -59,7 +59,7 @@ export default function ManageUsers() {
   >('create_user');
   
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
+    <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
       <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
           <ArrowLeft size={24} /> <span className="font-bold text-lg tracking-wide uppercase">Back to Admin Menu</span>
