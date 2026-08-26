@@ -86,7 +86,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING }, // e.g. HQS1
         state: { type: DataTypes.STRING, allowNull: false },
-        hqName: { type: DataTypes.STRING, allowNull: false },
+        hqName: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hqName', val.toUpperCase().trim()); } },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -95,7 +95,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING }, // e.g. CTY1
         state: { type: DataTypes.STRING, allowNull: false },
-        hq: { type: DataTypes.STRING, allowNull: false },
+        hq: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         cityName: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING, defaultValue: 'City' },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
@@ -106,7 +106,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING }, 
         state: { type: DataTypes.STRING, allowNull: false },
-        hq: { type: DataTypes.STRING, allowNull: false },
+        hq: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         fromCity: { type: DataTypes.STRING, allowNull: false },
         toCity: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING }, // Local, Ex-Station, Out-Station
@@ -146,7 +146,7 @@ module.exports = function initXlModels(sequelize) {
         email: { type: DataTypes.STRING },
         password: { type: DataTypes.STRING },
         dob: { type: DataTypes.STRING },
-        hq: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         designation: { type: DataTypes.STRING },
         division: { type: DataTypes.STRING },
         employeeId: { type: DataTypes.STRING },
@@ -176,7 +176,7 @@ module.exports = function initXlModels(sequelize) {
         email: { type: DataTypes.STRING },
         password: { type: DataTypes.STRING },
         dob: { type: DataTypes.STRING },
-        hq: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         designation: { type: DataTypes.STRING },
         division: { type: DataTypes.STRING },
         employeeId: { type: DataTypes.STRING },
@@ -200,7 +200,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         employeeEmail: { type: DataTypes.STRING, allowNull: false },
         employeeName: { type: DataTypes.STRING },
-        hq: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         month: { type: DataTypes.STRING, allowNull: false }, // e.g. "august"
         year: { type: DataTypes.STRING, allowNull: false },  // e.g. "2026"
         entries: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of {date, visitType, area}
