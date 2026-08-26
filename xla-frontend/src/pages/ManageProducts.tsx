@@ -122,7 +122,7 @@ function CategoryTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE PRODUCT CATEGORY</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE PRODUCT CATEGORY</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER PRODUCT CATEGORY *</label>
@@ -209,7 +209,7 @@ function TypeTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE PRODUCT TYPE</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE PRODUCT TYPE</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">PRODUCT TYPE *</label>
@@ -318,7 +318,7 @@ function ProductTab() {
     return (
       <div className="max-w-4xl bg-slate-800/80 rounded-2xl border border-slate-700 p-8 shadow-xl">
         <div className="flex items-center justify-between mb-8 border-b border-slate-700 pb-4">
-          <h2 className="text-2xl font-black text-white tracking-wide uppercase">PRODUCT DETAILS</h2>
+          <h2 className="text-lg font-bold text-white tracking-wide uppercase">PRODUCT DETAILS</h2>
           <button onClick={() => setViewProduct(null)} className="text-slate-400 hover:text-white font-bold px-4 py-2 bg-slate-700 rounded-lg">Close Details</button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
@@ -342,7 +342,7 @@ function ProductTab() {
 
   return (
     <div className="max-w-full">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">{isEditing ? 'EDIT PRODUCT' : 'CREATE PRODUCT'}</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">{isEditing ? 'EDIT PRODUCT' : 'CREATE PRODUCT'}</h2>
       
       <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-12 shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -431,7 +431,7 @@ function ProductTab() {
 function UploadTab() {
   return (
     <div className="max-w-3xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">UPLOAD PRODUCT</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">UPLOAD PRODUCT</h2>
       <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-lg">
         <label className="text-sm text-slate-400 font-bold mb-4 block uppercase tracking-wider">UPLOAD EXCEL *</label>
         <div className="flex gap-4 items-center">
@@ -497,7 +497,7 @@ function SupplierTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE PRODUCT SUPPLIER</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE PRODUCT SUPPLIER</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER PRODUCT SUPPLIER *</label>
@@ -581,7 +581,7 @@ function InventoryTab() {
     const paginated = data.slice((currentPage - 1) * pageSize, currentPage * pageSize);
     return (
       <div className="max-w-5xl">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase cursor-pointer hover:text-sky-400 flex items-center gap-2" onClick={() => setViewMode('add')}>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase cursor-pointer hover:text-sky-400 flex items-center gap-2" onClick={() => setViewMode('add')}>
           <ArrowLeft size={24} /> ALL INVENTORY
         </h2>
         <div className="flex justify-between items-center mb-6">
@@ -633,7 +633,7 @@ function InventoryTab() {
     const paginated = products.slice((currentPage - 1) * pageSize, currentPage * pageSize);
     return (
       <div className="max-w-6xl">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase cursor-pointer hover:text-sky-400 flex items-center gap-2" onClick={() => setViewMode('full')}>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase cursor-pointer hover:text-sky-400 flex items-center gap-2" onClick={() => setViewMode('full')}>
           <ArrowLeft size={24} /> PRODUCT WISE INVENTORY
         </h2>
         
@@ -681,7 +681,7 @@ function InventoryTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">INVENTORY</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">INVENTORY</h2>
       
       <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-8 shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">

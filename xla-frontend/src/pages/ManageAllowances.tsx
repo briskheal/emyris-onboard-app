@@ -87,7 +87,7 @@ export default function ManageAllowances() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">SET ALLOWANCES</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">SET ALLOWANCES</h2>
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -181,7 +181,7 @@ export default function ManageAllowances() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">OUT-STATION ALLOWANCES</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">OUT-STATION ALLOWANCES</h2>
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -269,7 +269,7 @@ export default function ManageAllowances() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">TOTAL RATES</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">TOTAL RATES</h2>
         
         <div className="mb-10 w-full md:w-1/3">
           <label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER *</label>

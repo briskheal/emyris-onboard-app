@@ -69,7 +69,7 @@ export default function ManageDCS() {
     return (
       <div className="flex-1 overflow-auto p-8">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-2xl font-black text-white tracking-wide uppercase">CREATE DOCTOR...</h2>
+          <h2 className="text-lg font-bold text-white tracking-wide uppercase">CREATE DOCTOR...</h2>
           <button className="text-sky-400 text-sm font-bold hover:underline">Do you want to add more Degrees and Specializations?</button>
         </div>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
@@ -124,7 +124,7 @@ export default function ManageDCS() {
 
     return (
       <div className="flex-1 overflow-auto p-8">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE CHEMIST</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE CHEMIST</h2>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BUSINESS NAME *</label><input required value={formData.businessName} onChange={e=>setFormData({...formData, businessName: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Chemist's Name" /></div>
@@ -171,7 +171,7 @@ export default function ManageDCS() {
 
     return (
       <div className="flex-1 overflow-auto p-8">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE STOCKIST</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE STOCKIST</h2>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BUSINESS NAME *</label><input required value={formData.businessName} onChange={e=>setFormData({...formData, businessName: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Stockist's Name" /></div>
@@ -262,7 +262,7 @@ export default function ManageDCS() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10 flex flex-col">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">EDIT / DELETE</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">EDIT / DELETE</h2>
         
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col p-6 flex-1">
           <p className="text-sm text-sky-400 mb-6 font-semibold bg-sky-900/30 p-4 rounded-lg inline-block w-fit">Deleting a DCS from here will also remove it from the list.</p>
@@ -365,7 +365,7 @@ export default function ManageDCS() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">UPLOAD DOCTOR / CHEMIST / STOCKIST / CITY OR AREA</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">UPLOAD DOCTOR / CHEMIST / STOCKIST / CITY OR AREA</h2>
         
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl p-8 mb-8">
           <p className="text-sm text-slate-400 mb-8 leading-relaxed max-w-4xl bg-slate-900/50 p-6 rounded-xl border border-slate-800">
@@ -410,7 +410,7 @@ export default function ManageDCS() {
     
     if(!subTab) return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">DOC / CHEM / STK LIST MANAGEMENT</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">DOC / CHEM / STK LIST MANAGEMENT</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <button onClick={()=>setSubTab('allot')} className="bg-slate-800/80 border border-slate-700 hover:border-sky-500 hover:bg-slate-800 rounded-2xl p-10 flex flex-col items-center gap-6 transition-all shadow-xl group">
             <div className="w-20 h-20 bg-slate-700 group-hover:bg-sky-500/20 rounded-full flex items-center justify-center transition-colors"><Users size={32} className="text-white group-hover:text-sky-400" /></div>

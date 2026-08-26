@@ -173,7 +173,7 @@ function StateTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE STATE</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE STATE</h2>
       
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
         <div className="flex-1">
@@ -275,7 +275,7 @@ function HQTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE HEADQUARTER</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE HEADQUARTER</h2>
       
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
         <div className="flex-1">
@@ -392,7 +392,7 @@ function CityTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE CITY / AREA</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE CITY / AREA</h2>
       
       <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
         <div className="flex-1 min-w-[200px]">
@@ -532,7 +532,7 @@ function RouteTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-4 tracking-wide uppercase">CREATE ROUTE</h2>
+      <h2 className="text-lg font-bold text-white mb-4 tracking-wide uppercase">CREATE ROUTE</h2>
       <div className="bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 p-4 rounded-xl mb-8 font-bold text-sm">
         Note: If the distance of a route is edited, the updated distance will not be reflected in the tour programs. However, the new distance will be applied to newly created tour programs.
       </div>
