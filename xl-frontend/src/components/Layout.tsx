@@ -3,6 +3,8 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, Layers, Wrench, FileText, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import DCRModal from './DCRModal';
+import NavigationDrawer from './NavigationDrawer';
+import { Menu, Bell } from 'lucide-react';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
@@ -17,6 +19,8 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showDCR, setShowDCR] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -26,6 +30,14 @@ export default function Layout() {
     } else {
       setUser(JSON.parse(storedUser));
     }
+
+    axios.get('/api/company-profile')
+      .then(res => {
+        if (res.data && res.data.logoUrl) {
+          setLogoUrl(res.data.logoUrl);
+        }
+      })
+      .catch(err => console.error("Failed to load company profile", err));
   }, [navigate]);
   
   const [isLocked, setIsLocked] = useState(false);
@@ -58,6 +70,33 @@ export default function Layout() {
   return (
     <div className="flex flex-col h-dvh bg-slate-900 overflow-hidden relative" style={{ fontFamily: "'Inter', sans-serif" }}>
       
+            {/* TOP NAVIGATION BAR */}
+      <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
+        <div className="flex items-center gap-3">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="h-8 object-contain" />
+          ) : (
+            <div className="w-8 h-8 bg-sky-500 rounded flex items-center justify-center text-white font-black text-sm">EM</div>
+          )}
+          <div className="flex flex-col">
+            <span className="text-[13px] font-black text-white leading-tight">EMYRIS</span>
+            <span className="text-[9px] font-bold text-emerald-400 tracking-widest uppercase leading-tight">Biolifesciences</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <button className="relative text-slate-400">
+            <Bell size={20} />
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 border-2 border-slate-900 rounded-full"></span>
+          </button>
+          <button onClick={() => setIsDrawerOpen(true)} className="text-slate-300">
+            <Menu size={24} />
+          </button>
+        </div>
+      </header>
+      
+      {/* Drawer */}
+      <NavigationDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} user={user} />
+
       {/* GLOBAL LOCKOUT OVERLAY */}
       {isLocked && (
         <div className="absolute inset-0 z-[9999] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
