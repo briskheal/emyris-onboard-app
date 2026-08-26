@@ -7,6 +7,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         type: { type: DataTypes.STRING, allowNull: false }, // Degree, Specialization, Hospital, Category
         name: { type: DataTypes.STRING, allowNull: false },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -29,9 +30,12 @@ module.exports = function initXlModels(sequelize) {
         headquarter: { type: DataTypes.STRING },
         workingArea: { type: DataTypes.STRING },
         extraInformation: { type: DataTypes.TEXT },
+        
         userAllotted: { type: DataTypes.STRING },
         updateAt: { type: DataTypes.STRING },
+        
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -50,6 +54,7 @@ module.exports = function initXlModels(sequelize) {
         extraInformation: { type: DataTypes.TEXT },
         userAllotted: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -71,6 +76,7 @@ module.exports = function initXlModels(sequelize) {
         extraInformation: { type: DataTypes.TEXT },
         userAllotted: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -79,6 +85,7 @@ module.exports = function initXlModels(sequelize) {
         uid: { type: DataTypes.STRING }, // e.g. STE1
         stateName: { type: DataTypes.STRING, allowNull: false },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -88,6 +95,7 @@ module.exports = function initXlModels(sequelize) {
         state: { type: DataTypes.STRING, allowNull: false },
         hqName: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hqName', val.toUpperCase().trim()); } },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -99,6 +107,7 @@ module.exports = function initXlModels(sequelize) {
         cityName: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING, defaultValue: 'City' },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -112,6 +121,7 @@ module.exports = function initXlModels(sequelize) {
         areaType: { type: DataTypes.STRING }, // Local, Ex-Station, Out-Station
         distance: { type: DataTypes.FLOAT },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -120,6 +130,7 @@ module.exports = function initXlModels(sequelize) {
         uid: { type: DataTypes.STRING },
         divisionName: { type: DataTypes.STRING, allowNull: false },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -132,6 +143,7 @@ module.exports = function initXlModels(sequelize) {
         exStationAllowance: { type: DataTypes.FLOAT },
         outStationAllowance: { type: DataTypes.FLOAT },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -162,6 +174,7 @@ module.exports = function initXlModels(sequelize) {
         city: { type: DataTypes.STRING },
         state: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -192,6 +205,7 @@ module.exports = function initXlModels(sequelize) {
         city: { type: DataTypes.STRING },
         state: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -208,6 +222,7 @@ module.exports = function initXlModels(sequelize) {
         adminRemarks: { type: DataTypes.TEXT },
         submittedAt: { type: DataTypes.DATE },
         approvedAt: { type: DataTypes.DATE },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -230,6 +245,7 @@ module.exports = function initXlModels(sequelize) {
         longitude: { type: DataTypes.FLOAT },
         geoAddress: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Submitted' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -245,6 +261,7 @@ module.exports = function initXlModels(sequelize) {
         punchOutLat: { type: DataTypes.FLOAT },
         punchOutLng: { type: DataTypes.FLOAT },
         status: { type: DataTypes.STRING, defaultValue: 'Present' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -258,6 +275,7 @@ module.exports = function initXlModels(sequelize) {
         reason: { type: DataTypes.TEXT },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending / Approved / Rejected
         adminRemarks: { type: DataTypes.TEXT },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -271,6 +289,7 @@ module.exports = function initXlModels(sequelize) {
         remarks: { type: DataTypes.TEXT },
         receiptImage: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -282,6 +301,7 @@ module.exports = function initXlModels(sequelize) {
         reason: { type: DataTypes.TEXT },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending / Approved / Rejected
         adminRemarks: { type: DataTypes.TEXT },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -291,6 +311,7 @@ module.exports = function initXlModels(sequelize) {
         employeeEmail: { type: DataTypes.STRING, allowNull: false },
         date: { type: DataTypes.STRING, allowNull: false },
         doctors: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of doctor IDs
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -309,6 +330,7 @@ module.exports = function initXlModels(sequelize) {
         outstandingData: { type: DataTypes.TEXT, defaultValue: '[]' },
         
         planningSubmittedAt: { type: DataTypes.DATE },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -316,6 +338,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING },
         categoryName: { type: DataTypes.STRING, allowNull: false },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -323,6 +346,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING },
         typeName: { type: DataTypes.STRING, allowNull: false },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -341,6 +365,7 @@ module.exports = function initXlModels(sequelize) {
         division: { type: DataTypes.STRING },
         gst: { type: DataTypes.FLOAT },
         stock: { type: DataTypes.INTEGER, defaultValue: 0 },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -348,6 +373,7 @@ module.exports = function initXlModels(sequelize) {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING },
         supplierName: { type: DataTypes.STRING, allowNull: false },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -363,6 +389,7 @@ module.exports = function initXlModels(sequelize) {
         batchNumber: { type: DataTypes.STRING },
         expiryDate: { type: DataTypes.DATE },
         fileUrl: { type: DataTypes.STRING },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -373,6 +400,7 @@ module.exports = function initXlModels(sequelize) {
         fromDistance: { type: DataTypes.INTEGER, allowNull: false },
         toDistance: { type: DataTypes.INTEGER, allowNull: false },
         allowancePerKm: { type: DataTypes.FLOAT, allowNull: false },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -388,6 +416,7 @@ module.exports = function initXlModels(sequelize) {
         lumpSumAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
         productTargets: { type: DataTypes.JSON, defaultValue: [] },
         totalProductAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -397,6 +426,7 @@ module.exports = function initXlModels(sequelize) {
         designation: { type: DataTypes.STRING, allowNull: false },
         category: { type: DataTypes.STRING, allowNull: false }, // e.g., 'Hotel', 'Food'
         amount: { type: DataTypes.FLOAT, allowNull: false },
+        excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 

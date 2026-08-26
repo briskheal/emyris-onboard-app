@@ -4698,6 +4698,31 @@ router.delete('/allowances/outstation/:id', async (req, res) => {
 // --- DCS MANAGEMENT ---
 const { XlDoctor, XlChemist, XlStockist, XlDoctorControl } = require('../db');
 
+
+async function getMaxUID(Model, prefix) {
+  const records = await Model.findAll({ attributes: ['uid'] });
+  let max = 0;
+  for (let r of records) {
+    if (r.uid && r.uid.startsWith(prefix)) {
+      const num = parseInt(r.uid.substring(prefix.length)) || 0;
+      if (num > max) max = num;
+    }
+  }
+  return max;
+}
+
+async function getMaxDoctorCode(Model) {
+  const records = await Model.findAll({ attributes: ['doctorCode'] });
+  let max = 0;
+  for (let r of records) {
+    if (r.doctorCode && r.doctorCode.startsWith('DOC')) {
+      const num = parseInt(r.doctorCode.substring(3)) || 0;
+      if (num > max) max = num;
+    }
+  }
+  return max;
+}
+
 async function generateUID(Model, prefix) {
   const records = await Model.findAll({ attributes: ['uid'] });
   let max = 0;
@@ -4710,15 +4735,15 @@ async function generateUID(Model, prefix) {
   return prefix + (max + 1);
 }
 
-router.get('/dcs/doctors', async (req, res) => { try { const docs = await XlDoctor.findAll({ order: [['createdAt', 'DESC']] }); res.json({ success: true, doctors: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.get('/dcs/doctors', async (req, res) => { try { const docs = await XlDoctor.findAll({ order: [['excelRowIndex', 'ASC'], ['createdAt', 'DESC']] }); res.json({ success: true, doctors: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/doctors', async (req, res) => { try { const data = req.body; if (!data.uid) data.uid = await generateUID(XlDoctor, 'DOC'); const doc = await XlDoctor.create(data); res.json({ success: true, doctor: doc }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/doctors/:id', async (req, res) => { try { await XlDoctor.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
-router.get('/dcs/chemists', async (req, res) => { try { const docs = await XlChemist.findAll({ order: [['createdAt', 'DESC']] }); res.json({ success: true, chemists: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.get('/dcs/chemists', async (req, res) => { try { const docs = await XlChemist.findAll({ order: [['excelRowIndex', 'ASC'], ['createdAt', 'DESC']] }); res.json({ success: true, chemists: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/chemists', async (req, res) => { try { const data = req.body; if (!data.uid) data.uid = await generateUID(XlChemist, 'CHM'); const doc = await XlChemist.create(data); res.json({ success: true, chemist: doc }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/chemists/:id', async (req, res) => { try { await XlChemist.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
-router.get('/dcs/stockists', async (req, res) => { try { const docs = await XlStockist.findAll({ order: [['createdAt', 'DESC']] }); res.json({ success: true, stockists: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.get('/dcs/stockists', async (req, res) => { try { const docs = await XlStockist.findAll({ order: [['excelRowIndex', 'ASC'], ['createdAt', 'DESC']] }); res.json({ success: true, stockists: docs }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/stockists', async (req, res) => { try { const data = req.body; if (!data.uid) data.uid = await generateUID(XlStockist, 'STK'); const doc = await XlStockist.create(data); res.json({ success: true, stockist: doc }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/stockists/:id', async (req, res) => { try { await XlStockist.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
@@ -4735,22 +4760,52 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
     const targetHq = req.body.hq;
     if (!type || !targetHq) throw new Error('Missing type or HQ');
     
-    const wb = xlsx.readFile(req.file.path);
-    const data = xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+    const wb = require('xlsx').readFile(req.file.path);
+    const data = require('xlsx').utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
     if (!data || data.length === 0) throw new Error('Empty or invalid excel file');
 
+    let currentUidMax = 0;
+    let currentDocCodeMax = 0;
+    const { XlDoctor, XlChemist, XlStockist } = require('../db');
+
+    if (type === 'Doctor') {
+      currentUidMax = await getMaxUID(XlDoctor, 'DOC');
+      currentDocCodeMax = await getMaxDoctorCode(XlDoctor);
+    } else if (type === 'Chemist') {
+      currentUidMax = await getMaxUID(XlChemist, 'CHM');
+    } else if (type === 'Stockist') {
+      currentUidMax = await getMaxUID(XlStockist, 'STK');
+    }
+
     const docs = [];
+    let index = 0;
     for (let d of data) {
-      let row = { headquarter: targetHq, status: 'Pending', uid: d.UID || d.uid };
+      let row = { headquarter: targetHq, status: 'Pending', excelRowIndex: index + 1 };
+      
+      row.updateAt = new Date().toLocaleString();
+
       if (type === 'Doctor') {
-        if (!row.uid) row.uid = await generateUID(XlDoctor, 'DOC');
+        if (!d.UID && !d.uid) {
+            currentUidMax++;
+            row.uid = 'DOC' + currentUidMax;
+        } else {
+            row.uid = d.UID || d.uid;
+        }
+
         row.name = d.Name || d.name || '';
         row.degree = d.Degree || d.degree || '';
         row.specialization = d.Specialization || d.specialization || '';
         row.hospital = d.Hospital || d.hospital || '';
         row.mobile = String(d.Mobile || d.mobile || '');
         row.clinicContact = String(d['Clinic Contact'] || d.clinicContact || '');
-        row.doctorCode = String(d['Doctor Code'] || d.doctorCode || '');
+        
+        if (!d['Doctor Code'] && !d.doctorCode) {
+            currentDocCodeMax++;
+            row.doctorCode = 'DOC' + currentDocCodeMax.toString().padStart(3, '0');
+        } else {
+            row.doctorCode = String(d['Doctor Code'] || d.doctorCode || '');
+        }
+
         row.category = d.Category || d.category || '';
         row.address = d.Address || d.address || '';
         row.workingArea = d['Working Area'] || d.workingArea || '';
@@ -4761,7 +4816,12 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
       if (type === 'Chemist') {
-        if (!row.uid) row.uid = await generateUID(XlChemist, 'CHM');
+        if (!d.UID && !d.uid) {
+            currentUidMax++;
+            row.uid = 'CHM' + currentUidMax;
+        } else {
+            row.uid = d.UID || d.uid;
+        }
         row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
         row.proprietorName = d['Proprietor Name'] || d.proprietorName || '';
         row.mobile = String(d.Mobile || d.mobile || '');
@@ -4773,7 +4833,12 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
       if (type === 'Stockist') {
-        if (!row.uid) row.uid = await generateUID(XlStockist, 'STK');
+        if (!d.UID && !d.uid) {
+            currentUidMax++;
+            row.uid = 'STK' + currentUidMax;
+        } else {
+            row.uid = d.UID || d.uid;
+        }
         row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
         row.name = d['Proprietor Name'] || d.name || '';
         row.mobile = String(d.Mobile || d.mobile || '');
@@ -4785,22 +4850,23 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.certifications = d.Certifications || d.certifications || '';
         row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
+      
       docs.push(row);
-      // Hack to advance the max without refetching constantly inside the loop
-      if (row.uid) {
-        if (type === 'Doctor') {
-          const ex = await XlDoctor.findOne({ where: { uid: row.uid } });
-          if (ex) await ex.update(row); else await XlDoctor.create(row);
-        }
-        if (type === 'Chemist') {
-          const ex = await XlChemist.findOne({ where: { uid: row.uid } });
-          if (ex) await ex.update(row); else await XlChemist.create(row);
-        }
-        if (type === 'Stockist') {
-          const ex = await XlStockist.findOne({ where: { uid: row.uid } });
-          if (ex) await ex.update(row); else await XlStockist.create(row);
-        }
+      
+      if (type === 'Doctor') {
+        const ex = await XlDoctor.findOne({ where: { uid: row.uid } });
+        if (ex) await ex.update(row); else await XlDoctor.create(row);
       }
+      if (type === 'Chemist') {
+        const ex = await XlChemist.findOne({ where: { uid: row.uid } });
+        if (ex) await ex.update(row); else await XlChemist.create(row);
+      }
+      if (type === 'Stockist') {
+        const ex = await XlStockist.findOne({ where: { uid: row.uid } });
+        if (ex) await ex.update(row); else await XlStockist.create(row);
+      }
+      
+      index++;
     }
 
     res.json({ success: true, count: docs.length });
@@ -4808,7 +4874,6 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
     res.status(500).json({ success: false, message: e.message });
   }
 });
-
 
 // -------------------------------------------------------------
 // TARGETS API (XLA)
