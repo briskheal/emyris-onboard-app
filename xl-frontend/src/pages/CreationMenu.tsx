@@ -50,7 +50,7 @@ export default function CreationMenu() {
   return (
     <div className="min-h-full bg-slate-900">
       {/* Header */}
-      <div className="px-4 pt-12 pb-6 bg-gradient-to-b from-slate-800 to-slate-900">
+      <div className="px-4 pt-4 pb-6 bg-gradient-to-b from-slate-800 to-slate-900">
         <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mb-1">Module</p>
         <h1 className="text-2xl font-bold text-white">Creation Menu</h1>
         <p className="text-sm text-slate-400 mt-1">Add new records to the CRM</p>

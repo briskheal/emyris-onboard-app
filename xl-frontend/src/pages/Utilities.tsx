@@ -32,7 +32,7 @@ export default function Utilities() {
   return (
     <div className="min-h-full bg-slate-900 pb-8">
       {/* Header */}
-      <div className="px-4 pt-12 pb-6 bg-gradient-to-b from-slate-800 to-slate-900 sticky top-0 z-10 flex justify-between items-start">
+      <div className="px-4 pt-4 pb-6 bg-gradient-to-b from-slate-800 to-slate-900 sticky top-0 z-10 flex justify-between items-start">
         <div>
           <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mb-1">Module</p>
           <h1 className="text-2xl font-bold text-white">Utilities</h1>

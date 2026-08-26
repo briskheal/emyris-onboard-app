@@ -20,11 +20,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
 };
 
 // Hardcoded for Phase 2 — will be replaced by login session in future
-const USER_EMAIL = 'rep@emyris.in';
-const USER_NAME = 'Field Rep';
+
+
 
 export default function TourProgram() {
   const navigate = useNavigate();
+  const storedUser = localStorage.getItem('xl_user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
   const today = new Date();
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [entries, setEntries] = useState<Record<string, string>>({}); // { "2026-08-15": "Local" }
@@ -49,7 +51,7 @@ export default function TourProgram() {
 
   const fetchTP = async () => {
     try {
-      const res = await axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${month}&year=${year}`);
+      const res = await axios.get(`/api/xl/tour-program/my?email=${user?.email}&month=${month}&year=${year}`);
       if (res.data.data) {
         const tp = res.data.data;
         setTpId(tp._id);
@@ -94,7 +96,7 @@ export default function TourProgram() {
     try {
       const entriesArr = Object.entries(entries).map(([date, visitType]) => ({ date, visitType }));
       const res = await axios.post('/api/xl/tour-program', {
-        employeeEmail: USER_EMAIL, employeeName: USER_NAME,
+        employeeEmail: user?.email, employeeName: user ? `${user.firstName} ${user.lastName}` : '',
         month, year, entries: entriesArr
       });
       setTpId(res.data.data._id);
@@ -128,7 +130,7 @@ export default function TourProgram() {
   return (
     <div className="min-h-full bg-slate-900">
       {/* Header */}
-      <div className="px-4 pt-12 pb-4 bg-gradient-to-b from-slate-800 to-slate-900">
+      <div className="px-4 pt-4 pb-4 bg-gradient-to-b from-slate-800 to-slate-900">
         <div className="flex items-center gap-3 mb-1">
           <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600">
             <ChevronLeft size={18} className="text-white" />

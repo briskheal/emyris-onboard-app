@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Check, CheckSquare, Square, Search } from 'lucide-react';
 import axios from 'axios';
 
-const USER_EMAIL = 'rep@emyris.in';
+
 
 export default function CallPlan() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  
+  const storedUser = localStorage.getItem('xl_user');
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
   const [saving, setSaving] = useState(false);
   const [doctors, setDoctors] = useState<any[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -24,13 +28,17 @@ export default function CallPlan() {
   }, []);
 
   const fetchData = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     try {
-      // 1. Fetch all doctors
-      const drRes = await axios.get('/api/xl/entities?type=Doctor');
+      // 1. Fetch all doctors for this HQ
+      const drRes = await axios.get(`/api/xl/doctors?hq=${user.hq || ''}`);
       setDoctors(drRes.data.data || []);
 
       // 2. Fetch existing call plan for today
-      const planRes = await axios.get(`/api/xl/call-plan/my?email=${USER_EMAIL}&date=${dateStr}`);
+      const planRes = await axios.get(`/api/xl/call-plan/my?email=${user.email}&date=${dateStr}`);
       if (planRes.data.data && planRes.data.data.doctors) {
         setSelectedIds(new Set(JSON.parse(planRes.data.data.doctors)));
       }
@@ -59,7 +67,7 @@ export default function CallPlan() {
 
     try {
       await axios.post('/api/xl/call-plan', {
-        employeeEmail: USER_EMAIL,
+        employeeEmail: user?.email,
         date: dateStr,
         doctors: Array.from(selectedIds)
       });
@@ -76,7 +84,7 @@ export default function CallPlan() {
   return (
     <div className="min-h-full bg-slate-900 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 bg-slate-800 border-b border-slate-700/60 sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-800 border-b border-slate-700/60 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600 flex-shrink-0">
           <ChevronLeft size={20} className="text-white" />
         </button>

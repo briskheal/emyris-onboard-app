@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { TrendingUp, User, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 export default function Dashboard() {
-  const [selectedMonth] = useState('August');
-  const [selectedYear] = useState('2026');
+  const [selectedMonth, setSelectedMonth] = useState('August');
+  const [selectedYear, setSelectedYear] = useState('2026');
 
   return (
     <div className="min-h-full bg-slate-900 flex flex-col font-sans pb-24 text-slate-100">
@@ -17,20 +17,41 @@ export default function Dashboard() {
         <div>
           <h2 className="text-xl font-bold text-sky-400 mb-4">My Stats</h2>
           <div className="grid grid-cols-2 gap-3">
-            <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700">
-              <div className="flex items-center gap-2">
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
                 <CheckCircle2 size={16} className="text-sky-400" />
-                <span className="font-semibold">{selectedMonth}</span>
               </div>
-              <ChevronDown size={18} className="text-slate-400" />
-            </button>
-            <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700">
-              <div className="flex items-center gap-2">
+              <select 
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full appearance-none bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-10 font-semibold text-white focus:outline-none focus:border-sky-500"
+              >
+                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronDown size={18} className="text-slate-400" />
+              </div>
+            </div>
+
+            <div className="relative">
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
                 <CheckCircle2 size={16} className="text-sky-400" />
-                <span className="font-semibold">{selectedYear}</span>
               </div>
-              <ChevronDown size={18} className="text-slate-400" />
-            </button>
+              <select 
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full appearance-none bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-10 font-semibold text-white focus:outline-none focus:border-sky-500"
+              >
+                {['2025', '2026', '2027'].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                <ChevronDown size={18} className="text-slate-400" />
+              </div>
+            </div>
           </div>
         </div>
 

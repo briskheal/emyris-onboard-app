@@ -72,7 +72,7 @@ export default function LeaveRequest() {
   return (
     <div className="min-h-full bg-slate-900 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 bg-slate-800 border-b border-slate-700/60 sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-800 border-b border-slate-700/60 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600 flex-shrink-0">
           <ChevronLeft size={20} className="text-white" />
         </button>
