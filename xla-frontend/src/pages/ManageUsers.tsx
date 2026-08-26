@@ -159,7 +159,11 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
       const url = isAdmin ? '/api/admin/admins' : '/api/admin/users';
       const res = await axios.post(url, formData);
       if (res.data.success) {
-        alert('Created successfully!');
+        if (sendEmail && formData.email && formData.password) {
+            alert(`LOGIN CREDENTIALS SHARED!\n\nCOMPANY: EMYRIS\nEMAIL: ${formData.email}\nPW: ${formData.password}\n\n(These are required to login to emyrishr.in/xl mobile portal)`);
+        } else {
+            alert('Created successfully!');
+        }
         setFormData({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '' });
       } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -415,9 +419,13 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
               <p className="text-white font-bold">{viewUser.lastName || '-'}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">EMAIL ADDRESS</p>
-              <p className="text-sky-400 font-bold break-all">{viewUser.email || '-'}</p>
-            </div>
+                <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">EMAIL ADDRESS</p>
+                <p className="text-sky-400 font-bold break-all">{viewUser.email || '-'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">PASSWORD</p>
+                <p className="text-amber-400 font-mono font-bold break-all">{viewUser.password || '-'}</p>
+              </div>
             <div>
               <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">PHONE NUMBER</p>
               <p className="text-white font-bold">{viewUser.phone || '-'}</p>
@@ -442,7 +450,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
             </div>
             <div>
               <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">EMPLOYEE ID</p>
-              <p className="text-emerald-400 font-bold">{viewUser.uid || '-'}</p>
+              <p className="text-emerald-400 font-bold">{viewUser.employeeId || viewUser.uid || '-'}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">DESIGNATION</p>
@@ -578,7 +586,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
                   <td className="border-r border-slate-700 p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
                   <td className="border-r border-slate-700 p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
                   <td className="border-r border-slate-700 p-4 text-slate-300 text-center">{p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold">{p.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold">{p.employeeId || p.uid || '-'}</td>
                   <td className="border-r border-slate-700 p-4 text-slate-300">{p.reportingManager || '-'}</td>
                   <td className="border-r border-slate-700 p-4 text-slate-300">{p.designation || '-'}</td>
                   <td className="border-r border-slate-700 p-4 text-slate-300">{p.hq || '-'}</td>
@@ -946,6 +954,10 @@ function EditDeleteTab() {
                 <input type="email" value={editUser.email || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
               </div>
               <div>
+                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Password</label>
+                <input type="text" value={editUser.password || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-amber-400 font-mono focus:outline-none" />
+              </div>
+              <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Phone *</label>
                 <input value={editUser.phone || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
               </div>
@@ -974,7 +986,7 @@ function EditDeleteTab() {
               </div>
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Employee ID</label>
-                <input value={editUser.uid || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.employeeId || editUser.uid || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Designation *</label>
@@ -993,6 +1005,23 @@ function EditDeleteTab() {
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Pan Number</label>
                 <input value={editUser.pan || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+              </div>
+            </div>
+            <div className="border-t border-slate-700/50 pt-8 mb-8 mt-8">
+              <h3 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Allowances</h3>
+              <div className="grid grid-cols-3 gap-6">
+                <div>
+                  <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Daily Allowance</label>
+                  <input value={editUser.dailyAllowance || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Ex Allowance</label>
+                  <input value={editUser.exStationAllowance || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                </div>
+                <div>
+                  <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Out Allowance</label>
+                  <input value={editUser.outStationAllowance || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                </div>
               </div>
             </div>
           </div>
