@@ -589,12 +589,13 @@ function RouteTab() {
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
               <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr no.</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Area Type</th>
                 <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">From City</th>
                 <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">To City</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
+                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
                 <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Distance</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Type</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
                 <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
               </tr>
             </thead>
@@ -602,11 +603,12 @@ function RouteTab() {
               {paginatedRoutes.map((r, i) => (
                 <tr key={r._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
                   <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.areaType || '-'}</td>
                   <td className="border-r border-slate-700 p-5 text-white font-bold">{r.fromCity}</td>
                   <td className="border-r border-slate-700 p-5 text-white font-bold">{r.toCity}</td>
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.distance} km</td>
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.areaType}</td>
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.uid || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.hq || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.state || '-'}</td>
+                  <td className="border-r border-slate-700 p-5 text-slate-300">{r.distance}</td>
                   <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
                     <button onClick={() => handleEdit(r._id, r.distance)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg">
                       <Edit size={20} />
