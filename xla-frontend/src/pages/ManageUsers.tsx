@@ -457,11 +457,11 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
             </div>
             <div>
               <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">EX ALLOWANCE</p>
-              <p className="text-white font-bold">{viewUser.exAllowance || '0'}</p>
+              <p className="text-white font-bold">{viewUser.exStationAllowance || '0'}</p>
             </div>
             <div>
               <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">OUT ALLOWANCE</p>
-              <p className="text-white font-bold">{viewUser.outAllowance || '0'}</p>
+              <p className="text-white font-bold">{viewUser.outStationAllowance || '0'}</p>
             </div>
           </div>
           <div>
