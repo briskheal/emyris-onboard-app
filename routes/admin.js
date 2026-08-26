@@ -2293,6 +2293,10 @@ router.get('/api/company-data', async (req, res) => {
     try {
         const company = await Company.findOne().lean();
         if (!company) return res.status(404).json({ error: 'Not found' });
+        
+        // Link XLA Designations globally
+        const xlDsgs = await XlDesignation.findAll({ order: [['level', 'ASC']] });
+        company.designations = xlDsgs.map(d => ({ title: d.designationName, department: 'SALES' }));
 
         const rawDivisions = await Division.find({ active: true }).lean();
         const hqs = await HQ.find({ active: true }).lean(); // Default sort
