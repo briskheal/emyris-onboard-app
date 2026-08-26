@@ -1,18 +1,24 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
+import { Mail, Lock, LogIn, ArrowRight, Building } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-        alert("Please enter email and password");
+    if (!companyName || !email || !password) {
+        alert("Please enter Company Name, Email and Password");
+        return;
+    }
+    
+    if (companyName.trim().toUpperCase() !== 'EMYRIS') {
+        alert("Invalid Company Name.");
         return;
     }
     
@@ -57,6 +63,18 @@ export default function Login() {
           <h2 className="text-lg font-bold text-white mb-6">Welcome back,</h2>
           
           <div className="space-y-4 mb-6">
+            <div className="relative">
+              <Building size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Company Name"
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                required
+              />
+            </div>
+            
             <div className="relative">
               <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
