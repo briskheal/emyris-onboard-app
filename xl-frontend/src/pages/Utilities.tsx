@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { 
+import { LogOut, 
   Zap, FileText, CalendarDays, Route, BarChart3, Receipt, MapPin, 
   BellRing, List, Clock, PackageSearch, TrendingUp, ShoppingCart, 
   ClipboardList, CalendarRange, Box, Gift, Target
@@ -32,10 +32,22 @@ export default function Utilities() {
   return (
     <div className="min-h-full bg-slate-900 pb-8">
       {/* Header */}
-      <div className="px-4 pt-12 pb-6 bg-gradient-to-b from-slate-800 to-slate-900 sticky top-0 z-10">
-        <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mb-1">Module</p>
-        <h1 className="text-2xl font-bold text-white">Utilities</h1>
-        <p className="text-sm text-slate-400 mt-1">Reports, analytics & management</p>
+      <div className="px-4 pt-12 pb-6 bg-gradient-to-b from-slate-800 to-slate-900 sticky top-0 z-10 flex justify-between items-start">
+        <div>
+          <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mb-1">Module</p>
+          <h1 className="text-2xl font-bold text-white">Utilities</h1>
+          <p className="text-sm text-slate-400 mt-1">Reports, analytics & management</p>
+        </div>
+        <button 
+          onClick={() => {
+            localStorage.removeItem('xl_user');
+            navigate('/login');
+          }}
+          className="flex items-center gap-2 bg-rose-500/10 text-rose-500 px-4 py-2 rounded-xl font-bold text-xs active:scale-95 transition-transform"
+        >
+          <LogOut size={16} />
+          LOGOUT
+        </button>
       </div>
 
       <div className="px-5 mt-6">

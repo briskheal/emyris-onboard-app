@@ -11,12 +11,22 @@ const navItems = [
   { path: '/utilities', icon: Wrench, label: 'Utilities' },
 ];
 
-const USER_EMAIL = 'rep@emyris.in';
+
 
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showDCR, setShowDCR] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('xl_user');
+    if (!storedUser) {
+      navigate('/login');
+    } else {
+      setUser(JSON.parse(storedUser));
+    }
+  }, [navigate]);
   
   const [isLocked, setIsLocked] = useState(false);
   const [lockMessage, setLockMessage] = useState('');
@@ -29,7 +39,8 @@ export default function Layout() {
       return;
     }
 
-    axios.get(`/api/xl/performance/status?email=${USER_EMAIL}`)
+    if (!user) return;
+    axios.get(`/api/xl/performance/status?email=${user.email}`)
       .then(res => {
         if (res.data.locked) {
           setIsLocked(true);
@@ -39,7 +50,7 @@ export default function Layout() {
         }
       })
       .catch(err => console.error("Failed to check lockout status", err));
-  }, [location.pathname]);
+  }, [location.pathname, user]);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
