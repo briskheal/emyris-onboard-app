@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, ArrowRight, Building } from 'lucide-react';
@@ -9,6 +9,21 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
+
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const res = await axios.get('/api/company-profile');
+        if (res.data && res.data.logoUrl) {
+          setLogoUrl(res.data.logoUrl);
+        }
+      } catch (e) {
+        console.error("Failed to load company profile", e);
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,12 +65,16 @@ export default function Login() {
       <div className="w-full max-w-sm relative z-10">
         
         {/* Logo Area */}
-        <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-sky-400 to-sky-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-sky-500/30 mb-6">
-            <h1 className="text-3xl font-black text-white tracking-tighter">EM</h1>
-          </div>
-          <h1 className="text-2xl font-black text-white tracking-tight leading-none mb-1">EMYRIS</h1>
-          <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Biolifesciences</p>
+        <div className="text-center mb-8">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Company Logo" className="h-20 mx-auto object-contain mb-6 drop-shadow-2xl" />
+          ) : (
+            <div className="w-20 h-20 bg-gradient-to-br from-sky-400 to-sky-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-sky-500/30 mb-6">
+              <h1 className="text-3xl font-black text-white tracking-tighter">EM</h1>
+            </div>
+          )}
+          <h1 className="text-xl font-black text-white tracking-tight leading-tight mb-2">EMYRIS BIOLIFESCIENCES PVT LTD.</h1>
+          <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Enhancing life, Excelling care</p>
         </div>
 
         {/* Login Form */}
@@ -119,11 +138,19 @@ export default function Login() {
         </form>
         
         {/* Switch Portal Link */}
-        <div className="mt-8 flex items-center justify-center">
+        <div className="mt-6 flex items-center justify-center">
           <a href="/xla" className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors">
             Switch to Admin Portal
             <ArrowRight size={14} />
           </a>
+        </div>
+        
+        {/* Footer Text */}
+        <div className="mt-8 text-center pb-4">
+          <p className="text-[10px] text-slate-500/70 font-semibold uppercase tracking-widest leading-relaxed">
+            Prepared and Secured by Emyris IT Dept.<br />
+            Report to Excel.
+          </p>
         </div>
 
       </div>
