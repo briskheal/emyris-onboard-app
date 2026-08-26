@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, generateId } = require('../db');
+const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
@@ -16,6 +16,32 @@ function haversineMetres(lat1, lng1, lat2, lng2) {
 }
 
 const DEFAULT_RADIUS_METRES = 200; // Admin can override in xladmin later
+
+// --- AUTHENTICATION ---
+router.post('/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        if (!email || !password) return res.json({ success: false, message: 'Email and password required' });
+        
+        const user = await XlUser.findOne({ where: { email, password } });
+        if (!user) {
+            return res.json({ success: false, message: 'Invalid email or password' });
+        }
+        if (user.status === 'Deactivated') {
+            return res.json({ success: false, message: 'Your account is deactivated. Contact admin.' });
+        }
+        
+        // Remove password before sending to frontend
+        const userData = user.toJSON();
+        delete userData.password;
+
+        res.json({ success: true, message: 'Login successful', user: userData });
+    } catch (e) {
+        console.error('XL Login Error:', e);
+        res.status(500).json({ success: false, message: 'System error during login' });
+    }
+});
+
 
 // ─── PHASE 1: CREATION ─────────────────────────────────────────────────────
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
 
@@ -6,13 +7,30 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login for now
-    if (email && password) {
-      // In a real app, you would set a token here
-      navigate('/dashboard');
+    if (!email || !password) {
+        alert("Please enter email and password");
+        return;
+    }
+    
+    setLoading(true);
+    try {
+        const res = await axios.post('/api/xl/login', { email, password });
+        if (res.data.success) {
+            // Save user data to localStorage
+            localStorage.setItem('xl_user', JSON.stringify(res.data.user));
+            navigate('/dashboard');
+        } else {
+            alert(res.data.message || "Login failed");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("An error occurred during login. Please check your connection.");
+    } finally {
+        setLoading(false);
     }
   };
 
@@ -74,10 +92,11 @@ export default function Login() {
 
           <button 
             type="submit"
-            className="w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30 active:scale-95 transition-transform"
+            disabled={loading}
+            className={`w-full bg-gradient-to-r from-sky-500 to-sky-600 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-sky-500/30 active:scale-95 transition-transform ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
             <LogIn size={20} />
-            LOGIN TO PORTAL
+            {loading ? 'AUTHENTICATING...' : 'LOGIN TO PORTAL'}
           </button>
         </form>
         
