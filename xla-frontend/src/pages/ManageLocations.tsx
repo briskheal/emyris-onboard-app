@@ -539,45 +539,46 @@ function RouteTab() {
       
       <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
         <div className="flex-1 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">STATE *</label>
+          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT STATE *</label>
           <select required value={stateName} onChange={e => { setStateName(e.target.value); setHqName(''); setFromCity(''); setToCity(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select State</option>
             {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
           </select>
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">HQ *</label>
+          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT HQ *</label>
           <select required value={hqName} onChange={e => { setHqName(e.target.value); setFromCity(''); setToCity(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select HQ</option>
+            <option value="">Select Headquarter</option>
             {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
           </select>
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">FROM *</label>
+          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">FROM CITY *</label>
           <select required value={fromCity} onChange={e => setFromCity(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select From</option>
+            <option value="">Select From City</option>
             {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
           </select>
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">TO *</label>
+          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">TO CITY *</label>
           <select required value={toCity} onChange={e => setToCity(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select To</option>
+            <option value="">Select To City</option>
             {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
           </select>
         </div>
         <div className="flex-1 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">AREA TYPE *</label>
-          <select value={areaType} onChange={e => setAreaType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
+          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT AREA TYPE *</label>
+          <select required value={areaType} onChange={e => setAreaType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
+            <option value="">Select Area Type</option>
             <option value="Local">Local</option><option value="Ex-Station">Ex-Station</option><option value="Out-Station">Out-Station</option>
           </select>
         </div>
-        <div className="w-32">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">DISTANCE *</label>
+        <div className="w-48">
+          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">ENTER DISTANCE (ONE SIDE) *</label>
           <input type="number" required value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
         </div>
         <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
-          {loading ? 'Adding...' : 'Add'}
+          {loading ? 'Adding...' : 'Add Route'}
         </button>
       </form>
       
