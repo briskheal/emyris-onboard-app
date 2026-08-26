@@ -32,7 +32,7 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
         </div>
       </div>
       <div className="flex items-center gap-4 text-sm font-bold text-slate-300">
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Previous</button>
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">&lt; Previous</button>
         <span>Page {currentPage} of {totalPages}</span>
         <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Next &gt;</button>
       </div>
@@ -40,26 +40,29 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
   );
 }
 
-export default 
 // Placeholder for missing tabs
 function PlaceholderTab({ title }: { title: string }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full opacity-50">
-      <h2 className="text-lg font-bold text-slate-500 uppercase tracking-widest mb-2">{title}</h2>
+    <div className="flex flex-col items-center justify-center h-full opacity-50 py-20">
+      <h2 className="text-xl font-bold text-slate-500 uppercase tracking-widest mb-2">{title}</h2>
       <p className="text-slate-400 uppercase tracking-wider text-sm">Module in Development</p>
     </div>
   );
 }
 
-function ManageUsers() {
+export default function ManageUsers() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'create_user' | 'create_admin' | 'user_info' | 'admin_info' | 'divisions' | 'designations' | 'ta_da'>('create_user');
+  const [activeTab, setActiveTab] = useState<
+    'create_user' | 'create_admin' | 'user_info' | 'edit_delete' | 'admin_info' | 
+    'divisions' | 'designations' | 'set_target' | 'upload_target' | 
+    'access_control' | 'user_devices' | 'ta_da'
+  >('create_user');
   
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
       <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={24} /> <span className="font-black text-xl tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
+        <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={24} /> <span className="font-bold text-lg tracking-wide uppercase">Back to Admin Menu</span>
         </button>
       </div>
       <div className="flex flex-1 overflow-hidden">
@@ -69,14 +72,14 @@ function ManageUsers() {
             <button onClick={() => setActiveTab('create_user')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'create_user' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>CREATE USER</button>
             <button onClick={() => setActiveTab('create_admin')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'create_admin' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>CREATE ADMIN</button>
             <button onClick={() => setActiveTab('user_info')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'user_info' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>USER INFO</button>
-              <button onClick={() => setActiveTab('edit_delete')} className={	ext-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all }>EDIT / DELETE</button>
+            <button onClick={() => setActiveTab('edit_delete')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'edit_delete' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>EDIT / DELETE</button>
             <button onClick={() => setActiveTab('admin_info')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'admin_info' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>ADMIN INFO</button>
             <button onClick={() => setActiveTab('divisions')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'divisions' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>MANAGE DIVISIONS</button>
             <button onClick={() => setActiveTab('designations')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'designations' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>MANAGE DESIGNATIONS</button>
-              <button onClick={() => setActiveTab('set_target')} className={	ext-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all }>SET USER TARGET</button>
-              <button onClick={() => setActiveTab('upload_target')} className={	ext-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all }>UPLOAD TARGET</button>
-              <button onClick={() => setActiveTab('access_control')} className={	ext-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all }>ACCESS CONTROL</button>
-              <button onClick={() => setActiveTab('user_devices')} className={	ext-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all }>USER DEVICES</button>
+            <button onClick={() => setActiveTab('set_target')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'set_target' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>SET USER TARGET</button>
+            <button onClick={() => setActiveTab('upload_target')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'upload_target' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>UPLOAD TARGET</button>
+            <button onClick={() => setActiveTab('access_control')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'access_control' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>ACCESS CONTROL</button>
+            <button onClick={() => setActiveTab('user_devices')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'user_devices' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>USER DEVICES</button>
             <button onClick={() => setActiveTab('ta_da')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'ta_da' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>TA, DA MANAGE</button>
           </div>
         </div>
@@ -84,15 +87,15 @@ function ManageUsers() {
           {activeTab === 'create_user' && <CreateProfileTab isAdmin={false} />}
           {activeTab === 'create_admin' && <CreateProfileTab isAdmin={true} />}
           {activeTab === 'user_info' && <ProfileInfoTab isAdmin={false} />}
+          {activeTab === 'edit_delete' && <PlaceholderTab title="Edit / Delete" />}
           {activeTab === 'admin_info' && <ProfileInfoTab isAdmin={true} />}
           {activeTab === 'divisions' && <DivisionsTab />}
           {activeTab === 'designations' && <DesignationsTab />}
-          {activeTab === 'ta_da' && <TADAManageTab />}
-          {activeTab === 'edit_delete' && <PlaceholderTab title="Edit / Delete" />}
           {activeTab === 'set_target' && <PlaceholderTab title="Set User Target" />}
           {activeTab === 'upload_target' && <PlaceholderTab title="Upload Target" />}
           {activeTab === 'access_control' && <PlaceholderTab title="Access Control" />}
           {activeTab === 'user_devices' && <PlaceholderTab title="User Devices" />}
+          {activeTab === 'ta_da' && <TADAManageTab />}
         </div>
       </div>
     </div>
@@ -251,7 +254,7 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE USER PROFILE</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">&lt; CREATE USER PROFILE</h2>
       <form onSubmit={handleSubmit} className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl">
 
         {/* Import HR Applicant */}
@@ -391,7 +394,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="max-w-full">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">{isAdmin ? 'ADMIN' : 'USER'} INFO</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">&lt; {isAdmin ? 'ADMIN' : 'USER'} INFO</h2>
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
       
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
@@ -488,7 +491,7 @@ function DivisionsTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE DIVISION</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">&lt; CREATE DIVISION</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER DIVISION *</label>
@@ -579,7 +582,7 @@ function DesignationsTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-lg font-bold text-white mb-4 tracking-wide uppercase">CREATE DESIGNATION</h2>
+      <h2 className="text-lg font-bold text-white mb-4 tracking-wide uppercase">&lt; CREATE DESIGNATION</h2>
       
       <div className="bg-emerald-900/40 border border-emerald-500/30 p-4 rounded-xl mb-8">
         <h3 className="text-emerald-400 font-bold text-sm mb-2 uppercase">Usage Instructions</h3>
@@ -670,7 +673,7 @@ function TADAManageTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">TA, DA MANAGE</h2>
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">&lt; TA, DA MANAGE</h2>
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
