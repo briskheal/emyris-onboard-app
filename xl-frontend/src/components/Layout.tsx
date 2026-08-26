@@ -68,10 +68,10 @@ export default function Layout() {
     location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="flex flex-col h-dvh bg-slate-900 overflow-hidden relative" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col h-dvh bg-slate-800 overflow-hidden relative" style={{ fontFamily: "'Inter', sans-serif" }}>
       
             {/* TOP NAVIGATION BAR */}
-      <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
+      <header className="h-16 bg-slate-800 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
         <div className="flex items-center gap-3">
           {logoUrl ? (
             <img src={logoUrl} alt="Logo" className="h-8 object-contain" />
@@ -84,7 +84,7 @@ export default function Layout() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button className="relative text-slate-400">
+          <button className="relative text-slate-200">
             <Bell size={20} />
             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 border-2 border-slate-900 rounded-full"></span>
           </button>
@@ -99,12 +99,12 @@ export default function Layout() {
 
       {/* GLOBAL LOCKOUT OVERLAY */}
       {isLocked && (
-        <div className="absolute inset-0 z-[9999] bg-slate-900/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
+        <div className="absolute inset-0 z-[9999] bg-slate-800/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center">
           <div className="w-20 h-20 bg-rose-500/20 rounded-full flex items-center justify-center mb-6">
             <AlertTriangle size={40} className="text-rose-500" />
           </div>
           <h2 className="text-2xl font-black text-white mb-2">Access Locked</h2>
-          <p className="text-slate-400 mb-8 max-w-[280px]">
+          <p className="text-slate-200 mb-8 max-w-[280px]">
             {lockMessage || "You must submit your Monthly Planning to unlock the dashboard."}
           </p>
           <button
@@ -129,7 +129,7 @@ export default function Layout() {
 
       {/* Bottom Navigation Bar */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/60"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-slate-800 border-t border-slate-700/60"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-stretch h-16 relative">

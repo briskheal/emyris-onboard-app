@@ -79,7 +79,7 @@ export default function EffortAnalysisReport() {
   return (
     <div className="min-h-full bg-[#f4f4f4] flex flex-col font-sans pb-10">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-[#e9ecef]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#e9ecef]">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/extras/performance')} className="text-slate-700">
             <ChevronLeft size={24} />

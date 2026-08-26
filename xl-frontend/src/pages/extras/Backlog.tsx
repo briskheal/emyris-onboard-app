@@ -67,15 +67,15 @@ export default function Backlog() {
   };
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col relative">
+    <div className="min-h-full bg-slate-800 flex flex-col relative">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-800 border-b border-slate-700/60 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600 flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-700 border-b border-slate-700/60 sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-600 active:bg-slate-600 flex-shrink-0">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-white leading-tight">Backlog Reporting</h1>
-          <p className="text-xs text-slate-400">Unlock missed call reports</p>
+          <p className="text-xs text-slate-200">Unlock missed call reports</p>
         </div>
         {!showNew && (
           <button onClick={() => setShowNew(true)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-sky-500 active:bg-sky-600 flex-shrink-0">
@@ -86,18 +86,18 @@ export default function Backlog() {
 
       <div className="flex-1 p-4">
         {showNew && (
-          <div className="bg-slate-800 rounded-2xl border border-slate-700 p-4 mb-6">
+          <div className="bg-slate-700 rounded-2xl border border-slate-700 p-4 mb-6">
             <h2 className="text-sm font-bold text-white mb-4">Request Unlock</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Missed Date</label>
+                <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-1.5">Missed Date</label>
                 <input type="date" required value={date} onChange={e => setDate(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:border-sky-500 focus:outline-none" />
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:border-sky-500 focus:outline-none" />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Reason for Delay</label>
+                <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-1.5">Reason for Delay</label>
                 <textarea required value={reason} onChange={e => setReason(e.target.value)} rows={3} placeholder="Why was the report missed?"
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:border-sky-500 focus:outline-none" />
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-white text-sm focus:border-sky-500 focus:outline-none" />
               </div>
               {error && <p className="text-rose-400 text-sm">{error}</p>}
               <div className="flex gap-3 pt-2">
@@ -108,7 +108,7 @@ export default function Backlog() {
           </div>
         )}
 
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-1">Your Requests</h3>
+        <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-3 px-1">Your Requests</h3>
         
         {loading ? (
           <p className="text-center text-sm text-slate-500 mt-10">Loading requests...</p>
@@ -119,7 +119,7 @@ export default function Backlog() {
             {requests.map(req => {
               const { color, icon: Icon } = getStatusConfig(req.status);
               return (
-                <div key={req._id} className="bg-slate-800 rounded-2xl p-4 border border-slate-700/50">
+                <div key={req._id} className="bg-slate-700 rounded-2xl p-4 border border-slate-700/50">
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center gap-2">
                       <Calendar size={16} className="text-sky-400" />
@@ -131,7 +131,7 @@ export default function Backlog() {
                     </div>
                   </div>
                   <p className="text-sm text-slate-300 mb-1">{req.reason}</p>
-                  {req.adminRemarks && <p className="text-xs text-slate-400 mt-2 p-2 bg-slate-900 rounded-lg border border-slate-800">Admin: {req.adminRemarks}</p>}
+                  {req.adminRemarks && <p className="text-xs text-slate-200 mt-2 p-2 bg-slate-800 rounded-lg border border-slate-800">Admin: {req.adminRemarks}</p>}
                   
                   {req.status === 'Approved' && (
                     <button 

@@ -67,40 +67,40 @@ export default function Attendance() {
   };
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col">
+    <div className="min-h-full bg-slate-800 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-800 border-b border-slate-700/60">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-700 border-b border-slate-700/60">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-600 active:bg-slate-600">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div>
           <h1 className="text-lg font-bold text-white leading-tight">Attendance</h1>
-          <p className="text-xs text-slate-400">Daily punch-in / punch-out</p>
+          <p className="text-xs text-slate-200">Daily punch-in / punch-out</p>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col items-center justify-center px-6 pb-20">
-        <p className="text-slate-400 font-medium text-sm mb-1 uppercase tracking-widest">Today</p>
+        <p className="text-slate-200 font-medium text-sm mb-1 uppercase tracking-widest">Today</p>
         <h2 className="text-xl font-bold text-white mb-10 text-center">{displayDate}</h2>
 
         {loading ? (
           <div className="animate-pulse flex flex-col items-center gap-4">
-            <div className="w-48 h-48 rounded-full bg-slate-800 border-4 border-slate-700"></div>
+            <div className="w-48 h-48 rounded-full bg-slate-700 border-4 border-slate-700"></div>
           </div>
         ) : (
           <div className="flex flex-col items-center w-full max-w-sm">
             {/* Status Card */}
-            <div className="w-full bg-slate-800/50 rounded-2xl p-4 border border-slate-700 mb-8 flex justify-between items-center">
+            <div className="w-full bg-slate-700/50 rounded-2xl p-4 border border-slate-700 mb-8 flex justify-between items-center">
               <div>
-                <p className="text-xs text-slate-400 font-semibold uppercase">Punch In</p>
+                <p className="text-xs text-slate-200 font-semibold uppercase">Punch In</p>
                 <div className="flex items-center gap-1.5 mt-1">
                   <Clock size={14} className="text-emerald-400" />
                   <p className="text-sm text-white font-medium">{att?.punchInTime || '--:--'}</p>
                 </div>
               </div>
-              <div className="h-8 w-px bg-slate-700"></div>
+              <div className="h-8 w-px bg-slate-600"></div>
               <div className="text-right">
-                <p className="text-xs text-slate-400 font-semibold uppercase">Punch Out</p>
+                <p className="text-xs text-slate-200 font-semibold uppercase">Punch Out</p>
                 <div className="flex items-center justify-end gap-1.5 mt-1">
                   <Clock size={14} className="text-rose-400" />
                   <p className="text-sm text-white font-medium">{att?.punchOutTime || '--:--'}</p>
@@ -136,9 +136,9 @@ export default function Attendance() {
                 <span className="text-rose-100 text-xs font-medium">End your day</span>
               </button>
             ) : (
-              <div className="w-48 h-48 rounded-full bg-slate-800 border-[6px] border-slate-700 flex flex-col items-center justify-center gap-2">
+              <div className="w-48 h-48 rounded-full bg-slate-700 border-[6px] border-slate-700 flex flex-col items-center justify-center gap-2">
                 <UserCheck size={32} className="text-slate-500" />
-                <span className="text-slate-400 font-bold text-lg tracking-wide">COMPLETED</span>
+                <span className="text-slate-200 font-bold text-lg tracking-wide">COMPLETED</span>
                 <span className="text-slate-500 text-xs font-medium">See you tomorrow!</span>
               </div>
             )}

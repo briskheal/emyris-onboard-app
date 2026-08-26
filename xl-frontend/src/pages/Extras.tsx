@@ -69,18 +69,18 @@ export default function Extras() {
       path: '#',
       icon: Settings,
       label: 'Settings',
-      color: 'text-slate-400',
+      color: 'text-slate-200',
       bg: 'bg-slate-500/10',
     },
   ];
 
   return (
-    <div className="min-h-full bg-slate-900 pb-24 text-slate-100 font-sans">
+    <div className="min-h-full bg-slate-800 pb-24 text-slate-100 font-sans">
       {/* Header */}
-      <div className="px-4 pt-4 pb-6 sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
-        <p className="text-xs text-slate-400 font-medium uppercase tracking-widest mb-1">Extras</p>
+      <div className="px-4 pt-4 pb-6 sticky top-0 bg-slate-800 z-10 border-b border-slate-800">
+        <p className="text-xs text-slate-200 font-medium uppercase tracking-widest mb-1">Extras</p>
         <h1 className="text-lg font-black text-white">Field Operations</h1>
-        <p className="text-xs text-slate-400">Manage plans, calls, and activities</p>
+        <p className="text-xs text-slate-200">Manage plans, calls, and activities</p>
       </div>
 
       <div className="px-5 mt-6">
@@ -89,7 +89,7 @@ export default function Extras() {
             <button 
               key={idx}
               onClick={() => item.path !== '#' && navigate(item.path)}
-              className={`bg-slate-800 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg transition-transform relative ${item.path !== '#' ? 'active:scale-95' : 'opacity-70 cursor-not-allowed'}`}
+              className={`bg-slate-700 border border-slate-700 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg transition-transform relative ${item.path !== '#' ? 'active:scale-95' : 'opacity-70 cursor-not-allowed'}`}
             >
               {item.isNew && (
                 <span className="absolute top-3 right-3 bg-rose-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-md uppercase">

@@ -59,13 +59,13 @@ function GeoTagButton({
 
   if (point) {
     return (
-      <div className="bg-slate-800 rounded-xl border border-emerald-500/30 px-4 py-3">
+      <div className="bg-slate-700 rounded-xl border border-emerald-500/30 px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2 flex-1">
             <CheckCircle2 size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-xs font-semibold text-emerald-400">{label} Tagged</p>
-              <p className="text-xs text-slate-400 mt-0.5">{point.address}</p>
+              <p className="text-xs text-slate-200 mt-0.5">{point.address}</p>
             </div>
           </div>
           <button type="button" onClick={onClear} className="text-slate-500">✕</button>
@@ -138,25 +138,25 @@ export default function MobileForm({ title, subtitle, endpoint, fields, accentCo
     }
   };
 
-  const inputClass = `w-full bg-slate-800 border border-slate-700 rounded-xl px-4 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-${accentColor}-500 focus:ring-1 focus:ring-${accentColor}-500/30 transition-colors`;
+  const inputClass = `w-full bg-slate-700 border border-slate-700 rounded-xl px-4 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-${accentColor}-500 focus:ring-1 focus:ring-${accentColor}-500/30 transition-colors`;
   const inputStyle = { height: '45px' };
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col">
-      <div className="flex items-center gap-3 px-4 pt-12 pb-5 bg-slate-800 border-b border-slate-700/60">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600 transition-colors">
+    <div className="min-h-full bg-slate-800 flex flex-col">
+      <div className="flex items-center gap-3 px-4 pt-12 pb-5 bg-slate-700 border-b border-slate-700/60">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-600 active:bg-slate-600 transition-colors">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div>
           <h1 className="text-lg font-bold text-white leading-tight">{title}</h1>
-          <p className="text-xs text-slate-400">{subtitle}</p>
+          <p className="text-xs text-slate-200">{subtitle}</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="flex-1 px-4 py-5 space-y-4">
         {fields.map(field => (
           <div key={field.name}>
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-1.5">
               {field.label} {field.required && <span className="text-rose-400">*</span>}
             </label>
             {field.options ? (
@@ -174,11 +174,11 @@ export default function MobileForm({ title, subtitle, endpoint, fields, accentCo
           <div className="pt-2 border-t border-slate-700/50 mt-4 space-y-3">
             <p className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-1">📍 Geo-Tag Locations</p>
             <div>
-              <p className="text-xs text-slate-400 font-semibold mb-1.5">Primary Location <span className="text-rose-400">*</span></p>
+              <p className="text-xs text-slate-200 font-semibold mb-1.5">Primary Location <span className="text-rose-400">*</span></p>
               <GeoTagButton label="Primary Location" point={geo1} onCapture={() => captureGeo().then(setGeo1).catch(()=>{})} onClear={() => setGeo1(null)} />
             </div>
             <div>
-              <p className="text-xs text-slate-400 font-semibold mb-1.5">Secondary Location <span className="text-slate-500">(optional)</span></p>
+              <p className="text-xs text-slate-200 font-semibold mb-1.5">Secondary Location <span className="text-slate-500">(optional)</span></p>
               <GeoTagButton label="Secondary Location" point={geo2} onCapture={() => captureGeo().then(setGeo2).catch(()=>{})} onClear={() => setGeo2(null)} />
             </div>
           </div>
@@ -187,7 +187,7 @@ export default function MobileForm({ title, subtitle, endpoint, fields, accentCo
         {error && <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3 text-sm text-rose-400">{error}</div>}
         {success && <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl px-4 py-3 flex items-center gap-3"><CheckCircle2 size={18} className="text-emerald-400 flex-shrink-0" /><p className="text-sm text-emerald-400 font-medium">Record saved successfully!</p></div>}
         
-        <button type="submit" disabled={loading} className={`w-full h-[45px] rounded-xl font-semibold text-sm text-white transition-all ${loading ? 'bg-slate-700 text-slate-400' : `bg-${accentColor}-500 active:bg-${accentColor}-600`}`}>
+        <button type="submit" disabled={loading} className={`w-full h-[45px] rounded-xl font-semibold text-sm text-white transition-all ${loading ? 'bg-slate-600 text-slate-200' : `bg-${accentColor}-500 active:bg-${accentColor}-600`}`}>
           {loading ? 'Saving...' : 'Save Record'}
         </button>
       </form>

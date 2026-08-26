@@ -164,7 +164,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   return (
     <div className="min-h-full bg-[#2a2d45] flex flex-col font-sans pb-24 text-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-[#2a2d45]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#2a2d45]">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/extras/performance')} className="text-sky-400">
             <ChevronLeft size={24} />
@@ -183,7 +183,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
         <div className="flex items-center gap-3 mb-8">
           <div className="flex-1 relative">
             <div className="bg-[#353854] border border-slate-600 rounded-2xl flex items-center px-4 h-14">
-              <span className="w-8 h-8 rounded-full bg-slate-700/50 flex items-center justify-center text-xs font-bold text-sky-400 mr-3">
+              <span className="w-8 h-8 rounded-full bg-slate-600/50 flex items-center justify-center text-xs font-bold text-sky-400 mr-3">
                 {addedEntities.length}
               </span>
               <input
@@ -240,7 +240,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
                 </div>
                 <div>
                   <p className="font-bold text-white text-sm">{e.entityName}</p>
-                  <p className="text-xs text-slate-400">Total Planned: {e.monthlyTarget}</p>
+                  <p className="text-xs text-slate-200">Total Planned: {e.monthlyTarget}</p>
                 </div>
               </div>
               <button 
@@ -267,7 +267,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
 
       {/* Bottom Sheet Modal for Week-by-Week Planning */}
       {showModal && activeModalEntity && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-800/60 backdrop-blur-sm">
           <div className="bg-[#2a2d45] w-full max-w-md rounded-t-3xl border-t border-slate-700 max-h-[85vh] flex flex-col relative animate-slide-up">
             
             {/* Modal Header */}
@@ -278,7 +278,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
                 </div>
                 <div>
                   <h3 className="font-bold text-sky-400 leading-tight">{activeModalEntity.entityName}</h3>
-                  <p className="text-xs text-slate-400 mt-1">{activeModalEntity.entityType}</p>
+                  <p className="text-xs text-slate-200 mt-1">{activeModalEntity.entityType}</p>
                 </div>
               </div>
               <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
@@ -290,7 +290,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
             <div className="p-5 overflow-y-auto pb-32">
               <div className="mb-6">
                 <label className="text-sm font-bold text-white block mb-1">My Monthly Target</label>
-                <p className="text-[10px] text-slate-400 mb-3">{month.charAt(0).toUpperCase() + month.slice(1)} 1 - {month.charAt(0).toUpperCase() + month.slice(1)} 30</p>
+                <p className="text-[10px] text-slate-200 mb-3">{month.charAt(0).toUpperCase() + month.slice(1)} 1 - {month.charAt(0).toUpperCase() + month.slice(1)} 30</p>
                 <div className="bg-[#353854] border border-slate-600 rounded-xl px-4 py-3 font-black text-xl text-emerald-400 w-1/2">
                   {calculateMonthlyTarget()}
                 </div>
@@ -300,7 +300,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
                 {weeks.map(w => (
                   <div key={w.id}>
                     <label className="text-sm font-bold text-white block mb-1">{w.label} <span className="text-rose-500">*</span></label>
-                    <p className="text-[10px] text-slate-400 mb-2">{w.dateRange}</p>
+                    <p className="text-[10px] text-slate-200 mb-2">{w.dateRange}</p>
                     <input 
                       type="number"
                       value={weeklyPlans[w.id] || ''}

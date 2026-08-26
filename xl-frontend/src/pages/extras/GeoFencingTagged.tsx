@@ -70,25 +70,25 @@ export default function GeoFencing() {
   const pendingCount = entities.filter(e => !e.lat1).length;
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col">
+    <div className="min-h-full bg-slate-800 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600 flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-700 sticky top-0 z-10">
+        <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-600 active:bg-slate-600 flex-shrink-0">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div className="flex-1">
           <h1 className="text-lg font-bold text-white leading-tight">Geo-Fencing</h1>
-          <p className="text-xs text-slate-400">Manage field locations</p>
+          <p className="text-xs text-slate-200">Manage field locations</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-slate-800 border-b border-slate-700/60 px-4 pt-2 pb-0 flex gap-4 sticky top-[76px] z-10 overflow-x-auto">
+      <div className="bg-slate-700 border-b border-slate-700/60 px-4 pt-2 pb-0 flex gap-4 sticky top-[76px] z-10 overflow-x-auto">
         {(['Doctor', 'Chemist', 'Stockist'] as EntityType[]).map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`pb-3 text-sm font-semibold transition-colors whitespace-nowrap ${activeTab === tab ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-slate-400'}`}
+            className={`pb-3 text-sm font-semibold transition-colors whitespace-nowrap ${activeTab === tab ? 'text-emerald-400 border-b-2 border-emerald-400' : 'text-slate-200'}`}
           >
             {tab}s
           </button>
@@ -113,7 +113,7 @@ export default function GeoFencing() {
             placeholder={`Search ${activeTab.toLowerCase()}s...`}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
+            className="w-full bg-slate-700 border border-slate-700 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none"
           />
         </div>
 
@@ -127,11 +127,11 @@ export default function GeoFencing() {
              <p className="text-center text-sm text-slate-500 mt-10">No {activeTab.toLowerCase()}s found.</p>
           ) : (
             filteredEntities.map(e => (
-              <div key={e._id} className="bg-slate-800 rounded-2xl p-4 border border-slate-700/50">
+              <div key={e._id} className="bg-slate-700 rounded-2xl p-4 border border-slate-700/50">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1 pr-2">
                     <h3 className="text-base font-bold text-white">{e.name || e.businessName}</h3>
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-200">
                       {activeTab === 'Doctor' ? (e.specialization || 'General') : (e.proprietorName || 'Owner')} • {e.workingArea || e.hq}
                     </p>
                   </div>
@@ -147,15 +147,15 @@ export default function GeoFencing() {
                 <div className="grid grid-cols-2 gap-2">
                   {/* Primary Location */}
                   {e.lat1 ? (
-                    <div className="bg-slate-900 border border-emerald-500/30 rounded-xl p-2.5 flex items-center gap-2">
+                    <div className="bg-slate-800 border border-emerald-500/30 rounded-xl p-2.5 flex items-center gap-2">
                       <MapPin size={14} className="text-emerald-400 flex-shrink-0" />
                       <div className="overflow-hidden">
                         <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest leading-none mb-1">Primary</p>
-                        <p className="text-[10px] text-slate-400 truncate">{e.geoAddress1}</p>
+                        <p className="text-[10px] text-slate-200 truncate">{e.geoAddress1}</p>
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => handleTag(e._id, 1)} disabled={tagLoading !== null} className="h-[46px] rounded-xl border border-dashed border-slate-600 flex flex-col items-center justify-center gap-0.5 active:bg-slate-700 disabled:opacity-50">
+                    <button onClick={() => handleTag(e._id, 1)} disabled={tagLoading !== null} className="h-[46px] rounded-xl border border-dashed border-slate-600 flex flex-col items-center justify-center gap-0.5 active:bg-slate-600 disabled:opacity-50">
                       {tagLoading === `${e._id}-1` ? <Navigation size={12} className="animate-spin text-emerald-400" /> : <MapPin size={12} className="text-emerald-400" />}
                       <span className="text-[10px] font-bold text-slate-300">Tag Primary</span>
                     </button>
@@ -163,15 +163,15 @@ export default function GeoFencing() {
 
                   {/* Secondary Location */}
                   {e.lat2 ? (
-                    <div className="bg-slate-900 border border-sky-500/30 rounded-xl p-2.5 flex items-center gap-2">
+                    <div className="bg-slate-800 border border-sky-500/30 rounded-xl p-2.5 flex items-center gap-2">
                       <MapPin size={14} className="text-sky-400 flex-shrink-0" />
                       <div className="overflow-hidden">
                         <p className="text-[10px] font-bold text-sky-400 uppercase tracking-widest leading-none mb-1">Secondary</p>
-                        <p className="text-[10px] text-slate-400 truncate">{e.geoAddress2}</p>
+                        <p className="text-[10px] text-slate-200 truncate">{e.geoAddress2}</p>
                       </div>
                     </div>
                   ) : (
-                    <button onClick={() => handleTag(e._id, 2)} disabled={tagLoading !== null} className="h-[46px] rounded-xl border border-dashed border-slate-600 flex flex-col items-center justify-center gap-0.5 active:bg-slate-700 disabled:opacity-50">
+                    <button onClick={() => handleTag(e._id, 2)} disabled={tagLoading !== null} className="h-[46px] rounded-xl border border-dashed border-slate-600 flex flex-col items-center justify-center gap-0.5 active:bg-slate-600 disabled:opacity-50">
                       {tagLoading === `${e._id}-2` ? <Navigation size={12} className="animate-spin text-sky-400" /> : <MapPin size={12} className="text-sky-400" />}
                       <span className="text-[10px] font-bold text-slate-300">Tag Secondary</span>
                     </button>

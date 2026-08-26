@@ -94,7 +94,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
   return (
     <div className="min-h-full bg-[#2a2d45] flex flex-col font-sans pb-24 text-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-[#2a2d45]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#2a2d45]">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/extras/performance')} className="text-sky-400">
             <ChevronLeft size={24} />
@@ -151,7 +151,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
               
               <div className="flex justify-between items-start pl-2">
                 <h3 className="text-base font-bold text-white max-w-[70%]">
-                  {t.entityName} <span className="text-sm font-medium text-slate-400 block mt-0.5">{t.entityType}</span>
+                  {t.entityName} <span className="text-sm font-medium text-slate-200 block mt-0.5">{t.entityType}</span>
                 </h3>
                 <div className={`px-3 py-1 rounded-full text-xs font-black ${barColor} text-white`}>
                   {progressRaw}%
@@ -163,24 +163,24 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
                 <div className="w-8 h-8 bg-sky-500 rounded-full flex items-center justify-center text-white text-[10px] font-bold shadow-md">
                   0%
                 </div>
-                <div className="flex-1 h-3 bg-slate-700 rounded-full overflow-hidden relative">
+                <div className="flex-1 h-3 bg-slate-600 rounded-full overflow-hidden relative">
                   {/* Dynamic gradient based on clamped progress */}
                   <div 
                     className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 transition-all duration-500" 
                     style={{ width: `${progressClamped}%` }}
                   ></div>
                 </div>
-                <span className="text-[10px] font-bold text-slate-400">100%</span>
+                <span className="text-[10px] font-bold text-slate-200">100%</span>
               </div>
 
               {/* Metrics Grid */}
               <div className="mt-8 flex justify-between px-2 pb-4 border-b border-slate-600/50">
                 <div>
-                  <p className="text-xs text-slate-400 font-medium">Monthly Target</p>
+                  <p className="text-xs text-slate-200 font-medium">Monthly Target</p>
                   <p className="text-sm font-bold text-white mt-1">{t.monthlyTarget}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs text-slate-400 font-medium">Planned Target</p>
+                  <p className="text-xs text-slate-200 font-medium">Planned Target</p>
                   <p className="text-sm font-bold text-white mt-1">{weekData.planned}</p>
                 </div>
               </div>
@@ -196,7 +196,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
                     onChange={(e) => updateTarget(t.entityId, Number(e.target.value))}
                     className="w-20 text-right font-black text-white text-lg border-b border-slate-500 focus:border-sky-500 focus:outline-none bg-transparent pb-1"
                   />
-                  <Pencil size={14} className="text-slate-400" />
+                  <Pencil size={14} className="text-slate-200" />
                 </div>
               </div>
             </div>

@@ -58,13 +58,13 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
       />
       
       {/* Drawer */}
-      <div className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-slate-900 z-[101] shadow-2xl flex flex-col font-sans overflow-hidden">
+      <div className="fixed top-0 right-0 bottom-0 w-[85%] max-w-sm bg-slate-800 z-[101] shadow-2xl flex flex-col font-sans overflow-hidden">
         
         {/* Header */}
-        <div className="bg-slate-800 px-6 pt-12 pb-6 border-b border-slate-700/50 relative">
+        <div className="bg-slate-700 px-6 pt-12 pb-6 border-b border-slate-700/50 relative">
           <button 
             onClick={onClose}
-            className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-700 text-slate-300 active:scale-95 transition-transform"
+            className="absolute top-4 left-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-600 text-slate-300 active:scale-95 transition-transform"
           >
             <X size={18} />
           </button>
@@ -83,7 +83,7 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
           </div>
           
           {user && (
-            <div className="flex items-center gap-3 mt-6 bg-slate-700/30 p-3 rounded-2xl border border-slate-700/50">
+            <div className="flex items-center gap-3 mt-6 bg-slate-600/30 p-3 rounded-2xl border border-slate-700/50">
               <div className="w-10 h-10 bg-sky-500/20 rounded-full flex items-center justify-center">
                 <Users size={20} className="text-sky-400" />
               </div>
@@ -103,10 +103,10 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
           {/* Dark Theme Toggle */}
           <button 
             onClick={() => setIsDarkTheme(!isDarkTheme)}
-            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl bg-slate-800/50 border border-slate-700/30 mb-2"
+            className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl bg-slate-700/50 border border-slate-700/30 mb-2"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center">
                 <Moon size={16} className="text-slate-300" />
               </div>
               <span className="text-sm font-bold text-slate-300">Dark Theme</span>
@@ -117,15 +117,15 @@ export default function NavigationDrawer({ isOpen, onClose, user }: NavigationDr
             </div>
           </button>
           
-          <div className="h-px bg-slate-800 my-2" />
+          <div className="h-px bg-slate-700 my-2" />
 
           {menuItems.map((item, idx) => (
             <button
               key={idx}
               onClick={item.onClick}
-              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors active:bg-slate-800/80"
+              className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-colors active:bg-slate-700/80"
             >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.isDestructive ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-800 text-sky-400'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${item.isDestructive ? 'bg-rose-500/10 text-rose-500' : 'bg-slate-700 text-sky-400'}`}>
                 <item.icon size={16} />
               </div>
               <span className={`text-sm font-bold ${item.isDestructive ? 'text-rose-500' : 'text-slate-300'}`}>

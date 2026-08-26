@@ -39,7 +39,7 @@ export default function PerformanceMenu() {
   return (
     <div className="min-h-full bg-[#f4f4f4] flex flex-col font-sans pb-10">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-[#e9ecef]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#e9ecef]">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/dashboard')} className="text-slate-700">
             <ChevronLeft size={24} />
@@ -66,7 +66,7 @@ export default function PerformanceMenu() {
         {/* Month & Year Selector */}
         <div className="flex gap-3 mb-6 bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-inner">
           <div className="flex-1">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Month</label>
+            <label className="text-[10px] font-bold text-slate-200 uppercase tracking-widest mb-1 block">Month</label>
             <select 
               value={selectedMonth} 
               onChange={e => setSelectedMonth(e.target.value)}
@@ -76,7 +76,7 @@ export default function PerformanceMenu() {
             </select>
           </div>
           <div className="flex-1">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1 block">Year</label>
+            <label className="text-[10px] font-bold text-slate-200 uppercase tracking-widest mb-1 block">Year</label>
             <select 
               value={selectedYear} 
               onChange={e => setSelectedYear(e.target.value)}

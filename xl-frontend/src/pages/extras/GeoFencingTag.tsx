@@ -65,7 +65,7 @@ export default function GeoFencingTag() {
   return (
     <div className="min-h-full bg-[#f4f4f4] flex flex-col font-sans relative">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-12 pb-4 bg-[#e9ecef]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#e9ecef]">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-slate-700">
             <ChevronLeft size={24} />
@@ -132,7 +132,7 @@ export default function GeoFencingTag() {
                 allowFullScreen
               ></iframe>
             ) : (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-2">
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-200 gap-2">
                 <Navigation size={32} className="animate-pulse" />
                 <p className="text-sm font-medium">Getting GPS signal...</p>
               </div>

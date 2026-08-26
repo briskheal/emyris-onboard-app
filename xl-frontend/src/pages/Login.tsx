@@ -56,7 +56,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-slate-800 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
       
       {/* Background decorations */}
       <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-sky-500/20 rounded-full blur-[80px]" />
@@ -78,42 +78,42 @@ export default function Login() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+        <form onSubmit={handleLogin} className="bg-slate-700/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
           <h2 className="text-lg font-bold text-white mb-6">Welcome back,</h2>
           
           <div className="space-y-4 mb-6">
             <div className="relative">
-              <Building size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Building size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200" />
               <input 
                 type="text" 
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Company Name"
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
                 required
               />
             </div>
             
             <div className="relative">
-              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Mail size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200" />
               <input 
                 type="email" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Email Address"
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
                 required
               />
             </div>
             
             <div className="relative">
-              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-200" />
               <input 
                 type="password" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                className="w-full bg-slate-800/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-4 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
                 required
               />
             </div>
@@ -121,8 +121,8 @@ export default function Login() {
 
           <div className="flex items-center justify-between mb-8">
             <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-800" />
-              <span className="text-xs font-medium text-slate-400">Remember me</span>
+              <input type="checkbox" className="w-4 h-4 rounded bg-slate-800 border-slate-700 text-sky-500 focus:ring-sky-500 focus:ring-offset-slate-800" />
+              <span className="text-xs font-medium text-slate-200">Remember me</span>
             </label>
             <button type="button" className="text-xs font-bold text-sky-400">Forgot Password?</button>
           </div>

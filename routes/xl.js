@@ -129,7 +129,7 @@ router.post('/route', async (req, res) => {
 // Fetch all doctors for a user (for DCR entity selection)
 router.get('/doctors', async (req, res) => {
     try {
-        const where = {}; if (req.query.hq) where.hq = req.query.hq; const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'hq', 'workingArea', 'category'], order: [['name', 'ASC']] });
+        const where = {}; if (req.query.hq) { const { sequelize } = require('../db'); where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.toLowerCase()); } const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category'], order: [['name', 'ASC']] });
         res.json({ success: true, data: doctors });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch doctors' });

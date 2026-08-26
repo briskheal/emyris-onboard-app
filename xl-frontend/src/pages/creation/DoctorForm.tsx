@@ -47,13 +47,13 @@ function GeoTagButton({
 
   if (point) {
     return (
-      <div className="bg-slate-800 rounded-xl border border-emerald-500/30 px-4 py-3">
+      <div className="bg-slate-700 rounded-xl border border-emerald-500/30 px-4 py-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2 flex-1">
             <MapPin size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-xs font-semibold text-emerald-400">{label} Tagged ✓</p>
-              <p className="text-xs text-slate-400 mt-0.5">{point.address}</p>
+              <p className="text-xs text-slate-200 mt-0.5">{point.address}</p>
             </div>
           </div>
           <button onClick={onClear} className="text-slate-500 hover:text-slate-300">
@@ -129,12 +129,12 @@ export default function DoctorForm() {
     }
   };
 
-  const inputClass = 'w-full bg-slate-800 border border-slate-700 rounded-xl px-4 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition-colors';
+  const inputClass = 'w-full bg-slate-700 border border-slate-700 rounded-xl px-4 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition-colors';
   const inputStyle = { height: '45px' };
 
   const field = (name: string, label: string, opts?: { type?: string; placeholder?: string; required?: boolean; options?: string[] }) => (
     <div key={name}>
-      <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+      <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-1.5">
         {label} {opts?.required && <span className="text-rose-400">*</span>}
       </label>
       {opts?.options ? (
@@ -151,16 +151,16 @@ export default function DoctorForm() {
   );
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col">
+    <div className="min-h-full bg-slate-800 flex flex-col">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-800 border-b border-slate-700/60">
+      <div className="flex items-center gap-3 px-4 pt-4 pb-4 bg-slate-700 border-b border-slate-700/60">
         <button onClick={() => navigate(-1)}
-          className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600">
+          className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-600 active:bg-slate-600">
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div>
           <h1 className="text-lg font-bold text-white leading-tight">Add Doctor</h1>
-          <p className="text-xs text-slate-400">Create a new doctor profile</p>
+          <p className="text-xs text-slate-200">Create a new doctor profile</p>
         </div>
       </div>
 
@@ -193,7 +193,7 @@ export default function DoctorForm() {
           <div className="space-y-3">
             {/* Location 1 — required */}
             <div>
-              <p className="text-xs text-slate-400 font-semibold mb-1.5">
+              <p className="text-xs text-slate-200 font-semibold mb-1.5">
                 Primary Location <span className="text-rose-400">*</span>
               </p>
               <GeoTagButton
@@ -206,7 +206,7 @@ export default function DoctorForm() {
 
             {/* Location 2 — optional */}
             <div>
-              <p className="text-xs text-slate-400 font-semibold mb-1.5">
+              <p className="text-xs text-slate-200 font-semibold mb-1.5">
                 Secondary Location <span className="text-slate-500">(optional)</span>
               </p>
               <GeoTagButton
@@ -237,7 +237,7 @@ export default function DoctorForm() {
         {/* Submit */}
         <button type="submit" disabled={loading}
           className={`w-full h-[45px] rounded-xl font-semibold text-sm text-white transition-all
-            ${loading ? 'bg-slate-700 text-slate-400' : 'bg-sky-500 active:bg-sky-600'}`}>
+            ${loading ? 'bg-slate-600 text-slate-200' : 'bg-sky-500 active:bg-sky-600'}`}>
           {loading ? 'Saving...' : 'Save Doctor'}
         </button>
       </form>

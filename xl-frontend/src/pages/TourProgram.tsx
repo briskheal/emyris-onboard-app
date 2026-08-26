@@ -9,11 +9,11 @@ const VISIT_TYPES = [
   { label: 'Out-Station', color: 'bg-violet-500', text: 'text-violet-400', border: 'border-violet-500' },
   { label: 'Conference', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500' },
   { label: 'Leave', color: 'bg-rose-500', text: 'text-rose-400', border: 'border-rose-500' },
-  { label: 'Holiday', color: 'bg-slate-500', text: 'text-slate-400', border: 'border-slate-500' },
+  { label: 'Holiday', color: 'bg-slate-500', text: 'text-slate-200', border: 'border-slate-500' },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  Draft: { label: 'Draft', color: 'text-slate-400', icon: Clock },
+  Draft: { label: 'Draft', color: 'text-slate-200', icon: Clock },
   Submitted: { label: 'Pending Approval', color: 'text-amber-400', icon: Clock },
   Approved: { label: 'Approved', color: 'text-emerald-400', icon: CheckCircle2 },
   Rejected: { label: 'Rejected', color: 'text-rose-400', icon: AlertCircle },
@@ -128,15 +128,15 @@ export default function TourProgram() {
   const StatusIcon = STATUS_CONFIG[tpStatus]?.icon || Clock;
 
   return (
-    <div className="min-h-full bg-slate-900">
+    <div className="min-h-full bg-slate-800">
       {/* Header */}
       <div className="px-4 pt-4 pb-4 bg-gradient-to-b from-slate-800 to-slate-900">
         <div className="flex items-center gap-3 mb-1">
-          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600">
+          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-600 active:bg-slate-600">
             <ChevronLeft size={18} className="text-white" />
           </button>
           <div className="flex-1 flex items-center justify-between">
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Tour Plan</p>
+            <p className="text-xs text-slate-200 font-medium uppercase tracking-widest">Tour Plan</p>
             {tpStatus && (
               <div className={`flex items-center gap-1.5 ${STATUS_CONFIG[tpStatus]?.color}`}>
                 <StatusIcon size={13} />
@@ -154,12 +154,12 @@ export default function TourProgram() {
       {/* Month Navigator */}
       <div className="flex items-center justify-between px-4 py-3">
         <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
-          className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center active:bg-slate-700">
+          className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center active:bg-slate-600">
           <ChevronLeft size={18} className="text-white" />
         </button>
         <p className="text-base font-bold text-white">{monthLabel}</p>
         <button onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-          className="w-9 h-9 rounded-xl bg-slate-800 flex items-center justify-center active:bg-slate-700">
+          className="w-9 h-9 rounded-xl bg-slate-700 flex items-center justify-center active:bg-slate-600">
           <ChevronRight size={18} className="text-white" />
         </button>
       </div>
@@ -187,7 +187,7 @@ export default function TourProgram() {
               onClick={() => handleDayTap(dateStr)}
               className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all
                 ${isSelected ? 'ring-2 ring-white scale-110' : ''}
-                ${vtConfig ? `${vtConfig.color} text-white` : 'bg-slate-800 text-slate-300'}
+                ${vtConfig ? `${vtConfig.color} text-white` : 'bg-slate-700 text-slate-300'}
                 ${isToday && !vtConfig ? 'ring-1 ring-sky-400' : ''}`}
             >
               {day}
@@ -201,7 +201,7 @@ export default function TourProgram() {
 
       {/* Visit Type Picker (shown when a date is selected) */}
       {selectedDate && (
-        <div className="mx-4 mb-4 bg-slate-800 rounded-2xl p-4 border border-slate-700">
+        <div className="mx-4 mb-4 bg-slate-700 rounded-2xl p-4 border border-slate-700">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm font-semibold text-white">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
             {entries[selectedDate] && (
@@ -211,7 +211,7 @@ export default function TourProgram() {
           <div className="grid grid-cols-3 gap-2">
             {VISIT_TYPES.map(vt => (
               <button key={vt.label} onClick={() => assignVisitType(vt.label)}
-                className={`py-2 rounded-xl text-xs font-semibold border ${entries[selectedDate] === vt.label ? `${vt.color} text-white border-transparent` : `bg-slate-900 ${vt.text} ${vt.border}`}`}>
+                className={`py-2 rounded-xl text-xs font-semibold border ${entries[selectedDate] === vt.label ? `${vt.color} text-white border-transparent` : `bg-slate-800 ${vt.text} ${vt.border}`}`}>
                 {vt.label}
               </button>
             ))}
@@ -224,14 +224,14 @@ export default function TourProgram() {
         {VISIT_TYPES.map(vt => (
           <div key={vt.label} className="flex items-center gap-1">
             <div className={`w-2.5 h-2.5 rounded-full ${vt.color}`} />
-            <span className="text-[10px] text-slate-400">{vt.label}</span>
+            <span className="text-[10px] text-slate-200">{vt.label}</span>
           </div>
         ))}
       </div>
 
       {/* Summary count */}
       <div className="px-4 mb-4">
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-200">
           {Object.keys(entries).length} days planned · {Object.values(entries).filter(v => v === 'Local').length} Local · {Object.values(entries).filter(v => v === 'Ex-Station').length} Ex · {Object.values(entries).filter(v => v === 'Out-Station').length} OS
         </p>
       </div>
@@ -240,7 +240,7 @@ export default function TourProgram() {
       {(tpStatus === 'Draft' || tpStatus === 'Rejected') && (
         <div className="px-4 pb-8 flex gap-3">
           <button onClick={saveTP} disabled={saving}
-            className="flex-1 h-[45px] rounded-xl bg-slate-700 text-white text-sm font-semibold active:bg-slate-600 disabled:opacity-50">
+            className="flex-1 h-[45px] rounded-xl bg-slate-600 text-white text-sm font-semibold active:bg-slate-600 disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button onClick={submitTP} disabled={submitting}
@@ -253,7 +253,7 @@ export default function TourProgram() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-24 left-4 right-4 bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white text-center z-50 shadow-lg">
+        <div className="fixed bottom-24 left-4 right-4 bg-slate-600 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white text-center z-50 shadow-lg">
           {toast}
         </div>
       )}
