@@ -74,7 +74,7 @@ export default function Login() {
             </div>
           )}
           <h1 className="text-xl font-black text-white tracking-tight leading-tight mb-2">EMYRIS BIOLIFESCIENCES PVT LTD.</h1>
-          <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">Enhancing life, Excelling care</p>
+          <p className="text-[11px] font-bold text-emerald-400 tracking-wider">Enhancing Life, Excelling in Care.</p>
         </div>
 
         {/* Login Form */}
