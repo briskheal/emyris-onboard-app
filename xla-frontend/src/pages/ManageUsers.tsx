@@ -568,38 +568,56 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Sr No.</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Name</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Creation Date</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">UID</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Reporting Manager</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Headquarter</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Division</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">View</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-700/50">
-              {paginated.map((p, i) => (
-                <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="border-r border-slate-700 p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300 text-center">{p.createdAt ? new Date(p.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold">{p.employeeId || p.uid || '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.reportingManager || '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.designation || '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.hq || '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.division || '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-center">
-                    <button onClick={() => setViewUser(p)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-2 rounded-lg transition-colors">
-                      <Eye size={18} />
-                    </button>
-                  </td>
+                <tr className="border-b border-slate-700 text-slate-300">
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800 sticky left-0 z-20">Sr No.</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800 sticky left-[50px] z-20">Name</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Employee ID</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Email Address</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Password</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Phone</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Designation</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Division</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Headquarter</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Reporting Manager</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">DOJ</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">DOB</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Daily DA</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Ex-Station DA</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Out-Station DA</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">PAN No.</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Aadhar No.</th>
+                  <th className="border-r border-slate-700 p-3 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-center sticky right-0 z-20">View</th>
                 </tr>
-              ))}
-              {profiles.length === 0 && <tr><td colSpan={9} className="p-8 text-center text-slate-500 font-bold">No records found.</td></tr>}
-            </tbody>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {paginated.map((p, i) => (
+                  <tr key={p._id} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors text-xs">
+                    <td className="border-r border-slate-700 p-3 text-slate-300 bg-slate-800/90 sticky left-0 z-10">{(currentPage - 1) * pageSize + i + 1}</td>
+                    <td className="border-r border-slate-700 p-3 text-white font-bold bg-slate-800/90 sticky left-[50px] z-10">{p.firstName} {p.lastName}</td>
+                    <td className="border-r border-slate-700 p-3 text-emerald-400 font-bold">{p.employeeId || p.uid || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-sky-400 font-bold">{p.email || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-amber-400 font-mono font-bold">{p.password || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-white font-bold">{p.phone || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.designation || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.division || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.hq || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.reportingManager || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.doj || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.dob || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.dailyAllowance || '0'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.exStationAllowance || '0'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.outStationAllowance || '0'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300 uppercase">{p.pan || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-slate-300">{p.aadhar || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-center bg-slate-800/90 sticky right-0 z-10">
+                      <button onClick={() => setViewUser(p)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-1.5 rounded transition-colors">
+                        <Eye size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {profiles.length === 0 && <tr><td colSpan={18} className="p-8 text-center text-slate-500 font-bold text-sm">No records found.</td></tr>}
+              </tbody>
           </table>
         </div>
         <TableFooter data={profiles} fileName={isAdmin ? "Admins" : "Users"} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
