@@ -3,7 +3,7 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const { XlDivision, XlDesignation, XlUser, XlAdmin, XlState, XlHQ, XlCity, XlRoute, Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, LoanType, AssignedLoan, AssignedAdvance, sequelize } = require('../db');
+const { XlDivision, XlDesignation, XlUser, XlAdmin, XlState, XlHQ, XlCity, XlRoute, XlTarget, Company, Applicant, Question, ExamResult, Asset, Division, HQ, TemplateHistory, Payslip, LeaveType, LeaveBalance, LeaveRequest, LoanType, AssignedLoan, AssignedAdvance, sequelize } = require('../db');
 const rateLimit = require('express-rate-limit');
 const multer = require('multer');
 const xlsx = require('xlsx');
@@ -4807,6 +4807,59 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
   } catch (e) {
     res.status(500).json({ success: false, message: e.message });
   }
+});
+
+
+// -------------------------------------------------------------
+// TARGETS API (XLA)
+// -------------------------------------------------------------
+
+router.get('/targets', async (req, res) => {
+    try {
+        const { period, month, year } = req.query;
+        let where = {};
+        if (period) where.targetPeriod = period;
+        if (month) where.month = month;
+        if (year) where.year = year;
+        
+        const targets = await XlTarget.findAll({ where, order: [['createdAt', 'DESC']] });
+        res.json({ success: true, targets });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/targets', async (req, res) => {
+    try {
+        const { userEmail, userName, targetPeriod, month, year, allocationType, lumpSumAmount, productTargets, totalProductAmount } = req.body;
+        
+        const whereClause = { userEmail, targetPeriod, year };
+        if (targetPeriod === 'Monthly') {
+            whereClause.month = month;
+        }
+        
+        await XlTarget.destroy({ where: whereClause });
+        
+        const newTarget = await XlTarget.create({
+            userEmail, userName, targetPeriod, month: targetPeriod === 'Monthly' ? month : null, year, allocationType, lumpSumAmount, productTargets, totalProductAmount
+        });
+        
+        res.json({ success: true, target: newTarget });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.delete('/targets/:id', async (req, res) => {
+    try {
+        await XlTarget.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: e.message });
+    }
 });
 
 module.exports = router;

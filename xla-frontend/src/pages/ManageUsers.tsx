@@ -91,7 +91,7 @@ export default function ManageUsers() {
           {activeTab === 'admin_info' && <ProfileInfoTab isAdmin={true} />}
           {activeTab === 'divisions' && <DivisionsTab />}
           {activeTab === 'designations' && <DesignationsTab />}
-          {activeTab === 'set_target' && <PlaceholderTab title="Set User Target" />}
+          {activeTab === 'set_target' && <SetTargetTab />}
           {activeTab === 'upload_target' && <PlaceholderTab title="Upload Target" />}
           {activeTab === 'access_control' && <PlaceholderTab title="Access Control" />}
           {activeTab === 'user_devices' && <PlaceholderTab title="User Devices" />}
@@ -1060,6 +1060,368 @@ function EditDeleteTab() {
           </table>
         </div>
         <TableFooter data={profiles} fileName="AllUsers" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+      </div>
+    </div>
+  );
+}
+
+// -------------------------------------------------------------
+// SET TARGET TAB
+// -------------------------------------------------------------
+function SetTargetTab() {
+  const [mode, setMode] = useState<'main' | 'add' | 'list'>('main');
+  const [targetPeriod, setTargetPeriod] = useState<'Monthly' | 'Yearly'>('Monthly');
+  
+  // Data state
+  const [users, setUsers] = useState<any[]>([]);
+  const [states, setStates] = useState<any[]>([]);
+  const [hqs, setHqs] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
+  
+  // Filters
+  const [stateName, setStateName] = useState('');
+  const [hqName, setHqName] = useState('');
+  
+  // Fetching data
+  useEffect(() => {
+    const fetchInitial = async () => {
+      try {
+        const [uRes, sRes, hRes, pRes] = await Promise.all([
+          axios.get('/api/admin/users'),
+          axios.get('/api/admin/locations/states'),
+          axios.get('/api/admin/locations/hqs'),
+          axios.get('/api/admin/products')
+        ]);
+        if (uRes.data.success) setUsers(uRes.data.users);
+        if (sRes.data.success) setStates(sRes.data.states);
+        if (hRes.data.success) setHqs(hRes.data.hqs);
+        if (pRes.data.success) setProducts(pRes.data.products);
+      } catch (e) { console.error(e); }
+    };
+    fetchInitial();
+  }, []);
+
+  const filteredHqs = hqs.filter(h => h.stateName === stateName);
+  const filteredUsers = users.filter(u => (!stateName || u.state === stateName) && (!hqName || u.hq === hqName));
+
+  // Pagination for main table
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Selected for assignment
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+
+  if (mode === 'add' && selectedUser) {
+    return <AddTargetView user={selectedUser} products={products} onBack={() => setMode('main')} />;
+  }
+
+  if (mode === 'list') {
+    return <TargetsListView period={targetPeriod} onBack={() => setMode('main')} />;
+  }
+
+  return (
+    <div className="max-w-6xl">
+      <h2 className="text-lg font-bold text-white mb-6 tracking-wide uppercase flex items-center gap-2">
+        <ArrowLeft size={20} className="cursor-pointer hover:text-sky-400" onClick={() => {}} /> SET USER TARGET
+      </h2>
+      
+      <div className="flex flex-wrap gap-6 items-end mb-8">
+        <div className="flex-1 min-w-[200px]">
+          <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">SELECT STATE</label>
+          <select value={stateName} onChange={e => { setStateName(e.target.value); setHqName(''); setCurrentPage(1); }} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+            <option value="">Select State</option>
+            {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 min-w-[200px]">
+          <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">SELECT HQ</label>
+          <select value={hqName} onChange={e => { setHqName(e.target.value); setCurrentPage(1); }} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+            <option value="">Select Headquarter</option>
+            {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+          </select>
+        </div>
+        <button className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors border border-sky-400">Filter</button>
+      </div>
+
+      <div className="flex gap-4 mb-8">
+        <button onClick={() => { setTargetPeriod('Monthly'); setMode('list'); }} className="border border-sky-500 text-sky-400 hover:bg-sky-500/10 font-bold py-2 px-6 rounded-lg transition-colors text-sm">Monthly Targets</button>
+        <button onClick={() => { setTargetPeriod('Yearly'); setMode('list'); }} className="border border-sky-500 text-sky-400 hover:bg-sky-500/10 font-bold py-2 px-6 rounded-lg transition-colors text-sm">Yearly Targets</button>
+      </div>
+
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+        <div className="p-4 bg-slate-800 border-b border-slate-700">
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">SHOWING ({filteredUsers.length}) TARGETS</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-900/50 text-slate-400 text-xs tracking-wider border-b border-slate-700">
+                <th className="p-4 font-bold border-r border-slate-700">Sr no.</th>
+                <th className="p-4 font-bold border-r border-slate-700">Name ↑</th>
+                <th className="p-4 font-bold border-r border-slate-700">Designation</th>
+                <th className="p-4 font-bold border-r border-slate-700">Headquarter ↑</th>
+                <th className="p-4 font-bold border-r border-slate-700">Division</th>
+                <th className="p-4 font-bold text-center">Add Target</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700">
+              {paginatedUsers.map((u, i) => (
+                <tr key={u._id} className="hover:bg-slate-700/30">
+                  <td className="p-4 text-slate-300 border-r border-slate-700">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="p-4 text-white font-bold border-r border-slate-700">{u.firstName} {u.lastName}</td>
+                  <td className="p-4 text-slate-300 border-r border-slate-700">{u.designation}</td>
+                  <td className="p-4 text-slate-300 border-r border-slate-700">{u.hq}</td>
+                  <td className="p-4 text-slate-300 border-r border-slate-700">{u.division}</td>
+                  <td className="p-4 text-center">
+                    <button onClick={() => { setSelectedUser(u); setMode('add'); }} className="text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 p-2 rounded-full inline-flex items-center justify-center h-8 w-8 transition-colors">
+                      <span className="font-bold text-xl leading-none block -mt-1">+</span>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {filteredUsers.length === 0 && (
+                <tr><td colSpan={6} className="p-8 text-center text-rose-400">No results found</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AddTargetView({ user, products, onBack }: any) {
+  const currentYear = new Date().getFullYear();
+  const years = [currentYear+2, currentYear+1, currentYear, currentYear-1, currentYear-2, currentYear-3, currentYear-4];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const [month, setMonth] = useState('');
+  const [year, setYear] = useState(currentYear.toString());
+  const [targetType, setTargetType] = useState('Qty * Amount');
+  const [lumpSumAmount, setLumpSumAmount] = useState<number>(0);
+  
+  // Filter products by division
+  const divisionProducts = products.filter((p: any) => p.division === user.division || !user.division);
+  
+  const [productQuantities, setProductQuantities] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(false);
+
+  const handleQtyChange = (id: string, qty: number) => {
+    setProductQuantities(prev => ({ ...prev, [id]: qty }));
+  };
+
+  const handleAllot = async () => {
+    if (targetType === 'Qty * Amount' && !month) { alert('Please select a month'); return; }
+    
+    setLoading(true);
+    let productTargets: any[] = [];
+    let totalProductAmount = 0;
+    
+    if (targetType === 'Qty * Amount') {
+      divisionProducts.forEach((p: any) => {
+        const qty = productQuantities[p._id] || 0;
+        if (qty > 0) {
+          const amount = qty * (p.ptr || 0);
+          productTargets.push({ productId: p._id, productName: p.productName, ptr: p.ptr || 0, qty, totalAmount: amount });
+          totalProductAmount += amount;
+        }
+      });
+    }
+
+    try {
+      const res = await axios.post('/api/admin/targets', {
+        userEmail: user.email,
+        userName: user.firstName + ' ' + (user.lastName || ''),
+        targetPeriod: 'Monthly',
+        month,
+        year,
+        allocationType: targetType,
+        lumpSumAmount,
+        productTargets,
+        totalProductAmount
+      });
+      if (res.data.success) {
+        alert('User Target Successfully Set');
+        onBack();
+      } else alert(res.data.message);
+    } catch (e) {
+      console.error(e);
+      alert('Error saving target');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="max-w-6xl">
+      <h2 className="text-lg font-bold text-white mb-6 tracking-wide uppercase flex items-center gap-2">
+        <ArrowLeft size={20} className="cursor-pointer hover:text-sky-400 transition-colors" onClick={onBack} /> 
+        SET TARGET FOR {user.firstName.toUpperCase()} {user.lastName?.toUpperCase()}
+      </h2>
+      
+      <div className="grid grid-cols-3 gap-6 mb-8">
+        <div>
+          <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">SELECT MONTH</label>
+          <select value={month} onChange={e => setMonth(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+            <option value="">Select Month</option>
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">SELECT YEAR</label>
+          <select value={year} onChange={e => setYear(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+            <option value="">Select Year</option>
+            {years.map(y => <option key={y} value={y.toString()}>{y}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">SELECT TARGET TYPE</label>
+          <select value={targetType} onChange={e => setTargetType(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+            <option value="Qty * Amount">Qty * Amount</option>
+            <option value="Lump-Sum">Lump-Sum</option>
+          </select>
+        </div>
+      </div>
+
+      {targetType === 'Lump-Sum' && (
+        <div className="mb-8 w-1/3">
+          <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">LUMP-SUM AMOUNT</label>
+          <input type="number" value={lumpSumAmount || ''} onChange={e => setLumpSumAmount(Number(e.target.value))} placeholder="Enter Amount" className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500" />
+          
+          <div className="mt-8 flex justify-center">
+            <button disabled={loading} onClick={handleAllot} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-10 rounded-lg transition-colors flex items-center gap-2">
+              <span className="text-sm font-bold">Allot Target</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {targetType === 'Qty * Amount' && (
+        <div className="bg-slate-800/80 rounded-2xl border border-slate-700 shadow-xl overflow-hidden mb-8">
+          <div className="p-4 bg-slate-800 border-b border-slate-700 flex justify-between items-center">
+            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">PRODUCT DETAILS</h3>
+          </div>
+          <div className="overflow-x-auto max-h-[50vh]">
+            <table className="w-full text-left relative">
+              <thead className="sticky top-0 bg-slate-900/90 z-10">
+                <tr className="text-slate-400 text-xs tracking-wider border-b border-slate-700">
+                  <th className="p-4 font-bold border-r border-slate-700">Sr no.</th>
+                  <th className="p-4 font-bold border-r border-slate-700">Product Name ↑</th>
+                  <th className="p-4 font-bold border-r border-slate-700">PTR</th>
+                  <th className="p-4 font-bold border-r border-slate-700 text-center w-32">Quantity ↑</th>
+                  <th className="p-4 font-bold text-center">Actions ↑</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700">
+                {divisionProducts.map((p: any, i: number) => (
+                  <tr key={p._id} className="hover:bg-slate-700/30">
+                    <td className="p-4 text-slate-300 border-r border-slate-700">{i + 1}</td>
+                    <td className="p-4 text-white font-bold border-r border-slate-700">{p.productName}</td>
+                    <td className="p-4 text-slate-300 border-r border-slate-700">{p.ptr || '0.00'}</td>
+                    <td className="p-4 border-r border-slate-700">
+                      <input type="number" value={productQuantities[p._id] === undefined ? 0 : productQuantities[p._id]} onChange={e => handleQtyChange(p._id, Number(e.target.value))} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-center text-white focus:outline-none focus:border-sky-500" />
+                    </td>
+                    <td className="p-4 text-center">
+                      <button onClick={handleAllot} className="text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 p-2 rounded transition-colors" title="Save Target">
+                        <Edit size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TargetsListView({ period, onBack }: any) {
+  const currentYear = new Date().getFullYear();
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  const [month, setMonth] = useState('August');
+  const [year] = useState(currentYear.toString());
+  const [targets, setTargets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchTargets = async () => {
+    setLoading(true);
+    try {
+      const url = period === 'Monthly' 
+        ? `/api/admin/targets?period=Monthly&month=${month}&year=${year}` 
+        : `/api/admin/targets?period=Yearly&year=${year}`;
+      const res = await axios.get(url);
+      if (res.data.success) setTargets(res.data.targets);
+    } catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+
+  useEffect(() => { fetchTargets(); }, [month, year, period]);
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("DELETE ALLOTTED TARGET\nTHIS WILL PERMANENTLY DELETE THE ALLOTTED TARGET!\nYes / No")) return;
+    try {
+      const res = await axios.delete('/api/admin/targets/' + id);
+      if (res.data.success) {
+        alert("Allotment deleted successfully");
+        fetchTargets();
+      }
+    } catch (e) { console.error(e); }
+  };
+
+  return (
+    <div className="max-w-6xl">
+      <h2 className="text-lg font-bold text-white mb-6 tracking-wide uppercase flex items-center gap-2">
+        <ArrowLeft size={20} className="cursor-pointer hover:text-sky-400 transition-colors" onClick={onBack} /> 
+        {period.toUpperCase()} TARGETS
+      </h2>
+
+      {period === 'Monthly' && (
+        <div className="mb-8 w-64">
+          <label className="text-xs text-slate-400 font-bold mb-2 block uppercase tracking-wider">Select Month*</label>
+          <select value={month} onChange={e => setMonth(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
+            {months.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+      )}
+
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+        <div className="p-4 bg-slate-800 border-b border-slate-700">
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">SHOWING ({targets.length}) ENTRIES</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-900/50 text-slate-400 text-xs tracking-wider border-b border-slate-700">
+                <th className="p-4 font-bold border-r border-slate-700">Sr no.</th>
+                <th className="p-4 font-bold border-r border-slate-700">Employee ↑</th>
+                <th className="p-4 font-bold border-r border-slate-700">Lump Amount ↑</th>
+                <th className="p-4 font-bold border-r border-slate-700">Product Amount ↑</th>
+                <th className="p-4 font-bold text-center">Delete ↑</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700">
+              {targets.map((t, i) => (
+                <tr key={t._id} className="hover:bg-slate-700/30">
+                  <td className="p-4 text-slate-300 border-r border-slate-700">{i + 1}</td>
+                  <td className="p-4 text-white font-bold border-r border-slate-700">{t.userName || t.userEmail}</td>
+                  <td className="p-4 text-slate-300 border-r border-slate-700">{t.lumpSumAmount || 0}</td>
+                  <td className="p-4 text-slate-300 border-r border-slate-700">{t.totalProductAmount || 0}</td>
+                  <td className="p-4 text-center">
+                    <button onClick={() => handleDelete(t._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg" title="Delete">
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {targets.length === 0 && !loading && (
+                <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-bold">No results found</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

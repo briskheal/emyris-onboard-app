@@ -376,6 +376,21 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    
+    const XlTarget = sequelize.define('xl_target', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        userEmail: { type: DataTypes.STRING, allowNull: false },
+        userName: { type: DataTypes.STRING },
+        targetPeriod: { type: DataTypes.STRING, allowNull: false },
+        month: { type: DataTypes.STRING },
+        year: { type: DataTypes.STRING, allowNull: false },
+        allocationType: { type: DataTypes.STRING, allowNull: false },
+        lumpSumAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
+        productTargets: { type: DataTypes.JSON, defaultValue: [] },
+        totalProductAmount: { type: DataTypes.FLOAT, defaultValue: 0 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     const XlOutStationAllowance = sequelize.define('xl_out_station_allowance', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         state: { type: DataTypes.STRING, allowNull: false },
