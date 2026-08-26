@@ -48,7 +48,7 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
           disabled={currentPage === 1}
           onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))}
           className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-        >&lt; Previous</button>
+        >Previous</button>
         <span>Page {currentPage} of {totalPages}</span>
         <button 
           disabled={currentPage === totalPages}
@@ -69,8 +69,8 @@ export default function ManageLocations() {
       
       {/* Header */}
       <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={24} /> <span className="font-bold text-lg tracking-wide uppercase">Back to Admin Menu</span>
+        <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={24} /> <span className="font-black text-xl tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
         </button>
       </div>
 
@@ -173,7 +173,7 @@ function StateTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE STATE</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE STATE</h2>
       
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
         <div className="flex-1">
@@ -275,7 +275,7 @@ function HQTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE HEADQUARTER</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE HEADQUARTER</h2>
       
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
         <div className="flex-1">
@@ -392,7 +392,7 @@ function CityTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE CITY / AREA</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE CITY / AREA</h2>
       
       <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
         <div className="flex-1 min-w-[200px]">
@@ -532,7 +532,7 @@ function RouteTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-4 tracking-wide uppercase">&lt; CREATE ROUTE</h2>
+      <h2 className="text-2xl font-black text-white mb-4 tracking-wide uppercase">CREATE ROUTE</h2>
       <div className="bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 p-4 rounded-xl mb-8 font-bold text-sm">
         Note: If the distance of a route is edited, the updated distance will not be reflected in the tour programs. However, the new distance will be applied to newly created tour programs.
       </div>

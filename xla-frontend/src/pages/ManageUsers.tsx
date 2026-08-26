@@ -32,7 +32,7 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
         </div>
       </div>
       <div className="flex items-center gap-4 text-sm font-bold text-slate-300">
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">&lt; Previous</button>
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Previous</button>
         <span>Page {currentPage} of {totalPages}</span>
         <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Next &gt;</button>
       </div>
@@ -47,8 +47,8 @@ export default function ManageUsers() {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
       <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={24} /> <span className="font-bold text-lg tracking-wide uppercase">Back to Admin Menu</span>
+        <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={24} /> <span className="font-black text-xl tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
         </button>
       </div>
       <div className="flex flex-1 overflow-hidden">
@@ -230,7 +230,7 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE USER PROFILE</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE USER PROFILE</h2>
       <form onSubmit={handleSubmit} className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl">
 
         {/* Import HR Applicant */}
@@ -370,7 +370,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <div className="max-w-full">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; {isAdmin ? 'ADMIN' : 'USER'} INFO</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">{isAdmin ? 'ADMIN' : 'USER'} INFO</h2>
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
       
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
@@ -467,7 +467,7 @@ function DivisionsTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE DIVISION</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE DIVISION</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER DIVISION *</label>
@@ -558,7 +558,7 @@ function DesignationsTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-4 tracking-wide uppercase">&lt; CREATE DESIGNATION</h2>
+      <h2 className="text-2xl font-black text-white mb-4 tracking-wide uppercase">CREATE DESIGNATION</h2>
       
       <div className="bg-emerald-900/40 border border-emerald-500/30 p-4 rounded-xl mb-8">
         <h3 className="text-emerald-400 font-bold text-sm mb-2 uppercase">Usage Instructions</h3>
@@ -649,7 +649,7 @@ function TADAManageTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; TA, DA MANAGE</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">TA, DA MANAGE</h2>
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">

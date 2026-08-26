@@ -87,7 +87,7 @@ export default function ManageAllowances() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; SET ALLOWANCES</h2>
+        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">SET ALLOWANCES</h2>
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -181,7 +181,7 @@ export default function ManageAllowances() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; OUT-STATION ALLOWANCES</h2>
+        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">OUT-STATION ALLOWANCES</h2>
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -269,7 +269,7 @@ export default function ManageAllowances() {
 
     return (
       <div className="flex-1 overflow-auto p-8 relative z-10">
-        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; TOTAL RATES</h2>
+        <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">TOTAL RATES</h2>
         
         <div className="mb-10 w-full md:w-1/3">
           <label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER *</label>
@@ -354,8 +354,8 @@ export default function ManageAllowances() {
       {/* Sidebar */}
       <div className="w-80 bg-slate-900/80 border-r border-slate-800 flex flex-col relative z-10 backdrop-blur-xl">
         <div className="p-8 border-b border-slate-800 flex flex-col gap-4">
-          <button onClick={() => navigate('/admin')} className="text-sky-400 hover:text-white transition-colors flex items-center gap-2 w-fit font-bold text-sm uppercase tracking-wider">
-            <ArrowLeft size={18} /> Back to Admin Panel
+          <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+            <ArrowLeft size={24} /> <span className="font-black text-xl tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
           </button>
           <h2 className="text-white font-black text-xl tracking-widest uppercase">MANAGE EXPENSES</h2>
         </div>

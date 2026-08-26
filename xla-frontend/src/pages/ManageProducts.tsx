@@ -32,7 +32,7 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
         </div>
       </div>
       <div className="flex items-center gap-4 text-sm font-bold text-slate-300">
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">&lt; Previous</button>
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Previous</button>
         <span>Page {currentPage} of {totalPages}</span>
         <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Next &gt;</button>
       </div>
@@ -47,8 +47,8 @@ export default function ManageProducts() {
   return (
     <div className="min-h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
       <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={24} /> <span className="font-bold text-lg tracking-wide uppercase">Back to Admin Menu</span>
+        <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={24} /> <span className="font-black text-xl tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
         </button>
       </div>
       <div className="flex flex-1 overflow-hidden">
@@ -122,7 +122,7 @@ function CategoryTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE PRODUCT CATEGORY</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE PRODUCT CATEGORY</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER PRODUCT CATEGORY *</label>
@@ -209,7 +209,7 @@ function TypeTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE PRODUCT TYPE</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE PRODUCT TYPE</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">PRODUCT TYPE *</label>
@@ -318,7 +318,7 @@ function ProductTab() {
     return (
       <div className="max-w-4xl bg-slate-800/80 rounded-2xl border border-slate-700 p-8 shadow-xl">
         <div className="flex items-center justify-between mb-8 border-b border-slate-700 pb-4">
-          <h2 className="text-2xl font-black text-white tracking-wide uppercase">&lt; PRODUCT DETAILS</h2>
+          <h2 className="text-2xl font-black text-white tracking-wide uppercase">PRODUCT DETAILS</h2>
           <button onClick={() => setViewProduct(null)} className="text-slate-400 hover:text-white font-bold px-4 py-2 bg-slate-700 rounded-lg">Close Details</button>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
@@ -342,7 +342,7 @@ function ProductTab() {
 
   return (
     <div className="max-w-full">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; {isEditing ? 'EDIT PRODUCT' : 'CREATE PRODUCT'}</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">{isEditing ? 'EDIT PRODUCT' : 'CREATE PRODUCT'}</h2>
       
       <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-12 shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -431,7 +431,7 @@ function ProductTab() {
 function UploadTab() {
   return (
     <div className="max-w-3xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; UPLOAD PRODUCT</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">UPLOAD PRODUCT</h2>
       <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-lg">
         <label className="text-sm text-slate-400 font-bold mb-4 block uppercase tracking-wider">UPLOAD EXCEL *</label>
         <div className="flex gap-4 items-center">
@@ -497,7 +497,7 @@ function SupplierTab() {
 
   return (
     <div className="max-w-4xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; CREATE PRODUCT SUPPLIER</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">CREATE PRODUCT SUPPLIER</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
         <div className="flex-1">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER PRODUCT SUPPLIER *</label>
@@ -582,7 +582,7 @@ function InventoryTab() {
     return (
       <div className="max-w-5xl">
         <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase cursor-pointer hover:text-sky-400 flex items-center gap-2" onClick={() => setViewMode('add')}>
-          <ArrowLeft size={24} /> &lt; ALL INVENTORY
+          <ArrowLeft size={24} /> ALL INVENTORY
         </h2>
         <div className="flex justify-between items-center mb-6">
           <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 inline-block">
@@ -634,7 +634,7 @@ function InventoryTab() {
     return (
       <div className="max-w-6xl">
         <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase cursor-pointer hover:text-sky-400 flex items-center gap-2" onClick={() => setViewMode('full')}>
-          <ArrowLeft size={24} /> &lt; PRODUCT WISE INVENTORY
+          <ArrowLeft size={24} /> PRODUCT WISE INVENTORY
         </h2>
         
         <div className="bg-slate-800 p-4 rounded-xl border border-slate-700 inline-block mb-6">
@@ -681,7 +681,7 @@ function InventoryTab() {
 
   return (
     <div className="max-w-6xl">
-      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">&lt; INVENTORY</h2>
+      <h2 className="text-2xl font-black text-white mb-8 tracking-wide uppercase">INVENTORY</h2>
       
       <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-8 shadow-lg">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
