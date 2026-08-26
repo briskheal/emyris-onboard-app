@@ -109,6 +109,7 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
   const [divisions, setDivisions] = useState<any[]>([]);
   const [applicants, setApplicants] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sendEmail, setSendEmail] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -348,9 +349,17 @@ function CreateProfileTab({ isAdmin }: { isAdmin: boolean }) {
           </div>
         </div>
 
-        <div className="flex justify-end gap-4 pt-4 border-t border-slate-700">
+        <div className="flex justify-between items-center w-full pt-4 border-t border-slate-700">
+            <div className="flex items-center gap-3 bg-slate-900/50 p-3 rounded-lg border border-slate-700">
+              <input type="checkbox" id="sendEmail" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)} className="w-5 h-5 accent-sky-500 cursor-pointer" />
+              <label htmlFor="sendEmail" className="text-sm font-bold text-sky-400 cursor-pointer select-none tracking-wide">
+                Send Login Details to Employee's Email ?
+              </label>
+            </div>
+            <div className="flex gap-4">
           <button type="button" className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">Save As Draft</button>
           <button disabled={loading} type="submit" className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">{loading ? 'Submitting...' : 'Submit'}</button>
+        </div>
         </div>
       </form>
     </div>
@@ -469,7 +478,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
             <div className="grid grid-cols-2 gap-8">
               <div>
                 <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">STREET ADDRESS 1</p>
-                <p className="text-white font-bold">{viewUser.address1 || '-'}</p>
+                <p className="text-white font-bold">{viewUser.streetAddress1 || '-'}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">CITY</p>
@@ -477,7 +486,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">STREET ADDRESS 2</p>
-                <p className="text-white font-bold">{viewUser.address2 || '-'}</p>
+                <p className="text-white font-bold">{viewUser.streetAddress2 || '-'}</p>
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">STATE</p>
@@ -992,7 +1001,7 @@ function EditDeleteTab() {
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Street Address 1</label>
-                <input value={editUser.address1 || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.streetAddress1 || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">City</label>
@@ -1002,7 +1011,7 @@ function EditDeleteTab() {
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Street Address 2</label>
-                <input value={editUser.address2 || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.streetAddress2 || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">State</label>
