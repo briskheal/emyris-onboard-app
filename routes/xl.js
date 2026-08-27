@@ -782,4 +782,65 @@ router.get('/vacancies', async (req, res) => {
     }
 });
 
+
+// Call Plan Routes
+router.get('/call-plan/month', async (req, res) => {
+    try {
+        const { email, month, year } = req.query; // employeeId is actually passed as email
+        if (!email || !month || !year) return res.status(400).json({ error: 'Missing parameters' });
+        
+        const { Op } = require('sequelize');
+        const { XlCallPlan } = require('../models/xlModels');
+        
+        const startDate = `${year}-${month.padStart(2, '0')}-01`;
+        const endDate = `${year}-${month.padStart(2, '0')}-31`;
+        
+        const plans = await XlCallPlan.findAll({
+            where: {
+                employeeId: email,
+                date: { [Op.between]: [startDate, endDate] }
+            },
+            order: [['date', 'ASC']]
+        });
+        
+        res.json({ success: true, data: plans });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch call plans' });
+    }
+});
+
+router.post('/call-plan/bulk', async (req, res) => {
+    try {
+        const { employeeId, dates, doctors, chemists, stockists } = req.body;
+        if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
+        
+        const { XlCallPlan } = require('../models/xlModels');
+        
+        for (const date of dates) {
+            let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
+            
+            if (plan) {
+                plan.doctors = JSON.stringify(doctors || []);
+                plan.chemists = JSON.stringify(chemists || []);
+                plan.stockists = JSON.stringify(stockists || []);
+                await plan.save();
+            } else {
+                await XlCallPlan.create({
+                    employeeId,
+                    date,
+                    doctors: JSON.stringify(doctors || []),
+                    chemists: JSON.stringify(chemists || []),
+                    stockists: JSON.stringify(stockists || [])
+                });
+            }
+        }
+        
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to save call plan' });
+    }
+});
+
 module.exports = router;
