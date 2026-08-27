@@ -67,7 +67,7 @@ export default function CallPlan() {
 
     try {
       await axios.post('/api/xl/call-plan', {
-        employeeEmail: user?.email,
+        employeeId: user?.employeeId,
         date: dateStr,
         doctors: Array.from(selectedIds)
       });

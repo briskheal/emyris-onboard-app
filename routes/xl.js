@@ -129,7 +129,23 @@ router.post('/route', async (req, res) => {
 // Fetch all doctors for a user (for DCR entity selection)
 router.get('/doctors', async (req, res) => {
     try {
-        const where = {}; if (req.query.hq) { const { sequelize } = require('../db'); where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.toLowerCase()); } const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category'], order: [['name', 'ASC']] });
+        const { empId, designation } = req.query;
+        let empIds = [];
+        if (empId) empIds.push(empId);
+        if (designation && designation !== 'ADMIN') {
+            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+            empIds.push(...reportees.map(r => r.employeeId));
+        }
+        
+        let where = {};
+        if (empIds.length > 0) {
+            where.employeeId = empIds;
+        } else if (req.query.hq) {
+            const { sequelize } = require('../db');
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.toLowerCase());
+        }
+
+        const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category', 'employeeId'], order: [['name', 'ASC']] });
         res.json({ success: true, data: doctors });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch doctors' });
@@ -139,7 +155,18 @@ router.get('/doctors', async (req, res) => {
 // Fetch all chemists
 router.get('/chemists', async (req, res) => {
     try {
-        const chemists = await XlChemist.findAll({ attributes: ['_id', 'businessName', 'proprietorName', 'hq', 'workingArea'], order: [['businessName', 'ASC']] });
+        const { empId, designation } = req.query;
+        let empIds = [];
+        if (empId) empIds.push(empId);
+        if (designation && designation !== 'ADMIN') {
+            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+            empIds.push(...reportees.map(r => r.employeeId));
+        }
+        
+        let where = {};
+        if (empIds.length > 0) where.employeeId = empIds;
+
+        const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'hq', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: chemists });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch chemists' });
@@ -151,18 +178,18 @@ router.get('/chemists', async (req, res) => {
 // Save/Update draft TP for the month
 router.post('/tour-program', async (req, res) => {
     try {
-        const { employeeEmail, employeeName, hq, month, year, entries } = req.body;
-        if (!employeeEmail || !month || !year) return res.status(400).json({ error: 'Missing required fields' });
+        const { employeeId, employeeName, hq, month, year, entries } = req.body;
+        if (!employeeId || !month || !year) return res.status(400).json({ error: 'Missing required fields' });
 
         // Upsert: one TP per employee per month/year
-        let tp = await XlTourProgram.findOne({ where: { employeeEmail, month, year } });
+        let tp = await XlTourProgram.findOne({ where: { employeeId, month, year } });
         if (tp) {
             await XlTourProgram.update({ entries: JSON.stringify(entries), employeeName, hq }, { where: { _id: tp._id } });
             tp = await XlTourProgram.findOne({ where: { _id: tp._id } });
         } else {
             tp = await XlTourProgram.create({
                 _id: generateId(),
-                employeeEmail, employeeName, hq, month, year,
+                employeeId, employeeName, hq, month, year,
                 entries: JSON.stringify(entries || []),
                 status: 'Draft'
             });
@@ -201,8 +228,8 @@ router.get('/tour-program/my', async (req, res) => {
 // Submit a DCR
 router.post('/dcr', async (req, res) => {
     try {
-        const { employeeEmail, date, entityType, entityId, entityName } = req.body;
-        if (!employeeEmail || !date || !entityType || !entityId) {
+        const { employeeId, date, entityType, entityId, entityName } = req.body;
+        if (!employeeId || !date || !entityType || !entityId) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -210,7 +237,7 @@ router.post('/dcr', async (req, res) => {
         const dateObj = new Date(date);
         const month = dateObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
         const year = String(dateObj.getFullYear());
-        const tp = await XlTourProgram.findOne({ where: { employeeEmail, month, year, status: 'Approved' } });
+        const tp = await XlTourProgram.findOne({ where: { employeeId, month, year, status: 'Approved' } });
         if (!tp) {
             return res.status(403).json({ error: 'No approved Tour Program found for this date. Please submit and get your TP approved first.' });
         }
@@ -226,13 +253,13 @@ router.post('/dcr', async (req, res) => {
         const todayStr = new Date().toISOString().split('T')[0];
         if (date === todayStr) {
             // Current day -> MUST be punched in
-            const att = await XlAttendance.findOne({ where: { employeeEmail, date } });
+            const att = await XlAttendance.findOne({ where: { employeeId, date } });
             if (!att || !att.punchInTime) {
                 return res.status(403).json({ error: 'You must punch in your Attendance for today before submitting a call report.' });
             }
         } else {
             // Past day -> MUST have an approved Backlog Request
-            const backlog = await XlBacklogRequest.findOne({ where: { employeeEmail, date, status: 'Approved' } });
+            const backlog = await XlBacklogRequest.findOne({ where: { employeeId, date, status: 'Approved' } });
             if (!backlog) {
                 return res.status(403).json({ error: `Reporting for ${date} is locked. You must submit a Backlog Request and get Admin approval to report for past dates.` });
             }
@@ -301,13 +328,13 @@ router.get('/dcr/my', async (req, res) => {
 // Punch In
 router.post('/attendance/punch-in', async (req, res) => {
     try {
-        const { employeeEmail, date, punchInTime, punchInLat, punchInLng } = req.body;
-        const existing = await XlAttendance.findOne({ where: { employeeEmail, date } });
+        const { employeeId, date, punchInTime, punchInLat, punchInLng } = req.body;
+        const existing = await XlAttendance.findOne({ where: { employeeId, date } });
         if (existing) return res.status(400).json({ error: 'Already punched in for today.' });
         
         const att = await XlAttendance.create({
             _id: generateId(),
-            employeeEmail, date, punchInTime, punchInLat, punchInLng
+            employeeId, date, punchInTime, punchInLat, punchInLng
         });
         res.json({ success: true, message: 'Punched In!', data: att });
     } catch (e) {
@@ -318,8 +345,8 @@ router.post('/attendance/punch-in', async (req, res) => {
 // Punch Out
 router.post('/attendance/punch-out', async (req, res) => {
     try {
-        const { employeeEmail, date, punchOutTime, punchOutLat, punchOutLng } = req.body;
-        const att = await XlAttendance.findOne({ where: { employeeEmail, date } });
+        const { employeeId, date, punchOutTime, punchOutLat, punchOutLng } = req.body;
+        const att = await XlAttendance.findOne({ where: { employeeId, date } });
         if (!att) return res.status(400).json({ error: 'No punch-in record found for today.' });
         if (att.punchOutTime) return res.status(400).json({ error: 'Already punched out.' });
 
@@ -388,8 +415,8 @@ router.get('/expense/my', async (req, res) => {
 
 router.post('/backlog', async (req, res) => {
     try {
-        const { employeeEmail, date } = req.body;
-        const existing = await XlBacklogRequest.findOne({ where: { employeeEmail, date } });
+        const { employeeId, date } = req.body;
+        const existing = await XlBacklogRequest.findOne({ where: { employeeId, date } });
         if (existing) return res.status(400).json({ error: 'Backlog request already exists for this date.' });
 
         const reqs = await XlBacklogRequest.create({ _id: generateId(), ...req.body });
@@ -412,12 +439,12 @@ router.get('/backlog/my', async (req, res) => {
 
 router.post('/call-plan', async (req, res) => {
     try {
-        const { employeeEmail, date, doctors } = req.body;
-        let plan = await XlCallPlan.findOne({ where: { employeeEmail, date } });
+        const { employeeId, date, doctors } = req.body;
+        let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
         if (plan) {
             await XlCallPlan.update({ doctors: JSON.stringify(doctors) }, { where: { _id: plan._id } });
         } else {
-            plan = await XlCallPlan.create({ _id: generateId(), employeeEmail, date, doctors: JSON.stringify(doctors) });
+            plan = await XlCallPlan.create({ _id: generateId(), employeeId, date, doctors: JSON.stringify(doctors) });
         }
         res.json({ success: true, message: 'Call plan saved!' });
     } catch (e) {
@@ -688,7 +715,7 @@ router.post('/approvals/action', async (req, res) => {
 
         try {
             await XlNotification.create({
-                employeeEmail: record.employeeEmail,
+                employeeId: record.employeeId,
                 title: 'Request ' + action,
                 message: 'Your ' + type + ' request has been ' + action.toLowerCase() + '. ' + (remarks ? 'Remarks: ' + remarks : '')
             });
