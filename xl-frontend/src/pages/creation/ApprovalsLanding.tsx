@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { UserRound, ShoppingBag, Building2, Navigation, Banknote, FileSignature, NotebookPen } from 'lucide-react';
+import { UserRound, ShoppingBag, Building2, Navigation, Banknote, FileSignature, NotebookPen, MapPin, Truck, Gift, Target, ShieldCheck, Map } from 'lucide-react';
 
 const approvalModules = [
   { path: 'Call Report', icon: UserRound, label: 'Call Report' },
@@ -10,6 +10,13 @@ const approvalModules = [
   { path: 'Stockists', icon: Building2, label: 'Stockists' },
   { path: 'Expense', icon: Banknote, label: 'Expense' },
   { path: 'Leave Request', icon: FileSignature, label: 'Leave Request' },
+  { path: 'City', icon: MapPin, label: 'City' },
+  { path: 'Routes', icon: Map, label: 'Routes' },
+  { path: 'Samples', icon: Truck, label: 'Samples' },
+  { path: 'Gifts', icon: Gift, label: 'Gifts' },
+  { path: 'Primary Sales', icon: Target, label: 'Primary Sales' },
+  { path: 'Secondary Sales', icon: ShieldCheck, label: 'Secondary Sales' },
+  { path: 'Geo Fencing', icon: Navigation, label: 'Geo Fencing' },
 ];
 
 export default function ApprovalsLanding() {
@@ -22,10 +29,11 @@ export default function ApprovalsLanding() {
         <button onClick={() => navigate(-1)} className="text-sky-400 font-medium">← Back</button>
         <div>
           <h1 className="text-xl font-bold text-white">Approvals</h1>
+          <p className="text-xs text-slate-400">Select a module to view pending approvals.</p>
         </div>
       </div>
 
-      <div className="px-5 mt-4 space-y-3">
+      <div className="px-4 grid grid-cols-1 gap-3">
         {approvalModules.map((item, idx) => (
           <button 
             key={idx}

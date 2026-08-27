@@ -3,7 +3,7 @@ const { DataTypes } = require('sequelize');
 const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
 module.exports = function initXlModels(sequelize) {
-    const XlDoctorControl = sequelize.define('xl_doctor_control', {
+    const XlSample = sequelize.define('xl_sample', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    details: { type: DataTypes.TEXT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlGift = sequelize.define('xl_gift', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    details: { type: DataTypes.TEXT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlPrimarySales = sequelize.define('xl_primary_sales', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    amount: { type: DataTypes.FLOAT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlSecondarySales = sequelize.define('xl_secondary_sales', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    amount: { type: DataTypes.FLOAT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlGeoFencing = sequelize.define('xl_geo_fencing', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    entityType: { type: DataTypes.STRING },\n    entityId: { type: DataTypes.STRING },\n    latitude: { type: DataTypes.FLOAT },\n    longitude: { type: DataTypes.FLOAT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n    const XlDoctorControl = sequelize.define('xl_doctor_control', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         type: { type: DataTypes.STRING, allowNull: false }, // Degree, Specialization, Hospital, Category
         name: { type: DataTypes.STRING, allowNull: false },
@@ -106,6 +106,8 @@ module.exports = function initXlModels(sequelize) {
         hq: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         cityName: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING, defaultValue: 'City' },
+        employeeEmail: { type: DataTypes.STRING },
+        adminRemarks: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
@@ -120,6 +122,8 @@ module.exports = function initXlModels(sequelize) {
         toCity: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING }, // Local, Ex-Station, Out-Station
         distance: { type: DataTypes.FLOAT },
+        employeeEmail: { type: DataTypes.STRING },
+        adminRemarks: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }

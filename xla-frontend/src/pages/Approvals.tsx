@@ -3,7 +3,8 @@ import axios from 'axios';
 import { Filter, CheckCircle, XCircle } from 'lucide-react';
 
 const modules = [
-  'Call Report', 'Tour Program', 'Call Plans', 'Doctors', 'Chemists', 'Stockists', 'Expense', 'Leave Request'
+  'Call Report', 'Tour Program', 'Call Plans', 'Doctors', 'Chemists', 'Stockists', 'Expense', 'Leave Request',
+  'City', 'Routes', 'Samples', 'Gifts', 'Primary Sales', 'Secondary Sales', 'Geo Fencing'
 ];
 
 export default function Approvals() {
