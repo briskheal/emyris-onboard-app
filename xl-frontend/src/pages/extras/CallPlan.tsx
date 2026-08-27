@@ -374,7 +374,7 @@ function CallPlan() {
       </div>
 
       {showPlanModal && (
-        <div className="fixed inset-0 z-50 bg-[#1c1c2e] flex flex-col">
+        <div className="fixed inset-0 z-[60] bg-[#1c1c2e] flex flex-col">
           <div className="p-4 border-b border-[#3b3b5a] flex items-center gap-3">
             <button onClick={() => setShowPlanModal(false)}><ChevronLeft className="w-6 h-6 text-sky-400" /></button>
             <div>
