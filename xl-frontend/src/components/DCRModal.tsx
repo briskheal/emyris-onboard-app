@@ -143,10 +143,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                   Working
                 </span>
               </div>
-              <p className="text-sm font-medium text-slate-200 flex items-center gap-2">
-                <Navigation size={16} className="text-rose-400" />
-                Tour Program not found. Click to create!
-              </p>
+              <button onClick={() => { onClose(); navigate("/extras/tour-program"); }} className="text-sm font-medium text-slate-200 flex items-center gap-2 active:text-rose-300"><Navigation size={16} className="text-rose-400" />Tour Program not found. Click to create!</button>
             </div>
 
             {/* Action Grid */}
