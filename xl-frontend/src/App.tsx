@@ -3,6 +3,8 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CreationMenu from './pages/CreationMenu';
+import ApprovalsLanding from './pages/creation/ApprovalsLanding';
+import ApprovalDetail from './pages/creation/ApprovalDetail';
 import DoctorForm from './pages/creation/DoctorForm';
 import ChemistForm from './pages/creation/ChemistForm';
 import StockistForm from './pages/creation/StockistForm';
@@ -37,6 +39,8 @@ function App() {
           <Route path="creation/stockist" element={<StockistForm />} />
           <Route path="creation/city" element={<CityForm />} />
           <Route path="creation/route" element={<RouteForm />} />
+          <Route path="creation/approvals" element={<ApprovalsLanding />} />
+          <Route path="creation/approvals/:type" element={<ApprovalDetail />} />
           <Route path="extras" element={<Extras />} />
           <Route path="extras/tour-program" element={<TourProgram />} />
           <Route path="extras/attendance" element={<Attendance />} />

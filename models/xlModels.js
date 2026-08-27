@@ -147,6 +147,7 @@ module.exports = function initXlModels(sequelize) {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlNotification = sequelize.define('xl_notification', { _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId }, employeeEmail: { type: DataTypes.STRING, allowNull: false }, title: { type: DataTypes.STRING, allowNull: false }, message: { type: DataTypes.TEXT, allowNull: false }, isRead: { type: DataTypes.BOOLEAN, defaultValue: false }, createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW } });
     const XlUser = sequelize.define('xl_user', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING },
@@ -237,6 +238,8 @@ module.exports = function initXlModels(sequelize) {
         entityId: { type: DataTypes.STRING },                       // FK to xl_doctor or xl_chemist
         entityName: { type: DataTypes.STRING },
         discussion: { type: DataTypes.TEXT },
+          status: { type: DataTypes.STRING, defaultValue: "Pending" },
+          adminRemarks: { type: DataTypes.TEXT },
         samplesGiven: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON [{product, qty}]
         gifts: { type: DataTypes.TEXT, defaultValue: '[]' },        // JSON [{item, qty}]
         checkInTime: { type: DataTypes.STRING },
@@ -311,6 +314,8 @@ module.exports = function initXlModels(sequelize) {
         employeeEmail: { type: DataTypes.STRING, allowNull: false },
         date: { type: DataTypes.STRING, allowNull: false },
         doctors: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of doctor IDs
+          status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+          adminRemarks: { type: DataTypes.TEXT },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -450,6 +455,7 @@ module.exports = function initXlModels(sequelize) {
         XlBacklogRequest,
         XlCallPlan,
         XlPerformanceAnalysis,
+        XlNotification,
         XlProductCategory,
         XlProductType,
         XlProduct,

@@ -7,6 +7,7 @@ export default function AdminMenu() {
   const navigate = useNavigate();
 
   const adminItems = [
+    { label: 'GLOBAL APPROVALS', icon: CheckSquare, path: '/admin/approvals' },
     { label: 'MANAGE LOCATIONS', icon: Building2, path: '/admin/locations' },
     { label: 'MANAGE USERS', icon: Users, path: '/admin/users' },
     { label: 'MANAGE PRODUCTS', icon: ClipboardList, path: '/admin/products' },

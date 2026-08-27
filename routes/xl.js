@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, generateId } = require('../db');
+const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
@@ -625,4 +625,81 @@ router.post('/performance/effort-analysis', async (req, res) => {
     }
 });
 
+// Approvals API
+router.get('/approvals/pending', async (req, res) => {
+    try {
+        const { type, designation } = req.query;
+        let reporteeEmails = null;
+        if (designation !== 'ADMIN') {
+            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+            reporteeEmails = reportees.map(u => u.email);
+            if (reporteeEmails.length === 0) return res.json({ success: true, data: [] });
+        }
+        let Model;
+        if (type === 'Call Report') Model = XlDCR;
+        else if (type === 'Tour Program') Model = XlTourProgram;
+        else if (type === 'Call Plans') Model = XlCallPlan;
+        else if (type === 'Doctors') Model = XlDoctor;
+        else if (type === 'Chemists') Model = XlChemist;
+        else if (type === 'Stockists') Model = XlStockist;
+        else if (type === 'Expense') Model = XlExpense;
+        else if (type === 'Leave Request') Model = XlLeave;
+        else return res.status(400).json({ error: 'Invalid module type' });
+        const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeEmail: reporteeEmails } : {}), status: ['Pending', 'Submitted'] }, order: [['createdAt', 'DESC']] });
+        res.json({ success: true, data: pending });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch pending approvals' });
+    }
+});
+
+router.post('/approvals/action', async (req, res) => {
+    try {
+        const { recordId, type, action, remarks } = req.body;
+        let Model;
+        if (type === 'Call Report') Model = XlDCR;
+        else if (type === 'Tour Program') Model = XlTourProgram;
+        else if (type === 'Call Plans') Model = XlCallPlan;
+        else if (type === 'Doctors') Model = XlDoctor;
+        else if (type === 'Chemists') Model = XlChemist;
+        else if (type === 'Stockists') Model = XlStockist;
+        else if (type === 'Expense') Model = XlExpense;
+        else if (type === 'Leave Request') Model = XlLeave;
+        else return res.status(400).json({ error: 'Invalid module type' });
+        const record = await Model.findByPk(recordId);
+        if (!record) return res.status(404).json({ error: 'Record not found' });
+        record.status = action;
+        record.adminRemarks = remarks || '';
+        await record.save();
+
+        try {
+            await XlNotification.create({
+                employeeEmail: record.employeeEmail,
+                title: 'Request ' + action,
+                message: 'Your ' + type + ' request has been ' + action.toLowerCase() + '. ' + (remarks ? 'Remarks: ' + remarks : '')
+            });
+        } catch(ne) { console.error('Notification failed', ne); }
+        res.json({ success: true, message: 'Successfully ' + action + ' record' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to process approval action' });
+    }
+});
+
+
+router.get('/notifications', async (req, res) => {
+    try {
+        const { email } = req.query;
+        const notifications = await XlNotification.findAll({ where: { employeeEmail: email }, order: [['createdAt', 'DESC']], limit: 50 });
+        res.json({ success: true, data: notifications });
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+router.post('/notifications/read', async (req, res) => {
+    try {
+        const { email } = req.body;
+        await XlNotification.update({ isRead: true }, { where: { employeeEmail: email, isRead: false } });
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
+});
 module.exports = router;

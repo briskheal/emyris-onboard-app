@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Layers, Wrench, FileText, AlertTriangle } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, FileText, Layers, Wrench, Menu, Bell, AlertTriangle } from 'lucide-react';
 import axios from 'axios';
 import DCRModal from './DCRModal';
 import NavigationDrawer from './NavigationDrawer';
-import { Menu, Bell } from 'lucide-react';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Home' },
@@ -13,15 +12,19 @@ const navItems = [
   { path: '/utilities', icon: Wrench, label: 'Utilities' },
 ];
 
-
-
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [showDCR, setShowDCR] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifMenu, setShowNotifMenu] = useState(false);
+
   const [logoUrl, setLogoUrl] = useState('');
   const [user, setUser] = useState<any>(null);
+  
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockMessage, setLockMessage] = useState('');
 
   useEffect(() => {
     const storedUser = localStorage.getItem('xl_user');
@@ -39,13 +42,24 @@ export default function Layout() {
       })
       .catch(err => console.error("Failed to load company profile", err));
   }, [navigate]);
-  
-  const [isLocked, setIsLocked] = useState(false);
-  const [lockMessage, setLockMessage] = useState('');
+
+  useEffect(() => {
+    if (user?.email) {
+        axios.get('/api/xl/notifications?email=' + user.email).then(r => setNotifications(r.data.data || [])).catch(e => console.error(e));
+    }
+  }, [user]);
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const handleOpenNotifs = async () => {
+      setShowNotifMenu(!showNotifMenu);
+      if (!showNotifMenu && unreadCount > 0) {
+          await axios.post('/api/xl/notifications/read', { email: user?.email });
+          setNotifications(notifications.map(n => ({...n, isRead: true})));
+      }
+  };
 
   // Check lockout status on mount and on route change
   useEffect(() => {
-    // If we are already on the performance page, don't show the overlay (let them do the planning)
     if (location.pathname.includes('/extras/performance')) {
       setIsLocked(false);
       return;
@@ -70,7 +84,7 @@ export default function Layout() {
   return (
     <div className="flex flex-col h-dvh bg-slate-800 overflow-hidden relative" style={{ fontFamily: "'Inter', sans-serif" }}>
       
-            {/* TOP NAVIGATION BAR */}
+      {/* TOP NAVIGATION BAR */}
       <header className="h-16 bg-slate-800 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
         <div className="flex items-center gap-3">
           {logoUrl ? (
@@ -84,10 +98,26 @@ export default function Layout() {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button className="relative text-slate-200">
-            <Bell size={20} />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-500 border-2 border-slate-900 rounded-full"></span>
-          </button>
+          <div className="relative">
+            <button onClick={handleOpenNotifs} className="relative text-slate-200 focus:outline-none">
+              <Bell size={20} />
+              {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center bg-rose-500 text-white border-2 border-slate-900 rounded-full">{unreadCount}</span>}
+            </button>
+            {showNotifMenu && (
+              <div className="absolute right-0 top-10 mt-2 w-72 max-h-96 overflow-y-auto bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-50 p-4">
+                <h3 className="text-white font-bold text-sm mb-3">Notifications</h3>
+                {notifications.length === 0 ? <p className="text-slate-400 text-xs">No new notifications</p> : 
+                 notifications.map(n => (
+                   <div key={n._id} className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
+                     <p className="text-xs font-bold text-slate-200">{n.title}</p>
+                     <p className="text-xs text-slate-400 mt-1">{n.message}</p>
+                     <p className="text-[9px] text-slate-500 mt-1">{new Date(n.createdAt).toLocaleDateString()}</p>
+                   </div>
+                 ))
+                }
+              </div>
+            )}
+          </div>
           <button onClick={() => setIsDrawerOpen(true)} className="text-slate-300">
             <Menu size={24} />
           </button>
@@ -152,7 +182,7 @@ export default function Layout() {
             );
           })}
 
-          {/* Centre FAB — Call Report (DCR) */}
+          {/* Centre FAB */}
           <div className="flex-1 flex items-center justify-center relative">
             <button
               onClick={() => setShowDCR(true)}
