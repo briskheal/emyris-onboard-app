@@ -130,25 +130,29 @@ export default function TourProgram() {
   return (
     <div className="min-h-full bg-slate-800">
       {/* Header */}
-      <div className="px-4 pt-4 pb-4 bg-gradient-to-b from-slate-800 to-slate-900">
-        <div className="flex items-center gap-3 mb-1">
-          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-600 active:bg-slate-600">
-            <ChevronLeft size={18} className="text-white" />
-          </button>
-          <div className="flex-1 flex items-center justify-between">
-            <p className="text-xs text-slate-200 font-medium uppercase tracking-widest">Tour Plan</p>
-            {tpStatus && (
-              <div className={`flex items-center gap-1.5 ${STATUS_CONFIG[tpStatus]?.color}`}>
-                <StatusIcon size={13} />
-                <span className="text-xs font-semibold">{STATUS_CONFIG[tpStatus]?.label}</span>
+      <div className="px-4 pt-4 pb-4 bg-slate-800 border-b border-slate-700/60 sticky top-0 z-40">
+          <div className="flex items-center gap-3">
+            <button onClick={() => navigate(-1)} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl bg-slate-700 active:bg-slate-600">
+              <ChevronLeft size={20} className="text-white" />
+            </button>
+            <div className="flex-1 flex items-start justify-between">
+              <div>
+                <h1 className="text-lg font-bold text-white leading-tight">Tour Program</h1>
+                <p className="text-[10px] text-slate-300">Submit proposed activities</p>
               </div>
-            )}
+              {tpStatus && (
+                <div className={`flex flex-col items-end ${STATUS_CONFIG[tpStatus]?.color}`}>
+                  <div className="flex items-center gap-1">
+                    <StatusIcon size={12} />
+                    <span className="text-[10px] font-semibold">{STATUS_CONFIG[tpStatus]?.label}</span>
+                  </div>
+                  {adminRemarks && tpStatus === 'Rejected' && (
+                    <p className="text-[9px] text-rose-400 mt-0.5 max-w-[100px] truncate" title={adminRemarks}>Remark: {adminRemarks}</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-        <h1 className="text-2xl font-bold text-white mt-2">Tour Program</h1>
-        {adminRemarks && tpStatus === 'Rejected' && (
-          <p className="text-xs text-rose-400 mt-1">Remark: {adminRemarks}</p>
-        )}
       </div>
 
       {/* Month Navigator */}

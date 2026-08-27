@@ -229,22 +229,20 @@ function CallPlan() {
   return (
     <div className="min-h-screen bg-[#1c1c2e] text-white pb-20 font-sans">
       {/* Header */}
-      <div className="px-4 pt-4 pb-4 bg-gradient-to-b from-[#1c1c2e] to-[#1c1c2e] shadow-md border-b border-[#3b3b5a]">
-        <div className="flex items-center gap-3 mb-1">
-          <button onClick={() => navigate('/extras')} className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#27273f] active:bg-[#3b3b5a]">
-            <ChevronLeft size={18} className="text-white" />
+      <div className="px-4 pt-4 pb-4 bg-[#1c1c2e] shadow-md border-b border-[#3b3b5a] sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate('/extras')} className="w-9 h-9 shrink-0 flex items-center justify-center rounded-xl bg-[#27273f] active:bg-[#3b3b5a]">
+            <ChevronLeft size={20} className="text-white" />
           </button>
-          <div className="flex-1 flex items-center justify-between">
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Call Planning</p>
+          <div>
+            <h1 className="text-lg font-bold text-white leading-tight">Call Planning</h1>
+            <p className="text-xs text-slate-400">Plan your daily visits and samples</p>
           </div>
         </div>
       </div>
 
       <div className="p-4">
-        <div className="mb-4">
-          <h2 className="text-2xl font-black text-white">Call Planning</h2>
-          <p className="text-slate-400 text-sm">Plan your daily visits and samples</p>
-        </div>
+        
 
         {subordinates.length > 0 && (
           <div 
@@ -311,17 +309,48 @@ function CallPlan() {
                 } catch(e){}
               }
               const isHol = isSunday(day);
+              const isPlanned = !!plan && (pDocs.length > 0 || pChems.length > 0 || pStocks.length > 0);
 
               return (
                 <div 
                   key={day} 
                   onClick={() => isMultiMode ? toggleMultiSelect(day) : openSinglePlan(day)}
-                  className={`flex items-center rounded-lg overflow-hidden border ${isMultiMode && selectedDates.has(day) ? 'border-sky-500 bg-sky-900/20' : 'border-[#3b3b5a] bg-[#27273f]'} transition-colors`}
+                  className={`flex items-center rounded-lg overflow-hidden border ${isMultiMode && selectedDates.has(day) ? 'border-sky-500 bg-sky-900/20' : 'border-[#3b3b5a] bg-[#27273f]'} transition-colors mb-2`}
                 >
-                  <div className={`w-14 shrink-0 flex flex-col items-center justify-center p-3 ${isHol ? 'bg-rose-900/30 border-r border-rose-500/30' : 'bg-[#1c1c2e] border-r border-[#3b3b5a]'}`}>
-                    <span className={`text-lg font-black leading-none ${isHol ? 'text-rose-500' : 'text-slate-200'}`}>{day}</span>
-                    <span className={`text-[10px] font-bold uppercase ${isHol ? 'text-rose-400' : 'text-slate-500'}`}>
+                  <div className={`w-14 h-16 shrink-0 flex flex-col items-center justify-center ${isHol ? 'bg-slate-700/50' : isPlanned ? 'bg-emerald-600' : 'bg-[#1e88e5]'}`}>
+                    <span className={`text-xl font-bold leading-none text-white opacity-90`}>{day}</span>
+                    <span className={`text-[9px] font-bold uppercase text-white opacity-75 mt-0.5`}>
                       {new Date(parseInt(year), parseInt(month) - 1, day).toLocaleString('en-US', { weekday: 'short' })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex-1 p-4 flex justify-between items-center cursor-pointer">
+                    {isHol ? (
+                      <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Not Allowed</span>
+                    ) : (
+                      <>
+                        {plan ? (
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" /><span className="text-emerald-400 font-bold">{pDocs.length}</span></div>
+                            <div className="flex items-center gap-1.5"><Package className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 font-bold">{pChems.length}</span></div>
+                            <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-orange-400" /><span className="text-orange-400 font-bold">{pStocks.length}</span></div>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-bold text-slate-200">Plan DCS calls</span>
+                        )}
+                      </>
+                    )}
+                    
+                    {isMultiMode && !isHol && (
+                      <div className="w-6 h-6 rounded border border-sky-400 flex items-center justify-center">
+                        {selectedDates.has(day) && <Check className="w-4 h-4 text-sky-400" />}
+                      </div>
+                    )}
+                    {!isMultiMode && !isHol && !plan && <Plus className="w-5 h-5 text-emerald-500" />}
+                  </div>
+                </div>
+              );
+            })}
                     </span>
                   </div>
                   
