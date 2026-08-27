@@ -82,6 +82,7 @@ function GeoTagButton({
 
 export default function DoctorForm() {
   const navigate = useNavigate();
+  const user = JSON.parse(localStorage.getItem('xl_user') || '{}');
   const [form, setForm] = useState<Record<string, string>>({});
   const [geo1, setGeo1] = useState<GeoPoint | null>(null);
   const [geo2, setGeo2] = useState<GeoPoint | null>(null);
@@ -114,6 +115,7 @@ export default function DoctorForm() {
     try {
       await axios.post('/api/xl/doctor', {
         ...form,
+        employeeEmail: user.email,
         lat1: geo1.lat, lng1: geo1.lng, geoAddress1: geo1.address,
         lat2: geo2?.lat ?? null, lng2: geo2?.lng ?? null, geoAddress2: geo2?.address ?? null,
       });

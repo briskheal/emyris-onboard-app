@@ -89,6 +89,10 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         userAllotted: { type: DataTypes.STRING },
         updateAt: { type: DataTypes.STRING },
         
+        employeeEmail: { type: DataTypes.STRING },
+        
+        adminRemarks: { type: DataTypes.STRING },
+        
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
