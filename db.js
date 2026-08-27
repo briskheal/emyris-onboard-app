@@ -109,7 +109,7 @@ async function syncDatabase() {
         try {
             const users = await XlUser.findAll();
             for (const u of users) {
-                if (u.email && u.uid) {
+                if (u.email && u.employeeId) {
                     const tablesToMigrate = [
                         sequelize.models.xl_doctor, sequelize.models.xl_chemist, sequelize.models.xl_stockist,
                         sequelize.models.xl_city, sequelize.models.xl_route, sequelize.models.xl_sample,
@@ -120,12 +120,12 @@ async function syncDatabase() {
                     for (const tbl of tablesToMigrate) {
                         if (tbl) {
                             try {
-                                await tbl.update({ employeeId: u.uid }, { where: { employeeId: u.email } });
+                                await tbl.update({ employeeId: u.employeeId }, { where: { employeeId: u.email } });
                             } catch (e) {}
                         }
                     }
-                    try { await sequelize.models.xl_dcr.update({ employeeId: u.uid }, { where: { employeeId: u.email } }); } catch(e){}
-                    try { await sequelize.models.xl_attendance.update({ employeeId: u.uid }, { where: { employeeId: u.email } }); } catch(e){}
+                    try { await sequelize.models.xl_dcr.update({ employeeId: u.employeeId }, { where: { employeeId: u.email } }); } catch(e){}
+                    try { await sequelize.models.xl_attendance.update({ employeeId: u.employeeId }, { where: { employeeId: u.email } }); } catch(e){}
                 }
             }
             console.log('✅ Migrated employeeEmail to employeeId based on uid.');

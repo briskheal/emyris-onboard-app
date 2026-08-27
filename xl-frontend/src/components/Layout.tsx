@@ -66,7 +66,7 @@ export default function Layout() {
     }
 
     if (!user) return;
-    axios.get(`/api/xl/performance/status?email=${user.uid}`)
+    axios.get(`/api/xl/performance/status?email=${user.employeeId}`)
       .then(res => {
         if (res.data.locked) {
           setIsLocked(true);

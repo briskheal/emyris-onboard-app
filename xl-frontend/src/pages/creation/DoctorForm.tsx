@@ -115,7 +115,7 @@ export default function DoctorForm() {
     try {
       await axios.post('/api/xl/doctor', {
         ...form,
-        employeeId: user.uid,
+        employeeId: user.employeeId,
         lat1: geo1.lat, lng1: geo1.lng, geoAddress1: geo1.address,
         lat2: geo2?.lat ?? null, lng2: geo2?.lng ?? null, geoAddress2: geo2?.address ?? null,
       });

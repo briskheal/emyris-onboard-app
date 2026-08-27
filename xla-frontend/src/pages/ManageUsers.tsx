@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit, Save, RefreshCw, Key, Mail , Eye} from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Save, RefreshCw, Key, Mail , Eye, ArrowRightLeft} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import TransferDataModal from '../components/TransferDataModal';
 
 // Reusable Table Footer Component
 function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, setPageSize }: any) {
@@ -905,6 +906,7 @@ function EditDeleteTab() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [editUser, setEditUser] = useState<any>(null);
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const fetchProfiles = async () => {
     try {
@@ -938,6 +940,9 @@ function EditDeleteTab() {
   if (editUser) {
     return (
       <div className="max-w-4xl">
+        {showTransferModal && (
+          <TransferDataModal onClose={() => setShowTransferModal(false)} users={profiles} />
+        )}
         <button onClick={() => setEditUser(null)} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
           <ArrowLeft size={16} /> EDIT USER
         </button>
@@ -1067,12 +1072,17 @@ function EditDeleteTab() {
             </div>
           </div>
           <div className="flex gap-4">
-            <button type="button" className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
-              <Edit size={18} /> Edit
-            </button>
-            <button type="button" onClick={() => handleDelete(editUser._id, editUser.isAdmin)} className="bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
-              <Trash2 size={18} /> Delete
-            </button>
+            <div className="flex gap-4">
+              <button type="button" className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
+                <Edit size={18} /> Edit
+              </button>
+              <button type="button" onClick={() => setShowTransferModal(true)} className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
+                <ArrowRightLeft size={18} /> Transfer Data
+              </button>
+              <button type="button" onClick={() => handleDelete(editUser._id, editUser.isAdmin)} className="bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
+                <Trash2 size={18} /> Delete
+              </button>
+            </div>
           </div>
         </div>
       </div>

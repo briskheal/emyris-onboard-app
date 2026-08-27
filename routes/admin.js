@@ -4484,7 +4484,41 @@ router.delete('/users/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-// ---- Admins ----
+
+// ---- Data Transfer ----
+router.post('/users/transfer-data', async (req, res) => {
+    try {
+        const { fromEmpId, toEmpId, modules } = req.body;
+        if (!fromEmpId || !toEmpId || !modules || !Array.isArray(modules)) {
+            return res.status(400).json({ success: false, message: 'Invalid payload' });
+        }
+        
+        const { XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlGeoFencing } = require('../db');
+        
+        let transferredCount = 0;
+        
+        for (const mod of modules) {
+            let Model = null;
+            if (mod === 'doctors') Model = XlDoctor;
+            if (mod === 'chemists') Model = XlChemist;
+            if (mod === 'stockists') Model = XlStockist;
+            if (mod === 'cities') Model = XlCity;
+            if (mod === 'routes') Model = XlRoute;
+            if (mod === 'geofencing') Model = XlGeoFencing;
+            
+            if (Model && Model.rawAttributes.employeeId) {
+                const [count] = await Model.update({ employeeId: toEmpId }, { where: { employeeId: fromEmpId } });
+                transferredCount += count;
+            }
+        }
+        
+        res.json({ success: true, message: `Successfully transferred ${transferredCount} records from ${fromEmpId} to ${toEmpId}.` });
+    } catch (e) {
+        console.error('Data Transfer Error:', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+\n// ---- Admins ----
 router.get('/admins', async (req, res) => {
     try {
         const admins = await XlAdmin.findAll({ order: [['createdAt', 'DESC']] });
