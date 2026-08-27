@@ -129,6 +129,25 @@ async function syncDatabase() {
                 }
             }
             console.log('✅ Migrated employeeEmail to employeeId based on uid.');
+        try {
+            const hqToEmpId = {};
+            for (let u of users) { 
+                if (u.hq && u.employeeId) hqToEmpId[u.hq.toLowerCase()] = u.employeeId; 
+            }
+            for (let Model of [sequelize.models.xl_doctor, sequelize.models.xl_chemist, sequelize.models.xl_stockist]) {
+                if (!Model) continue;
+                const records = await Model.findAll({ where: { employeeId: null } });
+                for (let r of records) {
+                    const hq = (r.headquarter || r.hq || '').toLowerCase();
+                    if (hq && hqToEmpId[hq]) {
+                        r.employeeId = hqToEmpId[hq];
+                        await r.save();
+                    }
+                }
+            }
+            console.log('✅ Migrated DCS employeeIds successfully.');
+        } catch(e) { console.error('DCS migration failed:', e.message); }
+
         } catch(e) {
             console.error('Migration failed:', e.message);
         }

@@ -4827,6 +4827,7 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
             row.uid = d.UID || d.uid;
         }
 
+        row.employeeId = d['Employee ID'] || d.employeeId || d.EmployeeID || null;
         row.name = d.Name || d.name || '';
         row.degree = d.Degree || d.degree || '';
         row.specialization = d.Specialization || d.specialization || '';
@@ -4858,6 +4859,7 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
             row.uid = d.UID || d.uid;
         }
         row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
+        row.employeeId = d['Employee ID'] || d.employeeId || d.EmployeeID || null;
         row.proprietorName = d['Proprietor Name'] || d.proprietorName || '';
         row.mobile = String(d.Mobile || d.mobile || '');
         row.email = d.Email || d.email || '';
@@ -4875,6 +4877,7 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
             row.uid = d.UID || d.uid;
         }
         row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
+        row.employeeId = d['Employee ID'] || d.employeeId || d.EmployeeID || null;
         row.name = d['Proprietor Name'] || d.name || '';
         row.mobile = String(d.Mobile || d.mobile || '');
         row.email = d.Email || d.email || '';
