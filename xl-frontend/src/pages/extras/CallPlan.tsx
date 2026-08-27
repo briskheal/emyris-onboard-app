@@ -21,6 +21,7 @@ function CallPlan() {
   const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [year, setYear] = useState(new Date().getFullYear().toString());
+  
   const [monthlyPlans, setMonthlyPlans] = useState<any[]>([]);
   
   const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
@@ -78,7 +79,6 @@ function CallPlan() {
       const hq = activeUser?.hq || '';
       const designation = activeUser?.designation || '';
       
-      // Pass both designation and hq so it resolves subordinates correctly on the backend
       const drRes = axios.get(`/api/xl/doctors?hq=${hq}&designation=${designation}`);
       const chRes = axios.get(`/api/xl/chemists?hq=${hq}&designation=${designation}`);
       const stRes = axios.get(`/api/xl/stockists?hq=${hq}&designation=${designation}`);
@@ -124,7 +124,6 @@ function CallPlan() {
       return;
     }
     
-    // Safely parse old raw arrays vs new object arrays
     const safeParse = (str: any, defaultKey: string) => {
       try {
         const parsed = JSON.parse(str || '[]');
@@ -242,8 +241,6 @@ function CallPlan() {
       </div>
 
       <div className="p-4">
-        
-
         {subordinates.length > 0 && (
           <div 
             onClick={() => setShowSubordinateModal(true)}
@@ -347,36 +344,6 @@ function CallPlan() {
                       </div>
                     )}
                     {!isMultiMode && !isHol && !plan && <Plus className="w-5 h-5 text-emerald-500" />}
-                  </div>
-                </div>
-              );
-            })}
-                    </span>
-                  </div>
-                  
-                  <div className="flex-1 p-3 flex justify-between items-center cursor-pointer">
-                    {isHol ? (
-                      <span className="text-sm font-bold text-rose-500 uppercase tracking-wider">Holiday / Sunday</span>
-                    ) : (
-                      <>
-                        {plan ? (
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" /><span className="text-emerald-400 font-bold">{pDocs.length}</span></div>
-                            <div className="flex items-center gap-1.5"><Package className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 font-bold">{pChems.length}</span></div>
-                            <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-orange-400" /><span className="text-orange-400 font-bold">{pStocks.length}</span></div>
-                          </div>
-                        ) : (
-                          <span className="text-sm font-bold text-slate-500 italic">No plan added</span>
-                        )}
-                      </>
-                    )}
-                    
-                    {isMultiMode && !isHol && (
-                      <div className="w-6 h-6 rounded border border-sky-400 flex items-center justify-center">
-                        {selectedDates.has(day) && <Check className="w-4 h-4 text-sky-400" />}
-                      </div>
-                    )}
-                    {!isMultiMode && !isHol && !plan && <Plus className="w-5 h-5 text-sky-400" />}
                   </div>
                 </div>
               );
