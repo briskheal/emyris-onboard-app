@@ -233,9 +233,38 @@ router.post('/tour-program', async (req, res) => {
 // Submit TP for approval
 router.put('/tour-program/:id/submit', async (req, res) => {
     try {
+        const { XlTourProgram, XlUser, XlNotification, generateId } = require('../db');
+        const tp = await XlTourProgram.findOne({ where: { _id: req.params.id } });
+        if (!tp) return res.status(404).json({ error: 'Not found' });
+
         await XlTourProgram.update({ status: 'Submitted', submittedAt: new Date() }, { where: { _id: req.params.id } });
+
+        // Notify reporting manager
+        const user = await XlUser.findOne({ where: { employeeId: tp.employeeId } });
+        if (user && user.reportingManager) {
+            // Find managers who hold this designation
+            const managers = await XlUser.findAll({ where: { designation: user.reportingManager } });
+            for (const m of managers) {
+                await XlNotification.create({
+                    _id: generateId(),
+                    employeeId: m.employeeId,
+                    title: 'Tour Program Submitted',
+                    message: `${tp.employeeName} has submitted their Tour Program for ${tp.month} ${tp.year} for approval.`
+                });
+            }
+        }
+        
+        // Also notify global admin
+        await XlNotification.create({
+            _id: generateId(),
+            employeeId: 'ADMIN',
+            title: 'Tour Program Submitted',
+            message: `${tp.employeeName} has submitted their Tour Program for ${tp.month} ${tp.year} for approval.`
+        });
+
         res.json({ success: true, message: 'Tour Program submitted for approval!' });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Failed to submit Tour Program' });
     }
 });
@@ -840,6 +869,26 @@ router.post('/call-plan/bulk', async (req, res) => {
             }
         }
         
+        // Notify manager of call plan update
+        const user = await require('../db').XlUser.findOne({ where: { employeeId } });
+        if (user && user.reportingManager) {
+            const managers = await require('../db').XlUser.findAll({ where: { designation: user.reportingManager } });
+            for (const m of managers) {
+                await require('../db').XlNotification.create({
+                    _id: require('../db').generateId(),
+                    employeeId: m.employeeId,
+                    title: 'Call Plan Updated',
+                    message: `${user.firstName} ${user.lastName} has submitted Call Plans for ${dates.length} days.`
+                });
+            }
+        }
+        await require('../db').XlNotification.create({
+            _id: require('../db').generateId(),
+            employeeId: 'ADMIN',
+            title: 'Call Plan Updated',
+            message: `${user ? user.firstName : employeeId} has submitted Call Plans for ${dates.length} days.`
+        });
+
         res.json({ success: true });
     } catch (e) {
         console.error(e);
