@@ -463,30 +463,9 @@ router.get('/backlog/my', async (req, res) => {
 
 // ─── PHASE 3: CALL PLAN ────────────────────────────────────────────────────
 
-router.post('/call-plan', async (req, res) => {
-    try {
-        const { employeeId, date, doctors } = req.body;
-        let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
-        if (plan) {
-            await XlCallPlan.update({ doctors: JSON.stringify(doctors) }, { where: { _id: plan._id } });
-        } else {
-            plan = await XlCallPlan.create({ _id: generateId(), employeeId, date, doctors: JSON.stringify(doctors) });
-        }
-        res.json({ success: true, message: 'Call plan saved!' });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to save call plan' });
-    }
-});
 
-router.get('/call-plan/my', async (req, res) => {
-    try {
-        const { email, date } = req.query;
-        const plan = await XlCallPlan.findOne({ where: { employeeId: email, date } });
-        res.json({ success: true, data: plan });
-    } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch call plan' });
-    }
-});
+
+
 
 // ─── PHASE 4: PERFORMANCE ANALYSIS ──────────────────────────────────────────
 

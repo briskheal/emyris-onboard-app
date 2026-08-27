@@ -146,6 +146,10 @@ async function syncDatabase() {
             }
         } catch(e) { console.error('Column rename failed:', e.message); }
 
+        try { await sequelize.query('ALTER TABLE "xl_call_plans" ADD COLUMN "chemists" TEXT DEFAULT \'[]\''); } catch(e){}
+        try { await sequelize.query('ALTER TABLE "xl_call_plans" ADD COLUMN "stockists" TEXT DEFAULT \'[]\''); } catch(e){}
+
+
         try {
             const hqToEmpId = {};
             for (let u of users) { 

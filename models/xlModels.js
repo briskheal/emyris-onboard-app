@@ -386,7 +386,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         employeeId: { type: DataTypes.STRING, allowNull: false },
         date: { type: DataTypes.STRING, allowNull: false },
-        doctors: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of doctor IDs
+        doctors: { type: DataTypes.TEXT, defaultValue: '[]' }, chemists: { type: DataTypes.TEXT, defaultValue: '[]' }, stockists: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of doctor IDs
           status: { type: DataTypes.STRING, defaultValue: 'Pending' },
           adminRemarks: { type: DataTypes.TEXT },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
