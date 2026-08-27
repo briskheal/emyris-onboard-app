@@ -17,6 +17,8 @@ function CallPlan() {
   const [subordinates, setSubordinates] = useState<any[]>([]);
   const [showSubordinateModal, setShowSubordinateModal] = useState(false);
 
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+  const [showYearDropdown, setShowYearDropdown] = useState(false);
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [monthlyPlans, setMonthlyPlans] = useState<any[]>([]);
@@ -184,8 +186,8 @@ function CallPlan() {
       const item = list.find(l => (l._id || l.id) === id) || {};
       return {
         id: id,
-        name: item.doctorName || item.chemistName || item.stockistName || id,
-        info: item.headquarter || item.address || '',
+        name: item.name || item.businessName || item.doctorName || item.chemistName || item.stockistName || id,
+        info: item.headquarter || item.hq || item.address || '',
         samples: [],
         gifts: []
       };
@@ -260,21 +262,37 @@ function CallPlan() {
         )}
 
         <div className="flex gap-4 mb-4">
-          <div className="flex-1">
+          <div className="flex-1 relative">
             <label className="text-xs text-rose-400 font-bold mb-1 block">Select Month *</label>
-            <select value={month} onChange={e => setMonth(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg p-3 text-sky-300 font-bold appearance-none">
-              <option value="01">January</option><option value="02">February</option><option value="03">March</option>
-              <option value="04">April</option><option value="05">May</option><option value="06">June</option>
-              <option value="07">July</option><option value="08">August</option><option value="09">September</option>
-              <option value="10">October</option><option value="11">November</option><option value="12">December</option>
-            </select>
+            <button onClick={() => setShowMonthDropdown(!showMonthDropdown)} className="w-full text-left bg-[#27273f] border border-[#3b3b5a] rounded-lg p-3 text-sky-300 font-bold flex justify-between items-center">
+              <span>{new Date(2000, parseInt(month)-1, 1).toLocaleString('default', { month: 'long' })}</span>
+              <span className="text-slate-400">v</span>
+            </button>
+            {showMonthDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-xl z-40 max-h-60 overflow-y-auto">
+                {['01','02','03','04','05','06','07','08','09','10','11','12'].map(m => (
+                  <button key={m} onClick={() => { setMonth(m); setShowMonthDropdown(false); }} className="w-full text-left p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0">
+                    {new Date(2000, parseInt(m)-1, 1).toLocaleString('default', { month: 'long' })}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="flex-1">
-            <label className="text-xs text-rose-400 font-bold mb-1 block">Select Year *</label>
-            <select value={year} onChange={e => setYear(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg p-3 text-sky-300 font-bold appearance-none">
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
-            </select>
+          <div className="flex-1 relative">
+            <label className="text-xs text-rose-400 font-bold mb-1 block">Year *</label>
+            <button onClick={() => setShowYearDropdown(!showYearDropdown)} className="w-full text-left bg-[#27273f] border border-[#3b3b5a] rounded-lg p-3 text-sky-300 font-bold flex justify-between items-center">
+              <span>{year}</span>
+              <span className="text-slate-400">v</span>
+            </button>
+            {showYearDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-xl z-40 max-h-60 overflow-y-auto">
+                {['2025','2026','2027','2028'].map(y => (
+                  <button key={y} onClick={() => { setYear(y); setShowYearDropdown(false); }} className="w-full text-left p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0">
+                    {y}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -427,7 +445,7 @@ function CallPlan() {
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
             {(activeTab === 'Doctors' ? doctors : activeTab === 'Chemists' ? chemists : stockists)
               .filter(item => {
-                const name = (item.doctorName || item.chemistName || item.stockistName || '').toLowerCase();
+                const name = (item.name || item.businessName || item.doctorName || item.chemistName || item.stockistName || '').toLowerCase();
                 return name.includes(entitySearch.toLowerCase());
               })
               .map(item => {
@@ -446,8 +464,8 @@ function CallPlan() {
                       className="w-5 h-5 rounded accent-emerald-500"
                     />
                     <div>
-                      <p className="font-bold text-white text-sm">{item.doctorName || item.chemistName || item.stockistName}</p>
-                      <p className="text-xs text-slate-400">{item.headquarter || item.address}</p>
+                      <p className="font-bold text-white text-sm">{item.name || item.businessName || item.doctorName || item.chemistName || item.stockistName}</p>
+                      <p className="text-xs text-slate-400">{item.headquarter || item.hq || item.address}</p>
                     </div>
                   </div>
                 );
