@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Send, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, Clock, Send, Search, X } from 'lucide-react';
 import axios from 'axios';
 
 const VISIT_TYPES = [
-  { label: 'Local', color: 'bg-sky-500', text: 'text-sky-400', border: 'border-sky-500' },
-  { label: 'Ex-Station', color: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-500' },
-  { label: 'Out-Station', color: 'bg-violet-500', text: 'text-violet-400', border: 'border-violet-500' },
-  { label: 'Conference', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500' },
+  { label: 'HQ', color: 'bg-sky-500', text: 'text-sky-400', border: 'border-sky-500' },
+  { label: 'Ex Mkt', color: 'bg-amber-500', text: 'text-amber-400', border: 'border-amber-500' },
+  { label: 'Out Mkt', color: 'bg-violet-500', text: 'text-violet-400', border: 'border-violet-500' },
+  { label: 'Conf/Mtng', color: 'bg-emerald-500', text: 'text-emerald-400', border: 'border-emerald-500' },
   { label: 'Leave', color: 'bg-rose-500', text: 'text-rose-400', border: 'border-rose-500' },
-  { label: 'Holiday', color: 'bg-slate-500', text: 'text-slate-200', border: 'border-slate-500' },
+  { label: 'Admin', color: 'bg-blue-500', text: 'text-blue-400', border: 'border-blue-500' },
+  { label: 'Transit', color: 'bg-orange-500', text: 'text-orange-400', border: 'border-orange-500' },
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
@@ -19,71 +20,101 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof
   Rejected: { label: 'Rejected', color: 'text-rose-400', icon: AlertCircle },
 };
 
-// Hardcoded for Phase 2 — will be replaced by login session in future
-
-
-
 export default function TourProgram() {
   const navigate = useNavigate();
   const storedUser = localStorage.getItem('xl_user');
   const user = storedUser ? JSON.parse(storedUser) : null;
   const today = new Date();
+  
   const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [entries, setEntries] = useState<Record<string, string>>({}); // { "2026-08-15": "Local" }
+  const [entries, setEntries] = useState<Record<string, any>>({});
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  
   const [tpId, setTpId] = useState<string | null>(null);
   const [tpStatus, setTpStatus] = useState('Draft');
   const [adminRemarks, setAdminRemarks] = useState('');
+  
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState('');
 
-  const month = currentDate.toLocaleString('en-US', { month: 'long' }).toLowerCase();
-  const year = String(currentDate.getFullYear());
-  const monthLabel = currentDate.toLocaleString('en-IN', { month: 'long', year: 'numeric' });
+  // Market Selection Modal State
+  const [showMarketModal, setShowMarketModal] = useState(false);
+  const [pendingVisitType, setPendingVisitType] = useState('');
+  const [markets, setMarkets] = useState<any[]>([]);
+  const [marketSearch, setMarketSearch] = useState('');
 
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-  const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+  const year = currentDate.getFullYear();
+  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthLabel = `${monthNames[currentDate.getMonth()]} ${year}`;
+  const month = monthNames[currentDate.getMonth()];
+  
+  const firstDay = new Date(year, currentDate.getMonth(), 1).getDay();
+  const daysInMonth = new Date(year, currentDate.getMonth() + 1, 0).getDate();
 
   useEffect(() => {
+    if (!user) { navigate('/login'); return; }
     fetchTP();
+    fetchMarkets();
   }, [currentDate]);
 
   const fetchTP = async () => {
     try {
-      const res = await axios.get(`/api/xl/tour-program/my?email=${user?.employeeId}&month=${month}&year=${year}`);
-      if (res.data.data) {
-        const tp = res.data.data;
+      const res = await axios.get(`/api/xl/tour-program?email=${user.employeeId}&month=${month}&year=${year}`);
+      if (res.data.success && res.data.data.length > 0) {
+        const tp = res.data.data[0];
         setTpId(tp._id);
-        setTpStatus(tp.status);
+        setTpStatus(tp.status || 'Draft');
         setAdminRemarks(tp.adminRemarks || '');
-        const map: Record<string, string> = {};
-        JSON.parse(tp.entries || '[]').forEach((e: { date: string; visitType: string }) => {
-          map[e.date] = e.visitType;
-        });
-        setEntries(map);
+        const loadedEntries: Record<string, any> = {};
+        try {
+          const parsed = JSON.parse(tp.entries || '[]');
+          parsed.forEach((e: any) => {
+            if (e.date) loadedEntries[e.date] = e;
+          });
+        } catch(e){}
+        setEntries(loadedEntries);
       } else {
-        setTpId(null);
-        setTpStatus('Draft');
-        setEntries({});
-        setAdminRemarks('');
+        setTpId(null); setTpStatus('Draft'); setAdminRemarks(''); setEntries({});
       }
-    } catch (_) {}
+    } catch(e) {}
   };
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 3000);
+  const fetchMarkets = async () => {
+    try {
+      const res = await axios.get('/api/admin/locations/cities');
+      if (res.data.success) {
+        setMarkets(res.data.cities || []);
+      }
+    } catch(e) {}
   };
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
   const handleDayTap = (dateStr: string) => {
     if (tpStatus === 'Submitted' || tpStatus === 'Approved') return;
+    const d = new Date(dateStr);
+    if (d.getDay() === 0) return; // Ignore Sundays
     setSelectedDate(dateStr === selectedDate ? null : dateStr);
   };
 
-  const assignVisitType = (type: string) => {
+  const handleVisitTypeClick = (type: string) => {
     if (!selectedDate) return;
-    setEntries(prev => ({ ...prev, [selectedDate]: type }));
+    
+    if (['Ex Mkt', 'Out Mkt', 'Conf/Mtng'].includes(type)) {
+      setPendingVisitType(type);
+      setMarketSearch('');
+      setShowMarketModal(true);
+    } else {
+      setEntries(prev => ({ ...prev, [selectedDate]: { type } }));
+      setSelectedDate(null);
+    }
+  };
+
+  const selectMarket = (marketName: string) => {
+    if (!selectedDate || !pendingVisitType) return;
+    setEntries(prev => ({ ...prev, [selectedDate]: { type: pendingVisitType, toMarket: marketName } }));
+    setShowMarketModal(false);
     setSelectedDate(null);
   };
 
@@ -94,7 +125,10 @@ export default function TourProgram() {
   const saveTP = async () => {
     setSaving(true);
     try {
-      const entriesArr = Object.entries(entries).map(([date, visitType]) => ({ date, visitType }));
+      const entriesArr = Object.entries(entries).map(([date, val]) => {
+        if (typeof val === 'string') return { date, type: val };
+        return { date, type: val.type || val.visitType, toMarket: val.toMarket };
+      });
       const res = await axios.post('/api/xl/tour-program', {
         employeeId: user?.employeeId, employeeName: user ? `${user.firstName} ${user.lastName}` : '',
         month, year, entries: entriesArr
@@ -124,11 +158,31 @@ export default function TourProgram() {
     }
   };
 
+  const getVisitTypeStr = (val: any) => {
+    if (!val) return null;
+    if (typeof val === 'string') {
+      // Legacy mapping
+      if (val === 'Local') return 'HQ';
+      if (val === 'Ex-Station') return 'Ex Mkt';
+      if (val === 'Out-Station') return 'Out Mkt';
+      if (val === 'Conference') return 'Conf/Mtng';
+      return val;
+    }
+    return val.type || val.visitType;
+  };
+
   const visitTypeConfig = (type: string) => VISIT_TYPES.find(v => v.label === type);
   const StatusIcon = STATUS_CONFIG[tpStatus]?.icon || Clock;
 
+  // Counts
+  const typeCounts = Object.values(entries).reduce((acc: any, val: any) => {
+    const t = getVisitTypeStr(val);
+    if (t) acc[t] = (acc[t] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
-    <div className="min-h-full bg-slate-800">
+    <div className="min-h-full bg-slate-800 pb-20">
       {/* Header */}
       <div className="px-4 pt-4 pb-4 bg-slate-800 border-b border-slate-700/60 sticky top-0 z-40">
           <div className="flex items-center gap-3">
@@ -181,22 +235,28 @@ export default function TourProgram() {
         {Array.from({ length: daysInMonth }).map((_, i) => {
           const day = i + 1;
           const dateStr = `${year}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-          const visitType = entries[dateStr];
+          
+          const dObj = new Date(dateStr);
+          const isSunday = dObj.getDay() === 0;
+
+          const entry = entries[dateStr];
+          const visitType = getVisitTypeStr(entry);
           const vtConfig = visitType ? visitTypeConfig(visitType) : null;
           const isSelected = selectedDate === dateStr;
           const isToday = dateStr === today.toISOString().split('T')[0];
+          
           return (
             <button
               key={dateStr}
               onClick={() => handleDayTap(dateStr)}
               className={`relative aspect-square flex flex-col items-center justify-center rounded-xl text-xs font-semibold transition-all
-                ${isSelected ? 'ring-2 ring-white scale-110' : ''}
-                ${vtConfig ? `${vtConfig.color} text-white` : 'bg-slate-700 text-slate-300'}
+                ${isSelected ? 'ring-2 ring-white scale-110 z-10' : ''}
+                ${vtConfig ? `${vtConfig.color} text-white` : isSunday ? 'bg-slate-700/30 text-slate-600' : 'bg-slate-700 text-slate-300'}
                 ${isToday && !vtConfig ? 'ring-1 ring-sky-400' : ''}`}
             >
               {day}
               {visitType && (
-                <span className="text-[8px] font-normal opacity-80 leading-tight">{visitType.slice(0, 3)}</span>
+                <span className="text-[8px] font-bold opacity-90 leading-tight uppercase mt-0.5">{visitType.slice(0, 3)}</span>
               )}
             </button>
           );
@@ -205,20 +265,28 @@ export default function TourProgram() {
 
       {/* Visit Type Picker (shown when a date is selected) */}
       {selectedDate && (
-        <div className="mx-4 mb-4 bg-slate-700 rounded-2xl p-4 border border-slate-700">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-semibold text-white">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+        <div className="mx-4 mb-4 bg-slate-700 rounded-2xl p-4 border border-slate-700 shadow-xl">
+          <div className="flex items-center justify-between mb-3 border-b border-slate-600 pb-2">
+            <div>
+              <p className="text-sm font-bold text-white">{new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+              {entries[selectedDate]?.toMarket && (
+                <p className="text-xs text-sky-400 mt-1">Market: {entries[selectedDate].toMarket}</p>
+              )}
+            </div>
             {entries[selectedDate] && (
-              <button onClick={() => removeEntry(selectedDate)} className="text-xs text-rose-400">Remove</button>
+              <button onClick={() => removeEntry(selectedDate)} className="text-xs font-bold bg-rose-500/20 text-rose-400 px-3 py-1.5 rounded-lg active:bg-rose-500/40">Remove</button>
             )}
           </div>
           <div className="grid grid-cols-3 gap-2">
-            {VISIT_TYPES.map(vt => (
-              <button key={vt.label} onClick={() => assignVisitType(vt.label)}
-                className={`py-2 rounded-xl text-xs font-semibold border ${entries[selectedDate] === vt.label ? `${vt.color} text-white border-transparent` : `bg-slate-800 ${vt.text} ${vt.border}`}`}>
-                {vt.label}
-              </button>
-            ))}
+            {VISIT_TYPES.map(vt => {
+              const isActive = getVisitTypeStr(entries[selectedDate]) === vt.label;
+              return (
+                <button key={vt.label} onClick={() => handleVisitTypeClick(vt.label)}
+                  className={`py-2 rounded-xl text-xs font-bold border transition-colors ${isActive ? `${vt.color} text-white border-transparent` : `bg-slate-800 ${vt.text} ${vt.border} hover:bg-slate-700`}`}>
+                  {vt.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
@@ -226,38 +294,79 @@ export default function TourProgram() {
       {/* Legend */}
       <div className="px-4 mb-4 flex flex-wrap gap-2">
         {VISIT_TYPES.map(vt => (
-          <div key={vt.label} className="flex items-center gap-1">
-            <div className={`w-2.5 h-2.5 rounded-full ${vt.color}`} />
-            <span className="text-[10px] text-slate-200">{vt.label}</span>
+          <div key={vt.label} className="flex items-center gap-1.5">
+            <div className={`w-2 h-2 rounded-full ${vt.color}`} />
+            <span className="text-[10px] text-slate-300 font-medium">{vt.label}</span>
           </div>
         ))}
       </div>
 
       {/* Summary count */}
-      <div className="px-4 mb-4">
-        <p className="text-xs text-slate-200">
-          {Object.keys(entries).length} days planned · {Object.values(entries).filter(v => v === 'Local').length} Local · {Object.values(entries).filter(v => v === 'Ex-Station').length} Ex · {Object.values(entries).filter(v => v === 'Out-Station').length} OS
+      <div className="px-4 mb-6">
+        <p className="text-xs text-slate-400 leading-relaxed font-medium">
+          {Object.keys(entries).length} days planned &middot; 
+          {typeCounts['HQ'] || 0} HQ &middot; 
+          {typeCounts['Ex Mkt'] || 0} Ex &middot; 
+          {typeCounts['Out Mkt'] || 0} OS &middot; 
+          {typeCounts['Conf/Mtng'] || 0} Mtng
         </p>
       </div>
 
       {/* Action Buttons */}
       {(tpStatus === 'Draft' || tpStatus === 'Rejected') && (
-        <div className="px-4 pb-8 flex gap-3">
+        <div className="px-4 flex gap-3">
           <button onClick={saveTP} disabled={saving}
-            className="flex-1 h-[45px] rounded-xl bg-slate-600 text-white text-sm font-semibold active:bg-slate-600 disabled:opacity-50">
+            className="flex-1 h-[48px] rounded-xl bg-slate-600 text-white text-sm font-bold active:bg-slate-500 transition-colors disabled:opacity-50">
             {saving ? 'Saving...' : 'Save Draft'}
           </button>
           <button onClick={submitTP} disabled={submitting}
-            className="flex-1 h-[45px] rounded-xl bg-sky-500 text-white text-sm font-semibold flex items-center justify-center gap-2 active:bg-sky-600 disabled:opacity-50">
-            <Send size={15} />
-            {submitting ? 'Submitting...' : 'Submit for Approval'}
+            className="flex-1 h-[48px] rounded-xl bg-sky-500 text-white text-sm font-bold flex items-center justify-center gap-2 active:bg-sky-400 transition-colors disabled:opacity-50 shadow-lg shadow-sky-500/20">
+            <Send size={16} />
+            {submitting ? 'Submitting...' : 'Submit TP'}
           </button>
+        </div>
+      )}
+
+      {/* Market Selection Modal */}
+      {showMarketModal && (
+        <div className="fixed inset-0 z-[60] bg-slate-900 flex flex-col">
+          <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+            <h2 className="font-bold text-lg text-white">Select TO Market</h2>
+            <button onClick={() => setShowMarketModal(false)} className="p-1"><X className="w-6 h-6 text-slate-400" /></button>
+          </div>
+          <div className="p-4 border-b border-slate-800 bg-slate-800/50">
+            <div className="relative">
+              <Search className="w-5 h-5 absolute left-3 top-3 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search market by city name..."
+                value={marketSearch}
+                onChange={e => setMarketSearch(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:outline-none focus:border-sky-500"
+              />
+            </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-2">
+            {markets.filter(m => m.cityName?.toLowerCase().includes(marketSearch.toLowerCase())).map((m, i) => (
+              <button 
+                key={m._id || i}
+                onClick={() => selectMarket(m.cityName)}
+                className="w-full text-left p-4 border-b border-slate-800/50 active:bg-slate-800"
+              >
+                <p className="text-sm font-bold text-white">{m.cityName}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{m.state} {m.hq ? `• ${m.hq}` : ''}</p>
+              </button>
+            ))}
+            {markets.length === 0 && (
+              <p className="text-center text-slate-400 mt-10 text-sm">No markets available.</p>
+            )}
+          </div>
         </div>
       )}
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-24 left-4 right-4 bg-slate-600 border border-slate-600 rounded-xl px-4 py-3 text-sm text-white text-center z-50 shadow-lg">
+        <div className="fixed bottom-24 left-4 right-4 bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm font-bold text-white text-center z-[70] shadow-2xl">
           {toast}
         </div>
       )}
