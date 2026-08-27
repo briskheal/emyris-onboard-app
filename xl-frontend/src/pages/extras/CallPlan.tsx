@@ -219,7 +219,7 @@ function CallPlan() {
       {/* Header */}
       <div className="bg-[#1c1c2e] p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/xl/dashboard')}><ChevronLeft className="w-6 h-6 text-sky-400" /></button>
+          <button onClick={() => navigate('/extras')}><ChevronLeft className="w-6 h-6 text-sky-400" /></button>
           <div>
             <h1 className="font-bold text-lg leading-tight uppercase tracking-widest text-slate-100 flex items-center gap-2">EMYRIS</h1>
             <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest leading-none">Biolifesciences</p>
