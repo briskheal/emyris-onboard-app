@@ -414,7 +414,7 @@ function CallPlan() {
 
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e]">
             <button onClick={handleSavePlan} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg flex items-center justify-center disabled:opacity-50">
-              SAVE {activeTab.toUpperCase()} CALL PLAN
+              SAVE & SUBMIT FOR APPROVAL
             </button>
           </div>
         </div>
