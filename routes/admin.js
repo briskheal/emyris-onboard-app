@@ -4518,7 +4518,8 @@ router.post('/users/transfer-data', async (req, res) => {
         res.status(500).json({ success: false, message: e.message });
     }
 });
-\n// ---- Admins ----
+
+// ---- Admins ----
 router.get('/admins', async (req, res) => {
     try {
         const admins = await XlAdmin.findAll({ order: [['createdAt', 'DESC']] });
