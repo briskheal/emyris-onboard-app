@@ -51,7 +51,7 @@ export default function TourProgram() {
 
   const fetchTP = async () => {
     try {
-      const res = await axios.get(`/api/xl/tour-program/my?email=${user?.email}&month=${month}&year=${year}`);
+      const res = await axios.get(`/api/xl/tour-program/my?email=${user?.employeeId}&month=${month}&year=${year}`);
       if (res.data.data) {
         const tp = res.data.data;
         setTpId(tp._id);
@@ -96,7 +96,7 @@ export default function TourProgram() {
     try {
       const entriesArr = Object.entries(entries).map(([date, visitType]) => ({ date, visitType }));
       const res = await axios.post('/api/xl/tour-program', {
-        employeeEmail: user?.email, employeeName: user ? `${user.firstName} ${user.lastName}` : '',
+        employeeId: user?.employeeId, employeeName: user ? `${user.firstName} ${user.lastName}` : '',
         month, year, entries: entriesArr
       });
       setTpId(res.data.data._id);

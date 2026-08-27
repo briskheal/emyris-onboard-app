@@ -38,7 +38,7 @@ export default function CallPlan() {
       setDoctors(drRes.data.data || []);
 
       // 2. Fetch existing call plan for today
-      const planRes = await axios.get(`/api/xl/call-plan/my?email=${user.email}&date=${dateStr}`);
+      const planRes = await axios.get(`/api/xl/call-plan/my?email=${user.employeeId}&date=${dateStr}`);
       if (planRes.data.data && planRes.data.data.doctors) {
         setSelectedIds(new Set(JSON.parse(planRes.data.data.doctors)));
       }
