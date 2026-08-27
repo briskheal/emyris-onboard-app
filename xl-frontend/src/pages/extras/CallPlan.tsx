@@ -1,3 +1,4 @@
+import React from 'react';
 // @ts-nocheck\nimport React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package } from 'lucide-react';
@@ -8,7 +9,7 @@ interface ProductSelect { product: string; qty: number; }
 interface GiftSelect { item: string; qty: number; }
 interface PlannedEntity { id: string; name: string; info: string; samples: ProductSelect[]; gifts: GiftSelect[]; }
 
-export default function CallPlan() {
+function CallPlan() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   
@@ -449,4 +450,20 @@ export default function CallPlan() {
 
     </div>
   );
+}
+
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  render() {
+    if (this.state.hasError) {
+      return <div style={{padding: 20, color: 'red', background: '#fff'}}><h1>Runtime Crash:</h1><pre>{this.state.error.toString()}</pre><pre>{this.state.error.stack}</pre></div>;
+    }
+    return this.props.children; 
+  }
+}
+
+export default function SafeCallPlan() {
+  return <ErrorBoundary><CallPlan /></ErrorBoundary>;
 }
