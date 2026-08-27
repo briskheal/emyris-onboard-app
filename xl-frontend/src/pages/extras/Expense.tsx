@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, ReceiptIndianRupee } from 'lucide-react';
 import axios from 'axios';
 
-const USER_EMAIL = 'rep@emyris.in';
+const getUserId = () => {
+  const u = localStorage.getItem('xl_user');
+  return u ? JSON.parse(u).employeeId : '';
+};
 const EXPENSE_CATEGORIES = ['Travel', 'DA', 'Hotel', 'Miscellaneous'];
 
 export default function Expense() {
@@ -27,7 +30,7 @@ export default function Expense() {
 
   const fetchExpenses = async () => {
     try {
-      const res = await axios.get(`/api/xl/expense/my?email=${USER_EMAIL}`);
+      const res = await axios.get(`/api/xl/expense/my?email=${getUserId()}`);
       setExpenses(res.data.data || []);
     } catch (e) {
       setError('Failed to fetch expenses.');
@@ -46,7 +49,7 @@ export default function Expense() {
 
     try {
       await axios.post('/api/xl/expense', { 
-        employeeEmail: USER_EMAIL, 
+        employeeId: getUserId(), 
         date, amount: Number(amount), category, remarks 
       });
       await fetchExpenses();

@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, CalendarRange } from 'lucide-react';
 import axios from 'axios';
 
-const USER_EMAIL = 'rep@emyris.in';
+const getUserId = () => {
+  const u = localStorage.getItem('xl_user');
+  return u ? JSON.parse(u).employeeId : '';
+};
 const LEAVE_TYPES = ['Casual Leave', 'Sick Leave', 'Paid Leave'];
 
 export default function LeaveRequest() {
@@ -27,7 +30,7 @@ export default function LeaveRequest() {
 
   const fetchLeaves = async () => {
     try {
-      const res = await axios.get(`/api/xl/leave/my?email=${USER_EMAIL}`);
+      const res = await axios.get(`/api/xl/leave/my?email=${getUserId()}`);
       setLeaves(res.data.data || []);
     } catch (e) {
       setError('Failed to fetch leave history.');
@@ -46,7 +49,7 @@ export default function LeaveRequest() {
 
     try {
       await axios.post('/api/xl/leave', { 
-        employeeEmail: USER_EMAIL, 
+        employeeId: getUserId(), 
         startDate, endDate, leaveType, reason 
       });
       await fetchLeaves();

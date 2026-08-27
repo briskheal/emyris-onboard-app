@@ -4,7 +4,10 @@ import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, Calendar } from 'l
 import axios from 'axios';
 import DCRModal from '../../components/DCRModal';
 
-const USER_EMAIL = 'rep@emyris.in';
+const getUserId = () => {
+  const u = localStorage.getItem('xl_user');
+  return u ? JSON.parse(u).employeeId : '';
+};
 
 export default function Backlog() {
   const navigate = useNavigate();
@@ -25,7 +28,7 @@ export default function Backlog() {
 
   const fetchRequests = async () => {
     try {
-      const res = await axios.get(`/api/xl/backlog/my?email=${USER_EMAIL}`);
+      const res = await axios.get(`/api/xl/backlog/my?email=${getUserId()}`);
       setRequests(res.data.data || []);
     } catch (e) {
       setError('Failed to fetch backlog requests.');
@@ -46,7 +49,7 @@ export default function Backlog() {
     setError('');
 
     try {
-      await axios.post('/api/xl/backlog', { employeeEmail: USER_EMAIL, date, reason });
+      await axios.post('/api/xl/backlog', { employeeId: getUserId(), date, reason });
       await fetchRequests();
       setShowNew(false);
       setDate('');

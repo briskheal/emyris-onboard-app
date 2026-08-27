@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
 
-const USER_EMAIL = 'rep@emyris.in';
+const getUserId = () => {
+  const u = localStorage.getItem('xl_user');
+  return u ? JSON.parse(u).employeeId : '';
+};
 
 const TARGET_KPIS = [
   { id: 'brand', label: 'Brand Analysis', icon: Paperclip },
@@ -27,7 +30,7 @@ export default function PerformanceMenu() {
 
   useEffect(() => {
     // Fetch the performance record to see if planning is submitted
-    axios.get(`/api/xl/performance/my?email=${USER_EMAIL}&month=${selectedMonth}&year=${selectedYear}`)
+    axios.get(`/api/xl/performance/my?email=${getUserId()}&month=${selectedMonth}&year=${selectedYear}`)
       .then(res => {
         if (res.data.success && res.data.data) {
           setIsPlanningPhase(!res.data.data.planningSubmittedAt);

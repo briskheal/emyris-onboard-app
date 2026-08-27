@@ -45,7 +45,7 @@ export default function Layout() {
 
   useEffect(() => {
     if (user?.uid) {
-        axios.get('/api/xl/notifications?email=' + user.email).then(r => setNotifications(r.data.data || [])).catch(e => console.error(e));
+        axios.get('/api/xl/notifications?email=' + user.employeeId).then(r => setNotifications(r.data.data || [])).catch(e => console.error(e));
     }
   }, [user]);
 

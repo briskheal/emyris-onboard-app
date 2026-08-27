@@ -13,7 +13,7 @@ const today = new Date().toISOString().split('T')[0];
 export default function DCRModal({ onClose, overrideDate }: { onClose: () => void; overrideDate?: string }) {
   const storedUser = localStorage.getItem('xl_user');
   const user = storedUser ? JSON.parse(storedUser) : null;
-  const USER_EMAIL = user ? user.email : '';
+  const USER_EMAIL = user ? user.employeeId : '';
   const USER_NAME = user ? `${user.firstName} ${user.lastName}` : '';
 
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
     setError('');
     try {
       await axios.post('/api/xl/dcr', {
-        employeeEmail: USER_EMAIL, employeeName: USER_NAME,
+        employeeId: USER_EMAIL, employeeName: USER_NAME,
         date: dcrDate, entityType,
         entityId: selected.id, entityName: selected.name,
         discussion, checkInTime,

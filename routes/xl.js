@@ -632,7 +632,7 @@ router.get('/approvals/pending', async (req, res) => {
         let reporteeEmails = null;
         if (designation !== 'ADMIN') {
             const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
-            reporteeEmails = reportees.map(u => u.email);
+            reporteeEmails = reportees.map(u => u.employeeId);
             if (reporteeEmails.length === 0) return res.json({ success: true, data: [] });
         }
         let Model;

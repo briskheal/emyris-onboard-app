@@ -4,7 +4,10 @@ import axios from 'axios';
 import TargetPlanningView from './TargetPlanningView';
 import TargetAchievementView from './TargetAchievementView';
 
-const USER_EMAIL = 'rep@emyris.in';
+const getUserId = () => {
+  const u = localStorage.getItem('xl_user');
+  return u ? JSON.parse(u).employeeId : '';
+};
 
 export default function TargetAnalysisReport() {
   const { kpiId } = useParams<{ kpiId: string }>();
@@ -19,7 +22,7 @@ export default function TargetAnalysisReport() {
 
   const fetchData = () => {
     setLoading(true);
-    axios.get(`/api/xl/performance/my?email=${USER_EMAIL}&month=${month}&year=${year}`)
+    axios.get(`/api/xl/performance/my?email=${getUserId()}&month=${month}&year=${year}`)
       .then(res => {
         if (res.data.success && res.data.data) {
           const perf = res.data.data;

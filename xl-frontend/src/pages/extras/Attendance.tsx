@@ -4,7 +4,10 @@ import { ChevronLeft, UserCheck, Clock, Navigation } from 'lucide-react';
 import axios from 'axios';
 
 // Hardcoded for Phase 3 — will be replaced by login session in future
-const USER_EMAIL = 'rep@emyris.in';
+const getUserId = () => {
+  const u = localStorage.getItem('xl_user');
+  return u ? JSON.parse(u).employeeId : '';
+};
 
 export default function Attendance() {
   const navigate = useNavigate();
@@ -23,7 +26,7 @@ export default function Attendance() {
 
   const fetchAttendance = async () => {
     try {
-      const res = await axios.get(`/api/xl/attendance/my?email=${USER_EMAIL}&date=${dateStr}`);
+      const res = await axios.get(`/api/xl/attendance/my?email=${getUserId()}&date=${dateStr}`);
       setAtt(res.data.data);
     } catch (e) {
       setError('Failed to fetch attendance status.');
@@ -44,7 +47,7 @@ export default function Attendance() {
       async (pos) => {
         try {
           const payload = {
-            employeeEmail: USER_EMAIL,
+            employeeId: getUserId(),
             date: dateStr,
             [type === 'in' ? 'punchInTime' : 'punchOutTime']: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
             [type === 'in' ? 'punchInLat' : 'punchOutLat']: pos.coords.latitude,

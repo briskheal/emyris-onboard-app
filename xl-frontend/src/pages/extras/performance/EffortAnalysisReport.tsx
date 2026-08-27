@@ -3,7 +3,10 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Share2, Activity, Users, Target } from 'lucide-react';
 import axios from 'axios';
 
-const USER_EMAIL = 'rep@emyris.in';
+const getUserId = () => {
+  const u = localStorage.getItem('xl_user');
+  return u ? JSON.parse(u).employeeId : '';
+};
 
 // Same calendar calculation helper as TargetAnalysisReport
 function getCalendarWeeks(monthStr: string, yearStr: string) {
@@ -66,7 +69,7 @@ export default function EffortAnalysisReport() {
 
     setLoading(true);
     axios.post('/api/xl/performance/effort-analysis', {
-      email: USER_EMAIL,
+      email: getUserId(),
       startDate: selectedWeek.isoStart,
       endDate: selectedWeek.isoEnd
     })
