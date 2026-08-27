@@ -204,8 +204,11 @@ router.get('/chemists', async (req, res) => {
 // Save/Update draft TP for the month
 router.post('/tour-program', async (req, res) => {
     try {
-        const { employeeId, employeeName, hq, month, year, entries } = req.body;
+        const { employeeId, employeeName, hq, year, entries } = req.body;
+        let { month } = req.body;
         if (!employeeId || !month || !year) return res.status(400).json({ error: 'Missing required fields' });
+        
+        month = month.toLowerCase(); // Enforce lowercase month for DB consistency
 
         // Upsert: one TP per employee per month/year
         let tp = await XlTourProgram.findOne({ where: { employeeId, month, year } });
@@ -240,8 +243,9 @@ router.put('/tour-program/:id/submit', async (req, res) => {
 // Get my TP for a specific month/year
 router.get('/tour-program/my', async (req, res) => {
     try {
-        const { email, month, year } = req.query;
+        let { email, month, year } = req.query;
         if (!email || !month || !year) return res.status(400).json({ error: 'Missing params' });
+        month = month.toLowerCase();
         const tp = await XlTourProgram.findOne({ where: { employeeId: email, month, year } });
         res.json({ success: true, data: tp || null });
     } catch (e) {

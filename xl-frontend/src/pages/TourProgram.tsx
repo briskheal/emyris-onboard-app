@@ -60,7 +60,7 @@ export default function TourProgram() {
 
   const fetchTP = async () => {
     try {
-      const res = await axios.get(`/api/xl/tour-program?email=${user.employeeId}&month=${month}&year=${year}`);
+      const res = await axios.get(`/api/xl/tour-program/my?email=${user.employeeId}&month=${month}&year=${year}`);
       if (res.data.success && res.data.data.length > 0) {
         const tp = res.data.data[0];
         setTpId(tp._id);
