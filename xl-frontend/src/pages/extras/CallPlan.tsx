@@ -4,96 +4,65 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package } from 'lucide-react';
 import axios from 'axios';
 
-// Interfaces for structured JSON
 interface ProductSelect { product: string; qty: number; }
 interface GiftSelect { item: string; qty: number; }
 interface PlannedEntity { id: string; name: string; info: string; samples: ProductSelect[]; gifts: GiftSelect[]; }
 
 function CallPlan() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  
   const storedUser = localStorage.getItem('xl_user');
   const loggedInUser = storedUser ? JSON.parse(storedUser) : null;
   
-  // State for user context (Manager selecting a subordinate)
   const [activeUser, setActiveUser] = useState<any>(loggedInUser);
   const [subordinates, setSubordinates] = useState<any[]>([]);
   const [showSubordinateModal, setShowSubordinateModal] = useState(false);
 
-  // Month & Year State
   const [month, setMonth] = useState((new Date().getMonth() + 1).toString().padStart(2, '0'));
   const [year, setYear] = useState(new Date().getFullYear().toString());
-
-  // Data fetching state
-  const [monthlyPlans, setMonthlyPlans] = useState<any[]>([]); // Array of XlCallPlan from backend
+  const [monthlyPlans, setMonthlyPlans] = useState<any[]>([]);
   
-  // Calendar Days Calculation
   const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // Master Data
   const [doctors, setDoctors] = useState<any[]>([]);
   const [chemists, setChemists] = useState<any[]>([]);
   const [stockists, setStockists] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]); // For Samples
-  const [giftsList, setGiftsList] = useState<any[]>([]); // For Gifts
+  const [products, setProducts] = useState<any[]>([]);
+  const [giftsList, setGiftsList] = useState<any[]>([]);
 
-  // Multi-Select CPs
+  const [loading, setLoading] = useState(true);
+
+  // Modals
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showEntityModal, setShowEntityModal] = useState(false);
+  const [configuringEntity, setConfiguringEntity] = useState<PlannedEntity | null>(null);
+
   const [isMultiMode, setIsMultiMode] = useState(false);
   const [selectedDates, setSelectedDates] = useState<Set<number>>(new Set());
+  const [planDates, setPlanDates] = useState<number[]>([]);
 
-  // Plan Calls Modal
-  const [showPlanModal, setShowPlanModal] = useState(false);
-  const [planDates, setPlanDates] = useState<number[]>([]); // Array of dates being planned (1 if single, >1 if multi)
-  
   const [activeTab, setActiveTab] = useState<'Doctors' | 'Chemists' | 'Stockists'>('Doctors');
-  
   const [plannedDocs, setPlannedDocs] = useState<PlannedEntity[]>([]);
   const [plannedChems, setPlannedChems] = useState<PlannedEntity[]>([]);
   const [plannedStocks, setPlannedStocks] = useState<PlannedEntity[]>([]);
-
-  // Entity Selection Modal
-  const [showEntityModal, setShowEntityModal] = useState(false);
-  const [entitySearch, setEntitySearch] = useState('');
   
-  // Sample/Gift Config Modal
-  const [configuringEntity, setConfiguringEntity] = useState<PlannedEntity | null>(null);
-  const [configType, setConfigType] = useState<'Doctors' | 'Chemists' | 'Stockists'>('Doctors');
+  const [entitySearch, setEntitySearch] = useState('');
+  const [selectedEntityIds, setSelectedEntityIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!loggedInUser) navigate('/login');
-    else {
-      fetchMasterData();
-      fetchSubordinates();
+    if (!loggedInUser) {
+        navigate('/login');
+    } else {
+        fetchSubordinates();
     }
   }, []);
 
   useEffect(() => {
     if (activeUser) {
+      fetchMasterData();
       fetchMonthlyPlans();
     }
   }, [activeUser, month, year]);
-
-  const fetchMasterData = async () => {
-    try {
-      const hq = activeUser?.hq || '';
-      const drRes = axios.get(`/api/xl/doctors?hq=${hq}`);
-      const chRes = axios.get(`/api/xl/chemists?hq=${hq}`);
-      const stRes = axios.get(`/api/xl/stockists?hq=${hq}`); // If doesn't exist, will fail silently or return 404
-      const prRes = axios.get('/api/admin/products');
-      const gfRes = axios.get('/api/admin/gifts'); // Assuming a gifts API exists, if not we'll handle gracefully
-
-      const [dr, ch, st, pr, gf] = await Promise.allSettled([drRes, chRes, stRes, prRes, gfRes]);
-      
-      if (dr.status === 'fulfilled' && dr.value.data.success) setDoctors(dr.value.data.data);
-      if (ch.status === 'fulfilled' && ch.value.data.success) setChemists(ch.value.data.data);
-      if (st.status === 'fulfilled' && st.value.data.success) setStockists(st.value.data.data || []);
-      if (pr.status === 'fulfilled' && pr.value.data.success) setProducts(pr.value.data.products || []);
-      if (gf.status === 'fulfilled' && gf.value.data.success) setGiftsList(gf.value.data.gifts || []);
-      
-    } catch (e) { console.error(e); }
-  };
 
   const fetchSubordinates = async () => {
     try {
@@ -102,26 +71,76 @@ function CallPlan() {
     } catch(e) {}
   };
 
+  const fetchMasterData = async () => {
+    try {
+      const hq = activeUser?.hq || '';
+      const designation = activeUser?.designation || '';
+      
+      // Pass both designation and hq so it resolves subordinates correctly on the backend
+      const drRes = axios.get(`/api/xl/doctors?hq=${hq}&designation=${designation}`);
+      const chRes = axios.get(`/api/xl/chemists?hq=${hq}&designation=${designation}`);
+      const stRes = axios.get(`/api/xl/stockists?hq=${hq}&designation=${designation}`);
+      const prRes = axios.get('/api/admin/products');
+      const gfRes = axios.get('/api/admin/gifts');
+
+      const [dr, ch, st, pr, gf] = await Promise.allSettled([drRes, chRes, stRes, prRes, gfRes]);
+      
+      if (dr.status === 'fulfilled' && dr.value.data.success) setDoctors(dr.value.data.data || []);
+      if (ch.status === 'fulfilled' && ch.value.data.success) setChemists(ch.value.data.data || []);
+      if (st.status === 'fulfilled' && st.value.data.success) setStockists(st.value.data.data || []);
+      if (pr.status === 'fulfilled' && pr.value.data.success) setProducts(pr.value.data.products || []);
+      if (gf.status === 'fulfilled' && gf.value.data.success) setGiftsList(gf.value.data.gifts || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const fetchMonthlyPlans = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/xl/call-plan/month?email=${activeUser.employeeId}&month=${month}&year=${year}`);
+      const res = await axios.get(`/api/xl/call-plan/month?email=${activeUser?.employeeId}&month=${month}&year=${year}`);
       if (res.data.success) {
-        setMonthlyPlans(res.data.data);
+        setMonthlyPlans(res.data.data || []);
       }
     } catch (e) { console.error(e); }
     setLoading(false);
   };
 
-  // Helper to get plan for a specific day
   const getPlanForDay = (day: number) => {
     const dStr = `${year}-${month}-${day.toString().padStart(2, '0')}`;
-    return monthlyPlans.find(p => p.date === dStr);
+    return (monthlyPlans || []).find(p => p.date === dStr);
   };
 
   const isSunday = (day: number) => {
     const d = new Date(parseInt(year), parseInt(month) - 1, day);
     return d.getDay() === 0;
+  };
+
+  const loadPlanIntoState = (p: any) => {
+    if (!p) {
+      setPlannedDocs([]); setPlannedChems([]); setPlannedStocks([]);
+      return;
+    }
+    
+    // Safely parse old raw arrays vs new object arrays
+    const safeParse = (str: any, defaultKey: string) => {
+      try {
+        const parsed = JSON.parse(str || '[]');
+        if (!Array.isArray(parsed)) return [];
+        return parsed.map(item => {
+          if (typeof item === 'string') {
+            return { id: item, name: item, info: 'Imported', samples: [], gifts: [] };
+          }
+          return item;
+        });
+      } catch(e) {
+        return [];
+      }
+    };
+    
+    setPlannedDocs(safeParse(p.doctors, 'name'));
+    setPlannedChems(safeParse(p.chemists, 'name'));
+    setPlannedStocks(safeParse(p.stockists, 'name'));
   };
 
   const openSinglePlan = (day: number) => {
@@ -135,25 +154,10 @@ function CallPlan() {
   const openMultiPlan = () => {
     if (selectedDates.size === 0) return;
     setPlanDates(Array.from(selectedDates));
-    // Load the first selected date's plan into state just to prepopulate if it exists
     const firstDate = Array.from(selectedDates)[0];
     const p = getPlanForDay(firstDate);
     loadPlanIntoState(p);
     setShowPlanModal(true);
-  };
-
-  const loadPlanIntoState = (p: any) => {
-    if (!p) {
-      setPlannedDocs([]); setPlannedChems([]); setPlannedStocks([]);
-      return;
-    }
-    try {
-      setPlannedDocs(JSON.parse(p.doctors || '[]'));
-      setPlannedChems(JSON.parse(p.chemists || '[]'));
-      setPlannedStocks(JSON.parse(p.stockists || '[]'));
-    } catch(e) {
-      setPlannedDocs([]); setPlannedChems([]); setPlannedStocks([]);
-    }
   };
 
   const toggleMultiSelect = (day: number) => {
@@ -163,60 +167,65 @@ function CallPlan() {
     setSelectedDates(ns);
   };
 
+  const openEntitySelector = () => {
+    const existing = (activeTab === 'Doctors' ? plannedDocs : activeTab === 'Chemists' ? plannedChems : plannedStocks).map(e => e.id);
+    setSelectedEntityIds(new Set(existing));
+    setEntitySearch('');
+    setShowEntityModal(true);
+  };
+
+  const confirmEntitySelection = () => {
+    const list = activeTab === 'Doctors' ? doctors : activeTab === 'Chemists' ? chemists : stockists;
+    const current = activeTab === 'Doctors' ? plannedDocs : activeTab === 'Chemists' ? plannedChems : plannedStocks;
+    
+    const newEntities = Array.from(selectedEntityIds).map(id => {
+      const existing = current.find(e => e.id === id);
+      if (existing) return existing;
+      const item = list.find(l => (l._id || l.id) === id) || {};
+      return {
+        id: id,
+        name: item.doctorName || item.chemistName || item.stockistName || id,
+        info: item.headquarter || item.address || '',
+        samples: [],
+        gifts: []
+      };
+    });
+
+    if (activeTab === 'Doctors') setPlannedDocs(newEntities);
+    if (activeTab === 'Chemists') setPlannedChems(newEntities);
+    if (activeTab === 'Stockists') setPlannedStocks(newEntities);
+    
+    setShowEntityModal(false);
+  };
+
   const handleSavePlan = async () => {
     setLoading(true);
     try {
       const datesToSave = planDates.map(d => `${year}-${month}-${d.toString().padStart(2, '0')}`);
       
       const payload = {
-        employeeId: activeUser.employeeId,
+        employeeId: activeUser?.employeeId,
         dates: datesToSave,
         doctors: plannedDocs,
         chemists: plannedChems,
         stockists: plannedStocks
       };
 
-      await axios.post('/api/xl/call-plan/bulk', payload);
-      alert('Auto Approved !\\nCall plan created successfully.');
-      setShowPlanModal(false);
-      setIsMultiMode(false);
-      setSelectedDates(new Set());
-      fetchMonthlyPlans();
+      const res = await axios.post('/api/xl/call-plan/bulk', payload);
+      if (res.data.success) {
+        setShowPlanModal(false);
+        setIsMultiMode(false);
+        setSelectedDates(new Set());
+        fetchMonthlyPlans();
+      }
     } catch (e) {
       alert('Failed to save call plan.');
     }
     setLoading(false);
   };
 
-  const addEntities = (entities: any[], type: 'Doctors' | 'Chemists' | 'Stockists') => {
-    const newItems = entities.map(e => ({
-      id: e._id,
-      name: e.name || e.hospital || 'Unknown',
-      info: e.workingArea || e.address || e.headquarter || '',
-      samples: [],
-      gifts: []
-    }));
-
-    if (type === 'Doctors') setPlannedDocs([...plannedDocs, ...newItems]);
-    if (type === 'Chemists') setPlannedChems([...plannedChems, ...newItems]);
-    if (type === 'Stockists') setPlannedStocks([...plannedStocks, ...newItems]);
-    setShowEntityModal(false);
-  };
-
-  const updateEntityConfig = (entity: PlannedEntity) => {
-    if (configType === 'Doctors') {
-      setPlannedDocs(plannedDocs.map(d => d.id === entity.id ? entity : d));
-    } else if (configType === 'Chemists') {
-      setPlannedChems(plannedChems.map(d => d.id === entity.id ? entity : d));
-    } else {
-      setPlannedStocks(plannedStocks.map(d => d.id === entity.id ? entity : d));
-    }
-    setConfiguringEntity(null);
-  };
-
   return (
     <div className="min-h-screen bg-[#1c1c2e] text-white pb-20 font-sans">
-      {/* Header */}
       <div className="bg-[#1c1c2e] p-4 flex items-center justify-between shadow-md">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/extras')}><ChevronLeft className="w-6 h-6 text-sky-400" /></button>
@@ -228,7 +237,26 @@ function CallPlan() {
       </div>
 
       <div className="p-4">
-        {/* Month/Year Selection */}
+        <div className="mb-4">
+          <h2 className="text-2xl font-black text-white">Call Planning</h2>
+          <p className="text-slate-400 text-sm">Plan your daily visits and samples</p>
+        </div>
+
+        {subordinates.length > 0 && (
+          <div 
+            onClick={() => setShowSubordinateModal(true)}
+            className="bg-emerald-900/40 border border-emerald-500/50 p-3 rounded-lg mb-4 flex items-center gap-3 cursor-pointer"
+          >
+            <Users className="w-5 h-5 text-emerald-400" />
+            <div>
+              <p className="text-sm font-bold text-emerald-400 leading-tight">Add Call Planning Report for another user</p>
+              {activeUser?.employeeId !== loggedInUser?.employeeId && (
+                <p className="text-xs text-white font-bold uppercase mt-1">FOR: {activeUser?.firstName} {activeUser?.lastName}</p>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="flex gap-4 mb-4">
           <div className="flex-1">
             <label className="text-xs text-rose-400 font-bold mb-1 block">Select Month *</label>
@@ -240,101 +268,91 @@ function CallPlan() {
             </select>
           </div>
           <div className="flex-1">
-            <label className="text-xs text-rose-400 font-bold mb-1 block">Year</label>
+            <label className="text-xs text-rose-400 font-bold mb-1 block">Select Year *</label>
             <select value={year} onChange={e => setYear(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg p-3 text-sky-300 font-bold appearance-none">
-              <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
             </select>
           </div>
         </div>
 
-        {/* Manager Override Banner */}
-        {subordinates.length > 0 && (
-          <div 
-            onClick={() => setShowSubordinateModal(true)}
-            className="bg-emerald-900/40 border border-emerald-500/50 p-3 rounded-lg mb-4 flex items-center gap-3 cursor-pointer"
-          >
-            <Users className="w-5 h-5 text-emerald-400" />
-            <div>
-              <p className="text-sm font-bold text-emerald-400 leading-tight">Add Call Planning Report for another user</p>
-              {activeUser.employeeId !== loggedInUser.employeeId && (
-                <p className="text-xs text-white font-bold uppercase mt-1">FOR: {activeUser.firstName} {activeUser.lastName}</p>
+        {loading ? (
+          <p className="text-slate-400 text-center py-10 font-bold">Loading plans...</p>
+        ) : (
+          <div className="space-y-2 relative">
+            {daysArray.map(day => {
+              const plan = getPlanForDay(day);
+              let pDocs = [], pChems = [], pStocks = [];
+              if (plan) {
+                try { 
+                  pDocs = JSON.parse(plan.doctors||'[]'); 
+                  pChems = JSON.parse(plan.chemists||'[]'); 
+                  pStocks = JSON.parse(plan.stockists||'[]'); 
+                } catch(e){}
+              }
+              const isHol = isSunday(day);
+
+              return (
+                <div 
+                  key={day} 
+                  onClick={() => isMultiMode ? toggleMultiSelect(day) : openSinglePlan(day)}
+                  className={`flex items-center rounded-lg overflow-hidden border ${isMultiMode && selectedDates.has(day) ? 'border-sky-500 bg-sky-900/20' : 'border-[#3b3b5a] bg-[#27273f]'} transition-colors`}
+                >
+                  <div className={`w-14 shrink-0 flex flex-col items-center justify-center p-3 ${isHol ? 'bg-rose-900/30 border-r border-rose-500/30' : 'bg-[#1c1c2e] border-r border-[#3b3b5a]'}`}>
+                    <span className={`text-lg font-black leading-none ${isHol ? 'text-rose-500' : 'text-slate-200'}`}>{day}</span>
+                    <span className={`text-[10px] font-bold uppercase ${isHol ? 'text-rose-400' : 'text-slate-500'}`}>
+                      {new Date(parseInt(year), parseInt(month) - 1, day).toLocaleString('en-US', { weekday: 'short' })}
+                    </span>
+                  </div>
+                  
+                  <div className="flex-1 p-3 flex justify-between items-center cursor-pointer">
+                    {isHol ? (
+                      <span className="text-sm font-bold text-rose-500 uppercase tracking-wider">Holiday / Sunday</span>
+                    ) : (
+                      <>
+                        {plan ? (
+                          <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" /><span className="text-emerald-400 font-bold">{pDocs.length}</span></div>
+                            <div className="flex items-center gap-1.5"><Package className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 font-bold">{pChems.length}</span></div>
+                            <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-orange-400" /><span className="text-orange-400 font-bold">{pStocks.length}</span></div>
+                          </div>
+                        ) : (
+                          <span className="text-sm font-bold text-slate-500 italic">No plan added</span>
+                        )}
+                      </>
+                    )}
+                    
+                    {isMultiMode && !isHol && (
+                      <div className="w-6 h-6 rounded border border-sky-400 flex items-center justify-center">
+                        {selectedDates.has(day) && <Check className="w-4 h-4 text-sky-400" />}
+                      </div>
+                    )}
+                    {!isMultiMode && !isHol && !plan && <Plus className="w-5 h-5 text-sky-400" />}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="sticky bottom-6 flex justify-end px-2">
+              {!isMultiMode ? (
+                <button onClick={() => setIsMultiMode(true)} className="bg-sky-500 text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2">
+                  <Plus className="w-5 h-5" /> Multiple CPs
+                </button>
+              ) : (
+                <div className="flex gap-2">
+                  <button onClick={() => { setIsMultiMode(false); setSelectedDates(new Set()); }} className="bg-slate-700 text-white px-5 py-3 rounded-full font-bold shadow-lg flex items-center gap-2">
+                    <X className="w-5 h-5" /> Cancel
+                  </button>
+                  <button onClick={openMultiPlan} disabled={selectedDates.size === 0} className="bg-sky-500 text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 disabled:opacity-50">
+                    <Check className="w-5 h-5" /> Add {selectedDates.size} CPs
+                  </button>
+                </div>
               )}
             </div>
           </div>
         )}
-
-        {/* Calendar Grid */}
-        <div className="space-y-2 relative">
-          {daysArray.map(day => {
-            const plan = getPlanForDay(day);
-            let pDocs = [], pChems = [], pStocks = [];
-            if (plan) {
-              try { pDocs = JSON.parse(plan.doctors||'[]'); pChems = JSON.parse(plan.chemists||'[]'); pStocks = JSON.parse(plan.stockists||'[]'); } catch(e){}
-            }
-            const isHol = isSunday(day);
-
-            return (
-              <div 
-                key={day} 
-                onClick={() => isMultiMode ? toggleMultiSelect(day) : openSinglePlan(day)}
-                className={`flex items-center rounded-lg overflow-hidden border ${isMultiMode && selectedDates.has(day) ? 'border-sky-500 bg-sky-900/20' : 'border-[#3b3b5a] bg-[#27273f]'} transition-colors`}
-              >
-                <div className={`w-14 shrink-0 flex flex-col items-center justify-center p-2 ${isHol ? 'bg-slate-700/50 text-slate-400' : 'bg-sky-500 text-white'}`}>
-                  <span className="text-xl font-bold leading-none">{day}</span>
-                  <span className="text-[10px] uppercase font-bold tracking-widest mt-1">
-                    {new Date(parseInt(year), parseInt(month) - 1, day).toLocaleString('en-US', { weekday: 'short' })}
-                  </span>
-                </div>
-                
-                <div className="flex-1 p-4 flex items-center justify-between">
-                  {isHol ? (
-                    <span className="text-slate-500 font-bold italic">Not Allowed</span>
-                  ) : (
-                    <>
-                      {plan ? (
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1.5"><Users className="w-4 h-4 text-emerald-400" /><span className="text-emerald-400 font-bold">{pDocs.length}</span></div>
-                          <div className="flex items-center gap-1.5"><Package className="w-4 h-4 text-yellow-400" /><span className="text-yellow-400 font-bold">{pChems.length}</span></div>
-                          <div className="flex items-center gap-1.5"><MapPin className="w-4 h-4 text-orange-400" /><span className="text-orange-400 font-bold">{pStocks.length}</span></div>
-                        </div>
-                      ) : (
-                        <span className="text-slate-300 font-medium">Plan DCS calls</span>
-                      )}
-                    </>
-                  )}
-                  
-                  {isMultiMode && !isHol && (
-                    <div className="w-6 h-6 rounded border border-sky-400 flex items-center justify-center">
-                      {selectedDates.has(day) && <Check className="w-4 h-4 text-sky-400" />}
-                    </div>
-                  )}
-                  {!isMultiMode && !isHol && !plan && <Plus className="w-5 h-5 text-sky-400" />}
-                </div>
-              </div>
-            );
-          })}
-
-          {/* Floating Multiple CPs button */}
-          <div className="sticky bottom-6 flex justify-end px-2">
-            {!isMultiMode ? (
-              <button onClick={() => setIsMultiMode(true)} className="bg-sky-500 text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2">
-                <Plus className="w-5 h-5" /> Multiple CPs
-              </button>
-            ) : (
-              <div className="flex gap-2">
-                <button onClick={() => { setIsMultiMode(false); setSelectedDates(new Set()); }} className="bg-slate-700 text-white px-5 py-3 rounded-full font-bold shadow-lg flex items-center gap-2">
-                  <X className="w-5 h-5" /> Cancel
-                </button>
-                <button onClick={openMultiPlan} disabled={selectedDates.size === 0} className="bg-sky-500 text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 disabled:opacity-50">
-                  <Check className="w-5 h-5" /> Add {selectedDates.size} CPs
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
-      {/* Plan Calls Modal */}
       {showPlanModal && (
         <div className="fixed inset-0 z-50 bg-[#1c1c2e] flex flex-col">
           <div className="p-4 border-b border-[#3b3b5a] flex items-center gap-3">
@@ -362,7 +380,7 @@ function CallPlan() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            <button onClick={() => setShowEntityModal(true)} className="flex items-center gap-2 text-sky-400 font-bold mb-4">
+            <button onClick={openEntitySelector} className="flex items-center gap-2 text-sky-400 font-bold mb-4">
               <Plus className="w-5 h-5" /> Add {activeTab}
             </button>
 
@@ -373,32 +391,19 @@ function CallPlan() {
                     <h3 className="font-bold text-white text-sm">{e.name}</h3>
                     <p className="text-xs text-slate-400 mt-1">{e.info}</p>
                   </div>
-                  <button 
-                    onClick={() => { setConfigType(activeTab); setConfiguringEntity(e); }}
-                    className="w-8 h-8 flex items-center justify-center bg-sky-900/30 text-sky-400 rounded-lg border border-sky-500/50"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
                 </div>
-                {(e.samples.length > 0 || e.gifts.length > 0) && (
-                  <div className="bg-[#1c1c2e] p-3 border-t border-[#3b3b5a] flex gap-3">
-                    {e.samples.map((s,i) => <span key={i} className="text-[10px] bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded font-bold border border-emerald-500/30">{s.qty} {s.product}</span>)}
-                    {e.gifts.map((g,i) => <span key={i} className="text-[10px] bg-purple-900/50 text-purple-400 px-2 py-1 rounded font-bold border border-purple-500/30">{g.qty} {g.item}</span>)}
-                  </div>
-                )}
               </div>
             ))}
           </div>
 
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e]">
             <button onClick={handleSavePlan} disabled={loading} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-lg flex items-center justify-center disabled:opacity-50">
-              Submit For Approval
+              SAVE {activeTab.toUpperCase()} CALL PLAN
             </button>
           </div>
         </div>
       )}
 
-      {/* Entity Selection Modal */}
       {showEntityModal && (
         <div className="fixed inset-0 z-[60] bg-[#1c1c2e] flex flex-col">
           <div className="p-4 border-b border-[#3b3b5a] flex items-center justify-between">
@@ -418,40 +423,72 @@ function CallPlan() {
             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {/* Extremely simplified selection list for brevity. A real implementation would map state and allow selection, then return selected entities to addEntities() */}
-            <p className="text-slate-400 text-sm text-center mt-10">Use checkboxes to select entities...</p>
+            {(activeTab === 'Doctors' ? doctors : activeTab === 'Chemists' ? chemists : stockists)
+              .filter(item => {
+                const name = (item.doctorName || item.chemistName || item.stockistName || '').toLowerCase();
+                return name.includes(entitySearch.toLowerCase());
+              })
+              .map(item => {
+                const id = item._id || item.id;
+                const isChecked = selectedEntityIds.has(id);
+                return (
+                  <div key={id} onClick={() => {
+                    const ns = new Set(selectedEntityIds);
+                    if (ns.has(id)) ns.delete(id); else ns.add(id);
+                    setSelectedEntityIds(ns);
+                  }} className="flex items-center gap-3 bg-[#27273f] p-3 rounded-lg border border-[#3b3b5a] cursor-pointer">
+                    <input 
+                      type="checkbox"
+                      checked={isChecked}
+                      readOnly
+                      className="w-5 h-5 rounded accent-emerald-500"
+                    />
+                    <div>
+                      <p className="font-bold text-white text-sm">{item.doctorName || item.chemistName || item.stockistName}</p>
+                      <p className="text-xs text-slate-400">{item.headquarter || item.address}</p>
+                    </div>
+                  </div>
+                );
+              })
+            }
+          </div>
+          <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e]">
+            <button onClick={confirmEntitySelection} className="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg">
+              Confirm Selection ({selectedEntityIds.size})
+            </button>
           </div>
         </div>
       )}
 
-      {/* Configuration Modal (Samples & Gifts) */}
-      {configuringEntity && (
-        <div className="fixed inset-0 z-[70] bg-[#1c1c2e] flex flex-col">
+      {showSubordinateModal && (
+        <div className="fixed inset-0 z-[80] bg-[#1c1c2e] flex flex-col">
           <div className="p-4 border-b border-[#3b3b5a] flex items-center justify-between">
-            <h2 className="font-bold text-lg text-sky-400">{configuringEntity.name}</h2>
-            <button onClick={() => setConfiguringEntity(null)}><X className="w-6 h-6 text-slate-400" /></button>
+            <h2 className="font-bold text-lg text-white">Select User to Plan For</h2>
+            <button onClick={() => setShowSubordinateModal(false)}><X className="w-6 h-6 text-slate-400" /></button>
           </div>
-          <div className="p-6 space-y-6 flex-1 overflow-y-auto">
-            <div>
-              <label className="text-sm font-bold text-slate-300 block mb-2">Planned POB / Samples</label>
-              {/* Fake dropdowns for simulation based on video */}
-              <div className="bg-[#27273f] border border-[#3b3b5a] rounded-lg p-4 text-slate-400 text-sm">Select Samples v</div>
-            </div>
-            <div>
-              <label className="text-sm font-bold text-slate-300 block mb-2">Planned Gifts</label>
-              <div className="bg-[#27273f] border border-[#3b3b5a] rounded-lg p-4 text-slate-400 text-sm">Select Gifts v</div>
-            </div>
-          </div>
-          <div className="p-4 border-t border-[#3b3b5a]">
-            <button onClick={() => updateEntityConfig(configuringEntity)} className="w-full bg-emerald-600 text-white font-bold py-3 rounded-lg">Save</button>
+          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <button 
+              onClick={() => { setActiveUser(loggedInUser); setShowSubordinateModal(false); }}
+              className="w-full text-left bg-[#27273f] p-4 rounded-lg font-bold text-emerald-400 border border-emerald-500/30"
+            >
+              Myself ({loggedInUser?.firstName} {loggedInUser?.lastName})
+            </button>
+            {subordinates.map(sub => (
+              <button 
+                key={sub.employeeId}
+                onClick={() => { setActiveUser(sub); setShowSubordinateModal(false); }}
+                className="w-full text-left bg-[#27273f] p-4 rounded-lg font-bold text-white border border-[#3b3b5a]"
+              >
+                {sub.firstName} {sub.lastName}
+                <span className="block text-xs text-slate-400 font-normal mt-1">{sub.designation} - {sub.hq}</span>
+              </button>
+            ))}
           </div>
         </div>
       )}
-
     </div>
   );
 }
-
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
