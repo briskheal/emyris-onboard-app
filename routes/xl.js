@@ -189,7 +189,7 @@ router.get('/tour-program/my', async (req, res) => {
     try {
         const { email, month, year } = req.query;
         if (!email || !month || !year) return res.status(400).json({ error: 'Missing params' });
-        const tp = await XlTourProgram.findOne({ where: { employeeEmail: email, month, year } });
+        const tp = await XlTourProgram.findOne({ where: { employeeId: email, month, year } });
         res.json({ success: true, data: tp || null });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch Tour Program' });
@@ -289,7 +289,7 @@ router.get('/dcr/my', async (req, res) => {
     try {
         const { email, date } = req.query;
         if (!email || !date) return res.status(400).json({ error: 'Missing params' });
-        const dcrs = await XlDCR.findAll({ where: { employeeEmail: email, date }, order: [['createdAt', 'DESC']] });
+        const dcrs = await XlDCR.findAll({ where: { employeeId: email, date }, order: [['createdAt', 'DESC']] });
         res.json({ success: true, data: dcrs });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch DCRs' });
@@ -337,7 +337,7 @@ router.post('/attendance/punch-out', async (req, res) => {
 router.get('/attendance/my', async (req, res) => {
     try {
         const { email, date } = req.query;
-        const att = await XlAttendance.findOne({ where: { employeeEmail: email, date } });
+        const att = await XlAttendance.findOne({ where: { employeeId: email, date } });
         res.json({ success: true, data: att });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch attendance' });
@@ -357,7 +357,7 @@ router.post('/leave', async (req, res) => {
 
 router.get('/leave/my', async (req, res) => {
     try {
-        const leaves = await XlLeave.findAll({ where: { employeeEmail: req.query.email }, order: [['createdAt', 'DESC']] });
+        const leaves = await XlLeave.findAll({ where: { employeeId: req.query.email }, order: [['createdAt', 'DESC']] });
         res.json({ success: true, data: leaves });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch leaves' });
@@ -377,7 +377,7 @@ router.post('/expense', async (req, res) => {
 
 router.get('/expense/my', async (req, res) => {
     try {
-        const exps = await XlExpense.findAll({ where: { employeeEmail: req.query.email }, order: [['date', 'DESC']] });
+        const exps = await XlExpense.findAll({ where: { employeeId: req.query.email }, order: [['date', 'DESC']] });
         res.json({ success: true, data: exps });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch expenses' });
@@ -401,7 +401,7 @@ router.post('/backlog', async (req, res) => {
 
 router.get('/backlog/my', async (req, res) => {
     try {
-        const reqs = await XlBacklogRequest.findAll({ where: { employeeEmail: req.query.email }, order: [['date', 'DESC']] });
+        const reqs = await XlBacklogRequest.findAll({ where: { employeeId: req.query.email }, order: [['date', 'DESC']] });
         res.json({ success: true, data: reqs });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch backlog requests' });
@@ -428,7 +428,7 @@ router.post('/call-plan', async (req, res) => {
 router.get('/call-plan/my', async (req, res) => {
     try {
         const { email, date } = req.query;
-        const plan = await XlCallPlan.findOne({ where: { employeeEmail: email, date } });
+        const plan = await XlCallPlan.findOne({ where: { employeeId: email, date } });
         res.json({ success: true, data: plan });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch call plan' });
@@ -454,7 +454,7 @@ router.get('/performance/status', async (req, res) => {
         const monthStr = today.toLocaleString('en-US', { month: 'long' }).toLowerCase();
         const yearStr = String(today.getFullYear());
 
-        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeEmail: email, month: monthStr, year: yearStr } });
+        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: email, month: monthStr, year: yearStr } });
         
         // If they have submitted their plan, no lockout
         if (perf && perf.planningSubmittedAt) {
@@ -466,7 +466,7 @@ router.get('/performance/status', async (req, res) => {
         const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
         const pastDcrs = await XlDCR.count({
             where: {
-                employeeEmail: email,
+                employeeId: email,
                 date: { [Op.lt]: firstOfThisMonth }
             }
         });
@@ -487,12 +487,12 @@ router.get('/performance/status', async (req, res) => {
 router.get('/performance/my', async (req, res) => {
     try {
         const { email, month, year } = req.query;
-        let perf = await XlPerformanceAnalysis.findOne({ where: { employeeEmail: email, month, year } });
+        let perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: email, month, year } });
         
         if (!perf) {
             perf = await XlPerformanceAnalysis.create({
                 _id: generateId(),
-                employeeEmail: email,
+                employeeId: email,
                 month,
                 year
             });
@@ -549,7 +549,7 @@ router.post('/performance/effort-analysis', async (req, res) => {
         
         const myDcrs = await XlDCR.findAll({
             where: {
-                employeeEmail: email,
+                employeeId: email,
                 date: { [Op.between]: [startDate, endDate] }
             }
         });
@@ -652,7 +652,7 @@ router.get('/approvals/pending', async (req, res) => {
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
-        const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeEmail: reporteeEmails } : {}), status: ['Pending', 'Submitted'] }, order: [['createdAt', 'DESC']] });
+        const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), status: ['Pending', 'Submitted'] }, order: [['createdAt', 'DESC']] });
         res.json({ success: true, data: pending });
     } catch (e) {
         console.error(e);
@@ -704,7 +704,7 @@ router.post('/approvals/action', async (req, res) => {
 router.get('/notifications', async (req, res) => {
     try {
         const { email } = req.query;
-        const notifications = await XlNotification.findAll({ where: { employeeEmail: email }, order: [['createdAt', 'DESC']], limit: 50 });
+        const notifications = await XlNotification.findAll({ where: { employeeId: email }, order: [['createdAt', 'DESC']], limit: 50 });
         res.json({ success: true, data: notifications });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
@@ -712,7 +712,7 @@ router.get('/notifications', async (req, res) => {
 router.post('/notifications/read', async (req, res) => {
     try {
         const { email } = req.body;
-        await XlNotification.update({ isRead: true }, { where: { employeeEmail: email, isRead: false } });
+        await XlNotification.update({ isRead: true }, { where: { employeeId: email, isRead: false } });
         res.json({ success: true });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });

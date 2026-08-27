@@ -105,6 +105,35 @@ async function syncDatabase() {
         }
         console.log('✅ Synchronized onboard_* tables in database.');
 
+        // ONE-TIME MIGRATION: employeeEmail -> employeeId
+        try {
+            const users = await XlUser.findAll();
+            for (const u of users) {
+                if (u.email && u.uid) {
+                    const tablesToMigrate = [
+                        sequelize.models.xl_doctor, sequelize.models.xl_chemist, sequelize.models.xl_stockist,
+                        sequelize.models.xl_city, sequelize.models.xl_route, sequelize.models.xl_sample,
+                        sequelize.models.xl_gift, sequelize.models.xl_primary_sales, sequelize.models.xl_secondary_sales,
+                        sequelize.models.xl_geo_fencing, sequelize.models.xl_notification, sequelize.models.xl_leave,
+                        sequelize.models.xl_expense
+                    ];
+                    for (const tbl of tablesToMigrate) {
+                        if (tbl) {
+                            try {
+                                await tbl.update({ employeeId: u.uid }, { where: { employeeId: u.email } });
+                            } catch (e) {}
+                        }
+                    }
+                    try { await sequelize.models.xl_dcr.update({ employeeId: u.uid }, { where: { employeeId: u.email } }); } catch(e){}
+                    try { await sequelize.models.xl_attendance.update({ employeeId: u.uid }, { where: { employeeId: u.email } }); } catch(e){}
+                }
+            }
+            console.log('✅ Migrated employeeEmail to employeeId based on uid.');
+        } catch(e) {
+            console.error('Migration failed:', e.message);
+        }
+
+
         // ---- AUTO HEAL LEGACY 20% PSYCHOMETRIC SCORES ----
         try {
             const apps = await Applicant.find();

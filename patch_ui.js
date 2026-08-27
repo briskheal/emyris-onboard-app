@@ -1,21 +1,60 @@
 const fs = require('fs');
+const file = 'xla-frontend/src/pages/ManageUsers.tsx';
+let code = fs.readFileSync(file, 'utf8');
 
-let adminHtml = fs.readFileSync('admin.html', 'utf8');
+// 1. Fix address properties in ViewUserOverlay and EditDeleteTab
+code = code.replace(/viewUser\.address1/g, 'viewUser.streetAddress1');
+code = code.replace(/viewUser\.address2/g, 'viewUser.streetAddress2');
+code = code.replace(/editUser\.address1/g, 'editUser.streetAddress1');
+code = code.replace(/editUser\.address2/g, 'editUser.streetAddress2');
 
-const regex = /<label[^>]*>Active Exam Date:<\/label>\s*<input type="date" id="activeExamDateInput"[^>]*>\s*<button class="btn btn-primary btn-sm" onclick="saveExamSchedule\(\)">Save Date<\/button>/;
+// 2. Add Password to ViewUserOverlay
+const viewEmailHtml = \<div>
+                <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">EMAIL ADDRESS</p>
+                <p className="text-sky-400 font-bold break-all">{viewUser.email || '-'}</p>
+              </div>\;
+const viewPassHtml = viewEmailHtml + \
+              <div>
+                <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">PASSWORD</p>
+                <p className="text-amber-400 font-mono font-bold break-all">{viewUser.password || '-'}</p>
+              </div>\;
+code = code.replace(viewEmailHtml, viewPassHtml);
 
-const newStr = `<label style="font-size: 0.8rem; color: var(--text-muted);">Active Exam Date:</label>
-                                    <input type="date" id="activeExamDateInput" class="form-input" style="padding: 4px 8px; font-size: 0.8rem;">
-                                    <label style="font-size: 0.8rem; color: var(--text-muted); margin-left: 5px;">Target Product:</label>
-                                    <select id="activeExamProductInput" class="form-input" style="padding: 4px 8px; font-size: 0.8rem; max-width: 140px;">
-                                        <option value="General">General / All</option>
-                                    </select>
-                                    <button class="btn btn-primary btn-sm" onclick="saveExamSchedule()">Save Schedule</button>`;
+// 3. Add Password to EditDeleteTab (Read Only Form)
+const editEmailHtml = \<div>
+                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Email *</label>
+                <input type="email" value={editUser.email || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+              </div>\;
+const editPassHtml = editEmailHtml + \
+              <div>
+                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Password</label>
+                <input type="text" value={editUser.password || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-amber-400 font-mono focus:outline-none" />
+              </div>\;
+code = code.replace(editEmailHtml, editPassHtml);
 
-if (regex.test(adminHtml)) {
-    adminHtml = adminHtml.replace(regex, newStr);
-    fs.writeFileSync('admin.html', adminHtml);
-    console.log('Successfully patched admin.html Target Product Dropdown using regex!');
-} else {
-    console.log('Failed to find regex match. Please check manually.');
-}
+// 4. Update CreateProfileTab with Checkbox and alert
+const stateInsert = "const [loading, setLoading] = useState(false);";
+const newState = stateInsert + "\n  const [sendEmail, setSendEmail] = useState(true);";
+code = code.replace(stateInsert, newState);
+
+const submitStart = "if (res.data.success) {\n        alert('Created successfully!');";
+const newSubmit = \if (res.data.success) {
+        if (sendEmail && formData.email && formData.password) {
+            alert(\LOGIN CREDENTIALS SHARED TO EMPLOYEE!\\n\\nCOMPANY NAME: EMYRIS\\nEMAIL ID: \\\nPW: \\\n\\nThese 3 are required to login to emyrishr.in/xl mobile portal.\);
+        } else {
+            alert('Created successfully!');
+        }\;
+code = code.replace(submitStart, newSubmit);
+
+const buttonInsert = '<button type="submit" disabled={loading} className="w-full bg-emerald-500';
+const newButton = \<div className="flex items-center gap-3 mb-6 bg-slate-900/50 p-4 rounded-xl border border-slate-700">
+          <input type="checkbox" id="sendEmail" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)} className="w-5 h-5 accent-sky-500 cursor-pointer" />
+          <label htmlFor="sendEmail" className="text-sm font-bold text-sky-400 cursor-pointer select-none tracking-wide">
+            Send Login Details to Employee's Email ?
+          </label>
+        </div>
+        \ + buttonInsert;
+code = code.replace(buttonInsert, newButton);
+
+fs.writeFileSync(file, code);
+console.log('UI updated successfully!');

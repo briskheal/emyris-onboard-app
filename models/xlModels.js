@@ -5,7 +5,7 @@ const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now(
 module.exports = function initXlModels(sequelize) {
     const XlSample = sequelize.define('xl_sample', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    employeeId: { type: DataTypes.STRING, allowNull: false },
     month: { type: DataTypes.STRING },
     year: { type: DataTypes.STRING },
     details: { type: DataTypes.TEXT },
@@ -16,7 +16,7 @@ module.exports = function initXlModels(sequelize) {
 
 const XlGift = sequelize.define('xl_gift', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    employeeId: { type: DataTypes.STRING, allowNull: false },
     month: { type: DataTypes.STRING },
     year: { type: DataTypes.STRING },
     details: { type: DataTypes.TEXT },
@@ -27,7 +27,7 @@ const XlGift = sequelize.define('xl_gift', {
 
 const XlPrimarySales = sequelize.define('xl_primary_sales', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    employeeId: { type: DataTypes.STRING, allowNull: false },
     month: { type: DataTypes.STRING },
     year: { type: DataTypes.STRING },
     amount: { type: DataTypes.FLOAT },
@@ -38,7 +38,7 @@ const XlPrimarySales = sequelize.define('xl_primary_sales', {
 
 const XlSecondarySales = sequelize.define('xl_secondary_sales', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    employeeId: { type: DataTypes.STRING, allowNull: false },
     month: { type: DataTypes.STRING },
     year: { type: DataTypes.STRING },
     amount: { type: DataTypes.FLOAT },
@@ -49,7 +49,7 @@ const XlSecondarySales = sequelize.define('xl_secondary_sales', {
 
 const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    employeeId: { type: DataTypes.STRING, allowNull: false },
     entityType: { type: DataTypes.STRING },
     entityId: { type: DataTypes.STRING },
     latitude: { type: DataTypes.FLOAT },
@@ -89,7 +89,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         userAllotted: { type: DataTypes.STRING },
         updateAt: { type: DataTypes.STRING },
         
-        employeeEmail: { type: DataTypes.STRING },
+        employeeId: { type: DataTypes.STRING },
         
         adminRemarks: { type: DataTypes.STRING },
         
@@ -165,7 +165,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         hq: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         cityName: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING, defaultValue: 'City' },
-        employeeEmail: { type: DataTypes.STRING },
+        employeeId: { type: DataTypes.STRING },
         adminRemarks: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
@@ -181,7 +181,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         toCity: { type: DataTypes.STRING, allowNull: false },
         areaType: { type: DataTypes.STRING }, // Local, Ex-Station, Out-Station
         distance: { type: DataTypes.FLOAT },
-        employeeEmail: { type: DataTypes.STRING },
+        employeeId: { type: DataTypes.STRING },
         adminRemarks: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
@@ -210,7 +210,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
-    const XlNotification = sequelize.define('xl_notification', { _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId }, employeeEmail: { type: DataTypes.STRING, allowNull: false }, title: { type: DataTypes.STRING, allowNull: false }, message: { type: DataTypes.TEXT, allowNull: false }, isRead: { type: DataTypes.BOOLEAN, defaultValue: false }, createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW } });
+    const XlNotification = sequelize.define('xl_notification', { _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId }, employeeId: { type: DataTypes.STRING, allowNull: false }, title: { type: DataTypes.STRING, allowNull: false }, message: { type: DataTypes.TEXT, allowNull: false }, isRead: { type: DataTypes.BOOLEAN, defaultValue: false }, createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW } });
     const XlUser = sequelize.define('xl_user', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING },
@@ -276,7 +276,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 2: Tour Program
     const XlTourProgram = sequelize.define('xl_tour_program', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         employeeName: { type: DataTypes.STRING },
         hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         month: { type: DataTypes.STRING, allowNull: false }, // e.g. "august"
@@ -293,7 +293,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 2: Daily Call Report (DCR)
     const XlDCR = sequelize.define('xl_dcr', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         employeeName: { type: DataTypes.STRING },
         date: { type: DataTypes.STRING, allowNull: false },         // "YYYY-MM-DD"
         tourProgramId: { type: DataTypes.STRING },                  // FK to xl_tour_program
@@ -318,7 +318,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 3: Attendance
     const XlAttendance = sequelize.define('xl_attendance', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         date: { type: DataTypes.STRING, allowNull: false }, // "YYYY-MM-DD"
         punchInTime: { type: DataTypes.STRING },
         punchInLat: { type: DataTypes.FLOAT },
@@ -334,7 +334,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 3: Leave Request
     const XlLeave = sequelize.define('xl_leave', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         startDate: { type: DataTypes.STRING, allowNull: false },
         endDate: { type: DataTypes.STRING, allowNull: false },
         leaveType: { type: DataTypes.STRING }, // Sick, Casual, Paid
@@ -348,7 +348,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 3: Expense
     const XlExpense = sequelize.define('xl_expense', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         date: { type: DataTypes.STRING, allowNull: false },
         amount: { type: DataTypes.FLOAT, allowNull: false },
         category: { type: DataTypes.STRING }, // Travel, DA, Hotel, Misc
@@ -362,7 +362,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 3: Backlog Request
     const XlBacklogRequest = sequelize.define('xl_backlog_request', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         date: { type: DataTypes.STRING, allowNull: false }, // The past date requested to unlock
         reason: { type: DataTypes.TEXT },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending / Approved / Rejected
@@ -374,7 +374,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 3: Call Plan
     const XlCallPlan = sequelize.define('xl_call_plan', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         date: { type: DataTypes.STRING, allowNull: false },
         doctors: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of doctor IDs
           status: { type: DataTypes.STRING, defaultValue: 'Pending' },
@@ -386,7 +386,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     // Phase 4: Performance Analysis
     const XlPerformanceAnalysis = sequelize.define('xl_performance_analysis', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        employeeEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         month: { type: DataTypes.STRING, allowNull: false },
         year: { type: DataTypes.STRING, allowNull: false },
         
@@ -475,7 +475,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     
     const XlTarget = sequelize.define('xl_target', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
-        userEmail: { type: DataTypes.STRING, allowNull: false },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
         userName: { type: DataTypes.STRING },
         targetPeriod: { type: DataTypes.STRING, allowNull: false },
         month: { type: DataTypes.STRING },

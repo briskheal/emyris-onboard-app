@@ -44,7 +44,7 @@ export default function Layout() {
   }, [navigate]);
 
   useEffect(() => {
-    if (user?.email) {
+    if (user?.uid) {
         axios.get('/api/xl/notifications?email=' + user.email).then(r => setNotifications(r.data.data || [])).catch(e => console.error(e));
     }
   }, [user]);
@@ -53,7 +53,7 @@ export default function Layout() {
   const handleOpenNotifs = async () => {
       setShowNotifMenu(!showNotifMenu);
       if (!showNotifMenu && unreadCount > 0) {
-          await axios.post('/api/xl/notifications/read', { email: user?.email });
+          await axios.post('/api/xl/notifications/read', { email: user?.uid });
           setNotifications(notifications.map(n => ({...n, isRead: true})));
       }
   };
@@ -66,7 +66,7 @@ export default function Layout() {
     }
 
     if (!user) return;
-    axios.get(`/api/xl/performance/status?email=${user.email}`)
+    axios.get(`/api/xl/performance/status?email=${user.uid}`)
       .then(res => {
         if (res.data.locked) {
           setIsLocked(true);
