@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, generateId } = require('../db');
+const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
@@ -644,6 +644,13 @@ router.get('/approvals/pending', async (req, res) => {
         else if (type === 'Stockists') Model = XlStockist;
         else if (type === 'Expense') Model = XlExpense;
         else if (type === 'Leave Request') Model = XlLeave;
+        else if (type === 'City') Model = XlCity;
+        else if (type === 'Routes') Model = XlRoute;
+        else if (type === 'Samples') Model = XlSample;
+        else if (type === 'Gifts') Model = XlGift;
+        else if (type === 'Primary Sales') Model = XlPrimarySales;
+        else if (type === 'Secondary Sales') Model = XlSecondarySales;
+        else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
         const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeEmail: reporteeEmails } : {}), status: ['Pending', 'Submitted'] }, order: [['createdAt', 'DESC']] });
         res.json({ success: true, data: pending });
@@ -665,6 +672,13 @@ router.post('/approvals/action', async (req, res) => {
         else if (type === 'Stockists') Model = XlStockist;
         else if (type === 'Expense') Model = XlExpense;
         else if (type === 'Leave Request') Model = XlLeave;
+        else if (type === 'City') Model = XlCity;
+        else if (type === 'Routes') Model = XlRoute;
+        else if (type === 'Samples') Model = XlSample;
+        else if (type === 'Gifts') Model = XlGift;
+        else if (type === 'Primary Sales') Model = XlPrimarySales;
+        else if (type === 'Secondary Sales') Model = XlSecondarySales;
+        else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
         const record = await Model.findByPk(recordId);
         if (!record) return res.status(404).json({ error: 'Record not found' });

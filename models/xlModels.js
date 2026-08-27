@@ -3,7 +3,62 @@ const { DataTypes } = require('sequelize');
 const generateId = () => Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
 module.exports = function initXlModels(sequelize) {
-    const XlSample = sequelize.define('xl_sample', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    details: { type: DataTypes.TEXT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlGift = sequelize.define('xl_gift', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    details: { type: DataTypes.TEXT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlPrimarySales = sequelize.define('xl_primary_sales', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    amount: { type: DataTypes.FLOAT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlSecondarySales = sequelize.define('xl_secondary_sales', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    month: { type: DataTypes.STRING },\n    year: { type: DataTypes.STRING },\n    amount: { type: DataTypes.FLOAT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n\nconst XlGeoFencing = sequelize.define('xl_geo_fencing', {\n    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },\n    employeeEmail: { type: DataTypes.STRING, allowNull: false },\n    entityType: { type: DataTypes.STRING },\n    entityId: { type: DataTypes.STRING },\n    latitude: { type: DataTypes.FLOAT },\n    longitude: { type: DataTypes.FLOAT },\n    status: { type: DataTypes.STRING, defaultValue: 'Pending' },\n    adminRemarks: { type: DataTypes.STRING },\n    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }\n});\n    const XlDoctorControl = sequelize.define('xl_doctor_control', {
+    const XlSample = sequelize.define('xl_sample', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    month: { type: DataTypes.STRING },
+    year: { type: DataTypes.STRING },
+    details: { type: DataTypes.TEXT },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+    adminRemarks: { type: DataTypes.STRING },
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+
+const XlGift = sequelize.define('xl_gift', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    month: { type: DataTypes.STRING },
+    year: { type: DataTypes.STRING },
+    details: { type: DataTypes.TEXT },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+    adminRemarks: { type: DataTypes.STRING },
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+
+const XlPrimarySales = sequelize.define('xl_primary_sales', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    month: { type: DataTypes.STRING },
+    year: { type: DataTypes.STRING },
+    amount: { type: DataTypes.FLOAT },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+    adminRemarks: { type: DataTypes.STRING },
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+
+const XlSecondarySales = sequelize.define('xl_secondary_sales', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    month: { type: DataTypes.STRING },
+    year: { type: DataTypes.STRING },
+    amount: { type: DataTypes.FLOAT },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+    adminRemarks: { type: DataTypes.STRING },
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+
+const XlGeoFencing = sequelize.define('xl_geo_fencing', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeEmail: { type: DataTypes.STRING, allowNull: false },
+    entityType: { type: DataTypes.STRING },
+    entityId: { type: DataTypes.STRING },
+    latitude: { type: DataTypes.FLOAT },
+    longitude: { type: DataTypes.FLOAT },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+    adminRemarks: { type: DataTypes.STRING },
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+    const XlDoctorControl = sequelize.define('xl_doctor_control', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         type: { type: DataTypes.STRING, allowNull: false }, // Degree, Specialization, Hospital, Category
         name: { type: DataTypes.STRING, allowNull: false },
