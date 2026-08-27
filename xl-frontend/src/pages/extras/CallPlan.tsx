@@ -226,12 +226,14 @@ function CallPlan() {
 
   return (
     <div className="min-h-screen bg-[#1c1c2e] text-white pb-20 font-sans">
-      <div className="bg-[#1c1c2e] p-4 flex items-center justify-between shadow-md">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/extras')}><ChevronLeft className="w-6 h-6 text-sky-400" /></button>
-          <div>
-            <h1 className="font-bold text-lg leading-tight uppercase tracking-widest text-slate-100 flex items-center gap-2">EMYRIS</h1>
-            <p className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest leading-none">Biolifesciences</p>
+      {/* Header */}
+      <div className="px-4 pt-4 pb-4 bg-gradient-to-b from-[#1c1c2e] to-[#1c1c2e] shadow-md border-b border-[#3b3b5a]">
+        <div className="flex items-center gap-3 mb-1">
+          <button onClick={() => navigate('/extras')} className="w-8 h-8 flex items-center justify-center rounded-xl bg-[#27273f] active:bg-[#3b3b5a]">
+            <ChevronLeft size={18} className="text-white" />
+          </button>
+          <div className="flex-1 flex items-center justify-between">
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-widest">Call Planning</p>
           </div>
         </div>
       </div>
