@@ -15,7 +15,21 @@ function haversineMetres(lat1, lng1, lat2, lng2) {
     return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-const DEFAULT_RADIUS_METRES = 200; // Admin can override in xladmin later
+const DEFAULT_RADIUS_METRES = 200;
+
+// N-Level Recursive Hierarchy Lookup for HQs
+async function getSubordinateHQs(designation, hqSet = new Set()) {
+    if (!designation || designation === 'ADMIN') return Array.from(hqSet);
+    const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+    if (!reportees || reportees.length === 0) return Array.from(hqSet);
+    
+    for (const r of reportees) {
+        if (r.hq) hqSet.add(r.hq.toLowerCase());
+        await getSubordinateHQs(r.designation, hqSet);
+    }
+    return Array.from(hqSet);
+}
+
 
 // --- AUTHENTICATION ---
 router.post('/login', async (req, res) => {
@@ -129,18 +143,21 @@ router.post('/route', async (req, res) => {
 // Fetch all doctors for a user (for DCR entity selection)
 router.get('/doctors', async (req, res) => {
     try {
-        const { empId, designation } = req.query;
-        let empIds = [];
-        if (empId) empIds.push(empId);
-        if (designation && designation !== 'ADMIN') {
-            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
-            empIds.push(...reportees.map(r => r.employeeId));
-        }
+        const { designation, hq } = req.query;
+        let hqList = [];
+        if (hq) hqList.push(hq.toLowerCase());
         
+        if (designation && designation !== 'ADMIN') {
+            const subHQs = await getSubordinateHQs(designation);
+            hqList = [...new Set([...hqList, ...subHQs])];
+        }
+
         let where = {};
-        if (empIds.length > 0) {
-            where.employeeId = empIds;
+        if (hqList.length > 0) {
+            const { sequelize } = require('../db');
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList });
         } else if (req.query.hq) {
+            // fallback
             const { sequelize } = require('../db');
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.toLowerCase());
         }
@@ -148,6 +165,7 @@ router.get('/doctors', async (req, res) => {
         const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category', 'employeeId'], order: [['name', 'ASC']] });
         res.json({ success: true, data: doctors });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Failed to fetch doctors' });
     }
 });
@@ -155,20 +173,28 @@ router.get('/doctors', async (req, res) => {
 // Fetch all chemists
 router.get('/chemists', async (req, res) => {
     try {
-        const { empId, designation } = req.query;
-        let empIds = [];
-        if (empId) empIds.push(empId);
-        if (designation && designation !== 'ADMIN') {
-            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
-            empIds.push(...reportees.map(r => r.employeeId));
-        }
+        const { designation, hq } = req.query;
+        let hqList = [];
+        if (hq) hqList.push(hq.toLowerCase());
         
+        if (designation && designation !== 'ADMIN') {
+            const subHQs = await getSubordinateHQs(designation);
+            hqList = [...new Set([...hqList, ...subHQs])];
+        }
+
         let where = {};
-        if (empIds.length > 0) where.employeeId = empIds;
+        if (hqList.length > 0) {
+            const { sequelize } = require('../db');
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList });
+        } else if (req.query.hq) {
+            const { sequelize } = require('../db');
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('hq')), req.query.hq.toLowerCase());
+        }
 
         const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'hq', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: chemists });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Failed to fetch chemists' });
     }
 });
@@ -743,4 +769,38 @@ router.post('/notifications/read', async (req, res) => {
         res.json({ success: true });
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
+
+router.get('/vacancies', async (req, res) => {
+    try {
+        const { designation } = req.query;
+        if (!designation) return res.json({ success: true, data: [] });
+        
+        const subHQs = await getSubordinateHQs(designation);
+        if (subHQs.length === 0) return res.json({ success: true, data: [] });
+
+        const { XlVacancyLog } = require('../db');
+        if (!XlVacancyLog) return res.json({ success: true, data: [] });
+
+        // Only return currently vacant HQs in their hierarchy
+        const vacancies = await XlVacancyLog.findAll({
+            where: {
+                headquarter: { [Op.in]: subHQs },
+                vacantTo: null
+            },
+            order: [['vacantFrom', 'DESC']]
+        });
+
+        // Calculate current days vacant for display
+        const enriched = vacancies.map(v => {
+            const days = Math.max(0, Math.round((new Date() - new Date(v.vacantFrom)) / (1000 * 60 * 60 * 24)));
+            return { ...v.toJSON(), currentDaysVacant: days };
+        });
+
+        res.json({ success: true, data: enriched });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch vacancies' });
+    }
+});
+
 module.exports = router;

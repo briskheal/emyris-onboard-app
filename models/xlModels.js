@@ -211,6 +211,16 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     });
 
     const XlNotification = sequelize.define('xl_notification', { _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId }, employeeId: { type: DataTypes.STRING, allowNull: false }, title: { type: DataTypes.STRING, allowNull: false }, message: { type: DataTypes.TEXT, allowNull: false }, isRead: { type: DataTypes.BOOLEAN, defaultValue: false }, createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW } });
+    
+    const XlVacancyLog = sequelize.define('xl_vacancy_log', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        headquarter: { type: DataTypes.STRING, allowNull: false },
+        vacantFrom: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        vacantTo: { type: DataTypes.DATE },
+        totalDays: { type: DataTypes.INTEGER },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     const XlUser = sequelize.define('xl_user', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING },

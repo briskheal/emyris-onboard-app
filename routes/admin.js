@@ -1,5 +1,25 @@
 const express = require('express');
 const router = express.Router();
+
+async function checkVacancyOnUserChange(hq) {
+    if (!hq) return;
+    const { XlUser, XlVacancyLog } = require('../db');
+    if (!XlVacancyLog) return; // safety
+    const activeUsers = await XlUser.count({ where: { hq, status: 'Active' } });
+    if (activeUsers === 0) {
+        const existing = await XlVacancyLog.findOne({ where: { headquarter: hq, vacantTo: null } });
+        if (!existing) {
+            await XlVacancyLog.create({ headquarter: hq, vacantFrom: new Date() });
+        }
+    } else {
+        const existing = await XlVacancyLog.findOne({ where: { headquarter: hq, vacantTo: null } });
+        if (existing) {
+            const days = Math.max(0, Math.round((new Date() - new Date(existing.vacantFrom)) / (1000 * 60 * 60 * 24)));
+            await existing.update({ vacantTo: new Date(), totalDays: days });
+        }
+    }
+}
+
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
@@ -4463,23 +4483,39 @@ router.get('/users', async (req, res) => {
 
 router.post('/users', async (req, res) => {
     try {
-        const count = await XlUser.count();
-        const uid = 'USR' + (count + 1);
-        const user = await XlUser.create({ ...req.body, uid });
+        const { XlUser } = require('../db');
+        const data = req.body;
+        let uid = data.uid;
+        if (!uid) {
+            const max = await getMaxUID(XlUser, 'EMYFE');
+            uid = 'EMYFE' + (max + 1);
+        }
+        const user = await XlUser.create({ ...data, uid });
+        if (user.hq) await checkVacancyOnUserChange(user.hq);
         res.json({ success: true, user });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 router.put('/users/:id', async (req, res) => {
     try {
+        const { XlUser } = require('../db');
+        const oldUser = await XlUser.findOne({ where: { _id: req.params.id } });
         await XlUser.update(req.body, { where: { _id: req.params.id } });
+        const newUser = await XlUser.findOne({ where: { _id: req.params.id } });
+        
+        if (oldUser && oldUser.hq) await checkVacancyOnUserChange(oldUser.hq);
+        if (newUser && newUser.hq && newUser.hq !== (oldUser ? oldUser.hq : '')) await checkVacancyOnUserChange(newUser.hq);
+        
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 router.delete('/users/:id', async (req, res) => {
     try {
+        const { XlUser } = require('../db');
+        const user = await XlUser.findOne({ where: { _id: req.params.id } });
         await XlUser.destroy({ where: { _id: req.params.id } });
+        if (user && user.hq) await checkVacancyOnUserChange(user.hq);
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
