@@ -129,6 +129,23 @@ async function syncDatabase() {
                 }
             }
             console.log('✅ Migrated employeeEmail to employeeId based on uid.');
+        // ---- RENAME LEGACY COLUMNS PROPERLY ----
+        try {
+            const legacyTables = [
+                'xl_tour_programs', 'xl_dcrs', 'xl_attendances', 'xl_leaves', 'xl_expenses', 
+                'xl_backlog_requests', 'xl_call_plans', 'xl_performance_analyses', 
+                'xl_samples', 'xl_gifts', 'xl_primary_sales', 'xl_secondary_sales'
+            ];
+            for (let table of legacyTables) {
+                try {
+                    await sequelize.query(`ALTER TABLE "${table}" RENAME COLUMN "employeeEmail" TO "employeeId"`);
+                    console.log(`✅ Renamed employeeEmail to employeeId in ${table}`);
+                } catch(e) {
+                    // Ignore error if column is already renamed or doesn't exist
+                }
+            }
+        } catch(e) { console.error('Column rename failed:', e.message); }
+
         try {
             const hqToEmpId = {};
             for (let u of users) { 
