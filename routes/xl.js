@@ -790,7 +790,7 @@ router.get('/call-plan/month', async (req, res) => {
         if (!email || !month || !year) return res.status(400).json({ error: 'Missing parameters' });
         
         const { Op } = require('sequelize');
-        const { XlCallPlan } = require('../models/xlModels');
+        const { XlCallPlan } = require('../db');
         
         const startDate = `${year}-${month.padStart(2, '0')}-01`;
         const endDate = `${year}-${month.padStart(2, '0')}-31`;
@@ -815,7 +815,7 @@ router.post('/call-plan/bulk', async (req, res) => {
         const { employeeId, dates, doctors, chemists, stockists } = req.body;
         if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
         
-        const { XlCallPlan } = require('../models/xlModels');
+        const { XlCallPlan } = require('../db');
         
         for (const date of dates) {
             let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
