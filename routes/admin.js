@@ -4472,6 +4472,33 @@ router.post('/users', async (req, res) => {
 
 router.put('/users/:id', async (req, res) => {
     try {
+        const oldUser = await XlUser.findByPk(req.params.id);
+        const newEmail = req.body.email;
+        
+        if (oldUser && newEmail && oldUser.email !== newEmail) {
+            const oldEmail = oldUser.email;
+            const modelsToUpdate = [
+                require('../db').XlLeave, require('../db').XlExpense, require('../db').XlDoctor,
+                require('../db').XlChemist, require('../db').XlStockist, require('../db').XlCity,
+                require('../db').XlRoute, require('../db').XlSample, require('../db').XlGift,
+                require('../db').XlPrimarySales, require('../db').XlSecondarySales, require('../db').XlGeoFencing,
+                require('../db').XlNotification, require('../db').XlCallPlan, require('../db').XlPerformanceAnalysis,
+                require('../db').XlTarget, require('../db').XlDCR, require('../db').XlAttendance
+            ];
+            
+            for (const Model of modelsToUpdate) {
+                if (Model && Model.rawAttributes && Model.rawAttributes.employeeEmail) {
+                    await Model.update({ employeeEmail: newEmail }, { where: { employeeEmail: oldEmail } });
+                }
+                if (Model && Model.name === 'xl_dcr' && Model.rawAttributes.userEmail) {
+                    await Model.update({ userEmail: newEmail }, { where: { userEmail: oldEmail } });
+                }
+                if (Model && Model.name === 'xl_attendance' && Model.rawAttributes.userEmail) {
+                    await Model.update({ userEmail: newEmail }, { where: { userEmail: oldEmail } });
+                }
+            }
+        }
+        
         await XlUser.update(req.body, { where: { _id: req.params.id } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
