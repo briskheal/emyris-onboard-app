@@ -1,5 +1,5 @@
 import React from 'react';
-// @ts-nocheck\nimport React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package } from 'lucide-react';
 import axios from 'axios';
