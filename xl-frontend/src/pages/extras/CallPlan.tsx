@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package } from 'lucide-react';
+import { ChevronLeft, Check, Search, X, Plus, MapPin, Users, Package, Trash2 } from 'lucide-react';
 import axios from 'axios';
 
 interface ProductSelect { product: string; qty: number; }
@@ -166,6 +166,14 @@ function CallPlan() {
     const ns = new Set(selectedDates);
     if (ns.has(day)) ns.delete(day); else ns.add(day);
     setSelectedDates(ns);
+  };
+
+  const clearDayPlan = () => {
+    if (window.confirm('Are you sure you want to clear the entire plan for this day?')) {
+      setPlannedDocs([]);
+      setPlannedChems([]);
+      setPlannedStocks([]);
+    }
   };
 
   const openEntitySelector = () => {
@@ -396,9 +404,15 @@ function CallPlan() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            <button onClick={openEntitySelector} className="flex items-center gap-2 text-sky-400 font-bold mb-4">
-              <Plus className="w-5 h-5" /> Add {activeTab}
-            </button>
+            <div className="flex items-center justify-between mb-4">
+              <button onClick={openEntitySelector} className="flex items-center gap-2 text-sky-400 font-bold active:scale-95 transition-transform">
+                <Plus className="w-5 h-5" /> Add {activeTab}
+              </button>
+              
+              <button onClick={clearDayPlan} className="flex items-center gap-2 text-red-500 font-bold active:scale-95 transition-transform px-3 py-1 bg-red-500/10 rounded-lg">
+                <Trash2 className="w-4 h-4" /> Clear Day
+              </button>
+            </div>
 
             {(activeTab === 'Doctors' ? plannedDocs : activeTab === 'Chemists' ? plannedChems : plannedStocks).map(e => (
               <div key={e.id} className="bg-[#27273f] rounded-lg border border-[#3b3b5a] overflow-hidden">
@@ -506,7 +520,7 @@ function CallPlan() {
   );
 }
 
-class ErrorBoundary extends React.Component {
+class ErrorBoundary extends React.Component<any, any> {
   constructor(props) { super(props); this.state = { hasError: false, error: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
   render() {
