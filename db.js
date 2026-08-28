@@ -39,7 +39,7 @@ const {
     XlAttendance,
     XlLeave,
     XlExpense,
-    XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance,
+    XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, 
     XlCallPlan
 } = initXlModels(sequelize);
 
@@ -83,6 +83,11 @@ async function syncDatabase() {
     try {
         // Run standard sync first so any new tables (like onboard_exam_results) are guaranteed to be created
         await sequelize.sync();
+        if (sequelize.getDialect() === 'sqlite') {
+            await sequelize.query('PRAGMA journal_mode=WAL;');
+            await sequelize.query('PRAGMA synchronous=NORMAL;');
+            await sequelize.query('PRAGMA busy_timeout=15000;');
+        }
         try {
             await sequelize.sync({ alter: true });
         } catch (alterErr) {
@@ -549,6 +554,6 @@ module.exports = {
     XlLeave,
     XlExpense,
     XlBacklogRequest,
-    XlCallPlan, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance,
+    XlCallPlan, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, 
     generateId 
 };

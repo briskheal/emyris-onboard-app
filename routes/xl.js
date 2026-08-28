@@ -849,11 +849,8 @@ router.post('/call-plan/bulk', async (req, res) => {
         const { employeeId, dates, doctors, chemists, stockists } = req.body;
         if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
         
-        
-        
         for (const date of dates) {
             let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
-            
             if (plan) {
                 plan.doctors = JSON.stringify(doctors || []);
                 plan.chemists = JSON.stringify(chemists || []);
@@ -879,20 +876,22 @@ router.post('/call-plan/bulk', async (req, res) => {
                     _id: generateId(),
                     employeeId: m.employeeId,
                     title: 'Call Plan Updated',
-                    message: `${user.firstName} ${user.lastName} has submitted Call Plans for ${dates.length} days.`
+                    message: `${user.firstName} ${user.lastName} has submitted their Call Plan.`
                 });
             }
         }
+        
         await XlNotification.create({
             _id: generateId(),
             employeeId: 'ADMIN',
             title: 'Call Plan Updated',
-            message: `${user ? user.firstName : employeeId} has submitted Call Plans for ${dates.length} days.`
+            message: `Call Plan submitted by ${user ? user.firstName : employeeId}.`
         });
 
         res.json({ success: true });
     } catch (e) {
-        console.error(e);
+        console.error('Call Plan Save Error:', e);
+        require('fs').appendFileSync('cp_error.log', (e.original ? e.original.message : '') + '\n' + (e.stack || e.message) + '\n');
         res.status(500).json({ error: 'Failed to save call plan' });
     }
 });
