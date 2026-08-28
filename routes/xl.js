@@ -262,6 +262,14 @@ router.put('/tour-program/:id/submit', async (req, res) => {
             title: 'Tour Program Submitted',
             message: `${tp.employeeName} has submitted their Tour Program for ${tp.month} ${tp.year} for approval.`
         });
+        
+        // Notify the submitter
+        await XlNotification.create({
+            _id: generateId(),
+            employeeId: tp.employeeId,
+            title: 'Tour Program Submitted',
+            message: `You have successfully submitted your Tour Program for ${tp.month} ${tp.year} for approval.`
+        });
 
         res.json({ success: true, message: 'Tour Program submitted for approval!' });
     } catch (e) {
@@ -878,6 +886,14 @@ router.post('/call-plan/bulk', async (req, res) => {
                     title: 'Call Plan Updated',
                     message: `${user.firstName} ${user.lastName} has submitted their Call Plan.`
                 });
+        
+        // Notify the submitter
+        await XlNotification.create({
+            _id: generateId(),
+            employeeId,
+            title: 'Call Plan Submitted',
+            message: `You have successfully submitted your Call Plan. It has been sent to your manager.`
+        });
             }
         }
         
