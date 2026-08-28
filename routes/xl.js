@@ -760,7 +760,20 @@ router.get('/approvals/pending', async (req, res) => {
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
         const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), status: ['Pending', 'Submitted'] }, order: [['createdAt', 'DESC']] });
-        res.json({ success: true, data: pending });
+        
+        const data = [];
+        for (const p of pending) {
+            const pData = p.toJSON();
+            if (!pData.employeeName && pData.employeeId) {
+                const u = await XlUser.findOne({ where: { employeeId: pData.employeeId } });
+                if (u) {
+                    pData.employeeName = u.firstName + ' ' + u.lastName;
+                }
+            }
+            data.push(pData);
+        }
+
+        res.json({ success: true, data });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Failed to fetch pending approvals' });

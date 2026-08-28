@@ -53,7 +53,7 @@ export default function Layout() {
   const handleOpenNotifs = async () => {
       setShowNotifMenu(!showNotifMenu);
       if (!showNotifMenu && unreadCount > 0) {
-          await axios.post('/api/xl/notifications/read', { email: user?.uid });
+          await axios.post('/api/xl/notifications/read', { email: user?.employeeId });
           setNotifications(notifications.map(n => ({...n, isRead: true})));
       }
   };
