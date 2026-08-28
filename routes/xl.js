@@ -31,6 +31,34 @@ async function getSubordinateHQs(designation, hqSet = new Set()) {
 }
 
 
+
+// Get routes for user and their team
+router.get('/routes', async (req, res) => {
+    try {
+        const { designation, hq } = req.query;
+        let hqList = [];
+        if (hq) hqList.push(hq.toLowerCase());
+        
+        if (designation && designation !== 'ADMIN') {
+            const subHQs = await getSubordinateHQs(designation);
+            hqList = [...new Set([...hqList, ...subHQs])];
+        } else if (designation === 'ADMIN') {
+            const routes = await XlRoute.findAll();
+            return res.json({ success: true, data: routes });
+        }
+        
+        const { sequelize } = require('../db');
+        const routes = await XlRoute.findAll({
+            where: hqList.length > 0 ? sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList }) : {}
+        });
+        
+        res.json({ success: true, data: routes });
+    } catch (e) {
+        console.error('Routes fetch error:', e);
+        res.status(500).json({ error: 'Failed to fetch routes' });
+    }
+});
+
 // --- AUTHENTICATION ---
 router.post('/login', async (req, res) => {
     try {

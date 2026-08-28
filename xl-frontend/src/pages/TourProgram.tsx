@@ -53,9 +53,9 @@ export default function TourProgram() {
 
   const fetchMarkets = async () => {
     try {
-      const res = await axios.get('/api/admin/locations/routes');
+      const res = await axios.get(`/api/xl/routes?designation=${user?.designation || ''}&hq=${user?.hq || ''}`);
       if (res.data.success) {
-        setRouteList(res.data.routes || []);
+        setRouteList(res.data.data || []);
       }
     } catch (e) {
       console.error('Failed to fetch routes', e);
@@ -266,11 +266,8 @@ export default function TourProgram() {
                 else if (at === 'Ex-Mkt' || at === 'Out-Ex-Mkt') expectedType = 'Ex-Station';
                 else if (at === 'Out-Mkt' || at === 'Out-Stn-Last-Day') expectedType = 'Out-Station';
                 
-                const isManager = user?.designation && user.designation !== 'MR';
-                const matchesHQ = isManager ? true : (r.hq === user?.hq);
-                
-                if (!expectedType) return matchesHQ;
-                return matchesHQ && r.areaType === expectedType;
+                if (!expectedType) return true;
+                  return r.areaType === expectedType;
             }).map((r: any) => {
              const routeStr = `${r.fromCity} - ${r.toCity}`;
              return <option key={r._id} value={routeStr}>{routeStr}</option>;
