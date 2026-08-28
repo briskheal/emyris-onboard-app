@@ -204,7 +204,7 @@ router.get('/chemists', async (req, res) => {
 // Save/Update draft TP for the month
 router.post('/tour-program', async (req, res) => {
     try {
-        const { employeeId, employeeName, hq, year, entries } = req.body;
+        const { employeeId, employeeName, hq, year, entries, resubmitRemark } = req.body;
         let { month } = req.body;
         if (!employeeId || !month || !year) return res.status(400).json({ error: 'Missing required fields' });
         
@@ -213,6 +213,18 @@ router.post('/tour-program', async (req, res) => {
         // Upsert: one TP per employee per month/year
         let tp = await XlTourProgram.findOne({ where: { employeeId, month, year } });
         if (tp) {
+            if ((tp.status === 'Submitted' || tp.status === 'Approved') && resubmitRemark) {
+                const u = await XlUser.findOne({ where: { employeeId } });
+                if (u && u.reportingManager) {
+                    try {
+                        await XlNotification.create({
+                            employeeId: u.reportingManager,
+                            title: 'Tour Program Resubmitted',
+                            message: `${employeeName} modified their ${month} ${year} Tour Program. Remark: ${resubmitRemark}`
+                        });
+                    } catch(e) {}
+                }
+            }
             await XlTourProgram.update({ entries: JSON.stringify(entries), employeeName, hq }, { where: { _id: tp._id } });
             tp = await XlTourProgram.findOne({ where: { _id: tp._id } });
         } else {

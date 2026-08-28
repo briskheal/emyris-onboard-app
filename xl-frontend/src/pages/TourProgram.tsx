@@ -89,46 +89,6 @@ export default function TourProgram() {
     }
   };
 
-  const saveTP = async () => {
-    setSaving(true);
-    try {
-      const entriesArr = Object.entries(entries).map(([date, val]) => {
-        return { date, type: val.type || val.areaType, toMarket: val.toMarket };
-      });
-      const res = await axios.post('/api/xl/tour-program', {
-        employeeId: user?.employeeId, 
-        employeeName: user ? `${user.firstName} ${user.lastName}` : '',
-        hq: user?.hq || '', 
-        month, 
-        year, 
-        entries: entriesArr
-      });
-      setTpId(res.data.data._id);
-      showToast('Tour Program saved!');
-      return res.data.data._id;
-    } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Save failed');
-      throw e;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const submitTP = async () => {
-    if (Object.keys(entries).length === 0) { showToast('Please plan at least one day.'); return; }
-    setSubmitting(true);
-    try {
-      const newTpId = await saveTP();
-      await axios.put(`/api/xl/tour-program/${newTpId}/submit`);
-      setTpStatus('Submitted');
-      showToast('Tour Program submitted for approval!');
-    } catch (e: any) {
-      if (e?.response?.data?.error) showToast(e.response.data.error);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const getDaysInMonth = () => {
     const mIndex = monthNames.indexOf(month);
     const y = parseInt(year);
@@ -160,7 +120,13 @@ export default function TourProgram() {
   };
 
   const applyForm = async () => {
-    if ((formArea === 'Ex Mkt' || formArea === 'Out Mkt') && !formLocation) {
+      let resubmitRemark = '';
+      if (tpStatus === 'Submitted' || tpStatus === 'Approved') {
+        const r = window.prompt("You are modifying a submitted Tour Program. Please provide a reason/remark for this change:");
+        if (r === null) return;
+        resubmitRemark = r;
+      }
+    if (['Ex-Mkt', 'Out-Mkt', 'Out-Ex-Mkt', 'Out-Stn-Last-Day'].includes(formArea) && !formLocation) {
       showToast('Please select a location');
       return;
     }
@@ -273,12 +239,13 @@ export default function TourProgram() {
                 className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
               >
                 <option value="HQ">HQ</option>
-                <option value="Ex Mkt">Ex Mkt</option>
-                <option value="Out Mkt">Out Mkt</option>
-                <option value="Conf/Mtng">Conf/Mtng</option>
+                <option value="Ex-Mkt">Ex-Mkt</option>
+                <option value="Out-Mkt">Out-Mkt</option>
+                <option value="Out-Ex-Mkt">Out-Ex-Mkt</option>
+                <option value="Out-Stn-Last-Day">Out-Stn-Last-Day</option>
                 <option value="Leave">Leave</option>
-                <option value="Admin">Admin</option>
                 <option value="Transit">Transit</option>
+                <option value="Admin">Admin</option>
               </select>
             </div>
           </div>
@@ -294,7 +261,19 @@ export default function TourProgram() {
           className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
         >
           <option value="">Select Route</option>
-          {routeList && routeList.filter(r => r.hq === user?.hq).map((r: any) => {
+          {routeList && routeList.filter((r: any) => {
+                const at = formArea;
+                let expectedType = '';
+                if (at === 'HQ') expectedType = 'Local';
+                else if (at === 'Ex-Mkt' || at === 'Out-Ex-Mkt') expectedType = 'Ex-Station';
+                else if (at === 'Out-Mkt' || at === 'Out-Stn-Last-Day') expectedType = 'Out-Station';
+                
+                const isManager = user?.designation && user.designation !== 'MR';
+                const matchesHQ = isManager ? true : (r.hq === user?.hq);
+                
+                if (!expectedType) return matchesHQ;
+                return matchesHQ && r.areaType === expectedType;
+            }).map((r: any) => {
              const routeStr = `${r.fromCity} - ${r.toCity}`;
              return <option key={r._id} value={routeStr}>{routeStr}</option>;
           })}
@@ -427,15 +406,15 @@ export default function TourProgram() {
       {!selectionMode && (
         <button 
           onClick={() => setSelectionMode(true)} 
-          className="fixed bottom-[80px] right-4 sm:right-auto sm:left-1/2 sm:ml-[100px] bg-sky-500 hover:bg-sky-400 text-white px-3 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1.5 z-20 active:scale-95 text-xs"
+          className="fixed bottom-6 right-4 sm:right-auto sm:left-1/2 sm:ml-[100px] bg-sky-500 hover:bg-sky-400 text-white px-4 py-2 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 z-20 active:scale-95 text-sm"
         >
           <Plus size={16} strokeWidth={3} /> Multiple TPs
         </button>
       )}
 
       {/* Bottom Save/Submit Bar */}
-      <div className="fixed bottom-[60px] w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-40">
-        {selectionMode ? (
+      {selectionMode && (
+        <div className="fixed bottom-[60px] w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-40">
           <div className="flex gap-3">
             <button 
               className="flex-1 bg-red-500/20 text-red-400 py-3 rounded-lg font-bold flex items-center justify-center gap-2"
@@ -450,28 +429,9 @@ export default function TourProgram() {
               <Plus size={18} strokeWidth={3} /> Add {selectedDates.length} TPs
             </button>
           </div>
-        ) : (
-          <div className="flex gap-3">
-            <button 
-              onClick={saveTP} 
-              disabled={saving}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 active:bg-slate-500 text-white py-3.5 rounded-lg font-bold text-sm transition-colors"
-            >
-              {saving ? 'Saving...' : 'Save Draft'}
-            </button>
-            <button 
-              onClick={submitTP} 
-              disabled={submitting}
-              className="flex-[2] bg-sky-500 hover:bg-sky-400 active:bg-sky-600 text-white py-3.5 rounded-lg font-bold text-sm shadow-[0_0_15px_rgba(14,165,233,0.3)] transition-colors flex items-center justify-center gap-2"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-              {submitting ? 'Submitting...' : 'Submit TP'}
-            </button>
-          </div>
-        )}
-      </div>
+        </div>
+      )}
 
-    
       {toastMsg && (
         <div className="fixed bottom-32 left-4 right-4 bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm font-bold text-white text-center z-[150] shadow-2xl">
           {toastMsg}
