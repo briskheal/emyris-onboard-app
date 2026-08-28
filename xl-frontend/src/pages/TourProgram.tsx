@@ -156,12 +156,13 @@ export default function TourProgram() {
     setShowForm(true);
   };
 
-  const applyForm = () => {
+  const applyForm = async () => {
     if ((formArea === 'Ex Mkt' || formArea === 'Out Mkt') && !formLocation) {
       showToast('Please select a location');
       return;
     }
     
+    // 1. Update Local State
     const newEntries = { ...entries };
     formDates.forEach(d => {
       newEntries[d] = { 
@@ -172,10 +173,38 @@ export default function TourProgram() {
       };
     });
     setEntries(newEntries);
-    setShowForm(false);
-    setSelectionMode(false);
-    setSelectedDates([]);
-    showToast('Plan added locally. Remember to Save/Submit!');
+    
+    // 2. Auto-Save to DB
+    setSaving(true);
+    try {
+      const entriesArr = Object.entries(newEntries).map(([date, val]) => {
+        return { date, type: val.type || val.areaType, toMarket: val.toMarket };
+      });
+      const saveRes = await axios.post('/api/xl/tour-program', {
+        employeeId: user?.employeeId, 
+        employeeName: user ? `${user.firstName} ${user.lastName}` : '',
+        hq: user?.hq || '', 
+        month, 
+        year, 
+        entries: entriesArr
+      });
+      
+      const newTpId = saveRes.data.data._id;
+      setTpId(newTpId);
+      
+      // 3. Auto-Submit for Approval
+      await axios.put(`/api/xl/tour-program/${newTpId}/submit`);
+      setTpStatus('Submitted');
+      
+      setShowForm(false);
+      setSelectionMode(false);
+      setSelectedDates([]);
+      showToast('Auto Approved! Tour Program Created Successfully');
+    } catch (e: any) {
+      showToast(e?.response?.data?.error || 'Failed to save to database');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const getBadge = (type: string) => {
@@ -278,7 +307,7 @@ export default function TourProgram() {
             onClick={applyForm}
             className="w-full bg-teal-600 active:bg-teal-700 text-white py-3.5 rounded-lg font-bold text-lg shadow-lg"
           >
-            Apply TP {formDates.length > 1 ? `for ${formDates.length} days` : ''}
+            Save & Submit for Approval
           </button>
         </div>
       </div>
@@ -383,7 +412,7 @@ export default function TourProgram() {
       {!selectionMode && (
         <button 
           onClick={() => setSelectionMode(true)} 
-          className="fixed bottom-[90px] right-4 sm:right-auto sm:left-1/2 sm:ml-[100px] bg-sky-500 hover:bg-sky-400 text-white px-3 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1.5 z-20 active:scale-95 text-xs"
+          className="fixed bottom-[80px] right-4 sm:right-auto sm:left-1/2 sm:ml-[100px] bg-sky-500 hover:bg-sky-400 text-white px-3 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1.5 z-20 active:scale-95 text-xs"
         >
           <Plus size={16} strokeWidth={3} /> Multiple TPs
         </button>
