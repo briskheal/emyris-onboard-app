@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, FileText, Layers, Wrench, Menu, Bell, AlertTriangle } from 'lucide-react';
+import {  LayoutDashboard, PlusCircle, FileText, Layers, Wrench, Menu, Bell, AlertTriangle , ChevronLeft } from 'lucide-react';
 import axios from 'axios';
 import DCRModal from './DCRModal';
 import NavigationDrawer from './NavigationDrawer';
@@ -85,8 +85,13 @@ export default function Layout() {
     <div className="flex flex-col h-dvh bg-slate-800 overflow-hidden relative w-full max-w-md mx-auto sm:shadow-2xl sm:border-x sm:border-slate-700/50" style={{ fontFamily: "'Inter', sans-serif" }}>
       
       {/* TOP NAVIGATION BAR */}
-      <header className="h-16 bg-slate-800 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
-        <div className="flex items-center gap-3">
+      <header className="h-14 bg-slate-800 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
+        <div className="flex items-center gap-2">
+            {location.pathname !== '/dashboard' && (
+              <button onClick={() => navigate(-1)} className="text-slate-300 active:scale-95 p-1 bg-slate-700/50 rounded-md mr-1">
+                <ChevronLeft size={20} />
+              </button>
+            )}
           {logoUrl ? (
             <img src={logoUrl} alt="Logo" className="h-8 object-contain" />
           ) : (

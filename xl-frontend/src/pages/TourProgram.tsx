@@ -3,7 +3,9 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Check } from 'lucide-react';
 
-export default function TourProgram({ showToast }: { showToast: (msg: string) => void }) {
+export default function TourProgram() {
+  const [toastMsg, setToastMsg] = useState('');
+  const showToast = (msg: string) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); };
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   
@@ -285,14 +287,7 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
   return (
     <div className="min-h-full bg-[#1e2335] pb-32 font-sans flex flex-col">
       {/* App Header */}
-      <div className="px-4 py-4 bg-slate-900 flex items-center gap-3 shadow-md border-b border-slate-800 z-10 sticky top-0">
-        <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center bg-slate-800 rounded-lg text-slate-300">
-          <ChevronLeft size={20} />
-        </button>
-        <div>
-          <h1 className="text-white font-bold text-xl leading-tight">Tour Program</h1>
-          <p className="text-slate-400 text-xs">Submit proposed activities</p>
-        </div>
+      
         <div className="ml-auto text-xs font-semibold text-slate-300 flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-md border border-slate-700">
           <span className="w-2 h-2 rounded-full bg-orange-400"></span>
           {tpStatus}
@@ -300,12 +295,15 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
       </div>
 
       {/* Selectors */}
-      <div className="px-4 py-3 bg-slate-800 border-b border-slate-700 flex gap-3 shadow-sm sticky top-[65px] z-10">
+      <div className="px-2 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center gap-2 shadow-sm sticky top-0 z-10">
+        <div className="text-[10px] font-bold text-slate-300 flex flex-col justify-center items-center px-2">
+           <span className="text-orange-400">{tpStatus}</span>
+        </div>
         <div className="flex-1 relative">
           <select 
             value={month} 
             onChange={(e) => setMonth(e.target.value)}
-            className="w-full bg-[#1e2335] text-slate-200 p-2.5 rounded border border-slate-600 appearance-none text-sm font-medium outline-none focus:border-sky-500"
+            className="w-full bg-[#1e2335] text-slate-200 p-1.5 rounded border border-slate-600 appearance-none text-sm font-medium outline-none focus:border-sky-500"
           >
             {monthNames.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
@@ -314,7 +312,7 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
           <select 
             value={year} 
             onChange={(e) => setYear(e.target.value)}
-            className="w-full bg-[#1e2335] text-slate-200 p-2.5 rounded border border-slate-600 appearance-none text-sm font-medium outline-none focus:border-sky-500"
+            className="w-full bg-[#1e2335] text-slate-200 p-1.5 rounded border border-slate-600 appearance-none text-sm font-medium outline-none focus:border-sky-500"
           >
             {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
@@ -342,14 +340,14 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
           return (
             <div 
               key={dateStr} 
-              className="flex items-center gap-3 p-3 border-b border-slate-800 bg-[#1e2335] hover:bg-slate-800/50 transition-colors"
+              className="flex items-center gap-2 p-1.5 border-b border-slate-800 bg-[#1e2335] hover:bg-slate-800/50 transition-colors"
               onClick={() => {
                 if (selectionMode && !isSunday) toggleSelection(dateStr);
               }}
             >
               {/* Date Box */}
-              <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center font-bold shadow-sm ${boxBg} ${boxText}`}>
-                <span className="text-[1.1rem] leading-none mb-0.5">{dayNum}</span>
+              <div className={`w-9 h-9 rounded-lg flex flex-col items-center justify-center font-bold shadow-sm ${boxBg} ${boxText}`}>
+                <span className="text-sm leading-none mb-0.5">{dayNum}</span>
                 <span className="text-[9px] leading-none opacity-90 tracking-wide uppercase">{dayName}</span>
               </div>
               
@@ -358,7 +356,7 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
                 {isSunday ? (
                   <span className="text-slate-500 font-medium text-sm">Not Allowed</span>
                 ) : entry ? (
-                  <div className="text-slate-200 text-[13px] font-medium leading-snug truncate">
+                  <div className="text-slate-200 text-xs font-medium leading-snug truncate">
                     {entry.toMarket ? `${user?.hq ? user.hq + ' - ' : ''}${entry.toMarket}` : entry.type}
                   </div>
                 ) : (
@@ -380,12 +378,12 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
                 )
               ) : (
                 isSunday ? (
-                  <div className="w-8 h-8 text-slate-600 flex items-center justify-center font-bold text-xl">+</div>
+                  <div className="w-6 h-6 text-slate-600 flex items-center justify-center font-bold text-xl">+</div>
                 ) : entry ? (
                   getBadge(entry.type)
                 ) : (
                   <button 
-                    className="w-8 h-8 text-slate-400 flex items-center justify-center font-bold text-2xl hover:text-white active:scale-90 transition-transform" 
+                    className="w-6 h-6 text-slate-400 flex items-center justify-center font-bold text-2xl hover:text-white active:scale-90 transition-transform" 
                     onClick={() => openFormForDates([dateStr])}
                   >
                     +
@@ -401,7 +399,7 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
       {!selectionMode && (
         <button 
           onClick={() => setSelectionMode(true)} 
-          className="fixed bottom-[140px] right-4 sm:right-auto sm:left-1/2 sm:ml-[100px] bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-full font-bold shadow-[0_4px_12px_rgba(14,165,233,0.4)] flex items-center gap-2 z-20 transition-transform active:scale-95 text-sm tracking-wide"
+          className="fixed bottom-[90px] right-4 sm:right-auto sm:left-1/2 sm:ml-[100px] bg-sky-500 hover:bg-sky-400 text-white px-3 py-1.5 rounded-full font-bold shadow-lg flex items-center gap-1.5 z-20 active:scale-95 text-xs"
         >
           <Plus size={16} strokeWidth={3} /> Multiple TPs
         </button>
@@ -445,6 +443,12 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
         )}
       </div>
 
+    
+      {toastMsg && (
+        <div className="fixed bottom-32 left-4 right-4 bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm font-bold text-white text-center z-[150] shadow-2xl">
+          {toastMsg}
+        </div>
+      )}
     </div>
   );
 }
