@@ -59,7 +59,7 @@ export default function ApprovalsLanding() {
           return (
             <button 
               key={idx}
-              onClick={() => navigate(\`/creation/approvals/\${item.path}\`)}
+              onClick={() => navigate(`/creation/approvals/${item.path}`)}
               className="w-full bg-slate-700 border border-slate-700/50 rounded-2xl px-5 py-4 flex flex-row items-center justify-between shadow-lg transition-transform active:scale-95"
             >
               <div className="flex items-center gap-4">
