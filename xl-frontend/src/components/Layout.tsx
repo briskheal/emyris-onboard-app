@@ -191,9 +191,9 @@ export default function Layout() {
           <div className="flex-1 flex items-center justify-center relative">
             <button
               onClick={() => setShowDCR(true)}
-              className="absolute -top-5 w-14 h-14 rounded-full bg-sky-500 shadow-lg shadow-sky-500/30 flex flex-col items-center justify-center active:bg-sky-600 transition-all"
+              className="absolute -top-4 w-12 h-12 rounded-full bg-sky-500 shadow-lg shadow-sky-500/30 flex flex-col items-center justify-center active:bg-sky-600 transition-all"
             >
-              <PlusCircle size={26} strokeWidth={1.8} className="text-white" />
+              <PlusCircle size={22} strokeWidth={2} className="text-white" />
             </button>
             <span className="mt-7 text-[10px] font-medium text-slate-500">Report</span>
           </div>

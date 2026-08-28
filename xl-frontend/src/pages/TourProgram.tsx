@@ -14,6 +14,10 @@ export default function TourProgram() {
   
   const [month, setMonth] = useState(monthNames[currentDate.getMonth()]);
   const [year, setYear] = useState(currentDate.getFullYear().toString());
+    const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+    const [showYearDropdown, setShowYearDropdown] = useState(false);
+    const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+    const [showYearDropdown, setShowYearDropdown] = useState(false);
   
   const [entries, setEntries] = useState<Record<string, any>>({});
   const [routeList, setRouteList] = useState<any[]>([]);
@@ -244,7 +248,7 @@ export default function TourProgram() {
               <select 
                 value={formActivity} 
                 onChange={e => setFormActivity(e.target.value)} 
-                className="w-full bg-slate-800 text-slate-100 p-3.5 rounded-lg border border-slate-700 appearance-none outline-none focus:border-sky-500"
+                className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
               >
                 <option value="Working">Working</option>
                 <option value="Training">Training</option>
@@ -268,7 +272,7 @@ export default function TourProgram() {
               <select 
                 value={formArea} 
                 onChange={e => setFormArea(e.target.value)} 
-                className="w-full bg-slate-800 text-slate-100 p-3.5 rounded-lg border border-slate-700 appearance-none outline-none focus:border-sky-500"
+                className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
               >
                 <option value="HQ">HQ</option>
                 <option value="Ex Mkt">Ex Mkt</option>
@@ -289,7 +293,7 @@ export default function TourProgram() {
         <select 
           value={formLocation} 
           onChange={e => setFormLocation(e.target.value)} 
-          className="w-full bg-slate-800 text-slate-100 p-3.5 rounded-lg border border-slate-700 appearance-none outline-none focus:border-sky-500"
+          className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
         >
           <option value="">Select Route</option>
           {routeList && routeList.filter(r => r.hq === user?.hq).map((r: any) => {
@@ -325,23 +329,35 @@ export default function TourProgram() {
            <span className="text-orange-400">{tpStatus}</span>
         </div>
         <div className="flex-1 relative">
-          <select 
-            value={month} 
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-full bg-[#1e2335] text-slate-200 p-1.5 rounded border border-slate-600 appearance-none text-sm font-medium outline-none focus:border-sky-500"
-          >
-            {monthNames.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 relative">
-          <select 
-            value={year} 
-            onChange={(e) => setYear(e.target.value)}
-            className="w-full bg-[#1e2335] text-slate-200 p-1.5 rounded border border-slate-600 appearance-none text-sm font-medium outline-none focus:border-sky-500"
-          >
-            {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
-          </select>
-        </div>
+            <button onClick={() => {setShowMonthDropdown(!showMonthDropdown); setShowYearDropdown(false)}} className="w-full text-left bg-[#27273f] border border-[#3b3b5a] rounded-lg p-2 text-sky-300 font-bold flex justify-between items-center text-sm shadow-sm">
+              <span>{month}</span>
+              <span className="text-slate-400">v</span>
+            </button>
+            {showMonthDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                {monthNames.map(m => (
+                  <button key={m} onClick={() => { setMonth(m); setShowMonthDropdown(false); }} className="w-full text-left p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0 text-sm">
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex-1 relative">
+            <button onClick={() => {setShowYearDropdown(!showYearDropdown); setShowMonthDropdown(false)}} className="w-full text-left bg-[#27273f] border border-[#3b3b5a] rounded-lg p-2 text-sky-300 font-bold flex justify-between items-center text-sm shadow-sm">
+              <span>{year}</span>
+              <span className="text-slate-400">v</span>
+            </button>
+            {showYearDropdown && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-xl z-50 max-h-60 overflow-y-auto">
+                {['2025','2026','2027','2028'].map(y => (
+                  <button key={y} onClick={() => { setYear(y); setShowYearDropdown(false); }} className="w-full text-left p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0 text-sm">
+                    {y}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
       </div>
       
       <div className="px-4 py-2 bg-green-500/10 text-green-400 text-center text-sm font-medium border-b border-green-500/20 flex items-center justify-center gap-2">
