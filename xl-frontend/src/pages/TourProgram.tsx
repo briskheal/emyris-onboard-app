@@ -350,7 +350,7 @@ export default function TourProgram() {
   }
 
   return (
-    <div className="min-h-full bg-[#1e2335] pb-24 font-sans flex flex-col">
+    <div className="min-h-full bg-[#1e2335] pb-[110px] font-sans flex flex-col">
       {/* App Header Removed */}
 
       {/* Selectors */}
@@ -471,14 +471,12 @@ export default function TourProgram() {
         </div>
 
         {!selectionMode && (
-          <div className="flex justify-center pb-4">
-            <button 
-              onClick={() => setSelectionMode(true)} 
-              className="bg-sky-500 hover:bg-sky-400 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 active:scale-95 text-sm"
-            >
-              <Plus size={18} strokeWidth={3} /> Multiple TPs
-            </button>
-          </div>
+          <button 
+            onClick={() => setSelectionMode(true)} 
+            className="fixed bottom-[75px] right-4 sm:right-auto sm:left-1/2 sm:ml-[110px] bg-sky-500 hover:bg-sky-400 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 z-40 active:scale-95 text-sm"
+          >
+            <Plus size={18} strokeWidth={3} /> Multiple TPs
+          </button>
         )}
 
       </div>
