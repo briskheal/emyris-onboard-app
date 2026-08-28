@@ -700,6 +700,39 @@ router.post('/performance/effort-analysis', async (req, res) => {
 });
 
 // Approvals API
+
+// Get counts of pending approvals for all modules
+router.get('/approvals/counts', async (req, res) => {
+    try {
+        const { designation } = req.query;
+        let reporteeEmails = null;
+        if (designation !== 'ADMIN') {
+            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+            reporteeEmails = reportees.map(u => u.employeeId);
+            if (reporteeEmails.length === 0) return res.json({ success: true, counts: {} });
+        }
+
+        const condition = designation === 'ADMIN' ? { status: 'Submitted' } : { status: 'Submitted', employeeId: { [Op.in]: reporteeEmails } };
+        
+        const counts = {};
+        
+        // Modules that support approvals
+        counts['Call Report'] = await XlDCR.count({ where: condition });
+        counts['Tour Program'] = await XlTourProgram.count({ where: condition });
+        counts['Call Plans'] = await XlCallPlan.count({ where: condition });
+        counts['Doctors'] = await XlDoctor.count({ where: condition });
+        counts['Chemists'] = await XlChemist.count({ where: condition });
+        counts['Stockists'] = await XlStockist.count({ where: condition });
+        counts['Expense'] = await XlExpense.count({ where: condition });
+        counts['Leave Request'] = await XlLeave.count({ where: condition });
+        
+        res.json({ success: true, counts });
+    } catch (e) {
+        console.error('Approvals count error:', e);
+        res.status(500).json({ error: 'Failed to fetch counts' });
+    }
+});
+
 router.get('/approvals/pending', async (req, res) => {
     try {
         const { type, designation } = req.query;
