@@ -37,7 +37,7 @@ function SearchableSelect({ value, onChange, options, placeholder }: { value: st
                                 />
                             </div>
                         )}
-                        <div className="max-h-60 overflow-y-auto">
+                        <div className="max-h-[350px] overflow-y-auto">
                             {filtered.map((o, i) => (
                                 <div 
                                     key={i} 
@@ -256,7 +256,7 @@ export default function TourProgram() {
         </div>
 
         {/* Form Content */}
-        <div className="p-4 flex flex-col gap-5 overflow-y-auto pb-24">
+        <div className="p-4 flex flex-col gap-5 overflow-y-auto pb-[140px] relative z-[60]">
           <div className="text-xl font-semibold text-white mb-2 border-b border-slate-700 pb-2">Tour Program</div>
 
           {/* Activity Type */}
@@ -336,7 +336,7 @@ export default function TourProgram() {
           </div>
   
           {/* Form Footer */}
-        <div className="fixed bottom-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-4px_15px_rgba(0,0,0,0.5)]">
+        <div className="fixed bottom-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-[50]">
           <button 
             onClick={applyForm}
             className="w-full bg-teal-600 active:bg-teal-700 text-white py-3.5 rounded-lg font-bold text-lg shadow-lg"
