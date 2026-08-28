@@ -215,17 +215,17 @@ export default function TourProgram() {
                 className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
               >
                 <option value="Working">Working</option>
-                <option value="Leave">Leave</option>
+                <option value="Half Day">Half Day</option>
                 <option value="Training">Training</option>
                 <option value="Seminar">Seminar</option>
                 <option value="Transit">Transit</option>
                 <option value="Meeting">Meeting</option>
-                <option value="Camp">Camp</option>
                 <option value="Conference">Conference</option>
                 <option value="Half Day (Meeting)">Half Day (Meeting)</option>
                 <option value="Half Day (Field Work)">Half Day (Field Work)</option>
                 <option value="Admin">Admin</option>
                 <option value="Market Survey">Market Survey</option>
+                <option value="Leave">Leave</option>
               </select>
             </div>
           </div>
