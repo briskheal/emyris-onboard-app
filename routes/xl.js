@@ -226,6 +226,7 @@ router.post('/tour-program', async (req, res) => {
         res.json({ success: true, message: 'Tour Program saved!', data: tp });
     } catch (e) {
         console.error('TP save error:', e);
+          require('fs').appendFileSync('tp_error.log', e.stack + '\n');
         res.status(500).json({ error: 'Failed to save Tour Program' });
     }
 });
