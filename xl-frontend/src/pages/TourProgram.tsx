@@ -249,8 +249,8 @@ export default function TourProgram() {
           </div>
 
           {/* Route / Location */}
-          {(formArea === 'Ex Mkt' || formArea === 'Out Mkt' || formArea === 'Conf/Mtng') && (
-    <div>
+          {/* Route / Location */}
+            <div>
       <label className="text-slate-300 text-sm mb-1.5 block font-medium">Route / Location <span className="text-red-500">*</span></label>
       <div className="relative">
         <select 
@@ -276,12 +276,11 @@ export default function TourProgram() {
              return <option key={r._id} value={routeStr}>{routeStr}</option>;
           })}
         </select>
-      </div>
-    </div>
-  )}
         </div>
-
-        {/* Form Footer */}
+      </div>
+          </div>
+  
+          {/* Form Footer */}
         <div className="fixed bottom-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-4px_15px_rgba(0,0,0,0.5)]">
           <button 
             onClick={applyForm}
