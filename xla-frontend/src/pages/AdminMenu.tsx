@@ -7,7 +7,6 @@ export default function AdminMenu() {
   const navigate = useNavigate();
 
   const adminItems = [
-    { label: 'GLOBAL APPROVALS', icon: CheckSquare, path: '/admin/approvals' },
     { label: 'MANAGE LOCATIONS', icon: Building2, path: '/admin/locations' },
     { label: 'MANAGE USERS', icon: Users, path: '/admin/users' },
     { label: 'MANAGE PRODUCTS', icon: ClipboardList, path: '/admin/products' },
@@ -15,7 +14,7 @@ export default function AdminMenu() {
     { label: 'ALLOWANCES', icon: DollarSign, path: '/admin/expenses' },
     { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope, path: '/admin/dcs' },
     { label: 'SAMPLES & GIFTS', icon: Gift },
-    { label: 'APPROVALS', icon: CheckSquare },
+    { label: 'APPROVALS', icon: CheckSquare, path: '/admin/approvals' },
     { label: 'MANAGE LEAVE', icon: CalendarDays },
     { label: 'SETTINGS', icon: SettingsIcon }
   ];
