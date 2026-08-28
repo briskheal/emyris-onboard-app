@@ -16,8 +16,6 @@ export default function TourProgram() {
   const [year, setYear] = useState(currentDate.getFullYear().toString());
     const [showMonthDropdown, setShowMonthDropdown] = useState(false);
     const [showYearDropdown, setShowYearDropdown] = useState(false);
-    const [showMonthDropdown, setShowMonthDropdown] = useState(false);
-    const [showYearDropdown, setShowYearDropdown] = useState(false);
   
   const [entries, setEntries] = useState<Record<string, any>>({});
   const [routeList, setRouteList] = useState<any[]>([]);
