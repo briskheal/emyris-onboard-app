@@ -186,7 +186,7 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
 
   if (showForm) {
     return (
-      <div className="fixed inset-0 bg-slate-900 z-[100] flex flex-col font-sans">
+      <div className="fixed inset-y-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-slate-900 z-[100] flex flex-col font-sans">
         {/* Form Header */}
         <div className="flex items-center px-4 py-3 bg-slate-800 gap-3 border-b border-slate-700 shadow-md">
           <button onClick={() => setShowForm(false)} className="text-slate-300 hover:text-white">
@@ -249,27 +249,28 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
           </div>
 
           {/* Route / Location */}
-          {(formArea === 'Ex Mkt' || formArea === 'Out Mkt') && (
-            <div>
-              <label className="text-slate-300 text-sm mb-1.5 block font-medium">Location <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <select 
-                  value={formLocation} 
-                  onChange={e => setFormLocation(e.target.value)} 
-                  className="w-full bg-slate-800 text-slate-100 p-3.5 rounded-lg border border-slate-700 appearance-none outline-none focus:border-sky-500"
-                >
-                  <option value="">Select Work Area</option>
-                  {markets.map((m: any) => (
-                    <option key={m.city} value={m.city}>{user?.hq ? `${user.hq} - ` : ''}{m.city}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          )}
+          {(formArea === 'Ex Mkt' || formArea === 'Out Mkt' || formArea === 'Conf/Mtng') && (
+    <div>
+      <label className="text-slate-300 text-sm mb-1.5 block font-medium">Route / Location <span className="text-red-500">*</span></label>
+      <div className="relative">
+        <select 
+          value={formLocation} 
+          onChange={e => setFormLocation(e.target.value)} 
+          className="w-full bg-slate-800 text-slate-100 p-3.5 rounded-lg border border-slate-700 appearance-none outline-none focus:border-sky-500"
+        >
+          <option value="">Select Route</option>
+          {routeList && routeList.filter(r => r.hq === user?.hq).map((r: any) => {
+             const routeStr = `${r.fromCity} - ${r.toCity}`;
+             return <option key={r._id} value={routeStr}>{routeStr}</option>;
+          })}
+        </select>
+      </div>
+    </div>
+  )}
         </div>
 
         {/* Form Footer */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-4px_15px_rgba(0,0,0,0.5)]">
+        <div className="fixed bottom-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-4px_15px_rgba(0,0,0,0.5)]">
           <button 
             onClick={applyForm}
             className="w-full bg-teal-600 active:bg-teal-700 text-white py-3.5 rounded-lg font-bold text-lg shadow-lg"
@@ -400,14 +401,14 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
       {!selectionMode && (
         <button 
           onClick={() => setSelectionMode(true)} 
-          className="fixed bottom-[140px] right-4 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-full font-bold shadow-[0_4px_12px_rgba(14,165,233,0.4)] flex items-center gap-2 z-20 transition-transform active:scale-95 text-sm tracking-wide"
+          className="fixed bottom-[140px] right-4 sm:right-auto sm:left-1/2 sm:ml-[100px] bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-full font-bold shadow-[0_4px_12px_rgba(14,165,233,0.4)] flex items-center gap-2 z-20 transition-transform active:scale-95 text-sm tracking-wide"
         >
           <Plus size={16} strokeWidth={3} /> Multiple TPs
         </button>
       )}
 
       {/* Bottom Save/Submit Bar */}
-      <div className="fixed bottom-[60px] left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-40">
+      <div className="fixed bottom-[60px] w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-40">
         {selectionMode ? (
           <div className="flex gap-3">
             <button 

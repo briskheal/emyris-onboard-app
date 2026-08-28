@@ -82,7 +82,7 @@ export default function Layout() {
     location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="flex flex-col h-dvh bg-slate-800 overflow-hidden relative" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="flex flex-col h-dvh bg-slate-800 overflow-hidden relative w-full max-w-md mx-auto sm:shadow-2xl sm:border-x sm:border-slate-700/50" style={{ fontFamily: "'Inter', sans-serif" }}>
       
       {/* TOP NAVIGATION BAR */}
       <header className="h-16 bg-slate-800 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
@@ -159,7 +159,7 @@ export default function Layout() {
 
       {/* Bottom Navigation Bar */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-slate-800 border-t border-slate-700/60"
+        className="fixed bottom-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 z-50 bg-slate-800 border-t border-slate-700/60"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="flex items-stretch h-16 relative">
