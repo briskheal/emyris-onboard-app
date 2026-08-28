@@ -102,24 +102,25 @@ export default function TourProgram() {
       });
       setTpId(res.data.data._id);
       showToast('Tour Program saved!');
+      return res.data.data._id;
     } catch (e: any) {
       showToast(e?.response?.data?.error || 'Save failed');
+      throw e;
     } finally {
       setSaving(false);
     }
   };
 
   const submitTP = async () => {
-    if (!tpId) { showToast('Save the TP first before submitting.'); return; }
     if (Object.keys(entries).length === 0) { showToast('Please plan at least one day.'); return; }
     setSubmitting(true);
     try {
-      await saveTP();
-      await axios.put(`/api/xl/tour-program/${tpId}/submit`);
+      const newTpId = await saveTP();
+      await axios.put(`/api/xl/tour-program/${newTpId}/submit`);
       setTpStatus('Submitted');
       showToast('Tour Program submitted for approval!');
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Submission failed');
+      if (e?.response?.data?.error) showToast(e.response.data.error);
     } finally {
       setSubmitting(false);
     }
@@ -326,64 +327,53 @@ export default function TourProgram() {
           const isSunday = d.getDay() === 0;
           const entry = entries[dateStr];
           const isSelected = selectedDates.includes(dateStr);
-
-          // Colors
-          const boxBg = entry ? 'bg-green-600' : isSunday ? 'bg-slate-700' : 'bg-[#293047]';
-          const boxText = entry ? 'text-white' : 'text-slate-300';
           
           return (
             <div 
               key={dateStr} 
-              className="flex items-center gap-2 p-1.5 border-b border-slate-800 bg-[#1e2335] hover:bg-slate-800/50 transition-colors"
+              className={`flex ${isSunday ? 'opacity-50' : ''} border-b border-[#3b3b5a] bg-[#1e2335]`}
               onClick={() => {
                 if (selectionMode && !isSunday) toggleSelection(dateStr);
+                else if (!selectionMode && !isSunday && !entry) openFormForDates([dateStr]);
               }}
             >
               {/* Date Box */}
-              <div className={`w-9 h-9 rounded-lg flex flex-col items-center justify-center font-bold shadow-sm ${boxBg} ${boxText}`}>
-                <span className="text-sm leading-none mb-0.5">{dayNum}</span>
-                <span className="text-[9px] leading-none opacity-90 tracking-wide uppercase">{dayName}</span>
+              <div className={`w-16 flex flex-col items-center justify-center p-2 border-r border-[#3b3b5a] ${isSunday ? 'bg-[#1c1c2e]' : 'bg-[#27273f]'}`}>
+                <span className="text-xl font-bold text-white">{dayNum.toString().padStart(2, '0')}</span>
+                <span className="text-xs text-sky-400 font-bold uppercase">{dayName}</span>
               </div>
               
               {/* Middle Content */}
-              <div className="flex-1 overflow-hidden">
-                {isSunday ? (
-                  <span className="text-slate-500 font-medium text-sm">Not Allowed</span>
-                ) : entry ? (
-                  <div className="text-slate-200 text-xs font-medium leading-snug truncate">
-                    {entry.toMarket ? `${user?.hq ? user.hq + ' - ' : ''}${entry.toMarket}` : entry.type}
-                  </div>
+              <div className="flex-1 p-4 flex justify-between items-center cursor-pointer">
+                <div className="flex-1 overflow-hidden pr-2">
+                  {isSunday ? (
+                    <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Not Allowed</span>
+                  ) : entry ? (
+                    <div className="text-sm font-bold text-slate-200 leading-snug truncate">
+                      {entry.toMarket ? entry.toMarket : entry.type}
+                    </div>
+                  ) : (
+                    <span className="text-sm font-bold text-slate-400">
+                      + Add Tour Program
+                    </span>
+                  )}
+                </div>
+
+                {/* Right Action/Badge */}
+                {selectionMode ? (
+                  !isSunday && (
+                    <div className={`w-6 h-6 rounded border flex items-center justify-center transition-colors ${isSelected ? 'border-sky-500 bg-sky-500/20' : 'border-[#3b3b5a]'}`}>
+                      {isSelected && <div className="w-3 h-3 bg-sky-500 rounded-sm" />}
+                    </div>
+                  )
                 ) : (
-                  <span 
-                    className="text-slate-400 text-sm font-medium cursor-pointer" 
-                    onClick={(e) => { if(!selectionMode) { e.stopPropagation(); openFormForDates([dateStr]); } }}
-                  >
-                    + Add Tour Program
-                  </span>
+                  !isSunday && entry ? (
+                    getBadge(entry.type)
+                  ) : !isSunday ? (
+                    <span className="w-6 h-6 text-emerald-500 flex items-center justify-center font-bold text-xl">+</span>
+                  ) : null
                 )}
               </div>
-
-              {/* Right Action/Badge */}
-              {selectionMode ? (
-                !isSunday && (
-                  <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-sky-500 bg-sky-500/20' : 'border-slate-600'}`}>
-                    {isSelected && <div className="w-2.5 h-2.5 bg-sky-500 rounded-full" />}
-                  </div>
-                )
-              ) : (
-                isSunday ? (
-                  <div className="w-6 h-6 text-slate-600 flex items-center justify-center font-bold text-xl">+</div>
-                ) : entry ? (
-                  getBadge(entry.type)
-                ) : (
-                  <button 
-                    className="w-6 h-6 text-slate-400 flex items-center justify-center font-bold text-2xl hover:text-white active:scale-90 transition-transform" 
-                    onClick={() => openFormForDates([dateStr])}
-                  >
-                    +
-                  </button>
-                )
-              )}
             </div>
           );
         })}
