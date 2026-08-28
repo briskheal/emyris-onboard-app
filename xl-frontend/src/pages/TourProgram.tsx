@@ -74,8 +74,9 @@ export default function TourProgram() {
         setTpStatus(tp.status || 'Draft');
         const loadedEntries: Record<string, any> = {};
         try {
-          const parsed = JSON.parse(tp.entries || '[]');
-          parsed.forEach((e: any) => {
+          let parsed = JSON.parse(tp.entries || '[]');
+            if (!Array.isArray(parsed)) parsed = Object.values(parsed);
+            parsed.forEach((e: any) => {
             if (e.date) loadedEntries[e.date] = e;
           });
         } catch(e){}
@@ -208,7 +209,7 @@ export default function TourProgram() {
   };
 
   const getBadge = (type: string) => {
-    switch (type) {
+    if (!type) return null; switch (type) {
       case 'HQ': return <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-[10px] font-bold rounded border border-cyan-500/30">LOC</span>;
       case 'Ex Mkt': return <span className="px-2 py-1 bg-orange-500/20 text-orange-400 text-[10px] font-bold rounded border border-orange-500/30">EX</span>;
       case 'Out Mkt': return <span className="px-2 py-1 bg-green-500/20 text-green-400 text-[10px] font-bold rounded border border-green-500/30">OUT</span>;
