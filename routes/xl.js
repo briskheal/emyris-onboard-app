@@ -234,7 +234,7 @@ router.post('/tour-program', async (req, res) => {
 // Submit TP for approval
 router.put('/tour-program/:id/submit', async (req, res) => {
     try {
-        const { XlTourProgram, XlUser, XlNotification, generateId } = require('../db');
+        
         const tp = await XlTourProgram.findOne({ where: { _id: req.params.id } });
         if (!tp) return res.status(404).json({ error: 'Not found' });
 
@@ -824,7 +824,7 @@ router.get('/call-plan/month', async (req, res) => {
         if (!email || !month || !year) return res.status(400).json({ error: 'Missing parameters' });
         
         const { Op } = require('sequelize');
-        const { XlCallPlan } = require('../db');
+        
         
         const startDate = `${year}-${month.padStart(2, '0')}-01`;
         const endDate = `${year}-${month.padStart(2, '0')}-31`;
@@ -849,7 +849,7 @@ router.post('/call-plan/bulk', async (req, res) => {
         const { employeeId, dates, doctors, chemists, stockists } = req.body;
         if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
         
-        const { XlCallPlan } = require('../db');
+        
         
         for (const date of dates) {
             let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
@@ -871,20 +871,20 @@ router.post('/call-plan/bulk', async (req, res) => {
         }
         
         // Notify manager of call plan update
-        const user = await require('../db').XlUser.findOne({ where: { employeeId } });
+        const user = await XlUser.findOne({ where: { employeeId } });
         if (user && user.reportingManager) {
-            const managers = await require('../db').XlUser.findAll({ where: { designation: user.reportingManager } });
+            const managers = await XlUser.findAll({ where: { designation: user.reportingManager } });
             for (const m of managers) {
-                await require('../db').XlNotification.create({
-                    _id: require('../db').generateId(),
+                await XlNotification.create({
+                    _id: generateId(),
                     employeeId: m.employeeId,
                     title: 'Call Plan Updated',
                     message: `${user.firstName} ${user.lastName} has submitted Call Plans for ${dates.length} days.`
                 });
             }
         }
-        await require('../db').XlNotification.create({
-            _id: require('../db').generateId(),
+        await XlNotification.create({
+            _id: generateId(),
             employeeId: 'ADMIN',
             title: 'Call Plan Updated',
             message: `${user ? user.firstName : employeeId} has submitted Call Plans for ${dates.length} days.`
