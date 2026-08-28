@@ -350,7 +350,7 @@ export default function TourProgram() {
   }
 
   return (
-    <div className="min-h-full bg-[#1e2335] font-sans flex flex-col" style={{ paddingBottom: 'calc(130px + env(safe-area-inset-bottom))' }}>
+    <div className="min-h-full bg-[#1e2335] font-sans flex flex-col" style={{ paddingBottom: 'calc(105px + env(safe-area-inset-bottom))' }}>
       {/* App Header Removed */}
 
       {/* Selectors */}
@@ -464,7 +464,7 @@ export default function TourProgram() {
           );
         })}
 
-        <div className="py-6 flex items-center justify-center text-slate-500 font-bold text-[10px] uppercase tracking-widest gap-3 px-8 opacity-70">
+        <div className="pt-6 pb-2 flex items-center justify-center text-slate-500 font-bold text-[10px] uppercase tracking-widest gap-3 px-8 opacity-70">
           <div className="h-px bg-slate-700 flex-1"></div>
           You have Reached the end of the List
           <div className="h-px bg-slate-700 flex-1"></div>
