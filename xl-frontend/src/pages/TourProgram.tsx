@@ -88,6 +88,8 @@ export default function TourProgram() {
 
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showRemarkModal, setShowRemarkModal] = useState(false);
+  const [remarkText, setRemarkText] = useState('');
 
   useEffect(() => {
     const storedUser = localStorage.getItem('xl_user');
@@ -173,13 +175,12 @@ export default function TourProgram() {
     setShowForm(true);
   };
 
-  const applyForm = async () => {
-      let resubmitRemark = '';
-      if (tpStatus === 'Submitted' || tpStatus === 'Approved') {
-        const r = window.prompt("You are modifying a submitted Tour Program. Please provide a reason/remark for this change:");
-        if (r === null) return;
-        resubmitRemark = r;
+  const applyForm = async (overrideRemark?: string) => {
+      if ((tpStatus === 'Submitted' || tpStatus === 'Approved') && overrideRemark === undefined) {
+        setShowRemarkModal(true);
+        return;
       }
+      let resubmitRemark = overrideRemark || '';
     if (['Ex-Mkt', 'Out-Mkt', 'Out-Ex-Mkt', 'Out-Stn-Last-Day'].includes(formArea) && !formLocation) {
       showToast('Please select a location');
       return;
@@ -491,6 +492,36 @@ export default function TourProgram() {
               <Plus size={18} strokeWidth={3} /> Add {selectedDates.length} TPs
             </button>
           </div>
+        </div>
+      )}
+
+      
+      {showRemarkModal && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
+           <div className="bg-[#1e2335] border border-[#3b3b5a] rounded-xl p-5 w-full max-w-sm shadow-2xl">
+               <h3 className="text-white font-bold text-lg mb-2">Resubmission Remark</h3>
+               <p className="text-slate-400 text-sm mb-4">You are modifying a submitted Tour Program. Please provide a reason for this change.</p>
+               <textarea 
+                   value={remarkText}
+                   onChange={e => setRemarkText(e.target.value)}
+                   className="w-full bg-[#1c1c2e] text-white p-3 rounded-lg border border-[#3b3b5a] focus:border-sky-500 outline-none h-24 resize-none mb-4"
+                   placeholder="Type your remarks here..."
+               />
+               <div className="flex gap-3">
+                   <button onClick={() => setShowRemarkModal(false)} className="flex-1 py-2.5 rounded-lg font-bold text-slate-300 bg-slate-800 hover:bg-slate-700">Cancel</button>
+                   <button 
+                       onClick={() => {
+                           if (!remarkText.trim()) { showToast('Remark is required!'); return; }
+                           setShowRemarkModal(false);
+                           applyForm(remarkText);
+                           setRemarkText('');
+                       }}
+                       className="flex-1 py-2.5 rounded-lg font-bold text-white bg-sky-500 hover:bg-sky-400 shadow-lg shadow-sky-500/30"
+                   >
+                       Confirm
+                   </button>
+               </div>
+           </div>
         </div>
       )}
 
