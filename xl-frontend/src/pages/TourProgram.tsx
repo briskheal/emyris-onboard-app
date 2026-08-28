@@ -215,6 +215,7 @@ export default function TourProgram() {
                 className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
               >
                 <option value="Working">Working</option>
+                <option value="Leave">Leave</option>
                 <option value="Training">Training</option>
                 <option value="Seminar">Seminar</option>
                 <option value="Transit">Transit</option>
@@ -243,9 +244,6 @@ export default function TourProgram() {
                 <option value="Out-Mkt">Out-Mkt</option>
                 <option value="Out-Ex-Mkt">Out-Ex-Mkt</option>
                 <option value="Out-Stn-Last-Day">Out-Stn-Last-Day</option>
-                <option value="Leave">Leave</option>
-                <option value="Transit">Transit</option>
-                <option value="Admin">Admin</option>
               </select>
             </div>
           </div>
