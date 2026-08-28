@@ -350,7 +350,7 @@ export default function TourProgram() {
   }
 
   return (
-    <div className="min-h-full bg-[#1e2335] pb-[110px] font-sans flex flex-col">
+    <div className="min-h-full bg-[#1e2335] font-sans flex flex-col" style={{ paddingBottom: 'calc(130px + env(safe-area-inset-bottom))' }}>
       {/* App Header Removed */}
 
       {/* Selectors */}
@@ -473,7 +473,8 @@ export default function TourProgram() {
         {!selectionMode && (
           <button 
             onClick={() => setSelectionMode(true)} 
-            className="fixed bottom-[75px] right-4 sm:right-auto sm:left-1/2 sm:ml-[110px] bg-sky-500 hover:bg-sky-400 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 z-40 active:scale-95 text-sm"
+            className="fixed right-4 sm:right-auto sm:left-1/2 sm:ml-[110px] bg-sky-500 hover:bg-sky-400 text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2 z-40 active:scale-95 text-sm"
+            style={{ bottom: 'calc(64px + env(safe-area-inset-bottom) + 12px)' }}
           >
             <Plus size={18} strokeWidth={3} /> Multiple TPs
           </button>
@@ -485,7 +486,8 @@ export default function TourProgram() {
 
       {/* Bottom Save/Submit Bar */}
       {selectionMode && (
-        <div className="fixed bottom-[75px] w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-40">
+        <div className="fixed w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-40"
+          style={{ bottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
           <div className="flex gap-3">
             <button 
               className="flex-1 bg-red-500/20 text-red-400 py-3 rounded-lg font-bold flex items-center justify-center gap-2"
