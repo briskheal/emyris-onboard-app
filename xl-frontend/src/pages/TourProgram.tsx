@@ -3,6 +3,60 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Check } from 'lucide-react';
 
+
+function SearchableSelect({ value, onChange, options, placeholder }: { value: string, onChange: (val: string) => void, options: any[], placeholder?: string }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+
+    const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
+
+    return (
+        <div className="relative">
+            <button 
+               type="button"
+               onClick={() => setIsOpen(!isOpen)}
+               className="w-full text-left bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] focus:border-sky-500 shadow-sm flex justify-between items-center"
+            >
+               <span className="truncate">{value || placeholder}</span>
+               <span className="text-slate-400 text-xs">▼</span>
+            </button>
+            
+            {isOpen && (
+                <>
+                    <div className="fixed inset-0 z-[90]" onClick={() => setIsOpen(false)}></div>
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-2xl z-[100] overflow-hidden">
+                        {options.length > 8 && (
+                            <div className="p-2 border-b border-[#3b3b5a] bg-[#1e2335]">
+                                <input 
+                                    type="text" 
+                                    autoFocus
+                                    value={search}
+                                    onChange={e => setSearch(e.target.value)}
+                                    placeholder="Search..."
+                                    className="w-full bg-[#1c1c2e] text-white p-2 rounded-md border border-[#3b3b5a] outline-none text-sm placeholder:text-slate-500"
+                                />
+                            </div>
+                        )}
+                        <div className="max-h-60 overflow-y-auto">
+                            {filtered.map((o, i) => (
+                                <div 
+                                    key={i} 
+                                    onClick={() => { onChange(o.value); setIsOpen(false); setSearch(''); }}
+                                    className="p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0 cursor-pointer text-sm"
+                                >
+                                    {o.label}
+                                </div>
+                            ))}
+                            {filtered.length === 0 && <div className="p-4 text-center text-slate-400 text-sm font-medium">No results found</div>}
+                        </div>
+                    </div>
+                </>
+            )}
+        </div>
+    );
+}
+
+
 export default function TourProgram() {
   const [toastMsg, setToastMsg] = useState('');
   const showToast = (msg: string) => { setToastMsg(msg); setTimeout(() => setToastMsg(''), 3000); };
@@ -209,24 +263,24 @@ export default function TourProgram() {
           <div>
             <label className="text-slate-300 text-sm mb-1.5 block font-medium">Activity Type <span className="text-red-500">*</span></label>
             <div className="relative">
-              <select 
-                value={formActivity} 
-                onChange={e => setFormActivity(e.target.value)} 
-                className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
-              >
-                <option value="Working">Working</option>
-                <option value="Half Day">Half Day</option>
-                <option value="Training">Training</option>
-                <option value="Seminar">Seminar</option>
-                <option value="Transit">Transit</option>
-                <option value="Meeting">Meeting</option>
-                <option value="Conference">Conference</option>
-                <option value="Half Day (Meeting)">Half Day (Meeting)</option>
-                <option value="Half Day (Field Work)">Half Day (Field Work)</option>
-                <option value="Admin">Admin</option>
-                <option value="Market Survey">Market Survey</option>
-                <option value="Leave">Leave</option>
-              </select>
+              <SearchableSelect 
+                  value={formActivity}
+                  onChange={val => setFormActivity(val)}
+                  options={[
+                    {value: 'Working', label: 'Working'},
+                    {value: 'Half Day', label: 'Half Day'},
+                    {value: 'Training', label: 'Training'},
+                    {value: 'Seminar', label: 'Seminar'},
+                    {value: 'Transit', label: 'Transit'},
+                    {value: 'Meeting', label: 'Meeting'},
+                    {value: 'Conference', label: 'Conference'},
+                    {value: 'Half Day (Meeting)', label: 'Half Day (Meeting)'},
+                    {value: 'Half Day (Field Work)', label: 'Half Day (Field Work)'},
+                    {value: 'Admin', label: 'Admin'},
+                    {value: 'Market Survey', label: 'Market Survey'},
+                    {value: 'Leave', label: 'Leave'}
+                  ]}
+                />
             </div>
           </div>
 
@@ -234,17 +288,17 @@ export default function TourProgram() {
           <div>
             <label className="text-slate-300 text-sm mb-1.5 block font-medium">Area Type <span className="text-red-500">*</span></label>
             <div className="relative">
-              <select 
-                value={formArea} 
-                onChange={e => setFormArea(e.target.value)} 
-                className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
-              >
-                <option value="HQ">HQ</option>
-                <option value="Ex-Mkt">Ex-Mkt</option>
-                <option value="Out-Mkt">Out-Mkt</option>
-                <option value="Out-Ex-Mkt">Out-Ex-Mkt</option>
-                <option value="Out-Stn-Last-Day">Out-Stn-Last-Day</option>
-              </select>
+              <SearchableSelect 
+                  value={formArea}
+                  onChange={val => { setFormArea(val); setFormLocation(''); }}
+                  options={[
+                    {value: 'HQ', label: 'HQ'},
+                    {value: 'Ex-Mkt', label: 'Ex-Mkt'},
+                    {value: 'Out-Mkt', label: 'Out-Mkt'},
+                    {value: 'Out-Ex-Mkt', label: 'Out-Ex-Mkt'},
+                    {value: 'Out-Stn-Last-Day', label: 'Out-Stn-Last-Day'}
+                  ]}
+                />
             </div>
           </div>
 
@@ -253,26 +307,30 @@ export default function TourProgram() {
             <div>
       <label className="text-slate-300 text-sm mb-1.5 block font-medium">Route / Location <span className="text-red-500">*</span></label>
       <div className="relative">
-        <select 
-          value={formLocation} 
-          onChange={e => setFormLocation(e.target.value)} 
-          className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] appearance-none outline-none focus:border-sky-500 shadow-sm"
-        >
-          <option value="">Select Route</option>
-          {routeList && routeList.filter((r: any) => {
-                const at = formArea;
-                let expectedType = '';
-                if (at === 'HQ') expectedType = 'Local';
-                else if (at === 'Ex-Mkt' || at === 'Out-Ex-Mkt') expectedType = 'Ex-Station';
-                else if (at === 'Out-Mkt' || at === 'Out-Stn-Last-Day') expectedType = 'Out-Station';
-                
-                if (!expectedType) return true;
+        {(() => {
+            const filteredRoutes = routeList ? routeList.filter((r: any) => {
+                  const at = formArea;
+                  let expectedType = '';
+                  if (at === 'HQ') expectedType = 'Local';
+                  else if (at === 'Ex-Mkt' || at === 'Out-Ex-Mkt') expectedType = 'Ex-Station';
+                  else if (at === 'Out-Mkt' || at === 'Out-Stn-Last-Day') expectedType = 'Out-Station';
+                  
+                  if (!expectedType) return true;
                   return r.areaType === expectedType;
-            }).map((r: any) => {
-             const routeStr = `${r.fromCity} - ${r.toCity}`;
-             return <option key={r._id} value={routeStr}>{routeStr}</option>;
-          })}
-        </select>
+            }).map((r: any) => ({
+                value: `${r.fromCity} - ${r.toCity}`,
+                label: `${r.fromCity} - ${r.toCity}`
+            })) : [];
+
+            return (
+                <SearchableSelect 
+                  value={formLocation}
+                  onChange={val => setFormLocation(val)}
+                  placeholder="Select Route"
+                  options={filteredRoutes}
+                />
+            );
+          })()}
         </div>
       </div>
           </div>
