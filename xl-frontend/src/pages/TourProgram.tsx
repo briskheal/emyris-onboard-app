@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Check } from 'lucide-react';
-import toast from 'react-hot-toast';
 
-export default function TourProgram() {
+export default function TourProgram({ showToast }: { showToast: (msg: string) => void }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   
@@ -100,25 +99,25 @@ export default function TourProgram() {
         entries: entriesArr
       });
       setTpId(res.data.data._id);
-      toast.success('Tour Program saved!');
+      showToast('Tour Program saved!');
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || 'Save failed');
+      showToast(e?.response?.data?.error || 'Save failed');
     } finally {
       setSaving(false);
     }
   };
 
   const submitTP = async () => {
-    if (!tpId) { toast.error('Save the TP first before submitting.'); return; }
-    if (Object.keys(entries).length === 0) { toast.error('Please plan at least one day.'); return; }
+    if (!tpId) { showToast('Save the TP first before submitting.'); return; }
+    if (Object.keys(entries).length === 0) { showToast('Please plan at least one day.'); return; }
     setSubmitting(true);
     try {
       await saveTP();
       await axios.put(`/api/xl/tour-program/${tpId}/submit`);
       setTpStatus('Submitted');
-      toast.success('Tour Program submitted for approval!');
+      showToast('Tour Program submitted for approval!');
     } catch (e: any) {
-      toast.error(e?.response?.data?.error || 'Submission failed');
+      showToast(e?.response?.data?.error || 'Submission failed');
     } finally {
       setSubmitting(false);
     }
@@ -156,7 +155,7 @@ export default function TourProgram() {
 
   const applyForm = () => {
     if ((formArea === 'Ex Mkt' || formArea === 'Out Mkt') && !formLocation) {
-      toast.error('Please select a location');
+      showToast('Please select a location');
       return;
     }
     
@@ -173,7 +172,7 @@ export default function TourProgram() {
     setShowForm(false);
     setSelectionMode(false);
     setSelectedDates([]);
-    toast.success('Plan added locally. Remember to Save/Submit!');
+    showToast('Plan added locally. Remember to Save/Submit!');
   };
 
   const getBadge = (type: string) => {
