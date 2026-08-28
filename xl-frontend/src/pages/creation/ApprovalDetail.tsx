@@ -35,11 +35,17 @@ export default function ApprovalDetail() {
   const handleAction = async (recordId: string, action: string) => {
     if (!window.confirm(`Are you sure you want to ${action} this request?`)) return;
     try {
+      let remarks = '';
+      if (action === 'Rejected') {
+         const reason = window.prompt('Please provide a reason for rejection:');
+         if (reason === null) return; // Cancelled
+         remarks = reason;
+      }
       const res = await axios.post('/api/xl/approvals/action', {
         recordId,
         type,
         action,
-        remarks: ''
+        remarks
       });
       if (res.data.success) {
         setItems(prev => prev.filter(item => item._id !== recordId));
