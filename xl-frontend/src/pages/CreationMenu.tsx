@@ -21,10 +21,10 @@ export default function CreationMenu() {
 
   return (
     <div className="min-h-full bg-slate-800 pb-24">
-      <div className="px-4 pt-4 pb-6 bg-gradient-to-b from-slate-800 to-slate-900">
-        <p className="text-xs text-slate-200 font-medium uppercase tracking-widest mb-1">Module</p>
-        <h1 className="text-2xl font-bold text-white">Creation Menu</h1>
-        <p className="text-sm text-slate-200 mt-1">Add new records to the CRM</p>
+      <div className="px-4 py-3 bg-gradient-to-b from-slate-800 to-slate-900 border-b border-slate-700/50">
+        <h1 className="text-lg font-black text-white tracking-wide">
+          CREATION <span className="text-sky-400 font-bold text-[13px] ml-1">(Add Records)</span>
+        </h1>
       </div>
       <div className="px-5 mt-6">
         <div className="grid grid-cols-2 gap-4">

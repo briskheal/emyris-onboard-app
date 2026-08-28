@@ -77,10 +77,10 @@ export default function Extras() {
   return (
     <div className="min-h-full bg-slate-800 pb-24 text-slate-100 font-sans">
       {/* Header */}
-      <div className="px-4 pt-4 pb-6 sticky top-0 bg-slate-800 z-10 border-b border-slate-800">
-        <p className="text-xs text-slate-200 font-medium uppercase tracking-widest mb-1">Extras</p>
-        <h1 className="text-lg font-black text-white">Field Operations</h1>
-        <p className="text-xs text-slate-200">Manage plans, calls, and activities</p>
+      <div className="px-4 py-3 sticky top-0 bg-slate-800 z-10 border-b border-slate-700">
+        <h1 className="text-lg font-black text-white tracking-wide">
+          EXTRAS <span className="text-sky-400 font-bold text-[13px] ml-1">(Plan Well)</span>
+        </h1>
       </div>
 
       <div className="px-5 mt-6">

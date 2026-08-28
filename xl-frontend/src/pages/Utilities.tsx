@@ -32,12 +32,10 @@ export default function Utilities() {
   return (
     <div className="min-h-full bg-slate-800 pb-8">
       {/* Header */}
-      <div className="px-4 pt-4 pb-6 bg-gradient-to-b from-slate-800 to-slate-900 sticky top-0 z-10 flex justify-between items-start">
-        <div>
-          <p className="text-xs text-slate-200 font-medium uppercase tracking-widest mb-1">Module</p>
-          <h1 className="text-2xl font-bold text-white">Utilities</h1>
-          <p className="text-sm text-slate-200 mt-1">Reports, analytics & management</p>
-        </div>
+      <div className="px-4 py-3 bg-gradient-to-b from-slate-800 to-slate-900 sticky top-0 z-10 flex justify-between items-center border-b border-slate-700/50">
+        <h1 className="text-lg font-black text-white tracking-wide">
+          UTILITIES <span className="text-sky-400 font-bold text-[13px] ml-1">(Reports)</span>
+        </h1>
         <button 
           onClick={() => {
             localStorage.removeItem('xl_user');
