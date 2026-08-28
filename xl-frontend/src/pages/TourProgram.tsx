@@ -61,8 +61,10 @@ export default function TourProgram() {
   const fetchTP = async () => {
     try {
       const res = await axios.get(`/api/xl/tour-program/my?email=${user.employeeId}&month=${month}&year=${year}`);
-      if (res.data.success && res.data.data.length > 0) {
-        const tp = res.data.data[0];
+      if (res.data.success && res.data.data) {
+        // Fallback for both array or object depending on backend
+        const tp = Array.isArray(res.data.data) ? res.data.data[0] : res.data.data;
+        if (!tp) return;
         setTpId(tp._id);
         setTpStatus(tp.status || 'Draft');
         setAdminRemarks(tp.adminRemarks || '');
@@ -131,7 +133,7 @@ export default function TourProgram() {
       });
       const res = await axios.post('/api/xl/tour-program', {
         employeeId: user?.employeeId, employeeName: user ? `${user.firstName} ${user.lastName}` : '',
-        month, year, entries: entriesArr
+        hq: user?.hq || '', month, year, entries: entriesArr
       });
       setTpId(res.data.data._id);
       showToast('Tour Program saved!');
