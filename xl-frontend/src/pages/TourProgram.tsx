@@ -14,7 +14,7 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
   const [year, setYear] = useState(currentDate.getFullYear().toString());
   
   const [entries, setEntries] = useState<Record<string, any>>({});
-  const [markets, setMarkets] = useState<any[]>([]);
+  const [routeList, setRouteList] = useState<any[]>([]);
   
   const [tpId, setTpId] = useState<string | null>(null);
   const [tpStatus, setTpStatus] = useState<string>('Draft');
@@ -49,12 +49,12 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
 
   const fetchMarkets = async () => {
     try {
-      const res = await axios.get('/api/admin/locations/cities');
+      const res = await axios.get('/api/admin/locations/routes');
       if (res.data.success) {
-        setMarkets(res.data.cities || []);
+        setRouteList(res.data.routes || []);
       }
     } catch (e) {
-      console.error('Failed to fetch markets', e);
+      console.error('Failed to fetch routes', e);
     }
   };
 
@@ -186,7 +186,7 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
 
   if (showForm) {
     return (
-      <div className="fixed inset-0 bg-slate-900 z-50 flex flex-col font-sans">
+      <div className="fixed inset-0 bg-slate-900 z-[100] flex flex-col font-sans">
         {/* Form Header */}
         <div className="flex items-center px-4 py-3 bg-slate-800 gap-3 border-b border-slate-700 shadow-md">
           <button onClick={() => setShowForm(false)} className="text-slate-300 hover:text-white">
@@ -400,14 +400,14 @@ export default function TourProgram({ showToast }: { showToast: (msg: string) =>
       {!selectionMode && (
         <button 
           onClick={() => setSelectionMode(true)} 
-          className="fixed bottom-28 right-4 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-full font-bold shadow-[0_4px_12px_rgba(14,165,233,0.4)] flex items-center gap-2 z-20 transition-transform active:scale-95 text-sm tracking-wide"
+          className="fixed bottom-[140px] right-4 bg-sky-500 hover:bg-sky-400 text-white px-4 py-2.5 rounded-full font-bold shadow-[0_4px_12px_rgba(14,165,233,0.4)] flex items-center gap-2 z-20 transition-transform active:scale-95 text-sm tracking-wide"
         >
           <Plus size={16} strokeWidth={3} /> Multiple TPs
         </button>
       )}
 
       {/* Bottom Save/Submit Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-20">
+      <div className="fixed bottom-[60px] left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-40">
         {selectionMode ? (
           <div className="flex gap-3">
             <button 
