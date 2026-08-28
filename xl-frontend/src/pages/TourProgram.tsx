@@ -286,13 +286,7 @@ export default function TourProgram() {
 
   return (
     <div className="min-h-full bg-[#1e2335] pb-32 font-sans flex flex-col">
-      {/* App Header */}
-      
-        <div className="ml-auto text-xs font-semibold text-slate-300 flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-md border border-slate-700">
-          <span className="w-2 h-2 rounded-full bg-orange-400"></span>
-          {tpStatus}
-        </div>
-      </div>
+      {/* App Header Removed */}
 
       {/* Selectors */}
       <div className="px-2 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center gap-2 shadow-sm sticky top-0 z-10">
