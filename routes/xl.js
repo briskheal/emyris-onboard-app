@@ -799,7 +799,7 @@ router.get('/approvals/pending', async (req, res) => {
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
-        const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), status: ['Pending', 'Submitted'] }, order: [['createdAt', 'DESC']] });
+        const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), status: ['Pending', 'Submitted', 'pending', 'submitted'] }, order: [['createdAt', 'DESC']] });
         
         const data = [];
         for (const p of pending) {
@@ -842,7 +842,7 @@ router.post('/approvals/action', async (req, res) => {
         else return res.status(400).json({ error: 'Invalid module type' });
                         if (type === 'ExpenseGroup') {
             const { employeeId, date, miscExpense } = req.body;
-            const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted'] } });
+            const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted'] } });
             
             for (const rec of records) {
                 if (rec.category === 'Misc' && miscExpense !== undefined) {
