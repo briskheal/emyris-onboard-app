@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CheckCircle, XCircle, ChevronLeft } from 'lucide-react';
+import TourProgramApproval from '../components/TourProgramApproval';
 import { useNavigate } from 'react-router-dom';
 
 const sidebarItems = [
@@ -189,80 +190,85 @@ export default function Approvals() {
           </div>
        </div>
 
+       
        {/* Main Content */}
-       <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
-          <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] flex justify-between items-center bg-[#1c1c2e] shrink-0">
-             <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
-                     <CheckCircle size={24} strokeWidth={2.5}/>
-                 </div>
-                 <div>
-                    <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wide">APPROVE {sidebarItems.find(i => i.path === selectedModule)?.label}</h1>
-                    <p className="text-xs font-medium text-slate-400 mt-1 tracking-wide">Showing pending requests for {selectedModule}</p>
-                 </div>
-             </div>
-             
-             {selectedRows.length > 0 && (
-               <div className="flex gap-3 bg-sky-900/30 rounded-xl border border-sky-500/30 items-center px-4 py-2">
-                 <span className="text-sky-400 font-bold text-sm hidden md:inline">{selectedRows.length} selected</span>
-                 <div className="w-px h-6 bg-sky-500/30 mx-1 hidden md:block"></div>
-                 <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Approve</button>
-                 <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Reject</button>
+       {selectedModule === 'Tour Program' ? (
+         <TourProgramApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+       ) : (
+         <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+            <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] flex justify-between items-center bg-[#1c1c2e] shrink-0">
+               <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
+                       <CheckCircle size={24} strokeWidth={2.5}/>
+                   </div>
+                   <div>
+                      <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wide">APPROVE {sidebarItems.find(i => i.path === selectedModule)?.label}</h1>
+                      <p className="text-xs font-medium text-slate-400 mt-1 tracking-wide">Showing pending requests for {selectedModule}</p>
+                   </div>
                </div>
-             )}
-          </div>
+               
+               {selectedRows.length > 0 && (
+                 <div className="flex gap-3 bg-sky-900/30 rounded-xl border border-sky-500/30 items-center px-4 py-2">
+                   <span className="text-sky-400 font-bold text-sm hidden md:inline">{selectedRows.length} selected</span>
+                   <div className="w-px h-6 bg-sky-500/30 mx-1 hidden md:block"></div>
+                   <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Approve</button>
+                   <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Reject</button>
+                 </div>
+               )}
+            </div>
 
-          <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-             <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse whitespace-nowrap">
-                    <thead>
-                      <tr className="border-b border-[#3b3b5a] bg-[#1c1c2e]">
-                        <th className="p-4 w-12 text-center">
-                          <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === items.length} onChange={toggleAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                        </th>
-                        <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Employee</th>
-                        <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Details</th>
-                        <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
-                        <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Date</th>
-                        <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {loading ? (
-                        <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">Loading Data...</td></tr>
-                      ) : items.length === 0 ? (
-                        <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Approvals</td></tr>
-                      ) : items.map(item => (
-                        <tr key={item._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                          <td className="p-4 text-center">
-                            <input type="checkbox" checked={selectedRows.includes(item._id)} onChange={() => toggleRow(item._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="text-sm font-bold text-white">{item.employeeName || item.employeeEmail || item.name || 'Unknown User'}</div>
-                            <div className="text-xs text-slate-400 mt-0.5">{item.employeeEmail || 'No Email'}</div>
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium text-sky-400">{item.hq || item.entityName || item.date || item.month || '-'}</td>
-                          <td className="px-4 py-3"><span className="px-2.5 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm">{item.status}</span></td>
-                          <td className="px-4 py-3 text-sm font-medium text-slate-300">{new Date(item.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="flex gap-2 justify-end">
-                              <button onClick={() => handleAction(item._id, 'Approved')} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95" title="Approve">
-                                <CheckCircle size={18} strokeWidth={2.5}/>
-                              </button>
-                              <button onClick={() => handleAction(item._id, 'Rejected')} className="p-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-95" title="Reject">
-                                <XCircle size={18} strokeWidth={2.5}/>
-                              </button>
-                            </div>
-                          </td>
+            <div className="p-6 md:p-8 flex-1 overflow-y-auto">
+               <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse whitespace-nowrap">
+                      <thead>
+                        <tr className="border-b border-[#3b3b5a] bg-[#1c1c2e]">
+                          <th className="p-4 w-12 text-center">
+                            <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === items.length} onChange={toggleAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
+                          </th>
+                          <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Employee</th>
+                          <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Details</th>
+                          <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Status</th>
+                          <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Date</th>
+                          <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-             </div>
-          </div>
-       </div>
+                      </thead>
+                      <tbody>
+                        {loading ? (
+                          <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">Loading Data...</td></tr>
+                        ) : items.length === 0 ? (
+                          <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Approvals</td></tr>
+                        ) : items.map(item => (
+                          <tr key={item._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
+                            <td className="p-4 text-center">
+                              <input type="checkbox" checked={selectedRows.includes(item._id)} onChange={() => toggleRow(item._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="text-sm font-bold text-white">{item.employeeName || item.employeeEmail || item.name || 'Unknown User'}</div>
+                              <div className="text-xs text-slate-400 mt-0.5">{item.employeeEmail || 'No Email'}</div>
+                            </td>
+                            <td className="px-4 py-3 text-sm font-medium text-sky-400">{item.hq || item.entityName || item.date || item.month || '-'}</td>
+                            <td className="px-4 py-3"><span className="px-2.5 py-1 bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm">{item.status}</span></td>
+                            <td className="px-4 py-3 text-sm font-medium text-slate-300">{new Date(item.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="flex gap-2 justify-end">
+                                <button onClick={() => handleAction(item._id, 'Approved')} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95" title="Approve">
+                                  <CheckCircle size={18} strokeWidth={2.5}/>
+                                </button>
+                                <button onClick={() => handleAction(item._id, 'Rejected')} className="p-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm active:scale-95" title="Reject">
+                                  <XCircle size={18} strokeWidth={2.5}/>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+               </div>
+            </div>
+         </div>
+       )}
     </div>
   );
 }

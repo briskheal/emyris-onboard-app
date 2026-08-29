@@ -840,11 +840,37 @@ router.post('/approvals/action', async (req, res) => {
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
-        const record = await Model.findByPk(recordId);
+                const record = await Model.findByPk(recordId);
         if (!record) return res.status(404).json({ error: 'Record not found' });
-        record.status = action;
-        record.adminRemarks = remarks || '';
-        await record.save();
+
+        if (type === 'Tour Program' && req.body.dates && Array.isArray(req.body.dates)) {
+            let entries = [];
+            try { entries = JSON.parse(record.entries || '[]'); } catch(e){}
+            if (!Array.isArray(entries)) entries = Object.values(entries);
+            
+            entries = entries.map(e => {
+                if (req.body.dates.includes(e.date)) {
+                    return { ...e, status: action };
+                }
+                return e;
+            });
+            
+            record.entries = JSON.stringify(entries);
+            
+            // Optionally update root status if all days are handled
+            const allHandled = entries.every(e => e.status && e.status !== 'Pending' && e.status !== 'Submitted');
+            if (allHandled) {
+                const hasRejected = entries.some(e => e.status === 'Rejected');
+                record.status = hasRejected ? 'Rejected' : 'Approved';
+            }
+            
+            record.adminRemarks = remarks || record.adminRemarks || '';
+            await record.save();
+        } else {
+            record.status = action;
+            record.adminRemarks = remarks || '';
+            await record.save();
+        }
 
         try {
             await XlNotification.create({
