@@ -840,7 +840,34 @@ router.post('/approvals/action', async (req, res) => {
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
-                const record = await Model.findByPk(recordId);
+                        if (type === 'ExpenseGroup') {
+            const { employeeId, date, miscExpense } = req.body;
+            const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted'] } });
+            
+            for (const rec of records) {
+                if (rec.category === 'Misc' && miscExpense !== undefined) {
+                    rec.amount = parseFloat(miscExpense) || 0;
+                }
+                rec.status = action;
+                rec.remarks = remarks || rec.remarks || '';
+                await rec.save();
+            }
+            
+            if (miscExpense !== undefined && !records.some(r => r.category === 'Misc')) {
+                await XlExpense.create({
+                    _id: generateId(),
+                    employeeId,
+                    date,
+                    amount: parseFloat(miscExpense) || 0,
+                    category: 'Misc',
+                    remarks: remarks || '',
+                    status: action
+                });
+            }
+            return res.json({ success: true, message: 'Successfully ' + action + ' expenses' });
+        }
+
+        const record = await Model.findByPk(recordId);
         if (!record) return res.status(404).json({ error: 'Record not found' });
 
         if (type === 'Tour Program' && req.body.dates && Array.isArray(req.body.dates)) {

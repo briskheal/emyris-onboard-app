@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CheckCircle, XCircle, ChevronLeft } from 'lucide-react';
 import TourProgramApproval from '../components/TourProgramApproval';
+import ExpenseApproval from '../components/ExpenseApproval';
 import { useNavigate } from 'react-router-dom';
 
 const sidebarItems = [
@@ -194,6 +195,8 @@ export default function Approvals() {
        {/* Main Content */}
        {selectedModule === 'Tour Program' ? (
          <TourProgramApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+       ) : selectedModule === 'Expense' ? (
+         <ExpenseApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
        ) : (
          <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
             <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] flex justify-between items-center bg-[#1c1c2e] shrink-0">
