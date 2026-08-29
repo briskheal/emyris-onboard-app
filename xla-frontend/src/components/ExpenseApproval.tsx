@@ -28,6 +28,8 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
         grouped[key] = {
           employeeId: i.employeeId,
           employeeName: i.employeeName || i.employeeEmail || i.employeeId,
+          designation: i.designation || '-',
+          reportingManager: i.reportingManager || '-',
           date: i.date,
           areaType: 'Local', // Can be refined if area info is stored
           travel: 0, food: 0, hotel: 0, ticket: 0, daily: 0, misc: 0, total: 0,
@@ -62,8 +64,8 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
           employeeId: d.employeeId,
           name: d.employeeName,
           month, year,
-          designation: 'RSM',
-          reportingManager: 'Admin',
+          designation: d.designation || '-',
+          reportingManager: d.reportingManager || '-',
           days: []
         };
       }

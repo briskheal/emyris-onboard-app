@@ -804,10 +804,13 @@ router.get('/approvals/pending', async (req, res) => {
         const data = [];
         for (const p of pending) {
             const pData = p.toJSON();
-            if (!pData.employeeName && pData.employeeId) {
+            if (pData.employeeId) {
                 const u = await XlUser.findOne({ where: { employeeId: pData.employeeId } });
                 if (u) {
-                    pData.employeeName = u.firstName + ' ' + u.lastName;
+                    pData.employeeName = pData.employeeName || (u.firstName + ' ' + u.lastName) || u.name;
+                    pData.employeeEmail = pData.employeeEmail || u.email;
+                    pData.designation = u.designation || '-';
+                    pData.reportingManager = u.reportingManager || '-';
                 }
             }
             data.push(pData);

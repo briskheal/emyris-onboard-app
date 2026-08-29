@@ -40,7 +40,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
             tpId: tp._id,
             date: e.date,
             employeeName: tp.employeeName || tp.employeeEmail,
-            designation: 'RSM', // Placeholder, we don't fetch designation in pending API easily
+            designation: tp.designation || '-',
             areaType: e.type || e.areaType || '-',
             location: e.toMarket || '-',
             remarks: e.remarks || '-',
@@ -273,8 +273,8 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                         <td className="px-4 py-4 text-sm font-bold text-white capitalize">{item.month}</td>
                         <td className="px-4 py-4 text-sm font-medium text-slate-300">{item.year}</td>
                         <td className="px-4 py-4 text-sm font-bold text-sky-400">{item.employeeName || item.employeeId}</td>
-                        <td className="px-4 py-4 text-sm text-slate-300">RSM</td>
-                        <td className="px-4 py-4 text-sm text-slate-300">Admin</td>
+                        <td className="px-4 py-4 text-sm text-slate-300">{item.designation || "-"}</td>
+                          <td className="px-4 py-4 text-sm text-slate-300">{item.reportingManager || "-"}</td>
                         <td className="px-4 py-4 text-center">
                           <button onClick={() => setDetailedMonthTpId(item._id)} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
                             <Eye size={18} strokeWidth={2.5}/>
