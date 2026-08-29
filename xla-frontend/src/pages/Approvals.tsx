@@ -63,6 +63,39 @@ export default function Approvals() {
     fetchPending();
   }, [selectedModule]);
 
+  // Handle Keyboard Up/Down Navigation
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept if user is typing in an input/textarea (like remarks)
+      if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) return;
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const currentIndex = sidebarItems.findIndex(i => i.path === selectedModule);
+        
+        if (e.key === 'ArrowDown' && currentIndex < sidebarItems.length - 1) {
+          setSelectedModule(sidebarItems[currentIndex + 1].path);
+          setSelectedRows([]);
+        } else if (e.key === 'ArrowUp' && currentIndex > 0) {
+          setSelectedModule(sidebarItems[currentIndex - 1].path);
+          setSelectedRows([]);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedModule]);
+
+  // Auto-scroll the sidebar when selectedModule changes
+  useEffect(() => {
+    const el = document.getElementById(`sidebar-item-${selectedModule}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [selectedModule]);
+
+
   const handleAction = async (recordId: string, action: string) => {
     if (!window.confirm(`Are you sure you want to ${action} this request?`)) return;
     try {
@@ -140,6 +173,7 @@ export default function Approvals() {
                 return (
                   <button 
                     key={item.label}
+                    id={`sidebar-item-${item.path}`}
                     onClick={() => { setSelectedModule(item.path); setSelectedRows([]); }}
                     className={`w-full text-left px-5 py-3.5 flex items-center justify-between transition-colors ${isSelected ? 'bg-emerald-500/10 text-emerald-400 border-r-[3px] border-emerald-400' : 'text-slate-400 hover:bg-[#27273f] hover:text-slate-200'}`}
                   >
