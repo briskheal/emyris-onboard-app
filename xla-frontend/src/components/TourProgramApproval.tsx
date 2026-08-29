@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import axios from 'axios';
-import { CheckCircle, XCircle, Eye, ChevronLeft } from 'lucide-react';
+import { CheckCircle, Eye, ChevronLeft } from 'lucide-react';
 
 export default function TourProgramApproval({ items, fetchPending, fetchCounts, selectedModule }: any) {
   const [selectedUser, setSelectedUser] = useState('');
@@ -54,28 +54,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
     return flattened.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [filteredItems]);
 
-  const handleDayAction = async (tpId: string, dates: string[], action: string) => {
-    if (!window.confirm(`Are you sure you want to ${action} ${dates.length} days?`)) return;
-    try {
-      const res = await axios.post('/api/xl/approvals/action', {
-        recordId: tpId,
-        type: 'Tour Program',
-        action,
-        dates
-      });
-      if (res.data.success) {
-        setSelectedRows([]);
-        fetchPending();
-        fetchCounts();
-      } else {
-        alert(res.data.message || 'Action failed');
-      }
-    } catch (e) {
-      console.error(e);
-      alert('Network error');
-    }
-  };
-
+  
   const handleBulkAction = async (action: string) => {
     if (selectedRows.length === 0) return;
     // Group selected rows by tpId
@@ -169,7 +148,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                  </thead>
                  <tbody>
                    {entries.map((entry: any, idx: number) => {
-                     const rowId = \`\${tp._id}_\${entry.date}\`;
+                     const rowId = `${tp._id}_${entry.date}`;
                      const d = new Date(entry.date);
                      const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][d.getDay()];
                      const status = entry.status || tp.status || 'Pending';
@@ -182,7 +161,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                          <td className="px-4 py-4 text-sm text-slate-300">{entry.type || entry.areaType || '-'}</td>
                          <td className="px-4 py-4 text-sm text-sky-400">{entry.toMarket || '-'}</td>
                          <td className="px-4 py-4 text-center">
-                           <span className={\`px-3 py-1 text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm \${status === 'Approved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : status === 'Rejected' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}\`}>
+                           <span className={`px-3 py-1 text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm ${status === 'Approved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : status === 'Rejected' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
                              {status}
                            </span>
                          </td>
@@ -235,9 +214,9 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
             <div className="flex items-center gap-3 bg-[#151521] px-5 py-3 rounded-xl border border-[#3b3b5a]">
               <div 
                 onClick={() => { setIsMonthlyView(!isMonthlyView); setSelectedRows([]); }} 
-                className={\`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors \${isMonthlyView ? 'bg-emerald-500' : 'bg-slate-700'}\`}
+                className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${isMonthlyView ? 'bg-emerald-500' : 'bg-slate-700'}`}
               >
-                <div className={\`w-4 h-4 rounded-full bg-white transition-transform \${isMonthlyView ? 'translate-x-6' : 'translate-x-0'}\`}></div>
+                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isMonthlyView ? 'translate-x-6' : 'translate-x-0'}`}></div>
               </div>
               <span className="text-sm font-bold text-slate-300">View Monthly Tour Program</span>
             </div>
@@ -277,7 +256,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                         <th className="p-4 w-12 text-center">
                           <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === dayWiseData.length} onChange={() => {
                             if (selectedRows.length === dayWiseData.length) setSelectedRows([]);
-                            else setSelectedRows(dayWiseData.map(d => \`\${d.tpId}_\${d.date}\`));
+                            else setSelectedRows(dayWiseData.map(d => `${d.tpId}_${d.date}`));
                           }} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
                         </th>
                       </>
@@ -307,7 +286,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                     dayWiseData.length === 0 ? (
                       <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily TPs</td></tr>
                     ) : dayWiseData.map((d: any, idx: number) => {
-                      const rowId = \`\${d.tpId}_\${d.date}\`;
+                      const rowId = `${d.tpId}_${d.date}`;
                       return (
                         <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
                           <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
