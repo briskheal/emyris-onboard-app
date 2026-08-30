@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SettingsPreferences from '../components/SettingsPreferences';
+import SettingsHolidays from '../components/SettingsHolidays';
 
 const SIDEBAR_ITEMS = [
   { id: 'holidays', label: 'CREATE HOLIDAYS' },
