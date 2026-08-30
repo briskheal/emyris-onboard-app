@@ -1066,4 +1066,23 @@ router.post('/call-plan/bulk', async (req, res) => {
     }
 });
 
+// GET Global Settings
+router.get('/settings/preferences', async (req, res) => {
+    try {
+        let settings = await XlGlobalSettings.findOne();
+        if (!settings) settings = await XlGlobalSettings.create({ settings: {} });
+        res.json({ success: true, data: settings.settings || {} });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// POST Global Settings
+router.post('/settings/preferences', async (req, res) => {
+    try {
+        let settings = await XlGlobalSettings.findOne();
+        if (!settings) settings = await XlGlobalSettings.create({ settings: req.body.settings || {} });
+        else { settings.settings = { ...settings.settings, ...req.body.settings }; await settings.save(); }
+        res.json({ success: true, data: settings.settings });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 module.exports = router;
