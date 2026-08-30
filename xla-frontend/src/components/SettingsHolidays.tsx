@@ -59,7 +59,7 @@ export default function SettingsHolidays() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this holiday?')) return;
     try {
-      await axios.delete(\`/api/xl/settings/holidays/\${id}\`);
+      await axios.delete(`/api/xl/settings/holidays/${id}`);
       setHolidays(holidays.filter(h => h._id !== id));
     } catch (e) {
       console.error(e);
