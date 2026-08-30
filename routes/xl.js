@@ -843,7 +843,19 @@ router.post('/approvals/action', async (req, res) => {
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
-                        if (type === 'ExpenseGroup') {
+                        if (type === 'CallReportGroup') {
+            const { employeeId, date } = req.body;
+            const records = await XlDCR.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted'] } });
+            
+            for (const rec of records) {
+                rec.status = action;
+                rec.adminRemarks = remarks || rec.adminRemarks || '';
+                await rec.save();
+            }
+            return res.json({ success: true, message: 'Successfully ' + action + ' call reports' });
+        }
+        
+        if (type === 'ExpenseGroup') {
             const { employeeId, date, miscExpense } = req.body;
             const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted'] } });
             
