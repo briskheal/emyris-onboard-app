@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { Trash2, CheckSquare } from 'lucide-react';
+import { Trash2, CheckSquare, ChevronDown, X } from 'lucide-react';
 
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana',
@@ -17,12 +17,26 @@ export default function SettingsHolidays() {
 
   // Form State
   const [type, setType] = useState('National');
-  const [state, setState] = useState('');
+  const [selectedStates, setSelectedStates] = useState<string[]>([]);
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
   const [date, setDate] = useState('');
   const [title, setTitle] = useState('');
   const [formError, setFormError] = useState('');
+  const [adding, setAdding] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetchHolidays(); }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setStateDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const fetchHolidays = async () => {
     try {
@@ -35,20 +49,33 @@ export default function SettingsHolidays() {
     }
   };
 
+  const toggleState = (s: string) => {
+    setSelectedStates(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s]);
+  };
+
   const handleAddHoliday = async () => {
     setFormError('');
     if (!title || !date) { setFormError('Please fill in Title and Date.'); return; }
-    if (type === 'State' && !state) { setFormError('Please select a State.'); return; }
+    if (type === 'State' && selectedStates.length === 0) { setFormError('Please select at least one State.'); return; }
+    setAdding(true);
     try {
-      const res = await axios.post('/api/xl/settings/holidays', {
-        type, state: type === 'State' ? state : null, date, title
-      });
-      if (res.data.success) {
-        setHolidays(prev => [...prev, res.data.data]);
-        setTitle(''); setDate(''); setState('');
+      if (type === 'National') {
+        const res = await axios.post('/api/xl/settings/holidays', { type, state: null, date, title });
+        if (res.data.success) setHolidays(prev => [...prev, res.data.data]);
+      } else {
+        // Create one row per selected state
+        const results = await Promise.all(
+          selectedStates.map(s => axios.post('/api/xl/settings/holidays', { type, state: s, date, title }))
+        );
+        const newHolidays = results.filter(r => r.data.success).map(r => r.data.data);
+        setHolidays(prev => [...prev, ...newHolidays]);
       }
+      setTitle(''); setDate(''); setSelectedStates(''.split(''));
+      setSelectedStates([]);
     } catch (e) {
       setFormError('Failed to add holiday. Please try again.');
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -98,20 +125,70 @@ export default function SettingsHolidays() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 shrink-0">
         <div>
           <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">HOLIDAY TYPE *</label>
-          <select value={type} onChange={e => { setType(e.target.value); setState(''); }} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
+          <select value={type} onChange={e => { setType(e.target.value); setSelectedStates([]); }} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
             <option value="National">National</option>
             <option value="State">State</option>
           </select>
         </div>
         {type === 'State' && (
-          <div>
-            <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">SELECT STATE *</label>
-            <select value={state} onChange={e => setState(e.target.value)} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
-              <option value="">Select State</option>
-              {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <div ref={dropdownRef} className="relative">
+            <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">SELECT STATES *</label>
+            {/* Trigger button */}
+            <button
+              type="button"
+              onClick={() => setStateDropdownOpen(o => !o)}
+              className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500 flex items-center justify-between gap-2"
+            >
+              <span className={selectedStates.length === 0 ? 'text-slate-500' : 'text-white'}>
+                {selectedStates.length === 0
+                  ? 'Select States'
+                  : `${selectedStates.length} state${selectedStates.length > 1 ? 's' : ''} selected`}
+              </span>
+              <ChevronDown size={14} className={`transition-transform shrink-0 ${stateDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {/* Selected state tags */}
+            {selectedStates.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-2">
+                {selectedStates.map(s => (
+                  <span key={s} className="flex items-center gap-1 px-2 py-1 bg-sky-500/20 text-sky-300 text-[10px] font-black rounded-lg border border-sky-500/30">
+                    {s}
+                    <button onClick={() => toggleState(s)} className="hover:text-white transition-colors"><X size={10} /></button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Dropdown panel */}
+            {stateDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#1c1c2e] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto">
+                {/* Select All / Clear */}
+                <div className="sticky top-0 bg-[#1c1c2e] border-b border-[#3b3b5a] px-3 py-2 flex items-center justify-between gap-3">
+                  <button
+                    onClick={() => setSelectedStates(selectedStates.length === INDIAN_STATES.length ? [] : [...INDIAN_STATES])}
+                    className="text-[10px] font-black text-sky-400 hover:text-sky-300 uppercase tracking-wider"
+                  >
+                    {selectedStates.length === INDIAN_STATES.length ? 'Clear All' : 'Select All'}
+                  </button>
+                  <span className="text-[10px] text-slate-500">{selectedStates.length}/{INDIAN_STATES.length}</span>
+                </div>
+                {INDIAN_STATES.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => toggleState(s)}
+                    className={`w-full text-left px-3 py-2 flex items-center gap-3 text-sm transition-colors hover:bg-[#27273f] ${selectedStates.includes(s) ? 'text-sky-300 bg-sky-500/5' : 'text-slate-300'}`}
+                  >
+                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all ${selectedStates.includes(s) ? 'bg-sky-500 border-sky-500' : 'border-[#3b3b5a]'}`}>
+                      {selectedStates.includes(s) && <CheckSquare size={10} className="text-white" />}
+                    </span>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
+
         <div>
           <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">SELECT DATE *</label>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500 [color-scheme:dark]" />
@@ -127,8 +204,8 @@ export default function SettingsHolidays() {
       )}
 
       <div className="mb-6 shrink-0">
-        <button onClick={handleAddHoliday} className="bg-sky-500 hover:bg-sky-400 text-white px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg transition-transform active:scale-95">
-          Add Holiday
+        <button onClick={handleAddHoliday} disabled={adding} className="bg-sky-500 hover:bg-sky-400 disabled:opacity-50 text-white px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg transition-transform active:scale-95">
+          {adding ? 'Adding...' : 'Add Holiday'}
         </button>
       </div>
 
