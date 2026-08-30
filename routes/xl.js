@@ -773,7 +773,7 @@ router.get('/approvals/counts', async (req, res) => {
     }
 });
 
-router.get('/approvals/pending', async (req, res) => {
+// GET Global Settings\nrouter.get('/settings/preferences', async (req, res) => {\n    try {\n        let settings = await XlGlobalSettings.findOne();\n        if (!settings) {\n            settings = await XlGlobalSettings.create({ settings: {} });\n        }\n        res.json({ success: true, data: settings.settings || {} });\n    } catch (e) {\n        console.error(e);\n        res.status(500).json({ error: 'Failed to fetch settings' });\n    }\n});\n\n// POST Global Settings\nrouter.post('/settings/preferences', async (req, res) => {\n    try {\n        const { settings: newSettings } = req.body;\n        let settings = await XlGlobalSettings.findOne();\n        if (!settings) {\n            settings = await XlGlobalSettings.create({ settings: newSettings || {} });\n        } else {\n            settings.settings = { ...settings.settings, ...newSettings };\n            await settings.save();\n        }\n        res.json({ success: true, data: settings.settings });\n    } catch (e) {\n        console.error(e);\n        res.status(500).json({ error: 'Failed to save settings' });\n    }\n});\n\nrouter.get('/approvals/pending', async (req, res) => {
     try {
         const { type, designation } = req.query;
         let reporteeEmails = null;

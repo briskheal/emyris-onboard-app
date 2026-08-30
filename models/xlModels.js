@@ -508,6 +508,14 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlGlobalSettings = sequelize.define('xl_global_settings', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: () => Math.random().toString(36).substr(2, 9) },
+        settings: { type: DataTypes.JSON, defaultValue: {} },
+        updatedBy: { type: DataTypes.STRING },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+        updatedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
         XlDoctor,
         XlChemist,
@@ -535,6 +543,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         XlProductSupplier,
         XlInventory,
         XlTravelAllowance,
-        XlOutStationAllowance
+        XlOutStationAllowance,
+        XlGlobalSettings
     };
 };
