@@ -108,9 +108,21 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
 
   // Filter by user
   const filteredItems = useMemo(() => {
-    if (!selectedUser) return items;
-    return items.filter((i: any) => i.employeeId === selectedUser || (i.employeeName && i.employeeName.includes(selectedUser)));
-  }, [items, selectedUser]);
+    let res = items;
+    if (selectedUser) {
+      res = res.filter((i: any) => i.employeeId === selectedUser || (i.employeeName && i.employeeName.includes(selectedUser)));
+    }
+    if (hasEntityToggles) {
+      res = res.filter((i: any) => {
+        const type = i.entityType || '';
+        if (activeToggle === 'DOCTORS' && type === 'Doctor') return true;
+        if (activeToggle === 'CHEMISTS' && type === 'Chemist') return true;
+        if (activeToggle === 'STOCKISTS' && type === 'Stockist') return true;
+        return false;
+      });
+    }
+    return res;
+  }, [items, selectedUser, hasEntityToggles, activeToggle]);
 
   // Unique users for dropdown
   const users = useMemo(() => {
