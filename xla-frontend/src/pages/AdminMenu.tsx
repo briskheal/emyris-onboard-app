@@ -16,7 +16,7 @@ export default function AdminMenu() {
     { label: 'SAMPLES & GIFTS', icon: Gift },
     { label: 'APPROVALS', icon: CheckSquare, path: '/admin/approvals' },
     { label: 'MANAGE LEAVE', icon: CalendarDays },
-    { label: 'SETTINGS', icon: SettingsIcon }
+    { label: 'SETTINGS', icon: SettingsIcon, path: '/extras/settings' }
   ];
 
   return (
