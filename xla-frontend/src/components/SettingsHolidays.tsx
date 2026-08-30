@@ -116,32 +116,39 @@ export default function SettingsHolidays() {
   const downloadHolidays = () => {
     if (holidays.length === 0) return;
 
-    // Group by date + title to create one row per holiday with multiple state columns
-    const grouped: Record<string, { date: string; title: string; type: string; states: string[] }> = {};
+    // Get all unique states present in the current holidays data
+    const uniqueStates = Array.from(new Set(
+      holidays.filter(h => h.state && h.state !== 'N/A').map(h => h.state)
+    )).sort();
+
+    // Group by date + title to create one row per holiday
+    const grouped: Record<string, { date: string; title: string; type: string; states: Set<string> }> = {};
     holidays.forEach(h => {
       const key = `${h.date}__${h.title}`;
       if (!grouped[key]) {
-        grouped[key] = { date: h.date, title: h.title, type: h.type, states: [] };
+        grouped[key] = { date: h.date, title: h.title, type: h.type, states: new Set() };
       }
       if (h.state && h.state !== 'N/A') {
-        grouped[key].states.push(h.state);
+        grouped[key].states.add(h.state);
       }
     });
 
-    // Find max number of states across all rows
-    const maxStates = Math.max(...Object.values(grouped).map(g => g.states.length), 1);
-
     // Build header row
-    const stateHeaders = Array.from({ length: maxStates }, (_, i) => `State ${i + 1}`);
-    const headers = ['Date', 'Holiday Name', 'Type', ...stateHeaders];
+    const headers = ['Sr no.', 'Date', 'Holiday Name', 'Type', ...uniqueStates];
 
     // Build data rows
     const rows = Object.values(grouped)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .map(g => {
+      .map((g, index) => {
         const dateStr = new Date(g.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-        const stateColumns = Array.from({ length: maxStates }, (_, i) => g.states[i] || '');
-        return [dateStr, g.title, g.type, ...stateColumns];
+        
+        // Check 'Y' for each state column
+        const stateChecks = uniqueStates.map(stateName => {
+          if (g.type === 'National') return 'Y';
+          return g.states.has(stateName) ? 'Y' : '';
+        });
+
+        return [index + 1, dateStr, g.title, g.type, ...stateChecks];
       });
 
     // Build worksheet using xlsx
@@ -150,8 +157,8 @@ export default function SettingsHolidays() {
 
       // Column widths
       ws['!cols'] = [
-        { wch: 15 }, { wch: 30 }, { wch: 12 },
-        ...Array(maxStates).fill({ wch: 20 })
+        { wch: 8 }, { wch: 15 }, { wch: 30 }, { wch: 12 },
+        ...Array(uniqueStates.length).fill({ wch: 15 })
       ];
 
       const wb = XLSX.utils.book_new();
