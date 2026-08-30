@@ -4,6 +4,8 @@ import { CheckCircle, XCircle, ChevronLeft } from 'lucide-react';
 import TourProgramApproval from '../components/TourProgramApproval';
 import ExpenseApproval from '../components/ExpenseApproval';
 import CallReportApproval from '../components/CallReportApproval';
+import LeaveRequestApproval from '../components/LeaveRequestApproval';
+import CallPlanApproval from '../components/CallPlanApproval';
 import { useNavigate } from 'react-router-dom';
 
 const sidebarItems = [
@@ -200,6 +202,10 @@ export default function Approvals() {
          <ExpenseApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
        ) : selectedModule === 'Call Report' ? (
          <CallReportApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+       ) : selectedModule === 'Leave Request' ? (
+         <LeaveRequestApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+       ) : selectedModule === 'Call Plans' ? (
+         <CallPlanApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
        ) : (
          <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
             <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] flex justify-between items-center bg-[#1c1c2e] shrink-0">
