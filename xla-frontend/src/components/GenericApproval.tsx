@@ -215,9 +215,32 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                </button>
             )}
           </div>
+          {hasEntityToggles && (
+            <div className="flex items-center gap-8 mt-6 pt-4 border-t border-[#3b3b5a]">
+               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveToggle('DOCTORS')}>
+                  <div className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 ${activeToggle === 'DOCTORS' ? 'bg-emerald-500' : 'bg-[#27273f]'}`}>
+                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${activeToggle === 'DOCTORS' ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                  </div>
+                  <span className="text-xs font-black text-white uppercase tracking-widest">DOCTORS</span>
+               </div>
+               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveToggle('STOCKISTS')}>
+                  <div className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 ${activeToggle === 'STOCKISTS' ? 'bg-emerald-500' : 'bg-[#27273f]'}`}>
+                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${activeToggle === 'STOCKISTS' ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                  </div>
+                  <span className="text-xs font-black text-white uppercase tracking-widest">STOCKISTS</span>
+               </div>
+               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveToggle('CHEMISTS')}>
+                  <div className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 ${activeToggle === 'CHEMISTS' ? 'bg-emerald-500' : 'bg-[#27273f]'}`}>
+                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${activeToggle === 'CHEMISTS' ? 'translate-x-6' : 'translate-x-0'}`}></div>
+                  </div>
+                  <span className="text-xs font-black text-white uppercase tracking-widest">CHEMISTS</span>
+               </div>
+            </div>
+          )}
        </div>
 
        {showConfirmModal && (
+
           <div className="absolute inset-0 bg-[#151521]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
              <div className="bg-[#1c1c2e] border border-[#3b3b5a] shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
                <div className="flex justify-between items-center mb-6 border-b border-[#3b3b5a] pb-4">
