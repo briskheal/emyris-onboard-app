@@ -113,13 +113,69 @@ export default function SettingsHolidays() {
 
   const renderDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+  const downloadHolidays = () => {
+    if (holidays.length === 0) return;
+
+    // Group by date + title to create one row per holiday with multiple state columns
+    const grouped: Record<string, { date: string; title: string; type: string; states: string[] }> = {};
+    holidays.forEach(h => {
+      const key = `${h.date}__${h.title}`;
+      if (!grouped[key]) {
+        grouped[key] = { date: h.date, title: h.title, type: h.type, states: [] };
+      }
+      if (h.state && h.state !== 'N/A') {
+        grouped[key].states.push(h.state);
+      }
+    });
+
+    // Find max number of states across all rows
+    const maxStates = Math.max(...Object.values(grouped).map(g => g.states.length), 1);
+
+    // Build header row
+    const stateHeaders = Array.from({ length: maxStates }, (_, i) => `State ${i + 1}`);
+    const headers = ['Date', 'Holiday Name', 'Type', ...stateHeaders];
+
+    // Build data rows
+    const rows = Object.values(grouped)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map(g => {
+        const dateStr = new Date(g.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const stateColumns = Array.from({ length: maxStates }, (_, i) => g.states[i] || '');
+        return [dateStr, g.title, g.type, ...stateColumns];
+      });
+
+    // Build worksheet using xlsx
+    import('xlsx').then(XLSX => {
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+
+      // Column widths
+      ws['!cols'] = [
+        { wch: 15 }, { wch: 30 }, { wch: 12 },
+        ...Array(maxStates).fill({ wch: 20 })
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Holiday List');
+      XLSX.writeFile(wb, 'Holiday_List_2026.xlsx');
+    });
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-400">Loading Holidays...</div>;
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
-      <div className="flex items-center gap-3 mb-6 shrink-0">
+      <div className="flex items-center justify-between gap-3 mb-6 shrink-0">
         <h2 className="text-xl font-black text-white uppercase tracking-wide">CREATE HOLIDAYS</h2>
+        {holidays.length > 0 && (
+          <button
+            onClick={downloadHolidays}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-white border border-emerald-500/30 rounded-xl text-xs font-black uppercase tracking-wider transition-all active:scale-95"
+          >
+            ↓ Download Excel
+          </button>
+        )}
       </div>
+
 
       {/* Form */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4 shrink-0">
