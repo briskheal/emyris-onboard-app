@@ -155,4 +155,3 @@ export default function SettingsHolidays() {
     </div>
   );
 }
-\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n      await axios.delete(`/api/xl/settings/holidays/${id}`);
