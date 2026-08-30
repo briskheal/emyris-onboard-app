@@ -32,7 +32,7 @@ export default function Approvals() {
   const navigate = useNavigate();
   const [selectedModule, setSelectedModule] = useState('Tour Program');
   const [items, setItems] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false); // @ts-ignore
+   // @ts-ignore
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
 
@@ -49,7 +49,7 @@ export default function Approvals() {
 
   const fetchPending = async () => {
     try {
-      setLoading(true);
+      // setLoading(true);
       const res = await axios.get(`/api/xl/approvals/pending?type=${encodeURIComponent(selectedModule)}&designation=ADMIN`);
       if (res.data.success) {
         setItems(res.data.data);
@@ -57,7 +57,7 @@ export default function Approvals() {
     } catch (e) {
       console.error(e);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
