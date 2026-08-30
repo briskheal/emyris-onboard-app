@@ -10,7 +10,7 @@ const SIDEBAR_ITEMS = [
   { id: 'user_controls', label: 'USER CONTROLS' },
   { id: 'doctor_controls', label: 'DOCTOR CONTROLS' },
   { id: 'campaigns', label: 'CAMPAIGNS' },
-  { id: 'refer', label: 'REFER & EARN' }
+  
 ];
 
 export default function Settings() {

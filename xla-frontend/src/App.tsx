@@ -43,7 +43,7 @@ function App() {
           <Route path="/admin/products" element={<ManageProducts />} />
           <Route path="/admin/expenses" element={<ManageAllowances />} />
           <Route path="/admin/dcs" element={<ManageDCS />} />
-          <Route path="/admin/approvals" element={<Approvals />} />
+          <Route path="/admin/approvals" element={<Approvals />} />\n          <Route path="/extras/settings" element={<Settings />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />
