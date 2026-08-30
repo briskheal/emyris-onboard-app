@@ -83,8 +83,54 @@ async function initializeApp() {
             }
             console.log(`✅ States synchronized with state.xlsx. Inserted: ${newCount}, Updated: ${updCount}`);
         }
+    } catch (err) {
+        console.error('⚠️ State sync failed:', err.message);
+    }
+
+    // AUTO SEED HOLIDAYS EXCEL
+    try {
+        const { XlHoliday } = require('./db');
+        const xlsx = require('xlsx');
+        const fs = require('fs');
+        if (fs.existsSync('REPORTING MODULE/holiday lists.xlsx')) {
+            const count = await XlHoliday.count();
+            if (count === 0) {
+                const wb = xlsx.readFile('REPORTING MODULE/holiday lists.xlsx');
+                const data = xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+                
+                const STATE_MAPPINGS = {
+                    'Uttar pradesh': 'Uttar Pradesh',
+                    'Tamilnadu': 'Tamil Nadu',
+                    'Ap': 'Andhra Pradesh',
+                    'Maharastra': 'Maharashtra',
+                    'West bengal': 'West Bengal'
+                };
+
+                const formattedHolidays = data.map(row => {
+                    let stateName = row['State'];
+                    if (stateName) {
+                        stateName = stateName.trim();
+                        if (STATE_MAPPINGS[stateName]) {
+                            stateName = STATE_MAPPINGS[stateName];
+                        } else {
+                            stateName = stateName.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
+                        }
+                    }
+
+                    return {
+                        date: new Date(row['Date']),
+                        type: row['Type'],
+                        state: stateName || null,
+                        title: row['Holiday']
+                    };
+                });
+
+                await XlHoliday.bulkCreate(formattedHolidays);
+                console.log(`✅ Automatically seeded ${formattedHolidays.length} holidays from Excel into production database!`);
+            }
+        }
     } catch (e) {
-        console.error('Error seeding states:', e.message);
+        console.error('⚠️ Auto-seed holidays failed:', e.message);
     }
 }
 
