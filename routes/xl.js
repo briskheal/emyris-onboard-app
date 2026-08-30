@@ -1069,7 +1069,7 @@ router.post('/call-plan/bulk', async (req, res) => {
 // GET Global Settings
 router.get('/settings/preferences', async (req, res) => {
     try {
-        let settings = await XlGlobalSettings.findOne();
+        let settings = await XlGlobalSettings, XlHoliday.findOne();
         if (!settings) settings = await XlGlobalSettings.create({ settings: {} });
         res.json({ success: true, data: settings.settings || {} });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
@@ -1085,4 +1085,40 @@ router.post('/settings/preferences', async (req, res) => {
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+
+// GET Holidays
+router.get('/settings/holidays', async (req, res) => {
+    try {
+        const holidays = await XlHoliday.findAll({ order: [['date', 'ASC']] });
+        res.json({ success: true, data: holidays });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch holidays' });
+    }
+});
+
+// POST Holiday
+router.post('/settings/holidays', async (req, res) => {
+    try {
+        const { date, type, state, title } = req.body;
+        const holiday = await XlHoliday.create({ date, type, state, title });
+        res.json({ success: true, data: holiday });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to create holiday' });
+    }
+});
+
+// DELETE Holiday
+router.delete('/settings/holidays/:id', async (req, res) => {
+    try {
+        await XlHoliday.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to delete holiday' });
+    }
+});
+
 module.exports = router;
+

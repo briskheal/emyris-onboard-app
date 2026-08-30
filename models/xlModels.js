@@ -516,7 +516,17 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         updatedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    const XlHoliday = sequelize.define('xl_holiday', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: () => Math.random().toString(36).substr(2, 9) },
+        date: { type: DataTypes.DATEONLY, allowNull: false },
+        type: { type: DataTypes.STRING, allowNull: false },
+        state: { type: DataTypes.STRING },
+        title: { type: DataTypes.STRING, allowNull: false },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     return {
+        XlHoliday,
         XlDoctor,
         XlChemist,
         XlStockist, XlDoctorControl,
