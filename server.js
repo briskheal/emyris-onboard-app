@@ -87,47 +87,62 @@ async function initializeApp() {
         console.error('⚠️ State sync failed:', err.message);
     }
 
-    // AUTO SEED HOLIDAYS EXCEL
+    // AUTO SEED HOLIDAYS - hardcoded data, always works on any server
     try {
         const { XlHoliday } = require('./db');
-        const xlsx = require('xlsx');
-        const fs = require('fs');
-        if (fs.existsSync('REPORTING MODULE/holiday lists.xlsx')) {
-            const count = await XlHoliday.count();
-            if (count === 0) {
-                const wb = xlsx.readFile('REPORTING MODULE/holiday lists.xlsx');
-                const data = xlsx.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-                
-                const STATE_MAPPINGS = {
-                    'Uttar pradesh': 'Uttar Pradesh',
-                    'Tamilnadu': 'Tamil Nadu',
-                    'Ap': 'Andhra Pradesh',
-                    'Maharastra': 'Maharashtra',
-                    'West bengal': 'West Bengal'
-                };
-
-                const formattedHolidays = data.map(row => {
-                    let stateName = row['State'];
-                    if (stateName) {
-                        stateName = stateName.trim();
-                        if (STATE_MAPPINGS[stateName]) {
-                            stateName = STATE_MAPPINGS[stateName];
-                        } else {
-                            stateName = stateName.replace(/\w\S*/g, (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-                        }
-                    }
-
-                    return {
-                        date: new Date(row['Date']),
-                        type: row['Type'],
-                        state: stateName || null,
-                        title: row['Holiday']
-                    };
-                });
-
-                await XlHoliday.bulkCreate(formattedHolidays);
-                console.log(`✅ Automatically seeded ${formattedHolidays.length} holidays from Excel into production database!`);
-            }
+        const HOLIDAY_SEED = [
+            { date: '2026-01-01', type: 'State', state: 'Telangana', title: 'New Year Day' },
+            { date: '2026-01-01', type: 'State', state: 'Uttar Pradesh', title: 'New Year Day' },
+            { date: '2026-01-01', type: 'State', state: 'Odisha', title: 'New Year Day' },
+            { date: '2026-01-01', type: 'State', state: 'Tamil Nadu', title: 'New Year Day' },
+            { date: '2026-01-01', type: 'State', state: 'Maharashtra', title: 'New Year Day' },
+            { date: '2026-01-01', type: 'State', state: 'Jharkhand', title: 'New Year Day' },
+            { date: '2026-01-14', type: 'National', state: null, title: 'Makar Sankranti / Bihu / Pongal' },
+            { date: '2026-01-14', type: 'State', state: 'Chhattisgarh', title: 'Makar Sankranti / Bihu / Pongal' },
+            { date: '2026-01-14', type: 'State', state: 'Madhya Pradesh', title: 'Makar Sankranti / Bihu / Pongal' },
+            { date: '2026-01-26', type: 'National', state: null, title: 'Republic Day Of India' },
+            { date: '2026-03-20', type: 'National', state: null, title: 'Holi Festival' },
+            { date: '2026-04-01', type: 'National', state: null, title: 'Id-ul-Fitr (Eid)' },
+            { date: '2026-04-14', type: 'State', state: 'Telangana', title: 'Ugadi' },
+            { date: '2026-05-01', type: 'National', state: null, title: 'Labor Day' },
+            { date: '2026-07-01', type: 'State', state: 'Odisha', title: 'Rath Yatra Festival' },
+            { date: '2026-08-15', type: 'National', state: null, title: 'Independence Day India' },
+            { date: '2026-08-19', type: 'State', state: 'Gujarat', title: 'Rakhi Purnami / Raksha Bandhan' },
+            { date: '2026-08-19', type: 'State', state: 'Uttar Pradesh', title: 'Rakhi Purnami / Raksha Bandhan' },
+            { date: '2026-08-19', type: 'State', state: 'Maharashtra', title: 'Rakhi Purnami / Raksha Bandhan' },
+            { date: '2026-08-19', type: 'State', state: 'Jharkhand', title: 'Rakhi Purnami / Raksha Bandhan' },
+            { date: '2026-08-19', type: 'State', state: 'Madhya Pradesh', title: 'Rakhi Purnami / Raksha Bandhan' },
+            { date: '2026-08-19', type: 'State', state: 'Chhattisgarh', title: 'Rakhi Purnami / Raksha Bandhan' },
+            { date: '2026-09-04', type: 'State', state: 'Gujarat', title: 'Janmastami' },
+            { date: '2026-09-04', type: 'State', state: 'Uttar Pradesh', title: 'Janmastami' },
+            { date: '2026-09-04', type: 'State', state: 'Telangana', title: 'Janmastami' },
+            { date: '2026-09-14', type: 'State', state: 'Gujarat', title: 'Ganesh Chaturthi' },
+            { date: '2026-09-14', type: 'State', state: 'Tamil Nadu', title: 'Ganesh Chaturthi' },
+            { date: '2026-09-14', type: 'State', state: 'Maharashtra', title: 'Ganesh Chaturthi' },
+            { date: '2026-09-14', type: 'State', state: 'Jharkhand', title: 'Ganesh Chaturthi' },
+            { date: '2026-09-14', type: 'State', state: 'Madhya Pradesh', title: 'Ganesh Chaturthi' },
+            { date: '2026-09-14', type: 'State', state: 'Chhattisgarh', title: 'Ganesh Chaturthi' },
+            { date: '2026-09-15', type: 'State', state: 'Maharashtra', title: 'Ganesh Chaturthi' },
+            { date: '2026-10-02', type: 'National', state: null, title: 'Gandhi Jayanti' },
+            { date: '2026-10-08', type: 'State', state: 'Odisha', title: 'Durganavami / Mahanavami' },
+            { date: '2026-10-12', type: 'National', state: null, title: 'Dussehra' },
+            { date: '2026-10-13', type: 'State', state: 'Odisha', title: 'Immersion Day' },
+            { date: '2026-10-29', type: 'National', state: null, title: 'Deepavali / Diwali' },
+            { date: '2026-10-29', type: 'State', state: 'Gujarat', title: 'Deepavali / Diwali' },
+            { date: '2026-10-29', type: 'State', state: 'Uttar Pradesh', title: 'Deepavali / Diwali' },
+            { date: '2026-10-29', type: 'State', state: 'Telangana', title: 'Deepavali / Diwali' },
+            { date: '2026-10-29', type: 'State', state: 'Tamil Nadu', title: 'Deepavali / Diwali' },
+            { date: '2026-10-29', type: 'State', state: 'Jharkhand', title: 'Deepavali / Diwali' },
+            { date: '2026-10-29', type: 'State', state: 'Madhya Pradesh', title: 'Deepavali / Diwali' },
+            { date: '2026-10-29', type: 'State', state: 'Chhattisgarh', title: 'Deepavali / Diwali' },
+            { date: '2026-12-25', type: 'State', state: 'Tamil Nadu', title: 'Christmas' }
+        ];
+        const count = await XlHoliday.count();
+        if (count === 0) {
+            await XlHoliday.bulkCreate(HOLIDAY_SEED);
+            console.log(`✅ Seeded ${HOLIDAY_SEED.length} holidays into database!`);
+        } else {
+            console.log(`ℹ️ Holidays already present in DB: ${count} records.`);
         }
     } catch (e) {
         console.error('⚠️ Auto-seed holidays failed:', e.message);
