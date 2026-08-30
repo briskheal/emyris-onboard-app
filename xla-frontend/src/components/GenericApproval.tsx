@@ -103,6 +103,8 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
 
   // Some modules don't have View icon in video
   const hasView = ['Doctors', 'Chemists', 'Stockists', 'Secondary Sales', 'Primary Sales', 'Deletion Request'].includes(selectedModule);
+  const hasEntityToggles = ['Geo Fencing', 'Deletion Request'].includes(selectedModule);
+  const [activeToggle, setActiveToggle] = useState('DOCTORS');
 
   // Filter by user
   const filteredItems = useMemo(() => {
