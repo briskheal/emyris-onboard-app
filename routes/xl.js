@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, generateId } = require('../db');
+const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
@@ -1069,7 +1069,7 @@ router.post('/call-plan/bulk', async (req, res) => {
 // GET Global Settings
 router.get('/settings/preferences', async (req, res) => {
     try {
-        let settings = await XlGlobalSettings, XlHoliday.findOne();
+        let settings = await XlGlobalSettings.findOne();
         if (!settings) settings = await XlGlobalSettings.create({ settings: {} });
         res.json({ success: true, data: settings.settings || {} });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
