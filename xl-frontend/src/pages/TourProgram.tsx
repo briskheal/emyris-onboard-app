@@ -90,6 +90,8 @@ export default function TourProgram() {
   const [submitting, setSubmitting] = useState(false);
   const [showRemarkModal, setShowRemarkModal] = useState(false);
   const [remarkText, setRemarkText] = useState('');
+  
+  const [holidays, setHolidays] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const storedUser = localStorage.getItem('xl_user');
@@ -104,8 +106,30 @@ export default function TourProgram() {
     if (user) {
       fetchTP();
       fetchMarkets();
+      fetchHolidays();
     }
   }, [month, year, user]);
+
+  const fetchHolidays = async () => {
+    try {
+      const res = await axios.get('/api/xl/settings/holidays');
+      if (res.data.success) {
+        const holidayMap: Record<string, string> = {};
+        res.data.data.forEach((h: any) => {
+          if (h.type === 'National' || h.state === user?.state) {
+            const d = new Date(h.date);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            holidayMap[`${y}-${m}-${day}`] = h.title;
+          }
+        });
+        setHolidays(holidayMap);
+      }
+    } catch (e) {
+      console.error('Failed to fetch holidays', e);
+    }
+  };
 
   const fetchMarkets = async () => {
     try {
@@ -401,16 +425,18 @@ export default function TourProgram() {
           const dayNum = d.getDate();
           const dayName = ['SUN','MON','TUE','WED','THU','FRI','SAT'][d.getDay()];
           const isSunday = d.getDay() === 0;
+          const isHoliday = !!holidays[dateStr];
+          const isBlocked = isSunday || isHoliday;
           const entry = entries[dateStr];
           const isSelected = selectedDates.includes(dateStr);
           
           return (
             <div 
               key={dateStr} 
-              className={`flex ${isSunday ? 'opacity-50' : ''} border-b border-[#3b3b5a] bg-[#1e2335]`}
+              className={`flex ${isBlocked ? 'opacity-50 bg-[#1c1c2e]' : 'bg-[#1e2335]'} border-b border-[#3b3b5a]`}
               onClick={() => {
-                  if (selectionMode && !isSunday) toggleSelection(dateStr);
-                  else if (!selectionMode && !isSunday) {
+                  if (selectionMode && !isBlocked) toggleSelection(dateStr);
+                  else if (!selectionMode && !isBlocked) {
                     if (entry) {
                       setFormActivity(entry.activityType || entry.type || 'Working');
                       setFormArea(entry.areaType || entry.type || 'HQ');
@@ -424,7 +450,7 @@ export default function TourProgram() {
                 }}
             >
               {/* Date Box */}
-              <div className={`w-16 flex flex-col items-center justify-center p-2 border-r border-[#3b3b5a] ${isSunday ? 'bg-[#1c1c2e]' : 'bg-[#27273f]'}`}>
+              <div className={`w-16 flex flex-col items-center justify-center p-2 border-r border-[#3b3b5a] ${isBlocked ? 'bg-[#1c1c2e]' : 'bg-[#27273f]'}`}>
                 <span className="text-xl font-bold text-white">{dayNum.toString().padStart(2, '0')}</span>
                 <span className="text-xs text-sky-400 font-bold uppercase">{dayName}</span>
               </div>
@@ -432,8 +458,11 @@ export default function TourProgram() {
               {/* Middle Content */}
               <div className="flex-1 p-4 flex justify-between items-center cursor-pointer">
                 <div className="flex-1 overflow-hidden pr-2">
-                  {isSunday ? (
-                    <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Not Allowed</span>
+                  {isBlocked ? (
+                    <div className="flex flex-col">
+                       <span className="text-sm font-bold text-rose-500 uppercase tracking-wider">{isHoliday ? 'Holiday' : 'Sunday'}</span>
+                       {isHoliday && <span className="text-xs font-medium text-slate-500 truncate">{holidays[dateStr]}</span>}
+                    </div>
                   ) : entry ? (
                     <div className="text-sm font-bold text-slate-200 leading-snug truncate">
                       {entry.toMarket ? entry.toMarket : entry.type}
@@ -447,15 +476,15 @@ export default function TourProgram() {
 
                 {/* Right Action/Badge */}
                 {selectionMode ? (
-                  !isSunday && (
+                  !isBlocked && (
                     <div className={`w-6 h-6 rounded border flex items-center justify-center transition-colors ${isSelected ? 'border-sky-500 bg-sky-500/20' : 'border-[#3b3b5a]'}`}>
                       {isSelected && <div className="w-3 h-3 bg-sky-500 rounded-sm" />}
                     </div>
                   )
                 ) : (
-                  !isSunday && entry ? (
+                  !isBlocked && entry ? (
                     getBadge(entry.type)
-                  ) : !isSunday ? (
+                  ) : !isBlocked ? (
                     <span className="w-6 h-6 text-emerald-500 flex items-center justify-center font-bold text-xl">+</span>
                   ) : null
                 )}
