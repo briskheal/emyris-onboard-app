@@ -44,6 +44,8 @@ export default function Settings() {
        <div className="flex-1 bg-[#1e1e2d] relative flex flex-col h-full overflow-hidden p-8">
           {activeTab === 'preferences' ? (
              <SettingsPreferences />
+          ) : activeTab === 'holidays' ? (
+             <SettingsHolidays />
           ) : (
              <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50">
                <div className="w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-400 flex items-center justify-center mb-4">
