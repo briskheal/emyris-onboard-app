@@ -46,6 +46,10 @@ function App() {
           <Route path="/admin/expenses" element={<ManageAllowances />} />
           <Route path="/admin/dcs" element={<ManageDCS />} />
           <Route path="/admin/approvals" element={<Approvals />} />\n          <Route path="/extras/settings" element={<Settings />} />
+                    <Route path="utilities/lists" element={<ListsLayout />}>
+            <Route index element={<Navigate to="doctors" replace />} />
+            <Route path="doctors" element={<DoctorsListReport />} />
+          </Route>
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />
@@ -63,10 +67,7 @@ function App() {
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
           <Route path="utilities" element={<Utilities />} />
-          <Route path="utilities/lists" element={<ListsLayout />}>
-            <Route index element={<Navigate to="doctors" replace />} />
-            <Route path="doctors" element={<DoctorsListReport />} />
-          </Route>
+
           <Route path="hierarchy" element={<Hierarchy />} />
           <Route path="todays-activity" element={<TodaysActivity />} />
           <Route path="consolidated-activity" element={<ConsolidatedActivity />} />
