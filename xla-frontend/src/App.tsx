@@ -33,6 +33,12 @@ import ManageDCS from './pages/ManageDCS';
 import Approvals from './pages/Approvals';
 import ListsLayout from './pages/ListsLayout';
 import DoctorsListReport from './pages/DoctorsListReport';
+import ChemistsListReport from './pages/ChemistsListReport';
+import StockistsListReport from './pages/StockistsListReport';
+import LocationsListReport from './pages/LocationsListReport';
+import ProductsListReport from './pages/ProductsListReport';
+import GeoFencingListReport from './pages/GeoFencingListReport';
+
 
 function App() {
   return (
@@ -49,6 +55,11 @@ function App() {
                     <Route path="utilities/lists" element={<ListsLayout />}>
             <Route index element={<Navigate to="doctors" replace />} />
             <Route path="doctors" element={<DoctorsListReport />} />
+            <Route path="chemists" element={<ChemistsListReport />} />
+            <Route path="stockists" element={<StockistsListReport />} />
+            <Route path="locations" element={<LocationsListReport />} />
+            <Route path="products" element={<ProductsListReport />} />
+            <Route path="geo-fencing" element={<GeoFencingListReport />} />
           </Route>
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
