@@ -31,6 +31,8 @@ import ManageProducts from './pages/ManageProducts';
 import ManageAllowances from './pages/ManageAllowances';
 import ManageDCS from './pages/ManageDCS';
 import Approvals from './pages/Approvals';
+import ListsLayout from './pages/ListsLayout';
+import DoctorsListReport from './pages/DoctorsListReport';
 
 function App() {
   return (
@@ -61,6 +63,10 @@ function App() {
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
           <Route path="utilities" element={<Utilities />} />
+          <Route path="utilities/lists" element={<ListsLayout />}>
+            <Route index element={<Navigate to="doctors" replace />} />
+            <Route path="doctors" element={<DoctorsListReport />} />
+          </Route>
           <Route path="hierarchy" element={<Hierarchy />} />
           <Route path="todays-activity" element={<TodaysActivity />} />
           <Route path="consolidated-activity" element={<ConsolidatedActivity />} />

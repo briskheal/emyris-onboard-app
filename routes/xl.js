@@ -169,6 +169,21 @@ router.post('/route', async (req, res) => {
 });
 
 // Fetch all doctors for a user (for DCR entity selection)
+
+// Reports Route for Doctors List
+router.get('/reports/doctors', async (req, res) => {
+    try {
+        const { employeeId } = req.query;
+        let where = {};
+        if (employeeId) where.employeeId = employeeId;
+        const doctors = await XlDoctor.findAll({ where, order: [['name', 'ASC']] });
+        res.json({ success: true, data: doctors });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch doctors for reports' });
+    }
+});
+
 router.get('/doctors', async (req, res) => {
     try {
         const { designation, hq } = req.query;

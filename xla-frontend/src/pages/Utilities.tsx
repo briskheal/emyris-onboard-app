@@ -1,4 +1,4 @@
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { 
   Menu, MessageSquare, Bell, FileText, CalendarDays, 
   BarChart3, Receipt, MapPin, BellRing, List, Clock, PackageSearch, 
@@ -7,6 +7,7 @@ import {
 
 export default function Utilities() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
+  const navigate = useNavigate();
 
   const utilitiesOptions = [
     { label: 'TOUR PROGRAM', description: 'Access detailed reports of field Tour Programs submitted by users, outlining their planned doctor visits, working areas, and daily schedule.', icon: CalendarDays, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
@@ -18,7 +19,7 @@ export default function Utilities() {
     { label: 'PRIMARY SALES REPORTS', description: 'Provide detailed data on pharmaceutical sales to doctors, chemists, and stockists, including quantities and dates, helping in accurate tracking and planning.', icon: PackageSearch, color: 'text-teal-400', bg: 'bg-teal-400/10' },
     { label: 'SECONDARY SALES REPORTS', description: 'Secondary Sales Reports track pharmaceutical product movement from stockists to retailers, including sales volumes and dates. They support monitoring distribution performance.', icon: ShoppingCart, color: 'text-lime-400', bg: 'bg-lime-400/10' },
     { label: 'PRODUCT-WISE REPORTS', description: 'Product-Wise Reports summarize key metrics for each product, including primary and secondary quantities, free stock, and closing stock, enabling effective inventory and sales management.', icon: Box, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-    { label: 'LISTS', description: 'This list consolidates essential data such as doctors, chemists, stockists, products, gifts, routes, holidays, and geofencing details, streamlining field management and operational planning.', icon: ClipboardList, color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' },
+    { id: 'lists', label: 'LISTS', description: 'This list consolidates essential data such as doctors, chemists, stockists, products, gifts, routes, holidays, and geofencing details, streamlining field management and operational planning.', icon: ClipboardList, color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' },
     { label: 'TARGET', description: 'Target Reports summarize product-wise sales targets, including amount and quantity, helping track progress and ensure goal achievement.', icon: Target, color: 'text-pink-400', bg: 'bg-pink-400/10' },
     { label: 'POB REPORTS', description: 'POB Reports track the details of Products on Booking, including quantities and value, providing insights into order status and sales performance.', icon: Receipt, color: 'text-purple-400', bg: 'bg-purple-400/10' },
     { label: 'MONTHLY REPORTS', description: 'Monthly Call Reports summarize all calls made by field staff to doctors, chemists, and stockists, highlighting call frequency and outcomes to assess engagement and performance.', icon: CalendarRange, color: 'text-sky-500', bg: 'bg-sky-500/10' },
@@ -64,7 +65,7 @@ export default function Utilities() {
         {/* Desktop Grid / Mobile List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-8">
           {utilitiesOptions.map((report, idx) => (
-            <div key={idx} className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 rounded-2xl p-5 md:p-6 transition-all group shadow-lg flex gap-4 md:gap-5 items-start relative overflow-hidden">
+            <div key={idx} onClick={() => report.id === 'lists' && navigate('/utilities/lists/doctors')} className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 rounded-2xl p-5 md:p-6 transition-all group shadow-lg flex gap-4 md:gap-5 items-start relative overflow-hidden cursor-pointer">
               {/* Desktop Decorative Glow */}
               <div className="hidden md:block absolute -inset-1 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 blur-xl transition-opacity z-0 pointer-events-none"></div>
 
