@@ -842,8 +842,9 @@ router.post('/approvals/action', async (req, res) => {
         else if (type === 'Primary Sales') Model = XlPrimarySales;
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
-        else return res.status(400).json({ error: 'Invalid module type' });
-                        if (type === 'CallReportGroup') {
+        else if (type !== 'CallReportGroup' && type !== 'ExpenseGroup') return res.status(400).json({ error: 'Invalid module type' });
+        
+        if (type === 'CallReportGroup') {
             const { employeeId, date } = req.body;
             const records = await XlDCR.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted'] } });
             
@@ -860,12 +861,16 @@ router.post('/approvals/action', async (req, res) => {
             const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted'] } });
             
             for (const rec of records) {
-                if (rec.category === 'Misc' && miscExpense !== undefined) {
-                    rec.amount = parseFloat(miscExpense) || 0;
+                if (action === 'Deleted' || action === 'Delete') {
+                    await rec.destroy();
+                } else {
+                    if (rec.category === 'Misc' && miscExpense !== undefined) {
+                        rec.amount = parseFloat(miscExpense) || 0;
+                    }
+                    rec.status = action;
+                    rec.remarks = remarks || rec.remarks || '';
+                    await rec.save();
                 }
-                rec.status = action;
-                rec.remarks = remarks || rec.remarks || '';
-                await rec.save();
             }
             
             if (miscExpense !== undefined && !records.some(r => r.category === 'Misc')) {
