@@ -351,7 +351,10 @@ export default function ManageDCS() {
             
             <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">EXTRA INFORMATION</label><textarea value={formData.extraInformation} onChange={e=>setFormData({...formData, extraInformation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white h-24" placeholder="Enter Extra Information" /></div>
           </div>
-          <div><button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Add Doctor</button></div>
+          <div className="flex gap-4">
+            <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Doctor' : 'Add Doctor'}</button>
+            {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
+          </div>
         </form>
       </div>
     );
@@ -398,7 +401,10 @@ export default function ManageDCS() {
             
             <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">EXTRA INFORMATION</label><textarea value={formData.extraInformation} onChange={e=>setFormData({...formData, extraInformation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white h-24" placeholder="Enter Extra Information" /></div>
           </div>
-          <div><button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Add Chemist</button></div>
+          <div className="flex gap-4">
+            <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Chemist' : 'Add Chemist'}</button>
+            {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
+          </div>
         </form>
       </div>
     );
@@ -449,7 +455,10 @@ export default function ManageDCS() {
             
             <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">EXTRA INFORMATION</label><textarea value={formData.extraInformation} onChange={e=>setFormData({...formData, extraInformation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white h-24" placeholder="Enter Extra Information" /></div>
           </div>
-          <div><button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Add Stockist</button></div>
+          <div className="flex gap-4">
+            <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Stockist' : 'Add Stockist'}</button>
+            {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
+          </div>
         </form>
       </div>
     );
