@@ -5,7 +5,7 @@ import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, Sea
 import CustomUserSelect from '../components/CustomUserSelect';
 import { useNavigate } from 'react-router-dom';
 
-const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, users, fetchData }: any) => {
+const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, users, fetchData, onEdit }: any) => {
   const [filterType, setFilterType] = useState('Chemist');
   const [filterHq, setFilterHq] = useState('');
   const [filterState, setFilterState] = useState('');
@@ -214,7 +214,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
                 <td className="p-4 border-r border-[#3b3b5a]/50 font-medium">{d.headquarter || '-'}</td>
                 <td className="p-4 text-center">
                   <div className="flex items-center justify-center gap-3">
-                    <button className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={16} /></button>
+                    <button onClick={() => onEdit(d, filterType)} className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={16} /></button>
                     <button onClick={() => handleDelete(d._id)} className="text-rose-400 hover:text-rose-300 hover:scale-110 transition-transform"><Trash2 size={16} /></button>
                   </div>
                 </td>
@@ -299,8 +299,8 @@ export default function ManageDCS() {
   const getControls = (type: string) => controls.filter(c => c.type === type);
 
   // --- DOCTOR TAB ---
-  const CreateDoctorTab = () => {
-    const [formData, setFormData] = useState({
+  const CreateDoctorTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
+    const [formData, setFormData] = useState(editData || {
       name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '',
       mobile: '', clinicContact: '', doctorCode: '', email: '', category: '', userAllotted: '',
       headquarter: '', workingArea: '', address: '', extraInformation: ''
@@ -322,7 +322,7 @@ export default function ManageDCS() {
     return (
       <div className="flex-1 overflow-auto p-8">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-lg font-bold text-white tracking-wide uppercase">CREATE DOCTOR...</h2>
+          <h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT DOCTOR: ${editData.name}` : 'CREATE DOCTOR...'}</h2>
           <button className="text-sky-400 text-sm font-bold hover:underline">Do you want to add more Degrees and Specializations?</button>
         </div>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
@@ -356,8 +356,8 @@ export default function ManageDCS() {
   };
 
   // --- CHEMIST TAB ---
-  const CreateChemistTab = () => {
-    const [formData, setFormData] = useState({
+  const CreateChemistTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
+    const [formData, setFormData] = useState(editData || {
       businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '',
       userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''
     });
@@ -377,7 +377,7 @@ export default function ManageDCS() {
 
     return (
       <div className="flex-1 overflow-auto p-8">
-        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE CHEMIST</h2>
+        <div className="flex justify-between items-center mb-8"><h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT CHEMIST: ${editData.businessName}` : 'CREATE CHEMIST'}</h2></div>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BUSINESS NAME *</label><input required value={formData.businessName} onChange={e=>setFormData({...formData, businessName: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Chemist's Name" /></div>
@@ -403,8 +403,8 @@ export default function ManageDCS() {
   };
 
   // --- STOCKIST TAB ---
-  const CreateStockistTab = () => {
-    const [formData, setFormData] = useState({
+  const CreateStockistTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
+    const [formData, setFormData] = useState(editData || {
       businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '',
       userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''
     });
@@ -424,7 +424,7 @@ export default function ManageDCS() {
 
     return (
       <div className="flex-1 overflow-auto p-8">
-        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE STOCKIST</h2>
+        <div className="flex justify-between items-center mb-8"><h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT STOCKIST: ${editData.businessName}` : 'CREATE STOCKIST'}</h2></div>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BUSINESS NAME *</label><input required value={formData.businessName} onChange={e=>setFormData({...formData, businessName: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Stockist's Name" /></div>
@@ -604,7 +604,10 @@ export default function ManageDCS() {
       {activeTab === 'create_doctor' && <CreateDoctorTab />}
       {activeTab === 'create_chemist' && <CreateChemistTab />}
       {activeTab === 'create_stockist' && <CreateStockistTab />}
-      {activeTab === 'edit_delete' && <EditDeleteTabComponent doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} users={users} fetchData={fetchData} />}
+      {activeTab === 'edit_delete' && !editingRecord && <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} users={users} fetchData={fetchData} />}
+      {activeTab === 'edit_delete' && editingRecord && editingType === 'Doctor' && <CreateDoctorTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
+      {activeTab === 'edit_delete' && editingRecord && editingType === 'Chemist' && <CreateChemistTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
+      {activeTab === 'edit_delete' && editingRecord && editingType === 'Stockist' && <CreateStockistTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
       {activeTab === 'upload_dcs' && <UploadDCSTab />}
       {activeTab === 'dcs_list_management' && <ListManagementTab />}
     </div>
