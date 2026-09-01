@@ -29,26 +29,26 @@ export default function ProductsListReport() {
   };
 
   const divisions = useMemo(() => {
-    const divs = new Set(products.map(p => p.divisionName).filter(Boolean));
+    const divs = new Set(products.map(p => p.division).filter(Boolean));
     return Array.from(divs);
   }, [products]);
 
   const filteredProducts = useMemo(() => {
     if (!selectedDivision) return products;
-    return products.filter(p => p.divisionName === selectedDivision);
+    return products.filter(p => p.division === selectedDivision);
   }, [products, selectedDivision]);
 
   const exportToExcel = () => {
     const dataToExport = filteredProducts.map((p, i) => ({
       'Sr no.': i + 1,
       Name: p.productName,
-      Division: p.divisionName,
+      Division: p.division,
       Packaging: p.packaging,
       MRP: p.mrp,
       PTS: p.pts,
       PTR: p.ptr,
       Category: p.category,
-      Manufacturer: p.supplierName,
+      Manufacturer: p.manufacturer,
       Composition: p.composition
     }));
 
@@ -115,7 +115,7 @@ export default function ProductsListReport() {
                     <tr key={p._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
                       <td className="px-4 py-4 text-sm font-bold text-white">{p.productName}</td>
-                      <td className="px-4 py-4 text-sm text-slate-300">{p.divisionName || '-'}</td>
+                      <td className="px-4 py-4 text-sm text-slate-300">{p.division || '-'}</td>
                       <td className="px-4 py-4 text-sm text-slate-300">{p.packaging || '-'}</td>
                       <td className="px-4 py-4 text-sm text-slate-300">{p.mrp || '0'}</td>
                       <td className="px-4 py-4 text-sm text-slate-300">{p.pts || '0'}</td>

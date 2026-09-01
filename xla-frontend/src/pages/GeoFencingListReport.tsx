@@ -14,8 +14,8 @@ export default function GeoFencingListReport() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('/api/xl/admin/users');
-      if (res.data.success) setUsers(res.data.data);
+      const res = await axios.get('/api/admin/users');
+      if (res.data.success) setUsers(res.data.users || res.data.data || []);
     } catch (e) {
       console.error(e);
     }
