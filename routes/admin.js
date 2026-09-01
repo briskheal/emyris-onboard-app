@@ -4823,6 +4823,7 @@ router.delete('/dcs/stockists/:id', async (req, res) => { try { await XlStockist
 
 router.get('/dcs/controls', async (req, res) => { try { const controls = await XlDoctorControl.findAll(); res.json({ success: true, controls }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.post('/dcs/controls', async (req, res) => { try { const c = await XlDoctorControl.create(req.body); res.json({ success: true, control: c }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.put('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.update(req.body, { where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
 const upload = multer({ dest: 'uploads/' });

@@ -3,6 +3,8 @@ import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SettingsPreferences from '../components/SettingsPreferences';
 import SettingsHolidays from '../components/SettingsHolidays';
+import SettingsUserControls from '../components/SettingsUserControls';
+import SettingsDoctorControls from '../components/SettingsDoctorControls';
 
 const SIDEBAR_ITEMS = [
   { id: 'holidays', label: 'CREATE HOLIDAYS' },
@@ -11,7 +13,6 @@ const SIDEBAR_ITEMS = [
   { id: 'user_controls', label: 'USER CONTROLS' },
   { id: 'doctor_controls', label: 'DOCTOR CONTROLS' },
   { id: 'campaigns', label: 'CAMPAIGNS' },
-  
 ];
 
 export default function Settings() {
@@ -20,7 +21,6 @@ export default function Settings() {
 
   return (
     <div className="flex h-screen bg-[#151521] text-white font-sans overflow-hidden">
-       {/* Sidebar */}
        <div className="w-64 bg-[#1c1c2e] border-r border-[#3b3b5a] flex flex-col shrink-0 relative z-10 shadow-2xl">
           <div className="p-6 border-b border-[#3b3b5a]">
             <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider hover:text-sky-300 transition-colors">
@@ -40,14 +40,17 @@ export default function Settings() {
           </div>
        </div>
 
-       {/* Content Pane */}
-       <div className="flex-1 bg-[#1e1e2d] relative flex flex-col h-full overflow-hidden p-8">
+       <div className="flex-1 bg-[#1e1e2d] relative flex flex-col h-full overflow-hidden">
           {activeTab === 'preferences' ? (
-             <SettingsPreferences />
+             <div className="p-8"><SettingsPreferences /></div>
           ) : activeTab === 'holidays' ? (
-             <SettingsHolidays />
+             <div className="p-8"><SettingsHolidays /></div>
+          ) : activeTab === 'user_controls' ? (
+             <SettingsUserControls />
+          ) : activeTab === 'doctor_controls' ? (
+             <SettingsDoctorControls />
           ) : (
-             <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50">
+             <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50 p-8">
                <div className="w-16 h-16 rounded-2xl bg-sky-500/10 text-sky-400 flex items-center justify-center mb-4">
                  <CheckCircle size={32} />
                </div>

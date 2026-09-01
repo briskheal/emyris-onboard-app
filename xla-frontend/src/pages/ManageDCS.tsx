@@ -298,7 +298,7 @@ export default function ManageDCS() {
     } catch (e) { console.error(e); }
   };
 
-  const getControls = (type: string) => controls.filter(c => c.type === type);
+  const getControls = (type: string) => controls.filter(c => c.type === type && c.isActive !== false);
 
   // --- DOCTOR TAB ---
   const CreateDoctorTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
