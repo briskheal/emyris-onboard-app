@@ -1,1 +1,0 @@
-fetch('https://emyrishr.in/api/admin/dcs/doctors').then(r=>r.json()).then(d=>{ console.log('Total Docs:', d.doctors?.length); if(d.doctors?.length) { const dr = d.doctors[0]; console.log('Sample:', {name: dr.name, hq: dr.headquarter, uid: dr.uid, code: dr.doctorCode}); } }).catch(console.error);

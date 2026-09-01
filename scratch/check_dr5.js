@@ -1,1 +1,0 @@
-const { XlDoctor } = require('../db'); async function check() { const drsE = await XlDoctor.findAll({ where: { employeeId: { [require('sequelize').Op.not]: null } } }); const drsU = await XlDoctor.findAll({ where: { userAllotted: { [require('sequelize').Op.not]: null } } }); console.log('drs with employeeId:', drsE.length, 'drs with userAllotted:', drsU.length); } check();
