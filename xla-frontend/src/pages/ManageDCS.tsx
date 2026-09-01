@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft } from 'lucide-react';
+import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, Search, ArrowUp } from 'lucide-react';
+import CustomUserSelect from '../components/CustomUserSelect';
 import { useNavigate } from 'react-router-dom';
 
 export default function ManageDCS() {
@@ -202,7 +203,7 @@ export default function ManageDCS() {
 
   // --- EDIT / DELETE TAB ---
   const EditDeleteTab = () => {
-    const [filterType, setFilterType] = useState('Doctor');
+    const [filterType, setFilterType] = useState('Chemist');
     const [filterHq, setFilterHq] = useState('');
     const [filterState, setFilterState] = useState('');
     const [filterUser, setFilterUser] = useState('');
@@ -219,11 +220,13 @@ export default function ManageDCS() {
       displayList = displayList.filter(d => hqsInState.includes(d.headquarter));
     }
     if (filterHq) displayList = displayList.filter(d => d.headquarter === filterHq);
-    if (filterUser) displayList = displayList.filter(d => d.userAllotted === filterUser);
+    if (filterUser) displayList = displayList.filter(d => d.userAllotted === filterUser || d.employeeId === filterUser);
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       displayList = displayList.filter(d => 
         (d.name || d.businessName || '').toLowerCase().includes(q) ||
+        (d.proprietorName || '').toLowerCase().includes(q) ||
+        (d.address || '').toLowerCase().includes(q) ||
         (d.uid || '').toLowerCase().includes(q) ||
         (d.mobile || '').toLowerCase().includes(q)
       );
@@ -251,7 +254,6 @@ export default function ManageDCS() {
       if (selectedIds.length === 0) return alert('Select records to delete');
       if(!window.confirm(`Delete ${selectedIds.length} records?`)) return;
       try {
-        // We delete sequentially for now to simplify
         for (const id of selectedIds) {
           await axios.delete(`/api/admin/dcs/${filterType.toLowerCase()}s/${id}`);
         }
@@ -260,70 +262,137 @@ export default function ManageDCS() {
       } catch (e) { alert('Error deleting records'); }
     };
 
+    const ThBase = ({ children, align = 'left', border = true }: { children: React.ReactNode, align?: 'left'|'center', border?: boolean }) => (
+      <th className={`p-4 ${border ? 'border-r border-[#3b3b5a]' : ''} font-bold text-slate-300 text-sm whitespace-nowrap bg-[#252538] text-${align}`}>
+        {children}
+      </th>
+    );
+
+    const ThWithIcons = ({ label, searchable, sortable }: { label: string, searchable?: boolean, sortable?: boolean }) => (
+      <ThBase>
+        <div className="flex items-center justify-center gap-2 w-full">
+          {searchable && <Search size={14} className="text-slate-500 shrink-0" />}
+          <span className="flex-1 text-center">{label}</span>
+          {sortable && <ArrowUp size={14} className="text-slate-500 shrink-0" />}
+        </div>
+      </ThBase>
+    );
+
     return (
-      <div className="flex-1 overflow-auto p-8 relative z-10 flex flex-col">
-        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">EDIT / DELETE</h2>
+      <div className="flex-1 overflow-auto p-4 md:p-8 relative z-10 flex flex-col bg-[#1e1e2d]">
+        <h2 className="text-lg font-bold text-white mb-6 tracking-wide uppercase">EDIT / DELETE</h2>
         
-        <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col p-6 flex-1">
-          <p className="text-sm text-sky-400 mb-6 font-semibold bg-sky-900/30 p-4 rounded-lg inline-block w-fit">Deleting a DCS from here will also remove it from the list.</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT TYPE</label><select value={filterType} onChange={e=>{setFilterType(e.target.value); setSelectedIds([]);}} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="Doctor">Doctor</option><option value="Chemist">Chemist</option><option value="Stockist">Stockist</option></select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT STATE</label><select value={filterState} onChange={e=>setFilterState(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">All States</option>{states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ</label><select value={filterHq} onChange={e=>setFilterHq(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">All Headquarters</option>{hqs.filter(h => !filterState || h.state === filterState).map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER</label><select value={filterUser} onChange={e=>setFilterUser(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">All Users</option>{users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>)}</select></div>
+        <div className="bg-[#27273f] rounded-xl border border-[#3b3b5a] overflow-hidden shadow-2xl flex flex-col p-6 flex-1">
+          <div className="bg-[#1d9c52] text-white text-sm font-semibold p-4 rounded-lg mb-8 shadow-md">
+            Deleting a DCS from here will also remove it from the list.
           </div>
           
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-slate-300">SEARCH:</span>
-              <input type="text" placeholder="Search by name, uid..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-sm text-white" />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">SELECT TYPE</label>
+              <select value={filterType} onChange={e=>{setFilterType(e.target.value); setSelectedIds([]);}} className="w-full bg-[#1e1e2d] border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer">
+                <option value="Doctor">Doctor</option>
+                <option value="Chemist">Chemist</option>
+                <option value="Stockist">Stockist</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">SELECT STATE</label>
+              <select value={filterState} onChange={e=>setFilterState(e.target.value)} className="w-full bg-[#1e1e2d] border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer">
+                <option value="">All States</option>
+                {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">SELECT HQ</label>
+              <select value={filterHq} onChange={e=>setFilterHq(e.target.value)} className="w-full bg-[#1e1e2d] border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer">
+                <option value="">All Headquarters</option>
+                {hqs.filter(h => !filterState || h.state === filterState).map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-xs text-slate-400 font-bold uppercase tracking-wider">SELECT USER</label>
+              <CustomUserSelect users={users} selectedUser={filterUser} onChange={setFilterUser} />
+            </div>
+          </div>
+          
+          <div className="flex justify-between items-end mb-4">
+            <span className="text-sm font-black text-slate-300 uppercase tracking-widest">SHOWING ({displayList.length}) ENTRIES</span>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-bold text-slate-300">SEARCH:</span>
+                <input type="text" placeholder="Search by name, uid..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-slate-900 border border-slate-700 rounded px-3 py-1.5 text-sm text-white w-64 focus:outline-none focus:border-sky-500" />
+              </div>
+              <button onClick={handleBatchDelete} className="text-rose-500 hover:text-rose-400 hover:scale-110 transition-all p-2" title="Delete Selected">
+                <Trash2 size={20} className="fill-current" />
+              </button>
             </div>
           </div>
 
-          <div className="overflow-y-auto max-h-[50vh] border border-slate-700 rounded-xl mb-4">
-            <table className="w-full text-left border-collapse relative">
-              <thead className="sticky top-0 bg-slate-900 z-10 shadow-md">
-                <tr className="border-b border-slate-700 text-slate-400 text-xs uppercase">
-                  <th className="p-3 border-r border-slate-700 text-center w-12"><input type="checkbox" onChange={handleSelectAll} checked={displayList.length > 0 && selectedIds.length === displayList.length} className="cursor-pointer" /></th>
-                  <th className="p-3 border-r border-slate-700 font-bold">Sr no.</th>
-                  <th className="p-3 border-r border-slate-700 font-bold">Name</th>
-                  {filterType === 'Doctor' && <th className="p-3 border-r border-slate-700 font-bold">Degree</th>}
-                  {filterType === 'Doctor' && <th className="p-3 border-r border-slate-700 font-bold">Specialization</th>}
-                  <th className="p-3 border-r border-slate-700 font-bold">Mobile Number</th>
-                  <th className="p-3 border-r border-slate-700 font-bold">HQ</th>
-                  <th className="p-3 font-bold text-center">Actions</th>
+          <div className="overflow-x-auto border border-[#3b3b5a] rounded-xl mb-4 bg-[#1e1e2d] custom-scrollbar">
+            <table className="w-full text-left border-collapse min-w-max">
+              <thead className="sticky top-0 z-10 shadow-md">
+                <tr className="border-b border-[#3b3b5a]">
+                  <th className="p-4 border-r border-[#3b3b5a] text-center w-12 bg-[#252538]"><input type="checkbox" onChange={handleSelectAll} checked={displayList.length > 0 && selectedIds.length === displayList.length} className="cursor-pointer accent-sky-500" /></th>
+                  
+                  <ThBase align="center">Sr no.</ThBase>
+                  
+                  {filterType === 'Doctor' ? (
+                    <>
+                      <ThWithIcons label="Doctor Name" searchable sortable />
+                      <ThWithIcons label="Degree" searchable sortable />
+                      <ThWithIcons label="Specialization" searchable sortable />
+                      <ThWithIcons label="Hospital" searchable />
+                    </>
+                  ) : (
+                    <>
+                      <ThWithIcons label="Business Name" searchable sortable />
+                      <ThWithIcons label="Propreitor Name" searchable sortable />
+                      <ThWithIcons label="Address" searchable />
+                    </>
+                  )}
+                  
+                  <ThWithIcons label="Mobile Number" searchable />
+                  <ThWithIcons label="HQ" searchable sortable />
+                  <ThBase align="center" border={false}>Actions</ThBase>
                 </tr>
               </thead>
               <tbody>
                 {displayList.length === 0 ? (
-                  <tr><td colSpan={8} className="p-8 text-center text-slate-500">No data found</td></tr>
+                  <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-medium">No records found.</td></tr>
                 ) : displayList.map((d, i) => (
-                  <tr key={d._id} className="border-b border-slate-700/50 hover:bg-slate-700/20 text-white text-sm">
-                    <td className="p-3 border-r border-slate-700 text-center"><input type="checkbox" checked={selectedIds.includes(d._id)} onChange={() => handleSelectOne(d._id)} className="cursor-pointer" /></td>
-                    <td className="p-3 border-r border-slate-700">{i + 1}</td>
-                    <td className="p-3 border-r border-slate-700 font-semibold">{filterType==='Doctor'?d.name:d.businessName}</td>
-                    {filterType === 'Doctor' && <td className="p-3 border-r border-slate-700 text-slate-300">{d.degree}</td>}
-                    {filterType === 'Doctor' && <td className="p-3 border-r border-slate-700 text-slate-300">{d.specialization}</td>}
-                    <td className="p-3 border-r border-slate-700">{d.mobile}</td>
-                    <td className="p-3 border-r border-slate-700">{d.headquarter}</td>
-                    <td className="p-3 text-center">
-                      <button className="text-sky-400 hover:text-sky-300 mx-1"><Edit2 size={16} /></button>
-                      <button onClick={()=>handleDelete(d._id)} className="text-rose-400 hover:text-rose-300 mx-1"><Trash2 size={16} /></button>
+                  <tr key={d._id} className="border-b border-[#3b3b5a]/50 hover:bg-[#252538] text-white text-sm transition-colors">
+                    <td className="p-4 border-r border-[#3b3b5a]/50 text-center"><input type="checkbox" checked={selectedIds.includes(d._id)} onChange={() => handleSelectOne(d._id)} className="cursor-pointer accent-sky-500" /></td>
+                    <td className="p-4 border-r border-[#3b3b5a]/50 text-center font-medium text-slate-400">{i + 1}</td>
+                    
+                    {filterType === 'Doctor' ? (
+                      <>
+                        <td className="p-4 border-r border-[#3b3b5a]/50 font-bold">{d.name}</td>
+                        <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300">{d.degree || '-'}</td>
+                        <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300">{d.specialization || '-'}</td>
+                        <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300 truncate max-w-xs">{d.hospital || '-'}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="p-4 border-r border-[#3b3b5a]/50 font-bold text-sky-400">{d.businessName}</td>
+                        <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300">{d.proprietorName || d.name || '-'}</td>
+                        <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed">{d.address || '-'}</td>
+                      </>
+                    )}
+                    
+                    <td className="p-4 border-r border-[#3b3b5a]/50">{d.mobile || d.contact || '-'}</td>
+                    <td className="p-4 border-r border-[#3b3b5a]/50 font-medium">{d.headquarter || '-'}</td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-3">
+                        <button className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={16} /></button>
+                        <button onClick={() => handleDelete(d._id)} className="text-rose-400 hover:text-rose-300 hover:scale-110 transition-transform"><Trash2 size={16} /></button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-          
-          <div className="flex justify-between items-center bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
-            <span className="text-xs font-black text-slate-400 tracking-widest">SHOWING ({displayList.length}) ENTRIES</span>
-            {selectedIds.length > 0 && (
-              <button onClick={handleBatchDelete} className="bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white transition-colors px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 border border-rose-500/50">
-                <Trash2 size={16} /> Delete Selected ({selectedIds.length})
-              </button>
-            )}
           </div>
         </div>
       </div>
