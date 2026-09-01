@@ -38,6 +38,9 @@ import StockistsListReport from './pages/StockistsListReport';
 import LocationsListReport from './pages/LocationsListReport';
 import ProductsListReport from './pages/ProductsListReport';
 import GeoFencingListReport from './pages/GeoFencingListReport';
+import GiftsListReport from './pages/GiftsListReport';
+import RoutesListReport from './pages/RoutesListReport';
+
 
 
 function App() {
@@ -60,6 +63,8 @@ function App() {
             <Route path="locations" element={<LocationsListReport />} />
             <Route path="products" element={<ProductsListReport />} />
             <Route path="geo-fencing" element={<GeoFencingListReport />} />
+            <Route path="gifts" element={<GiftsListReport />} />
+            <Route path="routes" element={<RoutesListReport />} />
           </Route>
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
