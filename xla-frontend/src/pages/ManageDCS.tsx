@@ -312,13 +312,14 @@ export default function ManageDCS() {
       e.preventDefault();
       setLoading(true);
       try {
-        const res = await axios.post('/api/admin/dcs/doctors', formData);
-        if(res.data.success) {
-          alert('Doctor added successfully');
-          fetchData();
-          setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', doctorCode: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: ''});
+        if (editData) {
+          const res = await axios.put(`/api/admin/dcs/doctors/${editData._id}`, formData);
+          if(res.data.success) { alert('Doctor updated successfully'); fetchData(); if(onCancel) onCancel(); }
+        } else {
+          const res = await axios.post('/api/admin/dcs/doctors', formData);
+          if(res.data.success) { alert('Doctor added successfully'); fetchData(); setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', doctorCode: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: ''}); }
         }
-      } catch (e) { alert('Error adding doctor'); } finally { setLoading(false); }
+      } catch (e: any) { alert(editData ? 'Error updating doctor: ' + (e.response?.data?.message || e.message) : 'Error adding doctor'); } finally { setLoading(false); }
     };
 
     return (
@@ -341,9 +342,9 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CLINICS CONTACT NUMBER</label><input value={formData.clinicContact} onChange={e=>setFormData({...formData, clinicContact: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Alternate Number" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOCTORS CODE</label><input value={formData.doctorCode} onChange={e=>setFormData({...formData, doctorCode: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Doctor Code" /></div>
             
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="email" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label><select required value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Category</option>{getControls('Category').map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER TO ALLOT *</label><select required value={formData.userAllotted} onChange={e=>setFormData({...formData, userAllotted: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select User</option>{users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER TO ALLOT *</label><select value={formData.userAllotted} onChange={e=>setFormData({...formData, userAllotted: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select User</option>{users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>)}</select></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ *</label><select required value={formData.headquarter} onChange={e=>setFormData({...formData, headquarter: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Headquarter</option>{hqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT WORKING AREA *</label><input required value={formData.workingArea} onChange={e=>setFormData({...formData, workingArea: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Working Area" /></div>
@@ -371,13 +372,14 @@ export default function ManageDCS() {
       e.preventDefault();
       setLoading(true);
       try {
-        const res = await axios.post('/api/admin/dcs/chemists', formData);
-        if(res.data.success) {
-          alert('Chemist added successfully');
-          fetchData();
-          setFormData({businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''});
+        if (editData) {
+          const res = await axios.put(`/api/admin/dcs/chemists/${editData._id}`, formData);
+          if(res.data.success) { alert('Chemist updated successfully'); fetchData(); if(onCancel) onCancel(); }
+        } else {
+          const res = await axios.post('/api/admin/dcs/chemists', formData);
+          if(res.data.success) { alert('Chemist added successfully'); fetchData(); setFormData({businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''}); }
         }
-      } catch (e) { alert('Error adding chemist'); } finally { setLoading(false); }
+      } catch (e: any) { alert(editData ? 'Error updating chemist: ' + (e.response?.data?.message || e.message) : 'Error adding chemist'); } finally { setLoading(false); }
     };
 
     return (
@@ -390,10 +392,10 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CERTIFICATIONS/TRADEMARKS</label><input value={formData.certifications} onChange={e=>setFormData({...formData, certifications: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Certification" /></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BIRTHDAY</label><input type="date" value={formData.birthday} onChange={e=>setFormData({...formData, birthday: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="email" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CHEMISTS CONTACT NUMBER *</label><input required value={formData.mobile} onChange={e=>setFormData({...formData, mobile: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Number" /></div>
             
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER TO ALLOT *</label><select required value={formData.userAllotted} onChange={e=>setFormData({...formData, userAllotted: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select User</option>{users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER TO ALLOT *</label><select value={formData.userAllotted} onChange={e=>setFormData({...formData, userAllotted: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select User</option>{users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>)}</select></div>
             <div className="md:col-span-2"><label className="text-xs text-slate-400 font-bold mb-1 block">CHEMISTS ADDRESS</label><input value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Clinic Address" /></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ *</label><select required value={formData.headquarter} onChange={e=>setFormData({...formData, headquarter: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Headquarter</option>{hqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
@@ -421,13 +423,14 @@ export default function ManageDCS() {
       e.preventDefault();
       setLoading(true);
       try {
-        const res = await axios.post('/api/admin/dcs/stockists', formData);
-        if(res.data.success) {
-          alert('Stockist added successfully');
-          fetchData();
-          setFormData({businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''});
+        if (editData) {
+          const res = await axios.put(`/api/admin/dcs/stockists/${editData._id}`, formData);
+          if(res.data.success) { alert('Stockist updated successfully'); fetchData(); if(onCancel) onCancel(); }
+        } else {
+          const res = await axios.post('/api/admin/dcs/stockists', formData);
+          if(res.data.success) { alert('Stockist added successfully'); fetchData(); setFormData({businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''}); }
         }
-      } catch (e) { alert('Error adding stockist'); } finally { setLoading(false); }
+      } catch (e: any) { alert(editData ? 'Error updating stockist: ' + (e.response?.data?.message || e.message) : 'Error adding stockist'); } finally { setLoading(false); }
     };
 
     return (
@@ -439,7 +442,7 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">NAME</label><input value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Proprietor's Name" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CERTIFICATIONS/TRADEMARKS</label><input value={formData.certifications} onChange={e=>setFormData({...formData, certifications: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Certification" /></div>
             
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="email" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">GST NUMBER *</label><input required value={formData.gst} onChange={e=>setFormData({...formData, gst: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter GST" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DRUG LICENSE NUMBER *</label><input required value={formData.drugLicense} onChange={e=>setFormData({...formData, drugLicense: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter DL" /></div>
             
@@ -447,7 +450,7 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">ESTABLISHMENT DATE</label><input type="date" value={formData.establishmentDate} onChange={e=>setFormData({...formData, establishmentDate: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">STOCKISTS CONTACT NUMBER *</label><input required value={formData.mobile} onChange={e=>setFormData({...formData, mobile: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Number" /></div>
             
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER TO ALLOT *</label><select required value={formData.userAllotted} onChange={e=>setFormData({...formData, userAllotted: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select User</option>{users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER TO ALLOT *</label><select value={formData.userAllotted} onChange={e=>setFormData({...formData, userAllotted: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select User</option>{users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName}</option>)}</select></div>
             <div className="md:col-span-2"><label className="text-xs text-slate-400 font-bold mb-1 block">STOCKISTS ADDRESS</label><input value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Clinic Address" /></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ *</label><select required value={formData.headquarter} onChange={e=>setFormData({...formData, headquarter: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Headquarter</option>{hqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
