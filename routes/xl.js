@@ -175,7 +175,14 @@ router.get('/reports/doctors', async (req, res) => {
     try {
         const { employeeId } = req.query;
         let where = {};
-        if (employeeId) where.employeeId = employeeId;
+        if (employeeId) {
+            const user = await XlUser.findOne({ where: { employeeId } });
+            if (user && user.hq) {
+                where.headquarter = user.hq;
+            } else {
+                where.employeeId = employeeId;
+            }
+        }
         const doctors = await XlDoctor.findAll({ where, order: [['name', 'ASC']] });
         res.json({ success: true, data: doctors });
     } catch (e) {
@@ -190,7 +197,14 @@ router.get('/reports/chemists', async (req, res) => {
     try {
         const { employeeId } = req.query;
         let where = {};
-        if (employeeId) where.employeeId = employeeId;
+        if (employeeId) {
+            const user = await XlUser.findOne({ where: { employeeId } });
+            if (user && user.hq) {
+                where.headquarter = user.hq;
+            } else {
+                where.employeeId = employeeId;
+            }
+        }
         const records = await XlChemist.findAll({ where, order: [['businessName', 'ASC']] });
         res.json({ success: true, data: records });
     } catch (e) {
@@ -203,7 +217,14 @@ router.get('/reports/stockists', async (req, res) => {
     try {
         const { employeeId } = req.query;
         let where = {};
-        if (employeeId) where.employeeId = employeeId;
+        if (employeeId) {
+            const user = await XlUser.findOne({ where: { employeeId } });
+            if (user && user.hq) {
+                where.headquarter = user.hq;
+            } else {
+                where.employeeId = employeeId;
+            }
+        }
         const records = await XlStockist.findAll({ where, order: [['businessName', 'ASC']] });
         res.json({ success: true, data: records });
     } catch (e) {
@@ -241,7 +262,14 @@ router.get('/reports/routes', async (req, res) => {
     try {
         const { employeeId } = req.query;
         let where = {};
-        if (employeeId) where.employeeId = employeeId;
+        if (employeeId) {
+            const user = await XlUser.findOne({ where: { employeeId } });
+            if (user && user.hq) {
+                where.hq = user.hq;
+            } else {
+                where.employeeId = employeeId;
+            }
+        }
         const records = await XlRoute.findAll({ where, order: [['createdAt', 'DESC']] });
         res.json({ success: true, data: records });
     } catch (e) {
