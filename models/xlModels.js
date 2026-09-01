@@ -63,6 +63,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         type: { type: DataTypes.STRING, allowNull: false }, // Degree, Specialization, Hospital, Category
         name: { type: DataTypes.STRING, allowNull: false },
         isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+          location: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });

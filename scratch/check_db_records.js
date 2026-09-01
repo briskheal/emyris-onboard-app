@@ -1,0 +1,1 @@
+const { XlDoctor, XlChemist, XlStockist } = require('../db'); async function check() { const d = await XlDoctor.count(); const c = await XlChemist.count(); const s = await XlStockist.count(); console.log('Doctors:', d, 'Chemists:', c, 'Stockists:', s); } check();

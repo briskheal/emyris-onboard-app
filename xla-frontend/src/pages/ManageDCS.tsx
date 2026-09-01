@@ -298,7 +298,7 @@ export default function ManageDCS() {
     } catch (e) { console.error(e); }
   };
 
-  const getControls = (type: string) => controls.filter(c => c.type === type && c.isActive !== false);
+  const getControls = (type: string, hq?: string) => controls.filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.location || c.location.toLowerCase() === hq.toLowerCase()));
 
   // --- DOCTOR TAB ---
   const CreateDoctorTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
@@ -326,15 +326,15 @@ export default function ManageDCS() {
       <div className="flex-1 overflow-auto p-8">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT DOCTOR: ${editData.name}` : 'CREATE DOCTOR...'}</h2>
-          <button className="text-sky-400 text-sm font-bold hover:underline">Do you want to add more Degrees and Specializations?</button>
+          <button type="button" onClick={() => navigate('/extras/settings?tab=doctor_controls')} className="text-sky-400 text-sm font-bold hover:underline">Do you want to add more Degrees and Specializations?</button>
         </div>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">NAME *</label><input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Doctor's Name" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DEGREE *</label><select required value={formData.degree} onChange={e=>setFormData({...formData, degree: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Degree</option>{getControls('Degree').map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SPECIALIZATION *</label><select required value={formData.specialization} onChange={e=>setFormData({...formData, specialization: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Specialization</option>{getControls('Specialization').map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DEGREE *</label><select required value={formData.degree} onChange={e=>setFormData({...formData, degree: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Degree</option>{getControls('Degree', formData.headquarter).map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SPECIALIZATION *</label><select required value={formData.specialization} onChange={e=>setFormData({...formData, specialization: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Specialization</option>{getControls('Specialization', formData.headquarter).map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
             
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">HOSPITAL</label><select value={formData.hospital} onChange={e=>setFormData({...formData, hospital: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Hospital</option>{getControls('Hospital').map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">HOSPITAL</label><select value={formData.hospital} onChange={e=>setFormData({...formData, hospital: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Hospital</option>{getControls('Hospital', formData.headquarter).map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BIRTHDAY</label><input type="date" value={formData.birthday} onChange={e=>setFormData({...formData, birthday: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">MARRIAGE ANNIVERSARY</label><input type="date" value={formData.anniversary} onChange={e=>setFormData({...formData, anniversary: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             
@@ -343,7 +343,7 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOCTORS CODE</label><input value={formData.doctorCode} onChange={e=>setFormData({...formData, doctorCode: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Doctor Code" /></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label><select required value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Category</option>{getControls('Category').map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label><select required value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Category</option>{getControls('Category', formData.headquarter).map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
             
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ *</label><select required value={formData.headquarter} onChange={e=>setFormData({...formData, headquarter: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Headquarter</option>{hqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>

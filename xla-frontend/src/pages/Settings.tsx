@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import SettingsPreferences from '../components/SettingsPreferences';
 import SettingsHolidays from '../components/SettingsHolidays';
 import SettingsUserControls from '../components/SettingsUserControls';
@@ -17,7 +17,21 @@ const SIDEBAR_ITEMS = [
 
 export default function Settings() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('preferences');
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialTab = queryParams.get('tab') || 'preferences';
+  
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    const tab = queryParams.get('tab');
+    if (tab) setActiveTab(tab);
+  }, [location.search]);
+
+  const handleTabClick = (id: string) => {
+    setActiveTab(id);
+    navigate(`/extras/settings?tab=${id}`, { replace: true });
+  }
 
   return (
     <div className="flex h-screen bg-[#151521] text-white font-sans overflow-hidden">
@@ -31,7 +45,7 @@ export default function Settings() {
             {SIDEBAR_ITEMS.map(item => (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleTabClick(item.id)}
                 className={`w-full text-left px-4 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all duration-200 ${activeTab === item.id ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:bg-[#27273f] hover:text-white'}`}
               >
                 {item.label}

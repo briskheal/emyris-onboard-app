@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit2, X, Check } from 'lucide-react';
 
 export default function SettingsDoctorControls() {
   const [controls, setControls] = useState<any[]>([]);
@@ -8,7 +8,13 @@ export default function SettingsDoctorControls() {
   
   const [type, setType] = useState('Specialization');
   const [inputValue, setInputValue] = useState('');
+  const [locationValue, setLocationValue] = useState('');
   const [adding, setAdding] = useState(false);
+
+  // Edit State
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editLocation, setEditLocation] = useState('');
 
   const fetchControls = async () => {
     setLoading(true);
@@ -30,8 +36,9 @@ export default function SettingsDoctorControls() {
     if (!inputValue.trim()) return;
     setAdding(true);
     try {
-      await axios.post('/api/admin/dcs/controls', { type, name: inputValue.trim(), isActive: true });
+      await axios.post('/api/admin/dcs/controls', { type, name: inputValue.trim(), location: type === 'Hospital' ? locationValue.trim() : null, isActive: true });
       setInputValue('');
+      setLocationValue('');
       fetchControls();
     } catch (e) {
       alert('Error adding control');
@@ -47,7 +54,7 @@ export default function SettingsDoctorControls() {
       await axios.put(`/api/admin/dcs/controls/${c._id}`, { isActive: newStatus });
     } catch (e) {
       alert('Error updating control status');
-      fetchControls(); // revert on fail
+      fetchControls(); 
     }
   };
 
@@ -58,6 +65,24 @@ export default function SettingsDoctorControls() {
       await axios.delete(`/api/admin/dcs/controls/${c._id}`);
     } catch (e) {
       alert('Error deleting control');
+      fetchControls();
+    }
+  };
+
+  const startEdit = (c: any) => {
+    setEditingId(c._id);
+    setEditName(c.name);
+    setEditLocation(c.location || '');
+  };
+
+  const saveEdit = async (c: any) => {
+    if (!editName.trim()) return;
+    try {
+      setControls(controls.map(x => x._id === c._id ? { ...x, name: editName.trim(), location: type === 'Hospital' ? editLocation.trim() : null } : x));
+      setEditingId(null);
+      await axios.put(`/api/admin/dcs/controls/${c._id}`, { name: editName.trim(), location: type === 'Hospital' ? editLocation.trim() : null });
+    } catch (e) {
+      alert('Error updating control');
       fetchControls();
     }
   };
@@ -73,25 +98,37 @@ export default function SettingsDoctorControls() {
       </div>
 
       <div className="p-8 shrink-0 flex items-end gap-6 bg-[#252538]/50 border-b border-[#3b3b5a]">
-        <div className="flex-1 max-w-xs">
+        <div className="flex-1 max-w-[200px]">
           <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">Select Type *</label>
-          <select value={type} onChange={e => setType(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors">
+          <select value={type} onChange={e => {setType(e.target.value); setEditingId(null);}} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors">
             <option value="Specialization">Specialization</option>
             <option value="Degree">Degree</option>
             <option value="Category">Category</option>
             <option value="Hospital">Hospital</option>
           </select>
         </div>
-        <div className="flex-1 max-w-xs">
-          <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">Enter {type} *</label>
+        <div className="flex-1">
+          <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">Enter {type} Name *</label>
           <input 
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="Enter Option"
+            placeholder="Enter Name"
             className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors"
           />
         </div>
+        {type === 'Hospital' && (
+          <div className="flex-1 max-w-[250px]">
+            <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">HQ / Location (Optional)</label>
+            <input 
+              value={locationValue}
+              onChange={e => setLocationValue(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleAdd()}
+              placeholder="e.g. Ahmedabad"
+              className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors"
+            />
+          </div>
+        )}
         <button onClick={handleAdd} disabled={adding || !inputValue.trim()} className="px-8 py-3 bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm rounded-lg transition-colors disabled:opacity-50">
           Add
         </button>
@@ -109,30 +146,75 @@ export default function SettingsDoctorControls() {
             <tr className="text-slate-300 text-[10px] uppercase tracking-wider font-bold">
               <th className="p-4 border-b border-[#3b3b5a] w-24 text-center">Sr no.</th>
               <th className="p-4 border-b border-[#3b3b5a]">Name</th>
-              <th className="p-4 border-b border-[#3b3b5a] text-center w-32">Action</th>
+              {type === 'Hospital' && <th className="p-4 border-b border-[#3b3b5a]">Location / HQ</th>}
+              <th className="p-4 border-b border-[#3b3b5a] text-center w-40">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={3} className="p-8 text-center text-slate-500">Loading...</td></tr>
+              <tr><td colSpan={type === 'Hospital' ? 4 : 3} className="p-8 text-center text-slate-500">Loading...</td></tr>
             ) : filtered.length === 0 ? (
-              <tr><td colSpan={3} className="p-8 text-center text-slate-500">No entries found for {type}</td></tr>
+              <tr><td colSpan={type === 'Hospital' ? 4 : 3} className="p-8 text-center text-slate-500">No entries found for {type}</td></tr>
             ) : filtered.map((c, i) => (
-              <tr key={c._id} className="border-b border-[#3b3b5a]/50 hover:bg-[#252538] transition-colors group">
+              <tr key={c._id} className="border-b border-[#3b3b5a]/50 hover:bg-[#252538] transition-colors group h-14">
                 <td className="p-4 text-slate-400 text-sm font-medium text-center">{i + 1}</td>
-                <td className="p-4 text-white text-sm">{c.name}</td>
+                
+                {editingId === c._id ? (
+                  <>
+                    <td className="p-2">
+                      <input 
+                        value={editName} 
+                        onChange={e => setEditName(e.target.value)} 
+                        autoFocus
+                        onKeyDown={e => e.key === 'Enter' && saveEdit(c)}
+                        className="w-full bg-slate-900 border border-sky-500 rounded p-2 text-sm text-white focus:outline-none" 
+                      />
+                    </td>
+                    {type === 'Hospital' && (
+                      <td className="p-2">
+                        <input 
+                          value={editLocation} 
+                          onChange={e => setEditLocation(e.target.value)} 
+                          onKeyDown={e => e.key === 'Enter' && saveEdit(c)}
+                          className="w-full bg-slate-900 border border-sky-500 rounded p-2 text-sm text-white focus:outline-none" 
+                        />
+                      </td>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <td className="p-4 text-white text-sm font-medium">{c.name}</td>
+                    {type === 'Hospital' && <td className="p-4 text-slate-400 text-sm">{c.location || '-'}</td>}
+                  </>
+                )}
+                
                 <td className="p-4">
-                  <div className="flex items-center justify-center gap-4">
-                    <input 
-                      type="checkbox" 
-                      checked={c.isActive !== false} // default true if undefined
-                      onChange={() => handleToggle(c)}
-                      className="w-4 h-4 accent-sky-500 cursor-pointer"
-                    />
-                    <button onClick={() => handleDelete(c)} className="text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100" title="Permanently delete">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  {editingId === c._id ? (
+                    <div className="flex items-center justify-center gap-3">
+                      <button onClick={() => saveEdit(c)} className="text-emerald-400 hover:text-emerald-300 transition-colors p-1 bg-emerald-500/10 rounded" title="Save">
+                        <Check size={16} />
+                      </button>
+                      <button onClick={() => setEditingId(null)} className="text-slate-400 hover:text-white transition-colors p-1 bg-slate-700/50 rounded" title="Cancel">
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center gap-4">
+                      <input 
+                        type="checkbox" 
+                        checked={c.isActive !== false}
+                        onChange={() => handleToggle(c)}
+                        className="w-4 h-4 accent-sky-500 cursor-pointer"
+                        title="Toggle visibility in dropdowns"
+                      />
+                      <button onClick={() => startEdit(c)} className="text-emerald-400 hover:text-emerald-300 transition-colors opacity-0 group-hover:opacity-100" title="Edit entry">
+                        <Edit2 size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(c)} className="text-rose-400 hover:text-rose-300 transition-colors opacity-0 group-hover:opacity-100" title="Permanently delete">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}
