@@ -110,7 +110,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
           <ArrowLeft size={16} /> EDIT / DELETE
         </button>
         
-        <div className="bg-[#27273f] rounded-xl border border-[#3b3b5a] overflow-hidden shadow-2xl flex flex-col p-6 flex-1">
+        <div className="bg-[#27273f] rounded-xl border border-[#3b3b5a] shadow-2xl flex flex-col p-6 min-h-fit mb-8">
           <div className="bg-[#1d9c52] text-white text-sm font-semibold p-4 rounded-lg mb-8 shadow-md">
             Deleting a DCS from here will also remove it from the list.
           </div>
