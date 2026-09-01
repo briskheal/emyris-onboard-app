@@ -618,7 +618,9 @@ export default function ManageDCS() {
       {activeTab === 'create_doctor' && <CreateDoctorTab />}
       {activeTab === 'create_chemist' && <CreateChemistTab />}
       {activeTab === 'create_stockist' && <CreateStockistTab />}
-      {activeTab === 'edit_delete' && !editingRecord && <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} users={users} fetchData={fetchData} />}
+      <div className="flex-1 w-full" style={{ display: (activeTab === 'edit_delete' && !editingRecord) ? 'flex' : 'none' }}>
+        <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} users={users} fetchData={fetchData} />
+      </div>
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Doctor' && <CreateDoctorTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Chemist' && <CreateChemistTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Stockist' && <CreateStockistTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
