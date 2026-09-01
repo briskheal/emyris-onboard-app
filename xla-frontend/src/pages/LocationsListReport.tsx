@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import CustomUserSelect from '../components/CustomUserSelect';
 
 export default function LocationsListReport() {
   const [loading, setLoading] = useState(true);
@@ -39,8 +40,7 @@ export default function LocationsListReport() {
     }
   };
 
-  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
+  const handleUserChange = (val: string) => {
     setSelectedUser(val);
     fetchLocations(val);
   };
@@ -114,18 +114,7 @@ export default function LocationsListReport() {
           </div>
           <div>
             <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-4">Select User</h2>
-            <select 
-              value={selectedUser} 
-              onChange={handleUserChange}
-              className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500 appearance-none"
-            >
-              <option value="">All Users</option>
-              {users.map(u => (
-                <option key={u.employeeId} value={u.employeeId}>
-                  {u.firstName} {u.lastName} ({u.employeeId})
-                </option>
-              ))}
-            </select>
+            <CustomUserSelect users={users} selectedUser={selectedUser} onChange={handleUserChange} />
           </div>
         </div>
       </div>

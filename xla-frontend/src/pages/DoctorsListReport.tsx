@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Eye, Download } from 'lucide-react';
 import DoctorDetails from '../components/DoctorDetails';
 import * as XLSX from 'xlsx';
+import CustomUserSelect from '../components/CustomUserSelect';
 
 export default function DoctorsListReport() {
   const [loading, setLoading] = useState(true);
@@ -40,8 +41,7 @@ export default function DoctorsListReport() {
     }
   };
 
-  const handleUserChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
+  const handleUserChange = (val: string) => {
     setSelectedUser(val);
     fetchDoctors(val);
   };
@@ -85,18 +85,7 @@ export default function DoctorsListReport() {
       <div className="p-4 md:p-6 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
         <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-4">Select User</h2>
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-          <select 
-            value={selectedUser} 
-            onChange={handleUserChange}
-            className="w-full max-w-sm bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500 appearance-none"
-          >
-            <option value="">All Users</option>
-            {users.map(u => (
-              <option key={u.employeeId} value={u.employeeId}>
-                {u.firstName} {u.lastName} ({u.employeeId})
-              </option>
-            ))}
-          </select>
+          <CustomUserSelect users={users} selectedUser={selectedUser} onChange={handleUserChange} />
         </div>
       </div>
 
