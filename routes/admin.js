@@ -4868,7 +4868,7 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.degree = d.Degree || d.degree || '';
         row.specialization = d.Specialization || d.specialization || '';
         row.hospital = d.Hospital || d.hospital || '';
-        row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || '');
+        row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
         row.clinicContact = String(d['Clinic Contact'] || d.clinicContact || '');
         
         if (!d['Doctor Code'] && !d.doctorCode) {
@@ -4912,7 +4912,7 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         } else {
             row.uid = d.UID || d.uid;
         }
-        row.businessName = d['Business Name'] || d.businessName || d.Name || d.name || '';
+        row.businessName = d['Business Name'] || d.businessName || d['business name'] || d.Name || d.name || '';
         row.employeeId = d['Employee ID'] || d.employeeId || d.EmployeeID || null;
         row.name = d['Proprietor Name'] || d.name || d.Name || '';
         row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || '');
