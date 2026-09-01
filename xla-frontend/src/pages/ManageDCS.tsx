@@ -157,7 +157,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
             </div>
           </div>
 
-          <div className="overflow-y-auto overflow-x-auto max-h-[50vh] border border-[#3b3b5a] rounded-t-xl bg-[#1e1e2d] custom-scrollbar">
+          <div className="overflow-x-auto border border-[#3b3b5a] border-b-0 rounded-t-xl bg-[#1e1e2d] custom-scrollbar">
             <table className="w-full text-left border-collapse min-w-max">
               <thead className="sticky top-0 z-10 shadow-md">
                 <tr className="border-b border-[#3b3b5a]">
@@ -223,7 +223,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
           </div>
 
           {/* Pagination Footer */}
-          <div className="flex items-center justify-between p-4 bg-[#252538] border border-[#3b3b5a] border-t-0 rounded-b-xl mt-[-16px]">
+          <div className="flex items-center justify-between p-4 bg-[#252538] border border-[#3b3b5a] rounded-b-xl">
             <div className="flex items-center gap-4">
               <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                 &lt; Prev
