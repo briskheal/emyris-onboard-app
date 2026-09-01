@@ -259,6 +259,8 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
 export default function ManageDCS() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'create_doctor' | 'create_chemist' | 'create_stockist' | 'edit_delete' | 'upload_dcs' | 'dcs_list_management'>('create_doctor');
+  const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editingType, setEditingType] = useState<string>('');
   
   // Data
   const [doctors, setDoctors] = useState<any[]>([]);
