@@ -60,15 +60,6 @@ export default function SettingsDoctorControls() {
 
   useEffect(() => {
     fetchData();
-    
-    // Quick hack to fetch HQs and Cities from users/raw endpoints if standard ones fail
-    const fetchAux = async () => {
-       try {
-           const { data } = await axios.get('/api/admin/users');
-           // Just as a fallback, we don't have explicit HQ/City endpoints built earlier in this script context.
-           // Actually, ManageDCS uses a consolidated fetch.
-       } catch(e) {}
-    }
   }, []);
   
   // Real fetchAux for HQ/Cities
