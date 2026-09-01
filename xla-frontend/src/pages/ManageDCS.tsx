@@ -298,7 +298,7 @@ export default function ManageDCS() {
     } catch (e) { console.error(e); }
   };
 
-  const getControls = (type: string, hq?: string) => controls.filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.location || c.location.toLowerCase() === hq.toLowerCase()));
+  const getControls = (type: string, hq?: string) => controls.filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.hq || c.hq.toLowerCase() === hq.toLowerCase()));
 
   // --- DOCTOR TAB ---
   const CreateDoctorTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
