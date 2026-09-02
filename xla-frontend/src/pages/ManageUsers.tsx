@@ -1000,6 +1000,20 @@ function EditDeleteTab() {
   });
 
   
+  
+  const handleDelete = async (id: string, isAdmin: boolean) => {
+    if (!window.confirm('Are you sure you want to completely delete this user?')) return;
+    try {
+      const url = isAdmin ? `/api/admin/admins/${id}` : `/api/admin/users/${id}`;
+      const res = await axios.delete(url);
+      if (res.data.success) {
+        fetchProfiles();
+      } else {
+        alert(res.data.message || 'Failed to delete user');
+      }
+    } catch (e) { alert('Failed to delete user'); }
+  };
+
   const paginated = filteredProfiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (editUser) {
