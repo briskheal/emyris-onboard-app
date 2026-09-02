@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit, Save, RefreshCw, Key, Mail , Eye, ArrowRightLeft} from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Save, RefreshCw, Key, Mail , Eye, ArrowRightLeft, Check, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TransferDataModal from '../components/TransferDataModal';
@@ -907,6 +907,8 @@ function EditDeleteTab() {
   const [pageSize, setPageSize] = useState(10);
   const [editUser, setEditUser] = useState<any>(null);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const fetchProfiles = async () => {
     try {
@@ -915,8 +917,8 @@ function EditDeleteTab() {
         axios.get('/api/admin/users')
       ]);
       let all: any[] = [];
-      if (adminsRes.data.success) all = [...all, ...adminsRes.data.admins.map((x:any) => ({...x, isAdmin: true}))];
-      if (usersRes.data.success) all = [...all, ...usersRes.data.users.map((x:any) => ({...x, isAdmin: false}))];
+      if (adminsRes.data && adminsRes.data.success) all = [...all, ...adminsRes.data.admins.map((x:any) => ({...x, isAdmin: true}))];
+      if (usersRes.data && usersRes.data.success) all = [...all, ...usersRes.data.users.map((x:any) => ({...x, isAdmin: false}))];
       setProfiles(all);
     } catch (e) { console.error(e); }
   };
@@ -932,102 +934,114 @@ function EditDeleteTab() {
         setEditUser(null);
         fetchProfiles();
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { alert('Failed to delete'); }
   };
 
-  const paginated = profiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const handleSave = async () => {
+    if (!editUser) return;
+    setSaving(true);
+    try {
+      const url = editUser.isAdmin ? `/api/admin/admins/${editUser._id}` : `/api/admin/users/${editUser._id}`;
+      const res = await axios.put(url, editUser);
+      if (res.data.success) {
+        alert('User details updated successfully!');
+        setEditUser(null);
+        fetchProfiles();
+      } else {
+        alert(res.data.message || 'Failed to update user');
+      }
+    } catch (e) {
+      alert('Error saving changes');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filteredProfiles = profiles.filter(p => {
+    const s = searchQuery.toLowerCase();
+    const fullName = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+    return fullName.includes(s) || 
+           (p.designation && p.designation.toLowerCase().includes(s)) ||
+           (p.hq && p.hq.toLowerCase().includes(s)) ||
+           (p.division && p.division.toLowerCase().includes(s)) ||
+           (p.email && p.email.toLowerCase().includes(s));
+  });
+
+  const totalPages = Math.ceil(filteredProfiles.length / pageSize) || 1;
+  const paginated = filteredProfiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (editUser) {
     return (
-      <div className="max-w-4xl">
-        {showTransferModal && (
-          <TransferDataModal onClose={() => setShowTransferModal(false)} users={profiles} />
-        )}
-        <button onClick={() => setEditUser(null)} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
-          <ArrowLeft size={16} /> EDIT USER
-        </button>
-        <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-xl">
-          <div className="grid grid-cols-3 gap-6 mb-8">
+        <div className="bg-slate-800/80 rounded-2xl p-8 border border-slate-700 relative shadow-xl max-w-4xl mx-auto">
+          <button onClick={() => setEditUser(null)} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
+            <ArrowLeft size={16} /> Back to List
+          </button>
+          
+          <h2 className="text-2xl font-black text-white mb-8 tracking-wider uppercase">Edit User Profile</h2>
+          
+          <div className="grid grid-cols-2 gap-6 mb-6">
             <div>
-              <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">First Name *</label>
-              <input value={editUser.firstName || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+              <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">First Name</label>
+              <input value={editUser.firstName || ''} onChange={e => setEditUser({...editUser, firstName: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
             </div>
             <div>
               <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Middle Name</label>
-              <input value={editUser.middleName || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+              <input value={editUser.middleName || ''} onChange={e => setEditUser({...editUser, middleName: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <div>
+              <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Last Name</label>
+              <input value={editUser.lastName || ''} onChange={e => setEditUser({...editUser, lastName: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
             </div>
             <div>
-              <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Last Name *</label>
-              <input value={editUser.lastName || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+              <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Email Address</label>
+              <input type="email" value={editUser.email || ''} onChange={e => setEditUser({...editUser, email: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
             </div>
           </div>
-          <div className="mb-8">
-            <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Gender</label>
-            <select value={editUser.gender || ''} disabled className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none appearance-none">
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
+
+          <div className="grid grid-cols-2 gap-6 mb-8">
+            <div>
+              <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Password</label>
+              <input type="text" value={editUser.password || ''} onChange={e => setEditUser({...editUser, password: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-amber-400 focus:outline-none focus:border-sky-500 font-mono" />
+            </div>
+            <div>
+              <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Phone Number</label>
+              <input value={editUser.phone || ''} onChange={e => setEditUser({...editUser, phone: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
+            </div>
           </div>
+
           <div className="border-t border-slate-700/50 pt-8 mb-8">
-            <h3 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Login Credentials</h3>
-            <div className="grid grid-cols-2 gap-6">
+            <h3 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Professional Details</h3>
+            <div className="grid grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Email *</label>
-                <input type="email" value={editUser.email || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Designation</label>
+                <input value={editUser.designation || ''} onChange={e => setEditUser({...editUser, designation: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
               <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Password</label>
-                <input type="text" value={editUser.password || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-amber-400 font-mono focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Phone *</label>
-                <input value={editUser.phone || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Division</label>
+                <input value={editUser.division || ''} onChange={e => setEditUser({...editUser, division: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
             </div>
-          </div>
-          <div className="border-t border-slate-700/50 pt-8 mb-8">
-            <h3 className="text-white font-bold mb-6 uppercase tracking-wider text-sm">Employee Details</h3>
-            <div className="grid grid-cols-3 gap-6 mb-6">
+            <div className="grid grid-cols-2 gap-6 mb-6">
               <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">DOB</label>
-                <input type="date" value={editUser.dob || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-400 focus:outline-none" />
+                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Headquarter (HQ)</label>
+                <input value={editUser.hq || ''} onChange={e => setEditUser({...editUser, hq: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
-              <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">DOJ</label>
-                <input type="date" value={editUser.doj || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-slate-400 focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Headquarter *</label>
-                <input value={editUser.hq || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-6 mb-6">
-              <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Division *</label>
-                <input value={editUser.division || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Employee ID</label>
-                <input value={editUser.employeeId || editUser.uid || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
-              </div>
-              <div>
-                <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Designation *</label>
-                <input value={editUser.designation || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-6">
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Reporting Manager</label>
-                <input value={editUser.reportingManager || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.reportingManager || ''} onChange={e => setEditUser({...editUser, reportingManager: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Aadhar Number</label>
-                <input value={editUser.aadhar || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.aadhar || ''} onChange={e => setEditUser({...editUser, aadhar: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Pan Number</label>
-                <input value={editUser.pan || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.pan || ''} onChange={e => setEditUser({...editUser, pan: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
             </div>
             <div className="border-t border-slate-700/50 pt-8 mb-8 mt-8">
@@ -1035,15 +1049,15 @@ function EditDeleteTab() {
               <div className="grid grid-cols-3 gap-6">
                 <div>
                   <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Daily Allowance</label>
-                  <input value={editUser.dailyAllowance || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                  <input value={editUser.dailyAllowance || ''} onChange={e => setEditUser({...editUser, dailyAllowance: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Ex Allowance</label>
-                  <input value={editUser.exStationAllowance || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                  <input value={editUser.exStationAllowance || ''} onChange={e => setEditUser({...editUser, exStationAllowance: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
                 </div>
                 <div>
                   <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Out Allowance</label>
-                  <input value={editUser.outStationAllowance || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                  <input value={editUser.outStationAllowance || ''} onChange={e => setEditUser({...editUser, outStationAllowance: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
                 </div>
               </div>
             </div>
@@ -1053,28 +1067,28 @@ function EditDeleteTab() {
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Street Address 1</label>
-                <input value={editUser.streetAddress1 || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.streetAddress1 || ''} onChange={e => setEditUser({...editUser, streetAddress1: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">City</label>
-                <input value={editUser.city || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.city || ''} onChange={e => setEditUser({...editUser, city: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">Street Address 2</label>
-                <input value={editUser.streetAddress2 || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.streetAddress2 || ''} onChange={e => setEditUser({...editUser, streetAddress2: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
               <div>
                 <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">State</label>
-                <input value={editUser.state || ''} readOnly className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none" />
+                <input value={editUser.state || ''} onChange={e => setEditUser({...editUser, state: e.target.value})} className="w-full bg-slate-900 border border-sky-500/50 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
               </div>
             </div>
           </div>
           <div className="flex gap-4">
             <div className="flex gap-4">
-              <button type="button" className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
-                <Edit size={18} /> Edit
+              <button type="button" onClick={handleSave} disabled={saving} className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
+                <Check size={18} /> {saving ? 'Saving...' : 'Save Changes'}
               </button>
               <button type="button" onClick={() => setShowTransferModal(true)} className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-4 px-12 rounded-xl transition-colors flex items-center gap-2 uppercase tracking-wide">
                 <ArrowRightLeft size={18} /> Transfer Data
@@ -1085,51 +1099,66 @@ function EditDeleteTab() {
             </div>
           </div>
         </div>
-      </div>
     );
   }
 
   return (
     <div className="max-w-full">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">&lt; EDIT / DELETE</h2>
-      <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
+      <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-bold text-white tracking-wide uppercase">EDIT / DELETE Users</h2>
+          <div className="relative w-72">
+              <Search size={18} className="absolute left-3 top-3 text-slate-500" />
+              <input 
+                  type="text"
+                  placeholder="Search name, hq, email..." 
+                  value={searchQuery}
+                  onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500"
+              />
+          </div>
+      </div>
+      <h3 className="text-sm font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({filteredProfiles.length}) ENTRIES</h3>
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
+              <tr>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Sr No.</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Name</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Headquarter</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Division</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Edit User</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((p, i) => (
                 <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700 p-4 text-slate-400">{(currentPage - 1) * pageSize + i + 1}</td>
                   <td className="border-r border-slate-700 p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
                   <td className="border-r border-slate-700 p-4 text-slate-300">{p.designation || '-'}</td>
                   <td className="border-r border-slate-700 p-4 text-slate-300">{p.hq || '-'}</td>
                   <td className="border-r border-slate-700 p-4 text-slate-300">{p.division || '-'}</td>
                   <td className="border-r border-slate-700 p-4 text-center">
-                    <button onClick={() => setEditUser(p)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-2 rounded-lg transition-colors">
-                      <Edit size={18} />
+                    <button onClick={() => setEditUser(p)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 px-4 py-2 rounded-lg transition-colors font-bold text-xs uppercase flex items-center justify-center gap-2 mx-auto">
+                      <Edit size={14} /> Edit
                     </button>
                   </td>
                 </tr>
               ))}
-              {profiles.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No records found.</td></tr>}
+              {filteredProfiles.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No records found.</td></tr>}
             </tbody>
           </table>
         </div>
-        <TableFooter data={profiles} fileName="AllUsers" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        
+        {/* Pagination */}
+        <TableFooter data={filteredProfiles} fileName="Users_List" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
+      {showTransferModal && <TransferDataModal onClose={() => setShowTransferModal(false)} />}
     </div>
   );
 }
+
 
 // -------------------------------------------------------------
 // SET TARGET TAB
