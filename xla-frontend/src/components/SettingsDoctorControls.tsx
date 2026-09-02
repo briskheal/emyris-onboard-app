@@ -39,8 +39,8 @@ export default function SettingsDoctorControls() {
     try {
       const [ctrlRes, hqRes, cityRes] = await Promise.all([
         axios.get('/api/admin/dcs/controls'),
-        axios.get('/api/admin/hqs'), // Assuming this exists or similar
-        axios.get('/api/admin/cities') // Assuming this exists
+        axios.get('/api/admin/locations/hqs'),
+        axios.get('/api/admin/locations/cities')
       ]);
       setControls(ctrlRes.data.controls || []);
       setHqs(hqRes.data.hqs || []);
@@ -62,20 +62,7 @@ export default function SettingsDoctorControls() {
     fetchData();
   }, []);
   
-  // Real fetchAux for HQ/Cities
-  useEffect(() => {
-    const fetchLists = async () => {
-        try {
-            const hqRes = await axios.get('/api/admin/hqs');
-            setHqs(hqRes.data.hqs || hqRes.data || []);
-        } catch(e) {}
-        try {
-            const cityRes = await axios.get('/api/admin/cities');
-            setCities(cityRes.data.cities || cityRes.data || []);
-        } catch(e) {}
-    };
-    fetchLists();
-  }, []);
+
 
   const handleAdd = async () => {
     if (!inputValue.trim()) return;
@@ -169,7 +156,7 @@ export default function SettingsDoctorControls() {
     ? filteredByType.filter(c => c.name.toLowerCase().includes(inputValue.toLowerCase())).slice(0, 5)
     : [];
 
-  const hqOptions = Array.from(new Set([...hqs.map(h => h.hqName), ...controls.filter(c => c.hq).map(c => c.hq)])).filter(Boolean).sort();
+  const hqOptions = Array.from(new Set(hqs.map(h => h.hqName))).filter(Boolean).sort();
   // If we don't have actual City API, we'll try to extract them from controls or cities array
   const cityOptions = Array.from(new Set([...cities.map(c => c.cityName), ...controls.filter(c => c.area).map(c => c.area)])).filter(Boolean).sort();
 
@@ -219,23 +206,23 @@ export default function SettingsDoctorControls() {
         {type === 'Hospital' && (
           <>
             <div className="w-48">
-              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">HQ (Optional)</label>
+              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">HQ *</label>
               <select value={hospitalHq} onChange={e => setHospitalHq(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
                   <option value="">Select HQ</option>
                   {hqOptions.map(h => <option key={h} value={h}>{h}</option>)}
               </select>
             </div>
             <div className="w-48">
-              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">City/Area (Optional)</label>
-              <select value={hospitalArea} onChange={e => setHospitalArea(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
-                  <option value="">Select Area</option>
-                  {cityOptions.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2 block">City/Area *</label>
+              <input list="add-city-list" value={hospitalArea} onChange={e => setHospitalArea(e.target.value)} placeholder="Type or Select Area" className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500" />
+              <datalist id="add-city-list">
+                  {cities.filter(city => !hospitalHq || city.hq === hospitalHq).map(city => <option key={city._id} value={city.cityName} />)}
+              </datalist>
             </div>
           </>
         )}
 
-        <button onClick={handleAdd} disabled={adding || !inputValue.trim()} className="px-8 py-3 bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm rounded-lg transition-colors disabled:opacity-50">
+        <button onClick={handleAdd} disabled={adding || !inputValue.trim() || (type === 'Hospital' && (!hospitalHq || !hospitalArea.trim()))} className="px-8 py-3 bg-sky-500 hover:bg-sky-400 text-white font-bold text-sm rounded-lg transition-colors disabled:opacity-50">
           Add
         </button>
       </div>
@@ -248,10 +235,12 @@ export default function SettingsDoctorControls() {
                       <option value="">Select Bulk HQ</option>
                       {hqOptions.map(h => <option key={h} value={h}>{h}</option>)}
                   </select>
-                  <select value={bulkArea} onChange={e=>setBulkArea(e.target.value)} className="bg-slate-900 border border-sky-500/50 rounded-lg p-2 text-sm text-white outline-none">
-                      <option value="">Select Bulk Area</option>
-                      {cityOptions.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
+                  <div className="relative">
+                      <input list="bulk-city-list" value={bulkArea} onChange={e=>setBulkArea(e.target.value)} placeholder="Type or Select Area" className="bg-slate-900 border border-sky-500/50 rounded-lg p-2 text-sm text-white outline-none w-40" />
+                      <datalist id="bulk-city-list">
+                          {cities.filter(city => !bulkHq || city.hq === bulkHq).map(city => <option key={city._id} value={city.cityName} />)}
+                      </datalist>
+                  </div>
               </div>
               <button onClick={handleBulkUpdate} disabled={bulking} className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-bold text-sm rounded-lg transition-colors">
                   {bulking ? 'Applying...' : 'Apply to Selected'}
@@ -324,10 +313,10 @@ export default function SettingsDoctorControls() {
                     </td>
                     {type === 'Hospital' && (
                       <td className="p-2">
-                        <select value={editArea} onChange={e => setEditArea(e.target.value)} className="w-full bg-slate-900 border border-sky-500 rounded p-2 text-sm text-white focus:outline-none">
-                            <option value="">Select Area</option>
-                            {cityOptions.map(city => <option key={city} value={city}>{city}</option>)}
-                        </select>
+                        <input list={`edit-city-list-${c._id}`} value={editArea} onChange={e => setEditArea(e.target.value)} placeholder="Type or Select Area" className="w-full bg-slate-900 border border-sky-500 rounded p-2 text-sm text-white focus:outline-none" />
+                        <datalist id={`edit-city-list-${c._id}`}>
+                            {cities.filter(city => !editHq || city.hq === editHq).map(city => <option key={city._id} value={city.cityName} />)}
+                        </datalist>
                       </td>
                     )}
                   </>
