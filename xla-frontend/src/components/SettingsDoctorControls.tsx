@@ -157,8 +157,7 @@ export default function SettingsDoctorControls() {
     : [];
 
   const hqOptions = Array.from(new Set(hqs.map(h => h.hqName))).filter(Boolean).sort();
-  // If we don't have actual City API, we'll try to extract them from controls or cities array
-  const cityOptions = Array.from(new Set([...cities.map(c => c.cityName), ...controls.filter(c => c.area).map(c => c.area)])).filter(Boolean).sort();
+  
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#1e1e2d]">
