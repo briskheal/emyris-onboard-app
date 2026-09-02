@@ -4829,22 +4829,7 @@ router.delete('/dcs/controls/bulk-hospitals', async (req, res) => { try { await 
 router.get('/force-reseed-hospitals', async (req, res) => {
   try {
     await XlDoctorControl.destroy({ where: { type: 'Hospital' } });
-    const XLSX = require('xlsx');
-    const wb = XLSX.readFile('REPORTING MODULE/Hospitals.xlsx');
-    const ws = wb.Sheets[wb.SheetNames[0]];
-    const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-    const rows = data.slice(1).filter(r => r && r.length > 0 && r[1] && typeof r[1] === 'string' && !r[1].startsWith('Date of File'));
-    const records = [];
-    for (let r of rows) {
-      let name = r[1].trim();
-      let hq = null;
-      if (name.includes(',')) {
-        const parts = name.split(',');
-        name = parts[0].trim();
-        hq = parts[1].trim();
-      }
-      records.push({ type: 'Hospital', name, hq, area: null, isActive: true });
-    }
+    const records = require('../hospitals_seed.json');
     await XlDoctorControl.bulkCreate(records);
     res.send(`<h1>Success! Wiped and reseeded ${records.length} hospitals.</h1><p>You can now close this tab and refresh the Settings page.</p>`);
   } catch(e) {
