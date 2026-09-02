@@ -1,5 +1,5 @@
-// @ts-nocheck\nimport { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit, Save, RefreshCw, Key, Mail , Eye, ArrowRightLeft, Check, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Trash2, Edit, Save, RefreshCw, Key, Mail , Eye, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TransferDataModal from '../components/TransferDataModal';
