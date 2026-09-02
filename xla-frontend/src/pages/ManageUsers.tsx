@@ -967,7 +967,7 @@ function EditDeleteTab() {
            (p.email && p.email.toLowerCase().includes(s));
   });
 
-  const totalPages = Math.ceil(filteredProfiles.length / pageSize) || 1;
+  
   const paginated = filteredProfiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (editUser) {
