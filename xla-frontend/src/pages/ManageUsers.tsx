@@ -1338,6 +1338,9 @@ function SetTargetTab() {
       
       {activeSubTab === 'main' && (
         <>
+      <button onClick={() => window.location.href='/xla/admin'} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm">
+        <ArrowLeft size={16} /> SET USER TARGET
+      </button>
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
               <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select State</label>
@@ -1351,7 +1354,7 @@ function SetTargetTab() {
                 <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select HQ</label>
                 <select value={selectedHq} onChange={e => setSelectedHq(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white disabled:opacity-50" disabled={!selectedState}>
                   <option value="">Select Headquarter</option>
-                  {hqs.filter(h => h.stateName === selectedState).map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+                  {hqs.filter(h => h.state === selectedState).map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
                 </select>
               </div>
               <button onClick={handleFilterUsers} className="bg-sky-500 hover:bg-sky-400 text-white px-6 py-3 rounded-lg font-bold transition-colors">
