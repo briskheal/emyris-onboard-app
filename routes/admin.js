@@ -4826,6 +4826,31 @@ router.post('/dcs/controls', async (req, res) => { try { const c = await XlDocto
 router.post('/dcs/controls/bulk', async (req, res) => { try { const inserted = await XlDoctorControl.bulkCreate(req.body); res.json({ success: true, count: inserted.length }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.put('/dcs/controls/bulk-update', async (req, res) => { try { const { ids, updates } = req.body; await XlDoctorControl.update(updates, { where: { _id: ids } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/controls/bulk-hospitals', async (req, res) => { try { await XlDoctorControl.destroy({ where: { type: 'Hospital' }}); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
+router.get('/force-reseed-hospitals', async (req, res) => {
+  try {
+    await XlDoctorControl.destroy({ where: { type: 'Hospital' } });
+    const XLSX = require('xlsx');
+    const wb = XLSX.readFile('REPORTING MODULE/Hospitals.xlsx');
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    const rows = data.slice(1).filter(r => r && r.length > 0 && r[1] && typeof r[1] === 'string' && !r[1].startsWith('Date of File'));
+    const records = [];
+    for (let r of rows) {
+      let name = r[1].trim();
+      let hq = null;
+      if (name.includes(',')) {
+        const parts = name.split(',');
+        name = parts[0].trim();
+        hq = parts[1].trim();
+      }
+      records.push({ type: 'Hospital', name, hq, area: null, isActive: true });
+    }
+    await XlDoctorControl.bulkCreate(records);
+    res.send(`<h1>Success! Wiped and reseeded ${records.length} hospitals.</h1><p>You can now close this tab and refresh the Settings page.</p>`);
+  } catch(e) {
+    res.send(`<h1>Error</h1><p>${e.message}</p>`);
+  }
+});
 router.put('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.update(req.body, { where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 router.delete('/dcs/controls/:id', async (req, res) => { try { await XlDoctorControl.destroy({ where: { _id: req.params.id } }); res.json({ success: true }); } catch (e) { res.status(500).json({ success: false, message: e.message }); } });
 
