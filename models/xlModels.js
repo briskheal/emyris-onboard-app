@@ -513,6 +513,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     });
 
     const XlGlobalSettings = sequelize.define('xl_global_settings', {
+        XlTarget,
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: () => Math.random().toString(36).substr(2, 9) },
         settings: { type: DataTypes.JSON, defaultValue: {} },
         updatedBy: { type: DataTypes.STRING },
