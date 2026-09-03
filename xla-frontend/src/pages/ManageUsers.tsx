@@ -1319,7 +1319,7 @@ function SetTargetTab() {
                         <input type="number" min="0" placeholder="0" value={p.qty} onChange={e => handleProductTargetChange(idx, 'qty', e.target.value)} className="w-20 bg-slate-900 border border-slate-700 p-2 text-white rounded" />
                       </td>
                       <td className="p-4 text-center text-emerald-400 font-bold">
-                        {p.amount.toFixed(2)}
+                        {p.amount.toFixed(0)}
                       </td>
                     </tr>
                   ))}
@@ -1327,7 +1327,7 @@ function SetTargetTab() {
               </table>
             </div>
             <div className="text-right mt-4 font-bold text-lg text-emerald-400">
-              Total Amount: {calculateTotalProductAmount().toFixed(2)}
+              Total Amount: {calculateTotalProductAmount().toFixed(0)}
             </div>
           </div>
         )}
@@ -1453,9 +1453,9 @@ function SetTargetTab() {
                   <tr key={i} className="hover:bg-slate-800/50">
                     <td className="p-4 border-r border-slate-700">{i + 1}</td>
                     <td className="p-4 border-r border-slate-700">{t.userName}</td>
-                    <td className="p-4 border-r border-slate-700 text-slate-300 font-mono">{t.directTarget.toFixed(2)}</td>
-                    <td className="p-4 border-r border-slate-700 text-slate-300 font-mono">{t.teamTarget.toFixed(2)}</td>
-                    <td className="p-4 border-r border-slate-700 text-emerald-400 font-bold font-mono">{t.totalTarget.toFixed(2)}</td>
+                    <td className="p-4 border-r border-slate-700 text-slate-300 font-mono">{t.directTarget.toFixed(0)}</td>
+                    <td className="p-4 border-r border-slate-700 text-slate-300 font-mono">{t.teamTarget.toFixed(0)}</td>
+                    <td className="p-4 border-r border-slate-700 text-emerald-400 font-bold font-mono">{t.totalTarget.toFixed(0)}</td>
                     <td className="p-4 text-center">
                       {t.rawTarget && (
                         <button onClick={() => handleDeleteTarget(t.rawTarget._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={16}/></button>
