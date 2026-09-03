@@ -712,7 +712,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
           </p>
         </div>
         <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
-        <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+        <div className="w-full flex flex-col mt-4 bg-slate-900 border border-slate-800 shadow-sm">
           <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
             <table className="w-full text-left border-collapse relative whitespace-nowrap">
               <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
@@ -755,7 +755,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
         <button onClick={() => setActivationMode(true)} className="text-sky-400 hover:text-white font-bold text-sm tracking-wide transition-colors">User Activation Control ?</button>
       </div>
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+      <div className="w-full flex flex-col mt-4 bg-slate-900 border border-slate-800 shadow-sm overflow-hidden">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
@@ -871,7 +871,7 @@ function DivisionsTab() {
         </div>
         <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">Add Division</button>
       </form>
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+      <div className="w-full flex flex-col bg-slate-900 border border-slate-700 overflow-hidden">
         <div className="overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
@@ -1572,10 +1572,10 @@ function SetTargetTab() {
   }
 
   return (
-    <div className="bg-slate-800/80 rounded-2xl border border-slate-700 p-8 shadow-xl max-w-5xl mx-auto">
+    <div className="w-full h-full text-slate-200">
       
       {activeSubTab === 'main' && (
-        <>
+        <div className="bg-slate-800/80 rounded-2xl border border-slate-700 p-8 shadow-xl max-w-5xl mx-auto">
       <button onClick={() => window.location.href='/xla/admin'} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm">
         <ArrowLeft size={16} /> SET USER TARGET
       </button>
@@ -1641,7 +1641,7 @@ function SetTargetTab() {
       )}
 
       {activeSubTab === 'monthly' && (
-        <div>
+        <div className="w-full px-4 pb-12">
            <button onClick={() => setActiveSubTab('main')} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm">
             <ArrowLeft size={16} /> MONTHLY TARGETS
           </button>
@@ -1698,7 +1698,7 @@ function SetTargetTab() {
       )}
 
       {activeSubTab === 'yearly' && (
-        <div className="bg-slate-800/80 rounded-2xl border border-slate-700 relative shadow-xl p-8 max-w-[98%] mx-auto w-full">
+        <div className="w-full px-4 pb-12">
           <button onClick={() => setActiveSubTab('main')} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm">
             <ArrowLeft size={16} /> YEARLY TARGETS
           </button>
@@ -1995,7 +1995,7 @@ function TargetsListView({ period, onBack }: any) {
         </div>
       )}
 
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+      <div className="w-full bg-slate-900 border border-slate-700 overflow-hidden mt-4">
         <div className="p-4 bg-slate-800 border-b border-slate-700">
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">SHOWING ({targets.length}) ENTRIES</h3>
         </div>
