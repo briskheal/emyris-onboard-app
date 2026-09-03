@@ -72,11 +72,12 @@ function UploadTargetTab() {
 
   const fetchLocations = async () => {
     try {
-      const res = await axios.get('/api/admin/locations');
-      if (res.data.success) {
-        setStates(res.data.states || []);
-        setHqs(res.data.hqs || []);
-      }
+      const [stRes, hqRes] = await Promise.all([
+        axios.get('/api/admin/locations/states'),
+        axios.get('/api/admin/locations/hqs')
+      ]);
+      if (stRes.data.success) setStates(stRes.data.states);
+      if (hqRes.data.success) setHqs(hqRes.data.hqs);
     } catch (e) { console.error(e); }
   };
 
@@ -1680,7 +1681,7 @@ function SetTargetTab() {
                     {['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'].map(m => (
                       <th key={m} className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">{m}</th>
                     ))}
-                    <th className="p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">Total ↑</th>
+                    <th className="p-4 font-bold uppercase tracking-wider text-sm bg-slate-800 text-center">Total</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
