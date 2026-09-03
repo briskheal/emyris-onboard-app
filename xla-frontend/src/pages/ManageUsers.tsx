@@ -140,23 +140,48 @@ function UploadTargetTab() {
         'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'
       ]);
       
-      hqUsers.forEach(u => {
-        products.forEach(p => {
-          wsData.push([
-            u.uid, u.firstName + ' ' + (u.lastName || ''), p.productName, p.ptr, p.pts, p.mrp, p.pts, p.uid,
-            '', '', '', '', '', '', '', '', '', '', '', ''
-          ]);
-        });
-      });
+      const categories = [...new Set(products.map(p => p.category || 'Uncategorized'))];
 
-      const rowCount = wsData.length;
-      wsData.push([]);
-      let totalRow = ['TOTAL BUDGET (Auto-Calc)', '', '', '', '', '', '', ''];
-      const cols = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
-      cols.forEach(c => {
-        totalRow.push({ f: `SUMPRODUCT(${c}2:${c}${rowCount}, G2:G${rowCount})` });
+      hqUsers.forEach(u => {
+        let grandTotalRows = [];
+
+        categories.forEach(cat => {
+          const catProducts = products.filter(p => (p.category || 'Uncategorized') === cat);
+          if (catProducts.length === 0) return;
+
+          wsData.push(['', '', `--- ${cat.toUpperCase()} ---`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+          
+          const startRow = wsData.length + 1; // 1-indexed
+
+          catProducts.forEach(p => {
+            wsData.push([
+              u.uid, u.firstName + ' ' + (u.lastName || ''), p.productName, p.ptr, p.pts, p.mrp, p.pts, p.uid,
+              '', '', '', '', '', '', '', '', '', '', '', ''
+            ]);
+          });
+
+          const endRow = wsData.length;
+
+          let subtotalRow = ['', '', `${cat.toUpperCase()} TOTAL`, '', '', '', '', ''];
+          const cols = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
+          cols.forEach(c => {
+            subtotalRow.push({ f: `SUMPRODUCT(${c}${startRow}:${c}${endRow}, G${startRow}:G${endRow})` });
+          });
+          wsData.push(subtotalRow);
+          
+          grandTotalRows.push(wsData.length);
+          wsData.push([]); // visual spacing
+        });
+
+        // Grand Total Row
+        let grandTotalRow = ['', '', 'GRAND TOTAL BUDGET', '', '', '', '', ''];
+        const cols = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
+        cols.forEach(c => {
+           const f = grandTotalRows.map(r => `${c}${r}`).join('+');
+           grandTotalRow.push({ f: f || '0' });
+        });
+        wsData.push(grandTotalRow);
       });
-      wsData.push(totalRow);
     }
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
