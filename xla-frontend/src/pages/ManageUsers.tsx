@@ -134,7 +134,7 @@ function UploadTargetTab() {
       hqUsers.forEach(u => {
         products.forEach(p => {
           wsData.push([
-            u.uid, u.firstName + ' ' + (u.lastName || ''), p.productName, p.ptr, p.pts, p.mrp, 0, p.productId,
+            u.uid, u.firstName + ' ' + (u.lastName || ''), p.productName, p.ptr, p.pts, p.mrp, 0, p.uid,
             '', '', '', '', '', '', '', '', '', '', '', ''
           ]);
         });
@@ -1530,7 +1530,7 @@ function SetTargetTab() {
                 </thead>
                 <tbody className="divide-y divide-slate-700">
                   {productTargets.map((p, idx) => ({p, idx})).filter(({p}) => p.productName.toLowerCase().includes(productSearch.toLowerCase())).map(({p, idx}) => (
-                    <tr key={p.productId} className="hover:bg-slate-800/50">
+                    <tr key={p.uid} className="hover:bg-slate-800/50">
                       <td className="p-4 border-r border-slate-700">{idx + 1}</td>
                       <td className="p-4 border-r border-slate-700">{p.productName}</td>
                       <td className="p-4 border-r border-slate-700">{p.ptr}</td>
