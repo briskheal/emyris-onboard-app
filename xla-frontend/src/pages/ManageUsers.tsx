@@ -454,7 +454,7 @@ const handleSubmit = async (e: React.FormEvent) => {
       <form onSubmit={handleSubmit} className="w-full mt-4">
 
         {/* Import HR Applicant */}
-{!editUser && <div className="mb-10 bg-slate-900 border border-slate-700 border-l-4 border-l-emerald-500 p-6 shadow-sm">
+{!editUser && <div className="mb-6 bg-slate-900 border border-slate-700 border-l-4 border-l-emerald-500 p-6 shadow-sm">
           <label className="text-xs text-emerald-400 font-bold mb-2 block flex items-center gap-2">
             IMPORT FROM HR SYSTEM (AUTO-FILL)
           </label>
@@ -467,20 +467,20 @@ const handleSubmit = async (e: React.FormEvent) => {
 
         {/* Basic Info */}
 
-        <div className="mb-10">
-          <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-sm mb-6 border-b border-slate-700 pb-2">Personal Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6">
+        <div className="mb-6">
+          <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-sm mb-4 border-b border-slate-700 pb-2">Personal Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">FIRST NAME *</label><input required name="firstName" value={formData.firstName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">MIDDLE NAME</label><input name="middleName" value={formData.middleName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME</label><input name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div className="md:col-span-1"><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">MIDDLE NAME</label><input name="middleName" value={formData.middleName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME</label><input name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
             <div className="md:col-span-2"><label className="text-xs text-slate-400 font-bold mb-1 block">PHONE NUMBER *</label><input required name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
           </div>
         </div>
 
         {/* Login Credentials */}
-        <div className="mb-10 bg-slate-900/50 p-6 rounded-xl border border-slate-700">
-          <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-2">
+        <div className="mb-6 bg-slate-900/50 p-6 rounded-xl border border-slate-700">
+          <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
             <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm">Login Credentials</h3>
             <button type="button" onClick={generatePassword} className="text-xs bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1">
               <RefreshCw size={14} /> Auto-Generate
@@ -503,8 +503,8 @@ const handleSubmit = async (e: React.FormEvent) => {
         </div>
 
         {/* Company Info */}
-        <div className="mb-10">
-          <h3 className="text-sky-400 font-bold uppercase tracking-wider text-sm mb-6 border-b border-slate-700 pb-2">Employment Details</h3>
+        <div className="mb-6">
+          <h3 className="text-sky-400 font-bold uppercase tracking-wider text-sm mb-4 border-b border-slate-700 pb-2">Employment Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF BIRTH</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">HEADQUARTER</label><select name="hq" value={formData.hq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select HQ</option>{hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
