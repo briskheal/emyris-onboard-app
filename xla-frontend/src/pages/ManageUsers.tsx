@@ -1637,7 +1637,7 @@ function SetTargetTab() {
               </tbody>
             </table>
           </div>
-        </>
+        </div>
       )}
 
       {activeSubTab === 'monthly' && (
