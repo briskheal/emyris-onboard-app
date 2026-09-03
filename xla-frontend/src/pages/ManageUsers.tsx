@@ -1131,7 +1131,8 @@ function SetTargetTab() {
     try {
       const res = await axios.get('/api/admin/products');
       if (res.data.success) {
-        setProducts(res.data.products);
+        const filtered = res.data.products.filter(p => !(p.productName || "").toLowerCase().includes("sample"));
+        setProducts(filtered);
       }
     } catch (e) { console.error(e); }
   };
