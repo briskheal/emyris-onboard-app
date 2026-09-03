@@ -167,14 +167,14 @@ function UploadTargetTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Select State</label>
-          <select value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedHq(''); }} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-sky-500">
+          <select value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedHq(''); }} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
             <option value="">Select State</option>
             {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
           </select>
         </div>
         <div className="flex flex-col gap-2">
           <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Select HQ</label>
-          <select value={selectedHq} onChange={e => setSelectedHq(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-sky-500">
+          <select value={selectedHq} onChange={e => setSelectedHq(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
             <option value="">Select HQ</option>
             {hqs.filter(h => h.state === selectedState || h.stateName === selectedState).map(h => (
               <option key={h._id} value={h.hqName}>{h.hqName}</option>
@@ -186,7 +186,7 @@ function UploadTargetTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Select Target Type</label>
-          <select value={targetType} onChange={e => setTargetType(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-sky-500">
+          <select value={targetType} onChange={e => setTargetType(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
             <option value="Select...">Select...</option>
             <option value="Qty * Amount">Qty * Amount</option>
             <option value="Lump-Sum">Lump-Sum</option>
@@ -1659,7 +1659,7 @@ function SetTargetTab() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div className="flex flex-col gap-2">
               <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Select Year *</label>
-              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-sky-500">
+              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
                 <option value="2024">2024</option>
                 <option value="2025">2025</option>
                 <option value="2026">2026</option>
@@ -1688,7 +1688,7 @@ function SetTargetTab() {
                   {yearlyTargets.map((t, i) => (
                     <tr key={t.uid} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
                       <td className="border-r border-slate-700 p-4 text-slate-300">{i + 1}</td>
-                      <td className="border-r border-slate-700 p-4 text-white font-bold">{t.userName}</td>
+                      <td className="border-r border-slate-700 p-4 text-slate-300 text-sm">{t.userName}</td>
                       <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.April > 0 ? Math.round(t.months.April) : ''}</td>
                       <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.May > 0 ? Math.round(t.months.May) : ''}</td>
                       <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.June > 0 ? Math.round(t.months.June) : ''}</td>
