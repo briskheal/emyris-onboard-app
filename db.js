@@ -82,7 +82,8 @@ const AssignedAdvance = new MongooseAdapter(OnboardAssignedAdvance);
 async function syncDatabase() {
     try {
         // Run standard sync first so any new tables (like onboard_exam_results) are guaranteed to be created
-        await sequelize.sync();\n        await XlTarget.sync({ alter: true });
+        await sequelize.sync();
+        await XlTarget.sync({ alter: true });
         if (sequelize.getDialect() === 'sqlite') {
             await sequelize.query('PRAGMA journal_mode=WAL;');
             await sequelize.query('PRAGMA synchronous=NORMAL;');
