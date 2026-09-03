@@ -39,7 +39,7 @@ const {
     XlAttendance,
     XlLeave,
     XlExpense,
-    XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday,
+    XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlTarget,
     XlCallPlan
 } = initXlModels(sequelize);
 
