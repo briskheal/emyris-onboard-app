@@ -5086,13 +5086,16 @@ router.get('/targets/yearly', async (req, res) => {
         if (year) where.year = year;
 
         const allTargets = await XlTarget.findAll({ where });
-        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'firstName', 'lastName'] });
+        const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'firstName', 'lastName', 'hq', 'division', 'designation'] });
         
         const userMap = {};
         allUsers.forEach(u => {
             userMap[u.uid] = {
                 uid: u.uid,
                 userName: u.firstName + ' ' + (u.lastName || ''),
+                hq: u.hq,
+                division: u.division,
+                designation: u.designation,
                 months: {
                     April: 0, May: 0, June: 0, July: 0, August: 0, September: 0,
                     October: 0, November: 0, December: 0, January: 0, February: 0, March: 0

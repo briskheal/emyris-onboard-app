@@ -243,7 +243,7 @@ export default function ManageUsers() {
             <button onClick={() => setActiveTab('ta_da')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'ta_da' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>TA, DA MANAGE</button>
           </div>
         </div>
-        <div className="flex-1 bg-slate-900 p-8 overflow-y-auto">
+        <div className={`flex-1 bg-slate-900 overflow-y-auto ${activeTab === 'set_target' ? 'p-0' : 'p-8'}`}>
           {activeTab === 'create_user' && <CreateProfileTab isAdmin={false} />}
           {activeTab === 'create_admin' && <CreateProfileTab isAdmin={true} />}
           {activeTab === 'user_info' && <ProfileInfoTab isAdmin={false} />}
@@ -1756,8 +1756,8 @@ function SetTargetTab() {
                     <tr key={t.uid} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
                       <td className="border-r border-slate-700 p-4 text-slate-300">{i + 1}</td>
                       <td className="border-r border-slate-700 p-4">
-                        <div className="text-slate-200 font-bold text-sm">{t.userName}</div>
-                        {t.hq && <div className="text-xs text-sky-400 font-semibold mt-1">{t.hq}</div>}
+                        <div className="text-slate-200 text-sm">{t.userName}</div>
+                        {t.designation && <div className="text-xs text-slate-400 font-light mt-1">{t.designation}</div>}
                       </td>
                       <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.April > 0 ? Math.round(t.months.April) : ''}</td>
                       <td className="border-r border-slate-700 p-4 text-center text-slate-300">{t.months.May > 0 ? Math.round(t.months.May) : ''}</td>
