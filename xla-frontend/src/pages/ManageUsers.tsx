@@ -1728,13 +1728,13 @@ function SetTargetTab() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {targets.map((t, i) => (
-                  <tr key={i} className="hover:bg-slate-800/50">
-                    <td className="p-4 border-r border-slate-700">{i + 1}</td>
-                    <td className="p-4 border-r border-slate-700">{t.userName}</td>
-                    <td className="p-4 border-r border-slate-700 text-slate-300 font-mono">{t.directTarget.toFixed(0)}</td>
-                    <td className="p-4 border-r border-slate-700 text-slate-300 font-mono">{t.teamTarget.toFixed(0)}</td>
-                    <td className="p-4 border-r border-slate-700 text-emerald-400 font-bold font-mono">{t.totalTarget.toFixed(0)}</td>
+                {targets.filter(t => t.totalTarget > 0).map((t, i) => (
+                  <tr key={t.employeeId} className="hover:bg-slate-700/30">
+                    <td className="p-4 text-slate-300 border-r border-slate-700">{i + 1}</td>
+                    <td className="p-4 text-white font-bold border-r border-slate-700">{t.userName || t.userEmail}</td>
+                    <td className="p-4 text-slate-300 border-r border-slate-700 text-right">{t.directTarget || 0}</td>
+                    <td className="p-4 text-slate-300 border-r border-slate-700 text-right">{t.teamTarget || 0}</td>
+                    <td className="p-4 text-emerald-400 font-bold border-r border-slate-700 text-right">{t.totalTarget || 0}</td>
                     <td className="p-4 text-center">
                       {t.rawTarget && (
                         <button onClick={() => handleDeleteTarget(t.rawTarget._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={16}/></button>
