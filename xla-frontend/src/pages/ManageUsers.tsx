@@ -125,6 +125,15 @@ function UploadTargetTab() {
       hqUsers.forEach(u => {
         wsData.push([u.uid, u.firstName + ' ' + (u.lastName || ''), '', '', '', '', '', '', '', '', '', '', '', '']);
       });
+
+      const rowCount = wsData.length;
+      wsData.push([]);
+      let totalRow = ['TOTAL BUDGET (Auto-Calc)', ''];
+      const cols = ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'];
+      cols.forEach(c => {
+        totalRow.push({ f: `SUM(${c}2:${c}${rowCount})` });
+      });
+      wsData.push(totalRow);
     } else {
       wsData.push([
         'Employee UID', 'Employee Name', 'productName', 'ptr', 'pts', 'mrp', 'cus', 'uid',
@@ -134,14 +143,31 @@ function UploadTargetTab() {
       hqUsers.forEach(u => {
         products.forEach(p => {
           wsData.push([
-            u.uid, u.firstName + ' ' + (u.lastName || ''), p.productName, p.ptr, p.pts, p.mrp, 0, p.uid,
+            u.uid, u.firstName + ' ' + (u.lastName || ''), p.productName, p.ptr, p.pts, p.mrp, p.pts, p.uid,
             '', '', '', '', '', '', '', '', '', '', '', ''
           ]);
         });
       });
+
+      const rowCount = wsData.length;
+      wsData.push([]);
+      let totalRow = ['TOTAL BUDGET (Auto-Calc)', '', '', '', '', '', '', ''];
+      const cols = ['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
+      cols.forEach(c => {
+        totalRow.push({ f: `SUMPRODUCT(${c}2:${c}${rowCount}, G2:G${rowCount})` });
+      });
+      wsData.push(totalRow);
     }
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Hide uid column for Qty*Amount and format widths
+    if (targetType !== 'Lump-Sum') {
+      ws['!cols'] = [
+        { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { hidden: true }
+      ];
+    }
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Target Format');
     XLSX.writeFile(wb, `Target_Upload_Format_${selectedHq.replace(/\s+/g, '_')}.xlsx`);
