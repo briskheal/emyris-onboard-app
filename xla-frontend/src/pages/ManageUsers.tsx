@@ -1229,6 +1229,13 @@ function SetTargetTab() {
     } catch (e) { console.error(e); }
   };
 
+
+  useEffect(() => {
+    if (activeSubTab === 'monthly') {
+      fetchTargets();
+    }
+  }, [activeSubTab, selectedMonth, selectedYear]);
+
   const handleDeleteTarget = async (id: string) => {
     if (!window.confirm('Delete this target?')) return;
     try {
@@ -1432,9 +1439,7 @@ function SetTargetTab() {
             </div>
           </div>
 
-          <button onClick={fetchTargets} className="mb-6 bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-2 rounded-lg font-bold">
-            Load Data
-          </button>
+          
 
           <div className="overflow-x-auto rounded-xl border border-slate-700">
             <table className="w-full text-left text-sm">
