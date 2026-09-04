@@ -1215,9 +1215,9 @@ router.post('/call-plan/bulk', async (req, res) => {
         }
         
         // Notify manager of call plan update
-        const user = await XlUser.findOne({ where: { employeeId } });
-        if (user && user.reportingManager) {
-            const managers = await XlUser.findAll({ where: { designation: user.reportingManager } });
+        const mgrUser = await XlUser.findOne({ where: { employeeId } });
+        if (mgrUser && mgrUser.reportingManager) {
+            const managers = await XlUser.findAll({ where: { designation: mgrUser.reportingManager } });
             for (const m of managers) {
                 await XlNotification.create({
                     _id: generateId(),
