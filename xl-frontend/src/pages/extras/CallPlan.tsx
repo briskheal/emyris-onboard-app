@@ -23,6 +23,7 @@ function CallPlan() {
   const [year, setYear] = useState(new Date().getFullYear().toString());
   
   const [monthlyPlans, setMonthlyPlans] = useState<any[]>([]);
+  const [holidays, setHolidays] = useState<Record<string, string>>({});
   
   const daysInMonth = new Date(parseInt(year), parseInt(month), 0).getDate();
   const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1);
@@ -313,13 +314,15 @@ function CallPlan() {
                   pStocks = JSON.parse(plan.stockists||'[]'); 
                 } catch(e){}
               }
-              const isHol = isSunday(day);
+              const dateStr = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+              const isHolidayDate = !!holidays[dateStr];
+              const isHol = isSunday(day) || isHolidayDate;
               const isPlanned = !!plan && (pDocs.length > 0 || pChems.length > 0 || pStocks.length > 0);
 
               return (
                 <div 
                   key={day} 
-                  onClick={() => isMultiMode ? toggleMultiSelect(day) : openSinglePlan(day)}
+                  onClick={() => isHol ? null : (isMultiMode ? toggleMultiSelect(day) : openSinglePlan(day))}
                   className={`flex items-center rounded-lg overflow-hidden border ${isMultiMode && selectedDates.has(day) ? 'border-sky-500 bg-sky-900/20' : 'border-[#3b3b5a] bg-[#27273f]'} transition-colors mb-2`}
                 >
                   <div className={`w-14 h-16 shrink-0 flex flex-col items-center justify-center ${isHol ? 'bg-slate-700/50' : isPlanned ? 'bg-emerald-600' : 'bg-[#1e88e5]'}`}>
