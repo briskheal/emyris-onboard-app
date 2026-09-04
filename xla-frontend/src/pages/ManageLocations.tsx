@@ -110,7 +110,7 @@ export default function ManageLocations() {
         </div>
 
         {/* Right Content Area */}
-        <div className="flex-1 bg-slate-900 p-8 overflow-y-auto">
+        <div className="flex-1 min-w-0 bg-slate-900 p-8 overflow-y-auto">
           {activeTab === 'state' && <StateTab />}
           {activeTab === 'hq' && <HQTab />}
           {activeTab === 'city' && <CityTab />}
@@ -176,7 +176,7 @@ function StateTab() {
       <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE STATE</h2>
       
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER STATE *</label>
           <input type="text" required value={stateName} onChange={e => setStateName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="State Name" />
         </div>
@@ -283,14 +283,14 @@ function HQTab() {
       <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE HEADQUARTER</h2>
       
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label className="text-sm text-slate-400 font-bold mb-2 block">SELECT STATE *</label>
           <select required value={stateName} onChange={e => setStateName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select State</option>
             {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
           </select>
         </div>
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER HEADQUARTER *</label>
           <input type="text" required value={hqName} onChange={e => setHqName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="HQ Name" />
         </div>
@@ -414,27 +414,27 @@ function CityTab() {
       <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE CITY / AREA</h2>
       
       <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block">TYPE *</label>
           <select value={type} onChange={e => setType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="City">City</option><option value="Local Area">Local Area</option>
           </select>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block">SELECT STATE *</label>
           <select required value={stateName} onChange={e => { setStateName(e.target.value); setHqName(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select State</option>
             {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
           </select>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block">SELECT HQ *</label>
           <select required value={hqName} onChange={e => setHqName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select HQ</option>
             {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
           </select>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block">CITY / AREA NAME *</label>
           <input type="text" required value={cityName} onChange={e => setCityName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Name" />
         </div>
@@ -557,35 +557,35 @@ function RouteTab() {
       </div>
       
       <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT STATE *</label>
           <select required value={stateName} onChange={e => { setStateName(e.target.value); setHqName(''); setFromCity(''); setToCity(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select State</option>
             {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
           </select>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT HQ *</label>
           <select required value={hqName} onChange={e => { setHqName(e.target.value); setFromCity(''); setToCity(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select Headquarter</option>
             {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
           </select>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">FROM CITY *</label>
           <select required value={fromCity} onChange={e => setFromCity(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select From City</option>
             {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
           </select>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">TO CITY *</label>
           <select required value={toCity} onChange={e => setToCity(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select To City</option>
             {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
           </select>
         </div>
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT AREA TYPE *</label>
           <select required value={areaType} onChange={e => setAreaType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select Area Type</option>

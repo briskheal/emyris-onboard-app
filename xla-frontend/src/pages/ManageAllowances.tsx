@@ -86,7 +86,7 @@ export default function ManageAllowances() {
     const displayedData = travelAllowances.slice((travelPage - 1) * travelRows, travelPage * travelRows);
 
     return (
-      <div className="flex-1 overflow-auto p-8 relative z-10">
+      <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">SET ALLOWANCES</h2>
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
@@ -180,7 +180,7 @@ export default function ManageAllowances() {
     const displayedData = outStationAllowances.slice((outStationPage - 1) * outStationRows, outStationPage * outStationRows);
 
     return (
-      <div className="flex-1 overflow-auto p-8 relative z-10">
+      <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">OUT-STATION ALLOWANCES</h2>
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
@@ -268,7 +268,7 @@ export default function ManageAllowances() {
     const displayedData = rateData.slice((ratesPage - 1) * ratesRows, ratesPage * ratesRows);
 
     return (
-      <div className="flex-1 overflow-auto p-8 relative z-10">
+      <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">TOTAL RATES</h2>
         
         <div className="mb-10 w-full md:w-1/3">
@@ -359,7 +359,7 @@ export default function ManageAllowances() {
           </button>
           <h2 className="text-white font-black text-sm tracking-widest uppercase">MANAGE EXPENSES</h2>
         </div>
-        <div className="flex-1 overflow-y-auto py-6">
+        <div className="flex-1 min-w-0 overflow-y-auto py-6">
           <ul className="space-y-2 px-4 text-sm font-bold tracking-wider">
             <li>
               <button onClick={() => setActiveTab('travel')} className={`w-full text-left px-6 py-4 rounded-xl transition-all ${activeTab === 'travel' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>

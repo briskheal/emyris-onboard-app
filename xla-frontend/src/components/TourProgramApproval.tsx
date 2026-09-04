@@ -165,7 +165,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
     };
 
     return (
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
          {showAddModal && (
             <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
                 <div className="bg-[#1c1c2e] rounded-xl border border-[#3b3b5a] p-6 w-full max-w-md shadow-2xl">
@@ -307,7 +307,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
 
   // Summary / Day-wise Views
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+    <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
        {/* Top Control Bar */}
        <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
           <div className="flex justify-between items-start mb-6">
@@ -330,7 +330,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
           </div>
 
           <div className="flex flex-col md:flex-row gap-6 md:items-center">
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">Select User</label>
               <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full max-w-sm bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
                 <option value="">All Users</option>

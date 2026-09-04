@@ -96,14 +96,14 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
     <ThBase>
       <div className="flex items-center justify-center gap-2 w-full">
         {searchable && <Search size={14} className="text-slate-500 shrink-0" />}
-        <span className="flex-1 text-center">{label}</span>
+        <span className="flex-1 min-w-0 text-center">{label}</span>
         {sortable && <ArrowUp size={14} className="text-slate-500 shrink-0" />}
       </div>
     </ThBase>
   );
 
   return (
-    <div className="flex-1 flex flex-col bg-[#1e1e2d] h-screen overflow-hidden relative z-10 w-full">
+    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-screen overflow-hidden relative z-10 w-full">
       
       {/* TOP TOOLBAR (Fixed) */}
       <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm z-20">
@@ -159,7 +159,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       </div>
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-1 overflow-auto bg-[#1e1e2d] custom-scrollbar w-full">
+      <div className="flex-1 min-w-0 overflow-auto bg-[#1e1e2d] custom-scrollbar w-full">
         <table className="w-full text-left border-collapse min-w-max">
           <thead className="sticky top-0 z-10 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
@@ -323,7 +323,7 @@ export default function ManageDCS() {
     };
 
     return (
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 min-w-0 overflow-auto p-8">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT DOCTOR: ${editData.name}` : 'CREATE DOCTOR...'}</h2>
           <button type="button" onClick={() => navigate('/extras/settings?tab=doctor_controls')} className="text-sky-400 text-sm font-bold hover:underline">Do you want to add more Degrees and Specializations?</button>
@@ -383,7 +383,7 @@ export default function ManageDCS() {
     };
 
     return (
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 min-w-0 overflow-auto p-8">
         <div className="flex justify-between items-center mb-8"><h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT CHEMIST: ${editData.businessName}` : 'CREATE CHEMIST'}</h2></div>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -434,7 +434,7 @@ export default function ManageDCS() {
     };
 
     return (
-      <div className="flex-1 overflow-auto p-8">
+      <div className="flex-1 min-w-0 overflow-auto p-8">
         <div className="flex justify-between items-center mb-8"><h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT STOCKIST: ${editData.businessName}` : 'CREATE STOCKIST'}</h2></div>
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -503,7 +503,7 @@ export default function ManageDCS() {
     };
 
     return (
-      <div className="flex-1 overflow-auto p-8 relative z-10">
+      <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">UPLOAD DOCTOR / CHEMIST / STOCKIST / CITY OR AREA</h2>
         
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl p-8 mb-8">
@@ -548,7 +548,7 @@ export default function ManageDCS() {
     const [subTab, setSubTab] = useState('');
     
     if(!subTab) return (
-      <div className="flex-1 overflow-auto p-8 relative z-10">
+      <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">DOC / CHEM / STK LIST MANAGEMENT</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <button onClick={()=>setSubTab('allot')} className="bg-slate-800/80 border border-slate-700 hover:border-sky-500 hover:bg-slate-800 rounded-2xl p-10 flex flex-col items-center gap-6 transition-all shadow-xl group">
@@ -568,7 +568,7 @@ export default function ManageDCS() {
     );
 
     return (
-      <div className="flex-1 overflow-auto p-8 relative z-10">
+      <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <button onClick={()=>setSubTab('')} className="text-sky-400 font-bold mb-8 hover:underline">BACK TO MANAGEMENT</button>
         <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 text-center">
           <p className="text-slate-400 mb-6">List assignment workflows (Allot, De-allot, Transfer) interface placeholder.</p>
@@ -595,7 +595,7 @@ export default function ManageDCS() {
           </button>
           <h2 className="text-white font-black text-sm tracking-widest uppercase">MANAGE DOCTORS, STOCKISTS & CHEMISTS</h2>
         </div>
-        <div className="flex-1 overflow-y-auto py-6">
+        <div className="flex-1 min-w-0 overflow-y-auto py-6">
           <ul className="space-y-2 px-4 text-xs font-bold tracking-wider">
             {[
               { id: 'create_doctor', label: 'CREATE DOCTORS' },
@@ -618,7 +618,7 @@ export default function ManageDCS() {
       {activeTab === 'create_doctor' && <CreateDoctorTab />}
       {activeTab === 'create_chemist' && <CreateChemistTab />}
       {activeTab === 'create_stockist' && <CreateStockistTab />}
-      <div className="flex-1 w-full" style={{ display: (activeTab === 'edit_delete' && !editingRecord) ? 'flex' : 'none' }}>
+      <div className="flex-1 min-w-0 w-full" style={{ display: (activeTab === 'edit_delete' && !editingRecord) ? 'flex' : 'none' }}>
         <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} users={users} fetchData={fetchData} />
       </div>
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Doctor' && <CreateDoctorTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}

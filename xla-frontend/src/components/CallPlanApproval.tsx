@@ -142,7 +142,7 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     const stockistCalls = stIds.map(id => stockistMap.get(id) || `Stockist (${id})`);
 
     return (
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
          <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
             <button onClick={() => setDetailedDateData(null)} className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider hover:text-sky-300 transition-colors">
                <ChevronLeft size={20} /> CALL DETAILS
@@ -239,7 +239,7 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     };
 
     return (
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
          <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
             <button onClick={() => { setDetailedMonthId(null); setSelectedRows([]); }} className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider mb-4 hover:text-sky-300 transition-colors">
                <ChevronLeft size={20} /> MONTHLY CALL PLAN DETAILS
@@ -346,7 +346,7 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
 
   // --- 3. MAIN APPROVAL LIST VIEW ---
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+    <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
        <div className="p-6 md:p-8 pb-6 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
           <div className="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-8">
              <div className="flex items-center gap-4">
@@ -371,7 +371,7 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
           </div>
 
           <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
-            <div className="flex-1 w-full max-w-sm">
+            <div className="flex-1 min-w-0 w-full max-w-sm">
               <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">Select User</label>
               <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
                 <option value="">All Users</option>
@@ -399,10 +399,10 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
                     DO YOU WANT TO APPROVE THE {selectedRows.length} CALL PLANNING REPORT{selectedRows.length !== 1 && 'S'}?
                   </p>
                   <div className="flex gap-4">
-                    <button onClick={() => handleBulkAction('Approved')} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
+                    <button onClick={() => handleBulkAction('Approved')} className="flex-1 min-w-0 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
                       <CheckCircle size={16} /> Approve
                     </button>
-                    <button onClick={() => handleBulkAction('Rejected')} className="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
+                    <button onClick={() => handleBulkAction('Rejected')} className="flex-1 min-w-0 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
                       <XCircle size={16} /> Reject
                     </button>
                   </div>

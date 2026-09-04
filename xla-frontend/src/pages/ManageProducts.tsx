@@ -63,7 +63,7 @@ export default function ManageProducts() {
             <button onClick={() => setActiveTab('inventory')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all ${activeTab === 'inventory' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>INVENTORY</button>
           </div>
         </div>
-        <div className="flex-1 bg-slate-900 p-8 overflow-y-auto">
+        <div className="flex-1 min-w-0 bg-slate-900 p-8 overflow-y-auto">
           {activeTab === 'category' && <CategoryTab />}
           {activeTab === 'type' && <TypeTab />}
           {activeTab === 'product' && <ProductTab />}
@@ -124,7 +124,7 @@ function CategoryTab() {
     <div className="max-w-4xl">
       <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE PRODUCT CATEGORY</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER PRODUCT CATEGORY *</label>
           <input required value={categoryName} onChange={e => setCategoryName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Enter Product Category" />
         </div>
@@ -211,7 +211,7 @@ function TypeTab() {
     <div className="max-w-4xl">
       <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE PRODUCT TYPE</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label className="text-sm text-slate-400 font-bold mb-2 block">PRODUCT TYPE *</label>
           <input required value={typeName} onChange={e => setTypeName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Enter Product Type" />
         </div>
@@ -518,7 +518,7 @@ function SupplierTab() {
     <div className="max-w-4xl">
       <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE PRODUCT SUPPLIER</h2>
       <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12 bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER PRODUCT SUPPLIER *</label>
           <input required value={supplierName} onChange={e => setSupplierName(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Enter Supplier Name" />
         </div>
