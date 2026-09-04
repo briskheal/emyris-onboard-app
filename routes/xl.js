@@ -59,7 +59,7 @@ async function getSubordinateHQs(designation, hqSet = new Set()) {
     if (!reportees || reportees.length === 0) return Array.from(hqSet);
     
     for (const r of reportees) {
-        if (r.hq) hqSet.add(r.hq.toLowerCase());
+        if (r.hq) hqSet.add(r.hq.trim().toLowerCase());
         await getSubordinateHQs(r.designation, hqSet);
     }
     return Array.from(hqSet);
@@ -72,7 +72,12 @@ router.get('/routes', async (req, res) => {
     try {
         const { designation, hq } = req.query;
         let hqList = [];
-        if (hq) hqList.push(hq.toLowerCase());
+        if (hq) {
+            const trimmed = hq.trim().toLowerCase();
+            hqList.push(trimmed);
+            hqList.push(trimmed.replace(/\s+/g, '-'));
+            hqList.push(trimmed.replace(/-/g, ' '));
+        }
         
         if (designation && designation !== 'ADMIN') {
             const subHQs = await getSubordinateHQs(designation);
@@ -332,7 +337,7 @@ router.get('/doctors', async (req, res) => {
     try {
         const { designation, hq } = req.query;
         let hqList = [];
-        if (hq) hqList.push(hq.toLowerCase());
+        if (hq) hqList.push(hq.trim().toLowerCase());
         
         if (designation && designation !== 'ADMIN') {
             const subHQs = await getSubordinateHQs(designation);
@@ -346,7 +351,7 @@ router.get('/doctors', async (req, res) => {
         } else if (req.query.hq) {
             // fallback
             const { sequelize } = require('../db');
-            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.toLowerCase());
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
 
         const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category', 'employeeId'], order: [['name', 'ASC']] });
@@ -362,7 +367,7 @@ router.get('/chemists', async (req, res) => {
     try {
         const { designation, hq } = req.query;
         let hqList = [];
-        if (hq) hqList.push(hq.toLowerCase());
+        if (hq) hqList.push(hq.trim().toLowerCase());
         
         if (designation && designation !== 'ADMIN') {
             const subHQs = await getSubordinateHQs(designation);
@@ -375,7 +380,7 @@ router.get('/chemists', async (req, res) => {
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList });
         } else if (req.query.hq) {
             const { sequelize } = require('../db');
-            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('hq')), req.query.hq.toLowerCase());
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('hq')), req.query.hq.trim().toLowerCase());
         }
 
         const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'hq', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
