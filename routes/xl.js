@@ -1174,6 +1174,27 @@ router.post('/call-plan/bulk', async (req, res) => {
     try {
         const { employeeId, dates, doctors, chemists, stockists } = req.body;
         if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
+        // --- HOLIDAY CHECK ---
+        const user = await XlUser.findOne({ where: { employeeId } });
+        if (user && user.state) {
+            const holidays = await XlHoliday.findAll({
+                where: {
+                    [Op.or]: [
+                        { state: user.state },
+                        { state: null },
+                        { state: 'All' },
+                        { state: 'N/A' },
+                        { state: '' }
+                    ]
+                }
+            });
+            const holidayDates = new Set(holidays.map(h => h.date));
+            const invalidDates = dates.filter(d => holidayDates.has(d));
+            if (invalidDates.length > 0) {
+                return res.json({ success: false, message: 'Cannot submit Call Plan on a Holiday: ' + invalidDates.join(', ') });
+            }
+        }
+        // -----------------------
         
         for (const date of dates) {
             let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
