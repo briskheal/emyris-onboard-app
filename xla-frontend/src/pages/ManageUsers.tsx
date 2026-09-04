@@ -15,7 +15,7 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
     const csvContent = [
       keys.join(','),
       ...data.map((row: any) => keys.map(k => `"${row[k] || ''}"`).join(','))
-    ].join('');
+    ].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -599,15 +599,13 @@ function CreateProfileTab({ isAdmin, editUser, onBack }: { isAdmin: boolean, edi
 const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: '', designation: '', division: '', reportingManager: '', reportingDesignation: '', reportingHq: '' });
     
     
-    
-
-
-  const [hqs, setHqs] = useState<any[]>([]);
+    const [hqs, setHqs] = useState<any[]>([]);
   const [designations, setDesignations] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
   const [applicants, setApplicants] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  
+  const [sendEmail, setSendEmail] = useState(true);
+
 useEffect(() => { 
         if (editUser) {
             let rd = editUser.reportingManager || '';
@@ -629,6 +627,9 @@ useEffect(() => {
             setFormData({ ...editUser, reportingDesignation: matchedRd, reportingHq: matchedRhq });
         } 
     }, [editUser, designations, hqs]);
+
+
+  
 
   useEffect(() => {
     Promise.all([
@@ -2425,7 +2426,7 @@ function TargetsListView({ period, onBack }: any) {
   useEffect(() => { fetchTargets(); }, [month, year, period]);
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm("DELETE ALLOTTED TARGETTHIS WILL PERMANENTLY DELETE THE ALLOTTED TARGET!Yes / No")) return;
+    if (!window.confirm("DELETE ALLOTTED TARGET\nTHIS WILL PERMANENTLY DELETE THE ALLOTTED TARGET!\nYes / No")) return;
     try {
       const res = await axios.delete('/api/admin/targets/' + id);
       if (res.data.success) {
