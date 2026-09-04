@@ -613,7 +613,7 @@ useEffect(() => {
             if (rd === 'ADMIN') {
                 rhq = '';
             } else {
-                const match = rd.match(/^(.*?)(?:\s*\((.*?)\))?$/);
+                const match = rd.match(/^(.*?)(?:\s*\(([^()]+)\))?$/);
                 if (match) {
                     rd = match[1].trim();
                     rhq = match[2] ? match[2].trim() : '';
