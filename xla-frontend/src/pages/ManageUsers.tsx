@@ -869,7 +869,7 @@ const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: 
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMPLOYEE ID</label><input name="employeeId" value={formData.employeeId || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF JOINING</label><input type="date" name="doj" value={formData.doj || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             
-              <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING DESIGNATION</label>
+              <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING DESG.</label>
                 <select name="reportingDesignation" value={formData.reportingDesignation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
                   <option value="">Select Designation</option>
                   <option value="ADMIN">ADMIN</option>
