@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, MapPin, CalendarDays, Receipt, MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, Users, History, CheckSquare } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, CalendarDays, Receipt, MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, Users, History, CheckSquare } from 'lucide-react';
 import NavigationDrawer from './NavigationDrawer';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/admin', icon: SettingsIcon, label: 'Admin Panel' },
-  { path: '/extras/tour-program', icon: MapPin, label: 'Tour Program' },
+  // { path: '/extras/tour-program', icon: MapPin, label: 'Tour Program' },
   { path: '/extras/call-plan', icon: CalendarDays, label: 'Call Planning' },
   { path: '/extras/expense', icon: Receipt, label: 'Expenses' },
   { path: '/extras/e-detailing', icon: MonitorPlay, label: 'E-Detailing' },
