@@ -539,6 +539,7 @@ function CityTab() {
 }
 
 function RouteTab() {
+  const [searchTerm, setSearchTerm] = useState('');
   const [routes, setRoutes] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [hqs, setHqs] = useState<any[]>([]);
@@ -616,7 +617,8 @@ function RouteTab() {
     } catch (e) { console.error(e); }
   };
 
-  const paginatedRoutes = routes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const searchedRoutes = routes.filter(r => !searchTerm || (r.fromCity && r.fromCity.toLowerCase().includes(searchTerm.toLowerCase())) || (r.toCity && r.toCity.toLowerCase().includes(searchTerm.toLowerCase())) || (r.hq && r.hq.toLowerCase().includes(searchTerm.toLowerCase())));
+  const paginatedRoutes = searchedRoutes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-6xl">
@@ -670,7 +672,16 @@ function RouteTab() {
         </button>
       </form>
       
-      <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({routes.length}) ROUTES</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedRoutes.length}) ROUTES</h3>
+        <input 
+          type="text" 
+          placeholder="Search HQ or City..." 
+          value={searchTerm}
+          onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+        />
+      </div>
       
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
@@ -768,7 +779,7 @@ function RouteTab() {
             </tbody>
           </table>
         </div>
-        <TableFooter data={routes} fileName="Routes" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={searchedRoutes} fileName="Routes" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
