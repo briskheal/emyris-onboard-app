@@ -352,12 +352,12 @@ export default function ManageAllowances() {
       </div>
       
       {/* Sidebar */}
-      <div className="w-80 bg-slate-900/80 border-r border-slate-800 flex flex-col relative z-10 backdrop-blur-xl">
+      <div className="w-64 shrink-0 bg-slate-900/80 border-r border-slate-800 flex flex-col relative z-10 backdrop-blur-xl">
         <div className="p-8 border-b border-slate-800 flex flex-col gap-4">
           <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-            <ArrowLeft size={24} /> <span className="font-black text-xl tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
+            <ArrowLeft size={18} /> <span className="font-black text-xs tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
           </button>
-          <h2 className="text-white font-black text-xl tracking-widest uppercase">MANAGE EXPENSES</h2>
+          <h2 className="text-white font-black text-sm tracking-widest uppercase">MANAGE EXPENSES</h2>
         </div>
         <div className="flex-1 overflow-y-auto py-6">
           <ul className="space-y-2 px-4 text-sm font-bold tracking-wider">
