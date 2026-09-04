@@ -89,7 +89,7 @@ function AccessControlTab() {
 
   const fetchDivisions = async () => {
     try {
-      const res = await axios.get('/api/admin/divisions');
+      const res = await axios.get('/api/admin/locations/divisions');
       if (res.data.success) setDivisions(res.data.divisions);
     } catch (e) { console.error(e); }
   };
