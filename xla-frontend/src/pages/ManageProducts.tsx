@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit, Eye, Upload } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Eye, Upload, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -264,6 +264,7 @@ function ProductTab() {
   const [pageSize, setPageSize] = useState(10);
   const [viewProduct, setViewProduct] = useState<any>(null); // For Details modal/view
   const [isEditing, setIsEditing] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
 
   const fetchData = async () => {
     try {
@@ -338,7 +339,12 @@ function ProductTab() {
     );
   }
 
-  const paginated = data.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const filteredData = data.filter(p => 
+      (p.productName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.uid || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (p.division || '').toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    const paginated = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-full">
@@ -378,6 +384,19 @@ function ProductTab() {
           <button disabled={loading} type="submit" className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">{isEditing ? 'Save Changes' : 'Add Product'}</button>
         </div>
       </form>
+        
+        <div className="flex justify-between items-center mb-6">
+          <div className="relative w-72">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
+            <input 
+              type="text" 
+              placeholder="Search products..." 
+              value={searchTerm} 
+              onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-sky-500 shadow-inner"
+            />
+          </div>
+        </div>
 
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
@@ -422,7 +441,7 @@ function ProductTab() {
             </tbody>
           </table>
         </div>
-        <TableFooter data={data} fileName="Products" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={filteredData} fileName="Products" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
