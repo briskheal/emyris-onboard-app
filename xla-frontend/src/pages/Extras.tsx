@@ -7,7 +7,7 @@ export default function Extras() {
 
   const extrasOptions = [
     // { label: 'Tour Program', path: '/extras/tour-program', description: 'Plan your monthly visits & get approval', icon: MapPin, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-    { label: 'Call Planning', path: '/extras/call-plan', description: 'Pre-call planning & objectives', icon: CalendarDays, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+    // { label: 'Call Planning', path: '/extras/call-plan', description: 'Pre-call planning & objectives', icon: CalendarDays, color: 'text-sky-400', bg: 'bg-sky-400/10' },
     { label: 'Leave Request', path: '/extras/leave', description: 'Apply for leaves & track status', icon: CalendarDays, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
     { label: 'Geo Fencing', path: '/extras/geo-fencing', description: 'Geo-tag doctors & clinic locations', icon: MapPin, color: 'text-rose-500', bg: 'bg-rose-500/10' },
     { label: 'Expense', path: '/extras/expense', description: 'Submit and track travel expenses', icon: Receipt, color: 'text-amber-400', bg: 'bg-amber-400/10' },
