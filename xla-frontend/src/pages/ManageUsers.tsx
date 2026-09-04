@@ -598,6 +598,7 @@ export default function ManageUsers() {
 function CreateProfileTab({ isAdmin, editUser, onBack }: { isAdmin: boolean, editUser?: any, onBack?: () => void }) {
 const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: '', designation: '', division: '', reportingManager: '', reportingDesignation: '', reportingHq: '' });
     
+    
     useEffect(() => { 
         if (editUser) {
             let rd = editUser.reportingManager || '';
@@ -611,9 +612,15 @@ const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: 
                     rhq = match[2] ? match[2].trim() : '';
                 }
             }
-            setFormData({ ...editUser, reportingDesignation: rd, reportingHq: rhq });
+            
+            // Fix exact strict React matching by pulling the exact string from the arrays
+            const matchedRd = rd === 'ADMIN' ? 'ADMIN' : (designations.find(d => d.designationName?.trim().toLowerCase() === rd.toLowerCase())?.designationName || rd);
+            const matchedRhq = hqs.find(h => h.hqName?.trim().toLowerCase() === rhq.toLowerCase())?.hqName || rhq;
+
+            setFormData({ ...editUser, reportingDesignation: matchedRd, reportingHq: matchedRhq });
         } 
-    }, [editUser]);
+    }, [editUser, designations, hqs]);
+
 
   const [hqs, setHqs] = useState<any[]>([]);
   const [designations, setDesignations] = useState<any[]>([]);
@@ -793,7 +800,7 @@ const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: 
   // Hierarchy Logic: Level 1 is entry, Level 9 is higher.
   // Meaning Employee Level N can only report to Manager Level M where M > N
   const selectedLevel = designations.find(d => d.designationName === formData.designation)?.level || 0;
-  const eligibleDesignations = designations;
+  const eligibleDesignations = designations.filter(d => d.level > selectedLevel);
 
   return (
     <div className="w-full px-4 pb-12">
