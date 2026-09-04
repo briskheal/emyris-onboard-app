@@ -64,6 +64,7 @@ function AccessControlTab() {
   const [selectedState, setSelectedState] = useState('');
   const [selectedHq, setSelectedHq] = useState('');
   const [selectedDivision, setSelectedDivision] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -107,6 +108,10 @@ function AccessControlTab() {
     if (selectedState && u.state !== selectedState && !hqs.find(h => h.hqName === u.hq && h.state === selectedState)) return false;
     if (selectedHq && u.hq !== selectedHq) return false;
     if (selectedDivision && u.division !== selectedDivision) return false;
+    if (searchTerm) {
+      const full = (u.firstName + ' ' + (u.lastName || '')).toLowerCase();
+      if (!full.includes(searchTerm.toLowerCase())) return false;
+    }
     return true;
   });
 
@@ -202,8 +207,20 @@ function AccessControlTab() {
       </div>
 
       <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden relative">
-        <div className="p-4 border-b border-slate-700/50 flex justify-between items-center">
-          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">Showing ({filteredUsers.length}) Entries</h3>
+        <div className="p-4 border-b border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex items-center gap-4">
+            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider whitespace-nowrap">Showing ({filteredUsers.length}) Entries</h3>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input 
+                type="text" 
+                placeholder="Search user..." 
+                value={searchTerm}
+                onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                className="bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 w-full md:w-64"
+              />
+            </div>
+          </div>
           {selectedHq && (
              <button 
                 onClick={() => { setIsUnlocking(allFilteredLocked); setShowConfirm(true); }} 
