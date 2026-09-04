@@ -63,6 +63,9 @@ function UploadTargetTab() {
   const [selectedState, setSelectedState] = useState('');
   const [selectedHq, setSelectedHq] = useState('');
   const [targetType, setTargetType] = useState('Select...');
+  const [file, setFile] = useState<File | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchLocations();
@@ -234,7 +237,7 @@ function UploadTargetTab() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-bold text-slate-400 uppercase tracking-wider">Select Target Type</label>
           <select value={targetType} onChange={e => setTargetType(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
@@ -246,15 +249,15 @@ function UploadTargetTab() {
         <div className="flex flex-col gap-2">
           <label className="text-sm font-bold text-rose-400 uppercase tracking-wider">Upload Excel *</label>
           <div className="bg-slate-900 border border-slate-700 rounded-lg flex items-center overflow-hidden">
-            <input type="file" accept=".xlsx, .xls" className="text-sm text-slate-400 file:mr-4 file:py-3 file:px-4 file:rounded-none file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer w-full" />
+            <input type="file" accept=".xlsx, .xls" onChange={e => setFile(e.target.files?.[0] || null)} className="text-sm text-slate-400 file:mr-4 file:py-3 file:px-4 file:rounded-none file:border-0 file:text-sm file:font-semibold file:bg-slate-700 file:text-white hover:file:bg-slate-600 cursor-pointer w-full" />
           </div>
         </div>
       </div>
       
       <div className="mt-8 flex justify-end">
-        <button className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-lg font-bold shadow-lg transition-colors">
-          Upload Targets
-        </button>
+        <button disabled={uploading} onClick={handleUpload} className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-3 rounded-lg font-bold shadow-lg transition-colors">
+            {uploading ? 'Uploading...' : 'Upload Targets'}
+          </button>
       </div>
     </div>
   );
