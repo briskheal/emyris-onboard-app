@@ -1436,11 +1436,9 @@ function SetTargetTab() {
             const mapped = products.map(p => {
               const ex = dbProductTargets.find((tp: any) => tp.productId === p._id || tp.productId === p.uid);
               if (ex) {
-                let guessedPriceType = ex.priceType || 'Custom';
-                if (!ex.priceType && ex.price !== undefined) {
-                  if (ex.price == p.pts) guessedPriceType = 'PTS';
-                  else if (ex.price == p.ptr) guessedPriceType = 'PTR';
-                  else if (ex.price == p.mrp) guessedPriceType = 'MRP';
+                let guessedPriceType = ex.priceType || 'CUSTOM';
+                if (!ex.priceType) {
+                   guessedPriceType = (ex.price && parseFloat(ex.price) > 0) ? 'CUSTOM' : 'PTS';
                 }
                 
                 return {
