@@ -793,7 +793,7 @@ const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: 
   // Hierarchy Logic: Level 1 is entry, Level 9 is higher.
   // Meaning Employee Level N can only report to Manager Level M where M > N
   const selectedLevel = designations.find(d => d.designationName === formData.designation)?.level || 0;
-  const eligibleDesignations = designations.filter(d => d.level > selectedLevel);
+  const eligibleDesignations = designations;
 
   return (
     <div className="w-full px-4 pb-12">
