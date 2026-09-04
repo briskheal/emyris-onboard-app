@@ -3,6 +3,41 @@ const router = express.Router();
 const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, generateId } = require('../db');
 const { Op } = require('sequelize');
 
+// Middleware to block locked users from any mobile API route instantly
+router.use(async (req, res, next) => {
+    const empId = req.body.employeeId || req.query.employeeId || req.body.email || req.query.email;
+    if (empId) {
+        try {
+            const user = await XlUser.findOne({ 
+                where: { 
+                    [Op.or]: [
+                        { employeeId: empId },
+                        { email: empId },
+                        { uid: empId }
+                    ]
+                }
+            });
+            if (user) {
+                let controls = user.controls;
+                if (typeof controls === 'string') {
+                    try { controls = JSON.parse(controls); } catch(e) { controls = {}; }
+                }
+                if (controls && controls.locked) {
+                    return res.json({ 
+                        success: false, 
+                        isLocked: true, // Special flag for mobile app if it wants to log out
+                        message: controls.lockedReason || 'Your account is locked by Admin.' 
+                    });
+                }
+            }
+        } catch(e) {
+            console.error('Lock Check Error:', e);
+        }
+    }
+    next();
+});
+
+
 // ─── HAVERSINE GEO-FENCE HELPER ──────────────────────────────────────────────
 // Returns distance in metres between two GPS coordinates
 function haversineMetres(lat1, lng1, lat2, lng2) {
