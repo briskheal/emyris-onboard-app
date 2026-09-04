@@ -5288,6 +5288,30 @@ router.post('/targets/upload', async (req, res) => {
     }
 });
 
+
+router.put('/users/bulk-lock', async (req, res) => {
+    try {
+        const { XlUser } = require('../db');
+        const { hq, locked, lockedReason } = req.body;
+        const users = await XlUser.findAll({ where: { hq } });
+        for (const user of users) {
+            let controls = user.controls;
+            if (typeof controls === 'string') {
+               try { controls = JSON.parse(controls); } catch(e) { controls = {}; }
+            }
+            if (!controls || typeof controls !== 'object') controls = {};
+            
+            controls.locked = locked;
+            controls.lockedReason = lockedReason || '';
+            await user.update({ controls });
+        }
+        res.json({ success: true, count: users.length });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 module.exports = router;
 
 
