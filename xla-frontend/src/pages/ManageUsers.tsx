@@ -596,8 +596,25 @@ export default function ManageUsers() {
 }
 
 function CreateProfileTab({ isAdmin, editUser, onBack }: { isAdmin: boolean, editUser?: any, onBack?: () => void }) {
-const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: '', designation: '', division: '', reportingManager: '' });
-    useEffect(() => { if (editUser) setFormData(editUser); }, [editUser]);
+const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: '', designation: '', division: '', reportingManager: '', reportingDesignation: '', reportingHq: '' });
+    
+    useEffect(() => { 
+        if (editUser) {
+            let rd = editUser.reportingManager || '';
+            let rhq = '';
+            if (rd === 'ADMIN') {
+                rhq = '';
+            } else {
+                const match = rd.match(/^(.*?)(?:\s*\((.*?)\))?$/);
+                if (match) {
+                    rd = match[1].trim();
+                    rhq = match[2] ? match[2].trim() : '';
+                }
+            }
+            setFormData({ ...editUser, reportingDesignation: rd, reportingHq: rhq });
+        } 
+    }, [editUser]);
+
   const [hqs, setHqs] = useState<any[]>([]);
   const [designations, setDesignations] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
@@ -646,12 +663,18 @@ const [formData, setFormData] = useState<any>(editUser || { gender: 'Male', hq: 
     }
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
+
+    const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setLoading(true);
       try {
-        const payload = { ...formData, isAdmin };
+        let finalRM = formData.reportingDesignation || '';
+        if (finalRM && finalRM !== 'ADMIN' && formData.reportingHq) {
+            finalRM = finalRM + ' (' + formData.reportingHq + ')';
+        }
+        const payload = { ...formData, reportingManager: finalRM, isAdmin };
         let res;
+
         if (editUser) {
             const url = isAdmin ? `/api/admin/admins/${editUser._id}` : `/api/admin/users/${editUser._id}`;
             res = await axios.put(url, payload);
@@ -678,7 +701,7 @@ const handleSubmit = async (e: React.FormEvent) => {
             if (editUser && onBack) {
                 onBack();
             } else {
-                setFormData({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '' });
+                setFormData({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '', reportingDesignation: '', reportingHq: '' });
             }
         } else alert(res.data.message);
       } catch (e) { console.error(e); } finally { setLoading(false); }
@@ -695,7 +718,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   const handleImport = async (e: any) => {
     const email = e.target.value;
     if (!email) {
-        setFormData({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '' });
+        setFormData({ gender: 'Male', hq: '', designation: '', division: '', reportingManager: '', reportingDesignation: '', reportingHq: '' });
         return;
     }
     try {
@@ -845,12 +868,23 @@ const handleSubmit = async (e: React.FormEvent) => {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DIVISION</label><select name="division" value={formData.division || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Division</option>{divisions.map(d => <option key={d._id} value={d.divisionName}>{d.divisionName}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMPLOYEE ID</label><input name="employeeId" value={formData.employeeId || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF JOINING</label><input type="date" name="doj" value={formData.doj || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER</label>
-              <select name="reportingManager" value={formData.reportingManager || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
-                <option value="">Select Designation</option>
-                {eligibleDesignations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}
-              </select>
-            </div>
+            
+              <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING DESIGNATION</label>
+                <select name="reportingDesignation" value={formData.reportingDesignation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
+                  <option value="">Select Designation</option>
+                  <option value="ADMIN">ADMIN</option>
+                  {eligibleDesignations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}
+                </select>
+              </div>
+              {formData.reportingDesignation && formData.reportingDesignation !== 'ADMIN' && (
+                  <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING HQ</label>
+                    <select name="reportingHq" value={formData.reportingHq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
+                      <option value="">Select HQ</option>
+                      {hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+                    </select>
+                  </div>
+              )}
+
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">AADHAR NUMBER</label><input name="aadhar" value={formData.aadhar || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">PAN NUMBER</label><input name="pan" value={formData.pan || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
           </div>

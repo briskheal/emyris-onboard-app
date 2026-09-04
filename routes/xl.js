@@ -53,14 +53,29 @@ function haversineMetres(lat1, lng1, lat2, lng2) {
 const DEFAULT_RADIUS_METRES = 200;
 
 // N-Level Recursive Hierarchy Lookup for HQs
-async function getSubordinateHQs(designation, hqSet = new Set()) {
+async function getSubordinateHQs(designation, hq, hqSet = new Set()) {
     if (!designation || designation === 'ADMIN') return Array.from(hqSet);
-    const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+    
+    let whereClause;
+    if (hq) {
+        const position = designation + ' (' + hq.trim().toUpperCase() + ')';
+        const { Op } = require('sequelize');
+        whereClause = {
+            [Op.or]: [
+                { reportingManager: position },
+                { reportingManager: designation }
+            ]
+        };
+    } else {
+        whereClause = { reportingManager: designation };
+    }
+
+    const reportees = await XlUser.findAll({ where: whereClause });
     if (!reportees || reportees.length === 0) return Array.from(hqSet);
     
     for (const r of reportees) {
         if (r.hq) hqSet.add(r.hq.trim().toLowerCase());
-        await getSubordinateHQs(r.designation, hqSet);
+        await getSubordinateHQs(r.designation, r.hq, hqSet);
     }
     return Array.from(hqSet);
 }
@@ -80,7 +95,7 @@ router.get('/routes', async (req, res) => {
         }
         
         if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation);
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
             hqList = [...new Set([...hqList, ...subHQs])];
         } else if (designation === 'ADMIN') {
             const routes = await XlRoute.findAll();
@@ -340,7 +355,7 @@ router.get('/doctors', async (req, res) => {
         if (hq) hqList.push(hq.trim().toLowerCase());
         
         if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation);
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
             hqList = [...new Set([...hqList, ...subHQs])];
         }
 
@@ -370,7 +385,7 @@ router.get('/chemists', async (req, res) => {
         if (hq) hqList.push(hq.trim().toLowerCase());
         
         if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation);
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
             hqList = [...new Set([...hqList, ...subHQs])];
         }
 
@@ -1119,7 +1134,7 @@ router.get('/vacancies', async (req, res) => {
         const { designation } = req.query;
         if (!designation) return res.json({ success: true, data: [] });
         
-        const subHQs = await getSubordinateHQs(designation);
+        const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
         if (subHQs.length === 0) return res.json({ success: true, data: [] });
 
         const { XlVacancyLog } = require('../db');
