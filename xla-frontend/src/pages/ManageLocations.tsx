@@ -344,6 +344,7 @@ function HQTab() {
 }
 
 function CityTab() {
+  const [searchTerm, setSearchTerm] = useState('');
   const [cities, setCities] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   const [hqs, setHqs] = useState<any[]>([]);
@@ -408,7 +409,8 @@ function CityTab() {
     } catch (e) { console.error(e); }
   };
 
-  const paginatedCities = cities.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const searchedCities = cities.filter(c => !searchTerm || (c.cityName && c.cityName.toLowerCase().includes(searchTerm.toLowerCase())) || (c.hq && c.hq.toLowerCase().includes(searchTerm.toLowerCase())) || (c.state && c.state.toLowerCase().includes(searchTerm.toLowerCase())));
+  const paginatedCities = searchedCities.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-6xl">
@@ -444,7 +446,16 @@ function CityTab() {
         </button>
       </form>
       
-      <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({cities.length}) CITIES</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedCities.length}) CITIES</h3>
+        <input 
+          type="text" 
+          placeholder="Search City, HQ, or State..." 
+          value={searchTerm}
+          onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+        />
+      </div>
       
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
@@ -532,7 +543,7 @@ function CityTab() {
             </tbody>
           </table>
         </div>
-        <TableFooter data={cities} fileName="Cities" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={searchedCities} fileName="Cities" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
