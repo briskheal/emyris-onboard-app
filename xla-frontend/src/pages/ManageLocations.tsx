@@ -52,6 +52,8 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
             <option value={20}>20</option>
             <option value={50}>50</option>
             <option value={100}>100</option>
+            <option value={500}>500</option>
+            <option value={1000}>1000</option>
           </select>
         </div>
       </div>
@@ -572,7 +574,7 @@ function RouteTab() {
   useEffect(() => { fetchData(); }, []);
 
   const filteredHqs = hqs.filter(h => h.state === stateName);
-  const filteredCities = cities.filter(c => c.state === stateName && c.hq === hqName);
+  const filteredCities = cities.filter(c => c.state === stateName);
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -689,10 +691,9 @@ function RouteTab() {
               {paginatedRoutes.map((r, i) => {
                 const isEditing = editId === r._id;
                 const activeEditState = isEditing ? editData.state : r.state;
-                const activeEditHq = isEditing ? editData.hq : r.hq;
                 
                 const dynamicHqs = hqs.filter(h => h.state === activeEditState);
-                const dynamicCities = cities.filter(c => c.state === activeEditState && c.hq === activeEditHq);
+                const dynamicCities = cities.filter(c => c.state === activeEditState);
 
                 return (
                   <tr key={r._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">

@@ -29,7 +29,7 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
         <div className="flex items-center gap-2 text-sm text-slate-300 font-bold">
           <span>Show</span>
           <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:outline-none">
-            {[10, 25, 50, 100, 1000].map(n => <option key={n} value={n}>{n}</option>)}
+            {[10, 25, 50, 100, 500, 1000].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
           <span>records</span>
         </div>
