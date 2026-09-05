@@ -108,10 +108,15 @@ export default function GeoFencingTag() {
     axios.put(`/api/xl/${type}/${selectedId}/geo`, payload)
       .then(() => {
         setSuccess('Location tagged successfully!');
-        setTimeout(() => navigate('/extras/geo-fencing'), 2000);
+        setTagging(false);
+        // Remove from list
+        setEntities(entities.filter(e => e._id !== selectedId));
+        setSelectedId('');
       })
-      .catch(() => setError('Failed to save location.'))
-      .finally(() => setTagging(false));
+      .catch((err: any) => {
+        setTagging(false);
+        setError(err.response?.data?.error || err.message || 'Failed to save location.');
+      });
   };
 
   const selectedEntity = entities.find(e => e._id === selectedId);

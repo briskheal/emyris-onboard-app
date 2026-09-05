@@ -178,7 +178,7 @@ router.put('/doctor/:id/geo', async (req, res) => {
         res.json({ success: true, message: 'Doctor location tagged successfully!' });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Failed to update doctor location' });
+        res.status(500).json({ error: 'DB ERROR: ' + e.message });
     }
 });
 
@@ -199,7 +199,7 @@ router.put('/chemist/:id/geo', async (req, res) => {
         });
         res.json({ success: true, message: 'Chemist location tagged successfully!' });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to update chemist location' });
+        res.status(500).json({ error: 'DB ERROR: ' + e.message });
     }
 });
 
@@ -220,7 +220,7 @@ router.put('/stockist/:id/geo', async (req, res) => {
         });
         res.json({ success: true, message: 'Stockist location tagged successfully!' });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to update stockist location' });
+        res.status(500).json({ error: 'DB ERROR: ' + e.message });
     }
 });
 

@@ -177,8 +177,6 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
         pobItems,
         discussion: remarks,
         rating
-      };
-
       await axios.post('/api/xl/dcr', payload);
       setStep('success');
     } catch (err: any) {
@@ -189,10 +187,8 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-sm sm:p-4">
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-sm sm:p-4">
       <div className="w-full sm:max-w-md bg-[#1c1c2e] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-[#3b3b5a]">
-        
-        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#3b3b5a] shrink-0 bg-[#27273f]">
           <div>
             <h2 className="text-lg font-black text-white">{entityType ? `${entityType} DCR` : 'Daily Call Report'}</h2>
@@ -209,23 +205,32 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
 
           {/* STEP: MENU */}
           {step === 'menu' && (
-            <div>
+            <div className="pb-16">
               <div className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-5 shadow-lg mb-8">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-bold text-slate-300">Today's Working Area</h3>
-                  {hasApprovedTP ? (
-                    <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Working</span>
-                  ) : (
-                    <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Not Planned</span>
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-slate-300">Today's Working Area:</h3>
+                    {hasApprovedTP ? (
+                      <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Working</span>
+                    ) : (
+                      <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Not Planned</span>
+                    )}
+                  </div>
+                  
+                  {hasApprovedTP && (
+                    <p className="text-white font-black text-lg">{workingAreas}</p>
                   )}
+
+                  <div className="mt-2 border-t border-[#3b3b5a] pt-3">
+                    {hasApprovedTP ? (
+                      <div className="text-sm font-bold text-emerald-400 flex items-center gap-2"><CheckCircle2 size={16} /> Tour Program Approved</div>
+                    ) : (
+                      <button onClick={() => { onClose(); navigate("/extras/tour-program"); }} className="text-sm font-medium text-slate-300 flex items-center gap-2 active:text-sky-300">
+                        <Navigation size={16} className="text-rose-400" /> Tour Program not found. <span className="text-sky-400 font-bold ml-1 hover:underline">Click to create!</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {hasApprovedTP ? (
-                  <div className="text-sm font-bold text-emerald-400 flex items-center gap-2"><CheckCircle2 size={16} /> Tour Program Approved</div>
-                ) : (
-                  <button onClick={() => { onClose(); navigate("/extras/tour-program"); }} className="text-sm font-medium text-slate-300 flex items-center gap-2 active:text-sky-300">
-                    <Navigation size={16} className="text-rose-400" /> Tour Program not found. <span className="text-sky-400 font-bold ml-1 hover:underline">Click to create!</span>
-                  </button>
-                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">
