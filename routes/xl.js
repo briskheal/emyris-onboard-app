@@ -1443,5 +1443,18 @@ router.delete('/settings/holidays/:id', async (req, res) => {
     }
 });
 
+// GET Geo Fencing Tags for a specific user
+router.get('/geo-fencing/my-tags', async (req, res) => {
+    try {
+        const { employeeId } = req.query;
+        if (!employeeId) return res.json({ success: true, data: [] });
+        const tags = await XlGeoFencing.findAll({ where: { employeeId } });
+        res.json({ success: true, data: tags });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch tags' });
+    }
+});
+
 module.exports = router;
 

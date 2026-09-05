@@ -40,7 +40,7 @@ export default function GeoFencingTag() {
     
     Promise.all([
       axios.get(`/api/xl/${typeStr}?hq=${hq}&designation=${desig}`),
-      axios.get(`/api/xl/geo-fencing/my-tags?employeeId=${uStr ? JSON.parse(uStr).employeeId : ''}`)
+      axios.get(`/api/xl/geo-fencing/my-tags?employeeId=${uStr ? JSON.parse(uStr).employeeId : ''}`).catch(() => ({ data: { data: [] } }))
     ])
       .then(([entitiesRes, tagsRes]) => {
         let allEntities = entitiesRes.data.data || [];
@@ -174,33 +174,37 @@ export default function GeoFencingTag() {
           )}
         </div>
 
-        {/* Map Area */}
-        <div className="flex-1 flex flex-col min-h-[350px] max-h-[500px]">
+      {/* Map Area */}
+        <div className="flex flex-col mt-4">
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
             GPS Location <span className="text-rose-500">*</span>
           </label>
           
-          <div className="flex-1 bg-[#27273f] rounded-3xl overflow-hidden relative border border-[#3b3b5a] shadow-lg shadow-black/20 min-h-[250px]">
+          <div className="h-[350px] w-full bg-[#27273f] rounded-3xl overflow-hidden relative border border-[#3b3b5a] shadow-lg shadow-black/20">
             {myLat && myLng ? (
               <iframe
                 title="Map"
-                className="absolute inset-0 w-full h-full"
-                frameBorder="0"
-                style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }} 
+                className="absolute top-0 left-0 w-full h-full"
+                style={{ width: '100%', height: '100%', border: 0, filter: 'invert(90%) hue-rotate(180deg)' }} 
                 src={`https://maps.google.com/maps?q=${myLat},${myLng}&z=16&output=embed`}
                 allowFullScreen
               ></iframe>
             ) : (
               <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 gap-3">
-                <Navigation size={32} className="animate-pulse text-sky-400" />
-                <p className="text-sm font-bold">Acquiring GPS Signal...</p>
+                <Navigation size={32} className={`text-sky-400 ${geoLoading ? 'animate-pulse' : ''}`} />
+                <p className="text-sm font-bold">{geoLoading ? 'Acquiring Precise GPS...' : 'No GPS Signal'}</p>
               </div>
             )}
             
-            {/* Target overlay icon */}
-            <div className="absolute top-4 right-4 w-10 h-10 bg-[#1c1c2e] border border-[#3b3b5a] rounded-full shadow-lg flex items-center justify-center text-sky-400">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
-            </div>
+            {/* Target overlay button for precise location refresh */}
+            <button 
+              onClick={refreshLocation}
+              disabled={geoLoading}
+              className={`absolute top-4 right-4 w-12 h-12 bg-[#1c1c2e] border-2 ${geoLoading ? 'border-sky-500 animate-pulse' : 'border-[#3b3b5a] active:border-sky-400'} rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center text-sky-400 active:scale-90 transition-all z-10 hover:bg-[#27273f]`}
+              title="Get Precise Location"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+            </button>
           </div>
         </div>
 
