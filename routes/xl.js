@@ -1302,21 +1302,25 @@ router.post('/call-plan/bulk', async (req, res) => {
         
         for (const date of dates) {
             let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
-            if (plan) {
-                plan.doctors = JSON.stringify(doctors || []);
-                plan.chemists = JSON.stringify(chemists || []);
-                plan.stockists = JSON.stringify(stockists || []);
-                plan.status = 'Submitted';
-                await plan.save();
-            } else {
-                await XlCallPlan.create({
-                    employeeId,
-                    date,
-                    doctors: JSON.stringify(doctors || []),
-                    chemists: JSON.stringify(chemists || []),
-                    stockists: JSON.stringify(stockists || []),
-                    status: 'Submitted'
-                });
+            try {
+                if (plan) {
+                    plan.doctors = JSON.stringify(doctors || []);
+                    plan.chemists = JSON.stringify(chemists || []);
+                    plan.stockists = JSON.stringify(stockists || []);
+                    plan.status = 'Submitted';
+                    await plan.save();
+                } else {
+                    await XlCallPlan.create({
+                        employeeId,
+                        date,
+                        doctors: JSON.stringify(doctors || []),
+                        chemists: JSON.stringify(chemists || []),
+                        stockists: JSON.stringify(stockists || []),
+                        status: 'Submitted'
+                    });
+                }
+            } catch (dbError) {
+                return res.json({ success: false, message: 'Database Error: ' + dbError.message });
             }
         }
         
