@@ -162,22 +162,41 @@ router.post('/doctor', async (req, res) => {
 
 router.put('/doctor/:id/geo', async (req, res) => {
     try {
+        const { lat1, lng1, geoAddress1, employeeId } = req.body;
         const doctor = await XlDoctor.findOne({ where: { _id: req.params.id } });
         if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
         
-        await XlDoctor.update(req.body, { where: { _id: req.params.id } });
+        await XlGeoFencing.create({
+            employeeId: employeeId || 'SYSTEM',
+            entityType: 'Doctor',
+            entityId: req.params.id,
+            latitude: lat1,
+            longitude: lng1,
+            geoAddress: geoAddress1,
+            status: 'Submitted'
+        });
         res.json({ success: true, message: 'Doctor location tagged successfully!' });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Failed to update doctor location' });
     }
 });
 
 router.put('/chemist/:id/geo', async (req, res) => {
     try {
+        const { lat1, lng1, geoAddress1, employeeId } = req.body;
         const chemist = await XlChemist.findOne({ where: { _id: req.params.id } });
         if (!chemist) return res.status(404).json({ error: 'Chemist not found' });
         
-        await XlChemist.update(req.body, { where: { _id: req.params.id } });
+        await XlGeoFencing.create({
+            employeeId: employeeId || 'SYSTEM',
+            entityType: 'Chemist',
+            entityId: req.params.id,
+            latitude: lat1,
+            longitude: lng1,
+            geoAddress: geoAddress1,
+            status: 'Submitted'
+        });
         res.json({ success: true, message: 'Chemist location tagged successfully!' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to update chemist location' });
@@ -186,10 +205,19 @@ router.put('/chemist/:id/geo', async (req, res) => {
 
 router.put('/stockist/:id/geo', async (req, res) => {
     try {
+        const { lat1, lng1, geoAddress1, employeeId } = req.body;
         const stockist = await XlStockist.findOne({ where: { _id: req.params.id } });
         if (!stockist) return res.status(404).json({ error: 'Stockist not found' });
         
-        await XlStockist.update(req.body, { where: { _id: req.params.id } });
+        await XlGeoFencing.create({
+            employeeId: employeeId || 'SYSTEM',
+            entityType: 'Stockist',
+            entityId: req.params.id,
+            latitude: lat1,
+            longitude: lng1,
+            geoAddress: geoAddress1,
+            status: 'Submitted'
+        });
         res.json({ success: true, message: 'Stockist location tagged successfully!' });
     } catch (e) {
         res.status(500).json({ error: 'Failed to update stockist location' });

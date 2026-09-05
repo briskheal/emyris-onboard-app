@@ -37,8 +37,24 @@ export default function GeoFencingTag() {
         } catch(e){}
     }
     const typeStr = displayType.toLowerCase() + 's';
-    axios.get(`/api/xl/${typeStr}?hq=${hq}&designation=${desig}`)
-      .then(res => setEntities(res.data.data || []))
+    
+    Promise.all([
+      axios.get(`/api/xl/${typeStr}?hq=${hq}&designation=${desig}`),
+      axios.get(`/api/xl/geo-fencing/my-tags?employeeId=${uStr ? JSON.parse(uStr).employeeId : ''}`)
+    ])
+      .then(([entitiesRes, tagsRes]) => {
+        let allEntities = entitiesRes.data.data || [];
+        const myTags = tagsRes.data.data || [];
+        
+        // Filter out entities that are fully tagged
+        allEntities = allEntities.filter(e => {
+          const tagCount = myTags.filter((t: any) => t.entityId === e._id && t.entityType.toLowerCase() === displayType.toLowerCase()).length;
+          const maxTags = displayType.toLowerCase() === 'doctor' ? 2 : 1;
+          return tagCount < maxTags;
+        });
+
+        setEntities(allEntities);
+      })
       .catch(() => setError(`Failed to load ${displayType}s.`));
 
     if (navigator.geolocation) {
@@ -63,7 +79,8 @@ export default function GeoFencingTag() {
     const payload = { 
       lat1: myLat, 
       lng1: myLng, 
-      geoAddress1: `${myLat.toFixed(5)}, ${myLng.toFixed(5)}` 
+      geoAddress1: `${myLat.toFixed(5)}, ${myLng.toFixed(5)}`,
+      employeeId: JSON.parse(localStorage.getItem('xl_user') || '{}').employeeId
     };
 
     axios.put(`/api/xl/${type}/${selectedId}/geo`, payload)
@@ -163,12 +180,11 @@ export default function GeoFencingTag() {
             GPS Location <span className="text-rose-500">*</span>
           </label>
           
-          <div className="flex-1 bg-[#27273f] rounded-3xl overflow-hidden relative border border-[#3b3b5a] shadow-lg shadow-black/20">
+          <div className="flex-1 bg-[#27273f] rounded-3xl overflow-hidden relative border border-[#3b3b5a] shadow-lg shadow-black/20 min-h-[250px]">
             {myLat && myLng ? (
               <iframe
                 title="Map"
-                width="100%"
-                height="100%"
+                className="absolute inset-0 w-full h-full"
                 frameBorder="0"
                 style={{ border: 0, filter: 'invert(90%) hue-rotate(180deg)' }} 
                 src={`https://maps.google.com/maps?q=${myLat},${myLng}&z=16&output=embed`}

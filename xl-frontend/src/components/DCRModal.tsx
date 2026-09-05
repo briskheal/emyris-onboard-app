@@ -34,12 +34,24 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   const [dcrDate] = useState(overrideDate || today);
+  const [hasApprovedTP, setHasApprovedTP] = useState(false);
 
   useEffect(() => {
-    // Only prefetch entity lists — NO auto GPS
+    // Check if TP is approved for this month
+    const dObj = new Date(dcrDate);
+    const m = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+    const y = dObj.getFullYear();
+    axios.get(`/api/xl/tour-program/month?email=${USER_EMAIL}&month=${m}&year=${y}`)
+      .then(res => {
+         if (res.data.success && res.data.data && res.data.data.status === 'Approved') {
+             setHasApprovedTP(true);
+         }
+      }).catch(() => {});
+
+    // Only prefetch entity lists – NO auto GPS
     axios.get('/api/xl/doctors').then(r => setDoctors(r.data.data || [])).catch(() => {});
     axios.get('/api/xl/chemists').then(r => setChemists(r.data.data || [])).catch(() => {});
-  }, []);
+  }, [dcrDate, USER_EMAIL]);
 
   const captureLocation = () => {
     if (!navigator.geolocation) {
@@ -135,16 +147,31 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
               </div>
             </div>
 
-            {/* Working Status */}
-            <div className="bg-slate-700 border border-slate-700 rounded-3xl p-5 shadow-lg mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-slate-300">Today's Working Area</h3>
-                <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">
-                  Working
-                </span>
+              {/* Working Status */}
+              <div className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-5 shadow-lg mb-8">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-slate-300">Today's Working Area</h3>
+                  {hasApprovedTP ? (
+                    <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">
+                      Working
+                    </span>
+                  ) : (
+                    <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">
+                      Not Planned
+                    </span>
+                  )}
+                </div>
+                {hasApprovedTP ? (
+                  <div className="text-sm font-bold text-emerald-400 flex items-center gap-2">
+                    <CheckCircle2 size={16} /> Tour Program Approved
+                  </div>
+                ) : (
+                  <button onClick={() => { onClose(); navigate("/extras/tour-program"); }} className="text-sm font-medium text-slate-300 flex items-center gap-2 active:text-sky-300 transition-colors hover:text-white">
+                    <Navigation size={16} className="text-rose-400" />
+                    Tour Program not found. <span className="text-sky-400 font-bold ml-1 hover:underline">Click to create!</span>
+                  </button>
+                )}
               </div>
-              <button onClick={() => { onClose(); navigate("/extras/tour-program"); }} className="text-sm font-medium text-slate-200 flex items-center gap-2 active:text-rose-300"><Navigation size={16} className="text-rose-400" />Tour Program not found. Click to create!</button>
-            </div>
 
             {/* Action Grid */}
             <div className="grid grid-cols-2 gap-4">
