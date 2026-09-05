@@ -398,7 +398,7 @@ router.get('/chemists', async (req, res) => {
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
 
-        const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
+        const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'userAllotted'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: chemists });
     } catch (e) {
         console.error(e);
@@ -426,7 +426,7 @@ router.get('/stockists', async (req, res) => {
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
 
-        const stockists = await XlStockist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
+        const stockists = await XlStockist.findAll({ where, attributes: ['_id', 'businessName', 'name', 'headquarter', 'workingArea', 'userAllotted'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: stockists });
     } catch (e) {
         console.error(e);
