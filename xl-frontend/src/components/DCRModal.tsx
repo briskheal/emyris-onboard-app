@@ -189,7 +189,9 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
 
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-sm sm:p-4">
-      <div className="w-full sm:max-w-md bg-[#1c1c2e] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-[#3b3b5a]">
+      <div className="w-full sm:max-w-md bg-[#1c1c2e] sm:rounded-3xl shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden sm:border border-[#3b3b5a]">
+        
+        {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#3b3b5a] shrink-0 bg-[#27273f]">
           <div>
             <h2 className="text-lg font-black text-white">{entityType ? `${entityType} DCR` : 'Daily Call Report'}</h2>
@@ -201,12 +203,12 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-5 scrollbar-hide pb-24">
           {error && <div className="mb-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3 rounded-xl text-sm font-medium">{error}</div>}
 
           {/* STEP: MENU */}
           {step === 'menu' && (
-            <div className="pb-16">
+            <div>
               <div className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-5 shadow-lg mb-8">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
@@ -232,6 +234,10 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                     )}
                   </div>
                 </div>
+              </div>
+
+              <div className="mb-4 text-center">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Select an option to start report</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
