@@ -71,8 +71,12 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
   // Rating
   const [rating, setRating] = useState(0);
 
+  const [todaysDcrs, setTodaysDcrs] = useState<any[]>([]);
+
   useEffect(() => {
-    const dObj = new Date(dcrDate);
+    let dObj;
+    try { dObj = new Date(dcrDate); if(isNaN(dObj.getTime())) throw new Error(); } 
+    catch(e) { dObj = new Date(); }
     const m = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
     const y = dObj.getFullYear();
     
@@ -94,6 +98,10 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
       }).catch(() => {});
 
     axios.get('/api/xl/reports/products').then(r => setProducts(r.data.data || [])).catch(()=>{});
+    
+    axios.get(`/api/xl/dcr/my?email=${USER_EMAIL}&date=${dcrDate}`)
+      .then(r => setTodaysDcrs(r.data.data || []))
+      .catch(()=>{});
   }, [dcrDate, USER_EMAIL]);
 
   const loadEntities = (type: string) => {
@@ -253,6 +261,21 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                     <span className="font-bold text-slate-300 text-sm">{type} Call</span>
                   </button>
                 ))}
+              </div>
+
+              {/* Final Call Report List Summary */}
+              <div className="mt-8 bg-[#27273f] border border-[#3b3b5a] rounded-3xl overflow-hidden shadow-lg flex">
+                <div className="flex-1 p-5">
+                  <h3 className="font-bold text-slate-200 text-sm mb-2">Final Call Report List</h3>
+                  <div className="flex gap-3 text-xs font-bold">
+                    <span className="text-orange-400">Doctor: {todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
+                    <span className="text-sky-400">Chemist: {todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
+                    <span className="text-emerald-400">Stockist: {todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
+                  </div>
+                </div>
+                <div className="bg-[#93c54b] w-20 flex items-center justify-center border-l border-[#3b3b5a]">
+                  <span className="text-white text-3xl font-black">{todaysDcrs.length}</span>
+                </div>
               </div>
             </div>
           )}
