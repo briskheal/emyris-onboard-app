@@ -100,11 +100,13 @@ async function syncDatabase() {
         const queries = isPostgres ? [
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricTestCompleted" BOOLEAN DEFAULT false;',
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricScores" TEXT;',
-            'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "mindsetReport" TEXT;'
+            'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "mindsetReport" TEXT;',
+            'ALTER TABLE xl_geo_fencings ADD COLUMN IF NOT EXISTS "geoAddress" VARCHAR(255);'
         ] : [
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricTestCompleted BOOLEAN DEFAULT 0;',
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricScores TEXT;',
-            'ALTER TABLE onboard_applicants ADD COLUMN mindsetReport TEXT;'
+            'ALTER TABLE onboard_applicants ADD COLUMN mindsetReport TEXT;',
+            'ALTER TABLE xl_geo_fencings ADD COLUMN geoAddress VARCHAR(255);'
         ];
         for (const q of queries) {
             try { await sequelize.query(q); } catch (e) {}
