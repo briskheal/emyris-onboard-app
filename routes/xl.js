@@ -104,7 +104,7 @@ router.get('/routes', async (req, res) => {
         
         const { sequelize } = require('../db');
         const routes = await XlRoute.findAll({
-            where: hqList.length > 0 ? sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList }) : {}
+            where: hqList.length > 0 ? sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList }) : {}
         });
         
         res.json({ success: true, data: routes });
@@ -114,7 +114,16 @@ router.get('/routes', async (req, res) => {
     }
 });
 
-// --- AUTHENTICATION ---
+router.get('/debug-call-plans', async (req, res) => {
+    try {
+        const plans = await XlCallPlan.findAll({ order: [['createdAt', 'DESC']], limit: 20 });
+        res.json({ success: true, data: plans });
+    } catch(e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// --- DOCTOR CONTROL ROUTES ---
 router.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -1025,7 +1034,16 @@ router.get('/approvals/pending', async (req, res) => {
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
-        const pending = await Model.findAll({ where: { ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), status: ['Pending', 'Submitted', 'pending', 'submitted'] }, order: [['createdAt', 'DESC']] });
+        const pending = await Model.findAll({ 
+            where: { 
+                ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), 
+                [Op.or]: [
+                    { status: ['Pending', 'Submitted', 'pending', 'submitted'] },
+                    { status: null }
+                ]
+            }, 
+            order: [['createdAt', 'DESC']] 
+        });
         
         const data = [];
         for (const p of pending) {
@@ -1288,6 +1306,7 @@ router.post('/call-plan/bulk', async (req, res) => {
                 plan.doctors = JSON.stringify(doctors || []);
                 plan.chemists = JSON.stringify(chemists || []);
                 plan.stockists = JSON.stringify(stockists || []);
+                plan.status = 'Submitted';
                 await plan.save();
             } else {
                 await XlCallPlan.create({
@@ -1295,7 +1314,8 @@ router.post('/call-plan/bulk', async (req, res) => {
                     date,
                     doctors: JSON.stringify(doctors || []),
                     chemists: JSON.stringify(chemists || []),
-                    stockists: JSON.stringify(stockists || [])
+                    stockists: JSON.stringify(stockists || []),
+                    status: 'Submitted'
                 });
             }
         }
