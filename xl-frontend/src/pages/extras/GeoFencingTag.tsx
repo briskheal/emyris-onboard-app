@@ -22,6 +22,28 @@ export default function GeoFencingTag() {
   const [tagging, setTagging] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [geoLoading, setGeoLoading] = useState(false);
+
+  const refreshLocation = () => {
+    if (!navigator.geolocation) {
+      setError('GPS is not supported on this device.');
+      return;
+    }
+    setGeoLoading(true);
+    setError('');
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setMyLat(pos.coords.latitude);
+        setMyLng(pos.coords.longitude);
+        setGeoLoading(false);
+      },
+      (err) => {
+        setError('Failed to get precise location. Ensure GPS is enabled.');
+        setGeoLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  };
 
   const displayType = type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Doctor';
 
