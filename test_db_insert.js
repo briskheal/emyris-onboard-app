@@ -1,0 +1,1 @@
+const { XlGeoFencing } = require('./db'); async function run() { try { await XlGeoFencing.create({ employeeId: 'test', entityType: 'Doctor', entityId: '123', latitude: 1, longitude: 1, geoAddress: 'test', status: 'Submitted' }); console.log('Success'); } catch(e) { console.error('ERROR:', e.message); } process.exit(); } run();

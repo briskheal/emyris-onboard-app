@@ -76,7 +76,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
     const m = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
     const y = dObj.getFullYear();
     
-    axios.get(`/api/xl/tour-program/month?email=${USER_EMAIL}&month=${m}&year=${y}`)
+    axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${m}&year=${y}`)
       .then(res => {
          if (res.data.success && res.data.data && res.data.data.status === 'Approved') {
              setHasApprovedTP(true);
@@ -88,7 +88,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
              });
              if (todayEntry) {
                  setWorkingAreaType(todayEntry.type || 'Out-Station');
-                 setWorkingAreas(todayEntry.category || 'N/A');
+                 setWorkingAreas(todayEntry.toMarket || todayEntry.category || 'N/A');
              }
          }
       }).catch(() => {});
@@ -102,6 +102,13 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
     let desig = '';
     if (user) { hq = user.hq || ''; desig = user.designation || ''; }
     
+    // Ignore entities fetch for Reminder as it doesn't have an entity list usually, or just return empty
+    if (type === 'Reminder') {
+      setEntities([]);
+      setLoading(false);
+      return;
+    }
+
     axios.get(`/api/xl/${type.toLowerCase()}s?hq=${hq}&designation=${desig}`)
       .then(res => setEntities(res.data.data || []))
       .catch(() => setError('Failed to load entities'))
@@ -128,7 +135,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
     if (!pobProduct) { setError('Select a product for POB'); return; }
     if (pobType === 'Custom' && !pobRate) { setError('Enter rate for Custom POB'); return; }
     
-    const prodName = products.find(p => p._id === pobProduct)?.name || 'Unknown';
+    const prodName = products.find(p => p._id === pobProduct)?.productName || 'Unknown';
     setPobItems([...pobItems, { 
       productId: pobProduct, 
       productName: prodName, 
@@ -143,7 +150,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
   };
 
   const handleSubmitInitial = () => {
-    if (!selectedEntityId) { setError(`Please select a ${entityType}`); return; }
+    if (!selectedEntityId && entityType !== 'Reminder') { setError(`Please select a ${entityType}`); return; }
     setStep('rating');
   };
 
@@ -253,6 +260,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                 </div>
               </div>
 
+              {entityType !== 'Reminder' && (
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Select {entityType} <span className="text-rose-500">*</span></label>
                 <div className="relative">
@@ -278,6 +286,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                   )}
                 </div>
               </div>
+              )}
 
               <div className="flex items-center justify-between bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
                 <span className="text-sm font-semibold text-white">Are you at location?</span>
@@ -299,13 +308,13 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                     <div className="absolute z-40 left-0 right-0 top-[55px] bg-[#27273f] border border-[#3b3b5a] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[250px]">
                       <div className="p-2 border-b border-[#3b3b5a]"><input type="text" placeholder="Search..." value={productSearch} onChange={e => setProductSearch(e.target.value)} onClick={e=>e.stopPropagation()} className="w-full bg-[#1c1c2e] text-white text-sm rounded-lg px-3 py-2" /></div>
                       <div className="overflow-y-auto">
-                        {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).map(p => (
+                        {products.filter(p => (p.productName || '').toLowerCase().includes(productSearch.toLowerCase())).map(p => (
                           <label key={p._id} className="flex items-center gap-3 px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer">
                             <input type="checkbox" checked={productsDetailed.includes(p._id)} onChange={(e) => {
                               if (e.target.checked) setProductsDetailed([...productsDetailed, p._id]);
                               else setProductsDetailed(productsDetailed.filter(id => id !== p._id));
                             }} className="w-4 h-4 rounded border-gray-600 text-emerald-500 bg-gray-700" />
-                            <span className="text-sm text-slate-200">{p.name}</span>
+                            <span className="text-sm text-slate-200">{p.productName}</span>
                           </label>
                         ))}
                       </div>
@@ -335,7 +344,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                     <div className="flex gap-2">
                       <select value={pobProduct} onChange={e => setPobProduct(e.target.value)} className="flex-1 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white">
                         <option value="">Select Product *</option>
-                        {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                        {products.map(p => <option key={p._id} value={p._id}>{p.productName}</option>)}
                       </select>
                       {pobType === 'Custom' && <input type="number" placeholder="Rate" value={pobRate} onChange={e => setPobRate(e.target.value)} className="w-20 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-2 py-2 text-sm text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />}
                     </div>
