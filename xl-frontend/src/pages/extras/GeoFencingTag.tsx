@@ -112,6 +112,7 @@ export default function GeoFencingTag() {
         // Remove from list
         setEntities(entities.filter(e => e._id !== selectedId));
         setSelectedId('');
+        setTimeout(() => setSuccess(''), 3000);
       })
       .catch((err: any) => {
         setTagging(false);
