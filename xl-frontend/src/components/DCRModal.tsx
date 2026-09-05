@@ -1,367 +1,410 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, UserRound, ShoppingBag, CheckCircle2, MapPin, Search, Navigation, Building2, Phone } from 'lucide-react';
+import { 
+  X, UserRound, Search, Navigation, 
+  ChevronDown, Plus, CheckCircle2, Star, Image as ImageIcon
+} from 'lucide-react';
 import axios from 'axios';
-
-interface Doctor { _id: string; name: string; degree: string; specialization: string; hospital: string; }
-interface Chemist { _id: string; businessName: string; proprietorName: string; }
-
-
 
 const today = new Date().toISOString().split('T')[0];
 
+interface Product { _id: string; name: string; }
+interface Gift { _id: string; name: string; }
+interface CoWorker { employeeId: string; firstName: string; lastName: string; }
+
 export default function DCRModal({ onClose, overrideDate }: { onClose: () => void; overrideDate?: string }) {
+  const navigate = useNavigate();
   const storedUser = localStorage.getItem('xl_user');
   const user = storedUser ? JSON.parse(storedUser) : null;
   const USER_EMAIL = user ? user.employeeId : '';
   const USER_NAME = user ? `${user.firstName} ${user.lastName}` : '';
+  const dcrDate = overrideDate || today;
 
-  const navigate = useNavigate();
-  const [step, setStep] = useState(1);
-  const [entityType, setEntityType] = useState<'Doctor' | 'Chemist' | null>(null);
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [chemists, setChemists] = useState<Chemist[]>([]);
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
-  const [discussion, setDiscussion] = useState('');
-  const [checkInTime] = useState(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }));
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
+  // Global UI State
+  const [step, setStep] = useState<'menu' | 'form' | 'rating' | 'success'>('menu');
+  const [entityType, setEntityType] = useState<'Doctor' | 'Chemist' | 'Stockist' | null>(null);
+  
+  // Validation / Loading
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  // Data Lists
+  const [entities, setEntities] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [gifts, setGifts] = useState<Gift[]>([]);
+  const [coworkers, setCoworkers] = useState<CoWorker[]>([]);
+  
+  // Working Area (from TP/CallPlan)
+  const [hasApprovedTP, setHasApprovedTP] = useState(false);
+  const [workingAreaType, setWorkingAreaType] = useState('Out-Station');
+  const [workingAreas, setWorkingAreas] = useState('N/A');
+
+  // Form State
+  const [selectedEntityId, setSelectedEntityId] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isEntityDropdownOpen, setIsEntityDropdownOpen] = useState(false);
+
+  // GPS
+  const [myLat, setMyLat] = useState<number | null>(null);
+  const [myLng, setMyLng] = useState<number | null>(null);
   const [geoAddress, setGeoAddress] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
-  const [geoError, setGeoError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState('');
-  const [dcrDate] = useState(overrideDate || today);
-  const [hasApprovedTP, setHasApprovedTP] = useState(false);
+  const [isAtLocation, setIsAtLocation] = useState(false);
+
+  // Products
+  const [productsDetailed, setProductsDetailed] = useState<string[]>([]);
+  const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+
+  // POB / Samples
+  const [showPob, setShowPob] = useState(false);
+  const [pobType, setPobType] = useState('PTS');
+  const [pobProduct, setPobProduct] = useState('');
+  const [pobRate, setPobRate] = useState('');
+  const [pobSampleQty, setPobSampleQty] = useState('');
+  const [pobQty, setPobQty] = useState('');
+  const [pobItems, setPobItems] = useState<any[]>([]);
+
+  // Remarks
+  const [remarks, setRemarks] = useState('');
+
+  // Rating
+  const [rating, setRating] = useState(0);
 
   useEffect(() => {
-    // Check if TP is approved for this month
     const dObj = new Date(dcrDate);
     const m = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
     const y = dObj.getFullYear();
+    
     axios.get(`/api/xl/tour-program/month?email=${USER_EMAIL}&month=${m}&year=${y}`)
       .then(res => {
          if (res.data.success && res.data.data && res.data.data.status === 'Approved') {
              setHasApprovedTP(true);
+             const entries = JSON.parse(res.data.data.entries || '[]');
+             const todayEntry = entries.find((e:any) => e.date === dcrDate);
+             if (todayEntry) {
+                 setWorkingAreaType(todayEntry.type || 'Out-Station');
+                 setWorkingAreas(todayEntry.category || 'N/A');
+             }
          }
       }).catch(() => {});
 
-    // Only prefetch entity lists – NO auto GPS
-    axios.get('/api/xl/doctors').then(r => setDoctors(r.data.data || [])).catch(() => {});
-    axios.get('/api/xl/chemists').then(r => setChemists(r.data.data || [])).catch(() => {});
+    axios.get('/api/xl/products').then(r => setProducts(r.data.data || [])).catch(()=>{});
   }, [dcrDate, USER_EMAIL]);
 
+  const loadEntities = (type: string) => {
+    setLoading(true);
+    let hq = '';
+    let desig = '';
+    if (user) { hq = user.hq || ''; desig = user.designation || ''; }
+    
+    axios.get(`/api/xl/${type.toLowerCase()}s?hq=${hq}&designation=${desig}`)
+      .then(res => setEntities(res.data.data || []))
+      .catch(() => setError('Failed to load entities'))
+      .finally(() => setLoading(false));
+  };
+
   const captureLocation = () => {
-    if (!navigator.geolocation) {
-      setGeoError('GPS is not supported on this device.');
-      return;
-    }
+    if (!navigator.geolocation) { setError('GPS not supported'); return; }
     setGeoLoading(true);
-    setGeoError('');
+    setError('');
     navigator.geolocation.getCurrentPosition(
-      pos => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
+      (pos) => {
+        setMyLat(pos.coords.latitude);
+        setMyLng(pos.coords.longitude);
         setGeoAddress(`${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
         setGeoLoading(false);
       },
-      err => {
-        setGeoLoading(false);
-        if (err.code === 1) {
-          setGeoError('Access denied. Go to Settings → Safari → Location and allow this site.');
-        } else {
-          setGeoError('Could not get location. Please try again.');
-        }
-      },
+      () => { setError('Failed to get precise location.'); setGeoLoading(false); },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
-  const filteredList = entityType === 'Doctor'
-    ? doctors.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.specialization?.toLowerCase().includes(search.toLowerCase()))
-    : chemists.filter(c => c.businessName.toLowerCase().includes(search.toLowerCase()));
-
-  const handleSubmit = async () => {
-    if (!selected || !entityType) return;
-    setLoading(true);
+  const handleAddPob = () => {
+    if (!pobProduct) { setError('Select a product for POB'); return; }
+    if (pobType === 'Custom' && !pobRate) { setError('Enter rate for Custom POB'); return; }
+    
+    const prodName = products.find(p => p._id === pobProduct)?.name || 'Unknown';
+    setPobItems([...pobItems, { 
+      productId: pobProduct, 
+      productName: prodName, 
+      type: pobType, 
+      rate: pobType === 'Custom' ? pobRate : pobType,
+      sampleQty: pobSampleQty || '0',
+      pobQty: pobQty || '0'
+    }]);
+    
+    setPobProduct(''); setPobRate(''); setPobSampleQty(''); setPobQty('');
     setError('');
+  };
+
+  const handleSubmitInitial = () => {
+    if (!selectedEntityId) { setError(`Please select a ${entityType}`); return; }
+    setStep('rating');
+  };
+
+  const submitFinal = async () => {
+    setLoading(true);
     try {
-      await axios.post('/api/xl/dcr', {
-        employeeId: USER_EMAIL, employeeName: USER_NAME,
-        date: dcrDate, entityType,
-        entityId: selected.id, entityName: selected.name,
-        discussion, checkInTime,
-        latitude: lat, longitude: lng, geoAddress,
-      });
-      setSuccess(true);
-    } catch (e: any) {
-      setError(e?.response?.data?.error || 'Submission failed. Please try again.');
+      const eMatch = entities.find(e => e._id === selectedEntityId);
+      
+      const payload = {
+        employeeId: USER_EMAIL,
+        employeeName: USER_NAME,
+        date: dcrDate,
+        entityType: entityType,
+        entityId: selectedEntityId,
+        entityName: eMatch?.name || eMatch?.businessName || '',
+        workingAreaType,
+        workingAreas,
+        latitude: myLat,
+        longitude: myLng,
+        geoAddress,
+        checkInTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        checkOutTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        productsDetailed,
+        pobItems,
+        discussion: remarks,
+        rating
+      };
+
+      await axios.post('/api/xl/dcr', payload);
+      setStep('success');
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to submit report');
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="fixed top-16 inset-x-0 bottom-0 z-30 bg-slate-800 flex flex-col items-center justify-center px-8" style={{ fontFamily: "'Inter', sans-serif" }}>
-        <CheckCircle2 size={64} className="text-emerald-400 mb-4" strokeWidth={1.5} />
-        <h2 className="text-xl font-bold text-white mb-2">Call Reported!</h2>
-        <p className="text-slate-200 text-sm text-center mb-8">
-          Visit to <span className="text-white font-semibold">{selected?.name}</span> recorded.
-        </p>
-        <button onClick={onClose} className="w-full h-[45px] bg-emerald-500 rounded-xl text-white font-semibold text-sm">Done</button>
-      </div>
-    );
-  }
-
   return (
-    <div className="fixed top-16 inset-x-0 bottom-0 z-30 bg-slate-800 flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-12 pb-4 bg-slate-700 border-b border-slate-700/60">
-        <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl bg-slate-600">
-          <X size={18} className="text-white" />
-        </button>
-        <div>
-          <h1 className="text-lg font-bold text-white leading-tight">Daily Call Report</h1>
-          <p className="text-xs text-slate-200">
-            {new Date(today + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} · {checkInTime}
-          </p>
+    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-sm sm:p-4">
+      <div className="w-full sm:max-w-md bg-[#1c1c2e] rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden border border-[#3b3b5a]">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-[#3b3b5a] shrink-0 bg-[#27273f]">
+          <div>
+            <h2 className="text-lg font-black text-white">{entityType ? `${entityType} DCR` : 'Daily Call Report'}</h2>
+            <p className="text-[10px] font-bold text-sky-400 tracking-widest uppercase mt-0.5">{dcrDate}</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#1c1c2e] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-5">
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-5 scrollbar-hide">
+          {error && <div className="mb-4 bg-rose-500/10 border border-rose-500/20 text-rose-400 p-3 rounded-xl text-sm font-medium">{error}</div>}
 
-        {/* ── STEP 1: Entity type (Card Grid) ──────────────────────── */}
-        {step === 1 && (
-          <div className="pb-24">
-            {/* Welcome Section */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-14 h-14 bg-slate-600 rounded-full border-2 border-sky-400 flex items-center justify-center overflow-hidden">
-                 <UserRound size={28} className="text-slate-200 mt-2" />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-200 uppercase tracking-wider">Welcome,</p>
-                <h2 className="text-xl font-black text-white">{USER_NAME}</h2>
-              </div>
-            </div>
-
-              {/* Working Status */}
+          {/* STEP: MENU */}
+          {step === 'menu' && (
+            <div>
               <div className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-5 shadow-lg mb-8">
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="font-bold text-slate-300">Today's Working Area</h3>
                   {hasApprovedTP ? (
-                    <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">
-                      Working
-                    </span>
+                    <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Working</span>
                   ) : (
-                    <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">
-                      Not Planned
-                    </span>
+                    <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">Not Planned</span>
                   )}
                 </div>
                 {hasApprovedTP ? (
-                  <div className="text-sm font-bold text-emerald-400 flex items-center gap-2">
-                    <CheckCircle2 size={16} /> Tour Program Approved
-                  </div>
+                  <div className="text-sm font-bold text-emerald-400 flex items-center gap-2"><CheckCircle2 size={16} /> Tour Program Approved</div>
                 ) : (
-                  <button onClick={() => { onClose(); navigate("/extras/tour-program"); }} className="text-sm font-medium text-slate-300 flex items-center gap-2 active:text-sky-300 transition-colors hover:text-white">
-                    <Navigation size={16} className="text-rose-400" />
-                    Tour Program not found. <span className="text-sky-400 font-bold ml-1 hover:underline">Click to create!</span>
+                  <button onClick={() => { onClose(); navigate("/extras/tour-program"); }} className="text-sm font-medium text-slate-300 flex items-center gap-2 active:text-sky-300">
+                    <Navigation size={16} className="text-rose-400" /> Tour Program not found. <span className="text-sky-400 font-bold ml-1 hover:underline">Click to create!</span>
                   </button>
                 )}
               </div>
 
-            {/* Action Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Doctor Call */}
-              <button 
-                onClick={() => { setEntityType('Doctor'); setStep(2); }}
-                className="bg-slate-700 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
-              >
-                <div className="w-16 h-16 rounded-full bg-emerald-400/10 flex items-center justify-center">
-                  <UserRound size={32} className="text-emerald-400" />
-                </div>
-                <span className="font-bold text-slate-300 text-sm">Doctor Call</span>
-              </button>
-
-              {/* Chemist Call */}
-              <button 
-                onClick={() => { setEntityType('Chemist'); setStep(2); }}
-                className="bg-slate-700 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
-              >
-                <div className="w-16 h-16 rounded-full bg-sky-400/10 flex items-center justify-center">
-                  <ShoppingBag size={32} className="text-sky-400" />
-                </div>
-                <span className="font-bold text-slate-300 text-sm">Chemist Call</span>
-              </button>
-
-              {/* Stockist Call */}
-              <button 
-                onClick={() => { alert('Stockist reporting coming soon!'); }}
-                className="bg-slate-700 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
-              >
-                <div className="w-16 h-16 rounded-full bg-amber-400/10 flex items-center justify-center">
-                  <Building2 size={32} className="text-amber-400" />
-                </div>
-                <span className="font-bold text-slate-300 text-sm">Stockist Call</span>
-              </button>
-
-              {/* Reminder Call */}
-              <button 
-                onClick={() => { alert('Reminder Call coming soon!'); }}
-                className="bg-slate-700 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
-              >
-                <div className="w-16 h-16 rounded-full bg-rose-400/10 flex items-center justify-center">
-                  <Phone size={32} className="text-rose-400" />
-                </div>
-                <span className="font-bold text-slate-300 text-sm text-center leading-tight">Reminder Call</span>
-              </button>
-            </div>
-
-            {/* Sticky Final Call Report Footer */}
-            <div className="fixed bottom-0 left-0 right-0 w-full bg-slate-700 border-t border-slate-700 px-5 py-4 flex items-center justify-between shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
-              <div>
-                <h4 className="font-bold text-white text-sm">Final Call Report List</h4>
-                <div className="flex gap-4 mt-1">
-                  <div className="flex items-center gap-1.5">
-                    <UserRound size={12} className="text-emerald-400" />
-                    <span className="text-[10px] font-bold text-slate-200">0</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <ShoppingBag size={12} className="text-sky-400" />
-                    <span className="text-[10px] font-bold text-slate-200">0</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Building2 size={12} className="text-amber-400" />
-                    <span className="text-[10px] font-bold text-slate-200">0</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="bg-emerald-500 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                <span className="text-white font-black text-xl">0</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 2: Search & Select ─────────────────────────────── */}
-        {step === 2 && (
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => setStep(1)} className="text-sky-400 text-sm font-medium">← Back</button>
-              <p className="text-sm font-semibold text-white">Select {entityType}</p>
-            </div>
-            <div className="relative mb-4">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-              <input
-                type="text"
-                placeholder={`Search ${entityType?.toLowerCase()}...`}
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="w-full bg-slate-700 border border-slate-700 rounded-xl pl-9 pr-4 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500"
-                style={{ height: '45px' }}
-              />
-            </div>
-            <div className="space-y-2">
-              {filteredList.length === 0 && (
-                <p className="text-slate-200 text-sm text-center py-8">
-                  No {entityType?.toLowerCase()}s found.<br />Add them from Creation Menu first.
-                </p>
-              )}
-              {filteredList.map((item: any) => (
-                <button key={item._id}
-                  onClick={() => { setSelected({ id: item._id, name: item.name || item.businessName }); setStep(3); }}
-                  className="w-full flex items-center gap-3 bg-slate-700 rounded-xl px-4 py-3 border border-slate-700/50 active:bg-slate-600 text-left">
-                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${entityType === 'Doctor' ? 'bg-sky-500/10' : 'bg-emerald-500/10'}`}>
-                    {entityType === 'Doctor'
-                      ? <UserRound size={16} className="text-sky-400" />
-                      : <ShoppingBag size={16} className="text-emerald-400" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{item.name || item.businessName}</p>
-                    <p className="text-xs text-slate-200">
-                      {item.degree || item.proprietorName || ''}
-                      {item.specialization ? ` · ${item.specialization}` : ''}
-                    </p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 3: Location + Discussion + Submit ───────────────── */}
-        {step === 3 && (
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <button onClick={() => setStep(2)} className="text-sky-400 text-sm font-medium">← Back</button>
-              <p className="text-sm font-semibold text-white">{selected?.name}</p>
-            </div>
-
-            {/* GPS Card — manual capture */}
-            <div className="bg-slate-700 rounded-2xl p-4 border border-slate-700/50 mb-4">
-              <p className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-3">Location Proof</p>
-
-              {geoAddress ? (
-                <div>
-                  <div className="flex items-start gap-2 mb-2">
-                    <MapPin size={14} className="text-emerald-400 mt-0.5 flex-shrink-0" />
-                    <p className="text-xs text-emerald-400 font-medium">{geoAddress}</p>
-                  </div>
-                  <button onClick={() => { setGeoAddress(''); setLat(null); setLng(null); }}
-                    className="text-xs text-slate-500 underline">Retake location</button>
-                </div>
-              ) : (
-                <div>
-                  <button
-                    onClick={captureLocation}
-                    disabled={geoLoading}
-                    className="w-full h-[45px] rounded-xl border-2 border-dashed border-slate-600 flex items-center justify-center gap-2 text-sm font-semibold text-slate-300 active:border-sky-500 active:text-sky-400 transition-colors disabled:opacity-50"
+              <div className="grid grid-cols-2 gap-4">
+                {['Doctor', 'Chemist', 'Stockist'].map(type => (
+                  <button 
+                    key={type}
+                    onClick={() => { setEntityType(type as any); loadEntities(type); setStep('form'); }}
+                    className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
                   >
-                    <Navigation size={16} className={geoLoading ? 'animate-spin' : ''} />
-                    {geoLoading ? 'Getting location...' : 'Tap to Capture My Location'}
+                    <div className={`w-16 h-16 rounded-full flex items-center justify-center ${type==='Doctor' ? 'bg-rose-400/10 text-rose-400' : type==='Chemist' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-sky-400/10 text-sky-400'}`}>
+                      <UserRound size={32} />
+                    </div>
+                    <span className="font-bold text-slate-300 text-sm">{type} Call</span>
                   </button>
-                  {geoError
-                    ? <p className="text-xs text-rose-400 mt-2 leading-relaxed">{geoError}</p>
-                    : <p className="text-[10px] text-slate-500 mt-2">Used only to verify your field visit.</p>
-                  }
-                </div>
-              )}
-            </div>
-
-            {/* Check-in time */}
-            <div className="bg-slate-700 rounded-2xl px-4 py-3 border border-slate-700/50 mb-4 flex justify-between text-xs">
-              <span className="text-slate-200">Check-in Time</span>
-              <span className="text-white font-semibold">{checkInTime}</span>
-            </div>
-
-            {/* Discussion */}
-            <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-1.5">
-              Discussion / Remarks
-            </label>
-            <textarea
-              placeholder="Products promoted, feedback received, next steps..."
-              value={discussion}
-              onChange={e => setDiscussion(e.target.value)}
-              rows={4}
-              className="w-full bg-slate-700 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 resize-none mb-4"
-            />
-
-            {error && (
-              <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl px-4 py-3 text-sm text-rose-400 mb-4">
-                {error}
+                ))}
               </div>
-            )}
+            </div>
+          )}
 
-            <button onClick={handleSubmit} disabled={loading}
-              className="w-full h-[45px] rounded-xl bg-sky-500 text-white font-semibold text-sm active:bg-sky-600 disabled:opacity-50">
-              {loading ? 'Submitting...' : 'Submit Call Report'}
-            </button>
-          </div>
-        )}
+          {/* STEP: FORM */}
+          {step === 'form' && (
+            <div className="space-y-6 pb-6">
+              
+              <div className="bg-[#27273f] rounded-2xl p-4 border border-[#3b3b5a]">
+                <div className="mb-3">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Working Area Type:</p>
+                  <p className="text-white font-medium">{workingAreaType}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Working Areas:</p>
+                  <p className="text-white font-medium">{workingAreas}</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Select {entityType} <span className="text-rose-500">*</span></label>
+                <div className="relative">
+                  <div onClick={() => setIsEntityDropdownOpen(!isEntityDropdownOpen)} className="w-full h-[50px] px-4 border border-[#3b3b5a] rounded-xl text-white font-semibold bg-[#27273f] flex items-center justify-between cursor-pointer">
+                    <span className="truncate">{selectedEntityId ? (entities.find(e => e._id === selectedEntityId)?.name || entities.find(e => e._id === selectedEntityId)?.businessName) : `Select ${entityType}`}</span>
+                    <ChevronDown size={18} className="text-slate-400" />
+                  </div>
+                  
+                  {isEntityDropdownOpen && (
+                    <div className="absolute z-50 left-0 right-0 top-[55px] bg-[#27273f] border border-[#3b3b5a] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[250px]">
+                      <div className="p-2 border-b border-[#3b3b5a] relative">
+                        <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onClick={e => e.stopPropagation()} className="w-full bg-[#1c1c2e] text-white text-sm rounded-lg pl-8 pr-3 py-2 focus:outline-none" />
+                      </div>
+                      <div className="overflow-y-auto">
+                        {entities.filter(e => (e.name||e.businessName||'').toLowerCase().includes(searchQuery.toLowerCase())).map(e => (
+                          <div key={e._id} onClick={() => { setSelectedEntityId(e._id); setIsEntityDropdownOpen(false); }} className="px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm">
+                            {e.name || e.businessName}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
+                <span className="text-sm font-semibold text-white">Are you at location?</span>
+                <button onClick={() => { setIsAtLocation(!isAtLocation); if (!isAtLocation) captureLocation(); }} className={`w-12 h-6 rounded-full transition-colors relative ${isAtLocation ? 'bg-emerald-500' : 'bg-[#1c1c2e] border border-[#3b3b5a]'}`}>
+                  <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white transition-all ${isAtLocation ? 'left-7' : 'left-1'}`} />
+                </button>
+              </div>
+              {isAtLocation && geoLoading && <p className="text-xs text-sky-400 animate-pulse mt-[-15px]">Acquiring GPS...</p>}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Products Detailed</label>
+                <div className="relative">
+                  <div onClick={() => setIsProductDropdownOpen(!isProductDropdownOpen)} className="w-full min-h-[50px] px-4 border border-[#3b3b5a] rounded-xl text-white font-semibold bg-[#27273f] flex items-center justify-between cursor-pointer">
+                    <span className="truncate text-sm">{productsDetailed.length > 0 ? `${productsDetailed.length} Products Selected` : 'Select Products'}</span>
+                    <ChevronDown size={18} className="text-slate-400" />
+                  </div>
+                  {isProductDropdownOpen && (
+                    <div className="absolute z-40 left-0 right-0 top-[55px] bg-[#27273f] border border-[#3b3b5a] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[250px]">
+                      <div className="p-2 border-b border-[#3b3b5a]"><input type="text" placeholder="Search..." value={productSearch} onChange={e => setProductSearch(e.target.value)} onClick={e=>e.stopPropagation()} className="w-full bg-[#1c1c2e] text-white text-sm rounded-lg px-3 py-2" /></div>
+                      <div className="overflow-y-auto">
+                        {products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase())).map(p => (
+                          <label key={p._id} className="flex items-center gap-3 px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer">
+                            <input type="checkbox" checked={productsDetailed.includes(p._id)} onChange={(e) => {
+                              if (e.target.checked) setProductsDetailed([...productsDetailed, p._id]);
+                              else setProductsDetailed(productsDetailed.filter(id => id !== p._id));
+                            }} className="w-4 h-4 rounded border-gray-600 text-emerald-500 bg-gray-700" />
+                            <span className="text-sm text-slate-200">{p.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-white">POB/Sample Details</span>
+                  <button onClick={() => setShowPob(!showPob)} className={`w-10 h-5 rounded-full transition-colors relative ${showPob ? 'bg-emerald-500' : 'bg-[#1c1c2e] border border-[#3b3b5a]'}`}>
+                    <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white transition-all ${showPob ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                {showPob && (
+                  <div className="mt-4 space-y-4 pt-4 border-t border-[#3b3b5a]">
+                    <div className="flex gap-4">
+                      {['PTS', 'MRP', 'PTR', 'Custom'].map(t => (
+                        <label key={t} className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="radio" name="pobType" checked={pobType === t} onChange={() => setPobType(t)} className="text-emerald-500" />
+                          <span className="text-xs text-slate-300">{t}</span>
+                        </label>
+                      ))}
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <select value={pobProduct} onChange={e => setPobProduct(e.target.value)} className="flex-1 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="">Select Product *</option>
+                        {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                      </select>
+                      {pobType === 'Custom' && <input type="number" placeholder="Rate" value={pobRate} onChange={e => setPobRate(e.target.value)} className="w-20 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-2 py-2 text-sm text-white" />}
+                    </div>
+
+                    <div className="flex gap-2 items-center">
+                      <input type="number" placeholder="Sample Qty" value={pobSampleQty} onChange={e => setPobSampleQty(e.target.value)} className="flex-1 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white" />
+                      <input type="number" placeholder="POB Qty" value={pobQty} onChange={e => setPobQty(e.target.value)} className="flex-1 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white" />
+                      <button onClick={handleAddPob} className="w-10 h-10 shrink-0 bg-emerald-500/20 text-emerald-400 rounded-lg flex items-center justify-center border border-emerald-500/50"><Plus size={20} /></button>
+                    </div>
+
+                    {pobItems.length > 0 && (
+                      <div className="space-y-2 mt-2">
+                        {pobItems.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-[#1c1c2e] p-2 rounded-lg border border-[#3b3b5a]">
+                            <div>
+                              <p className="text-xs text-white font-semibold">{item.productName} <span className="text-slate-400 font-normal">({item.type}{item.rate !== item.type && item.type === 'Custom' ? ` - ${item.rate}` : ''})</span></p>
+                              <p className="text-[10px] text-emerald-400">Sample: {item.sampleQty} | POB: {item.pobQty}</p>
+                            </div>
+                            <button onClick={() => setPobItems(pobItems.filter((_, i) => i !== idx))} className="text-rose-400"><X size={14} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Remarks</label>
+                <input type="text" placeholder="Enter Remarks" value={remarks} onChange={e => setRemarks(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white" />
+              </div>
+
+              <button onClick={handleSubmitInitial} className="w-full h-14 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-900/20 active:scale-95 transition-all">
+                Add Call Report
+              </button>
+            </div>
+          )}
+
+          {/* STEP: RATING */}
+          {step === 'rating' && (
+            <div className="flex flex-col items-center justify-center py-10">
+              <h2 className="text-2xl font-black text-white mb-2">Rate Your Experience</h2>
+              <p className="text-sm text-slate-400 mb-8 text-center">Please tell us how your call was!</p>
+              
+              <div className="flex gap-2 mb-10">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <button key={star} onClick={() => setRating(star)} className="focus:outline-none transition-transform active:scale-75">
+                    <Star size={40} className={rating >= star ? "fill-amber-400 text-amber-400" : "text-slate-600"} />
+                  </button>
+                ))}
+              </div>
+
+              <button onClick={submitFinal} disabled={loading} className="w-full h-14 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-2xl shadow-lg shadow-sky-900/20 active:scale-95 transition-all disabled:opacity-50">
+                {loading ? 'Submitting...' : 'Submit'}
+              </button>
+            </div>
+          )}
+
+          {/* STEP: SUCCESS */}
+          {step === 'success' && (
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
+                <CheckCircle2 size={48} className="text-emerald-400" />
+              </div>
+              <h2 className="text-2xl font-black text-white mb-2">Success!</h2>
+              <p className="text-sm text-slate-400 mb-8">Call Report successfully added</p>
+              
+              <button onClick={() => { setStep('menu'); setSelectedEntityId(''); setRemarks(''); setRating(0); setPobItems([]); setProductsDetailed([]); setIsAtLocation(false); }} className="px-8 h-12 bg-[#27273f] border border-[#3b3b5a] text-white font-bold rounded-xl hover:bg-[#3b3b5a] transition-colors">
+                Close
+              </button>
+            </div>
+          )}
+
+        </div>
       </div>
     </div>
   );

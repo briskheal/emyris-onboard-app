@@ -320,6 +320,13 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
           adminRemarks: { type: DataTypes.TEXT },
         samplesGiven: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON [{product, qty}]
         gifts: { type: DataTypes.TEXT, defaultValue: '[]' },        // JSON [{item, qty}]
+        productsDetailed: { type: DataTypes.TEXT, defaultValue: '[]' },
+        pobItems: { type: DataTypes.TEXT, defaultValue: '[]' },
+        workedWith: { type: DataTypes.TEXT, defaultValue: '[]' },
+        rating: { type: DataTypes.INTEGER, defaultValue: 0 },
+        photoUrl: { type: DataTypes.STRING },
+        workingAreaType: { type: DataTypes.STRING },
+        workingAreas: { type: DataTypes.STRING },
         checkInTime: { type: DataTypes.STRING },
         checkOutTime: { type: DataTypes.STRING },
         latitude: { type: DataTypes.FLOAT },

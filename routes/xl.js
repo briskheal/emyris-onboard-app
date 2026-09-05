@@ -674,6 +674,9 @@ router.post('/dcr', async (req, res) => {
             tourProgramId: tp._id,
             samplesGiven: JSON.stringify(req.body.samplesGiven || []),
             gifts: JSON.stringify(req.body.gifts || []),
+            productsDetailed: JSON.stringify(req.body.productsDetailed || []),
+            pobItems: JSON.stringify(req.body.pobItems || []),
+            workedWith: JSON.stringify(req.body.workedWith || []),
         });
         res.json({ success: true, message: 'Call Report submitted!', data: dcr });
     } catch (e) {
