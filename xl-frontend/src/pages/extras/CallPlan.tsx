@@ -65,6 +65,7 @@ function CallPlan() {
     if (activeUser) {
       fetchMasterData();
       fetchMonthlyPlans();
+      fetchHolidays();
     }
   }, [activeUser, month, year]);
 
@@ -73,6 +74,28 @@ function CallPlan() {
       const res = await axios.get(`/api/xl/subordinates?designation=${loggedInUser.designation}`);
       if (res.data.success) setSubordinates(res.data.data);
     } catch(e) {}
+  };
+
+
+  const fetchHolidays = async () => {
+    try {
+      const res = await axios.get('/api/xl/settings/holidays');
+      if (res.data.success) {
+        const holidayMap = {};
+        res.data.data.forEach(h => {
+          if (h.type === 'National' || h.state === activeUser?.state) {
+            const d = new Date(h.date);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            holidayMap[`${y}-${m}-${day}`] = h.title;
+          }
+        });
+        setHolidays(holidayMap);
+      }
+    } catch (e) {
+      console.error('Failed to fetch holidays', e);
+    }
   };
 
   const fetchMasterData = async () => {
@@ -334,7 +357,10 @@ function CallPlan() {
                   
                   <div className="flex-1 p-4 flex justify-between items-center cursor-pointer">
                     {isHol ? (
-                      <span className="text-sm font-bold text-slate-500 uppercase tracking-wider">Not Allowed</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-rose-500 uppercase tracking-wider">{isHolidayDate ? 'Holiday' : 'Sunday'}</span>
+                        {isHolidayDate && <span className="text-xs font-medium text-slate-500 truncate">{holidays[dateStr]}</span>}
+                      </div>
                     ) : (
                       <>
                         {plan ? (
