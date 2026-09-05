@@ -220,6 +220,7 @@ function CallPlan() {
       };
       const res = await axios.post('/api/xl/call-plan/bulk', payload);
       if (res.data.success) {
+        alert('Call Plan saved successfully!');
         setShowPlanModal(false);
         setIsMultiMode(false);
         setSelectedDates(new Set());
