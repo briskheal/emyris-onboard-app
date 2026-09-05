@@ -417,6 +417,25 @@ router.post('/tour-program', async (req, res) => {
         
         month = month.toLowerCase(); // Enforce lowercase month for DB consistency
 
+        // --- HOLIDAY CHECK ---
+        const u = await XlUser.findOne({ where: { employeeId } });
+        if (u && u.state && entries && entries.length > 0) {
+            const holidays = await XlHoliday.findAll({
+                where: {
+                    [Op.or]: [
+                        { state: u.state }, { state: null }, { state: 'All' }, { state: 'N/A' }, { state: '' }
+                    ]
+                }
+            });
+            const holidayDates = new Set(holidays.map(h => h.date));
+            for (const entry of entries) {
+                if (holidayDates.has(entry.date) && entry.type !== 'Holiday' && entry.activityType !== 'Holiday' && entry.type !== 'SUNDAY') {
+                    return res.status(403).json({ error: `Cannot plan a working route on a Holiday (${entry.date})` });
+                }
+            }
+        }
+        // ---------------------
+
         // Upsert: one TP per employee per month/year
         let tp = await XlTourProgram.findOne({ where: { employeeId, month, year } });
         if (tp) {
@@ -1194,6 +1213,25 @@ router.post('/call-plan/bulk', async (req, res) => {
     try {
         const { employeeId, dates, doctors, chemists, stockists } = req.body;
         if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
+        // --- STRICT TP DATE CHECK ---
+        for (const date of dates) {
+            const dObj = new Date(date);
+            const tpMonth = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+            const tpYear = String(dObj.getFullYear());
+            
+            const approvedTp = await XlTourProgram.findOne({ where: { employeeId, month: tpMonth, year: tpYear, status: 'Approved' } });
+            if (!approvedTp) {
+                return res.json({ success: false, message: `You must have an Approved Tour Program for ${tpMonth} ${tpYear} before submitting Call Plans.` });
+            }
+            
+            const tpEntries = JSON.parse(approvedTp.entries || '[]');
+            const validTpDates = new Set(tpEntries.map(e => e.date));
+            if (!validTpDates.has(date)) {
+                return res.json({ success: false, message: `Cannot submit Call Plan for ${date} because it is not planned as a working day in your Approved Tour Program.` });
+            }
+        }
+        // ----------------------------
+
         // --- HOLIDAY CHECK ---
         const user = await XlUser.findOne({ where: { employeeId } });
         if (user && user.state) {
