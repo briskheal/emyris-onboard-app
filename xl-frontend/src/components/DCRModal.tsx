@@ -177,6 +177,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
         pobItems,
         discussion: remarks,
         rating
+      };
       await axios.post('/api/xl/dcr', payload);
       setStep('success');
     } catch (err: any) {
