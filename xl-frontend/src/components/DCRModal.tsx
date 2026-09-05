@@ -81,7 +81,11 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
          if (res.data.success && res.data.data && res.data.data.status === 'Approved') {
              setHasApprovedTP(true);
              const entries = JSON.parse(res.data.data.entries || '[]');
-             const todayEntry = entries.find((e:any) => e.date === dcrDate);
+             const targetDateIso = new Date(dcrDate).toISOString().split('T')[0];
+             const todayEntry = entries.find((e:any) => {
+                 try { return new Date(e.date).toISOString().split('T')[0] === targetDateIso; }
+                 catch(err) { return e.date === dcrDate; }
+             });
              if (todayEntry) {
                  setWorkingAreaType(todayEntry.type || 'Out-Station');
                  setWorkingAreas(todayEntry.category || 'N/A');
@@ -89,7 +93,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
          }
       }).catch(() => {});
 
-    axios.get('/api/xl/products').then(r => setProducts(r.data.data || [])).catch(()=>{});
+    axios.get('/api/xl/reports/products').then(r => setProducts(r.data.data || [])).catch(()=>{});
   }, [dcrDate, USER_EMAIL]);
 
   const loadEntities = (type: string) => {
@@ -218,7 +222,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {['Doctor', 'Chemist', 'Stockist'].map(type => (
+                {['Doctor', 'Chemist', 'Stockist', 'Reminder'].map(type => (
                   <button 
                     key={type}
                     onClick={() => { setEntityType(type as any); loadEntities(type); setStep('form'); }}
@@ -281,7 +285,8 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                   <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white transition-all ${isAtLocation ? 'left-7' : 'left-1'}`} />
                 </button>
               </div>
-              {isAtLocation && geoLoading && <p className="text-xs text-sky-400 animate-pulse mt-[-15px]">Acquiring GPS...</p>}
+              {isAtLocation && geoLoading && <p className="text-xs text-sky-400 animate-pulse mt-[-10px] ml-4">Acquiring GPS...</p>}
+              {isAtLocation && !geoLoading && geoAddress && <p className="text-xs text-emerald-400 mt-[-10px] ml-4 flex items-center gap-1"><CheckCircle2 size={12} /> Verified Location</p>}
 
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Products Detailed</label>
@@ -332,12 +337,12 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                         <option value="">Select Product *</option>
                         {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
                       </select>
-                      {pobType === 'Custom' && <input type="number" placeholder="Rate" value={pobRate} onChange={e => setPobRate(e.target.value)} className="w-20 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-2 py-2 text-sm text-white" />}
+                      {pobType === 'Custom' && <input type="number" placeholder="Rate" value={pobRate} onChange={e => setPobRate(e.target.value)} className="w-20 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-2 py-2 text-sm text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />}
                     </div>
 
-                    <div className="flex gap-2 items-center">
-                      <input type="number" placeholder="Sample Qty" value={pobSampleQty} onChange={e => setPobSampleQty(e.target.value)} className="flex-1 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white" />
-                      <input type="number" placeholder="POB Qty" value={pobQty} onChange={e => setPobQty(e.target.value)} className="flex-1 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white" />
+                    <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                      <input type="number" placeholder="Sample Qty" value={pobSampleQty} onChange={e => setPobSampleQty(e.target.value)} className="w-full bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                      <input type="number" placeholder="POB Qty" value={pobQty} onChange={e => setPobQty(e.target.value)} className="w-full bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
                       <button onClick={handleAddPob} className="w-10 h-10 shrink-0 bg-emerald-500/20 text-emerald-400 rounded-lg flex items-center justify-center border border-emerald-500/50"><Plus size={20} /></button>
                     </div>
 
