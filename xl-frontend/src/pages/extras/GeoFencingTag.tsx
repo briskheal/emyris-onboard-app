@@ -23,7 +23,18 @@ export default function GeoFencingTag() {
 
   useEffect(() => {
     // 1. Fetch entities
-    axios.get(`/api/xl/entities?type=${displayType}`)
+    const uStr = localStorage.getItem('xl_user');
+    let hq = '';
+    let desig = '';
+    if (uStr) {
+        try {
+            const u = JSON.parse(uStr);
+            hq = u.hq || '';
+            desig = u.designation || '';
+        } catch(e){}
+    }
+    const typeStr = displayType.toLowerCase() + 's';
+    axios.get(`/api/xl/${typeStr}?hq=${hq}&designation=${desig}`)
       .then(res => setEntities(res.data.data || []))
       .catch(() => setError(`Failed to load ${displayType}s.`));
 
