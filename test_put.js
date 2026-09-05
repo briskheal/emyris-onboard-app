@@ -1,0 +1,1 @@
+const axios = require('axios'); axios.put('http://localhost:3013/api/xl/doctor/123/geo', { lat1: 1, lng1: 1, geoAddress1: 'test', employeeId: 'test' }).then(r => console.log(r.data)).catch(e => console.error(e.response ? e.response.data : e.message));

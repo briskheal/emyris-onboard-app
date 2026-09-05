@@ -1,0 +1,1 @@
+const { XlDoctor, XlGeoFencing } = require('./models/xlModels'); const { sequelize } = require('./db'); sequelize.sync().then(async () => { const drs = await XlDoctor.findAll(); console.log('Total Doctors:', drs.length); const tags = await XlGeoFencing.findAll(); console.log('Total Tags:', tags.length); console.log(tags.map(t => t.toJSON())); process.exit(); });

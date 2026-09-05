@@ -54,6 +54,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     entityId: { type: DataTypes.STRING },
     latitude: { type: DataTypes.FLOAT },
     longitude: { type: DataTypes.FLOAT },
+    geoAddress: { type: DataTypes.STRING },
     status: { type: DataTypes.STRING, defaultValue: 'Pending' },
     adminRemarks: { type: DataTypes.STRING },
     createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
