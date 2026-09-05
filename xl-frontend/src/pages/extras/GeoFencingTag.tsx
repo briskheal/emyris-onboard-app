@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronLeft, MapPin, Navigation, AlertCircle } from 'lucide-react';
+import { ChevronLeft, MapPin, Navigation, AlertCircle, ChevronDown, Search } from 'lucide-react';
 import axios from 'axios';
 
 type EntityType = 'doctor' | 'chemist' | 'stockist';
@@ -12,6 +12,10 @@ export default function GeoFencingTag() {
   const [entities, setEntities] = useState<any[]>([]);
   const [selectedId, setSelectedId] = useState('');
   
+  // Custom Dropdown State
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
   // Map/GPS state
   const [myLat, setMyLat] = useState<number | null>(null);
   const [myLng, setMyLng] = useState<number | null>(null);
@@ -71,6 +75,14 @@ export default function GeoFencingTag() {
       .finally(() => setTagging(false));
   };
 
+  const selectedEntity = entities.find(e => e._id === selectedId);
+  const selectedName = selectedEntity ? (selectedEntity.name || selectedEntity.businessName) : `Select ${displayType}`;
+  
+  const filteredEntities = entities.filter(e => {
+    const name = (e.name || e.businessName || '').toLowerCase();
+    return name.includes(searchQuery.toLowerCase());
+  });
+
   return (
     <div className="min-h-screen bg-[#1c1c2e] flex flex-col font-sans text-white">
       {/* Header */}
@@ -87,29 +99,62 @@ export default function GeoFencingTag() {
       </div>
 
       <div className="flex-1 px-4 py-6 flex flex-col">
-        {/* Dropdown */}
-        <div className="mb-6">
+        {/* Dropdown UI */}
+        <div className="mb-6 relative">
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">
             Select {displayType} <span className="text-rose-500">*</span>
           </label>
-          <div className="relative">
+          
+          <div 
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="w-full h-14 pl-14 pr-10 border border-[#3b3b5a] rounded-2xl text-white font-semibold bg-[#27273f] flex items-center cursor-pointer relative"
+          >
             <div className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full border-2 border-emerald-500/50 flex items-center justify-center text-emerald-400 text-xs font-black bg-emerald-500/10">
               {entities.length}
             </div>
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full h-14 pl-14 pr-10 border border-[#3b3b5a] rounded-2xl text-white font-semibold appearance-none bg-[#27273f] focus:outline-none focus:border-sky-500 shadow-sm"
-            >
-              <option value="">Select {displayType}</option>
-              {entities.map(e => (
-                <option key={e._id} value={e._id}>{e.name || e.businessName}</option>
-              ))}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-              <svg width="12" height="8" viewBox="0 0 12 8" fill="none"><path d="M1 1.5L6 6.5L11 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            
+            <span className="truncate">{selectedName}</span>
+            
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">
+              <ChevronDown size={20} className={`transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
           </div>
+
+          {/* Searchable Scroll Box */}
+          {isDropdownOpen && (
+            <div className="absolute z-50 left-0 right-0 top-[80px] bg-[#27273f] border border-[#3b3b5a] rounded-2xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col max-h-[300px]">
+              <div className="p-3 border-b border-[#3b3b5a] relative">
+                <Search size={16} className="absolute left-6 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search..." 
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  onClick={e => e.stopPropagation()}
+                  className="w-full bg-[#1c1c2e] text-white text-sm rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                />
+              </div>
+              <div className="overflow-y-auto flex-1">
+                {filteredEntities.length === 0 ? (
+                  <div className="p-6 text-center text-slate-400 text-sm">No results found</div>
+                ) : (
+                  filteredEntities.map(e => (
+                    <div 
+                      key={e._id}
+                      onClick={() => {
+                        setSelectedId(e._id);
+                        setIsDropdownOpen(false);
+                        setSearchQuery('');
+                      }}
+                      className="px-5 py-4 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm font-medium transition-colors"
+                    >
+                      {e.name || e.businessName}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Map Area */}
@@ -156,9 +201,12 @@ export default function GeoFencingTag() {
             {tagging ? 'Saving Coordinates...' : 'SAVE TAGGED LOCATION'}
           </button>
           
-          <button className="w-full h-14 bg-[#27273f] border border-[#3b3b5a] text-sky-400 font-bold rounded-2xl hover:bg-[#3b3b5a]/50 transition-colors flex items-center justify-center gap-2">
-            <MapPin size={18} /> Additional Locations
-          </button>
+          {/* ONLY DOCTORS CAN HAVE ADDITIONAL LOCATIONS */}
+          {displayType === 'Doctor' && (
+            <button className="w-full h-14 bg-[#27273f] border border-[#3b3b5a] text-sky-400 font-bold rounded-2xl hover:bg-[#3b3b5a]/50 transition-colors flex items-center justify-center gap-2">
+              <MapPin size={18} /> Additional Locations
+            </button>
+          )}
         </div>
       </div>
     </div>
