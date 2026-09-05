@@ -104,7 +104,7 @@ router.get('/routes', async (req, res) => {
         
         const { sequelize } = require('../db');
         const routes = await XlRoute.findAll({
-            where: hqList.length > 0 ? sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList }) : {}
+            where: hqList.length > 0 ? sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList }) : {}
         });
         
         res.json({ success: true, data: routes });
@@ -392,17 +392,45 @@ router.get('/chemists', async (req, res) => {
         let where = {};
         if (hqList.length > 0) {
             const { sequelize } = require('../db');
-            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList });
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList });
         } else if (req.query.hq) {
             const { sequelize } = require('../db');
-            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('hq')), req.query.hq.trim().toLowerCase());
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
 
-        const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'hq', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
+        const chemists = await XlChemist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
         res.json({ success: true, data: chemists });
     } catch (e) {
         console.error(e);
         res.status(500).json({ error: 'Failed to fetch chemists' });
+    }
+});
+
+router.get('/stockists', async (req, res) => {
+    try {
+        const { designation, hq } = req.query;
+        let hqList = [];
+        if (hq) hqList.push(hq.trim().toLowerCase());
+        
+        if (designation && designation !== 'ADMIN') {
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
+            hqList = [...new Set([...hqList, ...subHQs])];
+        }
+
+        let where = {};
+        if (hqList.length > 0) {
+            const { sequelize } = require('../db');
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList });
+        } else if (req.query.hq) {
+            const { sequelize } = require('../db');
+            where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
+        }
+
+        const stockists = await XlStockist.findAll({ where, attributes: ['_id', 'businessName', 'proprietorName', 'headquarter', 'workingArea', 'employeeId'], order: [['businessName', 'ASC']] });
+        res.json({ success: true, data: stockists });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch stockists' });
     }
 });
 
