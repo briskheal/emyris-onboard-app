@@ -166,6 +166,19 @@ router.put('/doctor/:id/geo', async (req, res) => {
         const doctor = await XlDoctor.findOne({ where: { _id: req.params.id } });
         if (!doctor) return res.status(404).json({ error: 'Doctor not found' });
         
+        if (!doctor.lat1) {
+            doctor.lat1 = lat1;
+            doctor.lng1 = lng1;
+            doctor.geoAddress1 = geoAddress1;
+        } else if (!doctor.lat2) {
+            doctor.lat2 = lat1;
+            doctor.lng2 = lng1;
+            doctor.geoAddress2 = geoAddress1;
+        } else {
+            return res.status(400).json({ error: 'Doctor already has 2 locations tagged.' });
+        }
+        await doctor.save();
+
         await XlGeoFencing.create({
             employeeId: employeeId || 'SYSTEM',
             entityType: 'Doctor',
@@ -188,6 +201,15 @@ router.put('/chemist/:id/geo', async (req, res) => {
         const chemist = await XlChemist.findOne({ where: { _id: req.params.id } });
         if (!chemist) return res.status(404).json({ error: 'Chemist not found' });
         
+        if (!chemist.lat1) {
+            chemist.lat1 = lat1;
+            chemist.lng1 = lng1;
+            chemist.geoAddress1 = geoAddress1;
+        } else {
+            return res.status(400).json({ error: 'Chemist already has a location tagged.' });
+        }
+        await chemist.save();
+        
         await XlGeoFencing.create({
             employeeId: employeeId || 'SYSTEM',
             entityType: 'Chemist',
@@ -199,6 +221,7 @@ router.put('/chemist/:id/geo', async (req, res) => {
         });
         res.json({ success: true, message: 'Chemist location tagged successfully!' });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'DB ERROR: ' + e.message });
     }
 });
@@ -208,6 +231,15 @@ router.put('/stockist/:id/geo', async (req, res) => {
         const { lat1, lng1, geoAddress1, employeeId } = req.body;
         const stockist = await XlStockist.findOne({ where: { _id: req.params.id } });
         if (!stockist) return res.status(404).json({ error: 'Stockist not found' });
+        
+        if (!stockist.lat1) {
+            stockist.lat1 = lat1;
+            stockist.lng1 = lng1;
+            stockist.geoAddress1 = geoAddress1;
+        } else {
+            return res.status(400).json({ error: 'Stockist already has a location tagged.' });
+        }
+        await stockist.save();
         
         await XlGeoFencing.create({
             employeeId: employeeId || 'SYSTEM',
@@ -220,6 +252,7 @@ router.put('/stockist/:id/geo', async (req, res) => {
         });
         res.json({ success: true, message: 'Stockist location tagged successfully!' });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'DB ERROR: ' + e.message });
     }
 });
