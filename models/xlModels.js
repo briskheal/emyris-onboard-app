@@ -567,6 +567,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         XlInventory,
         XlTravelAllowance,
         XlOutStationAllowance,
+        XlGeoFencing,
         XlGlobalSettings,
         XlTarget
     };

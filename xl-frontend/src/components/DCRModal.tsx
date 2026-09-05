@@ -88,7 +88,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
              });
              if (todayEntry) {
                  setWorkingAreaType(todayEntry.type || 'Out-Station');
-                 setWorkingAreas(todayEntry.toMarket || todayEntry.category || 'N/A');
+                 setWorkingAreas(todayEntry.toMarket || todayEntry.areaType || todayEntry.type || todayEntry.category || 'HQ');
              }
          }
       }).catch(() => {});
