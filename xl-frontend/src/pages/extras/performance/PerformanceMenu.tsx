@@ -45,7 +45,7 @@ export default function PerformanceMenu() {
 
   return (
     <div className="bg-slate-800 flex flex-col font-sans pb-28 pt-4 px-4 min-h-screen">
-      <div className="bg-slate-900 rounded-3xl px-4 py-6 shadow-2xl border border-slate-700/50 mb-4">
+      <div className="bg-slate-900 rounded-3xl flex-1 flex flex-col px-4 py-6 shadow-2xl border border-slate-700/50 mb-4">
         <h2 className="text-xl font-black text-sky-400 mb-6">User Performance Analysis (KPI's)</h2>
 
         {/* Month & Year Selector */}
@@ -101,16 +101,16 @@ export default function PerformanceMenu() {
         {/* Effort Analysis (Auto-calculated) */}
         <button
           onClick={() => navigate(`/extras/performance/effort?month=${selectedMonth}&year=${selectedYear}`)}
-          className="w-full bg-gradient-to-r from-[#2a2d43] to-[#25273c] rounded-2xl p-5 flex items-center gap-4 shadow-xl mb-8 active:scale-95 transition-transform border border-slate-700/50"
+          className="w-full bg-gradient-to-r from-[#2a2d43] to-[#25273c] rounded-2xl p-6 flex items-center gap-4 shadow-xl mb-8 active:scale-95 transition-transform border border-slate-700/50"
         >
-          <div className="w-12 h-12 bg-sky-500/20 rounded-xl flex items-center justify-center">
-            <Users size={24} className="text-sky-400" />
+          <div className="w-14 h-14 bg-sky-500/20 rounded-xl flex items-center justify-center">
+            <Users size={28} className="text-sky-400" />
           </div>
-          <span className="text-base font-bold text-white flex-1 text-left">Effort Analysis</span>
+          <span className="text-lg font-bold text-white flex-1 text-left">Effort Analysis</span>
         </button>
 
         {/* Add Targets section */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center gap-3 mb-6 mt-auto">
           <div className="h-px bg-slate-700 flex-1"></div>
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
             {isPlanningPhase ? "Add Planned Targets" : "Add Achieved Targets"}
@@ -118,17 +118,17 @@ export default function PerformanceMenu() {
           <div className="h-px bg-slate-700 flex-1"></div>
         </div>
         
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 pb-4">
           {TARGET_KPIS.map(kpi => (
             <button
               key={kpi.id}
               onClick={() => navigate(`/extras/performance/targets/${kpi.id}?month=${selectedMonth}&year=${selectedYear}`)}
-              className="bg-[#25273c] rounded-3xl p-5 flex flex-col items-center justify-center gap-4 shadow-xl active:scale-95 transition-transform border border-slate-700 hover:border-sky-500/50"
+              className="bg-[#25273c] rounded-3xl p-6 flex flex-col items-center justify-center gap-4 shadow-xl active:scale-95 transition-transform border border-slate-700 hover:border-sky-500/50 aspect-square"
             >
-              <div className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center shadow-inner">
-                <kpi.icon size={28} className="text-sky-400" />
+              <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center shadow-inner mb-2">
+                <kpi.icon size={32} className="text-sky-400" />
               </div>
-              <span className="text-xs font-bold text-slate-300 text-center px-1">{kpi.label}</span>
+              <span className="text-sm font-bold text-slate-300 text-center px-1 leading-tight">{kpi.label}</span>
             </button>
           ))}
         </div>
