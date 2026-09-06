@@ -10,7 +10,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
-  const [addedEntities, setAddedEntities] = useState<any[]>(initialTargets);
+  const [addedEntities, setAddedEntities] = useState<any[]>(initialTargets || []);
   
   const [showModal, setShowModal] = useState(false);
   const [activeModalEntity, setActiveModalEntity] = useState<any>(null);
