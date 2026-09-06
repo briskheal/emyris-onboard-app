@@ -79,13 +79,26 @@ export default function GeoFencingTag() {
       })
       .catch(() => setError(`Failed to load ${displayType}s.`));
 
+    // Instant low-accuracy lock for fast map rendering
     if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!myLat) { // Only set if watchPosition hasn't fired yet
+            setMyLat(pos.coords.latitude);
+            setMyLng(pos.coords.longitude);
+          }
+        },
+        () => {},
+        { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
+      );
+
+      // High accuracy watcher for precise tagging
       navigator.geolocation.watchPosition(
         (pos) => {
           setMyLat(pos.coords.latitude);
           setMyLng(pos.coords.longitude);
         },
-        () => {},
+        (err) => {},
         { enableHighAccuracy: true, maximumAge: 10000 }
       );
     }
