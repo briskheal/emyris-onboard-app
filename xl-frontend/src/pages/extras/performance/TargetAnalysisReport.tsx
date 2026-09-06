@@ -60,8 +60,8 @@ export default function TargetAnalysisReport() {
     );
   }
 
-  // If planning has NOT been submitted, show the Planning View
-  if (!planningSubmittedAt) {
+  // If planning has NOT been submitted OR this specific KPI has no targets planned yet, show the Planning View
+  if (!planningSubmittedAt || initialTargets.length === 0) {
     return (
       <TargetPlanningView 
         kpiId={kpiId} 

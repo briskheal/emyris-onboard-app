@@ -110,7 +110,7 @@ export default function PerformanceMenu() {
         </button>
 
         {/* Add Targets section */}
-        <div className="flex items-center gap-3 mb-6 mt-auto">
+        <div className="flex items-center gap-3 mb-6">
           <div className="h-px bg-slate-700 flex-1"></div>
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
             {isPlanningPhase ? "Add Planned Targets" : "Add Achieved Targets"}
@@ -123,7 +123,7 @@ export default function PerformanceMenu() {
             <button
               key={kpi.id}
               onClick={() => navigate(`/extras/performance/targets/${kpi.id}?month=${selectedMonth}&year=${selectedYear}`)}
-              className="bg-[#25273c] rounded-3xl p-6 flex flex-col items-center justify-center gap-4 shadow-xl active:scale-95 transition-transform border border-slate-700 hover:border-sky-500/50 aspect-square"
+              className="bg-[#25273c] rounded-3xl p-6 flex flex-col items-center justify-center gap-4 shadow-xl active:scale-95 transition-transform border border-slate-700 hover:border-sky-500/50"
             >
               <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center shadow-inner mb-2">
                 <kpi.icon size={32} className="text-sky-400" />
