@@ -348,16 +348,29 @@ export default function ManageDCS() {
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">MOBILE NUMBER *</label><input required value={formData.mobile} onChange={e=>setFormData({...formData, mobile: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Mobile Number" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CLINICS CONTACT NUMBER</label><input value={formData.clinicContact} onChange={e=>setFormData({...formData, clinicContact: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Alternate Number" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOCTORS CODE</label><input value={formData.doctorCode} onChange={e=>setFormData({...formData, doctorCode: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Doctor Code" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOCTORS CODE</label><input disabled value={formData.doctorCode || ''} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-500 cursor-not-allowed" placeholder="Auto-generated" /></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label><select required value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Category</option>{getControls('Category', formData.headquarter).map(c => <option key={c._id} value={c.name}>{c.name}</option>)}</select></div>
-            
+            <div>
+              <label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label>
+              <select required value={formData.category} onChange={e=>setFormData({...formData, category: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white">
+                <option value="">Select Category</option>
+                {(() => {
+                  const opts = getControls('Category', formData.headquarter);
+                  if (formData.category && !opts.find(o => o.name === formData.category)) {
+                    opts.push({ _id: 'temp_cat', name: formData.category, type: 'Category' });
+                  }
+                  return opts.map(c => <option key={c._id} value={c.name}>{c.name}</option>);
+                })()}
+              </select>
+            </div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ *</label><select required value={formData.headquarter} onChange={e=>setFormData({...formData, headquarter: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Headquarter</option>{hqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT WORKING AREA *</label><input required value={formData.workingArea} onChange={e=>setFormData({...formData, workingArea: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Working Area" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CLINICS ADDRESS</label><input value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Clinic Address" /></div>
             
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SYSTEM UID</label><input disabled value={formData.uid || 'Auto-generated'} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-500 cursor-not-allowed" /></div>
+
             <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">EXTRA INFORMATION</label><textarea value={formData.extraInformation} onChange={e=>setFormData({...formData, extraInformation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white h-24" placeholder="Enter Extra Information" /></div>
           </div>
           <div className="flex gap-4">
