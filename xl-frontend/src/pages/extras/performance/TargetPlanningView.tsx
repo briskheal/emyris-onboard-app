@@ -277,7 +277,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
       </div>
 
       {/* Sticky Submit Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-800 border-t border-slate-700">
+      <div className="fixed bottom-16 z-40 left-0 right-0 p-4 bg-slate-800 border-t border-slate-700">
         <button 
           onClick={submitEntirePlan}
           disabled={isSubmitting || addedEntities.length === 0}
@@ -289,7 +289,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
 
       {/* Bottom Sheet Modal for Week-by-Week Planning */}
       {showModal && activeModalEntity && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-800/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-800/60 backdrop-blur-sm">
           <div className="bg-slate-800 w-full max-w-md rounded-t-3xl border-t border-slate-700 max-h-[85vh] flex flex-col relative animate-slide-up">
             
             {/* Modal Header */}

@@ -198,7 +198,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
       </div>
 
       {/* Save Button */}
-      <div className="fixed bottom-6 right-4 z-40">
+      <div className="fixed bottom-20 right-4 z-40">
         <button 
           onClick={handleSave}
           disabled={isSaving}
