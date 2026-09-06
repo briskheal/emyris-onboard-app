@@ -107,10 +107,6 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   }, [kpiId]);
 
   useEffect(() => {
-    if (searchQuery.length < 1) {
-      setSearchResults([]);
-      return;
-    }
     const q = searchQuery.toLowerCase();
     setSearchResults(allEntities.filter(e => e.name && e.name.toLowerCase().includes(q)));
   }, [searchQuery, allEntities]);
@@ -202,20 +198,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
 
   return (
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-white">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-slate-800">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/extras/performance')} className="text-sky-400">
-            <ChevronLeft size={24} />
-          </button>
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight leading-none">EMYRIS</h1>
-            <p className="text-[10px] font-bold text-emerald-400 tracking-wider">Biolifesciences</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 py-4">
+      <div className="px-4 py-4 mt-2">
         <h2 className="text-xl font-bold text-sky-400 mb-6">Plan Targets</h2>
 
         {/* Search & Add Bar */}
@@ -239,8 +222,8 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
             </div>
 
             {/* Dropdown Results */}
-            {searchQuery.length >= 2 && !selectedEntity && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700/50 border border-slate-600 rounded-xl shadow-xl z-10 overflow-hidden">
+            {!selectedEntity && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700/95 backdrop-blur-xl border border-slate-600 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto">
                 {searchResults.map(res => (
                   <button
                     key={res.id}

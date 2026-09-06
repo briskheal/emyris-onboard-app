@@ -93,21 +93,8 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
 
   return (
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-white">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-slate-800">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/extras/performance')} className="text-sky-400">
-            <ChevronLeft size={24} />
-          </button>
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight leading-none">EMYRIS</h1>
-            <p className="text-[10px] font-bold text-emerald-400 tracking-wider">Biolifesciences</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-4 py-4 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-sky-400">{KPI_TITLES[kpiId || 'roi']}</h2>
+      <div className="px-4 py-4 mt-2 flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-sky-400">{KPI_TITLES[kpiId || 'roi']}</h2>
         <button className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md">
           <Share2 size={18} />
         </button>
