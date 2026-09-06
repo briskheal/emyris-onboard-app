@@ -92,7 +92,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
   };
 
   return (
-    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-white">
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-4 text-white">
       <div className="px-4 py-4 mt-2 flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-sky-400">{KPI_TITLES[kpiId || 'roi']}</h2>
         <button className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md">
