@@ -1121,6 +1121,17 @@ router.get('/approvals/pending', async (req, res) => {
                     pData.reportingManager = u.reportingManager || '-';
                 }
             }
+
+            if (type === 'Geo Fencing') {
+                let ent = null;
+                if (pData.entityType === 'Doctor') ent = await XlDoctor.findOne({ where: { _id: pData.entityId }});
+                else if (pData.entityType === 'Chemist') ent = await XlChemist.findOne({ where: { _id: pData.entityId }});
+                else if (pData.entityType === 'Stockist') ent = await XlStockist.findOne({ where: { _id: pData.entityId }});
+                
+                pData.entityName = ent ? (ent.name || ent.businessName || ent.proprietorName || 'Unknown') : 'Unknown';
+                pData.location = pData.geoAddress || `${pData.latitude}, ${pData.longitude}`;
+            }
+
             data.push(pData);
         }
 
