@@ -92,9 +92,9 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
   };
 
   return (
-    <div className="min-h-full bg-[#2a2d45] flex flex-col font-sans pb-24 text-white">
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#2a2d45]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-slate-800">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/extras/performance')} className="text-sky-400">
             <ChevronLeft size={24} />
@@ -123,7 +123,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
               className={`flex-shrink-0 flex flex-col items-center justify-center py-2 px-6 rounded-3xl border transition-all ${
                 activeWeek === w.id 
                   ? 'bg-sky-500 border-sky-500 text-white shadow-lg shadow-sky-500/30' 
-                  : 'bg-[#353854] border-slate-600 text-slate-300'
+                  : 'bg-slate-700/50 border-slate-600 text-slate-300'
               }`}
             >
               <span className="text-[13px] font-bold">{w.label}</span>
@@ -145,7 +145,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
           else if (progressRaw >= 100) barColor = 'bg-emerald-500';
           
           return (
-            <div key={t.entityId} className="bg-[#353854] rounded-3xl p-5 shadow-lg border border-slate-600 relative overflow-hidden">
+            <div key={t.entityId} className="bg-slate-700/50 rounded-3xl p-5 shadow-lg border border-slate-600 relative overflow-hidden">
               {/* Colored accent bar on the left */}
               <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${barColor} rounded-l-3xl`}></div>
               

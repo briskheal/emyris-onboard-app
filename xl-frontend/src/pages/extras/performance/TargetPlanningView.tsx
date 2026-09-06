@@ -48,33 +48,72 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
     setWeeks(w);
   }, [month, year]);
 
-  // Mock search results (in reality, fetch from API based on KPI)
+  const [allEntities, setAllEntities] = useState<any[]>([]);
+
   useEffect(() => {
-    if (searchQuery.length < 2) {
+    const fetchEntities = async () => {
+      try {
+        const u = localStorage.getItem('xl_user');
+        const user = u ? JSON.parse(u) : null;
+        if (!user) return;
+        
+        let entities: any[] = [];
+
+        if (kpiId === 'brand') {
+          const res = await axios.get('/api/xl/reports/products');
+          if (res.data.success) {
+            entities = res.data.data.map((p: any) => ({
+              id: p.id || p.productName,
+              name: p.productName,
+              type: 'Product'
+            }));
+          }
+        } else if (kpiId === 'account') {
+          const res = await axios.get(`/api/xl/doctors?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
+          if (res.data.success) {
+            const hospitals = [...new Set(res.data.data.map((d: any) => d.hospital).filter(Boolean))];
+            entities = hospitals.map((h: any) => ({
+              id: h,
+              name: h,
+              type: 'Hospital'
+            }));
+          }
+        } else if (kpiId === 'keyCustomer' || kpiId === 'roi') {
+          const res = await axios.get(`/api/xl/doctors?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
+          if (res.data.success) {
+            entities = res.data.data.map((d: any) => ({
+              id: d.id,
+              name: d.name,
+              type: 'Doctor'
+            }));
+          }
+        } else if (kpiId === 'outstanding') {
+          const res = await axios.get(`/api/xl/stockists?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
+          if (res.data.success) {
+            entities = res.data.data.map((s: any) => ({
+              id: s.id,
+              name: s.name,
+              type: 'Stockist'
+            }));
+          }
+        }
+
+        setAllEntities(entities);
+      } catch (err) {
+        console.error("Failed to fetch entities", err);
+      }
+    };
+    fetchEntities();
+  }, [kpiId]);
+
+  useEffect(() => {
+    if (searchQuery.length < 1) {
       setSearchResults([]);
       return;
     }
-
-    let entityType = 'Product';
-    let label = 'Product';
-    if (kpiId === 'account') {
-      entityType = 'Hospital';
-      label = 'Hospital';
-    } else if (kpiId === 'keyCustomer' || kpiId === 'roi') {
-      entityType = 'Doctor';
-      label = 'Doctor';
-    } else if (kpiId === 'outstanding') {
-      entityType = 'Stockist';
-      label = 'Stockist';
-    }
-
-    // Dummy search
-    setSearchResults([
-      { id: `e_${searchQuery}_1`, name: `${searchQuery} ${label} A`, type: entityType },
-      { id: `e_${searchQuery}_2`, name: `${searchQuery} ${label} B`, type: entityType },
-      { id: `e_${searchQuery}_3`, name: `${searchQuery} ${label} C`, type: entityType },
-    ]);
-  }, [searchQuery, kpiId]);
+    const q = searchQuery.toLowerCase();
+    setSearchResults(allEntities.filter(e => e.name && e.name.toLowerCase().includes(q)));
+  }, [searchQuery, allEntities]);
 
   const getPlaceholder = () => {
     if (kpiId === 'account') return 'Select Hospital...';
@@ -162,9 +201,9 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   };
 
   return (
-    <div className="min-h-full bg-[#2a2d45] flex flex-col font-sans pb-24 text-white">
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-white">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#2a2d45]">
+      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-slate-800">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate('/extras/performance')} className="text-sky-400">
             <ChevronLeft size={24} />
@@ -182,7 +221,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
         {/* Search & Add Bar */}
         <div className="flex items-center gap-3 mb-8">
           <div className="flex-1 relative">
-            <div className="bg-[#353854] border border-slate-600 rounded-2xl flex items-center px-4 h-14">
+            <div className="bg-slate-700/50 border border-slate-600 rounded-2xl flex items-center px-4 h-14">
               <span className="w-8 h-8 rounded-full bg-slate-600/50 flex items-center justify-center text-xs font-bold text-sky-400 mr-3">
                 {addedEntities.length}
               </span>
@@ -201,12 +240,12 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
 
             {/* Dropdown Results */}
             {searchQuery.length >= 2 && !selectedEntity && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#353854] border border-slate-600 rounded-xl shadow-xl z-10 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700/50 border border-slate-600 rounded-xl shadow-xl z-10 overflow-hidden">
                 {searchResults.map(res => (
                   <button
                     key={res.id}
                     onClick={() => setSelectedEntity(res)}
-                    className="w-full text-left px-4 py-3 border-b border-slate-700/50 hover:bg-[#404363] transition-colors"
+                    className="w-full text-left px-4 py-3 border-b border-slate-700/50 hover:bg-slate-600 transition-colors"
                   >
                     <span className="font-semibold text-white">{res.name}</span>
                   </button>
@@ -233,7 +272,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
             </div>
           )}
           {addedEntities.map((e, idx) => (
-            <div key={idx} className="bg-[#353854] rounded-2xl p-4 flex items-center justify-between border border-slate-600">
+            <div key={idx} className="bg-slate-700/50 rounded-2xl p-4 flex items-center justify-between border border-slate-600">
               <div className="flex items-center gap-3 flex-1">
                 <div className="w-8 h-8 rounded-full bg-sky-500/20 flex items-center justify-center">
                   <CheckCircle2 size={16} className="text-sky-400" />
@@ -255,7 +294,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
       </div>
 
       {/* Sticky Submit Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-[#2a2d45] border-t border-slate-700">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-800 border-t border-slate-700">
         <button 
           onClick={submitEntirePlan}
           disabled={isSubmitting || addedEntities.length === 0}
@@ -268,7 +307,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
       {/* Bottom Sheet Modal for Week-by-Week Planning */}
       {showModal && activeModalEntity && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-800/60 backdrop-blur-sm">
-          <div className="bg-[#2a2d45] w-full max-w-md rounded-t-3xl border-t border-slate-700 max-h-[85vh] flex flex-col relative animate-slide-up">
+          <div className="bg-slate-800 w-full max-w-md rounded-t-3xl border-t border-slate-700 max-h-[85vh] flex flex-col relative animate-slide-up">
             
             {/* Modal Header */}
             <div className="p-5 border-b border-slate-700 flex justify-between items-start">
@@ -291,7 +330,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
               <div className="mb-6">
                 <label className="text-sm font-bold text-white block mb-1">My Monthly Target</label>
                 <p className="text-[10px] text-slate-200 mb-3">{month.charAt(0).toUpperCase() + month.slice(1)} 1 - {month.charAt(0).toUpperCase() + month.slice(1)} 30</p>
-                <div className="bg-[#353854] border border-slate-600 rounded-xl px-4 py-3 font-black text-xl text-emerald-400 w-1/2">
+                <div className="bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 font-black text-xl text-emerald-400 w-1/2">
                   {calculateMonthlyTarget()}
                 </div>
               </div>
@@ -306,7 +345,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
                       value={weeklyPlans[w.id] || ''}
                       onChange={e => setWeeklyPlans({...weeklyPlans, [w.id]: Number(e.target.value)})}
                       placeholder="Qty"
-                      className="w-full bg-[#353854] border border-slate-600 rounded-xl px-4 py-3 font-semibold text-white focus:outline-none focus:border-sky-500 transition-colors"
+                      className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 font-semibold text-white focus:outline-none focus:border-sky-500 transition-colors"
                     />
                   </div>
                 ))}
@@ -314,7 +353,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
             </div>
 
             {/* Modal Footer */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 bg-[#2a2d45] border-t border-slate-700">
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-slate-800 border-t border-slate-700">
               <button 
                 onClick={saveModalEntity}
                 className="w-full h-14 bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform"

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert } from 'lucide-react';
+import { Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
 
 const getUserId = () => {
@@ -40,52 +40,30 @@ export default function PerformanceMenu() {
   }, [selectedMonth, selectedYear]);
 
   return (
-    <div className="min-h-full bg-[#f4f4f4] flex flex-col font-sans pb-10">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-4 bg-[#e9ecef]">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/dashboard')} className="text-slate-700">
-            <ChevronLeft size={24} />
-          </button>
-          <div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none">EMYRIS</h1>
-            <p className="text-[10px] font-bold text-emerald-600 tracking-wider">Biolifesciences</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="w-5 h-5 rounded-full bg-sky-500"></div>
-          <div className="w-5 h-5 rounded-full bg-emerald-500"></div>
-          <div className="flex flex-col gap-1 w-6">
-            <div className="h-0.5 bg-sky-600 w-full rounded"></div>
-            <div className="h-0.5 bg-sky-600 w-full rounded"></div>
-            <div className="h-0.5 bg-sky-600 w-full rounded"></div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-t-3xl flex-1 px-4 py-6 shadow-[0_-8px_20px_rgba(0,0,0,0.05)] mt-2">
-        <h2 className="text-lg font-bold text-sky-600 mb-4">User Performance Analysis</h2>
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 pt-4 px-4">
+      <div className="bg-slate-900 rounded-3xl flex-1 px-4 py-6 shadow-2xl border border-slate-700/50">
+        <h2 className="text-xl font-black text-sky-400 mb-6">User Performance Analysis (KPI's)</h2>
 
         {/* Month & Year Selector */}
-        <div className="flex gap-3 mb-6 bg-slate-50 p-3 rounded-2xl border border-slate-100 shadow-inner">
+        <div className="flex gap-3 mb-8 bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-inner">
           <div className="flex-1">
-            <label className="text-[10px] font-bold text-slate-200 uppercase tracking-widest mb-1 block">Month</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Month</label>
             <select 
               value={selectedMonth} 
               onChange={e => setSelectedMonth(e.target.value)}
-              className="w-full bg-white border-none rounded-xl text-slate-700 font-semibold h-10 px-3 shadow-sm focus:ring-2 focus:ring-sky-500"
+              className="w-full bg-slate-700/50 border border-slate-600 rounded-xl text-white font-semibold h-11 px-3 shadow-sm focus:ring-2 focus:ring-sky-500 focus:outline-none appearance-none"
             >
-              {months.map(m => <option key={m} value={m}>{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
+              {months.map(m => <option key={m} value={m} className="bg-slate-800">{m.charAt(0).toUpperCase() + m.slice(1)}</option>)}
             </select>
           </div>
           <div className="flex-1">
-            <label className="text-[10px] font-bold text-slate-200 uppercase tracking-widest mb-1 block">Year</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 block">Year</label>
             <select 
               value={selectedYear} 
               onChange={e => setSelectedYear(e.target.value)}
-              className="w-full bg-white border-none rounded-xl text-slate-700 font-semibold h-10 px-3 shadow-sm focus:ring-2 focus:ring-sky-500"
+              className="w-full bg-slate-700/50 border border-slate-600 rounded-xl text-white font-semibold h-11 px-3 shadow-sm focus:ring-2 focus:ring-sky-500 focus:outline-none appearance-none"
             >
-              {years.map(y => <option key={y} value={y}>{y}</option>)}
+              {years.map(y => <option key={y} value={y} className="bg-slate-800">{y}</option>)}
             </select>
           </div>
         </div>
@@ -93,30 +71,34 @@ export default function PerformanceMenu() {
         {/* Effort Analysis (Auto-calculated) */}
         <button
           onClick={() => navigate(`/extras/performance/effort?month=${selectedMonth}&year=${selectedYear}`)}
-          className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-[0_4px_20px_rgba(0,0,0,0.06)] mb-8 active:scale-95 transition-transform border border-slate-50"
+          className="w-full bg-gradient-to-r from-[#2a2d43] to-[#25273c] rounded-2xl p-5 flex items-center gap-4 shadow-xl mb-8 active:scale-95 transition-transform border border-slate-700/50"
         >
-          <div className="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center">
-            <Users size={24} className="text-slate-600" />
+          <div className="w-12 h-12 bg-sky-500/20 rounded-xl flex items-center justify-center">
+            <Users size={24} className="text-sky-400" />
           </div>
-          <span className="text-base font-semibold text-slate-700 flex-1 text-left">Effort Analysis</span>
+          <span className="text-base font-bold text-white flex-1 text-left">Effort Analysis</span>
         </button>
 
         {/* Add Targets section */}
-        <h3 className="text-sm font-bold text-slate-800 mb-4">
-          {isPlanningPhase ? "Add Planned Targets" : "Add Achieved Targets"}
-        </h3>
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-px bg-slate-700 flex-1"></div>
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider">
+            {isPlanningPhase ? "Add Planned Targets" : "Add Achieved Targets"}
+          </h3>
+          <div className="h-px bg-slate-700 flex-1"></div>
+        </div>
         
         <div className="grid grid-cols-2 gap-4">
           {TARGET_KPIS.map(kpi => (
             <button
               key={kpi.id}
               onClick={() => navigate(`/extras/performance/targets/${kpi.id}?month=${selectedMonth}&year=${selectedYear}`)}
-              className="bg-white rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-[0_4px_20px_rgba(0,0,0,0.06)] active:scale-95 transition-transform border border-slate-50"
+              className="bg-[#25273c] rounded-3xl p-5 flex flex-col items-center justify-center gap-4 shadow-xl active:scale-95 transition-transform border border-slate-700 hover:border-sky-500/50"
             >
-              <div className="w-14 h-14 bg-slate-100 rounded-full flex items-center justify-center">
-                <kpi.icon size={28} className="text-slate-600" />
+              <div className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center shadow-inner">
+                <kpi.icon size={28} className="text-sky-400" />
               </div>
-              <span className="text-xs font-bold text-slate-700 text-center px-2">{kpi.label}</span>
+              <span className="text-xs font-bold text-slate-300 text-center px-1">{kpi.label}</span>
             </button>
           ))}
         </div>
