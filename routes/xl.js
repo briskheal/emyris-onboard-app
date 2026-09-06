@@ -922,17 +922,31 @@ router.post('/performance/plan', async (req, res) => {
         const { id, brandData, roiData, accountData, keyCustomerData, outstandingData } = req.body;
         
         await XlPerformanceAnalysis.update({
-            brandData: JSON.stringify(brandData),
-            roiData: JSON.stringify(roiData),
-            accountData: JSON.stringify(accountData),
-            keyCustomerData: JSON.stringify(keyCustomerData),
-            outstandingData: JSON.stringify(outstandingData),
+            brandData: brandData !== undefined ? JSON.stringify(brandData) : undefined,
+            roiData: roiData !== undefined ? JSON.stringify(roiData) : undefined,
+            accountData: accountData !== undefined ? JSON.stringify(accountData) : undefined,
+            keyCustomerData: keyCustomerData !== undefined ? JSON.stringify(keyCustomerData) : undefined,
+            outstandingData: outstandingData !== undefined ? JSON.stringify(outstandingData) : undefined
+        }, { where: { _id: id } });
+
+        res.json({ success: true, message: 'Plan saved successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to save planning' });
+    }
+});
+
+// Final submission locks the month
+router.post('/performance/submit-final', async (req, res) => {
+    try {
+        const { id } = req.body;
+        
+        await XlPerformanceAnalysis.update({
             planningSubmittedAt: new Date()
         }, { where: { _id: id } });
 
-        res.json({ success: true, message: 'Monthly Planning submitted successfully!' });
+        res.json({ success: true, message: 'Monthly Planning locked successfully!' });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to submit planning' });
+        res.status(500).json({ error: 'Failed to lock planning' });
     }
 });
 

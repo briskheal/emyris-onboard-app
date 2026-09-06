@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert, ChevronDown } from 'lucide-react';
+import { Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert, ChevronDown, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
 const getUserId = () => {
@@ -24,6 +24,9 @@ export default function PerformanceMenu() {
   const [selectedMonth, setSelectedMonth] = useState(today.toLocaleString('en-US', { month: 'long' }).toLowerCase());
   const [selectedYear, setSelectedYear] = useState(String(today.getFullYear()));
   const [isPlanningPhase, setIsPlanningPhase] = useState(true);
+  const [recordId, setRecordId] = useState<string | null>(null);
+  const [plannedCount, setPlannedCount] = useState(0);
+  const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
 
   // Custom Dropdown State
   const [isMonthOpen, setIsMonthOpen] = useState(false);
@@ -32,16 +35,44 @@ export default function PerformanceMenu() {
   const months = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
   const years = ['2025', '2026', '2027'];
 
-  useEffect(() => {
-    // Fetch the performance record to see if planning is submitted
+  const fetchPerformance = () => {
     axios.get(`/api/xl/performance/my?email=${getUserId()}&month=${selectedMonth}&year=${selectedYear}`)
       .then(res => {
         if (res.data.success && res.data.data) {
-          setIsPlanningPhase(!res.data.data.planningSubmittedAt);
+          const data = res.data.data;
+          setRecordId(data._id);
+          setIsPlanningPhase(!data.planningSubmittedAt);
+          
+          // Calculate how many KPIs are planned
+          let count = 0;
+          if (data.brandData) count++;
+          if (data.accountData) count++;
+          if (data.keyCustomerData) count++;
+          if (data.roiData) count++;
+          if (data.outstandingData) count++;
+          setPlannedCount(count);
         }
       })
       .catch(console.error);
+  };
+
+  useEffect(() => {
+    fetchPerformance();
   }, [selectedMonth, selectedYear]);
+
+  const handleFinalSubmit = async () => {
+    if (!recordId) return;
+    setIsSubmittingFinal(true);
+    try {
+        await axios.post('/api/xl/performance/submit-final', { id: recordId });
+        alert('Final Monthly Plan locked successfully!');
+        fetchPerformance();
+    } catch (e) {
+        alert('Failed to lock monthly plan');
+    } finally {
+        setIsSubmittingFinal(false);
+    }
+  };
 
   return (
     <div className="bg-slate-800 flex flex-col font-sans pt-4 px-4 min-h-full pb-24">
@@ -132,6 +163,41 @@ export default function PerformanceMenu() {
             </button>
           ))}
         </div>
+
+        {/* Final Submission Section */}
+        {isPlanningPhase && (
+          <div className="mt-6 pt-6 border-t border-slate-700/50">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <span className="text-sm font-medium text-slate-300">Planning Progress</span>
+              <span className="text-sm font-bold text-sky-400">{plannedCount} / 5 KPIs Planned</span>
+            </div>
+            
+            <div className="w-full bg-slate-800 rounded-full h-2 mb-6 overflow-hidden">
+              <div 
+                className="bg-sky-500 h-2 rounded-full transition-all duration-500" 
+                style={{ width: `${(plannedCount / 5) * 100}%` }}
+              ></div>
+            </div>
+
+            {plannedCount >= 5 ? (
+              <button
+                onClick={handleFinalSubmit}
+                disabled={isSubmittingFinal}
+                className="w-full h-14 bg-emerald-500 hover:bg-emerald-400 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 size={20} />
+                {isSubmittingFinal ? 'Locking Plan...' : 'Submit Final Monthly Plan'}
+              </button>
+            ) : (
+              <button
+                disabled
+                className="w-full h-14 bg-slate-700 text-slate-400 font-bold rounded-2xl cursor-not-allowed border border-slate-600 border-dashed"
+              >
+                Plan all KPIs to Submit
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

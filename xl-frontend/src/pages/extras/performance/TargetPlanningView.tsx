@@ -294,7 +294,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
           disabled={isSubmitting || addedEntities.length === 0}
           className="flex-1 h-14 bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform disabled:opacity-50"
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Monthly Plan'}
+          {isSubmitting ? 'Saving...' : 'Save Plan'}
         </button>
       </div>
 

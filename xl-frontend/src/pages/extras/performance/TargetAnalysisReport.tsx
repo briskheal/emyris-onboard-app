@@ -61,8 +61,8 @@ export default function TargetAnalysisReport() {
     );
   }
 
-  // If editing, not submitted, or empty targets, show Planning View
-  if (isEditing || !planningSubmittedAt || initialTargets.length === 0) {
+  // If editing or not submitted, show Planning View
+  if (isEditing || !planningSubmittedAt) {
     return (
       <TargetPlanningView 
         kpiId={kpiId} 
