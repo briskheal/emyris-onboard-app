@@ -16,8 +16,12 @@ export default function Login() {
     const fetchCompanyInfo = async () => {
       try {
         const res = await axios.get('/api/company-profile');
-        if (res.data && res.data.logoUrl) {
-          setLogoUrl(res.data.logoUrl);
+        if (res.data) {
+          if (res.data.logo && res.data.logo.length > 0 && res.data.logo[0].data) {
+            setLogoUrl(res.data.logo[0].data);
+          } else if (res.data.logoUrl) {
+            setLogoUrl(res.data.logoUrl);
+          }
         }
       } catch (e) {
         console.error("Failed to load company profile", e);

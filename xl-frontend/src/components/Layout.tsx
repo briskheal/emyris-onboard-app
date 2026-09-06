@@ -36,8 +36,12 @@ export default function Layout() {
 
     axios.get('/api/company-profile')
       .then(res => {
-        if (res.data && res.data.logoUrl) {
-          setLogoUrl(res.data.logoUrl);
+        if (res.data) {
+          if (res.data.logo && res.data.logo.length > 0 && res.data.logo[0].data) {
+            setLogoUrl(res.data.logo[0].data);
+          } else if (res.data.logoUrl) {
+            setLogoUrl(res.data.logoUrl);
+          }
         }
       })
       .catch(err => console.error("Failed to load company profile", err));
