@@ -225,8 +225,8 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center bg-black/60 backdrop-blur-sm sm:p-4">
-      <div className="w-full sm:max-w-md bg-[#1c1c2e] sm:rounded-3xl shadow-2xl flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] overflow-hidden sm:border border-[#3b3b5a]">
+    <div className="absolute top-14 bottom-16 inset-x-0 z-[100] flex justify-center bg-slate-800 sm:p-4">
+      <div className="w-full sm:max-w-md bg-[#1c1c2e] sm:rounded-3xl shadow-2xl flex flex-col h-full overflow-hidden sm:border border-[#3b3b5a]">
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-[#3b3b5a] shrink-0 bg-[#27273f]">
@@ -246,6 +246,21 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
           {/* STEP: MENU */}
           {step === 'menu' && (
             <div>
+              {/* Mobile-like Welcome Header */}
+              <div className="flex items-center gap-3 mb-6">
+                {user?.profilePicture ? (
+                  <img src={user.profilePicture} alt={USER_NAME} className="w-12 h-12 rounded-full border-2 border-[#3b3b5a] object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full bg-slate-700 border-2 border-[#3b3b5a] flex items-center justify-center text-white font-bold text-lg">
+                    {USER_NAME.charAt(0)}
+                  </div>
+                )}
+                <h2 className="text-xl font-bold text-sky-400 leading-tight">
+                  <span className="text-slate-300 text-sm block font-medium">Welcome,</span>
+                  {USER_NAME}
+                </h2>
+              </div>
+
               <div className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-5 shadow-lg mb-8">
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center justify-between">
