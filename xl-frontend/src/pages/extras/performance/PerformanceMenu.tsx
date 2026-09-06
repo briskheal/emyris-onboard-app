@@ -9,7 +9,7 @@ const getUserId = () => {
 };
 
 const TARGET_KPIS = [
-  { id: 'brand', label: 'Brand Analysis', icon: Paperclip },
+  { id: 'brand', label: 'Product Wise Analysis', icon: Paperclip },
   { id: 'account', label: 'Account Wise Analysis', icon: Building2 },
   { id: 'keyCustomer', label: 'Key Customer Analysis', icon: UserStar },
   { id: 'roi', label: 'Customer ROI Analysis', icon: Banknote },
@@ -44,7 +44,7 @@ export default function PerformanceMenu() {
   }, [selectedMonth, selectedYear]);
 
   return (
-    <div className="bg-slate-800 flex flex-col font-sans pt-4 px-4 h-full">
+    <div className="bg-slate-800 flex flex-col font-sans pt-4 px-4 min-h-full pb-24">
       <div className="bg-slate-900 rounded-3xl flex-1 flex flex-col px-4 py-6 shadow-2xl border border-slate-700/50 mb-4">
         <h2 className="text-xl font-black text-sky-400 mb-6">User Performance Analysis (KPI's)</h2>
 

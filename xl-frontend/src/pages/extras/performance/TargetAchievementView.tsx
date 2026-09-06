@@ -38,14 +38,14 @@ function getCalendarWeeks(monthStr: string, yearStr: string) {
 }
 
 const KPI_TITLES: Record<string, string> = {
-  brand: 'Brand Analysis Report',
+  brand: 'Product Wise Analysis Report',
   account: 'Account Analysis Report',
   keyCustomer: 'Key Customer Analysis Report',
   roi: 'Customer ROI Analysis Report',
   outstanding: 'Outstanding Analysis Report'
 };
 
-export default function TargetAchievementView({ kpiId, month, year, initialTargets, recordId }: any) {
+export default function TargetAchievementView({ kpiId, month, year, initialTargets, recordId, onEditPlan }: any) {
   const navigate = useNavigate();
 
   const [weeks, setWeeks] = useState<{id: string, label: string, dateRange: string}[]>([]);
@@ -95,9 +95,19 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-4 text-white">
       <div className="px-4 py-4 mt-2 flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-sky-400">{KPI_TITLES[kpiId || 'roi']}</h2>
-        <button className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md">
-          <Share2 size={18} />
-        </button>
+        <div className="flex gap-2">
+          {onEditPlan && (
+            <button 
+              onClick={onEditPlan}
+              className="w-10 h-10 bg-emerald-500 rounded-full text-white flex items-center justify-center shadow-md hover:bg-emerald-400 transition-colors"
+            >
+              <Pencil size={18} />
+            </button>
+          )}
+          <button className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md">
+            <Share2 size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Week Tabs */}

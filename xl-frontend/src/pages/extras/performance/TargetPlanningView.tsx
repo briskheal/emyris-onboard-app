@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, X, Search, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
-export default function TargetPlanningView({ kpiId, month, year, initialTargets, recordId, onPlanSubmitted }: any) {
+export default function TargetPlanningView({ kpiId, month, year, initialTargets, recordId, onPlanSubmitted, onCancelEdit }: any) {
   const navigate = useNavigate();
   const [weeks, setWeeks] = useState<{id: string, label: string, dateRange: string}[]>([]);
   
@@ -277,11 +277,19 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
       </div>
 
       {/* Sticky Submit Button */}
-      <div className="fixed bottom-16 z-40 left-0 right-0 p-4 bg-slate-800 border-t border-slate-700">
+      <div className="fixed bottom-16 z-40 left-0 right-0 p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
+        {onCancelEdit && (
+          <button 
+            onClick={onCancelEdit}
+            className="w-1/3 h-14 bg-slate-600 text-white font-bold rounded-2xl active:scale-95 transition-transform"
+          >
+            Cancel
+          </button>
+        )}
         <button 
           onClick={submitEntirePlan}
           disabled={isSubmitting || addedEntities.length === 0}
-          className="w-full h-14 bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform disabled:opacity-50"
+          className="flex-1 h-14 bg-emerald-500 text-white font-bold rounded-2xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform disabled:opacity-50"
         >
           {isSubmitting ? 'Submitting...' : 'Submit Monthly Plan'}
         </button>

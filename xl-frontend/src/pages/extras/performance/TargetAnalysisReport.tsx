@@ -19,6 +19,7 @@ export default function TargetAnalysisReport() {
   const [planningSubmittedAt, setPlanningSubmittedAt] = useState<string | null>(null);
   const [recordId, setRecordId] = useState<string | null>(null);
   const [initialTargets, setInitialTargets] = useState<any[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
 
   const fetchData = () => {
     setLoading(true);
@@ -54,14 +55,14 @@ export default function TargetAnalysisReport() {
 
   if (loading) {
     return (
-      <div className="min-h-full bg-[#2a2d45] flex items-center justify-center">
+      <div className="min-h-full bg-slate-800 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  // If planning has NOT been submitted OR this specific KPI has no targets planned yet, show the Planning View
-  if (!planningSubmittedAt || initialTargets.length === 0) {
+  // If editing, not submitted, or empty targets, show Planning View
+  if (isEditing || !planningSubmittedAt || initialTargets.length === 0) {
     return (
       <TargetPlanningView 
         kpiId={kpiId} 
@@ -69,12 +70,15 @@ export default function TargetAnalysisReport() {
         year={year} 
         initialTargets={initialTargets} 
         recordId={recordId} 
-        onPlanSubmitted={fetchData} 
+        onPlanSubmitted={() => {
+          setIsEditing(false);
+          fetchData();
+        }}
+        onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
       />
     );
   }
 
-  // If planning HAS been submitted, show the Achievement View
   return (
     <TargetAchievementView 
       kpiId={kpiId} 
@@ -82,6 +86,7 @@ export default function TargetAnalysisReport() {
       year={year} 
       initialTargets={initialTargets} 
       recordId={recordId} 
+      onEditPlan={() => setIsEditing(true)}
     />
   );
 }
