@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
-const today = new Date().toISOString().split('T')[0];
+const today = new Date().toLocaleDateString('en-CA'); // Gets local YYYY-MM-DD
 
 interface Product { _id: string; name: string; }
 interface Gift { _id: string; name: string; }
@@ -38,6 +38,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
   const [hasApprovedTP, setHasApprovedTP] = useState(false);
   const [workingAreaType, setWorkingAreaType] = useState('Out-Station');
   const [workingAreas, setWorkingAreas] = useState('N/A');
+  const [isLockedDay, setIsLockedDay] = useState(false);
 
   // Form State
   const [selectedEntityId, setSelectedEntityId] = useState('');
@@ -80,22 +81,50 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
     const m = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
     const y = dObj.getFullYear();
     
+    // First, check if today is Sunday
+    let locked = dObj.getDay() === 0;
+
+    axios.get('/api/xl/settings/holidays').then(hRes => {
+       const hMap: Record<string, boolean> = {};
+       (hRes.data.data || []).forEach((h: any) => {
+           const hd = new Date(h.date);
+           hMap[`${hd.getFullYear()}-${String(hd.getMonth()+1).padStart(2,'0')}-${String(hd.getDate()).padStart(2,'0')}`] = true;
+       });
+       if (hMap[dcrDate]) locked = true;
+       setIsLockedDay(locked);
+    }).catch(() => setIsLockedDay(locked));
+    
     axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${m}&year=${y}`)
       .then(res => {
          if (res.data.success && res.data.data && res.data.data.status === 'Approved') {
-             setHasApprovedTP(true);
              const entries = JSON.parse(res.data.data.entries || '[]');
              const targetDateIso = new Date(dcrDate).toISOString().split('T')[0];
              const todayEntry = entries.find((e:any) => {
                  try { return new Date(e.date).toISOString().split('T')[0] === targetDateIso; }
                  catch(err) { return e.date === dcrDate; }
              });
+             
              if (todayEntry) {
-                 setWorkingAreaType(todayEntry.type || 'Out-Station');
-                 setWorkingAreas(todayEntry.toMarket || todayEntry.areaType || todayEntry.type || todayEntry.category || 'HQ');
+                 const tType = (todayEntry.type || '').toLowerCase();
+                 if (tType === 'sunday' || tType === 'holiday') {
+                     setIsLockedDay(true);
+                     setWorkingAreaType(todayEntry.type);
+                     setWorkingAreas(todayEntry.type);
+                 } else {
+                     setWorkingAreaType(todayEntry.type || 'Out-Station');
+                     setWorkingAreas(todayEntry.toMarket || todayEntry.areaType || todayEntry.type || todayEntry.category || 'HQ');
+                 }
+                 setHasApprovedTP(true);
+             } else {
+                 // No entry found for this date
+                 setHasApprovedTP(false);
+                 setIsLockedDay(true);
              }
+         } else {
+             setHasApprovedTP(false);
+             setIsLockedDay(true);
          }
-      }).catch(() => {});
+      }).catch(() => { setHasApprovedTP(false); setIsLockedDay(true); });
 
     axios.get('/api/xl/reports/products').then(r => setProducts(r.data.data || [])).catch(()=>{});
     
@@ -203,7 +232,7 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
         <div className="flex items-center justify-between p-5 border-b border-[#3b3b5a] shrink-0 bg-[#27273f]">
           <div>
             <h2 className="text-lg font-black text-white">{entityType ? `${entityType} DCR` : 'Daily Call Report'}</h2>
-            <p className="text-[10px] font-bold text-sky-400 tracking-widest uppercase mt-0.5">{dcrDate}</p>
+            <p className="text-[10px] font-bold text-sky-400 tracking-widest uppercase mt-0.5">{dcrDate.split('-').reverse().join('/')}</p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#1c1c2e] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
             <X size={18} />
@@ -252,9 +281,15 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
                 {['Doctor', 'Chemist', 'Stockist', 'Reminder'].map(type => (
                   <button 
                     key={type}
+                    disabled={isLockedDay}
                     onClick={() => { setEntityType(type as any); loadEntities(type); setStep('form'); }}
-                    className="bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg active:scale-95 transition-transform"
+                    className={`bg-[#27273f] border border-[#3b3b5a] rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg transition-transform ${isLockedDay ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}`}
                   >
+                    {isLockedDay && (
+                      <div className="absolute top-4 right-4 text-slate-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                      </div>
+                    )}
                     <div className={`w-16 h-16 rounded-full flex items-center justify-center ${type==='Doctor' ? 'bg-rose-400/10 text-rose-400' : type==='Chemist' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-sky-400/10 text-sky-400'}`}>
                       <UserRound size={32} />
                     </div>
