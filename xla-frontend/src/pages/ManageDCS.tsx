@@ -369,16 +369,16 @@ export default function ManageDCS() {
             
             <div>
               <label className="text-xs text-slate-400 font-bold mb-1 block">HOSPITAL</label>
-              <select value={formData.hospital} onChange={e=>setFormData({...formData, hospital: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white">
-                <option value="">Select Hospital</option>
-                {(() => {
-                  const opts = getControls('Hospital', formData.headquarter);
-                  if (formData.hospital && !opts.find(o => o.name === formData.hospital)) {
-                    opts.push({ _id: 'temp_hosp', name: formData.hospital, type: 'Hospital' });
-                  }
-                  return opts.map(c => <option key={c._id} value={c.name}>{c.name}</option>);
-                })()}
-              </select>
+              <input 
+                list="hospital-options"
+                value={formData.hospital} 
+                onChange={e=>setFormData({...formData, hospital: e.target.value})} 
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"
+                placeholder="Search or enter hospital..."
+              />
+              <datalist id="hospital-options">
+                {getControls('Hospital', formData.headquarter).map(c => <option key={c._id} value={c.name} />)}
+              </datalist>
             </div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BIRTHDAY</label><input type="date" value={formData.birthday} onChange={e=>setFormData({...formData, birthday: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">MARRIAGE ANNIVERSARY</label><input type="date" value={formData.anniversary} onChange={e=>setFormData({...formData, anniversary: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
