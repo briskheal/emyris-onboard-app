@@ -223,7 +223,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
 
             {/* Dropdown Results */}
             {!selectedEntity && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700/95 backdrop-blur-xl border border-slate-600 rounded-xl shadow-2xl z-50 max-h-64 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700/95 backdrop-blur-xl border border-slate-600 rounded-xl shadow-2xl z-50 max-h-[500px] overflow-y-auto">
                 {searchResults.map(res => (
                   <button
                     key={res.id}
