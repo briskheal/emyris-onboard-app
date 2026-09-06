@@ -11,6 +11,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
   const [addedEntities, setAddedEntities] = useState<any[]>(Array.isArray(initialTargets) ? initialTargets : []);
+  const [isFocused, setIsFocused] = useState(false);
   
   const [showModal, setShowModal] = useState(false);
   const [activeModalEntity, setActiveModalEntity] = useState<any>(null);
@@ -212,6 +213,8 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
                 type="text"
                 placeholder={getPlaceholder()}
                 value={selectedEntity ? selectedEntity.name : searchQuery}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setTimeout(() => setIsFocused(false), 200)}
                 onChange={e => {
                   setSearchQuery(e.target.value);
                   setSelectedEntity(null);
@@ -222,7 +225,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
             </div>
 
             {/* Dropdown Results */}
-            {!selectedEntity && searchResults.length > 0 && (
+            {!selectedEntity && searchResults.length > 0 && isFocused && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-slate-700/95 backdrop-blur-xl border border-slate-600 rounded-xl shadow-2xl z-50 max-h-[500px] overflow-y-auto">
                 {searchResults.map(res => (
                   <button

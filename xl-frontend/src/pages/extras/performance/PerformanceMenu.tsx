@@ -45,7 +45,7 @@ export default function PerformanceMenu() {
 
   return (
     <div className="bg-slate-800 flex flex-col font-sans pt-4 px-4 min-h-full pb-24">
-      <div className="bg-slate-900 rounded-3xl flex-1 flex flex-col px-4 py-6 shadow-2xl border border-slate-700/50 mb-4">
+      <div className="bg-slate-900 rounded-3xl flex flex-col px-4 py-6 shadow-2xl border border-slate-700/50 mb-4">
         <h2 className="text-xl font-black text-sky-400 mb-6">User Performance Analysis (KPI's)</h2>
 
         {/* Month & Year Selector */}
