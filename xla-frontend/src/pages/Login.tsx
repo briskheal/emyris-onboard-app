@@ -2,14 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
@@ -30,25 +27,17 @@ export default function Login() {
     fetchCompanyInfo();
   }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return toast.error('Enter email and password');
-    setLoading(true);
-    try {
-      const res = await axios.post('/api/auth/login-admin', { email, password });
-      localStorage.setItem('xl_token', res.data.token);
-      localStorage.setItem('xla_user', JSON.stringify(res.data.user));
-      toast.success('Welcome back!');
+    // Simulate login for now
+    if (email && password) {
+      // In a real app, you would set a token here
       navigate('/dashboard');
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Invalid credentials');
-    } finally {
-      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
       
       {/* Background decorations */}
       <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-rose-500/20 rounded-full blur-[80px]" />
