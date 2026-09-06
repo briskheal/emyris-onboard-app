@@ -10,7 +10,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [selectedEntity, setSelectedEntity] = useState<any>(null);
-  const [addedEntities, setAddedEntities] = useState<any[]>(initialTargets || []);
+  const [addedEntities, setAddedEntities] = useState<any[]>(Array.isArray(initialTargets) ? initialTargets : []);
   
   const [showModal, setShowModal] = useState(false);
   const [activeModalEntity, setActiveModalEntity] = useState<any>(null);
@@ -62,7 +62,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
         if (kpiId === 'brand') {
           const res = await axios.get('/api/xl/reports/products');
           if (res.data.success) {
-            entities = (res.data.data || []).map((p: any) => ({
+            entities = (Array.isArray(res.data.data) ? res.data.data : []).map((p: any) => ({
               id: p.id || p.productName,
               name: p.productName,
               type: 'Product'
@@ -71,7 +71,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
         } else if (kpiId === 'account') {
           const res = await axios.get(`/api/xl/doctors?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
           if (res.data.success) {
-            const hospitals = [...new Set((res.data.data || []).map((d: any) => d.hospital).filter(Boolean))];
+            const hospitals = [...new Set((Array.isArray(res.data.data) ? res.data.data : []).map((d: any) => d.hospital).filter(Boolean))];
             entities = hospitals.map((h: any) => ({
               id: h,
               name: h,
@@ -81,7 +81,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
         } else if (kpiId === 'keyCustomer' || kpiId === 'roi') {
           const res = await axios.get(`/api/xl/doctors?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
           if (res.data.success) {
-            entities = (res.data.data || []).map((d: any) => ({
+            entities = (Array.isArray(res.data.data) ? res.data.data : []).map((d: any) => ({
               id: d.id,
               name: d.name,
               type: 'Doctor'
@@ -90,7 +90,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
         } else if (kpiId === 'outstanding') {
           const res = await axios.get(`/api/xl/stockists?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
           if (res.data.success) {
-            entities = (res.data.data || []).map((s: any) => ({
+            entities = (Array.isArray(res.data.data) ? res.data.data : []).map((s: any) => ({
               id: s.id,
               name: s.name,
               type: 'Stockist'

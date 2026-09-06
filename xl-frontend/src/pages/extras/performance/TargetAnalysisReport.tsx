@@ -37,7 +37,8 @@ export default function TargetAnalysisReport() {
           else if (kpiId === 'outstanding') dataStr = perf.outstandingData;
 
           try {
-            setInitialTargets(JSON.parse(dataStr));
+            const parsed = JSON.parse(dataStr);
+            setInitialTargets(Array.isArray(parsed) ? parsed : []);
           } catch (e) {
             setInitialTargets([]);
           }

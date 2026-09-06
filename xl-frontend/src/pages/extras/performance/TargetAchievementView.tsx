@@ -50,7 +50,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
 
   const [weeks, setWeeks] = useState<{id: string, label: string, dateRange: string}[]>([]);
   const [activeWeek, setActiveWeek] = useState('week1');
-  const [targets, setTargets] = useState<any[]>(initialTargets || []);
+  const [targets, setTargets] = useState<any[]>(Array.isArray(initialTargets) ? initialTargets : []);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
