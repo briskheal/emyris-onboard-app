@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, Search, ArrowUp, Download } from 'lucide-react';
+import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, Search, ArrowUp, Download, MapPinOff } from 'lucide-react';
 import CustomUserSelect from '../components/CustomUserSelect';
 import { useNavigate } from 'react-router-dom';
 
@@ -214,8 +214,16 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
                 <td className="p-4 border-r border-[#3b3b5a]/50 font-medium">{d.headquarter || '-'}</td>
                 <td className="p-4 text-center">
                   <div className="flex items-center justify-center gap-3">
-                    <button onClick={() => onEdit(d, filterType)} className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={16} /></button>
-                    <button onClick={() => handleDelete(d._id)} className="text-rose-400 hover:text-rose-300 hover:scale-110 transition-transform"><Trash2 size={16} /></button>
+                    <button title="Edit Record" onClick={() => onEdit(d, filterType)} className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={16} /></button>
+                    <button title="Reset GPS Locations" onClick={async () => {
+                      if(!window.confirm('Erase all GPS location tags for this record? This allows the MR to re-tag them.')) return;
+                      try {
+                        await axios.put(`/api/admin/dcs/${filterType.toLowerCase()}s/${d._id}`, { lat1: null, lng1: null, geoAddress1: null, lat2: null, lng2: null, geoAddress2: null });
+                        fetchData();
+                        alert('GPS Locations reset successfully!');
+                      } catch (e) { alert('Error resetting GPS'); }
+                    }} className="text-amber-400 hover:text-amber-300 hover:scale-110 transition-transform"><MapPinOff size={16} /></button>
+                    <button title="Delete Record" onClick={() => handleDelete(d._id)} className="text-rose-400 hover:text-rose-300 hover:scale-110 transition-transform"><Trash2 size={16} /></button>
                   </div>
                 </td>
               </tr>
