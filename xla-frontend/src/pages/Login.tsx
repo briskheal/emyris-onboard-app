@@ -1,23 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const res = await axios.get('/api/company-profile');
+        if (res.data) {
+          if (res.data.logo && res.data.logo.length > 0 && res.data.logo[0].data) {
+            setLogoUrl(res.data.logo[0].data);
+          } else if (res.data.logoUrl) {
+            setLogoUrl(res.data.logoUrl);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load company profile", e);
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login for now
-    if (email && password) {
-      // In a real app, you would set a token here
+    if (!email || !password) return toast.error('Enter email and password');
+    setLoading(true);
+    try {
+      const res = await axios.post('/api/auth/login-admin', { email, password });
+      localStorage.setItem('xl_token', res.data.token);
+      localStorage.setItem('xla_user', JSON.stringify(res.data.user));
+      toast.success('Welcome back!');
       navigate('/dashboard');
+    } catch (err: any) {
+      toast.error(err.response?.data?.error || 'Invalid credentials');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-6 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden font-sans">
       
       {/* Background decorations */}
       <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-rose-500/20 rounded-full blur-[80px]" />
@@ -27,9 +58,13 @@ export default function Login() {
         
         {/* Logo Area */}
         <div className="text-center mb-10">
-          <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-rose-500/30 mb-6">
-            <h1 className="text-3xl font-black text-white tracking-tighter">EM</h1>
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Company Logo" className="h-20 mx-auto object-contain mb-6 drop-shadow-2xl" />
+          ) : (
+            <div className="w-20 h-20 bg-gradient-to-br from-rose-500 to-rose-700 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-rose-500/30 mb-6">
+              <h1 className="text-3xl font-black text-white tracking-tighter">EM</h1>
+            </div>
+          )}
           <h1 className="text-2xl font-black text-white tracking-tight leading-none mb-1">EMYRIS</h1>
           <p className="text-[10px] font-bold text-rose-400 tracking-widest uppercase">Admin Portal</p>
         </div>

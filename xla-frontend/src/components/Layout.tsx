@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, Receipt, MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, Users, History, CheckSquare } from 'lucide-react';
 import NavigationDrawer from './NavigationDrawer';
+import axios from 'axios';
 
 const navItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { path: '/admin', icon: SettingsIcon, label: 'Admin Panel' },
-  // { path: '/extras/tour-program', icon: MapPin, label: 'Tour Program' },
-  // { path: '/extras/call-plan', icon: CalendarDays, label: 'Call Planning' },
   { path: '/extras/expense', icon: Receipt, label: 'Expenses' },
   { path: '/extras/e-detailing', icon: MonitorPlay, label: 'E-Detailing' },
   { path: '/extras/primary-sales', icon: Target, label: 'Primary Sales' },
@@ -27,6 +26,25 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
+
+  useEffect(() => {
+    const fetchCompanyInfo = async () => {
+      try {
+        const res = await axios.get('/api/company-profile');
+        if (res.data) {
+          if (res.data.logo && res.data.logo.length > 0 && res.data.logo[0].data) {
+            setLogoUrl(res.data.logo[0].data);
+          } else if (res.data.logoUrl) {
+            setLogoUrl(res.data.logoUrl);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load company profile", e);
+      }
+    };
+    fetchCompanyInfo();
+  }, []);
 
   const isActive = (path: string) =>
     location.pathname === path || location.pathname.startsWith(path + '/');
@@ -37,10 +55,14 @@ export default function Layout() {
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden md:flex flex-col w-64 bg-slate-900 border-r border-slate-800 flex-shrink-0">
         <div className="h-20 flex items-center px-6 border-b border-slate-800">
-          <div>
-            <h1 className="text-2xl font-black text-white tracking-tight leading-none">EMYRIS</h1>
-            <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
-          </div>
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="h-10 object-contain" />
+          ) : (
+            <div>
+              <h1 className="text-2xl font-black text-white tracking-tight leading-none">EMYRIS</h1>
+              <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
+            </div>
+          )}
         </div>
         
         <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1">
