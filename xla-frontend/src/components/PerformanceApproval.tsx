@@ -51,7 +51,7 @@ export default function PerformanceApproval({ items, fetchPending, fetchCounts }
                 <tr key={item._id} className="hover:bg-[#252538] transition-colors">
                   <td className="p-4">
                     <div className="font-bold text-white">{item.employeeName}</div>
-                    <div className="text-xs text-slate-500">ID: {item.employeeId}</div>
+                    <div className="text-[10px] text-slate-400 font-medium mt-0.5">{item.employeeId} &bull; {item.hq}</div>
                   </td>
                   <td className="p-4 font-medium text-slate-300">
                     <span className="capitalize">{item.month}</span> {item.year}
@@ -87,5 +87,6 @@ export default function PerformanceApproval({ items, fetchPending, fetchCounts }
     </div>
   );
 }
+
 
 

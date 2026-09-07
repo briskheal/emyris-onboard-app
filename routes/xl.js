@@ -1135,10 +1135,17 @@ router.get('/approvals/pending', async (req, res) => {
                 },
                 raw: true
             });
+            const allUsers = await XlUser.findAll({ raw: true });
+            const userMap = {};
+            allUsers.forEach(u => {
+                userMap[u.employeeId] = { name: u.name, hq: u.hq };
+            });
+
             const formatted = perfs.map(p => ({
                 ...p,
                 status: 'Submitted',
-                employeeName: p.employeeId
+                employeeName: userMap[p.employeeId]?.name || p.employeeId,
+                hq: userMap[p.employeeId]?.hq || 'Unknown HQ'
             }));
             return res.json({ success: true, data: formatted });
         }
@@ -1566,5 +1573,6 @@ router.get('/geo-fencing/my-tags', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
