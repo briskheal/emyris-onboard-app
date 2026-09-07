@@ -1126,6 +1126,23 @@ router.get('/approvals/pending', async (req, res) => {
             reporteeEmails = reportees.map(u => u.employeeId);
             if (reporteeEmails.length === 0) return res.json({ success: true, data: [] });
         }
+
+        if (type === 'Performance KPI') {
+            const perfs = await XlPerformanceAnalysis.findAll({
+                where: {
+                    ...(reporteeEmails ? { employeeId: reporteeEmails } : {}),
+                    planningSubmittedAt: { [Op.ne]: null }
+                },
+                raw: true
+            });
+            const formatted = perfs.map(p => ({
+                ...p,
+                status: 'Submitted',
+                employeeName: p.employeeId
+            }));
+            return res.json({ success: true, data: formatted });
+        }
+
         let Model;
         if (type === 'Call Report') Model = XlDCR;
         else if (type === 'Tour Program') Model = XlTourProgram;
