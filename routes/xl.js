@@ -1138,7 +1138,7 @@ router.get('/approvals/pending', async (req, res) => {
             const allUsers = await XlUser.findAll({ raw: true });
             const userMap = {};
             allUsers.forEach(u => {
-                userMap[u.employeeId] = { name: u.name, hq: u.hq };
+                userMap[u.employeeId] = { name: (u.firstName + ' ' + (u.lastName || '')).trim(), hq: u.hq };
             });
 
             const formatted = perfs.map(p => ({
@@ -1573,6 +1573,7 @@ router.get('/geo-fencing/my-tags', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
