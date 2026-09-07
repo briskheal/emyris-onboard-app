@@ -54,8 +54,12 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setWeeks(getCalendarWeeks(month, year));
-  }, [month, year]);
+      setWeeks(getCalendarWeeks(month, year));
+    }, [month, year]);
+
+    useEffect(() => {
+      setTargets(Array.isArray(initialTargets) ? initialTargets : []);
+    }, [initialTargets]);
 
   const updateTarget = (entityId: string, value: number) => {
     setTargets(prev => prev.map(t => {
@@ -221,4 +225,5 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
     </div>
   );
 }
+
 

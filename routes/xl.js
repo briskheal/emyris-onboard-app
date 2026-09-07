@@ -922,11 +922,11 @@ router.post('/performance/plan', async (req, res) => {
         const { id, brandData, roiData, accountData, keyCustomerData, outstandingData } = req.body;
         
         await XlPerformanceAnalysis.update({
-            brandData: brandData !== undefined ? JSON.stringify(brandData) : undefined,
-            roiData: roiData !== undefined ? JSON.stringify(roiData) : undefined,
-            accountData: accountData !== undefined ? JSON.stringify(accountData) : undefined,
-            keyCustomerData: keyCustomerData !== undefined ? JSON.stringify(keyCustomerData) : undefined,
-            outstandingData: outstandingData !== undefined ? JSON.stringify(outstandingData) : undefined
+            brandData: brandData !== undefined ? brandData : undefined,
+            roiData: roiData !== undefined ? roiData : undefined,
+            accountData: accountData !== undefined ? accountData : undefined,
+            keyCustomerData: keyCustomerData !== undefined ? keyCustomerData : undefined,
+            outstandingData: outstandingData !== undefined ? outstandingData : undefined
         }, { where: { _id: id } });
 
         res.json({ success: true, message: 'Plan saved successfully!' });
@@ -1573,6 +1573,7 @@ router.get('/geo-fencing/my-tags', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
