@@ -6,6 +6,7 @@ import ExpenseApproval from '../components/ExpenseApproval';
 import CallReportApproval from '../components/CallReportApproval';
 import LeaveRequestApproval from '../components/LeaveRequestApproval';
 import CallPlanApproval from '../components/CallPlanApproval';
+import PerformanceApproval from '../components/PerformanceApproval';
 import GenericApproval from '../components/GenericApproval';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,7 +26,8 @@ const sidebarItems = [
   { label: 'SAMPLES', path: 'Samples' },
   { label: 'GIFTS', path: 'Gifts' },
   { label: 'GEO FENCING', path: 'Geo Fencing' },
-  { label: 'DELETION REQUEST', path: 'Deletion Request' }
+  { label: 'DELETION REQUEST', path: 'Deletion Request' },
+  { label: 'PERFORMANCE KPI', path: 'Performance KPI' }
 ];
 
 export default function Approvals() {
@@ -201,7 +203,9 @@ export default function Approvals() {
 
        
        {/* Main Content */}
-       {selectedModule === 'Tour Program' ? (
+       {selectedModule === 'Performance KPI' ? (
+           <PerformanceApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} />
+       ) : selectedModule === 'Tour Program' ? (
          <TourProgramApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
        ) : selectedModule === 'Expense' ? (
          <ExpenseApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
@@ -217,3 +221,4 @@ export default function Approvals() {
     </div>
   );
 }
+

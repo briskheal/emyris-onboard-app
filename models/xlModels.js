@@ -421,7 +421,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         outstandingData: { type: DataTypes.TEXT, defaultValue: '[]' },
         
         planningSubmittedAt: { type: DataTypes.DATE },
-        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        unlockRequested: { type: DataTypes.BOOLEAN, defaultValue: false },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 

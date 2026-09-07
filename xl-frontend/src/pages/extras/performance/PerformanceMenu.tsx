@@ -27,6 +27,8 @@ export default function PerformanceMenu() {
   const [recordId, setRecordId] = useState<string | null>(null);
   const [plannedCount, setPlannedCount] = useState(0);
   const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
+  const [unlockRequested, setUnlockRequested] = useState(false);
+  const [isRequestingUnlock, setIsRequestingUnlock] = useState(false);
 
   // Custom Dropdown State
   const [isMonthOpen, setIsMonthOpen] = useState(false);
@@ -42,6 +44,7 @@ export default function PerformanceMenu() {
           const data = res.data.data;
           setRecordId(data._id);
           setIsPlanningPhase(!data.planningSubmittedAt);
+          setUnlockRequested(!!data.unlockRequested);
           
           // Calculate how many KPIs are planned
           let count = 0;
@@ -71,6 +74,20 @@ export default function PerformanceMenu() {
         alert('Failed to lock monthly plan');
     } finally {
         setIsSubmittingFinal(false);
+    }
+  };
+
+  const handleRequestUnlock = async () => {
+    if (!recordId) return;
+    setIsRequestingUnlock(true);
+    try {
+        await axios.post('/api/xl/performance/request-unlock', { id: recordId });
+        alert('Unlock requested successfully! Please wait for admin approval.');
+        fetchPerformance();
+    } catch (e) {
+        alert('Failed to request unlock');
+    } finally {
+        setIsRequestingUnlock(false);
     }
   };
 
@@ -148,6 +165,19 @@ export default function PerformanceMenu() {
           </h3>
           <div className="h-px bg-slate-700 flex-1"></div>
         </div>
+
+        {/* Request Unlock Section */}
+        {!isPlanningPhase && (
+          <div className="mb-6">
+            <button
+              onClick={handleRequestUnlock}
+              disabled={unlockRequested || isRequestingUnlock}
+              className={`w-full h-12 rounded-xl font-bold flex items-center justify-center transition-all ${unlockRequested ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : 'bg-slate-700 hover:bg-slate-600 text-white'}`}
+            >
+              {isRequestingUnlock ? 'Requesting...' : unlockRequested ? 'Unlock Requested - Pending Approval' : 'Request Edit Access'}
+            </button>
+          </div>
+        )}
         
         <div className="grid grid-cols-2 gap-4 pb-4">
           {TARGET_KPIS.map(kpi => (
@@ -202,3 +232,4 @@ export default function PerformanceMenu() {
     </div>
   );
 }
+

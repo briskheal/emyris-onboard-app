@@ -950,6 +950,31 @@ router.post('/performance/submit-final', async (req, res) => {
     }
 });
 
+// Request an unlock (User)
+router.post('/performance/request-unlock', async (req, res) => {
+    try {
+        const { id } = req.body;
+        await XlPerformanceAnalysis.update({ unlockRequested: true }, { where: { _id: id } });
+        res.json({ success: true, message: 'Unlock requested successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to request unlock' });
+    }
+});
+
+// Release / unlock the plan (Admin)
+router.post('/performance/release', async (req, res) => {
+    try {
+        const { id } = req.body;
+        await XlPerformanceAnalysis.update({ 
+            planningSubmittedAt: null,
+            unlockRequested: false
+        }, { where: { _id: id } });
+        res.json({ success: true, message: 'Plan unlocked successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to unlock plan' });
+    }
+});
+
 // Update achieved targets for a specific week (or updating targets)
 router.put('/performance/achieve', async (req, res) => {
     try {
@@ -1078,6 +1103,12 @@ router.get('/approvals/counts', async (req, res) => {
         counts['Stockists'] = await XlStockist.count({ where: condition });
         counts['Expense'] = await XlExpense.count({ where: condition });
         counts['Leave Request'] = await XlLeave.count({ where: condition });
+
+        counts['Performance KPI'] = await XlPerformanceAnalysis.count({
+            where: designation === 'ADMIN' 
+                ? { planningSubmittedAt: { [Op.ne]: null } } 
+                : { planningSubmittedAt: { [Op.ne]: null }, employeeId: { [Op.in]: reporteeEmails } }
+        });
         
         res.json({ success: true, counts });
     } catch (e) {
@@ -1518,4 +1549,5 @@ router.get('/geo-fencing/my-tags', async (req, res) => {
 });
 
 module.exports = router;
+
 
