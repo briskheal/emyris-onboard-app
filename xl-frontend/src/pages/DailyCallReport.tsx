@@ -42,6 +42,8 @@ export default function DailyCallReport() {
   const [workingAreaType, setWorkingAreaType] = useState('Out-Station');
   const [workingAreas, setWorkingAreas] = useState('N/A');
   const [isLockedDay, setIsLockedDay] = useState(false);
+  const [daySubmitted, setDaySubmitted] = useState(false);
+  const [dayRemarks, setDayRemarks] = useState('');
 
   // Form State
   const [selectedEntityId, setSelectedEntityId] = useState('');
@@ -97,7 +99,17 @@ export default function DailyCallReport() {
        setIsLockedDay(locked);
     }).catch(() => setIsLockedDay(locked));
     
-    axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${m}&year=${y}`)
+          axios.get(`/api/xl/attendance/my?email=${USER_EMAIL}&date=${dcrDate}`)
+        .then(res => {
+           if (res.data.success && res.data.data) {
+               if (res.data.data.daySubmitted) {
+                   setDaySubmitted(true);
+                   setIsLockedDay(true);
+               }
+           }
+        }).catch(()=>{});
+
+      axios.get(`/api/xl/tour-program/my?email=${USER_EMAIL}&month=${m}&year=${y}`)
       .then(res => {
          if (res.data.success && res.data.data && res.data.data.status === 'Approved') {
              const entries = JSON.parse(res.data.data.entries || '[]');
@@ -192,6 +204,27 @@ export default function DailyCallReport() {
   const handleSubmitInitial = () => {
     if (!selectedEntityId && entityType !== 'Reminder') { setError(`Please select a ${entityType}`); return; }
     setStep('rating');
+  };
+
+  
+  const submitFinalDay = async () => {
+    setLoading(true);
+    try {
+      await axios.post('/api/xl/attendance/submit-day', {
+        employeeId: user?.employeeId,
+        date: dcrDate,
+        dayRemarks
+      });
+      setDaySubmitted(true);
+      setIsLockedDay(true);
+      setStep('select');
+      setSuccess('Day submitted successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to submit day');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const submitFinal = async () => {
@@ -312,7 +345,10 @@ export default function DailyCallReport() {
               </div>
 
               {/* Final Call Report List Summary */}
-              <div className="mt-8 bg-[#27273f] border border-[#3b3b5a] rounded-3xl overflow-hidden shadow-lg flex">
+              <div 
+                onClick={() => !daySubmitted && setStep('final')} 
+                className={`mt-8 bg-[#27273f] border border-[#3b3b5a] rounded-3xl overflow-hidden shadow-lg flex ${!daySubmitted ? 'cursor-pointer active:scale-95 transition-transform hover:border-sky-500/50' : 'opacity-75'}`}
+              >
                 <div className="flex-1 p-5">
                   <h3 className="font-bold text-slate-200 text-sm mb-2">Final Call Report List</h3>
                   <div className="flex gap-3 text-xs font-bold">
@@ -329,6 +365,40 @@ export default function DailyCallReport() {
           )}
 
           {/* STEP: FORM */}
+          
+          {/* STEP: FINAL SUBMIT */}
+          {step === 'final' && (
+            <div className="space-y-6 pb-6">
+              <div className="flex items-center gap-3 text-sky-400 mb-6">
+                <button onClick={() => setStep('select')} className="w-10 h-10 rounded-full bg-[#27273f] flex items-center justify-center hover:bg-[#3b3b5a] transition-colors"><ChevronLeft size={20} /></button>
+                <h3 className="font-bold text-lg">Submit Final Report</h3>
+              </div>
+
+              <div className="bg-[#27273f] rounded-3xl p-5 space-y-4 border border-[#3b3b5a]">
+                <p className="text-sm text-slate-300">You are about to submit the final report for the day. This will lock your DCRs for {dcrDate}.</p>
+                <div className="flex flex-col gap-2">
+                  <span className="text-xs font-bold text-slate-400 uppercase">Remarks for the Day</span>
+                  <textarea 
+                    value={dayRemarks}
+                    onChange={(e) => setDayRemarks(e.target.value)}
+                    placeholder="Enter overall remarks..."
+                    className="w-full bg-[#1c1c2e] text-white rounded-xl p-4 border border-[#3b3b5a] focus:border-sky-500 outline-none h-32 resize-none"
+                  />
+                </div>
+              </div>
+
+              {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-sm font-semibold">{error}</div>}
+
+              <button 
+                onClick={submitFinalDay} 
+                disabled={loading} 
+                className="w-full h-14 bg-sky-500 hover:bg-sky-400 text-white font-bold rounded-2xl shadow-lg shadow-sky-900/20 active:scale-95 transition-all disabled:opacity-50 mt-8"
+              >
+                {loading ? 'Submitting...' : 'Submit Day Final Report'}
+              </button>
+            </div>
+          )}
+
           {step === 'form' && (
             <div className="space-y-6 pb-6">
               

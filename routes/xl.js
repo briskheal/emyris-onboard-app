@@ -767,6 +767,25 @@ router.post('/attendance/punch-out', async (req, res) => {
     }
 });
 
+
+// Submit Day Final Report
+router.post('/attendance/submit-day', async (req, res) => {
+    try {
+        const { employeeId, date, dayRemarks } = req.body;
+        const att = await XlAttendance.findOne({ where: { employeeId, date } });
+        if (!att) return res.status(400).json({ error: 'No punch-in record found for today.' });
+        if (att.daySubmitted) return res.status(400).json({ error: 'Day already submitted.' });
+
+        await XlAttendance.update(
+            { dayRemarks, daySubmitted: true }, 
+            { where: { _id: att._id } }
+        );
+        res.json({ success: true, message: 'Day submitted successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to submit day' });
+    }
+});
+
 // Get Attendance for date
 router.get('/attendance/my', async (req, res) => {
     try {
