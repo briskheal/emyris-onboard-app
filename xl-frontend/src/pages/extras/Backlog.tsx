@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, Calendar as CalendarIcon, Lock, X } from 'lucide-react';
 import axios from 'axios';
@@ -242,8 +243,8 @@ export default function Backlog() {
       )}
 
       {/* Calendar Modal */}
-      {showCalendar && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      {showCalendar && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-[#1c1c2e] border border-[#3b3b5a] rounded-3xl w-full max-w-md mx-auto p-5 shadow-2xl shadow-black animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-5">
               <div>
@@ -273,7 +274,8 @@ export default function Backlog() {
               {submitting ? 'Submitting...' : `Submit ${selectedDates.size} Request${selectedDates.size > 1 ? 's' : ''}`}
             </button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
