@@ -88,32 +88,30 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, "Performance");
         
-        const wopts = { bookType: 'xlsx', bookSST: false, type: 'array' as any };
-        const wbout = XLSX.write(wb, wopts);
-        const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
         const fileName = `${KPI_TITLES[kpiId] || 'Report'} - ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}.xlsx`;
         
-        if (navigator.canShare) {
+        try {
+            const wopts = { bookType: 'xlsx', bookSST: false, type: 'array' };
+            const wbout = XLSX.write(wb, wopts);
+            const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
             const file = new File([blob], fileName, { type: blob.type });
-            if (navigator.canShare({ files: [file] })) {
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
                 await navigator.share({
                     files: [file],
                     title: fileName,
                 });
                 return;
             }
+        } catch (shareErr) {
+            console.warn("Native share failed, falling back to download", shareErr);
         }
         
-        // Fallback to direct download
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
+        // Fallback to direct download using xlsx built-in
+        XLSX.writeFile(wb, fileName);
     } catch (error) {
         console.error("Error sharing file:", error);
-        alert("Failed to share or download the file.");
+        alert("Error: " + (error.message || error));
     }
   };
 
@@ -274,6 +272,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
     </div>
   );
 }
+
 
 
 
