@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   X, UserRound, Search, Navigation, 
-  ChevronDown, Plus, CheckCircle2, Star, Image as ImageIcon
+  ChevronDown, ChevronLeft, Plus, CheckCircle2, Star, Image as ImageIcon
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -30,6 +30,7 @@ export default function DailyCallReport() {
   // Validation / Loading
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   
   // Data Lists
   const [entities, setEntities] = useState<any[]>([]);
@@ -277,6 +278,7 @@ export default function DailyCallReport() {
           {/* STEP: MENU */}
           {step === 'menu' && (
             <div>
+              {success && <div className="p-4 mb-4 mx-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-sm font-semibold">{success}</div>}
               {/* Mobile-like Welcome Header */}
               <div className="flex items-center gap-3 mb-6">
                 {user?.profilePicture ? (
