@@ -347,22 +347,30 @@ export default function DailyCallReport() {
               </div>
 
               {/* Final Call Report List Summary */}
-              <div 
-                onClick={() => !daySubmitted && setStep('final')} 
-                className={`mt-8 bg-[#27273f] border border-[#3b3b5a] rounded-3xl overflow-hidden shadow-lg flex ${!daySubmitted ? 'cursor-pointer active:scale-95 transition-transform hover:border-sky-500/50' : 'opacity-75'}`}
-              >
-                <div className="flex-1 p-5">
-                  <h3 className="font-bold text-slate-200 text-sm mb-2">Final Call Report List</h3>
-                  <div className="flex gap-3 text-xs font-bold">
-                    <span className="text-orange-400">Doctor: {todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
-                    <span className="text-sky-400">Chemist: {todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
-                    <span className="text-emerald-400">Stockist: {todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
+              {daySubmitted ? (
+                <div className="mt-8 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-5 flex flex-col items-center justify-center shadow-lg">
+                  <CheckCircle2 size={32} className="text-emerald-400 mb-2" />
+                  <h3 className="font-bold text-emerald-400 text-base mb-1">Day's Report Submitted</h3>
+                  <p className="text-xs text-emerald-400/80 font-medium text-center">Your final report for {dcrDate} is securely locked.</p>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => setStep('final')} 
+                  className="mt-8 bg-[#27273f] border border-[#3b3b5a] rounded-3xl overflow-hidden shadow-lg flex cursor-pointer active:scale-95 transition-transform hover:border-sky-500/50"
+                >
+                  <div className="flex-1 p-5">
+                    <h3 className="font-bold text-slate-200 text-sm mb-2">Final Call Report List</h3>
+                    <div className="flex gap-3 text-xs font-bold">
+                      <span className="text-orange-400">Doctor: {todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
+                      <span className="text-sky-400">Chemist: {todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
+                      <span className="text-emerald-400">Stockist: {todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
+                    </div>
+                  </div>
+                  <div className="bg-[#93c54b] w-20 flex items-center justify-center border-l border-[#3b3b5a]">
+                    <span className="text-white text-3xl font-black">{todaysDcrs.length}</span>
                   </div>
                 </div>
-                <div className="bg-[#93c54b] w-20 flex items-center justify-center border-l border-[#3b3b5a]">
-                  <span className="text-white text-3xl font-black">{todaysDcrs.length}</span>
-                </div>
-              </div>
+              )}
             </div>
           )}
 
