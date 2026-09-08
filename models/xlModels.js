@@ -99,6 +99,13 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        
+        lat1: { type: DataTypes.DOUBLE },
+        lng1: { type: DataTypes.DOUBLE },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.DOUBLE },
+        lng2: { type: DataTypes.DOUBLE },
+        geoAddress2: { type: DataTypes.STRING },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -118,6 +125,13 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         userAllotted: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        
+        lat1: { type: DataTypes.DOUBLE },
+        lng1: { type: DataTypes.DOUBLE },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.DOUBLE },
+        lng2: { type: DataTypes.DOUBLE },
+        geoAddress2: { type: DataTypes.STRING },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
@@ -140,6 +154,13 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         userAllotted: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        
+        lat1: { type: DataTypes.DOUBLE },
+        lng1: { type: DataTypes.DOUBLE },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.DOUBLE },
+        lng2: { type: DataTypes.DOUBLE },
+        geoAddress2: { type: DataTypes.STRING },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
