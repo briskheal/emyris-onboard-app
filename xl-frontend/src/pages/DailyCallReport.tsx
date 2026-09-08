@@ -351,7 +351,7 @@ export default function DailyCallReport() {
                 <div className="mt-8 bg-emerald-500/10 border border-emerald-500/30 rounded-3xl p-5 flex flex-col items-center justify-center shadow-lg">
                   <CheckCircle2 size={32} className="text-emerald-400 mb-2" />
                   <h3 className="font-bold text-emerald-400 text-base mb-1">Day's Report Submitted</h3>
-                  <p className="text-xs text-emerald-400/80 font-medium text-center">Your final report for {dcrDate} is securely locked.</p>
+                  <p className="text-xs text-emerald-400/80 font-medium text-center">Your final report for {dcrDate.split('-').reverse().join('-')} is securely locked.</p>
                 </div>
               ) : (
                 <div 
