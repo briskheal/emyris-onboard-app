@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   X, UserRound, Search, Navigation, 
   ChevronDown, Plus, CheckCircle2, Star, Image as ImageIcon
@@ -12,7 +12,10 @@ interface Product { _id: string; name: string; }
 interface Gift { _id: string; name: string; }
 interface CoWorker { employeeId: string; firstName: string; lastName: string; }
 
-export default function DCRModal({ onClose, overrideDate }: { onClose: () => void; overrideDate?: string }) {
+export default function DailyCallReport() {
+  const locationState = useLocation().state as { overrideDate?: string } | null;
+  const overrideDate = locationState?.overrideDate;
+  
   const navigate = useNavigate();
   const storedUser = localStorage.getItem('xl_user');
   const user = storedUser ? JSON.parse(storedUser) : null;
@@ -225,19 +228,14 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
   };
 
   return (
-    <div className="absolute top-14 bottom-16 inset-x-0 z-[100] flex justify-center bg-slate-800 sm:p-4">
-      <div className="w-full sm:max-w-md bg-[#1c1c2e] sm:rounded-3xl shadow-2xl flex flex-col h-full overflow-hidden sm:border border-[#3b3b5a]">
-        
-        {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#3b3b5a] shrink-0 bg-[#27273f]">
-          <div>
-            <h2 className="text-lg font-black text-white">{entityType ? `${entityType} DCR` : 'Daily Call Report'}</h2>
-            <p className="text-[10px] font-bold text-sky-400 tracking-widest uppercase mt-0.5">{dcrDate.split('-').reverse().join('/')}</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-[#1c1c2e] flex items-center justify-center text-slate-400 hover:text-white transition-colors">
-            <X size={18} />
-          </button>
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-4 text-white">
+      {/* Header */}
+      <div className="px-4 py-4 mt-2 flex items-center justify-between mb-2">
+        <div>
+          <h2 className="text-xl font-bold text-sky-400">{entityType ? `${entityType} DCR` : 'Daily Call Report'}</h2>
+          <p className="text-[10px] font-bold text-sky-400 tracking-widest uppercase mt-0.5">{dcrDate.split('-').reverse().join('/')}</p>
         </div>
+      </div>
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-5 scrollbar-hide pb-24">
@@ -505,6 +503,5 @@ export default function DCRModal({ onClose, overrideDate }: { onClose: () => voi
 
         </div>
       </div>
-    </div>
   );
 }

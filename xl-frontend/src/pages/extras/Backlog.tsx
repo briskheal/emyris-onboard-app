@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, Calendar } from 'lucide-react';
 import axios from 'axios';
-import DCRModal from '../../components/DCRModal';
 
 const getUserId = () => {
   const u = localStorage.getItem('xl_user');
@@ -20,8 +19,7 @@ export default function Backlog() {
   const [error, setError] = useState('');
 
   // DCR Modal State
-  const [activeDcrDate, setActiveDcrDate] = useState<string | null>(null);
-
+  
   useEffect(() => {
     fetchRequests();
   }, []);
@@ -138,7 +136,7 @@ export default function Backlog() {
                   
                   {req.status === 'Approved' && (
                     <button 
-                      onClick={() => setActiveDcrDate(req.date)}
+                      onClick={() => navigate('/report', { state: { overrideDate: req.date } })}
                       className="mt-4 w-full py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-semibold text-sm active:bg-emerald-500/20 transition-colors"
                     >
                       Fill Call Report for {req.date}
@@ -150,13 +148,6 @@ export default function Backlog() {
           </div>
         )}
       </div>
-
-      {activeDcrDate && (
-        <DCRModal 
-          onClose={() => setActiveDcrDate(null)} 
-          overrideDate={activeDcrDate} // Pass override date to DCR
-        />
-      )}
     </div>
   );
 }

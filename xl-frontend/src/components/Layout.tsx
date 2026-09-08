@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {  LayoutDashboard, PlusCircle, FileText, Layers, Wrench, Menu, Bell, AlertTriangle , ChevronLeft } from 'lucide-react';
 import axios from 'axios';
-import DCRModal from './DCRModal';
 import NavigationDrawer from './NavigationDrawer';
 
 const navItems = [
@@ -15,8 +14,7 @@ const navItems = [
 export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [showDCR, setShowDCR] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
 
@@ -158,10 +156,7 @@ export default function Layout() {
         </div>
       )}
 
-      {/* DCR Modal (full-screen overlay) */}
-      {showDCR && <DCRModal onClose={() => setShowDCR(false)} />}
-
-      {/* Main content area */}
+            {/* Main content area */}
       <main className="flex-1 overflow-y-auto pb-24">
         <Outlet />
       </main>
@@ -194,12 +189,12 @@ export default function Layout() {
           {/* Centre FAB */}
           <div className="flex-1 flex items-center justify-center relative">
             <button
-              onClick={() => setShowDCR(true)}
-              className="absolute -top-4 w-12 h-12 rounded-full bg-sky-500 shadow-lg shadow-sky-500/30 flex flex-col items-center justify-center active:bg-sky-600 transition-all"
+              onClick={() => navigate('/report')}
+              className={`absolute -top-4 w-12 h-12 rounded-full shadow-lg flex flex-col items-center justify-center active:scale-95 transition-all ${isActive('/report') ? 'bg-sky-600 shadow-sky-600/40' : 'bg-sky-500 shadow-sky-500/30'}`}
             >
               <PlusCircle size={22} strokeWidth={2} className="text-white" />
             </button>
-            <span className="mt-7 text-[10px] font-medium text-slate-500">Report</span>
+            <span className={`mt-7 text-[10px] font-medium ${isActive('/report') ? 'text-sky-400' : 'text-slate-500'}`}>Report</span>
           </div>
 
           {/* Right two items */}

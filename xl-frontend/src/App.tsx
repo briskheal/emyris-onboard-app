@@ -24,6 +24,7 @@ import PerformanceMenu from './pages/extras/performance/PerformanceMenu';
 import TargetAnalysisReport from './pages/extras/performance/TargetAnalysisReport';
 import EffortAnalysisReport from './pages/extras/performance/EffortAnalysisReport';
 import Utilities from './pages/Utilities';
+import DailyCallReport from './pages/DailyCallReport';
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
           <Route path="extras/performance" element={<PerformanceMenu />} />
           <Route path="extras/performance/targets/:kpiId" element={<TargetAnalysisReport />} />
           <Route path="extras/performance/effort" element={<EffortAnalysisReport />} />
+          <Route path="report" element={<DailyCallReport />} />
           <Route path="utilities" element={<Utilities />} />
         </Route>
       </Routes>
