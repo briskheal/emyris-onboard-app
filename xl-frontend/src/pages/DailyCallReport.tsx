@@ -376,6 +376,25 @@ export default function DailyCallReport() {
 
               <div className="bg-[#27273f] rounded-3xl p-5 space-y-4 border border-[#3b3b5a]">
                 <p className="text-sm text-slate-300">You are about to submit the final report for the day. This will lock your DCRs for {dcrDate}.</p>
+                
+                <div className="grid grid-cols-2 gap-3 py-2">
+                  <div className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center">
+                    <span className="text-orange-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
+                    <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Doctors</span>
+                  </div>
+                  <div className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center">
+                    <span className="text-sky-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
+                    <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Chemists</span>
+                  </div>
+                  <div className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center">
+                    <span className="text-emerald-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
+                    <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Stockists</span>
+                  </div>
+                  <div className="bg-sky-500/10 rounded-xl p-3 border border-sky-500/30 flex flex-col justify-center items-center">
+                    <span className="text-sky-400 font-black text-2xl">{todaysDcrs.length}</span>
+                    <span className="text-sky-400/80 font-bold text-[10px] uppercase tracking-wider">Total Calls</span>
+                  </div>
+                </div>
                 <div className="flex flex-col gap-2">
                   <span className="text-xs font-bold text-slate-400 uppercase">Remarks for the Day</span>
                   <textarea 

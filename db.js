@@ -101,12 +101,54 @@ async function syncDatabase() {
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricTestCompleted" BOOLEAN DEFAULT false;',
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricScores" TEXT;',
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "mindsetReport" TEXT;',
-            'ALTER TABLE xl_geo_fencings ADD COLUMN IF NOT EXISTS "geoAddress" VARCHAR(255);'
+            'ALTER TABLE xl_geo_fencings ADD COLUMN IF NOT EXISTS "geoAddress" VARCHAR(255);',
+            'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lat1" DOUBLE PRECISION;',
+            'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lng1" DOUBLE PRECISION;',
+            'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "geoAddress1" VARCHAR(255);',
+            'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lat2" DOUBLE PRECISION;',
+            'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lng2" DOUBLE PRECISION;',
+            'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "geoAddress2" VARCHAR(255);',
+            'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lat1" DOUBLE PRECISION;',
+            'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lng1" DOUBLE PRECISION;',
+            'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "geoAddress1" VARCHAR(255);',
+            'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lat2" DOUBLE PRECISION;',
+            'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lng2" DOUBLE PRECISION;',
+            'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "geoAddress2" VARCHAR(255);',
+            'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "lat1" DOUBLE PRECISION;',
+            'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "lng1" DOUBLE PRECISION;',
+            'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "geoAddress1" VARCHAR(255);',
+            'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "lat2" DOUBLE PRECISION;',
+            'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "lng2" DOUBLE PRECISION;',
+            'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "geoAddress2" VARCHAR(255);',
+            'ALTER TABLE xl_attendances ADD COLUMN IF NOT EXISTS "dayRemarks" TEXT;',
+            'ALTER TABLE xl_attendances ADD COLUMN IF NOT EXISTS "daySubmitted" BOOLEAN DEFAULT false;'
+
         ] : [
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricTestCompleted BOOLEAN DEFAULT 0;',
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricScores TEXT;',
             'ALTER TABLE onboard_applicants ADD COLUMN mindsetReport TEXT;',
-            'ALTER TABLE xl_geo_fencings ADD COLUMN geoAddress VARCHAR(255);'
+            'ALTER TABLE xl_geo_fencings ADD COLUMN geoAddress VARCHAR(255);',
+            'ALTER TABLE xl_doctors ADD COLUMN lat1 DOUBLE;',
+            'ALTER TABLE xl_doctors ADD COLUMN lng1 DOUBLE;',
+            'ALTER TABLE xl_doctors ADD COLUMN geoAddress1 VARCHAR(255);',
+            'ALTER TABLE xl_doctors ADD COLUMN lat2 DOUBLE;',
+            'ALTER TABLE xl_doctors ADD COLUMN lng2 DOUBLE;',
+            'ALTER TABLE xl_doctors ADD COLUMN geoAddress2 VARCHAR(255);',
+            'ALTER TABLE xl_chemists ADD COLUMN lat1 DOUBLE;',
+            'ALTER TABLE xl_chemists ADD COLUMN lng1 DOUBLE;',
+            'ALTER TABLE xl_chemists ADD COLUMN geoAddress1 VARCHAR(255);',
+            'ALTER TABLE xl_chemists ADD COLUMN lat2 DOUBLE;',
+            'ALTER TABLE xl_chemists ADD COLUMN lng2 DOUBLE;',
+            'ALTER TABLE xl_chemists ADD COLUMN geoAddress2 VARCHAR(255);',
+            'ALTER TABLE xl_stockists ADD COLUMN lat1 DOUBLE;',
+            'ALTER TABLE xl_stockists ADD COLUMN lng1 DOUBLE;',
+            'ALTER TABLE xl_stockists ADD COLUMN geoAddress1 VARCHAR(255);',
+            'ALTER TABLE xl_stockists ADD COLUMN lat2 DOUBLE;',
+            'ALTER TABLE xl_stockists ADD COLUMN lng2 DOUBLE;',
+            'ALTER TABLE xl_stockists ADD COLUMN geoAddress2 VARCHAR(255);',
+            'ALTER TABLE xl_attendances ADD COLUMN dayRemarks TEXT;',
+            'ALTER TABLE xl_attendances ADD COLUMN daySubmitted BOOLEAN DEFAULT 0;'
+
         ];
         for (const q of queries) {
             try { await sequelize.query(q); } catch (e) {}
