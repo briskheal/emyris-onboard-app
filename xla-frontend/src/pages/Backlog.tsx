@@ -36,11 +36,11 @@ export default function Backlog() {
   };
 
   const handleAction = async (id: string, action: 'Approve' | 'Reject') => {
-    const remarks = window.prompt(\`Enter remarks for \${action} (Optional):\`);
+    const remarks = window.prompt(`Enter remarks for ${action} (Optional):`);
     if (remarks === null) return; // cancelled
 
     try {
-      await axios.post(\`/api/admin/xl-backlog/\${id}/action\`, { action, remarks });
+      await axios.post(`/api/admin/xl-backlog/${id}/action`, { action, remarks });
       fetchRequests(); // Refresh list
     } catch (e) {
       alert('Action failed.');
@@ -73,7 +73,7 @@ export default function Backlog() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={\`flex-1 min-w-[80px] py-2 text-xs font-bold rounded-md transition-colors \${filter === f ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-700'}\`}
+              className={`flex-1 min-w-[80px] py-2 text-xs font-bold rounded-md transition-colors ${filter === f ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-700'}`}
             >
               {f}
             </button>
@@ -103,11 +103,11 @@ export default function Backlog() {
                     <h3 className="font-bold text-white text-base">{req.employeeName}</h3>
                     <p className="text-xs font-medium text-slate-400">{req.employeeId}</p>
                   </div>
-                  <div className={\`px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase \${
+                  <div className={`px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase ${
                     req.status === 'Pending' ? 'bg-amber-500/20 text-amber-400' :
                     req.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' :
                     'bg-rose-500/20 text-rose-400'
-                  }\`}>
+                  }`}>
                     {req.status}
                   </div>
                 </div>
