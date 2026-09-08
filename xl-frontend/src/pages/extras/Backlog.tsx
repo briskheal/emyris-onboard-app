@@ -151,7 +151,7 @@ export default function Backlog() {
         </div>
       </div>
 
-      <div className="flex-1 p-4 pb-24">
+      <div className="flex-1 p-4 pb-36">
         {/* Month/Year Selectors */}
         <div className="flex gap-3 mb-6">
           <div className="flex-1 bg-[#1c1c2e] rounded-xl border border-[#3b3b5a] px-3 py-1.5 flex flex-col">
@@ -230,7 +230,7 @@ export default function Backlog() {
 
       {/* Floating Action Button for Unlock */}
       {hasLocked && (
-        <div className="fixed bottom-6 left-0 right-0 px-6 flex justify-center z-20">
+        <div className="fixed bottom-24 left-0 right-0 px-6 flex justify-center z-50">
           <button 
             onClick={openCalendar}
             className="bg-sky-500 hover:bg-sky-400 text-white font-black text-sm px-8 py-4 rounded-full shadow-lg shadow-sky-900/50 flex items-center gap-2 active:scale-95 transition-all"
