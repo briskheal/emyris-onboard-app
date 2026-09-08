@@ -217,7 +217,7 @@ export default function DailyCallReport() {
       });
       setDaySubmitted(true);
       setIsLockedDay(true);
-      setStep('select');
+      setStep('menu');
       setSuccess('Day submitted successfully!');
       setTimeout(() => setSuccess(''), 3000);
     } catch (err: any) {
@@ -370,7 +370,7 @@ export default function DailyCallReport() {
           {step === 'final' && (
             <div className="space-y-6 pb-6">
               <div className="flex items-center gap-3 text-sky-400 mb-6">
-                <button onClick={() => setStep('select')} className="w-10 h-10 rounded-full bg-[#27273f] flex items-center justify-center hover:bg-[#3b3b5a] transition-colors"><ChevronLeft size={20} /></button>
+                <button onClick={() => setStep('menu')} className="w-10 h-10 rounded-full bg-[#27273f] flex items-center justify-center hover:bg-[#3b3b5a] transition-colors"><ChevronLeft size={20} /></button>
                 <h3 className="font-bold text-lg">Submit Final Report</h3>
               </div>
 
