@@ -243,8 +243,8 @@ export default function Backlog() {
 
       {/* Calendar Modal */}
       {showCalendar && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#1c1c2e] border border-[#3b3b5a] rounded-3xl w-full max-w-md mx-auto p-5 animate-in slide-in-from-bottom-8">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-[#1c1c2e] border border-[#3b3b5a] rounded-3xl w-full max-w-md mx-auto p-5 shadow-2xl shadow-black animate-in zoom-in-95 duration-200">
             <div className="flex justify-between items-center mb-5">
               <div>
                 <h3 className="text-white font-bold text-lg">Select Days to Unlock</h3>
