@@ -174,30 +174,31 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
                 <span className="text-[10px] font-bold text-slate-200">100%</span>
               </div>
 
-              {/* Metrics Grid */}
-              <div className="mt-8 flex justify-between px-2 pb-4 border-b border-slate-600/50">
+              {/* Combined Metrics Grid */}
+              <div className="grid grid-cols-3 gap-2 mt-4 pt-4 border-t border-slate-600/50 px-2">
+                {/* Monthly */}
                 <div>
-                  <p className="text-xs text-slate-200 font-medium">Monthly Target</p>
-                  <p className="text-sm font-bold text-white mt-1">{t.monthlyTarget}</p>
+                  <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mb-1">Monthly</p>
+                  <p className="text-sm font-bold text-white">{t.monthlyTarget}</p>
                 </div>
+                
+                {/* Planned */}
+                <div className="text-center">
+                  <p className="text-[10px] text-slate-400 font-medium uppercase tracking-wider mb-1">Planned</p>
+                  <p className="text-sm font-bold text-sky-400">{weekData.planned}</p>
+                </div>
+                
+                {/* Achieved Input */}
                 <div className="text-right">
-                  <p className="text-xs text-slate-200 font-medium">Planned Target</p>
-                  <p className="text-sm font-bold text-white mt-1">{weekData.planned}</p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex justify-between items-center px-2">
-                <div>
-                  <p className="text-sm text-slate-300 font-bold">Achieved Target</p>
-                </div>
-                <div className="text-right flex items-center gap-2">
-                  <input 
-                    type="number" 
-                    value={weekData.achieved}
-                    onChange={(e) => updateTarget(t.entityId, Number(e.target.value))}
-                    className="w-20 text-right font-black text-white text-lg border-b border-slate-500 focus:border-sky-500 focus:outline-none bg-transparent pb-1"
-                  />
-                  <Pencil size={14} className="text-slate-200" />
+                  <p className="text-[10px] text-emerald-400 font-medium uppercase tracking-wider mb-1">Achieved</p>
+                  <div className="flex items-center justify-end">
+                    <input 
+                      type="number" 
+                      value={weekData.achieved || ''}
+                      onChange={(e) => updateTarget(t.entityId, Number(e.target.value))}
+                      className="w-16 text-right font-black text-white bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm focus:border-sky-500 focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -212,14 +213,14 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
       </div>
 
       {/* Save Button */}
-      <div className="fixed bottom-20 right-4 z-40">
+      <div className="fixed bottom-20 left-4 z-40">
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-sky-500 hover:bg-sky-400 text-white font-bold h-14 px-8 rounded-2xl shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+          className="bg-sky-500 hover:bg-sky-400 text-white font-bold h-10 px-5 rounded-xl shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm"
         >
+          <Save size={16} />
           {isSaving ? 'Saving...' : 'Save'}
-          <Save size={20} />
         </button>
       </div>
     </div>
