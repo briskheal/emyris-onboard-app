@@ -843,7 +843,6 @@ router.post('/backlog', async (req, res) => {
     try {
         const { employeeId, dates, reason } = req.body;
         
-        // Backward compatibility for old UI
         let datesArray = dates;
         if (!dates && req.body.date) datesArray = [req.body.date];
         
@@ -872,6 +871,738 @@ router.get('/backlog/my', async (req, res) => {
     }
 });
 
+// ─── PHASE 3: CALL PLAN ────────────────────────────────────────────────────
+
+
+
+
+
+// ─── PHASE 4: PERFORMANCE ANALYSIS ──────────────────────────────────────────
+
+// Lockout Status Check
+router.get('/performance/status', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).json({ error: 'Missing email' });
+
+        const today = new Date();
+        const dateNum = today.getDate();
+        
+        // If it's <= 3rd of the month, no lockout
+        if (dateNum <= 3) {
+            return res.json({ locked: false });
+        }
+
+        const monthStr = today.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+        const yearStr = String(today.getFullYear());
+
+        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: email, month: monthStr, year: yearStr } });
+        
+        // If they have submitted their plan, no lockout
+        if (perf && perf.planningSubmittedAt) {
+            return res.json({ locked: false });
+        }
+
+        // Mid-month joiner check: if they have NO DCRs from ANY previous month, they are new, don't lock them
+        // For simplicity, we just check if they have any DCR submitted prior to the 1st of this month
+        const firstOfThisMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
+        const pastDcrs = await XlDCR.count({
+            where: {
+                employeeId: email,
+                date: { [Op.lt]: firstOfThisMonth }
+            }
+        });
+
+        if (pastDcrs === 0) {
+            return res.json({ locked: false }); // Mid-month joiner / fresh account
+        }
+
+        return res.json({ locked: true, message: `Planning for ${monthStr.charAt(0).toUpperCase() + monthStr.slice(1)} must be submitted to access the dashboard.` });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to check performance status' });
+    }
+});
+
+// Get/Create user's performance record for a month
+router.get('/performance/my', async (req, res) => {
+    try {
+        const { email, month, year } = req.query;
+        let perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: email, month, year } });
+        
+        if (!perf) {
+            perf = await XlPerformanceAnalysis.create({
+                _id: generateId(),
+                employeeId: email,
+                month,
+                year
+            });
+        }
+        res.json({ success: true, data: perf });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch performance record' });
+    }
+});
+
+// Submit the monthly plan (locks in the planned targets)
+router.post('/performance/plan', async (req, res) => {
+    try {
+        const { id, brandData, roiData, accountData, keyCustomerData, outstandingData } = req.body;
+        
+        await XlPerformanceAnalysis.update({
+            brandData: brandData !== undefined ? brandData : undefined,
+            roiData: roiData !== undefined ? roiData : undefined,
+            accountData: accountData !== undefined ? accountData : undefined,
+            keyCustomerData: keyCustomerData !== undefined ? keyCustomerData : undefined,
+            outstandingData: outstandingData !== undefined ? outstandingData : undefined
+        }, { where: { _id: id } });
+
+        res.json({ success: true, message: 'Plan saved successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to save planning' });
+    }
+});
+
+// Final submission locks the month
+router.post('/performance/submit-final', async (req, res) => {
+    try {
+        const { id } = req.body;
+        
+        await XlPerformanceAnalysis.update({
+            planningSubmittedAt: new Date()
+        }, { where: { _id: id } });
+
+        res.json({ success: true, message: 'Monthly Planning locked successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to lock planning' });
+    }
+});
+
+// Request an unlock (User)
+router.post('/performance/request-unlock', async (req, res) => {
+    try {
+        const { id } = req.body;
+        await XlPerformanceAnalysis.update({ unlockRequested: true }, { where: { _id: id } });
+        res.json({ success: true, message: 'Unlock requested successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to request unlock' });
+    }
+});
+
+// Release / unlock the plan (Admin)
+router.post('/performance/release', async (req, res) => {
+    try {
+        const { id } = req.body;
+        await XlPerformanceAnalysis.update({ 
+            planningSubmittedAt: null,
+            unlockRequested: false
+        }, { where: { _id: id } });
+        res.json({ success: true, message: 'Plan unlocked successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to unlock plan' });
+    }
+});
+
+// Update achieved targets for a specific week (or updating targets)
+router.put('/performance/achieve', async (req, res) => {
+    try {
+        const { id, brandData, roiData, accountData, keyCustomerData, outstandingData } = req.body;
+        
+        await XlPerformanceAnalysis.update({
+            brandData: JSON.stringify(brandData),
+            roiData: JSON.stringify(roiData),
+            accountData: JSON.stringify(accountData),
+            keyCustomerData: JSON.stringify(keyCustomerData),
+            outstandingData: JSON.stringify(outstandingData)
+        }, { where: { _id: id } });
+
+        res.json({ success: true, message: 'Achievements saved successfully!' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to update achievements' });
+    }
+});
+
+// Auto-calculate Effort Analysis based on DCRs for a date range
+router.post('/performance/effort-analysis', async (req, res) => {
+    try {
+        const { email, startDate, endDate } = req.body;
+        
+        const myDcrs = await XlDCR.findAll({
+            where: {
+                employeeId: email,
+                date: { [Op.between]: [startDate, endDate] }
+            }
+        });
+
+        const myDoctors = await XlDoctor.findAll({ where: { allottedUser: email } });
+        const myChemists = await XlChemist.findAll({ where: { allottedUser: email } });
+        const myStockists = await XlStockist.findAll({ where: { allottedUser: email } });
+
+        // Calculate metrics
+        const totalDoctors = myDoctors.length;
+        const totalChemists = myChemists.length;
+        const totalStockists = myStockists.length;
+
+        let totalDrCalls = 0;
+        let totalChemCalls = 0;
+        let totalStockCalls = 0;
+        
+        const uniqueDrsVisited = new Set();
+        const workDays = new Set();
+
+        myDcrs.forEach(dcr => {
+            workDays.add(dcr.date);
+            if (dcr.entityType === 'Doctor') {
+                totalDrCalls++;
+                uniqueDrsVisited.add(dcr.entityId);
+            } else if (dcr.entityType === 'Chemist') {
+                totalChemCalls++;
+            } else if (dcr.entityType === 'Stockist') {
+                totalStockCalls++;
+            }
+        });
+
+        const totalUniqueDoctorsVisited = uniqueDrsVisited.size;
+        const totalMissedDoctors = totalDoctors - totalUniqueDoctorsVisited;
+        
+        const numWorkDays = workDays.size || 1; // avoid div by 0
+        const doctorCallAverage = (totalDrCalls / numWorkDays).toFixed(1);
+        const chemistCallAverage = (totalChemCalls / numWorkDays).toFixed(1);
+        
+        const coveragePercentage = totalDoctors > 0 ? Math.round((totalUniqueDoctorsVisited / totalDoctors) * 100) : 0;
+
+        // Dummy compliance percentage for now (needs more complex parsing of categories)
+        const compliancePercentage = coveragePercentage; 
+
+        const numNonCore = myDoctors.filter(d => d.category === 'C' || d.category === 'D').length;
+        const numCore = myDoctors.filter(d => d.category === 'B' || d.category === 'A').length;
+        const numSuperCore = myDoctors.filter(d => d.category === 'A+').length;
+
+        res.json({
+            success: true,
+            data: {
+                totalDoctors,
+                totalDrCalls,
+                totalUniqueDoctorsVisited,
+                totalMissedDoctors,
+                numNonCore,
+                numCore,
+                numSuperCore,
+                doctorCallAverage,
+                coveragePercentage,
+                compliancePercentage,
+                totalChemists,
+                totalChemCalls,
+                chemistCallAverage,
+                totalStockists,
+                totalStockCalls
+            }
+        });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to calculate effort analysis' });
+    }
+});
+
+// Approvals API
+
+// Get counts of pending approvals for all modules
+router.get('/approvals/counts', async (req, res) => {
+    try {
+        const { designation } = req.query;
+        let reporteeEmails = null;
+        if (designation !== 'ADMIN') {
+            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+            reporteeEmails = reportees.map(u => u.employeeId);
+            if (reporteeEmails.length === 0) return res.json({ success: true, counts: {} });
+        }
+
+        const condition = designation === 'ADMIN' ? { status: 'Submitted' } : { status: 'Submitted', employeeId: { [Op.in]: reporteeEmails } };
+        
+        const counts = {};
+        
+        // Modules that support approvals
+        counts['Call Report'] = await XlDCR.count({ where: condition });
+        counts['Tour Program'] = await XlTourProgram.count({ where: condition });
+        counts['Call Plans'] = await XlCallPlan.count({ where: condition });
+        counts['Doctors'] = await XlDoctor.count({ where: condition });
+        counts['Chemists'] = await XlChemist.count({ where: condition });
+        counts['Stockists'] = await XlStockist.count({ where: condition });
+        counts['Expense'] = await XlExpense.count({ where: condition });
+        counts['Leave Request'] = await XlLeave.count({ where: condition });
+
+        counts['Performance KPI'] = await XlPerformanceAnalysis.count({
+            where: designation === 'ADMIN' 
+                ? { planningSubmittedAt: { [Op.ne]: null } } 
+                : { planningSubmittedAt: { [Op.ne]: null }, employeeId: { [Op.in]: reporteeEmails } }
+        });
+        
+        res.json({ success: true, counts });
+    } catch (e) {
+        console.error('Approvals count error:', e);
+        res.status(500).json({ error: 'Failed to fetch counts' });
+    }
+});
+
+router.get('/approvals/pending', async (req, res) => {
+    try {
+        const { type, designation } = req.query;
+        let reporteeEmails = null;
+        if (designation !== 'ADMIN') {
+            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
+            reporteeEmails = reportees.map(u => u.employeeId);
+            if (reporteeEmails.length === 0) return res.json({ success: true, data: [] });
+        }
+
+        if (type === 'Performance KPI') {
+            const perfs = await XlPerformanceAnalysis.findAll({
+                where: {
+                    ...(reporteeEmails ? { employeeId: reporteeEmails } : {}),
+                    planningSubmittedAt: { [Op.ne]: null }
+                },
+                raw: true
+            });
+            const allUsers = await XlUser.findAll({ raw: true });
+            const userMap = {};
+            allUsers.forEach(u => {
+                userMap[u.employeeId] = { name: (u.firstName + ' ' + (u.lastName || '')).trim(), hq: u.hq };
+            });
+
+            const formatted = perfs.map(p => ({
+                ...p,
+                status: 'Submitted',
+                employeeName: userMap[p.employeeId]?.name || p.employeeId,
+                hq: userMap[p.employeeId]?.hq || 'Unknown HQ'
+            }));
+            return res.json({ success: true, data: formatted });
+        }
+
+        let Model;
+        if (type === 'Call Report') Model = XlDCR;
+        else if (type === 'Tour Program') Model = XlTourProgram;
+        else if (type === 'Call Plans') Model = XlCallPlan;
+        else if (type === 'Doctors') Model = XlDoctor;
+        else if (type === 'Chemists') Model = XlChemist;
+        else if (type === 'Stockists') Model = XlStockist;
+        else if (type === 'Expense') Model = XlExpense;
+        else if (type === 'Leave Request') Model = XlLeave;
+        else if (type === 'City') Model = XlCity;
+        else if (type === 'Routes') Model = XlRoute;
+        else if (type === 'Samples') Model = XlSample;
+        else if (type === 'Gifts') Model = XlGift;
+        else if (type === 'Primary Sales') Model = XlPrimarySales;
+        else if (type === 'Secondary Sales') Model = XlSecondarySales;
+        else if (type === 'Geo Fencing') Model = XlGeoFencing;
+        else return res.status(400).json({ error: 'Invalid module type' });
+        const pending = await Model.findAll({ 
+            where: { 
+                ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), 
+                [Op.or]: [
+                    { status: ['Pending', 'Submitted', 'pending', 'submitted'] },
+                    { status: null }
+                ]
+            }, 
+            order: [['createdAt', 'DESC']] 
+        });
+        
+        const data = [];
+        for (const p of pending) {
+            const pData = p.toJSON();
+            if (pData.employeeId) {
+                const u = await XlUser.findOne({ where: { employeeId: pData.employeeId } });
+                if (u) {
+                    pData.employeeName = pData.employeeName || (u.firstName + ' ' + u.lastName) || u.name;
+                    pData.employeeEmail = pData.employeeEmail || u.email;
+                    pData.designation = u.designation || '-';
+                    pData.reportingManager = u.reportingManager || '-';
+                }
+            }
+
+            if (type === 'Geo Fencing') {
+                let ent = null;
+                if (pData.entityType === 'Doctor') ent = await XlDoctor.findOne({ where: { _id: pData.entityId }});
+                else if (pData.entityType === 'Chemist') ent = await XlChemist.findOne({ where: { _id: pData.entityId }});
+                else if (pData.entityType === 'Stockist') ent = await XlStockist.findOne({ where: { _id: pData.entityId }});
+                
+                pData.entityName = ent ? (ent.name || ent.businessName || ent.proprietorName || 'Unknown') : 'Unknown';
+                pData.location = pData.geoAddress || `${pData.latitude}, ${pData.longitude}`;
+            }
+
+            data.push(pData);
+        }
+
+        res.json({ success: true, data });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch pending approvals' });
+    }
+});
+
+router.post('/approvals/action', async (req, res) => {
+    try {
+        const { recordId, type, action, remarks } = req.body;
+        let Model;
+        if (type === 'Call Report') Model = XlDCR;
+        else if (type === 'Tour Program') Model = XlTourProgram;
+        else if (type === 'Call Plans') Model = XlCallPlan;
+        else if (type === 'Doctors') Model = XlDoctor;
+        else if (type === 'Chemists') Model = XlChemist;
+        else if (type === 'Stockists') Model = XlStockist;
+        else if (type === 'Expense') Model = XlExpense;
+        else if (type === 'Leave Request') Model = XlLeave;
+        else if (type === 'City') Model = XlCity;
+        else if (type === 'Routes') Model = XlRoute;
+        else if (type === 'Samples') Model = XlSample;
+        else if (type === 'Gifts') Model = XlGift;
+        else if (type === 'Primary Sales') Model = XlPrimarySales;
+        else if (type === 'Secondary Sales') Model = XlSecondarySales;
+        else if (type === 'Geo Fencing') Model = XlGeoFencing;
+        else if (type !== 'CallReportGroup' && type !== 'ExpenseGroup') return res.status(400).json({ error: 'Invalid module type' });
+        
+        if (type === 'CallReportGroup') {
+            const { employeeId, date } = req.body;
+            const records = await XlDCR.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted'] } });
+            
+            for (const rec of records) {
+                rec.status = action;
+                rec.adminRemarks = remarks || rec.adminRemarks || '';
+                await rec.save();
+            }
+            return res.json({ success: true, message: 'Successfully ' + action + ' call reports' });
+        }
+        
+        if (type === 'ExpenseGroup') {
+            const { employeeId, date, miscExpense } = req.body;
+            const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted'] } });
+            
+            for (const rec of records) {
+                if (action === 'Deleted' || action === 'Delete') {
+                    await rec.destroy();
+                } else {
+                    if (rec.category === 'Misc' && miscExpense !== undefined) {
+                        rec.amount = parseFloat(miscExpense) || 0;
+                    }
+                    rec.status = action;
+                    rec.remarks = remarks || rec.remarks || '';
+                    await rec.save();
+                }
+            }
+            
+            if (miscExpense !== undefined && !records.some(r => r.category === 'Misc')) {
+                await XlExpense.create({
+                    _id: generateId(),
+                    employeeId,
+                    date,
+                    amount: parseFloat(miscExpense) || 0,
+                    category: 'Misc',
+                    remarks: remarks || '',
+                    status: action
+                });
+            }
+            return res.json({ success: true, message: 'Successfully ' + action + ' expenses' });
+        }
+
+        const record = await Model.findByPk(recordId);
+        if (!record) return res.status(404).json({ error: 'Record not found' });
+
+        if (type === 'Tour Program' && req.body.dates && Array.isArray(req.body.dates)) {
+            let entries = [];
+            try { entries = JSON.parse(record.entries || '[]'); } catch(e){}
+            if (!Array.isArray(entries)) entries = Object.values(entries);
+            
+            entries = entries.map(e => {
+                if (req.body.dates.includes(e.date)) {
+                    return { ...e, status: action };
+                }
+                return e;
+            });
+            
+            record.entries = JSON.stringify(entries);
+            
+            // Optionally update root status if all days are handled
+            const allHandled = entries.every(e => e.status && e.status !== 'Pending' && e.status !== 'Submitted');
+            if (allHandled) {
+                const hasRejected = entries.some(e => e.status === 'Rejected');
+                record.status = hasRejected ? 'Rejected' : 'Approved';
+            }
+            
+            record.adminRemarks = remarks || record.adminRemarks || '';
+            await record.save();
+        } else {
+            record.status = action;
+            record.adminRemarks = remarks || '';
+            await record.save();
+        }
+
+        try {
+            await XlNotification.create({
+                employeeId: record.employeeId,
+                title: 'Request ' + action,
+                message: 'Your ' + type + ' request has been ' + action.toLowerCase() + '. ' + (remarks ? 'Remarks: ' + remarks : '')
+            });
+        } catch(ne) { console.error('Notification failed', ne); }
+        res.json({ success: true, message: 'Successfully ' + action + ' record' });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to process approval action' });
+    }
+});
+
+
+router.get('/notifications', async (req, res) => {
+    try {
+        const { email } = req.query;
+        const notifications = await XlNotification.findAll({ where: { employeeId: email }, order: [['createdAt', 'DESC']], limit: 50 });
+        res.json({ success: true, data: notifications });
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+router.post('/notifications/read', async (req, res) => {
+    try {
+        const { email } = req.body;
+        await XlNotification.update({ isRead: true }, { where: { employeeId: email, isRead: false } });
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+router.get('/vacancies', async (req, res) => {
+    try {
+        const { designation } = req.query;
+        if (!designation) return res.json({ success: true, data: [] });
+        
+        const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
+        if (subHQs.length === 0) return res.json({ success: true, data: [] });
+
+        const { XlVacancyLog } = require('../db');
+        if (!XlVacancyLog) return res.json({ success: true, data: [] });
+
+        // Only return currently vacant HQs in their hierarchy
+        const vacancies = await XlVacancyLog.findAll({
+            where: {
+                headquarter: { [Op.in]: subHQs },
+                vacantTo: null
+            },
+            order: [['vacantFrom', 'DESC']]
+        });
+
+        // Calculate current days vacant for display
+        const enriched = vacancies.map(v => {
+            const days = Math.max(0, Math.round((new Date() - new Date(v.vacantFrom)) / (1000 * 60 * 60 * 24)));
+            return { ...v.toJSON(), currentDaysVacant: days };
+        });
+
+        res.json({ success: true, data: enriched });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch vacancies' });
+    }
+});
+
+
+// Call Plan Routes
+router.get('/call-plan/month', async (req, res) => {
+    try {
+        const { email, month, year } = req.query; // employeeId is actually passed as email
+        if (!email || !month || !year) return res.status(400).json({ error: 'Missing parameters' });
+        
+        const { Op } = require('sequelize');
+        
+        
+        const startDate = `${year}-${month.padStart(2, '0')}-01`;
+        const endDate = `${year}-${month.padStart(2, '0')}-31`;
+        
+        const plans = await XlCallPlan.findAll({
+            where: {
+                employeeId: email,
+                date: { [Op.between]: [startDate, endDate] }
+            },
+            order: [['date', 'ASC']]
+        });
+        
+        res.json({ success: true, data: plans });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch call plans' });
+    }
+});
+
+router.post('/call-plan/bulk', async (req, res) => {
+    try {
+        const { employeeId, dates, doctors, chemists, stockists } = req.body;
+        if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
+        // --- STRICT TP DATE CHECK ---
+        for (const date of dates) {
+            const dObj = new Date(date);
+            const tpMonth = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+            const tpYear = String(dObj.getFullYear());
+            
+            const approvedTp = await XlTourProgram.findOne({ where: { employeeId, month: tpMonth, year: tpYear, status: 'Approved' } });
+            if (!approvedTp) {
+                return res.json({ success: false, message: `You must have an Approved Tour Program for ${tpMonth} ${tpYear} before submitting Call Plans.` });
+            }
+            
+            const tpEntries = JSON.parse(approvedTp.entries || '[]');
+            const validTpDates = new Set(tpEntries.map(e => e.date));
+            if (!validTpDates.has(date)) {
+                return res.json({ success: false, message: `Cannot submit Call Plan for ${date} because it is not planned as a working day in your Approved Tour Program.` });
+            }
+        }
+        // ----------------------------
+
+        // --- HOLIDAY CHECK ---
+        const user = await XlUser.findOne({ where: { employeeId } });
+        if (user && user.state) {
+            const holidays = await XlHoliday.findAll({
+                where: {
+                    [Op.or]: [
+                        { state: user.state },
+                        { state: null },
+                        { state: 'All' },
+                        { state: 'N/A' },
+                        { state: '' }
+                    ]
+                }
+            });
+            const holidayDates = new Set(holidays.map(h => h.date));
+            const invalidDates = dates.filter(d => holidayDates.has(d));
+            if (invalidDates.length > 0) {
+                return res.json({ success: false, message: 'Cannot submit Call Plan on a Holiday: ' + invalidDates.join(', ') });
+            }
+        }
+        // -----------------------
+        
+        for (const date of dates) {
+            let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
+            try {
+                if (plan) {
+                    plan.doctors = JSON.stringify(doctors || []);
+                    plan.chemists = JSON.stringify(chemists || []);
+                    plan.stockists = JSON.stringify(stockists || []);
+                    plan.status = 'Submitted';
+                    await plan.save();
+                } else {
+                    await XlCallPlan.create({
+                        employeeId,
+                        date,
+                        doctors: JSON.stringify(doctors || []),
+                        chemists: JSON.stringify(chemists || []),
+                        stockists: JSON.stringify(stockists || []),
+                        status: 'Submitted'
+                    });
+                }
+            } catch (dbError) {
+                return res.json({ success: false, message: 'Database Error: ' + dbError.message });
+            }
+        }
+        
+        // Notify manager of call plan update
+        const mgrUser = await XlUser.findOne({ where: { employeeId } });
+        if (mgrUser && mgrUser.reportingManager) {
+            const managers = await XlUser.findAll({ where: { designation: mgrUser.reportingManager } });
+            for (const m of managers) {
+                await XlNotification.create({
+                    _id: generateId(),
+                    employeeId: m.employeeId,
+                    title: 'Call Plan Updated',
+                    message: `${user.firstName} ${user.lastName} has submitted their Call Plan.`
+                });
+        
+        // Notify the submitter
+        await XlNotification.create({
+            _id: generateId(),
+            employeeId,
+            title: 'Call Plan Submitted',
+            message: `You have successfully submitted your Call Plan. It has been sent to your manager.`
+        });
+            }
+        }
+        
+        await XlNotification.create({
+            _id: generateId(),
+            employeeId: 'ADMIN',
+            title: 'Call Plan Updated',
+            message: `Call Plan submitted by ${user ? user.firstName : employeeId}.`
+        });
+
+        res.json({ success: true });
+    } catch (e) {
+        console.error('Call Plan Save Error:', e);
+        require('fs').appendFileSync('cp_error.log', (e.original ? e.original.message : '') + '\n' + (e.stack || e.message) + '\n');
+        res.status(500).json({ error: 'Failed to save call plan' });
+    }
+});
+
+// GET Global Settings
+router.get('/settings/preferences', async (req, res) => {
+    try {
+        let settings = await XlGlobalSettings.findOne();
+        if (!settings) settings = await XlGlobalSettings.create({ settings: {} });
+        res.json({ success: true, data: settings.settings || {} });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+// POST Global Settings
+router.post('/settings/preferences', async (req, res) => {
+    try {
+        let settings = await XlGlobalSettings.findOne();
+        if (!settings) settings = await XlGlobalSettings.create({ settings: req.body.settings || {} });
+        else { settings.settings = { ...settings.settings, ...req.body.settings }; await settings.save(); }
+        res.json({ success: true, data: settings.settings });
+    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+});
+
+
+// GET Holidays
+router.get('/settings/holidays', async (req, res) => {
+    try {
+        const holidays = await XlHoliday.findAll({ order: [['date', 'ASC']] });
+        res.json({ success: true, data: holidays });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch holidays' });
+    }
+});
+
+// POST Holiday
+router.post('/settings/holidays', async (req, res) => {
+    try {
+        const { date, type, state, title } = req.body;
+        const holiday = await XlHoliday.create({ date, type, state, title });
+        res.json({ success: true, data: holiday });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to create holiday' });
+    }
+});
+
+// DELETE Holiday
+router.delete('/settings/holidays/:id', async (req, res) => {
+    try {
+        await XlHoliday.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to delete holiday' });
+    }
+});
+
+// GET Geo Fencing Tags for a specific user
+router.get('/geo-fencing/my-tags', async (req, res) => {
+    try {
+        const { employeeId } = req.query;
+        if (!employeeId) return res.json({ success: true, data: [] });
+        const tags = await XlGeoFencing.findAll({ where: { employeeId } });
+        res.json({ success: true, data: tags });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch tags' });
+    }
+});
+
+
+// --- ADDED BACKLOG OVERVIEW ---
 router.get('/backlog/overview', async (req, res) => {
     try {
         const { email, year, month } = req.query; // month is 1-12
@@ -890,13 +1621,13 @@ router.get('/backlog/overview', async (req, res) => {
 
         // Fetch Attendances for the month
         const attendances = await XlAttendance.findAll({ 
-            where: { employeeId: email, date: { [require('sequelize').Op.startsWith]: `${year}-${month.padStart(2, '0')}` } }
+            where: { employeeId: email, date: { [require('sequelize').Op.startsWith]: `${year}-${String(month).padStart(2, '0')}` } }
         });
         const submittedDates = new Set(attendances.filter(a => a.daySubmitted).map(a => a.date));
 
         // Fetch existing requests for the month
         const requests = await XlBacklogRequest.findAll({ 
-            where: { employeeId: email, date: { [require('sequelize').Op.startsWith]: `${year}-${month.padStart(2, '0')}` } }
+            where: { employeeId: email, date: { [require('sequelize').Op.startsWith]: `${year}-${String(month).padStart(2, '0')}` } }
         });
         const requestMap = {};
         requests.forEach(r => requestMap[r.date] = r);
@@ -935,5 +1666,10 @@ router.get('/backlog/overview', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch backlog overview' });
     }
 });
+// ------------------------------
+\nmodule.exports = router;
 
-module.exports = router;
+
+
+
+
