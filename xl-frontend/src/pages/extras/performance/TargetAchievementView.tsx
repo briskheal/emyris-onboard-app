@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Share2, Save, Pencil } from 'lucide-react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 // Helper to calculate calendar weeks for a given month and year
 function getCalendarWeeks(monthStr: string, yearStr: string) {
@@ -61,6 +62,61 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
       setTargets(Array.isArray(initialTargets) ? initialTargets : []);
     }, [initialTargets]);
 
+  const handleShare = async () => {
+    try {
+        const wb = XLSX.utils.book_new();
+        const wsData = [];
+        
+        // Headers
+        const headers = ["Entity Name", "Monthly Target"];
+        weeks.forEach(w => {
+            headers.push(`${w.label} Plan`);
+            headers.push(`${w.label} Achieved`);
+        });
+        wsData.push(headers);
+
+        // Rows
+        targets.forEach(t => {
+            const row = [t.entityName, t.monthlyTarget];
+            weeks.forEach(w => {
+                row.push(t[w.id]?.planned || 0);
+                row.push(t[w.id]?.achieved || 0);
+            });
+            wsData.push(row);
+        });
+
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "Performance");
+        
+        const wopts = { bookType: 'xlsx', bookSST: false, type: 'array' as any };
+        const wbout = XLSX.write(wb, wopts);
+        const blob = new Blob([wbout], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+        const fileName = `${KPI_TITLES[kpiId] || 'Report'} - ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}.xlsx`;
+        
+        if (navigator.canShare) {
+            const file = new File([blob], fileName, { type: blob.type });
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: fileName,
+                });
+                return;
+            }
+        }
+        
+        // Fallback to direct download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error("Error sharing file:", error);
+        alert("Failed to share or download the file.");
+    }
+  };
+
   const updateTarget = (entityId: string, value: number) => {
     setTargets(prev => prev.map(t => {
       if (t.entityId === entityId) {
@@ -100,15 +156,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
       <div className="px-4 py-4 mt-2 flex items-center justify-between mb-4">
         <h2 className="text-xl font-bold text-sky-400">{KPI_TITLES[kpiId || 'roi']}</h2>
         <div className="flex gap-2">
-          {onEditPlan && (
-            <button 
-              onClick={onEditPlan}
-              className="w-10 h-10 bg-emerald-500 rounded-full text-white flex items-center justify-center shadow-md hover:bg-emerald-400 transition-colors"
-            >
-              <Pencil size={18} />
-            </button>
-          )}
-          <button className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md">
+          <button onClick={handleShare} className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md hover:bg-sky-400 transition-colors">
             <Share2 size={18} />
           </button>
         </div>
@@ -226,5 +274,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
     </div>
   );
 }
+
+
 
 
