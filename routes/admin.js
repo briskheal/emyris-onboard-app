@@ -5312,6 +5312,66 @@ router.put('/users/bulk-lock', async (req, res) => {
     }
 });
 
+
+
+// --- BACKLOG APPROVAL ROUTES ---
+router.get('/xl-backlog', async (req, res) => {
+    try {
+        const { XlBacklogRequest, OnboardApplicant } = require('../models');
+        const requests = await XlBacklogRequest.findAll({ order: [['createdAt', 'DESC']] });
+        
+        // Join with employee names
+        const employees = await OnboardApplicant.findAll();
+        const empMap = {};
+        employees.forEach(e => {
+            empMap[e.email] = e.firstName + ' ' + (e.lastName || '');
+        });
+
+        const data = requests.map(r => {
+            const json = r.toJSON();
+            json.employeeName = empMap[r.employeeId] || r.employeeId;
+            return json;
+        });
+
+        res.json({ success: true, data });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch backlog requests' });
+    }
+});
+
+router.post('/xl-backlog/:id/action', async (req, res) => {
+    try {
+        const { XlBacklogRequest, XlNotification } = require('../models');
+        const { action, remarks } = req.body; // action = 'Approved' or 'Rejected'
+        
+        const reqs = await XlBacklogRequest.findOne({ where: { _id: req.params.id } });
+        if (!reqs) return res.status(404).json({ error: 'Request not found' });
+
+        reqs.status = action === 'Approve' ? 'Approved' : 'Rejected';
+        reqs.adminRemarks = remarks || '';
+        await reqs.save();
+
+        // Notify user
+        try {
+            const generateId = () => Math.random().toString(36).substring(2, 15);
+            await XlNotification.create({
+                _id: generateId(),
+                employeeId: reqs.employeeId,
+                title: 'Backlog Request ' + reqs.status,
+                message: `Your backlog request for ${reqs.date} has been ${reqs.status}.` + (remarks ? ` Remarks: ${remarks}` : ''),
+                isRead: false
+            });
+        } catch (ne) { console.error("Notification err", ne); }
+
+        res.json({ success: true, message: `Request ${reqs.status}` });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to update request' });
+    }
+});
+// ------------------------------
+
 module.exports = router;
 
 
