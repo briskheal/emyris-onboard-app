@@ -5324,7 +5324,7 @@ router.get('/xl-backlog', async (req, res) => {
         const employees = await Applicant.find();
         const empMap = {};
         employees.forEach(e => {
-            empMap[e.email] = e.firstName + ' ' + (e.lastName || '');
+            empMap[e.uid] = e.firstName + ' ' + (e.lastName || ''); empMap[e.email] = e.firstName + ' ' + (e.lastName || '');
         });
 
         const data = requests.map(r => {
