@@ -5317,7 +5317,7 @@ router.put('/users/bulk-lock', async (req, res) => {
 // --- BACKLOG APPROVAL ROUTES ---
 router.get('/xl-backlog', async (req, res) => {
     try {
-        const { XlBacklogRequest, OnboardApplicant } = require('../models');
+        const { XlBacklogRequest, OnboardApplicant } = require('../db');
         const requests = await XlBacklogRequest.findAll({ order: [['createdAt', 'DESC']] });
         
         // Join with employee names
@@ -5342,7 +5342,7 @@ router.get('/xl-backlog', async (req, res) => {
 
 router.post('/xl-backlog/:id/action', async (req, res) => {
     try {
-        const { XlBacklogRequest, XlNotification } = require('../models');
+        const { XlBacklogRequest, XlNotification } = require('../db');
         const { action, remarks } = req.body; // action = 'Approved' or 'Rejected'
         
         const reqs = await XlBacklogRequest.findOne({ where: { _id: req.params.id } });
