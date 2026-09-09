@@ -5321,7 +5321,7 @@ router.get('/xl-backlog', async (req, res) => {
         const requests = await XlBacklogRequest.findAll({ order: [['createdAt', 'DESC']] });
         
         // Join with employee names
-        const employees = await Applicant.findAll();
+        const employees = await Applicant.find();
         const empMap = {};
         employees.forEach(e => {
             empMap[e.email] = e.firstName + ' ' + (e.lastName || '');
