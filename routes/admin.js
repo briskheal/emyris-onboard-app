@@ -5317,14 +5317,14 @@ router.put('/users/bulk-lock', async (req, res) => {
 // --- BACKLOG APPROVAL ROUTES ---
 router.get('/xl-backlog', async (req, res) => {
     try {
-        const { XlBacklogRequest, Applicant } = require('../db');
+        const { XlBacklogRequest, XlUser } = require('../db');
         const requests = await XlBacklogRequest.findAll({ order: [['createdAt', 'DESC']] });
         
         // Join with employee names
-        const employees = await Applicant.find();
+        const employees = await XlUser.findAll();
         const empMap = {};
         employees.forEach(e => {
-            empMap[e.uid] = e.firstName + ' ' + (e.lastName || ''); empMap[e.email] = e.firstName + ' ' + (e.lastName || '');
+            empMap[e.uid] = e.firstName + ' ' + (e.lastName || ''); empMap[e.email] = e.firstName + ' ' + (e.lastName || ''); empMap[e.employeeId] = e.firstName + ' ' + (e.lastName || '');
         });
 
         const data = requests.map(r => {

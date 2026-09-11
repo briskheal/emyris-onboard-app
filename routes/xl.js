@@ -753,8 +753,15 @@ router.post('/attendance/punch-in', async (req, res) => {
 router.post('/attendance/punch-out', async (req, res) => {
     try {
         const { employeeId, date, punchOutTime, punchOutLat, punchOutLng } = req.body;
-        const att = await XlAttendance.findOne({ where: { employeeId, date } });
-        if (!att) return res.status(400).json({ error: 'No punch-in record found for today.' });
+        let att = await XlAttendance.findOne({ where: { employeeId, date } });
+        if (!att) {
+            const backlog = await XlBacklogRequest.findOne({ where: { employeeId, date, status: 'Approved' } });
+            if (backlog) {
+                att = await XlAttendance.create({ _id: generateId(), employeeId, date, punchInTime: '00:00', punchOutTime: '23:59', daySubmitted: false });
+            } else {
+                return res.status(400).json({ error: 'No punch-in record found for today.' });
+            }
+        }
         if (att.punchOutTime) return res.status(400).json({ error: 'Already punched out.' });
 
         await XlAttendance.update(

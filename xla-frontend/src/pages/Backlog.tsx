@@ -47,30 +47,6 @@ export default function Backlog() {
     return dateStr;
   };
 
-  const handleAction = async (id: string, action: 'Approve' | 'Reject') => {
-    const remarks = remarksMap[id] || '';
-    
-    if (action === 'Reject' && !remarks.trim()) {
-      alert('Remarks cannot be blank when rejecting a request.');
-      return;
-    }
-
-    try {
-      await axios.post(`/api/admin/xl-backlog/${id}/action`, { action, remarks });
-      
-      // Clear remark for this id
-      setRemarksMap(prev => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      
-      fetchRequests(); // Refresh list
-    } catch (e) {
-      alert('Action failed.');
-    }
-  };
-
   const handleBatchAction = async (action: 'Approve' | 'Reject') => {
     if (selectedIds.size === 0) return;
 
@@ -255,22 +231,7 @@ export default function Backlog() {
                       </td>
                       <td className="p-4">
                         {req.status === 'Pending' ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <button 
-                              onClick={() => handleAction(req._id, 'Approve')}
-                              className="p-2 bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-white rounded-lg transition-colors"
-                              title="Approve"
-                            >
-                              <Check size={18} strokeWidth={3} />
-                            </button>
-                            <button 
-                              onClick={() => handleAction(req._id, 'Reject')}
-                              className="p-2 bg-rose-500/20 text-rose-400 hover:bg-rose-500 hover:text-white rounded-lg transition-colors"
-                              title="Reject"
-                            >
-                              <X size={18} strokeWidth={3} />
-                            </button>
-                          </div>
+                          <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold">Select box to action</span>
                         ) : (
                           <div className={`inline-block px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase ${
                             req.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-rose-500/20 text-rose-400'
