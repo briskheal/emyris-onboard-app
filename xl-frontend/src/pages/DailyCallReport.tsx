@@ -12,6 +12,18 @@ interface Product { _id: string; name: string; }
 interface Gift { _id: string; name: string; }
 interface CoWorker { employeeId: string; firstName: string; lastName: string; }
 
+const haversineMetres = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  if(!lat1||!lon1||!lat2||!lon2) return Infinity;
+  const R = 6371e3;
+  const p1 = lat1 * Math.PI/180;
+  const p2 = lat2 * Math.PI/180;
+  const dp = (lat2-lat1) * Math.PI/180;
+  const dl = (lon2-lon1) * Math.PI/180;
+  const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
 export default function DailyCallReport() {
   const locationState = useLocation().state as { overrideDate?: string } | null;
   const overrideDate = locationState?.overrideDate;
@@ -80,6 +92,25 @@ export default function DailyCallReport() {
   const [rating, setRating] = useState(0);
 
   const [todaysDcrs, setTodaysDcrs] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (step === 'form' && dcrDate === today && entityType !== 'Reminder') {
+      captureLocation();
+    }
+  }, [step, dcrDate, entityType]);
+
+  const sortedEntities = React.useMemo(() => {
+    let filtered = entities.filter(e => (e.name||e.businessName||'').toLowerCase().includes(searchQuery.toLowerCase()));
+    if (myLat && myLng) {
+      filtered = filtered.map(e => {
+        const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
+        const dist2 = haversineMetres(myLat, myLng, e.lat2, e.lng2);
+        const minDist = Math.min(dist1, dist2);
+        return { ...e, _dist: minDist };
+      }).sort((a, b) => a._dist - b._dist);
+    }
+    return filtered;
+  }, [entities, searchQuery, myLat, myLng]);
 
   useEffect(() => {
     let dObj;
@@ -510,9 +541,10 @@ export default function DailyCallReport() {
                         <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onClick={e => e.stopPropagation()} className="w-full bg-[#1c1c2e] text-white text-sm rounded-lg pl-8 pr-3 py-2 focus:outline-none" />
                       </div>
                       <div className="overflow-y-auto">
-                        {entities.filter(e => (e.name||e.businessName||'').toLowerCase().includes(searchQuery.toLowerCase())).map(e => (
-                          <div key={e._id} onClick={() => { setSelectedEntityId(e._id); setIsEntityDropdownOpen(false); }} className="px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm">
-                            {e.name || e.businessName}
+                        {sortedEntities.map(e => (
+                          <div key={e._id} onClick={() => { setSelectedEntityId(e._id); setIsEntityDropdownOpen(false); }} className="px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm flex justify-between items-center">
+                            <span>{e.name || e.businessName}</span>
+                            {e._dist !== undefined && e._dist < 300 && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">Nearby</span>}
                           </div>
                         ))}
                       </div>
@@ -522,14 +554,10 @@ export default function DailyCallReport() {
               </div>
               )}
 
-              <div className="flex items-center justify-between bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
-                <span className="text-sm font-semibold text-white">Are you at location?</span>
-                <button onClick={() => { setIsAtLocation(!isAtLocation); if (!isAtLocation) captureLocation(); }} className={`w-12 h-6 rounded-full transition-colors relative ${isAtLocation ? 'bg-emerald-500' : 'bg-[#1c1c2e] border border-[#3b3b5a]'}`}>
-                  <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white transition-all ${isAtLocation ? 'left-7' : 'left-1'}`} />
-                </button>
-              </div>
-              {isAtLocation && geoLoading && <p className="text-xs text-sky-400 animate-pulse mt-[-10px] ml-4">Acquiring GPS...</p>}
-              {isAtLocation && !geoLoading && geoAddress && <p className="text-xs text-emerald-400 mt-[-10px] ml-4 flex items-center gap-1"><CheckCircle2 size={12} /> Verified Location</p>}
+              
+                {geoLoading && <p className="text-xs text-sky-400 animate-pulse ml-4">Acquiring GPS...</p>}
+                {!geoLoading && geoAddress && <p className="text-xs text-emerald-400 ml-4 flex items-center gap-1"><CheckCircle2 size={12} /> Verified Location</p>}
+    
 
               <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Products Detailed</label>
