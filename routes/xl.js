@@ -439,7 +439,7 @@ router.get('/doctors', async (req, res) => {
             where.headquarter = sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), req.query.hq.trim().toLowerCase());
         }
 
-        const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category', 'userAllotted'], order: [['name', 'ASC']] });
+        const doctors = await XlDoctor.findAll({ where, attributes: ['_id', 'name', 'degree', 'specialization', 'hospital', 'headquarter', 'workingArea', 'category', 'userAllotted', 'lat1', 'lng1', 'lat2', 'lng2'], order: [['name', 'ASC']] });
         res.json({ success: true, data: doctors });
     } catch (e) {
         console.error(e);
