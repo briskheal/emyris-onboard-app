@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   X, UserRound, Search, Navigation, 
-  ChevronDown, ChevronLeft, Plus, CheckCircle2, Star, Image as ImageIcon
+  ChevronDown, ChevronLeft, Plus, CheckCircle2, Star, Image as ImageIcon, Trash2
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -229,6 +229,16 @@ export default function DailyCallReport() {
     }
   };
 
+  const handleDeleteDcr = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this call report?')) return;
+    try {
+      await axios.delete(`/api/xl/dcr/${id}`);
+      setTodaysDcrs(prev => prev.filter(d => d._id !== id));
+    } catch (err: any) {
+      alert('Failed to delete report');
+    }
+  };
+
   const submitFinal = async () => {
     setLoading(true);
     try {
@@ -433,7 +443,10 @@ export default function DailyCallReport() {
                         <div key={d._id} className="bg-[#1c1c2e] p-3 rounded-xl border border-[#3b3b5a]">
                           <div className="flex justify-between items-start mb-1">
                             <span className="text-sm font-bold text-slate-200">{d.entityName || 'N/A'}</span>
-                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#3b3b5a] text-sky-300 font-semibold">{d.entityType}</span>
+                            <div className="flex gap-2 items-center">
+                              <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#3b3b5a] text-sky-300 font-semibold">{d.entityType}</span>
+                              <button onClick={() => handleDeleteDcr(d._id)} className="text-rose-400 hover:text-rose-300 bg-rose-500/10 p-1 rounded-md transition-colors"><Trash2 size={14} /></button>
+                            </div>
                           </div>
                           <div className="text-xs text-slate-400 mt-1 line-clamp-1">{d.discussion || 'No remarks'}</div>
                         </div>

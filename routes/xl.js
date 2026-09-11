@@ -776,6 +776,16 @@ router.post('/attendance/punch-out', async (req, res) => {
 });
 
 
+// Delete DCR
+router.delete('/dcr/:id', async (req, res) => {
+    try {
+        await XlDCR.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true, message: 'Deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to delete DCR' });
+    }
+});
+
 // Submit Day Final Report
 router.post('/attendance/submit-day', async (req, res) => {
     try {
