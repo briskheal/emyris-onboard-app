@@ -670,7 +670,8 @@ router.post('/dcr', async (req, res) => {
         }
 
         // ── Geo-fence check for Doctor, Chemist, and Stockist visits ────────────
-        if (entityType === 'Doctor' || entityType === 'Chemist' || entityType === 'Stockist') {
+        const todayStr2 = new Date().toISOString().split('T')[0];
+        if (date === todayStr2 && (entityType === 'Doctor' || entityType === 'Chemist' || entityType === 'Stockist')) {
             const { latitude: mrLat, longitude: mrLng } = req.body;
 
             if (!mrLat || !mrLng) {
