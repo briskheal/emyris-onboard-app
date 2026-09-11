@@ -253,6 +253,9 @@ export default function DailyCallReport() {
         rating
       };
       await axios.post('/api/xl/dcr', payload);
+      axios.get(`/api/xl/dcr/my?email=${USER_EMAIL}&date=${dcrDate}`)
+        .then(r => setTodaysDcrs(r.data.data || []))
+        .catch(()=>{});
       setStep('success');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to submit report');
