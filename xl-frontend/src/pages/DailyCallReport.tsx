@@ -101,16 +101,22 @@ export default function DailyCallReport() {
 
   const sortedEntities = React.useMemo(() => {
     let filtered = entities.filter(e => (e.name||e.businessName||'').toLowerCase().includes(searchQuery.toLowerCase()));
-    if (myLat && myLng) {
-      filtered = filtered.map(e => {
-        const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
-        const dist2 = haversineMetres(myLat, myLng, e.lat2, e.lng2);
-        const minDist = Math.min(dist1, dist2);
-        return { ...e, _dist: minDist };
-      }).sort((a, b) => a._dist - b._dist);
+    
+    if (dcrDate === today) {
+      if (myLat && myLng) {
+        filtered = filtered.map(e => {
+          const dist1 = haversineMetres(myLat, myLng, e.lat1, e.lng1);
+          const dist2 = haversineMetres(myLat, myLng, e.lat2, e.lng2);
+          const minDist = Math.min(dist1, dist2);
+          return { ...e, _dist: minDist };
+        }).filter(e => e._dist <= 300).sort((a, b) => a._dist - b._dist);
+      } else {
+        // If GPS is not yet acquired for today's report, show empty list
+        filtered = [];
+      }
     }
     return filtered;
-  }, [entities, searchQuery, myLat, myLng]);
+  }, [entities, searchQuery, myLat, myLng, dcrDate]);
 
   useEffect(() => {
     let dObj;
@@ -540,13 +546,18 @@ export default function DailyCallReport() {
                         <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input type="text" placeholder="Search..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onClick={e => e.stopPropagation()} className="w-full bg-[#1c1c2e] text-white text-sm rounded-lg pl-8 pr-3 py-2 focus:outline-none" />
                       </div>
-                      <div className="overflow-y-auto">
-                        {sortedEntities.map(e => (
+                      <div className="overflow-y-auto max-h-60">
+                        {sortedEntities.length > 0 ? sortedEntities.map(e => (
                           <div key={e._id} onClick={() => { setSelectedEntityId(e._id); setIsEntityDropdownOpen(false); }} className="px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer text-slate-200 text-sm flex justify-between items-center">
                             <span>{e.name || e.businessName}</span>
-                            {e._dist !== undefined && e._dist < 300 && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-bold">Nearby</span>}
                           </div>
-                        ))}
+                        )) : (
+                          <div className="p-4 text-center text-sm text-slate-400">
+                            {dcrDate === today 
+                              ? (geoLoading ? "Acquiring GPS..." : "No tagged doctors found within 300m of your location. You must be at the clinic to report.")
+                              : "No results found."}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
