@@ -45,6 +45,7 @@ export default function DailyCallReport() {
   const [isLockedDay, setIsLockedDay] = useState(false);
   const [daySubmitted, setDaySubmitted] = useState(false);
   const [dayRemarks, setDayRemarks] = useState('');
+  const [viewListType, setViewListType] = useState<string | null>(null);
 
   // Form State
   const [selectedEntityId, setSelectedEntityId] = useState('');
@@ -390,24 +391,59 @@ export default function DailyCallReport() {
               <div className="bg-[#27273f] rounded-3xl p-5 space-y-4 border border-[#3b3b5a]">
                 <p className="text-sm text-slate-300">You are about to submit the final report for the day. This will lock your DCRs for {dcrDate}.</p>
                 
-                <div className="grid grid-cols-2 gap-3 py-2">
-                  <div className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center">
-                    <span className="text-orange-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
-                    <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Doctors</span>
+                {!viewListType ? (
+                  <div className="grid grid-cols-2 gap-3 py-2">
+                    <div 
+                      onClick={() => setViewListType('Doctor')} 
+                      className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center cursor-pointer hover:border-orange-500/50 transition-colors"
+                    >
+                      <span className="text-orange-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Doctor').length}</span>
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Doctors</span>
+                    </div>
+                    <div 
+                      onClick={() => setViewListType('Chemist')}
+                      className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center cursor-pointer hover:border-sky-500/50 transition-colors"
+                    >
+                      <span className="text-sky-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Chemists</span>
+                    </div>
+                    <div 
+                      onClick={() => setViewListType('Stockist')}
+                      className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center cursor-pointer hover:border-emerald-500/50 transition-colors"
+                    >
+                      <span className="text-emerald-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
+                      <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Stockists</span>
+                    </div>
+                    <div 
+                      onClick={() => setViewListType('All')}
+                      className="bg-sky-500/10 rounded-xl p-3 border border-sky-500/30 flex flex-col justify-center items-center cursor-pointer hover:bg-sky-500/20 transition-colors"
+                    >
+                      <span className="text-sky-400 font-black text-2xl">{todaysDcrs.length}</span>
+                      <span className="text-sky-400/80 font-bold text-[10px] uppercase tracking-wider">Total Calls</span>
+                    </div>
                   </div>
-                  <div className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center">
-                    <span className="text-sky-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Chemist').length}</span>
-                    <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Chemists</span>
+                ) : (
+                  <div className="py-2">
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-sm font-bold text-sky-400">{viewListType === 'All' ? 'All Calls' : `${viewListType}s`}</span>
+                      <button onClick={() => setViewListType(null)} className="text-xs bg-[#3b3b5a] text-white px-3 py-1 rounded-full font-semibold">Back</button>
+                    </div>
+                    <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
+                      {todaysDcrs.filter(d => viewListType === 'All' || d.entityType === viewListType).map(d => (
+                        <div key={d._id} className="bg-[#1c1c2e] p-3 rounded-xl border border-[#3b3b5a]">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="text-sm font-bold text-slate-200">{d.entityName || 'N/A'}</span>
+                            <span className="text-[10px] px-2 py-0.5 rounded-md bg-[#3b3b5a] text-sky-300 font-semibold">{d.entityType}</span>
+                          </div>
+                          <div className="text-xs text-slate-400 mt-1 line-clamp-1">{d.discussion || 'No remarks'}</div>
+                        </div>
+                      ))}
+                      {todaysDcrs.filter(d => viewListType === 'All' || d.entityType === viewListType).length === 0 && (
+                        <div className="text-center text-slate-500 text-sm py-4">No records found.</div>
+                      )}
+                    </div>
                   </div>
-                  <div className="bg-[#1c1c2e] rounded-xl p-3 border border-[#3b3b5a] flex flex-col justify-center items-center">
-                    <span className="text-emerald-400 font-black text-2xl">{todaysDcrs.filter(d => d.entityType === 'Stockist').length}</span>
-                    <span className="text-slate-400 font-bold text-[10px] uppercase tracking-wider">Stockists</span>
-                  </div>
-                  <div className="bg-sky-500/10 rounded-xl p-3 border border-sky-500/30 flex flex-col justify-center items-center">
-                    <span className="text-sky-400 font-black text-2xl">{todaysDcrs.length}</span>
-                    <span className="text-sky-400/80 font-bold text-[10px] uppercase tracking-wider">Total Calls</span>
-                  </div>
-                </div>
+                )}
                 <div className="flex flex-col gap-2">
                   <span className="text-xs font-bold text-slate-400 uppercase">Remarks for the Day</span>
                   <textarea 
