@@ -29,6 +29,7 @@ import ManageLocations from './pages/ManageLocations';
 import ManageUsers from './pages/ManageUsers';
 import ManageProducts from './pages/ManageProducts';
 import ManageAllowances from './pages/ManageAllowances';
+import ManageLeave from './pages/ManageLeave';
 import ManageDCS from './pages/ManageDCS';
 import Approvals from './pages/Approvals';
 import ListsLayout from './pages/ListsLayout';
@@ -51,7 +52,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin/locations" element={<ManageLocations />} />
           <Route path="/admin/users" element={<ManageUsers />} />
-          <Route path="/admin/products" element={<ManageProducts />} />
+          <Route path="/admin/products" element={<ManageProducts />} />`n          <Route path="/admin/leave" element={<ManageLeave />} />
           <Route path="/admin/expenses" element={<ManageAllowances />} />
           <Route path="/admin/dcs" element={<ManageDCS />} />
           <Route path="/admin/approvals" element={<Approvals />} />\n          <Route path="/extras/settings" element={<Settings />} />
@@ -99,3 +100,4 @@ function App() {
 }
 
 export default App;
+

@@ -15,7 +15,7 @@ export default function AdminMenu() {
     { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope, path: '/admin/dcs' },
     { label: 'SAMPLES & GIFTS', icon: Gift },
     { label: 'APPROVALS', icon: CheckSquare, path: '/admin/approvals' },
-    { label: 'MANAGE LEAVE', icon: CalendarDays },
+    { label: 'MANAGE LEAVE', icon: CalendarDays, path: '/admin/leave' },
     { label: 'SETTINGS', icon: SettingsIcon, path: '/extras/settings' }
   ];
 

@@ -378,6 +378,34 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     });
 
     // Phase 3: Leave Request
+    
+    const XlLeaveType = sequelize.define('xl_leave_type', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        name: { type: DataTypes.STRING, allowNull: false },
+        code: { type: DataTypes.STRING, allowNull: false },
+        description: { type: DataTypes.TEXT },
+        isPaid: { type: DataTypes.BOOLEAN, defaultValue: true },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlAssignedLeave = sequelize.define('xl_assigned_leave', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
+        year: { type: DataTypes.STRING, allowNull: false }, // e.g. "2026-2027"
+        leaveType: { type: DataTypes.STRING, allowNull: false }, // E.g., "Casual Leave" or type _id
+        assigned: { type: DataTypes.INTEGER, defaultValue: 0 },
+        used: { type: DataTypes.INTEGER, defaultValue: 0 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlLeaveTemplate = sequelize.define('xl_leave_template', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        name: { type: DataTypes.STRING, allowNull: false },
+        description: { type: DataTypes.TEXT },
+        payload: { type: DataTypes.TEXT }, // JSON string of [{leaveType, count}]
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     const XlLeave = sequelize.define('xl_leave', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         employeeId: { type: DataTypes.STRING, allowNull: false },
@@ -578,6 +606,9 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         XlDCR,
         XlAttendance,
         XlLeave,
+        XlLeaveType,
+        XlAssignedLeave,
+        XlLeaveTemplate,
         XlExpense,
         XlBacklogRequest,
         XlCallPlan,
