@@ -17,7 +17,10 @@ export default function CreationMenu() {
   const navigate = useNavigate();
   const storedUser = localStorage.getItem('xl_user');
   const user = storedUser ? JSON.parse(storedUser) : null;
-  const isManager = user?.designation && (user.designation.toLowerCase().includes('manager') || user.designation.toLowerCase().includes('admin'));
+  
+  const isManager = user?.level 
+    ? user.level > 1 
+    : user?.designation && (user.designation.toLowerCase().includes('manager') || user.designation.toLowerCase().includes('admin')) && user.designation.toLowerCase() !== 'territory business manager';
 
   return (
     <div className="min-h-full bg-slate-800 pb-24">
@@ -28,14 +31,13 @@ export default function CreationMenu() {
       </div>
       <div className="px-5 mt-6">
         <div className="grid grid-cols-2 gap-4">
-          {creationOptions.map((item, idx) => (
+          {creationOptions.filter(item => !(item.requiresManager && !isManager)).map((item, idx) => (
             <button 
               key={idx}
               onClick={() => {
-                if (item.requiresManager && !isManager) return;
                 if (item.path !== '#') navigate(item.path);
               }}
-              className={`bg-slate-700 border border-slate-600 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg transition-transform ${(item.requiresManager && !isManager) ? 'opacity-40 cursor-not-allowed' : 'active:scale-95'}`}
+              className="bg-slate-700 border border-slate-600 rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-lg transition-transform active:scale-95"
             >
               <div className={`w-14 h-14 rounded-full flex items-center justify-center ${item.bg}`}>
                 <item.icon size={28} className={item.color} />

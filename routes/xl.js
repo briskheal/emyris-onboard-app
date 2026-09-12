@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { XlUser, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, generateId } = require('../db');
+const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // Middleware to block locked users from any mobile API route instantly
@@ -140,6 +140,12 @@ router.post('/login', async (req, res) => {
         // Remove password before sending to frontend
         const userData = user.toJSON();
         delete userData.password;
+
+        // Fetch user designation level
+        if (user.designation) {
+            const desigRec = await XlDesignation.findOne({ where: { designationName: user.designation } });
+            if (desigRec) userData.level = desigRec.level;
+        }
 
         res.json({ success: true, message: 'Login successful', user: userData });
     } catch (e) {
