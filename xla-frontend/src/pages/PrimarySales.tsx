@@ -7,6 +7,9 @@ import axios from 'axios';
 export default function PrimarySales() {
   const navigate = useNavigate();
   const [products, setProducts] = useState<any[]>([]);
+  const [stockists, setStockists] = useState<any[]>([]);
+  const [hqs, setHqs] = useState<string[]>([]);
+  const [divisions, setDivisions] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -24,10 +27,27 @@ export default function PrimarySales() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const pRes = await axios.get('/api/xl/products');
-        setProducts(pRes.data.data || []);
+        const [pRes, sRes] = await Promise.all([
+          axios.get('/api/xl/reports/products').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } }))
+        ]);
+        
+        const fetchedProducts = pRes.data.data || [];
+        setProducts(fetchedProducts);
+        
+        const fetchedStockists = sRes.data.data || [];
+        setStockists(fetchedStockists);
+
+        // Extract unique HQs from stockists
+        const uniqueHqs = [...new Set(fetchedStockists.map((s: any) => s.headquarter).filter(Boolean))].sort();
+        setHqs(uniqueHqs as string[]);
+
+        // Extract unique divisions from products
+        const uniqueDivs = [...new Set(fetchedProducts.map((p: any) => p.division).filter(Boolean))].sort();
+        setDivisions(uniqueDivs as string[]);
+
       } catch (err) {
-        console.error(err);
+        console.error("Failed to fetch data:", err);
       }
     };
     fetchData();
@@ -50,6 +70,9 @@ export default function PrimarySales() {
       setRows(newRows);
     }
   };
+
+  // Filter stockists based on selected HQ
+  const filteredStockists = stockists.filter(s => !formData.headquarter || s.headquarter === formData.headquarter);
 
   return (
     <div className="h-dvh bg-[#1a1a2e] flex flex-col text-[#d1d5db] font-sans overflow-hidden">
@@ -127,8 +150,8 @@ export default function PrimarySales() {
               <label className="text-[11px] font-semibold text-[#8b8baf]">Select Division <span className="text-rose-500">*</span></label>
               <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
                 <CustomSelect 
-                  options={[{value: 'CRITIZA', label: 'CRITIZA'}]}
-                  value={formData.division || 'CRITIZA'}
+                  options={divisions.map(d => ({ value: d, label: d }))}
+                  value={formData.division}
                   onChange={(val) => setFormData({...formData, division: val})}
                   placeholder="Select Division"
                 />
@@ -140,9 +163,9 @@ export default function PrimarySales() {
               <label className="text-[11px] font-semibold text-[#8b8baf]">Select Headquarter <span className="text-rose-500">*</span></label>
               <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
                 <CustomSelect 
-                  options={[{value: 'Surat', label: 'Surat'}]}
-                  value={formData.headquarter || 'Surat'}
-                  onChange={(val) => setFormData({...formData, headquarter: val})}
+                  options={hqs.map(hq => ({ value: hq, label: hq }))}
+                  value={formData.headquarter}
+                  onChange={(val) => setFormData({...formData, headquarter: val, stockist: ''})}
                   placeholder="Select Headquarter"
                 />
               </div>
@@ -153,8 +176,8 @@ export default function PrimarySales() {
               <label className="text-[11px] font-semibold text-[#8b8baf]">Select Stockist <span className="text-rose-500">*</span></label>
               <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
                 <CustomSelect 
-                  options={[{value: 'Silver Medicare', label: 'Silver Medicare'}]}
-                  value={formData.stockist || 'Silver Medicare'}
+                  options={filteredStockists.map((s: any) => ({ value: s.uid || s._id, label: s.businessName || s.name }))}
+                  value={formData.stockist}
                   onChange={(val) => setFormData({...formData, stockist: val})}
                   placeholder="Select Stockist"
                 />
@@ -177,7 +200,7 @@ export default function PrimarySales() {
                       Product (₹)
                     </div>
                   </th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-28">Price</th>
+                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-36">Price</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Quantity</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Purc. Rtn</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Free Stocks</th>
@@ -220,66 +243,48 @@ export default function PrimarySales() {
                           }))}
                           value={row.productId}
                           onChange={(val) => handleRowChange(index, 'productId', val)}
-                          placeholder="Select Product"
+                          placeholder="SELECT PRODUCT"
                         />
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <div className="flex flex-col gap-1 text-[10px] font-bold bg-[#1a1a2e] p-1.5 rounded border border-[#3b3b5a]">
-                          
-                          <div className="flex justify-between items-center h-4">
-                            <button 
-                              onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')}
-                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
-                            >MRP</button> 
-                            <span className="text-white">{mrp.toFixed(2)}</span>
+                        {/* NEW PRICE LAYOUT AS PER SCREENSHOT */}
+                        <div className="flex items-center gap-2 justify-center">
+                          <div className="flex flex-col gap-px w-8">
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus..</button>
                           </div>
-
-                          <div className="flex justify-between items-center h-4">
-                            <button 
-                              onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')}
-                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
-                            >PTR</button> 
-                            <span className="text-emerald-400">{ptr.toFixed(2)}</span>
+                          <div className="flex-1 w-20">
+                            {row.selectedPriceType === 'CUS' ? (
+                              <input 
+                                type="number" 
+                                min="0"
+                                value={row.customPrice}
+                                onChange={e => handleRowChange(index, 'customPrice', e.target.value)}
+                                className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-[14px] text-sm text-sky-400 outline-none focus:border-sky-500 text-center font-bold" 
+                                placeholder="0.00"
+                              />
+                            ) : (
+                              <div className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-[14px] text-sm text-[#8b8baf] text-center font-bold">
+                                {activePrice.toFixed(2)}
+                              </div>
+                            )}
                           </div>
-
-                          <div className="flex justify-between items-center h-4">
-                            <button 
-                              onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')}
-                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
-                            >PTS</button> 
-                            <span className="text-sky-400">{pts.toFixed(2)}</span>
-                          </div>
-                          
-                          <div className="flex justify-between items-center h-5 mt-1 border-t border-[#3b3b5a]/50 pt-1">
-                            <button 
-                              onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')}
-                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
-                            >CUS</button> 
-                            <input 
-                              type="number" 
-                              min="0"
-                              value={row.customPrice}
-                              onChange={e => handleRowChange(index, 'customPrice', e.target.value)}
-                              onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')}
-                              className="w-14 bg-[#212136] text-emerald-400 border border-[#3b3b5a] rounded outline-none text-right px-1 py-0.5"
-                              placeholder="0.00"
-                            />
-                          </div>
-
                         </div>
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" value={row.quantity} onChange={e => handleRowChange(index, 'quantity', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-1.5 text-sm text-white outline-none focus:border-sky-500 text-center" />
+                        <input type="number" min="0" value={row.quantity} onChange={e => handleRowChange(index, 'quantity', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-white outline-none focus:border-sky-500 text-center" />
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-1.5 text-sm text-rose-400 outline-none focus:border-rose-500 text-center" />
+                        <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-rose-400 outline-none focus:border-rose-500 text-center" />
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-1.5 text-sm text-white outline-none focus:border-sky-500 text-center" />
+                        <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-white outline-none focus:border-sky-500 text-center" />
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50 text-center text-white font-semibold">{totalQty}</td>
                       <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" max="100" value={row.discount} onChange={e => handleRowChange(index, 'discount', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-1.5 text-sm text-white outline-none focus:border-sky-500 text-center" />
+                        <input type="number" min="0" max="100" value={row.discount} onChange={e => handleRowChange(index, 'discount', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-white outline-none focus:border-sky-500 text-center" />
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-400">{finalAmt.toFixed(2)}</td>
                       <td className="p-2 text-center">
