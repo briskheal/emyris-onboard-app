@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Folder, Search, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Folder, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
@@ -21,7 +21,7 @@ export default function PrimarySales() {
   });
 
   const [rows, setRows] = useState([
-    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR' }
+    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR', customRtnPrice: '', selectedRtnPriceType: 'PTR' }
   ]);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function PrimarySales() {
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR' }]);
+    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR', customRtnPrice: '', selectedRtnPriceType: 'PTR' }]);
   };
 
   const removeRow = (index: number) => {
@@ -191,23 +191,20 @@ export default function PrimarySales() {
         <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 overflow-hidden flex-1 flex flex-col">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[1000px]">
-              <thead className="bg-[#1a1a2e] text-[#8b8baf] text-xs border-b border-[#3b3b5a]">
+              <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
                 <tr>
-                  <th className="p-3 font-semibold text-center w-12 border-r border-[#3b3b5a]">Sr no.</th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a]">
-                    <div className="flex items-center gap-2">
-                      <Search size={14} className="text-slate-500" />
-                      Product (₹)
-                    </div>
-                  </th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-36">Price</th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Quantity</th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Purc. Rtn</th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Free Stocks</th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Total Qty</th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-24">Discount %</th>
-                  <th className="p-3 font-semibold border-r border-[#3b3b5a] text-center w-28">Final Price (₹)</th>
-                  <th className="p-3 font-semibold text-center w-16">Actions</th>
+                  <th className="p-2 font-bold text-center border-r border-[#3b3b5a]">Sr</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a]">Product</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Qty</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Free Stocks</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Total Qty</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Discnt %</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400">Final Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Purc. Rtn</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Rtn Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400">Final Value</th>
+                  <th className="p-2 font-bold text-center">Del</th>
                 </tr>
               </thead>
               <tbody>
@@ -220,22 +217,32 @@ export default function PrimarySales() {
                   const qty = Number(row.quantity) || 0;
                   const free = Number(row.freeStocks) || 0;
                   const rtn = Number(row.purcRtn) || 0;
-                  
-                  const totalQty = (qty + free) - rtn;
                   const discount = Number(row.discount) || 0;
                   
+                  // Sale Price
                   let activePrice = ptr;
                   if (row.selectedPriceType === 'MRP') activePrice = mrp;
                   else if (row.selectedPriceType === 'PTS') activePrice = pts;
                   else if (row.selectedPriceType === 'CUS') activePrice = Number(row.customPrice) || 0;
                   
-                  const gross = qty * activePrice;
-                  const finalAmt = gross - (gross * (discount / 100));
+                  // Return Price
+                  let rtnPrice = ptr;
+                  if (row.selectedRtnPriceType === 'MRP') rtnPrice = mrp;
+                  else if (row.selectedRtnPriceType === 'PTS') rtnPrice = pts;
+                  else if (row.selectedRtnPriceType === 'CUS') rtnPrice = Number(row.customRtnPrice) || 0;
+                  
+                  const totalQty = qty + free;
+                  const grossSale = qty * activePrice;
+                  const finalPrice = grossSale - (grossSale * (discount / 100));
+                  const returnValue = rtn * rtnPrice;
+                  const finalValue = finalPrice - returnValue;
 
                   return (
                     <tr key={row.id} className="border-b border-[#3b3b5a]/50 hover:bg-[#1a1a2e]/50 transition-colors">
-                      <td className="p-2 text-center text-xs font-semibold border-r border-[#3b3b5a]/50">{index + 1}</td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50 min-w-[200px]">
+                      <td className="p-1.5 text-center text-xs font-semibold border-r border-[#3b3b5a]/50">{index + 1}</td>
+                      
+                      {/* Product - Reduced Width */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[140px] max-w-[200px]">
                         <CustomSelect 
                           options={products.map((p: any) => ({
                             value: p.uid || p._id,
@@ -243,52 +250,79 @@ export default function PrimarySales() {
                           }))}
                           value={row.productId}
                           onChange={(val) => handleRowChange(index, 'productId', val)}
-                          placeholder="SELECT PRODUCT"
+                          placeholder="Select"
                         />
                       </td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50">
-                        {/* NEW PRICE LAYOUT AS PER SCREENSHOT */}
-                        <div className="flex items-center gap-2 justify-center">
-                          <div className="flex flex-col gap-px w-8">
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[9px] font-bold py-[3px] px-1 rounded ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus..</button>
+
+                      {/* Price Block */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50">
+                        <div className="flex items-center gap-1 justify-center">
+                          <div className="flex flex-col gap-px w-7">
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus</button>
                           </div>
-                          <div className="flex-1 w-20">
+                          <div className="flex-1 w-16">
                             {row.selectedPriceType === 'CUS' ? (
-                              <input 
-                                type="number" 
-                                min="0"
-                                value={row.customPrice}
-                                onChange={e => handleRowChange(index, 'customPrice', e.target.value)}
-                                className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-[14px] text-sm text-sky-400 outline-none focus:border-sky-500 text-center font-bold" 
-                                placeholder="0.00"
-                              />
+                              <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-[14px] text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
                             ) : (
-                              <div className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-[14px] text-sm text-[#8b8baf] text-center font-bold">
-                                {activePrice.toFixed(2)}
-                              </div>
+                              <div className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-[14px] text-xs text-[#8b8baf] text-center font-bold">{activePrice.toFixed(2)}</div>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" value={row.quantity} onChange={e => handleRowChange(index, 'quantity', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-white outline-none focus:border-sky-500 text-center" />
+
+                      {/* Qty */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
+                        <input type="number" min="0" value={row.quantity} onChange={e => handleRowChange(index, 'quantity', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-1.5 text-xs text-white outline-none focus:border-sky-500 text-center" />
                       </td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-rose-400 outline-none focus:border-rose-500 text-center" />
+
+                      {/* Free Stocks */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
+                        <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-1.5 text-xs text-white outline-none focus:border-sky-500 text-center" />
                       </td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-white outline-none focus:border-sky-500 text-center" />
+
+                      {/* Total Qty */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center text-white text-xs font-semibold w-16">{totalQty}</td>
+
+                      {/* Discnt % */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
+                        <input type="number" min="0" max="100" value={row.discount} onChange={e => handleRowChange(index, 'discount', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-1.5 text-xs text-white outline-none focus:border-sky-500 text-center" />
                       </td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50 text-center text-white font-semibold">{totalQty}</td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <input type="number" min="0" max="100" value={row.discount} onChange={e => handleRowChange(index, 'discount', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-2 py-2 text-sm text-white outline-none focus:border-sky-500 text-center" />
+
+                      {/* Final Price */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center text-xs font-bold text-sky-400 w-20">{finalPrice.toFixed(2)}</td>
+
+                      {/* Purc. Rtn */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16 bg-rose-950/10">
+                        <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full bg-[#1a1a2e] border border-rose-900/50 rounded px-1 py-1.5 text-xs text-rose-400 outline-none focus:border-rose-500 text-center" />
                       </td>
-                      <td className="p-2 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-400">{finalAmt.toFixed(2)}</td>
-                      <td className="p-2 text-center">
-                        <button onClick={() => removeRow(index)} className="text-[#8b8baf] hover:text-rose-400 transition-colors p-1"><Trash2 size={16} /></button>
+
+                      {/* Rtn Price Block */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-rose-950/10">
+                        <div className="flex items-center gap-1 justify-center">
+                          <div className="flex flex-col gap-px w-7">
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTR')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'PTR' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTR</button>
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'PTS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTS</button>
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'MRP')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'MRP' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>MRP</button>
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'CUS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'CUS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>Cus</button>
+                          </div>
+                          <div className="flex-1 w-16">
+                            {row.selectedRtnPriceType === 'CUS' ? (
+                              <input type="number" min="0" value={row.customRtnPrice} onChange={e => handleRowChange(index, 'customRtnPrice', e.target.value)} className="w-full bg-[#1a1a2e] border border-rose-900/50 rounded px-1 py-[14px] text-xs text-rose-400 outline-none focus:border-rose-500 text-center font-bold" placeholder="0.00" />
+                            ) : (
+                              <div className="w-full bg-[#1a1a2e] border border-rose-900/50 rounded px-1 py-[14px] text-xs text-rose-400/70 text-center font-bold">{rtnPrice.toFixed(2)}</div>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Final Value */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center text-xs font-black text-emerald-400 w-24 bg-emerald-950/10">{finalValue.toFixed(2)}</td>
+                      
+                      <td className="p-1.5 text-center w-10">
+                        <button onClick={() => removeRow(index)} className="text-[#8b8baf] hover:text-rose-400 transition-colors p-1"><Trash2 size={14} /></button>
                       </td>
                     </tr>
                   );
