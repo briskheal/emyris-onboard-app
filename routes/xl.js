@@ -846,10 +846,29 @@ router.get('/leave', async (req, res) => {
 
 router.delete('/leave/:id', async (req, res) => {
     try {
-        const { XlLeave } = require('../db');
+        const { XlLeave, XlAssignedLeave } = require('../db');
+        const leave = await XlLeave.findOne({ where: { _id: req.params.id } });
+        
+        if (leave && leave.status === 'Approved' && leave.leaveType !== 'Leave Without Pay' && leave.leaveType !== 'LWP') {
+            const sd = new Date(leave.startDate);
+            const ed = new Date(leave.endDate || leave.startDate);
+            const days = Math.ceil(Math.abs(ed - sd) / (1000 * 60 * 60 * 24)) + 1;
+            
+            const startMonth = sd.getMonth();
+            const startYear = sd.getFullYear();
+            const yearStr = startMonth >= 3 ? `${startYear}-${startYear+1}` : `${startYear-1}-${startYear}`;
+            
+            const record = await XlAssignedLeave.findOne({ where: { employeeId: leave.employeeId, year: yearStr, leaveType: leave.leaveType } });
+            if (record) {
+                record.used = Math.max(0, (record.used || 0) - days);
+                await record.save();
+            }
+        }
+        
         await XlLeave.destroy({ where: { _id: req.params.id } });
-        res.json({ success: true, message: 'Leave deleted' });
+        res.json({ success: true, message: 'Leave deleted and balance restored' });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Failed to delete leave' });
     }
 });

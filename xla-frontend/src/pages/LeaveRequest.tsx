@@ -335,11 +335,20 @@ export default function LeaveRequest() {
               </div>
               <div className="flex flex-col gap-1.5 w-full md:w-64">
                 <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-1">Select User</label>
-                <select className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500 transition-colors w-full"
-                  value={filterUser} onChange={e=>setFilterUser(e.target.value)}>
-                  <option value="">All Users</option>
-                  {users.map(u => <option key={u.uid} value={u.uid}>{u.firstName} {u.lastName}</option>)}
-                </select>
+                <div className="relative z-40 w-full"><CustomSelect 
+                options={users.map((u:any) => ({
+                  value: u.uid,
+                  label: `${u.firstName} ${u.lastName || ''}`,
+                  subLabel: u.designation || u.designationName || u.employeeId,
+                  avatarUrl: u.profilePic,
+                  showDefaultAvatar: true
+                }))}
+                value={filterUser}
+                onChange={(val) => setFilterUser(val)}
+                placeholder="All Users"
+                showAllOption={true}
+                allOptionLabel="All Users"
+              /></div>
               </div>
             </div>
           </div>
