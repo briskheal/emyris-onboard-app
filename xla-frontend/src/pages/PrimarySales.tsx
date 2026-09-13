@@ -255,11 +255,11 @@ export default function PrimarySales() {
                       {/* Price Block */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50">
                         <div className="flex items-center gap-1 justify-center">
-                          <div className="flex flex-col gap-px w-7">
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus</button>
+                          <div className="flex flex-col gap-[2px] w-10">
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
+                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus</button>
                           </div>
                           <div className="w-12 shrink-0">
                             {row.selectedPriceType === 'CUS' ? (
@@ -300,11 +300,11 @@ export default function PrimarySales() {
                       {/* Rtn Price Block */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-rose-950/10">
                         <div className="flex items-center gap-1 justify-center">
-                          <div className="flex flex-col gap-px w-7">
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTR')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'PTR' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTR</button>
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'PTS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTS</button>
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'MRP')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'MRP' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>MRP</button>
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'CUS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'CUS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>Cus</button>
+                          <div className="flex flex-col gap-[2px] w-10">
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTR' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTR</button>
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTS</button>
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'MRP' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>MRP</button>
+                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'CUS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'CUS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>Cus</button>
                           </div>
                           <div className="w-12 shrink-0">
                             {row.selectedRtnPriceType === 'CUS' ? (
