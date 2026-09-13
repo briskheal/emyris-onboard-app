@@ -242,8 +242,7 @@ export default function PrimarySales() {
                       <td className="p-1.5 text-center text-xs font-semibold border-r border-[#3b3b5a]/50">{index + 1}</td>
                       
                       {/* Product - Reduced Width */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[140px] max-w-[200px]">
-                        <CustomSelect 
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[140px] max-w-[200px]"><div className="h-[34px] [&>div>div]:min-h-[34px] [&>div>div]:py-1"><CustomSelect 
                           options={products.map((p: any) => ({
                             value: p.uid || p._id,
                             label: p.productName
@@ -251,8 +250,7 @@ export default function PrimarySales() {
                           value={row.productId}
                           onChange={(val) => handleRowChange(index, 'productId', val)}
                           placeholder="Select"
-                        />
-                      </td>
+                        /></div></td>
 
                       {/* Price Block */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50">
@@ -265,9 +263,9 @@ export default function PrimarySales() {
                           </div>
                           <div className="flex-1 w-16">
                             {row.selectedPriceType === 'CUS' ? (
-                              <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-[14px] text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
+                              <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
                             ) : (
-                              <div className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-[14px] text-xs text-[#8b8baf] text-center font-bold">{activePrice.toFixed(2)}</div>
+                              <div className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 flex items-center justify-center text-xs text-[#8b8baf] font-bold">{activePrice.toFixed(2)}</div>
                             )}
                           </div>
                         </div>
@@ -275,12 +273,12 @@ export default function PrimarySales() {
 
                       {/* Qty */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
-                        <input type="number" min="0" value={row.quantity} onChange={e => handleRowChange(index, 'quantity', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-1.5 text-xs text-white outline-none focus:border-sky-500 text-center" />
+                        <input type="number" min="0" value={row.quantity} onChange={e => handleRowChange(index, 'quantity', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-white outline-none focus:border-sky-500 text-center" />
                       </td>
 
                       {/* Free Stocks */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
-                        <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-1.5 text-xs text-white outline-none focus:border-sky-500 text-center" />
+                        <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-white outline-none focus:border-sky-500 text-center" />
                       </td>
 
                       {/* Total Qty */}
@@ -288,7 +286,7 @@ export default function PrimarySales() {
 
                       {/* Discnt % */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
-                        <input type="number" min="0" max="100" value={row.discount} onChange={e => handleRowChange(index, 'discount', e.target.value)} className="w-full bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 py-1.5 text-xs text-white outline-none focus:border-sky-500 text-center" />
+                        <input type="number" min="0" max="100" value={row.discount} onChange={e => handleRowChange(index, 'discount', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-white outline-none focus:border-sky-500 text-center" />
                       </td>
 
                       {/* Final Price */}
@@ -296,7 +294,7 @@ export default function PrimarySales() {
 
                       {/* Purc. Rtn */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16 bg-rose-950/10">
-                        <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full bg-[#1a1a2e] border border-rose-900/50 rounded px-1 py-1.5 text-xs text-rose-400 outline-none focus:border-rose-500 text-center" />
+                        <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center" />
                       </td>
 
                       {/* Rtn Price Block */}
@@ -310,9 +308,9 @@ export default function PrimarySales() {
                           </div>
                           <div className="flex-1 w-16">
                             {row.selectedRtnPriceType === 'CUS' ? (
-                              <input type="number" min="0" value={row.customRtnPrice} onChange={e => handleRowChange(index, 'customRtnPrice', e.target.value)} className="w-full bg-[#1a1a2e] border border-rose-900/50 rounded px-1 py-[14px] text-xs text-rose-400 outline-none focus:border-rose-500 text-center font-bold" placeholder="0.00" />
+                              <input type="number" min="0" value={row.customRtnPrice} onChange={e => handleRowChange(index, 'customRtnPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center font-bold" placeholder="0.00" />
                             ) : (
-                              <div className="w-full bg-[#1a1a2e] border border-rose-900/50 rounded px-1 py-[14px] text-xs text-rose-400/70 text-center font-bold">{rtnPrice.toFixed(2)}</div>
+                              <div className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 flex items-center justify-center text-xs text-rose-400/70 font-bold">{rtnPrice.toFixed(2)}</div>
                             )}
                           </div>
                         </div>
