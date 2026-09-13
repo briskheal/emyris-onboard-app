@@ -1296,7 +1296,7 @@ router.get('/approvals/pending', async (req, res) => {
             where: { 
                 ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), 
                 ...(status === 'History' ? {
-                    status: { [Op.notIn]: ['Pending', 'Submitted', 'pending', 'submitted', null] }
+                    status: { [Op.notIn]: ['Pending', 'Submitted', 'pending', 'submitted'] }
                 } : {
                     [Op.or]: [
                         { status: ['Pending', 'Submitted', 'pending', 'submitted'] },
@@ -1954,6 +1954,7 @@ router.delete('/leave-templates/:id', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
