@@ -271,8 +271,8 @@ export default function PrimarySales() {
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
                 <tr>
-                  <th className="p-2 font-bold text-center border-r border-[#3b3b5a]">Sr</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] w-[200px] min-w-[200px]">Product</th>
+                  <th className="p-2 font-bold text-center border-r border-[#3b3b5a] w-12 max-w-[48px]">Sr</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] min-w-[250px] w-auto">Product</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-[140px]">Price</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Qty</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Free Stocks</th>
@@ -318,10 +318,10 @@ export default function PrimarySales() {
 
                   return (
                     <tr key={row.id} className="border-b border-[#3b3b5a]/50 hover:bg-[#1a1a2e]/50 transition-colors">
-                      <td className="p-1.5 text-center text-xs font-semibold border-r border-[#3b3b5a]/50">{index + 1}</td>
+                      <td className="p-1.5 text-center text-xs font-semibold border-r border-[#3b3b5a]/50 w-12 max-w-[48px]">{index + 1}</td>
                       
                       {/* Product - Reduced Width */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[140px] max-w-[200px]"><div className="h-[34px] [&>div>div]:min-h-[34px] [&>div>div]:py-1"><CustomSelect 
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[250px] w-auto"><div className="h-[34px] [&>div>div]:min-h-[34px] [&>div>div]:py-1"><CustomSelect 
                           options={products.map((p: any) => ({
                             value: p.uid || p._id,
                             label: p.productName
