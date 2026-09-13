@@ -21,7 +21,7 @@ export default function PrimarySales() {
   });
 
   const [rows, setRows] = useState([
-    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR', customRtnPrice: '', selectedRtnPriceType: 'PTR' }
+    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS' }
   ]);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function PrimarySales() {
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR', customRtnPrice: '', selectedRtnPriceType: 'PTR' }]);
+    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS' }]);
   };
 
   const removeRow = (index: number) => {
@@ -136,7 +136,7 @@ export default function PrimarySales() {
           ...formData,
           invoiceNumber: ''
         });
-        setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR', customRtnPrice: '', selectedRtnPriceType: 'PTR' }]);
+        setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS' }]);
       } else {
         alert('Failed to save invoice.');
       }
