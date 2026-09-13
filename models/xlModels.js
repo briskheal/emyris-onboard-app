@@ -45,6 +45,358 @@ const XlPrimarySales = sequelize.define('xl_primary_sales', {
     createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
 });
 
+const XlSecondarySales = sequelize.define('xl_secondary_sales', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeId: { type: DataTypes.STRING, allowNull: false },
+    month: { type: DataTypes.STRING },
+    year: { type: DataTypes.STRING },
+    amount: { type: DataTypes.FLOAT },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+    adminRemarks: { type: DataTypes.STRING },
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+
+const XlGeoFencing = sequelize.define('xl_geo_fencing', {
+    _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+    employeeId: { type: DataTypes.STRING, allowNull: false },
+    entityType: { type: DataTypes.STRING },
+    entityId: { type: DataTypes.STRING },
+    latitude: { type: DataTypes.FLOAT },
+    longitude: { type: DataTypes.FLOAT },
+    geoAddress: { type: DataTypes.STRING },
+    status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+    adminRemarks: { type: DataTypes.STRING },
+    createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+});
+    const XlDoctorControl = sequelize.define('xl_doctor_control', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        type: { type: DataTypes.STRING, allowNull: false }, // Degree, Specialization, Hospital, Category
+        name: { type: DataTypes.STRING, allowNull: false },
+        isActive: { type: DataTypes.BOOLEAN, defaultValue: true },
+          hq: { type: DataTypes.STRING },
+          area: { type: DataTypes.STRING },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlDoctor = sequelize.define('xl_doctor', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        name: { type: DataTypes.STRING, allowNull: false },
+        degree: { type: DataTypes.STRING },
+        specialization: { type: DataTypes.STRING },
+        hospital: { type: DataTypes.STRING },
+        birthday: { type: DataTypes.STRING },
+        anniversary: { type: DataTypes.STRING },
+        mobile: { type: DataTypes.STRING },
+        clinicContact: { type: DataTypes.STRING },
+        contact: { type: DataTypes.STRING },
+        doctorCode: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        category: { type: DataTypes.STRING },
+        uid: { type: DataTypes.STRING },
+        address: { type: DataTypes.TEXT },
+        headquarter: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('headquarter', val.toUpperCase().trim()); } },
+        workingArea: { type: DataTypes.STRING },
+        extraInformation: { type: DataTypes.TEXT },
+        
+        userAllotted: { type: DataTypes.STRING },
+        updateAt: { type: DataTypes.STRING },
+        
+        employeeId: { type: DataTypes.STRING },
+        
+        adminRemarks: { type: DataTypes.STRING },
+        
+        status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        
+        lat1: { type: DataTypes.DOUBLE },
+        lng1: { type: DataTypes.DOUBLE },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.DOUBLE },
+        lng2: { type: DataTypes.DOUBLE },
+        geoAddress2: { type: DataTypes.STRING },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlChemist = sequelize.define('xl_chemist', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        businessName: { type: DataTypes.STRING, allowNull: false },
+        proprietorName: { type: DataTypes.STRING },
+        uid: { type: DataTypes.STRING },
+        certifications: { type: DataTypes.STRING },
+        birthday: { type: DataTypes.STRING },
+        mobile: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        address: { type: DataTypes.TEXT },
+        headquarter: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('headquarter', val.toUpperCase().trim()); } },
+        workingArea: { type: DataTypes.STRING },
+        extraInformation: { type: DataTypes.TEXT },
+        userAllotted: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        
+        lat1: { type: DataTypes.DOUBLE },
+        lng1: { type: DataTypes.DOUBLE },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.DOUBLE },
+        lng2: { type: DataTypes.DOUBLE },
+        geoAddress2: { type: DataTypes.STRING },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlStockist = sequelize.define('xl_stockist', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        businessName: { type: DataTypes.STRING, allowNull: false },
+        name: { type: DataTypes.STRING },
+        uid: { type: DataTypes.STRING },
+        certifications: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        gst: { type: DataTypes.STRING },
+        drugLicense: { type: DataTypes.STRING },
+        drugExpiryDate: { type: DataTypes.STRING },
+        establishmentDate: { type: DataTypes.STRING },
+        mobile: { type: DataTypes.STRING },
+        address: { type: DataTypes.TEXT },
+        headquarter: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('headquarter', val.toUpperCase().trim()); } },
+        workingArea: { type: DataTypes.STRING },
+        extraInformation: { type: DataTypes.TEXT },
+        userAllotted: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        
+        lat1: { type: DataTypes.DOUBLE },
+        lng1: { type: DataTypes.DOUBLE },
+        geoAddress1: { type: DataTypes.STRING },
+        lat2: { type: DataTypes.DOUBLE },
+        lng2: { type: DataTypes.DOUBLE },
+        geoAddress2: { type: DataTypes.STRING },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlState = sequelize.define('xl_state', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, // e.g. STE1
+        stateName: { type: DataTypes.STRING, allowNull: false },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        controls: { type: DataTypes.JSON, defaultValue: {} },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlHQ = sequelize.define('xl_hq', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, // e.g. HQS1
+        state: { type: DataTypes.STRING, allowNull: false },
+        hqName: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hqName', val.toUpperCase().trim()); } },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlCity = sequelize.define('xl_city', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, // e.g. CTY1
+        state: { type: DataTypes.STRING, allowNull: false },
+        hq: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
+        cityName: { type: DataTypes.STRING, allowNull: false },
+        areaType: { type: DataTypes.STRING, defaultValue: 'City' },
+        employeeId: { type: DataTypes.STRING },
+        adminRemarks: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlRoute = sequelize.define('xl_route', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING }, 
+        state: { type: DataTypes.STRING, allowNull: false },
+        hq: { type: DataTypes.STRING, allowNull: false, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
+        fromCity: { type: DataTypes.STRING, allowNull: false },
+        toCity: { type: DataTypes.STRING, allowNull: false },
+        areaType: { type: DataTypes.STRING }, // Local, Ex-Station, Out-Station
+        distance: { type: DataTypes.FLOAT },
+        employeeId: { type: DataTypes.STRING },
+        adminRemarks: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlDivision = sequelize.define('xl_division', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        divisionName: { type: DataTypes.STRING, allowNull: false },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlDesignation = sequelize.define('xl_designation', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        designationName: { type: DataTypes.STRING, allowNull: false },
+        level: { type: DataTypes.INTEGER, allowNull: false },
+        dailyAllowance: { type: DataTypes.FLOAT },
+        exStationAllowance: { type: DataTypes.FLOAT },
+        outStationAllowance: { type: DataTypes.FLOAT },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlNotification = sequelize.define('xl_notification', { _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId }, employeeId: { type: DataTypes.STRING, allowNull: false }, title: { type: DataTypes.STRING, allowNull: false }, message: { type: DataTypes.TEXT, allowNull: false }, isRead: { type: DataTypes.BOOLEAN, defaultValue: false }, createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW } });
+    
+    const XlVacancyLog = sequelize.define('xl_vacancy_log', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        headquarter: { type: DataTypes.STRING, allowNull: false },
+        vacantFrom: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
+        vacantTo: { type: DataTypes.DATE },
+        totalDays: { type: DataTypes.INTEGER },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlUser = sequelize.define('xl_user', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        firstName: { type: DataTypes.STRING, allowNull: false },
+        middleName: { type: DataTypes.STRING },
+        lastName: { type: DataTypes.STRING },
+        gender: { type: DataTypes.STRING },
+        phone: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        password: { type: DataTypes.STRING },
+        dob: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
+        designation: { type: DataTypes.STRING },
+        division: { type: DataTypes.STRING },
+        employeeId: { type: DataTypes.STRING },
+        doj: { type: DataTypes.STRING },
+        reportingManager: { type: DataTypes.STRING },
+        aadhar: { type: DataTypes.STRING },
+        pan: { type: DataTypes.STRING },
+        dailyAllowance: { type: DataTypes.FLOAT },
+        exStationAllowance: { type: DataTypes.FLOAT },
+        outStationAllowance: { type: DataTypes.FLOAT },
+        streetAddress1: { type: DataTypes.STRING },
+        streetAddress2: { type: DataTypes.STRING },
+        city: { type: DataTypes.STRING },
+        state: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        controls: { type: DataTypes.JSON, defaultValue: {} },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    const XlAdmin = sequelize.define('xl_admin', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        uid: { type: DataTypes.STRING },
+        firstName: { type: DataTypes.STRING, allowNull: false },
+        middleName: { type: DataTypes.STRING },
+        lastName: { type: DataTypes.STRING },
+        gender: { type: DataTypes.STRING },
+        phone: { type: DataTypes.STRING },
+        email: { type: DataTypes.STRING },
+        password: { type: DataTypes.STRING },
+        dob: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
+        designation: { type: DataTypes.STRING },
+        division: { type: DataTypes.STRING },
+        employeeId: { type: DataTypes.STRING },
+        doj: { type: DataTypes.STRING },
+        reportingManager: { type: DataTypes.STRING },
+        aadhar: { type: DataTypes.STRING },
+        pan: { type: DataTypes.STRING },
+        dailyAllowance: { type: DataTypes.FLOAT },
+        exStationAllowance: { type: DataTypes.FLOAT },
+        outStationAllowance: { type: DataTypes.FLOAT },
+        streetAddress1: { type: DataTypes.STRING },
+        streetAddress2: { type: DataTypes.STRING },
+        city: { type: DataTypes.STRING },
+        state: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 2: Tour Program
+    const XlTourProgram = sequelize.define('xl_tour_program', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
+        employeeName: { type: DataTypes.STRING },
+        hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
+        month: { type: DataTypes.STRING, allowNull: false }, // e.g. "august"
+        year: { type: DataTypes.STRING, allowNull: false },  // e.g. "2026"
+        entries: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of {date, visitType, area}
+        status: { type: DataTypes.STRING, defaultValue: 'Draft' }, // Draft / Submitted / Approved / Rejected
+        adminRemarks: { type: DataTypes.TEXT },
+        submittedAt: { type: DataTypes.DATE },
+        approvedAt: { type: DataTypes.DATE },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 2: Daily Call Report (DCR)
+    const XlDCR = sequelize.define('xl_dcr', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
+        employeeName: { type: DataTypes.STRING },
+        date: { type: DataTypes.STRING, allowNull: false },         // "YYYY-MM-DD"
+        tourProgramId: { type: DataTypes.STRING },                  // FK to xl_tour_program
+        entityType: { type: DataTypes.STRING },                     // "Doctor" or "Chemist"
+        entityId: { type: DataTypes.STRING },                       // FK to xl_doctor or xl_chemist
+        entityName: { type: DataTypes.STRING },
+        discussion: { type: DataTypes.TEXT },
+          status: { type: DataTypes.STRING, defaultValue: "Pending" },
+          adminRemarks: { type: DataTypes.TEXT },
+        samplesGiven: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON [{product, qty}]
+        gifts: { type: DataTypes.TEXT, defaultValue: '[]' },        // JSON [{item, qty}]
+        productsDetailed: { type: DataTypes.TEXT, defaultValue: '[]' },
+        pobItems: { type: DataTypes.TEXT, defaultValue: '[]' },
+        workedWith: { type: DataTypes.TEXT, defaultValue: '[]' },
+        rating: { type: DataTypes.INTEGER, defaultValue: 0 },
+        photoUrl: { type: DataTypes.STRING },
+        workingAreaType: { type: DataTypes.STRING },
+        workingAreas: { type: DataTypes.STRING },
+        checkInTime: { type: DataTypes.STRING },
+        checkOutTime: { type: DataTypes.STRING },
+        latitude: { type: DataTypes.FLOAT },
+        longitude: { type: DataTypes.FLOAT },
+        geoAddress: { type: DataTypes.STRING },
+        status: { type: DataTypes.STRING, defaultValue: 'Submitted' },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 3: Attendance
+    const XlAttendance = sequelize.define('xl_attendance', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        employeeId: { type: DataTypes.STRING, allowNull: false },
+        date: { type: DataTypes.STRING, allowNull: false }, // "YYYY-MM-DD"
+        punchInTime: { type: DataTypes.STRING },
+        punchInLat: { type: DataTypes.FLOAT },
+        punchInLng: { type: DataTypes.FLOAT },
+        punchOutTime: { type: DataTypes.STRING },
+        punchOutLat: { type: DataTypes.FLOAT },
+        punchOutLng: { type: DataTypes.FLOAT },
+        status: { type: DataTypes.STRING, defaultValue: 'Present' },
+        dayRemarks: { type: DataTypes.TEXT },
+        daySubmitted: { type: DataTypes.BOOLEAN, defaultValue: false },
+        // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
+    // Phase 3: Leave Request
+    
+    const XlLeaveType = sequelize.define('xl_leave_type', {
+        _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
+        name: { type: DataTypes.STRING, allowNull: false },
+        code: { type: DataTypes.STRING, allowNull: false },
+        description: { type: DataTypes.TEXT },
+        isPaid: { type: DataTypes.BOOLEAN, defaultValue: true },
+        createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    });
+
     const XlAssignedLeave = sequelize.define('xl_assigned_leave', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         employeeId: { type: DataTypes.STRING, allowNull: false },
