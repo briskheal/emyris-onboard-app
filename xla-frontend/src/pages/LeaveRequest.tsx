@@ -1,7 +1,8 @@
-import { ArrowLeft, ChevronDown, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
+import CustomSelect from '../components/CustomSelect';
 
 export default function LeaveRequest() {
   const navigate = useNavigate();
@@ -25,19 +26,7 @@ export default function LeaveRequest() {
   const [filterUser, setFilterUser] = useState('');
 
   // Dropdown & Calendar State
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-
-  useEffect(() => {
-    function handleClickOutside(event: any) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsDropdownOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -232,52 +221,41 @@ export default function LeaveRequest() {
           <div className="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-6 md:p-8 shadow-2xl flex flex-col gap-6 w-full xl:w-[450px]">
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-1">Select User *</label>
-              <div className="relative">
-                <select className="w-full appearance-none bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-emerald-500 transition-colors"
-                  value={formData.employeeId} onChange={e=>setFormData({...formData, employeeId:e.target.value})}>
-                  <option value="" disabled hidden>Select User</option>
-                  {users.map(u => <option key={u.uid} value={u.uid}>{u.firstName} {u.lastName} ({u.designation || u.designationName})</option>)}
-                </select>
-                <ChevronDown size={18} className="text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <CustomSelect 
+                options={users.map(u => ({
+                  value: u.uid,
+                  label: u.firstName + ' ' + (u.lastName || ''),
+                  subLabel: u.designation || u.designationName,
+                  showDefaultAvatar: true,
+                  avatarUrl: u.profilePic
+                }))}
+                value={formData.employeeId}
+                onChange={(val) => setFormData({...formData, employeeId: val})}
+                placeholder="Select User"
+              />
             </div>
 
-            <div className="flex flex-col gap-1.5" ref={dropdownRef}>
+            <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Leave Type *</label>
-              <div className="relative">
-                <button 
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="w-full flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-rose-500 transition-colors">
-                  <span className={formData.leaveType ? "text-white" : "text-slate-400 font-semibold"}>
-                    {formData.leaveType || 'Select Leave Type'}
-                  </span>
-                  <ChevronDown size={18} className="text-slate-400" />
-                </button>
-                
-                {isDropdownOpen && (
-                  <div className="absolute z-20 top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden py-2">
-                    {leaveTypes.map(t => {
-                      const b = balances.find((x:any) => x.leaveType === t.name);
-                      const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP';
-                      const remaining = b ? (b.assigned - b.used) : 0;
-                      return (
-                        <button 
-                          key={t._id} 
-                          onClick={() => { setFormData({...formData, leaveType: t.name}); setIsDropdownOpen(false); }}
-                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-700/50 transition-colors text-left"
-                        >
-                          <span className="text-sm font-semibold text-slate-200">{t.name}</span>
-                          {!isLWP && (
-                            <span className="w-6 h-6 rounded-full bg-sky-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-sky-500/20">
-                              {remaining}
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <CustomSelect 
+                options={leaveTypes.map(t => {
+                  const b = balances.find((x:any) => x.leaveType === t.name);
+                  const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP';
+                  const remaining = b ? (b.assigned - b.used) : 0;
+                  return {
+                    value: t.name,
+                    label: t.name,
+                    rightBadge: !isLWP ? (
+                      <span className="w-6 h-6 rounded-full bg-sky-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-sky-500/20">
+                        {remaining}
+                      </span>
+                    ) : undefined
+                  };
+                })}
+                value={formData.leaveType}
+                onChange={(val) => setFormData({...formData, leaveType: val})}
+                placeholder="Select Leave Type"
+              />
             </div>
 
             <div className="flex flex-col gap-1.5 flex-1">
