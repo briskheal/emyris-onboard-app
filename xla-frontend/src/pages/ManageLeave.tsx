@@ -8,6 +8,10 @@ function CreateLeaveTypeTab() {
   const [types, setTypes] = useState([]);
   const [formData, setFormData] = useState({ name: '', code: '', description: '', isPaid: true });
   
+  // For Edit modal
+  const [editItem, setEditItem] = useState<any>(null);
+  const [editFormData, setEditFormData] = useState({ name: '', code: '', description: '', isPaid: true });
+
   const fetchTypes = async () => {
     try {
       const res = await axios.get('/api/xl/leave-types');
@@ -25,6 +29,20 @@ function CreateLeaveTypeTab() {
       setFormData({ name: '', code: '', description: '', isPaid: true });
     } catch (e) {}
   };
+  
+  const handleEditSave = async () => {
+    if(!editItem) return;
+    if(!editFormData.name || !editFormData.code) return alert("Name and Code required");
+    try {
+      await axios.put('/api/xl/leave-types/' + editItem._id, editFormData);
+      alert("Updated");
+      setEditItem(null);
+      fetchTypes();
+    } catch (e) {
+      alert("Error updating leave type");
+    }
+  };
+
   const handleDelete = async (id: string) => {
     if(!window.confirm("Delete?")) return;
     try {
@@ -33,8 +51,13 @@ function CreateLeaveTypeTab() {
     } catch(e) {}
   };
 
+  const openEdit = (t:any) => {
+    setEditFormData({ name: t.name, code: t.code, description: t.description || '', isPaid: t.isPaid });
+    setEditItem(t);
+  };
+
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col relative">
       <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest border-b border-slate-700 pb-2">Create Leave Type</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
@@ -59,26 +82,31 @@ function CreateLeaveTypeTab() {
       </div>
       <h3 className="text-sm font-bold text-slate-300 mb-2 uppercase">Showing ({types.length}) Entries</h3>
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
-        <table className="w-full text-left whitespace-nowrap">
-          <thead className="bg-slate-700">
+        <table className="w-full text-left">
+          <thead className="bg-slate-700 whitespace-nowrap">
             <tr>
               <th className="p-3 text-xs text-sky-400">Sr no.</th>
               <th className="p-3 text-xs text-sky-400">Leave Types</th>
               <th className="p-3 text-xs text-sky-400">Code</th>
               <th className="p-3 text-xs text-sky-400">Status</th>
-              <th className="p-3 text-xs text-sky-400">Description</th>
-              <th className="p-3 text-xs text-sky-400">Actions</th>
+              <th className="p-3 text-xs text-sky-400 w-1/2">Description</th>
+              <th className="p-3 text-xs text-sky-400 text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {types.map((t:any, i) => (
-              <tr key={t._id} className="border-b border-slate-700/50">
-                <td className="p-3 text-sm text-slate-300">{i+1}</td>
-                <td className="p-3 text-sm text-slate-300">{t.name}</td>
-                <td className="p-3 text-sm text-slate-300">{t.code}</td>
-                <td className="p-3 text-sm text-slate-300">{t.isPaid ? 'Paid' : 'Unpaid'}</td>
-                <td className="p-3 text-sm text-slate-300 truncate max-w-xs">{t.description}</td>
-                <td className="p-3 text-sm text-slate-300"><button onClick={()=>handleDelete(t._id)}><Trash2 size={16} className="text-rose-400 hover:text-rose-300"/></button></td>
+              <tr key={t._id} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                <td className="p-3 text-sm text-slate-300 whitespace-nowrap">{i+1}</td>
+                <td className="p-3 text-sm text-slate-300 whitespace-nowrap">{t.name}</td>
+                <td className="p-3 text-sm text-slate-300 whitespace-nowrap">{t.code}</td>
+                <td className="p-3 text-sm text-slate-300 whitespace-nowrap">{t.isPaid ? 'Paid' : 'Unpaid'}</td>
+                <td className="p-3 text-sm text-slate-300 text-wrap leading-relaxed max-w-sm">{t.description}</td>
+                <td className="p-3 text-sm text-slate-300 whitespace-nowrap">
+                  <div className="flex items-center justify-center gap-3">
+                    <button onClick={()=>openEdit(t)} title="Edit"><Edit2 size={16} className="text-sky-400 hover:text-sky-300"/></button>
+                    <button onClick={()=>handleDelete(t._id)} title="Delete"><Trash2 size={16} className="text-rose-400 hover:text-rose-300"/></button>
+                  </div>
+                </td>
               </tr>
             ))}
             {types.length === 0 && (
@@ -87,6 +115,43 @@ function CreateLeaveTypeTab() {
           </tbody>
         </table>
       </div>
+
+      {editItem && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl w-full max-w-md relative">
+            <button onClick={() => setEditItem(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+              <X size={20} />
+            </button>
+            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4">Edit Leave Type</h3>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-[10px] font-bold text-sky-400 uppercase">Leave Type *</label>
+                <input type="text" value={editFormData.name} onChange={e => setEditFormData({...editFormData, name:e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 mt-1 focus:border-sky-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-sky-400 uppercase">Code *</label>
+                <input type="text" value={editFormData.code} onChange={e => setEditFormData({...editFormData, code:e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 mt-1 focus:border-sky-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-sky-400 uppercase">Description</label>
+                <textarea rows={3} value={editFormData.description} onChange={e => setEditFormData({...editFormData, description:e.target.value})}
+                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 mt-1 focus:border-sky-500 focus:outline-none" />
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={editFormData.isPaid} onChange={e=>setEditFormData({...editFormData, isPaid:e.target.checked})} className="w-5 h-5 accent-sky-500" />
+                <span className="text-sm font-bold text-slate-300">PAID LEAVE</span>
+              </div>
+            </div>
+            
+            <button onClick={handleEditSave} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors">
+              Save Changes
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

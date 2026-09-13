@@ -1722,6 +1722,23 @@ router.post('/leave-types', async (req, res) => {
         res.json({ success: true, data });
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
+router.put('/leave-types/:id', async (req, res) => {
+    try {
+        const { XlLeaveType } = require('../db');
+        const { name, code, description, isPaid } = req.body;
+        const record = await XlLeaveType.findOne({ where: { _id: req.params.id } });
+        if (!record) return res.status(404).json({ error: 'Not found' });
+        
+        record.name = name;
+        record.code = code;
+        record.description = description;
+        record.isPaid = isPaid;
+        await record.save();
+        
+        res.json({ success: true, data: record });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.delete('/leave-types/:id', async (req, res) => {
     try {
         const { XlLeaveType } = require('../db');
