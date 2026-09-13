@@ -23,7 +23,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -39,7 +39,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
     if (isOpen) {
       setSearchTerm('');
       setTimeout(() => {
-        searchInputRef.current?.focus();
+        inputRef.current?.focus();
       }, 50);
     }
   }, [isOpen]);
@@ -54,59 +54,63 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
   return (
     <div className="relative w-full" ref={dropdownRef}>
       <div 
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full bg-slate-800 border ${isOpen ? 'border-[#00e5ff]' : 'border-slate-700'} text-white rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-lg min-h-[56px]`}
+        onClick={() => {
+          if (!isOpen) setIsOpen(true);
+        }}
+        className={`w-full bg-slate-800 border ${isOpen ? 'border-[#00e5ff]' : 'border-slate-700'} text-white rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-lg min-h-[56px] relative`}
       >
-        <div className="flex items-center gap-3 overflow-hidden w-full pr-4">
-          {selectedData ? (
-            <>
-              {(selectedData.avatarUrl || selectedData.showDefaultAvatar) && (
-                <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center shrink-0 border border-slate-500 overflow-hidden">
-                  {selectedData.avatarUrl ? (
-                    <img src={selectedData.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={16} className="text-slate-300" />
+        <div className="flex items-center gap-3 overflow-hidden w-full pr-4 relative">
+          
+          {/* SEARCH INPUT (Visible when open) */}
+          <div className={`absolute inset-0 flex items-center bg-slate-800 z-10 transition-opacity duration-200 ${isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+             <Search size={16} className="text-slate-400 shrink-0 mr-2" />
+             <input
+                ref={inputRef}
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent border-none outline-none w-full text-sm text-white placeholder:text-slate-500 font-bold"
+             />
+          </div>
+
+          {/* DISPLAY UI (Visible when closed) */}
+          <div className={`flex items-center gap-3 w-full transition-opacity duration-200 ${isOpen ? 'opacity-0' : 'opacity-100'}`}>
+            {selectedData ? (
+              <>
+                {(selectedData.avatarUrl || selectedData.showDefaultAvatar) && (
+                  <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center shrink-0 border border-slate-500 overflow-hidden">
+                    {selectedData.avatarUrl ? (
+                      <img src={selectedData.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={16} className="text-slate-300" />
+                    )}
+                  </div>
+                )}
+                <div className="flex flex-col overflow-hidden w-full">
+                  <span className={`font-bold truncate ${selectedData.subLabel ? 'text-sm' : 'text-sm'}`}>
+                    {selectedData.label}
+                  </span>
+                  {selectedData.subLabel && (
+                    <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">
+                      {selectedData.subLabel}
+                    </span>
                   )}
                 </div>
-              )}
-              <div className="flex flex-col overflow-hidden w-full">
-                <span className={`font-bold truncate ${selectedData.subLabel ? 'text-sm' : 'text-sm'}`}>
-                  {selectedData.label}
-                </span>
-                {selectedData.subLabel && (
-                  <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">
-                    {selectedData.subLabel}
-                  </span>
-                )}
+              </>
+            ) : (
+              <div className="flex items-center gap-3 text-slate-400 font-semibold text-sm uppercase tracking-widest">
+                <span>{value === '' && showAllOption ? allOptionLabel : placeholder}</span>
               </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-3 text-slate-400 font-semibold text-sm uppercase tracking-widest">
-              <span>{value === '' && showAllOption ? allOptionLabel : placeholder}</span>
-            </div>
-          )}
+            )}
+          </div>
+
         </div>
-        <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#00e5ff]' : ''}`} />
+        <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 shrink-0 relative z-20 ${isOpen ? 'rotate-180 text-[#00e5ff]' : ''}`} />
       </div>
 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col">
-          {options.length > 5 && (
-            <div className="p-3 border-b border-slate-700 bg-slate-800/90 backdrop-blur sticky top-0 z-10 shrink-0">
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  placeholder="Search..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
-                />
-              </div>
-            </div>
-          )}
-
           <div className="max-h-64 overflow-y-auto custom-scrollbar py-2">
             
             {showAllOption && !searchTerm && (

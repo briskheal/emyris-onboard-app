@@ -247,7 +247,7 @@ export default function LeaveRequest() {
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Leave Type *</label>
               <CustomSelect 
-                options={leaveTypes.map(t => {
+                options={leaveTypes.filter(t => { const b = balances.find((x:any) => x.leaveType === t.name); const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP'; return isLWP || (b && b.assigned > 0); }).map(t => {
                   const b = balances.find((x:any) => x.leaveType === t.name);
                   const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP';
                   const remaining = b ? (b.assigned - b.used) : 0;
@@ -352,4 +352,5 @@ export default function LeaveRequest() {
     </div>
   );
 }
+
 
