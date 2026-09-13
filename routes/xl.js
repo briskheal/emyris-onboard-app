@@ -830,6 +830,30 @@ router.get('/attendance/my', async (req, res) => {
 
 // ─── PHASE 3: LEAVE REQUEST ────────────────────────────────────────────────
 
+
+// --- LEAVE ADMIN FETCH ROUTES ---
+router.get('/leave', async (req, res) => {
+    try {
+        const { XlLeave } = require('../db');
+        let where = {};
+        if (req.query.employeeId) where.employeeId = req.query.employeeId;
+        const leaves = await XlLeave.findAll({ where, order: [['createdAt', 'DESC']] });
+        res.json({ success: true, data: leaves });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch leaves' });
+    }
+});
+
+router.delete('/leave/:id', async (req, res) => {
+    try {
+        const { XlLeave } = require('../db');
+        await XlLeave.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true, message: 'Leave deleted' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to delete leave' });
+    }
+});
+
 router.post('/leave', async (req, res) => {
     try {
         const leave = await XlLeave.create({ _id: generateId(), ...req.body });
