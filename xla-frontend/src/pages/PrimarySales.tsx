@@ -276,14 +276,15 @@ export default function PrimarySales() {
                 <tr>
                   <th className="p-2 font-bold text-center border-r border-[#3b3b5a]">Sr</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a]">Product</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-24">Price</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Qty</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Free Stocks</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Total Qty</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Discnt %</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400">Final Price</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Purc. Rtn</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Rtn Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400 w-24">Rtn Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Rtn Value</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400">Final Value</th>
                   <th className="p-2 font-bold text-center">Del</th>
                 </tr>
@@ -334,7 +335,7 @@ export default function PrimarySales() {
                         /></div></td>
 
                       {/* Price Block */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50">
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 w-28">
                         <div className="flex items-center gap-1 justify-center">
                           <div className="flex flex-col gap-[2px] w-10">
                             <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
@@ -379,7 +380,7 @@ export default function PrimarySales() {
                       </td>
 
                       {/* Rtn Price Block */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-rose-950/10">
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-rose-950/10 w-28">
                         <div className="flex items-center gap-1 justify-center">
                           <div className="flex flex-col gap-[2px] w-10">
                             <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTR' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTR</button>
