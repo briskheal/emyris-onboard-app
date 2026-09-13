@@ -90,15 +90,26 @@ function CreateLeaveTypeTab() {
   )
 }
 
-function AssignLeaveTab() {
-  const [users, setUsers] = useState([]);
+function AssignLeaveTab({ users }: { users: any[] }) {
   const [types, setTypes] = useState([]);
+  const [assigned, setAssigned] = useState([]);
   const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', leaveType: '', count: '' });
   
+  const fetchAssigned = async () => {
+    if(!formData.employeeId) { setAssigned([]); return; }
+    try {
+      const res = await axios.get('/api/xl/assigned-leaves/my?employeeId=' + formData.employeeId + '&year=' + formData.year);
+      setAssigned(res.data.data||[]);
+    } catch(e){}
+  };
+
   useEffect(() => {
-    axios.get('/api/admin/users').then(res => setUsers(res.data.users||[]));
     axios.get('/api/xl/leave-types').then(res => setTypes(res.data.data||[]));
   }, []);
+  
+  useEffect(() => {
+    fetchAssigned();
+  }, [formData.employeeId, formData.year]);
 
   const handleAssign = async () => {
     if(!formData.employeeId || !formData.leaveType || !formData.count) return alert("Fill all fields");
@@ -141,14 +152,49 @@ function AssignLeaveTab() {
           <input type="text" inputMode="numeric" className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.count} onChange={e=>setFormData({...formData, count:e.target.value})} />
         </div>
         <div className="md:col-span-2 lg:col-span-3">
-          <button onClick={handleAssign} className="bg-sky-500 text-white font-bold py-2 px-6 rounded-lg active:scale-95 transition-transform">Assign Leave</button>
+          <button onClick={async () => { await handleAssign(); await fetchAssigned(); }} className="bg-sky-500 text-white font-bold py-2 px-6 rounded-lg active:scale-95 transition-transform">Assign Leave</button>
         </div>
       </div>
+
+      {formData.employeeId && (
+        <div className="mt-8 border-t border-slate-700 pt-6">
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-4">Showing ({assigned.length}) Entries</h3>
+          <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
+            <table className="w-full text-left whitespace-nowrap">
+              <thead className="bg-slate-700">
+                <tr>
+                  <th className="p-3 text-xs text-sky-400">Sr no.</th>
+                  <th className="p-3 text-xs text-sky-400 cursor-pointer">Year</th>
+                  <th className="p-3 text-xs text-sky-400 cursor-pointer">Leave Types</th>
+                  <th className="p-3 text-xs text-sky-400">Assigned Leaves</th>
+                  <th className="p-3 text-xs text-sky-400">Used Leaves</th>
+                  <th className="p-3 text-xs text-sky-400">Remaining Leaves</th>
+                </tr>
+              </thead>
+              <tbody>
+                {assigned.map((a:any, i) => (
+                  <tr key={a._id} className="border-b border-slate-700/50">
+                    <td className="p-3 text-sm text-slate-300 font-bold">{i+1}</td>
+                    <td className="p-3 text-sm text-slate-300 font-bold">{a.year}</td>
+                    <td className="p-3 text-sm text-slate-300">{a.leaveType}</td>
+                    <td className="p-3 text-sm text-slate-300">{a.assigned}</td>
+                    <td className="p-3 text-sm text-slate-300">{a.used}</td>
+                    <td className="p-3 text-sm text-emerald-400 font-bold">{a.assigned - a.used}</td>
+                  </tr>
+                ))}
+                {assigned.length === 0 && (
+                  <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No Leaves Assigned</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function AssignedLeavesTab() {
+function AssignedLeavesTab({ users }: { users: any[] }) {
   const [data, setData] = useState([]);
   const [year, setYear] = useState('2026-2027');
   
@@ -170,6 +216,7 @@ function AssignedLeavesTab() {
           <thead className="bg-slate-700">
             <tr>
               <th className="p-3 text-xs text-sky-400">Employee ID</th>
+              <th className="p-3 text-xs text-sky-400">Employee Name</th>
               <th className="p-3 text-xs text-sky-400">Leave Type</th>
               <th className="p-3 text-xs text-sky-400">Assigned</th>
               <th className="p-3 text-xs text-sky-400">Used</th>
@@ -177,23 +224,27 @@ function AssignedLeavesTab() {
             </tr>
           </thead>
           <tbody>
-            {data.map((d:any) => (
-              <tr key={d._id} className="border-b border-slate-700/50">
-                <td className="p-3 text-sm text-slate-300 font-bold">{d.employeeId}</td>
-                <td className="p-3 text-sm text-slate-300">{d.leaveType}</td>
-                <td className="p-3 text-sm text-slate-300">{d.assigned}</td>
-                <td className="p-3 text-sm text-slate-300">{d.used}</td>
-                <td className="p-3 text-sm text-emerald-400 font-bold">{d.assigned - d.used}</td>
-              </tr>
-            ))}
+            {data.map((d:any) => {
+              const u = users.find((usr:any) => usr.uid === d.employeeId);
+              return (
+                <tr key={d._id} className="border-b border-slate-700/50">
+                  <td className="p-3 text-sm text-slate-200 font-bold">{u?.employeeId || d.employeeId}</td>
+                  <td className="p-3 text-sm text-slate-200">{u ? `${u.firstName} ${u.lastName || ''}` : 'Unknown'}</td>
+                  <td className="p-3 text-sm text-slate-300">{d.leaveType}</td>
+                  <td className="p-3 text-sm text-slate-300">{d.assigned}</td>
+                  <td className="p-3 text-sm text-slate-300">{d.used}</td>
+                  <td className="p-3 text-sm text-emerald-400 font-bold">{d.assigned - d.used}</td>
+                </tr>
+              );
+            })}
             {data.length === 0 && (
-              <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-bold">No Leave Data Found</td></tr>
+              <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No Leave Data Found</td></tr>
             )}
           </tbody>
         </table>
       </div>
     </div>
-  )
+  );
 }
 
 function CreateLeaveTemplateTab() {
@@ -311,13 +362,11 @@ function CreateLeaveTemplateTab() {
   )
 }
 
-function AssignLeaveTemplateTab() {
-  const [users, setUsers] = useState([]);
+function AssignLeaveTemplateTab({ users }: { users: any[] }) {
   const [templates, setTemplates] = useState([]);
   const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', templateId: '' });
   
   useEffect(() => {
-    axios.get('/api/admin/users').then(res => setUsers(res.data.users||[]));
     axios.get('/api/xl/leave-templates').then(res => setTemplates(res.data.data||[]));
   }, []);
 
@@ -365,6 +414,10 @@ function AssignLeaveTemplateTab() {
 }
 
 export default function ManageLeave() {
+  const [users, setUsers] = useState<any[]>([]);
+  useEffect(() => {
+    axios.get('/api/admin/users').then(res => setUsers(res.data.users||[]));
+  }, []);
   const [activeTab, setActiveTab] = useState<'create-type' | 'assign-leave' | 'assigned-leaves' | 'create-template' | 'assign-template'>('create-type');
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -417,10 +470,10 @@ export default function ManageLeave() {
         {/* Content */}
         <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-8 overflow-y-auto">
           {activeTab === 'create-type' && <CreateLeaveTypeTab />}
-          {activeTab === 'assign-leave' && <AssignLeaveTab />}
-          {activeTab === 'assigned-leaves' && <AssignedLeavesTab />}
+          {activeTab === 'assign-leave' && <AssignLeaveTab users={users} />}
+          {activeTab === 'assigned-leaves' && <AssignedLeavesTab users={users} />}
           {activeTab === 'create-template' && <CreateLeaveTemplateTab />}
-          {activeTab === 'assign-template' && <AssignLeaveTemplateTab />}
+          {activeTab === 'assign-template' && <AssignLeaveTemplateTab users={users} />}
         </div>
       </div>
     </div>
