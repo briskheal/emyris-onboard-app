@@ -147,7 +147,9 @@ export default function PrimarySales() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex flex-col text-[#d1d5db] font-sans">
+    <div className="min-h-screen bg-[#161625] flex flex-col text-[#d1d5db] font-sans">
+      {/* STICKY TOP BLOCK */}
+      <div className="sticky top-0 z-40 bg-[#161625] shadow-lg border-b border-[#3b3b5a]/80 pb-2">
       
       {/* HEADER */}
       <div className="flex items-center justify-between px-5 py-3 bg-[#1e1e30] border-b border-[#3b3b5a] shrink-0">
@@ -165,7 +167,7 @@ export default function PrimarySales() {
         </div>
       </div>
 
-      <div className="flex-1 p-3 md:p-4 bg-[#161625]">
+      <div className="px-3 md:px-4 pt-3 md:pt-4 pb-1">
         
         {/* COMPACT FORM CONTAINER */}
         <div className="bg-[#212136] rounded-xl p-4 mb-4 shadow-lg border border-[#3b3b5a]/50 shrink-0">
@@ -258,7 +260,11 @@ export default function PrimarySales() {
 
           </div>
         </div>
+        </div>
+      </div>
 
+      {/* SCROLLING TABLE BLOCK */}
+      <div className="flex-1 px-3 md:px-4 pb-3">
         {/* DATA TABLE */}
         <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 mb-20">
           <div className="w-full">
@@ -410,9 +416,8 @@ export default function PrimarySales() {
              <button onClick={addRow} className="text-xs font-bold text-sky-400 hover:text-sky-300 flex items-center gap-1"><Plus size={14}/> Add Row</button>
           </div>
         </div>
-
       </div>
-    
+
       {/* FLOATING TOTALS FOOTER */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
         <div className="flex gap-8 mb-3 md:mb-0">
