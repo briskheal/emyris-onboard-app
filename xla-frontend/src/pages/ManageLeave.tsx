@@ -288,7 +288,14 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
     if (!acc[curr.employeeId]) acc[curr.employeeId] = [];
     acc[curr.employeeId].push(curr);
     return acc;
-  }, {});
+    }, {});
+    
+    const filteredGroupKeys = Object.keys(grouped).filter((empId:any) => {
+      if (!searchQuery) return true;
+      const user = users.find((u:any) => u.uid === empId);
+      const name = user ? `${user.firstName} ${user.lastName || ''}` : 'Unknown';
+      return name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
 
   const handleEditSave = async () => {
     if(!editItem) return;
@@ -350,7 +357,7 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
 
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
         <div className="p-4 border-b border-slate-700 bg-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
-          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Showing ({Object.keys(grouped).length}) Entries</h3>
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Showing ({filteredGroupKeys.length}) Entries</h3>
           <div className="relative w-full md:w-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
             <input 
@@ -374,7 +381,7 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
             </tr>
           </thead>
           <tbody>
-            {Object.keys(grouped).map((empId, index) => {
+            {filteredGroupKeys.map((empId, index) => {
               const items = grouped[empId];
               const user = users.find(u => u.uid === empId);
               const name = user ? `${user.firstName} ${user.lastName || ''}` : 'Unknown';
@@ -465,7 +472,7 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
                 </React.Fragment>
               );
             })}
-            {Object.keys(grouped).length === 0 && (
+            {filteredGroupKeys.length === 0 && (
               <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No Leave Data Found</td></tr>
             )}
           </tbody>
@@ -737,6 +744,8 @@ export default function ManageLeave() {
     </div>
   );
 }
+
+
 
 
 
