@@ -202,14 +202,14 @@ function AssignLeaveTab({ users }: { users: any[] }) {
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT EMPLOYEE *</label>
           <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.employeeId} onChange={e=>setFormData({...formData, employeeId:e.target.value})}>
-            <option value="">Select Employee</option>
+            <option value="" disabled hidden>Select Employee</option>
             {users.map((u:any) => <option key={u.uid} value={u.uid}>{u.firstName} {u.lastName} ({u.designation || u.designationName})</option>)}
           </select>
         </div>
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT LEAVE TYPE *</label>
           <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.leaveType} onChange={e=>setFormData({...formData, leaveType:e.target.value})}>
-            <option value="">Select Leave Type</option>
+            <option value="" disabled hidden>Select Leave Type</option>
             {types.map((t:any) => <option key={t.name} value={t.name}>{t.name}</option>)}
           </select>
         </div>
@@ -554,7 +554,7 @@ function CreateLeaveTemplateTab() {
             <div className="flex-1 w-full">
                <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT LEAVE TYPE</label>
                <select className="w-full bg-slate-900 text-white p-2 rounded-lg border border-slate-700" value={curType} onChange={e=>setCurType(e.target.value)}>
-                 <option value="">Select</option>
+                 <option value="" disabled hidden>Select</option>
                  {types.map((t:any) => <option key={t.name} value={t.name}>{t.name}</option>)}
                </select>
             </div>
@@ -634,7 +634,7 @@ function AssignLeaveTemplateTab({ users }: { users: any[] }) {
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT EMPLOYEE *</label>
           <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.employeeId} onChange={e=>setFormData({...formData, employeeId:e.target.value})}>
-            <option value="">Select Employee</option>
+            <option value="" disabled hidden>Select Employee</option>
             {users.map((u:any) => <option key={u.uid} value={u.uid}>{u.firstName} {u.lastName} ({u.designation || u.designationName})</option>)}
           </select>
         </div>
