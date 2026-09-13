@@ -83,23 +83,38 @@ export default function LeaveRequest() {
   }, [filterMonth, filterUser]);
 
   const handleSubmit = async () => {
-    if (!formData.employeeId || !formData.leaveType || !formData.startDate || !formData.reason) {
-      alert("Please fill all required fields (End Date is optional for a single day).");
-      return;
-    }
-    // If end date is empty, set it to start date
-    const submission = { ...formData };
-    if (!submission.endDate) submission.endDate = submission.startDate;
+      if (!formData.employeeId || !formData.leaveType || !formData.startDate || !formData.reason) {
+        alert("Please fill all required fields (End Date is optional for a single day).");
+        return;
+      }
+      
+      const isLWP = formData.leaveType === 'Leave Without Pay' || formData.leaveType === 'LWP';
+      const sd = new Date(formData.startDate);
+      const ed = new Date(formData.endDate || formData.startDate);
+      const requestedDays = Math.ceil(Math.abs(ed.getTime() - sd.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      
+      if (!isLWP) {
+         const b = balances.find((x:any) => x.leaveType === formData.leaveType);
+         const remaining = b ? (b.assigned - b.used) : 0;
+         if (requestedDays > remaining) {
+            alert(`You are requesting ${requestedDays} days, but only have ${remaining} days of ${formData.leaveType} remaining.`);
+            return;
+         }
+      }
 
-    try {
-      await axios.post('/api/xl/leave', submission);
-      alert("Leave Request Submitted!");
-      setFormData({ employeeId: '', leaveType: '', startDate: '', endDate: '', reason: '' });
-      fetchLeaves();
-    } catch (e) {
-      alert("Error submitting leave request.");
-    }
-  };
+      const submission = { ...formData, status: 'Approved' };
+      if (!submission.endDate) submission.endDate = submission.startDate;
+      
+      try {
+        await axios.post('/api/xl/leave', submission);
+        alert("Leave Request Approved & Submitted!");
+        setFormData({ employeeId: '', leaveType: '', startDate: '', endDate: '', reason: '' });
+        fetchLeaves();
+        fetchBalances(formData.employeeId); // Refresh balance badges immediately
+      } catch (e) {
+        alert("Error submitting leave request.");
+      }
+    };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to permanently delete this leave request?")) return;

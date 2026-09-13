@@ -856,9 +856,31 @@ router.delete('/leave/:id', async (req, res) => {
 
 router.post('/leave', async (req, res) => {
     try {
-        const leave = await XlLeave.create({ _id: generateId(), ...req.body });
+        const { XlLeave, XlAssignedLeave } = require('../db');
+        const { startDate, endDate, leaveType, status, employeeId } = req.body;
+        
+        const finalStatus = status || 'Pending';
+        const leave = await XlLeave.create({ _id: generateId(), ...req.body, status: finalStatus });
+        
+        if (finalStatus === 'Approved' && leaveType !== 'Leave Without Pay' && leaveType !== 'LWP') {
+            const sd = new Date(startDate);
+            const ed = new Date(endDate || startDate);
+            const days = Math.ceil(Math.abs(ed - sd) / (1000 * 60 * 60 * 24)) + 1;
+            
+            const startMonth = sd.getMonth();
+            const startYear = sd.getFullYear();
+            const yearStr = startMonth >= 3 ? `${startYear}-${startYear+1}` : `${startYear-1}-${startYear}`;
+            
+            const record = await XlAssignedLeave.findOne({ where: { employeeId, year: yearStr, leaveType } });
+            if (record) {
+                record.used = (record.used || 0) + days;
+                await record.save();
+            }
+        }
+        
         res.json({ success: true, message: 'Leave request submitted!', data: leave });
     } catch (e) {
+        console.error(e);
         res.status(500).json({ error: 'Failed to submit leave request' });
     }
 });
