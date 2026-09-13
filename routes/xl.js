@@ -1295,10 +1295,14 @@ router.get('/approvals/pending', async (req, res) => {
         const pending = await Model.findAll({ 
             where: { 
                 ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), 
-                [Op.or]: [
-                    { status: ['Pending', 'Submitted', 'pending', 'submitted'] },
-                    { status: null }
-                ]
+                ...(status === 'History' ? {
+                    status: { [Op.notIn]: ['Pending', 'Submitted', 'pending', 'submitted', null] }
+                } : {
+                    [Op.or]: [
+                        { status: ['Pending', 'Submitted', 'pending', 'submitted'] },
+                        { status: null }
+                    ]
+                })
             }, 
             order: [['createdAt', 'DESC']] 
         });
@@ -1427,6 +1431,47 @@ router.post('/approvals/action', async (req, res) => {
             record.adminRemarks = remarks || record.adminRemarks || '';
             await record.save();
         } else {
+            if (type === 'Leave Request') {
+                const { XlAssignedLeave } = require('../db');
+                const oldStatus = record.status;
+                
+                if ((oldStatus === 'Pending' || oldStatus === 'Submitted' || oldStatus === 'pending' || !oldStatus) && action === 'Approved' && record.leaveType !== 'Leave Without Pay' && record.leaveType !== 'LWP') {
+                    const sd = new Date(record.startDate);
+                    const ed = new Date(record.endDate || record.startDate);
+                    const days = Math.ceil(Math.abs(ed - sd) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const startMonth = sd.getMonth();
+                    const startYear = sd.getFullYear();
+                    const yearStr = startMonth >= 3 ? ${startYear}- : ${startYear-1}-;
+                    
+                    const assignment = await XlAssignedLeave.findOne({
+                        where: { employeeId: record.employeeId, year: yearStr, leaveType: record.leaveType }
+                    });
+                    if (assignment) {
+                        assignment.used = (assignment.used || 0) + days;
+                        await assignment.save();
+                    }
+                }
+                
+                if (oldStatus === 'Approved' && action === 'Revoked' && record.leaveType !== 'Leave Without Pay' && record.leaveType !== 'LWP') {
+                    const sd = new Date(record.startDate);
+                    const ed = new Date(record.endDate || record.startDate);
+                    const days = Math.ceil(Math.abs(ed - sd) / (1000 * 60 * 60 * 24)) + 1;
+                    
+                    const startMonth = sd.getMonth();
+                    const startYear = sd.getFullYear();
+                    const yearStr = startMonth >= 3 ? ${startYear}- : ${startYear-1}-;
+                    
+                    const assignment = await XlAssignedLeave.findOne({
+                        where: { employeeId: record.employeeId, year: yearStr, leaveType: record.leaveType }
+                    });
+                    if (assignment) {
+                        assignment.used = Math.max(0, (assignment.used || 0) - days);
+                        await assignment.save();
+                    }
+                }
+            }
+
             record.status = action;
             record.adminRemarks = remarks || '';
             await record.save();
@@ -1909,3 +1954,5 @@ router.delete('/leave-templates/:id', async (req, res) => {
 });
 
 module.exports = router;
+
+
