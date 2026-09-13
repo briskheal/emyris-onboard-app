@@ -18,7 +18,7 @@ export default function PrimarySales() {
   });
 
   const [rows, setRows] = useState([
-    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '' }
+    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR' }
   ]);
 
   useEffect(() => {
@@ -33,14 +33,14 @@ export default function PrimarySales() {
     fetchData();
   }, []);
 
-  const handleRowChange = (index: number, field: string, value: string) => {
+  const handleRowChange = (index: number, field: string, value: any) => {
     const newRows = [...rows];
     newRows[index] = { ...newRows[index], [field]: value };
     setRows(newRows);
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '' }]);
+    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR' }]);
   };
 
   const removeRow = (index: number) => {
@@ -201,7 +201,12 @@ export default function PrimarySales() {
                   const totalQty = (qty + free) - rtn;
                   const discount = Number(row.discount) || 0;
                   
-                  const gross = qty * ptr;
+                  let activePrice = ptr;
+                  if (row.selectedPriceType === 'MRP') activePrice = mrp;
+                  else if (row.selectedPriceType === 'PTS') activePrice = pts;
+                  else if (row.selectedPriceType === 'CUS') activePrice = Number(row.customPrice) || 0;
+                  
+                  const gross = qty * activePrice;
                   const finalAmt = gross - (gross * (discount / 100));
 
                   return (
@@ -219,10 +224,48 @@ export default function PrimarySales() {
                         />
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50">
-                        <div className="flex flex-col gap-0.5 text-[10px] font-bold bg-[#1a1a2e] p-1.5 rounded border border-[#3b3b5a]">
-                          <div className="flex justify-between"><span className="text-slate-400">MRP:</span> <span className="text-white">{mrp.toFixed(2)}</span></div>
-                          <div className="flex justify-between"><span className="text-slate-400">PTR:</span> <span className="text-emerald-400">{ptr.toFixed(2)}</span></div>
-                          <div className="flex justify-between"><span className="text-slate-400">PTS:</span> <span className="text-sky-400">{pts.toFixed(2)}</span></div>
+                        <div className="flex flex-col gap-1 text-[10px] font-bold bg-[#1a1a2e] p-1.5 rounded border border-[#3b3b5a]">
+                          
+                          <div className="flex justify-between items-center h-4">
+                            <button 
+                              onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')}
+                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
+                            >MRP</button> 
+                            <span className="text-white">{mrp.toFixed(2)}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center h-4">
+                            <button 
+                              onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')}
+                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
+                            >PTR</button> 
+                            <span className="text-emerald-400">{ptr.toFixed(2)}</span>
+                          </div>
+
+                          <div className="flex justify-between items-center h-4">
+                            <button 
+                              onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')}
+                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
+                            >PTS</button> 
+                            <span className="text-sky-400">{pts.toFixed(2)}</span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center h-5 mt-1 border-t border-[#3b3b5a]/50 pt-1">
+                            <button 
+                              onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')}
+                              className={`px-1.5 py-0.5 rounded transition-colors ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#27273f] text-slate-400 hover:bg-[#3b3b5a] hover:text-white'}`}
+                            >CUS</button> 
+                            <input 
+                              type="number" 
+                              min="0"
+                              value={row.customPrice}
+                              onChange={e => handleRowChange(index, 'customPrice', e.target.value)}
+                              onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')}
+                              className="w-14 bg-[#212136] text-emerald-400 border border-[#3b3b5a] rounded outline-none text-right px-1 py-0.5"
+                              placeholder="0.00"
+                            />
+                          </div>
+
                         </div>
                       </td>
                       <td className="p-2 border-r border-[#3b3b5a]/50">
