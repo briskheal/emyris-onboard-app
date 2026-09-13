@@ -247,9 +247,9 @@ function AssignLeaveTab({ users }: { users: any[] }) {
                     <td className="p-3 text-sm text-slate-300 font-bold">{i+1}</td>
                     <td className="p-3 text-sm text-slate-300 font-bold">{a.year}</td>
                     <td className="p-3 text-sm text-slate-300">{a.leaveType}</td>
-                    <td className="p-3 text-sm text-slate-300">{a.assigned}</td>
+                    <td className="p-3 text-sm text-slate-300">{(a.leaveType === 'Leave Without Pay' || a.leaveType === 'LWP') ? '-' : a.assigned}</td>
                     <td className="p-3 text-sm text-slate-300">{a.used}</td>
-                    <td className="p-3 text-sm text-emerald-400 font-bold">{a.assigned - a.used}</td>
+                    <td className="p-3 text-sm text-emerald-400 font-bold">{(a.leaveType === 'Leave Without Pay' || a.leaveType === 'LWP') ? '-' : (a.assigned - a.used)}</td>
                   </tr>
                 ))}
                 {assigned.length === 0 && (
