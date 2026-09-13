@@ -74,6 +74,78 @@ export default function PrimarySales() {
   // Filter stockists based on selected HQ
   const filteredStockists = stockists.filter(s => !formData.headquarter || s.headquarter === formData.headquarter);
 
+  
+  const totals = rows.reduce((acc, row) => {
+    const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
+    const ptr = prod ? (prod.ptr || 0) : 0;
+    const mrp = prod ? (prod.mrp || 0) : 0;
+    const pts = prod ? (prod.pts || 0) : 0;
+    
+    const qty = Number(row.quantity) || 0;
+    const rtn = Number(row.purcRtn) || 0;
+    const discount = Number(row.discount) || 0;
+    
+    let activePrice = ptr;
+    if (row.selectedPriceType === 'MRP') activePrice = mrp;
+    else if (row.selectedPriceType === 'PTS') activePrice = pts;
+    else if (row.selectedPriceType === 'CUS') activePrice = Number(row.customPrice) || 0;
+    
+    let rtnPrice = ptr;
+    if (row.selectedRtnPriceType === 'MRP') rtnPrice = mrp;
+    else if (row.selectedRtnPriceType === 'PTS') rtnPrice = pts;
+    else if (row.selectedRtnPriceType === 'CUS') rtnPrice = Number(row.customRtnPrice) || 0;
+    
+    const grossSale = qty * activePrice;
+    const finalPrice = grossSale - (grossSale * (discount / 100));
+    const returnValue = rtn * rtnPrice;
+    const finalValue = finalPrice - returnValue;
+
+    acc.grossInvValue += finalPrice;
+    acc.netInvValue += finalValue;
+    return acc;
+  }, { grossInvValue: 0, netInvValue: 0 });
+
+  const handleSave = async () => {
+    if (!formData.headquarter || !formData.stockist || !formData.date || !formData.invoiceNumber) {
+      alert('Please fill all mandatory fields (Date, Invoice No, HQ, Stockist)');
+      return;
+    }
+    
+    const validRows = rows.filter(r => r.productId && (Number(r.quantity) > 0 || Number(r.freeStocks) > 0 || Number(r.purcRtn) > 0));
+    if (validRows.length === 0) {
+      alert('Please add at least one valid product with quantity or return quantity.');
+      return;
+    }
+
+    try {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : {};
+      
+      const payload = {
+        ...formData,
+        employeeId: user.employeeId || user._id || 'ADMIN',
+        grossInvValue: totals.grossInvValue,
+        netInvValue: totals.netInvValue,
+        productsData: validRows
+      };
+
+      const res = await axios.post('/api/xl/primary-sales/save', payload);
+      if (res.data.success) {
+        alert('Invoice saved successfully!');
+        setFormData({
+          ...formData,
+          invoiceNumber: ''
+        });
+        setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTR', customRtnPrice: '', selectedRtnPriceType: 'PTR' }]);
+      } else {
+        alert('Failed to save invoice.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while saving.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#1a1a2e] flex flex-col text-[#d1d5db] font-sans">
       
@@ -339,6 +411,23 @@ export default function PrimarySales() {
           </div>
         </div>
 
+      </div>
+    
+      {/* FLOATING TOTALS FOOTER */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+        <div className="flex gap-8 mb-3 md:mb-0">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Gross Inv Value</span>
+            <span className="text-xl font-black text-sky-400">₹ {totals.grossInvValue.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Net Inv Value</span>
+            <span className="text-xl font-black text-emerald-400">₹ {totals.netInvValue.toFixed(2)}</span>
+          </div>
+        </div>
+        <button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2">
+          Save Invoice
+        </button>
       </div>
     </div>
   );

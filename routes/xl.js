@@ -1953,6 +1953,39 @@ router.delete('/leave-templates/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+
+// Save Primary Sales Invoice
+router.post('/primary-sales/save', async (req, res) => {
+    try {
+        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, productsData } = req.body;
+        
+        const month = date ? new Date(date).toLocaleString('default', { month: 'short' }) : new Date().toLocaleString('default', { month: 'short' });
+        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+
+        const newSale = await XlPrimarySales.create({
+            employeeId: employeeId || 'ADMIN',
+            date,
+            invoiceDate,
+            invoiceNumber,
+            division,
+            headquarter,
+            stockist,
+            grossInvValue,
+            netInvValue,
+            amount: netInvValue, // Legacy fallback
+            month,
+            year,
+            productsData: JSON.stringify(productsData),
+            status: 'Pending'
+        });
+
+        res.json({ success: true, message: 'Primary Sales invoice saved successfully!', data: newSale });
+    } catch (error) {
+        console.error('Error saving primary sales:', error);
+        res.status(500).json({ success: false, message: 'Failed to save primary sales' });
+    }
+});
+
 module.exports = router;
 
 
