@@ -92,21 +92,17 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
           
           <div className="bg-slate-800 w-full sm:max-w-md h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative z-10 animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 border border-slate-700">
             
-            <div className="p-4 border-b border-slate-700 bg-slate-800 flex flex-col gap-3 shrink-0">
-              
-              <div className="relative">
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  ref={inputRef}
-                  type="text"
-                  placeholder="Search options..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value
-      )}
-                  className="w-full bg-slate-900 border border-slate-700 outline-none rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder:text-slate-500 font-bold focus:border-sky-500 transition-colors"
-                />
-              </div>
-            </div>
+            <div className="relative shrink-0 border-b border-slate-700/50 bg-transparent">
+  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
+  <input
+    ref={inputRef}
+    type="text"
+    placeholder="Search options..."
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+    className="w-full bg-transparent outline-none pl-12 pr-4 py-4 text-sm text-white placeholder:text-slate-500 font-bold transition-colors"
+  />
+</div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
               {showAllOption && !searchTerm && (
@@ -170,6 +166,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
     </div>
   );
 }
+
 
 
 
