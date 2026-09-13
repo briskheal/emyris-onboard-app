@@ -93,7 +93,7 @@ function CreateLeaveTypeTab() {
 function AssignLeaveTab({ users }: { users: any[] }) {
   const [types, setTypes] = useState([]);
   const [assigned, setAssigned] = useState([]);
-  const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', leaveType: '', count: '' });
+  const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', leaveType: '', count: '', used: '' });
   
   const fetchAssigned = async () => {
     if(!formData.employeeId) { setAssigned([]); return; }
@@ -116,7 +116,7 @@ function AssignLeaveTab({ users }: { users: any[] }) {
     try {
       await axios.post('/api/xl/assign-leave', formData);
       alert("Leave successfully assigned!");
-      setFormData({...formData, count: ''});
+      setFormData({...formData, count: '', used: ''});
     } catch(e) {
       alert("Error assigning leave");
     }
@@ -150,6 +150,10 @@ function AssignLeaveTab({ users }: { users: any[] }) {
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">ENTER NUMBER OF LEAVES *</label>
           <input type="text" inputMode="numeric" className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.count} onChange={e=>setFormData({...formData, count:e.target.value})} />
+        </div>
+        <div>
+          <label className="text-xs font-bold text-slate-400 mb-1 block">ENTER USED LEAVES (Optional)</label>
+          <input type="text" inputMode="numeric" placeholder="e.g. 2" className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.used} onChange={e=>setFormData({...formData, used:e.target.value})} />
         </div>
         <div className="md:col-span-2 lg:col-span-3">
           <button onClick={async () => { await handleAssign(); await fetchAssigned(); }} className="bg-sky-500 text-white font-bold py-2 px-6 rounded-lg active:scale-95 transition-transform">Assign Leave</button>

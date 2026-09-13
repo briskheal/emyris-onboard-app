@@ -1751,13 +1751,18 @@ router.get('/assigned-leaves/my', async (req, res) => {
 router.post('/assign-leave', async (req, res) => {
     try {
         const { XlAssignedLeave } = require('../db');
-        const { employeeId, year, leaveType, count } = req.body;
+        const { employeeId, year, leaveType, count, used } = req.body;
         let record = await XlAssignedLeave.findOne({ where: { employeeId, year, leaveType } });
         if (record) {
             record.assigned += parseInt(count, 10);
+            if (used) record.used += parseInt(used, 10);
             await record.save();
         } else {
-            record = await XlAssignedLeave.create({ employeeId, year, leaveType, assigned: parseInt(count, 10) });
+            record = await XlAssignedLeave.create({ 
+                employeeId, year, leaveType, 
+                assigned: parseInt(count, 10),
+                used: used ? parseInt(used, 10) : 0 
+            });
         }
         res.json({ success: true, data: record });
     } catch (e) { res.status(500).json({ error: e.message }); }
