@@ -1986,6 +1986,34 @@ router.post('/primary-sales/save', async (req, res) => {
     }
 });
 
+
+// Get all Primary Sales
+router.get('/primary-sales/all', async (req, res) => {
+    try {
+        const { employeeId, designation, month, year } = req.query;
+        let whereClause = {};
+        
+        if (month) whereClause.month = month;
+        if (year) whereClause.year = year;
+        
+        // If not admin, they can only see their own HQ / division sales (or based on employeeId)
+        // Since there is no explicit auth checking logic mapped out perfectly here, we can filter by employeeId if provided and not ADMIN
+        if (designation !== 'ADMIN' && designation !== 'HO' && employeeId) {
+            whereClause.employeeId = employeeId;
+        }
+
+        const sales = await XlPrimarySales.findAll({
+            where: whereClause,
+            order: [['createdAt', 'DESC']]
+        });
+
+        res.json({ success: true, data: sales });
+    } catch (error) {
+        console.error('Error fetching primary sales:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch primary sales' });
+    }
+});
+
 module.exports = router;
 
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Folder, Upload } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Folder, Upload, List } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
@@ -161,9 +161,12 @@ export default function PrimarySales() {
         </div>
         
         <div className="flex items-center gap-6">
-          <button className="bg-transparent border border-sky-500/50 text-sky-400 hover:bg-sky-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
-            <Upload size={14} /> Upload Primary Sales
-          </button>
+          <button onClick={() => navigate('/extras/primary-sales/all')} className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 shadow-lg">
+              <List size={14} /> All Primary Sales
+            </button>
+            <button className="bg-transparent border border-sky-500/50 text-sky-400 hover:bg-sky-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
+              <Upload size={14} /> Upload Primary Sales
+            </button>
         </div>
       </div>
 
@@ -395,6 +398,7 @@ export default function PrimarySales() {
                       </td>
 
                       {/* Final Value */}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center text-xs font-bold text-rose-400 w-20 bg-rose-950/10">{returnValue.toFixed(2)}</td>
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center text-xs font-black text-emerald-400 w-24 bg-emerald-950/10">{finalValue.toFixed(2)}</td>
                       
                       <td className="p-1.5 text-center w-10">

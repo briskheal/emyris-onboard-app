@@ -19,6 +19,7 @@ import TodaysActivity from './pages/TodaysActivity';
 import ConsolidatedActivity from './pages/ConsolidatedActivity';
 import EDetailing from './pages/EDetailing';
 import PrimarySales from './pages/PrimarySales';
+import AllPrimarySales from './pages/AllPrimarySales';
 import SecondarySales from './pages/SecondarySales';
 import Attendance from './pages/Attendance';
 import Reminders from './pages/Reminders';
@@ -68,6 +69,7 @@ function App() {
             <Route path="routes" element={<RoutesListReport />} />
           </Route>
           <Route path="/extras/primary-sales" element={<PrimarySales />} />
+          <Route path="/extras/primary-sales/all" element={<AllPrimarySales />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />
