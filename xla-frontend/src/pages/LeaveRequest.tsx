@@ -133,6 +133,15 @@ export default function LeaveRequest() {
     }
   };
 
+  const isToday = (dateNum: number) => {
+    const today = new Date();
+    return (
+      today.getDate() === dateNum &&
+      today.getMonth() === currentMonth.getMonth() &&
+      today.getFullYear() === currentMonth.getFullYear()
+    );
+  };
+
   const isSelected = (dateNum: number) => {
     const pad = (n:number) => n.toString().padStart(2, '0');
     const dateStr = `${currentMonth.getFullYear()}-${pad(currentMonth.getMonth()+1)}-${pad(dateNum)}`;
@@ -207,7 +216,7 @@ export default function LeaveRequest() {
                     <button 
                       onClick={() => handleDateClick(dateNum)}
                       className={`relative z-10 w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center transition-all ${
-                        active ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-110' : 'text-slate-300 hover:bg-slate-700'
+                        active ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-110' : isToday(dateNum) ? 'text-sky-400 border-2 border-sky-500 hover:bg-slate-700' : 'text-slate-300 hover:bg-slate-700'
                       }`}>
                       {dateNum}
                     </button>
@@ -343,3 +352,4 @@ export default function LeaveRequest() {
     </div>
   );
 }
+
