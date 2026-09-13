@@ -325,17 +325,23 @@ export default function LeaveRequest() {
         {/* BOTTOM TABLE */}
         <div className="flex flex-col bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl relative mt-4">
           
-          <div className="px-6 py-4 bg-slate-800/80 border-b border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Showing ({leaves.length}) Entries</h3>
-            
-            <div className="flex items-center gap-4 w-full md:w-auto"><button onClick={exportToCSV} className="hidden md:flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors mt-5"><Download size={16} /> Export</button><div className="flex flex-col gap-1.5 w-full md:w-48">
-                <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider pl-1">Select Month</label>
-                <input type="month" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500 transition-colors w-full"
-                  value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} />
+          <div className="px-6 py-4 bg-slate-800/80 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">
+                <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest whitespace-nowrap">Showing ({leaves.length}) Entries</h3>
+                
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <button onClick={exportToCSV} className="hidden md:flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors h-[42px]"><Download size={16} /> Export</button>
+                  <div className="flex flex-col gap-1 w-full sm:w-40">
+                    <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider pl-1">Select Month</label>
+                    <input type="month" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500 transition-colors w-full h-[42px]"
+                      value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} />
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col gap-1.5 w-full md:w-64">
+              
+              <div className="flex flex-col gap-1 w-full lg:w-80 relative z-40">
                 <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-1">Select User</label>
-                <div className="relative z-40 w-full"><CustomSelect 
+                <div className="w-full"><CustomSelect 
                 options={users.map((u:any) => ({
                   value: u.uid,
                   label: `${u.firstName} ${u.lastName || ''}`,
@@ -348,10 +354,7 @@ export default function LeaveRequest() {
                 placeholder="All Users"
                 showAllOption={true}
                 allOptionLabel="All Users"
-              /></div>
-              </div>
-            </div>
-          </div>
+              /></div></div></div>
 
           <div className="overflow-x-auto pb-4">
             <table className="w-full text-left border-collapse whitespace-nowrap">
@@ -377,7 +380,7 @@ export default function LeaveRequest() {
                     <td className="p-4 text-sm font-semibold text-slate-300 text-wrap max-w-xs leading-relaxed">{l.reason}</td>
                     <td className="p-4 text-sm font-semibold text-slate-300">{l.leaveType}</td>
                     <td className="p-4 text-sm font-semibold text-slate-300">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${l.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : l.status === 'Rejected' ? 'bg-rose-500/20 text-rose-400' : 'bg-sky-500/20 text-sky-400'}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-bold ${l.status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400' : l.status === 'Rejected' ? 'bg-rose-500/20 text-rose-400' : l.status === 'Revoked' ? 'bg-amber-500/20 text-amber-400' : 'bg-sky-500/20 text-sky-400'}`}>
                         {l.status || 'Pending'}
                       </span>
                     </td>
@@ -400,6 +403,8 @@ export default function LeaveRequest() {
     </div>
   );
 }
+
+
 
 
 

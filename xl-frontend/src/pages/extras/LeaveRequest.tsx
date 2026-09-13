@@ -220,3 +220,4 @@ export default function LeaveRequest() {
     </div>
   );
 }
+

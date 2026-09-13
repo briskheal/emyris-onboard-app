@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { User, ChevronDown, Check, Search, X } from 'lucide-react';
 
 interface CustomUserSelectProps {
@@ -17,15 +16,15 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
     if (isOpen) {
       setSearchTerm('');
       // Prevent body scrolling when modal is open
-      document.body.style.overflow = 'hidden';
+      
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
     } else {
-      document.body.style.overflow = '';
+      
     }
     return () => {
-      document.body.style.overflow = '';
+      
     };
   }, [isOpen]);
 
@@ -39,7 +38,7 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
   });
 
   return (
-    <>
+    <div className="relative w-full">
       {/* TRIGGER BUTTON */}
       <div 
         onClick={() => setIsOpen(true)}
@@ -75,11 +74,11 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
       </div>
 
       {/* PORTAL MODAL */}
-      {isOpen && createPortal(
-        <div className="fixed inset-0 z-[9999] flex flex-col justify-end sm:justify-center items-center sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+      {isOpen && (
+        <div className="absolute top-full mt-2 left-0 right-0 z-50 animate-in fade-in zoom-in-95 duration-200 shadow-2xl">
           
           {/* BACKDROP CLICK DISMISS */}
-          <div className="absolute inset-0" onClick={() => setIsOpen(false)}></div>
+          
           
           <div className="bg-[#1e1e30] w-full sm:max-w-md h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative z-10 animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 border border-[#3b3b5a]">
             
@@ -159,9 +158,9 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
               )}
             </div>
           </div>
-        </div>,
-        document.body
+        </div>
       )}
-    </>
+    </div>
   );
 }
+
