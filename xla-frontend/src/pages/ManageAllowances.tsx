@@ -304,8 +304,6 @@ export default function ManageAllowances() {
                 value={selectedUser}
                 onChange={(val) => setSelectedUser(val)}
                 placeholder="Select User"
-                showAllOption={true}
-                allOptionLabel="All Users"
               />
         </div>
 

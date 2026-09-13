@@ -351,9 +351,7 @@ export default function LeaveRequest() {
                 }))}
                 value={filterUser}
                 onChange={(val) => setFilterUser(val)}
-                placeholder="All Users"
-                showAllOption={true}
-                allOptionLabel="All Users"
+                placeholder="Select User"
               /></div></div></div>
 
           <div className="overflow-x-auto pb-4">
