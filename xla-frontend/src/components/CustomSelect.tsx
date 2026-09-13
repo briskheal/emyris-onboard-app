@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, User } from 'lucide-react';
+import { ChevronDown, Check, User, Search } from 'lucide-react';
 
 export interface SelectOption {
   value: string;
@@ -21,7 +21,9 @@ interface CustomSelectProps {
 
 export default function CustomSelect({ options, value, onChange, placeholder = "Select...", showAllOption = false, allOptionLabel = "All" }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -33,7 +35,21 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      setSearchTerm('');
+      setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+    }
+  }, [isOpen]);
+
   const selectedData = options.find(o => o.value === value);
+
+  const filteredOptions = options.filter(o => 
+    o.label.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (o.subLabel && o.subLabel.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <div className="relative w-full" ref={dropdownRef}>
@@ -74,10 +90,26 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col">
+          {options.length > 5 && (
+            <div className="p-3 border-b border-slate-700 bg-slate-800/90 backdrop-blur sticky top-0 z-10 shrink-0">
+              <div className="relative">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-sky-500 transition-colors"
+                />
+              </div>
+            </div>
+          )}
+
           <div className="max-h-64 overflow-y-auto custom-scrollbar py-2">
             
-            {showAllOption && (
+            {showAllOption && !searchTerm && (
               <div 
                 onClick={() => { onChange(''); setIsOpen(false); }}
                 className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${value === '' ? 'bg-slate-700' : 'hover:bg-slate-700/50'}`}
@@ -87,7 +119,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
               </div>
             )}
             
-            {options.map((o) => (
+            {filteredOptions.map((o) => (
               <div 
                 key={o.value}
                 onClick={() => { onChange(o.value); setIsOpen(false); }}
@@ -124,9 +156,9 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
               </div>
             ))}
             
-            {options.length === 0 && (
+            {filteredOptions.length === 0 && (
               <div className="px-4 py-6 text-center text-sm font-bold text-slate-500">
-                No options available
+                No matches found
               </div>
             )}
           </div>
