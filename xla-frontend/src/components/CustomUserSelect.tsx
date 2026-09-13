@@ -48,7 +48,20 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
         className={`w-full bg-[#27273f] border ${isOpen ? 'border-[#00e5ff]' : 'border-[#3b3b5a]'} text-white rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-lg min-h-[56px]`}
       >
         <div className="flex items-center gap-3 w-full pr-4 overflow-hidden">
-          {selectedData ? (
+          {isOpen ? (
+            <div className="flex items-center gap-2 w-full">
+              <Search size={16} className="text-slate-400 shrink-0" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                placeholder="Search users..."
+                className="w-full bg-transparent outline-none text-white placeholder:text-slate-500 font-semibold text-sm"
+              />
+            </div>
+          ) : selectedData ? (
             <>
               <div className="w-8 h-8 rounded-full bg-[#32324f] flex items-center justify-center shrink-0 border border-[#3b3b5a] overflow-hidden">
                 {selectedData.profilePic ? (
@@ -73,17 +86,6 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
 
       {isOpen && (
         <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-[#1e1e30] border border-[#3b3b5a] rounded-xl shadow-2xl flex flex-col overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-[#3b3b5a]">
-            <Search size={15} className="text-slate-500 shrink-0" />
-            <input
-              ref={searchRef}
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Search..."
-              className="w-full bg-transparent outline-none text-sm text-white placeholder:text-slate-500 font-semibold"
-            />
-          </div>
           <div className="max-h-64 overflow-y-auto p-1">
             {filteredUsers.map(u => (
               <div

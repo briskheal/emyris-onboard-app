@@ -25,6 +25,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
   const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  // Close on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -32,10 +33,13 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
         setSearchTerm('');
       }
     }
-    if (isOpen) document.addEventListener('mousedown', handleClick);
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClick);
+    }
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isOpen]);
 
+  // Focus search when opened
   useEffect(() => {
     if (isOpen) {
       setSearchTerm('');
@@ -54,12 +58,26 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
 
   return (
     <div ref={containerRef} className="relative w-full">
+      {/* TRIGGER */}
       <div
         onClick={() => setIsOpen(prev => !prev)}
         className={`w-full bg-slate-800 border ${isOpen ? 'border-[#00e5ff]' : 'border-slate-700'} text-white rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-lg min-h-[56px]`}
       >
         <div className="flex items-center gap-3 w-full pr-4 overflow-hidden">
-          {selectedData ? (
+          {isOpen ? (
+            <div className="flex items-center gap-2 w-full">
+              <Search size={16} className="text-slate-400 shrink-0" />
+              <input
+                ref={searchRef}
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                onClick={e => e.stopPropagation()}
+                placeholder="Search..."
+                className="w-full bg-transparent outline-none text-white placeholder:text-slate-500 font-semibold text-sm"
+              />
+            </div>
+          ) : selectedData ? (
             <>
               {(selectedData.avatarUrl || selectedData.showDefaultAvatar) && (
                 <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center shrink-0 border border-slate-500 overflow-hidden">
@@ -80,27 +98,18 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
               </div>
             </>
           ) : (
-            <span className="text-slate-400 font-semibold text-sm uppercase tracking-widest">
-              {value === '' && showAllOption ? allOptionLabel : placeholder}
-            </span>
+            <div className="flex items-center gap-3 text-slate-400 font-semibold text-sm uppercase tracking-widest">
+              <span>{value === '' && showAllOption ? allOptionLabel : placeholder}</span>
+            </div>
           )}
         </div>
         <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#00e5ff]' : ''}`} />
       </div>
 
+      {/* DROPDOWN */}
       {isOpen && (
         <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
-          <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-700/60">
-            <Search size={15} className="text-slate-500 shrink-0" />
-            <input
-              ref={searchRef}
-              type="text"
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Search..."
-              className="w-full bg-transparent outline-none text-sm text-white placeholder:text-slate-500 font-semibold"
-            />
-          </div>
+          {/* LIST */}
           <div className="max-h-64 overflow-y-auto p-1">
             {showAllOption && (
               <div
@@ -111,6 +120,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                 {value === '' && <Check size={16} className="text-[#00e5ff]" />}
               </div>
             )}
+
             {filteredOptions.map(o => (
               <div
                 key={o.value}
@@ -136,8 +146,9 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                 {value === o.value && <Check size={16} className="text-[#00e5ff] shrink-0" />}
               </div>
             ))}
+
             {filteredOptions.length === 0 && (
-              <div className="py-8 text-center">
+              <div className="py-8 flex flex-col items-center justify-center text-center">
                 <span className="text-slate-400 font-bold text-sm">No matches found</span>
               </div>
             )}
