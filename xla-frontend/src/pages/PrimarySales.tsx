@@ -75,7 +75,7 @@ export default function PrimarySales() {
   const filteredStockists = stockists.filter(s => !formData.headquarter || s.headquarter === formData.headquarter);
 
   return (
-    <div className="h-dvh bg-[#1a1a2e] flex flex-col text-[#d1d5db] font-sans overflow-hidden">
+    <div className="min-h-screen bg-[#1a1a2e] flex flex-col text-[#d1d5db] font-sans">
       
       {/* HEADER */}
       <div className="flex items-center justify-between px-5 py-3 bg-[#1e1e30] border-b border-[#3b3b5a] shrink-0">
@@ -93,7 +93,7 @@ export default function PrimarySales() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col overflow-auto p-3 md:p-4 bg-[#161625]">
+      <div className="flex-1 p-3 md:p-4 bg-[#161625]">
         
         {/* COMPACT FORM CONTAINER */}
         <div className="bg-[#212136] rounded-xl p-4 mb-4 shadow-lg border border-[#3b3b5a]/50 shrink-0">
@@ -188,8 +188,8 @@ export default function PrimarySales() {
         </div>
 
         {/* DATA TABLE */}
-        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 overflow-hidden flex-1 flex flex-col">
-          <div className="overflow-x-auto">
+        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 mb-20">
+          <div className="w-full">
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
                 <tr>
@@ -261,7 +261,7 @@ export default function PrimarySales() {
                             <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
                             <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus</button>
                           </div>
-                          <div className="flex-1 w-16">
+                          <div className="w-12 shrink-0">
                             {row.selectedPriceType === 'CUS' ? (
                               <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
                             ) : (
@@ -306,7 +306,7 @@ export default function PrimarySales() {
                             <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'MRP')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'MRP' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>MRP</button>
                             <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'CUS')} className={`text-[8px] font-bold py-0.5 px-0.5 rounded ${row.selectedRtnPriceType === 'CUS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>Cus</button>
                           </div>
-                          <div className="flex-1 w-16">
+                          <div className="w-12 shrink-0">
                             {row.selectedRtnPriceType === 'CUS' ? (
                               <input type="number" min="0" value={row.customRtnPrice} onChange={e => handleRowChange(index, 'customRtnPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center font-bold" placeholder="0.00" />
                             ) : (
