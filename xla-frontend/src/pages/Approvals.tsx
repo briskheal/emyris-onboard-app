@@ -70,7 +70,7 @@ export default function Approvals() {
 
   useEffect(() => {
     fetchPending();
-  }, [selectedModule]);
+  }, [selectedModule, viewMode]);
 
   // Handle Keyboard Up/Down Navigation
   useEffect(() => {
@@ -222,5 +222,6 @@ export default function Approvals() {
     </div>
   );
 }
+
 
 
