@@ -116,8 +116,14 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                 onClick={() => { onChange(''); setIsOpen(false); setSearchTerm(''); }}
                 className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${value === '' ? 'bg-slate-700 border border-sky-500/30' : 'hover:bg-slate-700/50'}`}
               >
-                <span className="text-sm font-bold text-slate-300 uppercase tracking-widest flex-1">{allOptionLabel}</span>
-                {value === '' && <Check size={16} className="text-[#00e5ff]" />}
+                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 overflow-hidden">
+                  <User size={16} className="text-slate-300" />
+                </div>
+                <div className="flex flex-col flex-1 overflow-hidden">
+                  <span className="text-sm font-bold text-white truncate">{allOptionLabel}</span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">Filter</span>
+                </div>
+                {value === '' && <Check size={16} className="text-[#00e5ff] shrink-0" />}
               </div>
             )}
 
