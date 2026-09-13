@@ -1,6 +1,6 @@
-import { ArrowLeft, ChevronDown, Trash2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 export default function LeaveRequest() {
@@ -9,6 +9,7 @@ export default function LeaveRequest() {
   const [users, setUsers] = useState<any[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [leaves, setLeaves] = useState<any[]>([]);
+  const [balances, setBalances] = useState<any[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -22,6 +23,21 @@ export default function LeaveRequest() {
   // Filter State for Table
   const [filterMonth, setFilterMonth] = useState('');
   const [filterUser, setFilterUser] = useState('');
+
+  // Dropdown & Calendar State
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  useEffect(() => {
+    function handleClickOutside(event: any) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchUsers = async () => {
     try {
@@ -37,13 +53,21 @@ export default function LeaveRequest() {
     } catch(e) {}
   };
 
+  const fetchBalances = async (empId: string) => {
+    if (!empId) { setBalances([]); return; }
+    try {
+      const year = new Date().getMonth() >= 3 ? `${new Date().getFullYear()}-${new Date().getFullYear()+1}` : `${new Date().getFullYear()-1}-${new Date().getFullYear()}`;
+      const res = await axios.get(`/api/xl/assigned-leaves/my?employeeId=${empId}&year=${year}`);
+      setBalances(res.data.data || []);
+    } catch(e) {}
+  };
+
   const fetchLeaves = async () => {
     try {
       let url = '/api/xl/leave';
       const params = new URLSearchParams();
       if (filterUser) params.append('employeeId', filterUser);
-      // Backend could be modified to filter by month natively, 
-      // but for now we'll fetch based on user and filter locally if needed.
+
       if (params.toString()) url += '?' + params.toString();
 
       const res = await axios.get(url);
@@ -62,16 +86,24 @@ export default function LeaveRequest() {
   }, []);
 
   useEffect(() => {
+    fetchBalances(formData.employeeId);
+  }, [formData.employeeId]);
+
+  useEffect(() => {
     fetchLeaves();
   }, [filterMonth, filterUser]);
 
   const handleSubmit = async () => {
-    if (!formData.employeeId || !formData.leaveType || !formData.startDate || !formData.endDate || !formData.reason) {
-      alert("Please fill all fields.");
+    if (!formData.employeeId || !formData.leaveType || !formData.startDate || !formData.reason) {
+      alert("Please fill all required fields (End Date is optional for a single day).");
       return;
     }
+    // If end date is empty, set it to start date
+    const submission = { ...formData };
+    if (!submission.endDate) submission.endDate = submission.startDate;
+
     try {
-      await axios.post('/api/xl/leave', formData);
+      await axios.post('/api/xl/leave', submission);
       alert("Leave Request Submitted!");
       setFormData({ employeeId: '', leaveType: '', startDate: '', endDate: '', reason: '' });
       fetchLeaves();
@@ -91,6 +123,35 @@ export default function LeaveRequest() {
   const getUserName = (id: string) => {
     const u = users.find(x => x.uid === id);
     return u ? `${u.firstName} ${u.lastName || ''}` : 'Unknown User';
+  };
+
+  // Calendar Logic
+  const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
+  const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
+
+  const handleDateClick = (dateNum: number) => {
+    const pad = (n:number) => n.toString().padStart(2, '0');
+    const dateStr = `${currentMonth.getFullYear()}-${pad(currentMonth.getMonth()+1)}-${pad(dateNum)}`;
+
+    if (!formData.startDate || (formData.startDate && formData.endDate)) {
+      setFormData({...formData, startDate: dateStr, endDate: ''});
+    } else {
+      if (new Date(dateStr) < new Date(formData.startDate)) {
+        setFormData({...formData, startDate: dateStr});
+      } else {
+        setFormData({...formData, endDate: dateStr});
+      }
+    }
+  };
+
+  const isSelected = (dateNum: number) => {
+    const pad = (n:number) => n.toString().padStart(2, '0');
+    const dateStr = `${currentMonth.getFullYear()}-${pad(currentMonth.getMonth()+1)}-${pad(dateNum)}`;
+    if (formData.startDate === dateStr || formData.endDate === dateStr) return true;
+    if (formData.startDate && formData.endDate) {
+      return (new Date(dateStr) >= new Date(formData.startDate) && new Date(dateStr) <= new Date(formData.endDate));
+    }
+    return false;
   };
 
   return (
@@ -117,20 +178,53 @@ export default function LeaveRequest() {
 
         <div className="flex flex-col xl:flex-row gap-8 mb-8">
           
-          {/* Calendar Block Replacement */}
-          <div className="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-6 md:p-8 shadow-2xl flex-1 max-w-xl flex flex-col gap-6 justify-center">
-            <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2 border-b border-slate-700/50 pb-2">Select Dates</h3>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider pl-1">Start Date *</label>
-                <input type="date" className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-sky-500 transition-colors"
-                  value={formData.startDate} onChange={e=>setFormData({...formData, startDate:e.target.value})} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider pl-1">End Date *</label>
-                <input type="date" className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-sky-500 transition-colors"
-                  value={formData.endDate} onChange={e=>setFormData({...formData, endDate:e.target.value})} />
-              </div>
+          {/* Visual Calendar Block */}
+          <div className="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-6 md:p-8 shadow-2xl flex-1 max-w-xl">
+            <div className="flex items-center justify-between mb-8">
+              <button 
+                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                className="w-8 h-8 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <ChevronLeft size={18} className="text-slate-400" />
+              </button>
+              <span className="font-bold text-lg text-white">
+                {currentMonth.toLocaleString('default', { month: 'long' })} {currentMonth.getFullYear()}
+              </span>
+              <button 
+                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                className="w-8 h-8 rounded-full hover:bg-slate-700 flex items-center justify-center transition-colors">
+                <ChevronRight size={18} className="text-slate-400" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-y-6 text-center">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div key={day} className="text-xs font-bold text-slate-500 uppercase">{day}</div>
+              ))}
+              
+              {/* Empty Days */}
+              {Array.from({ length: firstDay }).map((_, i) => (
+                <div key={`empty-${i}`}></div>
+              ))}
+
+              {/* Days */}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const dateNum = i + 1;
+                const active = isSelected(dateNum);
+                return (
+                  <div key={dateNum} className="flex items-center justify-center relative">
+                    {active && formData.startDate && formData.endDate && (
+                      <div className="absolute inset-0 bg-sky-500/20 w-full"></div>
+                    )}
+                    <button 
+                      onClick={() => handleDateClick(dateNum)}
+                      className={`relative z-10 w-8 h-8 rounded-full text-sm font-semibold flex items-center justify-center transition-all ${
+                        active ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/30 scale-110' : 'text-slate-300 hover:bg-slate-700'
+                      }`}>
+                      {dateNum}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -148,15 +242,41 @@ export default function LeaveRequest() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1.5" ref={dropdownRef}>
               <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Leave Type *</label>
               <div className="relative">
-                <select className="w-full appearance-none bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-rose-500 transition-colors"
-                  value={formData.leaveType} onChange={e=>setFormData({...formData, leaveType:e.target.value})}>
-                  <option value="" disabled hidden>Select Leave Type</option>
-                  {leaveTypes.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
-                </select>
-                <ChevronDown size={18} className="text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <button 
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="w-full flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-4 text-sm font-bold text-white focus:outline-none focus:border-rose-500 transition-colors">
+                  <span className={formData.leaveType ? "text-white" : "text-slate-400 font-semibold"}>
+                    {formData.leaveType || 'Select Leave Type'}
+                  </span>
+                  <ChevronDown size={18} className="text-slate-400" />
+                </button>
+                
+                {isDropdownOpen && (
+                  <div className="absolute z-20 top-full left-0 right-0 mt-2 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl overflow-hidden py-2">
+                    {leaveTypes.map(t => {
+                      const b = balances.find((x:any) => x.leaveType === t.name);
+                      const isLWP = t.name === 'Leave Without Pay' || t.name === 'LWP';
+                      const remaining = b ? (b.assigned - b.used) : 0;
+                      return (
+                        <button 
+                          key={t._id} 
+                          onClick={() => { setFormData({...formData, leaveType: t.name}); setIsDropdownOpen(false); }}
+                          className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-700/50 transition-colors text-left"
+                        >
+                          <span className="text-sm font-semibold text-slate-200">{t.name}</span>
+                          {!isLWP && (
+                            <span className="w-6 h-6 rounded-full bg-sky-500 flex items-center justify-center text-xs font-bold text-white shadow-lg shadow-sky-500/20">
+                              {remaining}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
