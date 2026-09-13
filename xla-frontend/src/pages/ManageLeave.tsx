@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeft, Trash2, Plus, X, Menu, Eye, EyeOff, Edit2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Menu, Eye, EyeOff, Edit2, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 function CreateLeaveTypeTab() {
@@ -271,6 +271,8 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
   
   const [editItem, setEditItem] = useState<any>(null);
   const [editValue, setEditValue] = useState('');
+  const [editUsedValue, setEditUsedValue] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchData = async () => {
     const res = await axios.get('/api/xl/assigned-leaves?year=' + year);
@@ -291,7 +293,7 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
   const handleEditSave = async () => {
     if(!editItem) return;
     try {
-      await axios.put('/api/xl/assign-leave/' + editItem._id, { assigned: editValue });
+      await axios.put('/api/xl/assign-leave/' + editItem._id, { assigned: editValue, used: editUsedValue });
       setEditItem(null);
       fetchData();
     } catch(e) {
@@ -347,8 +349,18 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
       </div>
 
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
-        <div className="p-4 border-b border-slate-700 bg-slate-700/50">
+        <div className="p-4 border-b border-slate-700 bg-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
           <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Showing ({Object.keys(grouped).length}) Entries</h3>
+          <div className="relative w-full md:w-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search employee..." 
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="w-full md:w-64 bg-slate-900 border border-slate-700 text-white rounded-lg pl-9 pr-4 py-2 text-sm focus:border-sky-500 focus:outline-none"
+            />
+          </div>
         </div>
         <table className="w-full text-left whitespace-nowrap">
           <thead className="bg-slate-700">
@@ -427,11 +439,18 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
                                      {it.leaveType === 'Leave Without Pay' || it.leaveType === 'LWP' ? '-' : (
                                         <div className="flex items-center gap-2">
                                           <span>{it.assigned}</span>
-                                          <button onClick={() => { setEditItem({ ...it, user: name }); setEditValue(it.assigned); }} className="text-sky-400 hover:text-sky-300"><Edit2 size={12} /></button>
+                                          <button onClick={() => { setEditItem({ ...it, user: name }); setEditValue(it.assigned); setEditUsedValue(it.used); }} className="text-sky-400 hover:text-sky-300"><Edit2 size={12} /></button>
                                         </div>
                                      )}
                                    </td>
-                                   <td className="p-2 text-xs text-slate-300">{it.used}</td>
+                                   <td className="p-2 text-xs text-slate-300">
+                                       {it.leaveType === 'Leave Without Pay' || it.leaveType === 'LWP' ? '-' : (
+                                          <div className="flex items-center gap-2">
+                                            <span>{it.used}</span>
+                                            <button onClick={() => { setEditItem({ ...it, user: name }); setEditValue(it.assigned); setEditUsedValue(it.used); }} className="text-sky-400 hover:text-sky-300"><Edit2 size={12} /></button>
+                                          </div>
+                                       )}
+                                     </td>
                                    <td className="p-2 pr-4 text-xs text-slate-300">
                                      {it.leaveType === 'Leave Without Pay' || it.leaveType === 'LWP' ? '-' : (it.assigned - it.used)}
                                    </td>
@@ -472,9 +491,8 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
                 <div className="text-sm font-bold text-slate-200">{editItem.leaveType}</div>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-sky-400 uppercase">New Leave Allocation *</label>
-                <input type="text" inputMode="numeric" value={editValue} onChange={e => setEditValue(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 mt-1 focus:border-sky-500 focus:outline-none" />
+                <label className="text-[10px] font-bold text-sky-400 uppercase">Assigned Leaves *</label>
+                <input type="text" inputMode="numeric" value={editValue} onChange={e => setEditValue(e.target.value)} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 mt-1 focus:border-sky-500 focus:outline-none" /></div><div><label className="text-[10px] font-bold text-sky-400 uppercase">Used Leaves *</label><input type="text" inputMode="numeric" value={editUsedValue} onChange={e => setEditUsedValue(e.target.value)} className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 mt-1 focus:border-sky-500 focus:outline-none" />
               </div>
             </div>
             
@@ -719,4 +737,8 @@ export default function ManageLeave() {
     </div>
   );
 }
+
+
+
+
 
