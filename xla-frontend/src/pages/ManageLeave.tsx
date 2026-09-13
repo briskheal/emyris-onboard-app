@@ -1,4 +1,5 @@
 import React from 'react';
+import CustomSelect from '../components/CustomSelect';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ArrowLeft, Trash2, Plus, X, Menu, Eye, EyeOff, Edit2, Search } from 'lucide-react';
@@ -194,24 +195,31 @@ function AssignLeaveTab({ users }: { users: any[] }) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT YEAR *</label>
-          <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.year} onChange={e=>setFormData({...formData, year:e.target.value})}>
-            <option>2026-2027</option>
-            <option>2027-2028</option>
-          </select>
+          <CustomSelect
+                options={[]}
+                value={formData.year}
+                onChange={(val) => setFormData({...formData, year: val})}
+                placeholder="Select Year"
+              />
         </div>
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT EMPLOYEE *</label>
-          <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.employeeId} onChange={e=>setFormData({...formData, employeeId:e.target.value})}>
-            <option value="" disabled hidden>Select Employee</option>
-            {users.map((u:any) => <option key={u.uid} value={u.uid}>{u.firstName} {u.lastName} ({u.designation || u.designationName})</option>)}
-          </select>
+          <CustomSelect
+                options={users.map((u: any) => ({ value: u.uid || u.employeeId, label: `${u.firstName} ${u.lastName || ''}`, subLabel: u.designation, showDefaultAvatar: true, avatarUrl: u.profilePic }))}
+                value={formData.employeeId}
+                onChange={(val) => setFormData({...formData, employeeId: val})}
+                placeholder="Select Employee"
+                showAllOption={false}
+              />
         </div>
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT LEAVE TYPE *</label>
-          <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.leaveType} onChange={e=>setFormData({...formData, leaveType:e.target.value})}>
-            <option value="" disabled hidden>Select Leave Type</option>
-            {types.map((t:any) => <option key={t.name} value={t.name}>{t.name}</option>)}
-          </select>
+          <CustomSelect
+                options={types.map((t: any) => ({ value: (t as any).name || t, label: (t as any).name || t }))}
+                value={formData.leaveType}
+                onChange={(val) => setFormData({...formData, leaveType: val})}
+                placeholder="Select Leave Type"
+              />
         </div>
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">ENTER NUMBER OF LEAVES *</label>
@@ -349,10 +357,12 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
         </button>
       </div>
       <div className="mb-4">
-        <select className="bg-slate-800 text-white p-2 rounded-lg border border-slate-700 w-48" value={year} onChange={e=>setYear(e.target.value)}>
-          <option>2026-2027</option>
-          <option>2027-2028</option>
-        </select>
+        <CustomSelect
+                options={[]}
+                value={year}
+                onChange={(val) => setYear(val)}
+                placeholder="Select Year"
+              />
       </div>
 
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">

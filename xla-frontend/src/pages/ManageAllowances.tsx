@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 import { Trash2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -91,8 +92,18 @@ export default function ManageAllowances() {
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT STATE *</label><select required value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select State</option>{states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT DESIGNATION *</label><select required value={formData.designation} onChange={e => setFormData({...formData, designation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT STATE *</label><CustomSelect
+                  options={states.map((s: any) => ({ value: s.stateName || s, label: s.stateName || s }))}
+                  value={formData.state}
+                  onChange={(val) => setFormData({...formData, state: val})}
+                  placeholder="Select State"
+                /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT DESIGNATION *</label><CustomSelect
+                  options={designations.map((d: any) => ({ value: d.designationName || d, label: d.designationName || d }))}
+                  value={formData.designation}
+                  onChange={(val) => setFormData({...formData, designation: val})}
+                  placeholder="Select Designation"
+                /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">FROM DISTANCE *</label><input required type="number" value={formData.fromDistance} onChange={e => setFormData({...formData, fromDistance: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Distance" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">TO DISTANCE *</label><input required type="number" value={formData.toDistance} onChange={e => setFormData({...formData, toDistance: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Distance" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">TRAVEL ALLOWANCE (PER KM) *</label><input required type="number" step="0.01" value={formData.allowancePerKm} onChange={e => setFormData({...formData, allowancePerKm: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter TA" /></div>
@@ -185,9 +196,24 @@ export default function ManageAllowances() {
         
         <form onSubmit={handleAdd} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 mb-10 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT STATE *</label><select required value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select State</option>{states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT DESIGNATION *</label><select required value={formData.designation} onChange={e => setFormData({...formData, designation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label><select required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Category</option><option value="Hotel">Hotel</option><option value="Food">Food</option></select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT STATE *</label><CustomSelect
+                  options={states.map((s: any) => ({ value: s.stateName || s, label: s.stateName || s }))}
+                  value={formData.state}
+                  onChange={(val) => setFormData({...formData, state: val})}
+                  placeholder="Select State"
+                /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT DESIGNATION *</label><CustomSelect
+                  options={designations.map((d: any) => ({ value: d.designationName || d, label: d.designationName || d }))}
+                  value={formData.designation}
+                  onChange={(val) => setFormData({...formData, designation: val})}
+                  placeholder="Select Designation"
+                /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label><CustomSelect
+                  options={[{ value: 'Hotel', label: 'Hotel' }, { value: 'Food', label: 'Food' }]}
+                  value={formData.category}
+                  onChange={(val) => setFormData({...formData, category: val})}
+                  placeholder="Select Category"
+                /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">AMOUNT *</label><input required type="number" step="0.01" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="0" /></div>
           </div>
           <div><button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Set Allowance</button></div>
@@ -273,10 +299,14 @@ export default function ManageAllowances() {
         
         <div className="mb-10 w-full md:w-1/3">
           <label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER *</label>
-          <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white">
-            <option value="">Select User</option>
-            {users.map(u => <option key={u._id} value={u._id}>{u.firstName} {u.lastName} ({u.designation})</option>)}
-          </select>
+          <CustomSelect
+                options={users.map((u: any) => ({ value: u.uid || u.employeeId, label: `${u.firstName} ${u.lastName || ''}`, subLabel: u.designation, showDefaultAvatar: true, avatarUrl: u.profilePic }))}
+                value={selectedUser}
+                onChange={(val) => setSelectedUser(val)}
+                placeholder="Select User"
+                showAllOption={true}
+                allOptionLabel="All Users"
+              />
         </div>
 
         {selectedUser && (
