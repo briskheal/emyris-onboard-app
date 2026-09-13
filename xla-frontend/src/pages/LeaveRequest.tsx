@@ -323,7 +323,7 @@ export default function LeaveRequest() {
         </div>
 
         {/* BOTTOM TABLE */}
-        <div className="flex flex-col bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl relative mt-4">
+        <div className="flex flex-col bg-slate-800/50 border border-slate-700/50 rounded-2xl shadow-2xl relative mt-4">
           
           <div className="px-6 py-4 bg-slate-800/80 border-b border-slate-700/50 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 w-full lg:w-auto">

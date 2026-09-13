@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { User, ChevronDown, Check, Search, X } from 'lucide-react';
+import { User, ChevronDown, Check, Search} from 'lucide-react';
 
 interface CustomUserSelectProps {
   users: any[];
@@ -84,18 +84,7 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
             
             {/* HEADER & SEARCH */}
             <div className="p-4 border-b border-[#3b3b5a] bg-[#1e1e30] flex flex-col gap-3 shrink-0">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-bold text-lg uppercase tracking-widest flex items-center gap-2">
-                  <User size={20} className="text-[#00e5ff]" />
-                  Select User
-                </h3>
-                <button 
-                  onClick={() => setIsOpen(false)}
-                  className="w-8 h-8 rounded-full bg-[#27273f] flex items-center justify-center text-slate-400 hover:text-white transition-colors border border-[#3b3b5a]"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+              
               <div className="relative">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -163,4 +152,5 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
     </div>
   );
 }
+
 

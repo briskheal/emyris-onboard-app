@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Check, User, Search, X } from 'lucide-react';
+import { ChevronDown, Check, User, Search} from 'lucide-react';
 
 export interface SelectOption {
   value: string;
@@ -93,19 +93,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
           <div className="bg-slate-800 w-full sm:max-w-md h-[85vh] sm:h-auto sm:max-h-[85vh] rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative z-10 animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-200 border border-slate-700">
             
             <div className="p-4 border-b border-slate-700 bg-slate-800 flex flex-col gap-3 shrink-0">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-bold text-lg uppercase tracking-widest flex items-center gap-2">
-                  <Search size={20} className="text-sky-400" />
-                  Search
-                </h3>
-                <button 
-                  onClick={() => setIsOpen(false
-      )}
-                  className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition-colors border border-slate-600"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+              
               <div className="relative">
                 <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -182,5 +170,6 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
     </div>
   );
 }
+
 
 
