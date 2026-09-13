@@ -1442,7 +1442,7 @@ router.post('/approvals/action', async (req, res) => {
                     
                     const startMonth = sd.getMonth();
                     const startYear = sd.getFullYear();
-                    const yearStr = startMonth >= 3 ? ${startYear}- : ${startYear-1}-;
+                    const yearStr = startMonth >= 3 ? `${startYear}-${startYear+1}` : `${startYear-1}-${startYear}`;
                     
                     const assignment = await XlAssignedLeave.findOne({
                         where: { employeeId: record.employeeId, year: yearStr, leaveType: record.leaveType }
@@ -1460,7 +1460,7 @@ router.post('/approvals/action', async (req, res) => {
                     
                     const startMonth = sd.getMonth();
                     const startYear = sd.getFullYear();
-                    const yearStr = startMonth >= 3 ? ${startYear}- : ${startYear-1}-;
+                    const yearStr = startMonth >= 3 ? `${startYear}-${startYear+1}` : `${startYear-1}-${startYear}`;
                     
                     const assignment = await XlAssignedLeave.findOne({
                         where: { employeeId: record.employeeId, year: yearStr, leaveType: record.leaveType }
@@ -1954,5 +1954,6 @@ router.delete('/leave-templates/:id', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
