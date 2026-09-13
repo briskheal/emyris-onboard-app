@@ -1215,7 +1215,7 @@ router.get('/approvals/counts', async (req, res) => {
             if (reporteeEmails.length === 0) return res.json({ success: true, counts: {} });
         }
 
-        const condition = designation === 'ADMIN' ? { status: 'Submitted' } : { status: 'Submitted', employeeId: { [Op.in]: reporteeEmails } };
+        const condition = designation === 'ADMIN' ? { status: ['Submitted', 'Pending', 'pending', 'submitted'] } : { status: ['Submitted', 'Pending', 'pending', 'submitted'], employeeId: { [Op.in]: reporteeEmails } };
         
         const counts = {};
         
@@ -1244,7 +1244,7 @@ router.get('/approvals/counts', async (req, res) => {
 
 router.get('/approvals/pending', async (req, res) => {
     try {
-        const { type, designation } = req.query;
+        const { type, designation, status } = req.query;
         let reporteeEmails = null;
         if (designation !== 'ADMIN') {
             const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
@@ -1307,7 +1307,7 @@ router.get('/approvals/pending', async (req, res) => {
         for (const p of pending) {
             const pData = p.toJSON();
             if (pData.employeeId) {
-                const u = await XlUser.findOne({ where: { employeeId: pData.employeeId } });
+                const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: pData.employeeId }, { uid: pData.employeeId }] } });
                 if (u) {
                     pData.employeeName = pData.employeeName || (u.firstName + ' ' + u.lastName) || u.name;
                     pData.employeeEmail = pData.employeeEmail || u.email;

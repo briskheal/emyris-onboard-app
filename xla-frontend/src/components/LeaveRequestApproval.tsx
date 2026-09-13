@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import axios from 'axios';
 import { CheckCircle, XCircle } from 'lucide-react';
 
-export default function LeaveRequestApproval({ items, fetchPending, fetchCounts, selectedModule }: any) {
+export default function LeaveRequestApproval({ items, fetchPending, fetchCounts, selectedModule, viewMode = 'Pending', setViewMode = () => {} }: any) {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -74,6 +74,11 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
                     <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wide">APPROVE {selectedModule}</h1>
                  </div>
              </div>
+             
+             <div className="flex bg-[#151521] border border-[#3b3b5a] rounded-lg p-1">
+                <button onClick={() => { setViewMode('Pending'); setSelectedRows([]); }} className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest ${viewMode === 'Pending' ? 'bg-[#27273f] text-white shadow' : 'text-slate-400 hover:text-slate-300'}`}>Pending</button>
+                <button onClick={() => { setViewMode('History'); setSelectedRows([]); }} className={`px-4 py-2 rounded-md text-xs font-bold uppercase tracking-widest ${viewMode === 'History' ? 'bg-[#27273f] text-white shadow' : 'text-slate-400 hover:text-slate-300'}`}>History</button>
+             </div>
           </div>
 
           <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
@@ -102,15 +107,23 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
                </div>
                <div className="text-center py-4">
                   <p className="text-slate-300 font-bold uppercase tracking-wide text-sm mb-8">
-                    DO YOU WANT TO APPROVE THE {selectedRows.length} LEAVE REQUEST{selectedRows.length !== 1 && 'S'}?
+                    DO YOU WANT TO PROCESS {selectedRows.length} {viewMode === 'Pending' ? 'PENDING' : 'HISTORY'} LEAVE REQUEST{selectedRows.length !== 1 && 'S'}?
                   </p>
                   <div className="flex gap-4">
-                    <button onClick={() => handleBulkAction('Approved')} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
-                      <CheckCircle size={16} /> Approve
-                    </button>
-                    <button onClick={() => handleBulkAction('Rejected')} className="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
-                      <XCircle size={16} /> Reject
-                    </button>
+                    {viewMode === 'Pending' ? (
+                      <>
+                        <button onClick={() => handleBulkAction('Approved')} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
+                          <CheckCircle size={16} /> Approve
+                        </button>
+                        <button onClick={() => handleBulkAction('Rejected')} className="flex-1 flex items-center justify-center gap-2 bg-rose-500 hover:bg-rose-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
+                          <XCircle size={16} /> Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button onClick={() => handleBulkAction('Revoked')} className="flex-1 flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">
+                          <XCircle size={16} /> Revoke
+                      </button>
+                    )}
                   </div>
                </div>
              </div>
@@ -128,10 +141,11 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
                 <thead>
                   <tr className="border-b border-[#3b3b5a] bg-[#151521]">
                     <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Start Date ↑</th>
-                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">End Date ↑</th>
-                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Employee Name ↑</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Start Date &uarr;</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">End Date &uarr;</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Employee Name &uarr;</th>
                     <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Reason For Leave</th>
+                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Status</th>
                     <th className="p-4 w-16 text-center">
                        <div className="flex items-center justify-center gap-2">
                          <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Select</span>
@@ -142,7 +156,7 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
                 </thead>
                 <tbody>
                   {filteredItems.length === 0 ? (
-                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Leave Requests</td></tr>
+                    <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Leave Requests Found</td></tr>
                   ) : filteredItems.map((d: any, idx: number) => {
                     const sd = d.startDate || d.date || '';
                     const ed = d.endDate || d.date || '';
@@ -153,6 +167,7 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
                         <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(ed).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                         <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName || d.employeeId}</td>
                         <td className="px-4 py-4 text-sm text-slate-300">{d.reason || d.remarks || '-'}</td>
+                        <td className="px-4 py-4 text-sm font-bold" style={{ color: d.status === 'Approved' ? '#34d399' : d.status === 'Revoked' ? '#fbbf24' : d.status === 'Rejected' ? '#f87171' : '#fcd34d' }}>{d.status || 'Pending'}</td>
                         <td className="p-4 text-center">
                           <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
                         </td>

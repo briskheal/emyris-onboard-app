@@ -37,6 +37,7 @@ export default function Approvals() {
    // @ts-ignore
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [viewMode, setViewMode] = useState<'Pending'|'History'>('Pending');
 
   const fetchCounts = async () => {
     try {
@@ -52,7 +53,7 @@ export default function Approvals() {
   const fetchPending = async () => {
     try {
       // setLoading(true);
-      const res = await axios.get(`/api/xl/approvals/pending?type=${encodeURIComponent(selectedModule)}&designation=ADMIN`);
+      const res = await axios.get(`/api/xl/approvals/pending?type=${encodeURIComponent(selectedModule)}&designation=ADMIN&status=${viewMode}`);
       if (res.data.success) {
         setItems(res.data.data);
       }
@@ -204,21 +205,22 @@ export default function Approvals() {
        
        {/* Main Content */}
        {selectedModule === 'Performance KPI' ? (
-           <PerformanceApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} />
+           <PerformanceApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} viewMode={viewMode} setViewMode={setViewMode} />
        ) : selectedModule === 'Tour Program' ? (
-         <TourProgramApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+         <TourProgramApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} viewMode={viewMode} setViewMode={setViewMode} />
        ) : selectedModule === 'Expense' ? (
-         <ExpenseApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+         <ExpenseApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} viewMode={viewMode} setViewMode={setViewMode} />
        ) : selectedModule === 'Call Report' ? (
-         <CallReportApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+         <CallReportApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} viewMode={viewMode} setViewMode={setViewMode} />
        ) : selectedModule === 'Leave Request' ? (
-         <LeaveRequestApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+         <LeaveRequestApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} viewMode={viewMode} setViewMode={setViewMode} />
        ) : selectedModule === 'Call Plans' ? (
-         <CallPlanApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+         <CallPlanApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} viewMode={viewMode} setViewMode={setViewMode} />
        ) : (
-         <GenericApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} />
+         <GenericApproval items={items} fetchPending={fetchPending} fetchCounts={fetchCounts} selectedModule={selectedModule} viewMode={viewMode} setViewMode={setViewMode} />
        )}
     </div>
   );
 }
+
 
