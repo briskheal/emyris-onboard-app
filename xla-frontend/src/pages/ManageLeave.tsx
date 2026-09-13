@@ -96,7 +96,7 @@ function AssignLeaveTab() {
   const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', leaveType: '', count: '' });
   
   useEffect(() => {
-    axios.get('/api/xl/users').then(res => setUsers(res.data.data||[]));
+    axios.get('/api/admin/users').then(res => setUsers(res.data.users||[]));
     axios.get('/api/xl/leave-types').then(res => setTypes(res.data.data||[]));
   }, []);
 
@@ -126,7 +126,7 @@ function AssignLeaveTab() {
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT EMPLOYEE *</label>
           <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.employeeId} onChange={e=>setFormData({...formData, employeeId:e.target.value})}>
             <option value="">Select Employee</option>
-            {users.map((u:any) => <option key={u.employeeId} value={u.employeeId}>{u.firstName} {u.lastName} ({u.designation})</option>)}
+            {users.map((u:any) => <option key={u.uid} value={u.uid}>{u.firstName} {u.lastName} ({u.designation || u.designationName})</option>)}
           </select>
         </div>
         <div>
@@ -138,7 +138,7 @@ function AssignLeaveTab() {
         </div>
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">ENTER NUMBER OF LEAVES *</label>
-          <input type="number" className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.count} onChange={e=>setFormData({...formData, count:e.target.value})} />
+          <input type="text" inputMode="numeric" className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.count} onChange={e=>setFormData({...formData, count:e.target.value})} />
         </div>
         <div className="md:col-span-2 lg:col-span-3">
           <button onClick={handleAssign} className="bg-sky-500 text-white font-bold py-2 px-6 rounded-lg active:scale-95 transition-transform">Assign Leave</button>
@@ -269,7 +269,7 @@ function CreateLeaveTemplateTab() {
             </div>
             <div className="flex-1 w-full">
                <label className="text-xs font-bold text-slate-400 mb-1 block">NUMBER OF LEAVES</label>
-               <input type="number" className="w-full bg-slate-900 text-white p-2 rounded-lg border border-slate-700" value={curCount} onChange={e=>setCurCount(e.target.value)} />
+               <input type="text" inputMode="numeric" className="w-full bg-slate-900 text-white p-2 rounded-lg border border-slate-700" value={curCount} onChange={e=>setCurCount(e.target.value)} />
             </div>
             <button onClick={addType} className="bg-emerald-500/20 text-emerald-400 p-2 rounded-lg w-full md:w-auto h-10 flex items-center justify-center hover:bg-emerald-500/30 transition-colors"><Plus size={20}/></button>
           </div>
@@ -317,7 +317,7 @@ function AssignLeaveTemplateTab() {
   const [formData, setFormData] = useState({ year: '2026-2027', employeeId: '', templateId: '' });
   
   useEffect(() => {
-    axios.get('/api/xl/users').then(res => setUsers(res.data.data||[]));
+    axios.get('/api/admin/users').then(res => setUsers(res.data.users||[]));
     axios.get('/api/xl/leave-templates').then(res => setTemplates(res.data.data||[]));
   }, []);
 
@@ -346,7 +346,7 @@ function AssignLeaveTemplateTab() {
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT EMPLOYEE *</label>
           <select className="w-full bg-slate-800 text-white p-3 rounded-lg border border-slate-700" value={formData.employeeId} onChange={e=>setFormData({...formData, employeeId:e.target.value})}>
             <option value="">Select Employee</option>
-            {users.map((u:any) => <option key={u.employeeId} value={u.employeeId}>{u.firstName} {u.lastName} ({u.designation})</option>)}
+            {users.map((u:any) => <option key={u.uid} value={u.uid}>{u.firstName} {u.lastName} ({u.designation || u.designationName})</option>)}
           </select>
         </div>
         <div>
@@ -426,3 +426,4 @@ export default function ManageLeave() {
     </div>
   );
 }
+

@@ -1705,4 +1705,105 @@ router.get('/backlog/overview', async (req, res) => {
 
 
 
+
+// --- LEAVE MANAGEMENT ADMIN ROUTES ---
+router.get('/leave-types', async (req, res) => {
+    try {
+        const { XlLeaveType } = require('../db');
+        const data = await XlLeaveType.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, data });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/leave-types', async (req, res) => {
+    try {
+        const { XlLeaveType } = require('../db');
+        const { name, code, description, isPaid } = req.body;
+        const data = await XlLeaveType.create({ name, code, description, isPaid });
+        res.json({ success: true, data });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.delete('/leave-types/:id', async (req, res) => {
+    try {
+        const { XlLeaveType } = require('../db');
+        await XlLeaveType.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/assigned-leaves', async (req, res) => {
+    try {
+        const { XlAssignedLeave } = require('../db');
+        const { year } = req.query;
+        let where = {};
+        if (year) where.year = year;
+        const data = await XlAssignedLeave.findAll({ where });
+        res.json({ success: true, data });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.get('/assigned-leaves/my', async (req, res) => {
+    try {
+        const { XlAssignedLeave } = require('../db');
+        const { employeeId, year } = req.query;
+        const data = await XlAssignedLeave.findAll({ where: { employeeId, year } });
+        res.json({ success: true, data });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/assign-leave', async (req, res) => {
+    try {
+        const { XlAssignedLeave } = require('../db');
+        const { employeeId, year, leaveType, count } = req.body;
+        let record = await XlAssignedLeave.findOne({ where: { employeeId, year, leaveType } });
+        if (record) {
+            record.assigned += parseInt(count, 10);
+            await record.save();
+        } else {
+            record = await XlAssignedLeave.create({ employeeId, year, leaveType, assigned: parseInt(count, 10) });
+        }
+        res.json({ success: true, data: record });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/assign-leave-bulk', async (req, res) => {
+    try {
+        const { XlAssignedLeave, XlLeaveTemplate } = require('../db');
+        const { employeeId, year, templateId } = req.body;
+        const template = await XlLeaveTemplate.findOne({ where: { _id: templateId } });
+        if (!template) return res.status(404).json({ error: 'Template not found' });
+        
+        const payload = JSON.parse(template.payload || '[]');
+        for (let item of payload) {
+            let record = await XlAssignedLeave.findOne({ where: { employeeId, year, leaveType: item.leaveType } });
+            if (record) {
+                record.assigned += parseInt(item.count, 10);
+                await record.save();
+            } else {
+                await XlAssignedLeave.create({ employeeId, year, leaveType: item.leaveType, assigned: parseInt(item.count, 10) });
+            }
+        }
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.get('/leave-templates', async (req, res) => {
+    try {
+        const { XlLeaveTemplate } = require('../db');
+        const data = await XlLeaveTemplate.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, data });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.post('/leave-templates', async (req, res) => {
+    try {
+        const { XlLeaveTemplate } = require('../db');
+        const { name, description, payload } = req.body;
+        const data = await XlLeaveTemplate.create({ name, description, payload: JSON.stringify(payload) });
+        res.json({ success: true, data });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+router.delete('/leave-templates/:id', async (req, res) => {
+    try {
+        const { XlLeaveTemplate } = require('../db');
+        await XlLeaveTemplate.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
