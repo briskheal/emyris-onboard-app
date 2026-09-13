@@ -1,6 +1,7 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeft, Trash2, Plus, X, Menu } from 'lucide-react';
+import { ArrowLeft, Trash2, Plus, X, Menu, Eye, EyeOff, Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 function CreateLeaveTypeTab() {
@@ -199,15 +200,42 @@ function AssignLeaveTab({ users }: { users: any[] }) {
 }
 
 function AssignedLeavesTab({ users }: { users: any[] }) {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any[]>([]);
   const [year, setYear] = useState('2026-2027');
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+  
+  const [editItem, setEditItem] = useState<any>(null);
+  const [editValue, setEditValue] = useState('');
+
+  const fetchData = async () => {
+    const res = await axios.get('/api/xl/assigned-leaves?year=' + year);
+    setData(res.data.data || []);
+  };
   
   useEffect(() => {
-    axios.get(`/api/xl/assigned-leaves?year=${year}`).then(res => setData(res.data.data||[]));
+    fetchData();
   }, [year]);
 
+  // Group data by employeeId
+  const grouped = data.reduce((acc:any, curr:any) => {
+    if (!acc[curr.employeeId]) acc[curr.employeeId] = [];
+    acc[curr.employeeId].push(curr);
+    return acc;
+  }, {});
+
+  const handleEditSave = async () => {
+    if(!editItem) return;
+    try {
+      await axios.put('/api/xl/assign-leave/' + editItem._id, { assigned: editValue });
+      setEditItem(null);
+      fetchData();
+    } catch(e) {
+      alert('Error updating leave');
+    }
+  };
+
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col h-full overflow-y-auto relative">
       <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest border-b border-slate-700 pb-2">Assigned Leaves</h2>
       <div className="mb-4">
         <select className="bg-slate-800 text-white p-2 rounded-lg border border-slate-700 w-48" value={year} onChange={e=>setYear(e.target.value)}>
@@ -215,42 +243,148 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
           <option>2027-2028</option>
         </select>
       </div>
+
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-x-auto">
+        <div className="p-4 border-b border-slate-700 bg-slate-700/50">
+          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Showing ({Object.keys(grouped).length}) Entries</h3>
+        </div>
         <table className="w-full text-left whitespace-nowrap">
           <thead className="bg-slate-700">
             <tr>
-              <th className="p-3 text-xs text-sky-400">Employee ID</th>
+              <th className="p-3 text-xs text-sky-400">Sr no.</th>
               <th className="p-3 text-xs text-sky-400">Employee Name</th>
-              <th className="p-3 text-xs text-sky-400">Leave Type</th>
-              <th className="p-3 text-xs text-sky-400">Assigned</th>
-              <th className="p-3 text-xs text-sky-400">Used</th>
-              <th className="p-3 text-xs text-sky-400">Remaining</th>
+              <th className="p-3 text-xs text-sky-400">Assigned Leaves</th>
+              <th className="p-3 text-xs text-sky-400">Used Leaves</th>
+              <th className="p-3 text-xs text-sky-400">Remaining Leaves</th>
+              <th className="p-3 text-xs text-sky-400 text-center">View</th>
             </tr>
           </thead>
           <tbody>
-            {data.map((d:any) => {
-              const u = users.find((usr:any) => usr.uid === d.employeeId);
+            {Object.keys(grouped).map((empId, index) => {
+              const items = grouped[empId];
+              const user = users.find(u => u.uid === empId);
+              const name = user ? `${user.firstName} ${user.lastName || ''}` : 'Unknown';
+              
+              // Calculate totals (excluding Leave Without Pay for standard totals, matching legacy video logic if needed, but for now we just sum)
+              let assignedTotal = 0;
+              let paidUsed = 0;
+              let lwpUsed = 0;
+              let remainingTotal = 0;
+              
+              items.forEach((item:any) => {
+                if (item.leaveType === 'Leave Without Pay' || item.leaveType === 'LWP') {
+                  lwpUsed += item.used;
+                } else {
+                  assignedTotal += item.assigned;
+                  paidUsed += item.used;
+                  remainingTotal += (item.assigned - item.used);
+                }
+              });
+              
+              const usedStr = lwpUsed > 0 ? `${paidUsed} + ${lwpUsed} LWP` : `${paidUsed}`;
+              const isExpanded = expandedRow === empId;
+
               return (
-                <tr key={d._id} className="border-b border-slate-700/50">
-                  <td className="p-3 text-sm text-slate-200 font-bold">{u?.employeeId || d.employeeId}</td>
-                  <td className="p-3 text-sm text-slate-200">{u ? `${u.firstName} ${u.lastName || ''}` : 'Unknown'}</td>
-                  <td className="p-3 text-sm text-slate-300">{d.leaveType}</td>
-                  <td className="p-3 text-sm text-slate-300">{d.assigned}</td>
-                  <td className="p-3 text-sm text-slate-300">{d.used}</td>
-                  <td className="p-3 text-sm text-emerald-400 font-bold">{d.assigned - d.used}</td>
-                </tr>
+                <React.Fragment key={empId}>
+                  <tr className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                    <td className="p-3 text-sm text-slate-300 font-bold">{index + 1}</td>
+                    <td className="p-3 text-sm text-slate-200">{name}</td>
+                    <td className="p-3 text-sm text-slate-300">{assignedTotal}</td>
+                    <td className="p-3 text-sm text-slate-300">{usedStr}</td>
+                    <td className="p-3 text-sm text-slate-300">{remainingTotal}</td>
+                    <td className="p-3 text-center">
+                      <button onClick={() => setExpandedRow(isExpanded ? null : empId)} className="text-slate-400 hover:text-sky-400 transition-colors">
+                        {isExpanded ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </td>
+                  </tr>
+                  
+                  {isExpanded && (
+                    <tr className="bg-slate-900/50">
+                      <td colSpan={6} className="p-4 border-b border-slate-700">
+                        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-inner">
+                           <div className="p-3 border-b border-slate-700 bg-slate-700/50">
+                             <h4 className="text-xs font-bold text-sky-400 uppercase tracking-widest">Showing ({items.length}) Entries</h4>
+                           </div>
+                           <table className="w-full text-left">
+                             <thead className="bg-slate-700/30">
+                               <tr>
+                                 <th className="p-2 pl-4 text-[10px] text-slate-400 uppercase">Sr no.</th>
+                                 <th className="p-2 text-[10px] text-slate-400 uppercase">Leave Types</th>
+                                 <th className="p-2 text-[10px] text-slate-400 uppercase">Assigned Leaves</th>
+                                 <th className="p-2 text-[10px] text-slate-400 uppercase">Used Leaves</th>
+                                 <th className="p-2 pr-4 text-[10px] text-slate-400 uppercase">Remaining Leaves</th>
+                               </tr>
+                             </thead>
+                             <tbody>
+                               {items.map((it:any, idx:number) => (
+                                 <tr key={it._id} className="border-t border-slate-700/30 hover:bg-slate-700/20">
+                                   <td className="p-2 pl-4 text-xs text-slate-300">{idx+1}</td>
+                                   <td className="p-2 text-xs text-slate-200">{it.leaveType}</td>
+                                   <td className="p-2 text-xs text-slate-200">
+                                     {it.leaveType === 'Leave Without Pay' || it.leaveType === 'LWP' ? '-' : (
+                                        <div className="flex items-center gap-2">
+                                          <span>{it.assigned}</span>
+                                          <button onClick={() => { setEditItem({ ...it, user: name }); setEditValue(it.assigned); }} className="text-sky-400 hover:text-sky-300"><Edit2 size={12} /></button>
+                                        </div>
+                                     )}
+                                   </td>
+                                   <td className="p-2 text-xs text-slate-300">{it.used}</td>
+                                   <td className="p-2 pr-4 text-xs text-slate-300">
+                                     {it.leaveType === 'Leave Without Pay' || it.leaveType === 'LWP' ? '-' : (it.assigned - it.used)}
+                                   </td>
+                                 </tr>
+                               ))}
+                             </tbody>
+                           </table>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
-            {data.length === 0 && (
+            {Object.keys(grouped).length === 0 && (
               <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No Leave Data Found</td></tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Edit Modal */}
+      {editItem && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-2xl w-full max-w-md relative">
+            <button onClick={() => setEditItem(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white">
+              <X size={20} />
+            </button>
+            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4">Editing Assigned Leave</h3>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase">User</label>
+                <div className="text-sm font-bold text-slate-200">{editItem.user}</div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Leave Type</label>
+                <div className="text-sm font-bold text-slate-200">{editItem.leaveType}</div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-sky-400 uppercase">New Leave Allocation *</label>
+                <input type="text" inputMode="numeric" value={editValue} onChange={e => setEditValue(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 text-white rounded-lg p-3 mt-1 focus:border-sky-500 focus:outline-none" />
+              </div>
+            </div>
+            
+            <button onClick={handleEditSave} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors">
+              Save
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
-
 function CreateLeaveTemplateTab() {
   const [templates, setTemplates] = useState([]);
   const [types, setTypes] = useState([]);

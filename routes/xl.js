@@ -1788,6 +1788,18 @@ router.post('/assign-leave-bulk', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+router.put('/assign-leave/:id', async (req, res) => {
+    try {
+        const { XlAssignedLeave } = require('../db');
+        const { assigned } = req.body;
+        const record = await XlAssignedLeave.findOne({ where: { _id: req.params.id } });
+        if (!record) return res.status(404).json({ error: 'Not found' });
+        record.assigned = parseInt(assigned, 10);
+        await record.save();
+        res.json({ success: true });
+    } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 router.get('/leave-templates', async (req, res) => {
     try {
         const { XlLeaveTemplate } = require('../db');
