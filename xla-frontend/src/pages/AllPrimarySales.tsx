@@ -9,7 +9,7 @@ export default function AllPrimarySales() {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
-    return d.toLocaleString('default', { month: 'short' }) + ' ' + d.getFullYear();
+    return d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getFullYear();
   });
 
   const fetchSales = async () => {
@@ -47,7 +47,7 @@ export default function AllPrimarySales() {
   const d = new Date();
   for (let i = 0; i < 12; i++) {
     const nd = new Date(d.getFullYear(), d.getMonth() - i, 1);
-    monthOptions.push(nd.toLocaleString('default', { month: 'short' }) + ' ' + nd.getFullYear());
+    monthOptions.push(nd.toLocaleString('en-US', { month: 'short' }) + ' ' + nd.getFullYear());
   }
 
   return (

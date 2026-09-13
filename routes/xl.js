@@ -1959,7 +1959,7 @@ router.post('/primary-sales/save', async (req, res) => {
     try {
         const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, productsData } = req.body;
         
-        const month = date ? new Date(date).toLocaleString('default', { month: 'short' }) : new Date().toLocaleString('default', { month: 'short' });
+        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
         const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
 
         const newSale = await XlPrimarySales.create({

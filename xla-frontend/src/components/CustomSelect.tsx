@@ -108,7 +108,7 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
 
       {/* DROPDOWN */}
       {isOpen && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="absolute top-full mt-1 left-0 right-0 z-[100] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
           {/* LIST */}
           <div className="max-h-64 overflow-y-auto p-1">
             {showAllOption && (
