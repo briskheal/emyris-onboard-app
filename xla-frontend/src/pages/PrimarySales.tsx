@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, Folder, Upload, List } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Folder, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
@@ -161,10 +161,7 @@ export default function PrimarySales() {
         </div>
         
         <div className="flex items-center gap-6">
-          <button onClick={() => navigate('/extras/primary-sales/all')} className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2 shadow-lg">
-              <List size={14} /> All Primary Sales
-            </button>
-            <button className="bg-transparent border border-sky-500/50 text-sky-400 hover:bg-sky-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
+          <button className="bg-transparent border border-sky-500/50 text-sky-400 hover:bg-sky-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
               <Upload size={14} /> Upload Primary Sales
             </button>
         </div>
@@ -275,15 +272,15 @@ export default function PrimarySales() {
               <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
                 <tr>
                   <th className="p-2 font-bold text-center border-r border-[#3b3b5a]">Sr</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a]">Product</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-24">Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] w-[200px] min-w-[200px]">Product</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-[140px]">Price</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Qty</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Free Stocks</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Total Qty</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Discnt %</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400">Final Price</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Purc. Rtn</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400 w-24">Rtn Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400 w-[140px]">Rtn Price</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Rtn Value</th>
                   <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400">Final Value</th>
                   <th className="p-2 font-bold text-center">Del</th>
@@ -335,7 +332,7 @@ export default function PrimarySales() {
                         /></div></td>
 
                       {/* Price Block */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50 w-28">
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 w-[140px]">
                         <div className="flex items-center gap-1 justify-center">
                           <div className="flex flex-col gap-[2px] w-10">
                             <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
@@ -343,7 +340,7 @@ export default function PrimarySales() {
                             <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
                             <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus</button>
                           </div>
-                          <div className="w-12 shrink-0">
+                          <div className="w-16 shrink-0">
                             {row.selectedPriceType === 'CUS' ? (
                               <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
                             ) : (
@@ -380,7 +377,7 @@ export default function PrimarySales() {
                       </td>
 
                       {/* Rtn Price Block */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-rose-950/10 w-28">
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-rose-950/10 w-[140px]">
                         <div className="flex items-center gap-1 justify-center">
                           <div className="flex flex-col gap-[2px] w-10">
                             <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTR' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTR</button>
@@ -388,7 +385,7 @@ export default function PrimarySales() {
                             <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'MRP' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>MRP</button>
                             <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'CUS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'CUS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>Cus</button>
                           </div>
-                          <div className="w-12 shrink-0">
+                          <div className="w-16 shrink-0">
                             {row.selectedRtnPriceType === 'CUS' ? (
                               <input type="number" min="0" value={row.customRtnPrice} onChange={e => handleRowChange(index, 'customRtnPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center font-bold" placeholder="0.00" />
                             ) : (
