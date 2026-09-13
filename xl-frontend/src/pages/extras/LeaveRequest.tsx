@@ -5,35 +5,46 @@ import axios from 'axios';
 
 const getUserId = () => {
   const u = localStorage.getItem('xl_user');
-  return u ? JSON.parse(u).employeeId : '';
+  if (!u) return '';
+  const parsed = JSON.parse(u);
+  return parsed.employeeId || parsed.uid || '';
 };
-const LEAVE_TYPES = ['Casual Leave', 'Sick Leave', 'Paid Leave'];
 
 export default function LeaveRequest() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState<any[]>([]);
+  const [balances, setBalances] = useState<any[]>([]);
   const [showNew, setShowNew] = useState(false);
   
   // Form State
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [leaveType, setLeaveType] = useState(LEAVE_TYPES[0]);
+  const [leaveType, setLeaveType] = useState('');
   const [reason, setReason] = useState('');
   
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchLeaves();
+    fetchData();
   }, []);
 
-  const fetchLeaves = async () => {
+  const fetchData = async () => {
     try {
-      const res = await axios.get(`/api/xl/leave/my?email=${getUserId()}`);
-      setLeaves(res.data.data || []);
+      const currentYear = new Date().getMonth() >= 3 ? `${new Date().getFullYear()}-${new Date().getFullYear()+1}` : `${new Date().getFullYear()-1}-${new Date().getFullYear()}`;
+      const [histRes, balRes] = await Promise.all([
+        axios.get(`/api/xl/leave/my?email=${getUserId()}`),
+        axios.get(`/api/xl/assigned-leaves/my?employeeId=${getUserId()}&year=${currentYear}`)
+      ]);
+      setLeaves(histRes.data.data || []);
+      const bals = balRes.data.data || [];
+      setBalances(bals);
+      if (bals.length > 0) {
+        setLeaveType(bals[0].leaveType);
+      }
     } catch (e) {
-      setError('Failed to fetch leave history.');
+      setError('Failed to fetch leave data.');
     } finally {
       setLoading(false);
     }
@@ -43,6 +54,7 @@ export default function LeaveRequest() {
     e.preventDefault();
     if (!startDate || !endDate || !reason) { setError('All fields are required.'); return; }
     if (endDate < startDate) { setError('End date cannot be before start date.'); return; }
+    if (!leaveType) { setError('Please select a leave type.'); return; }
 
     setSubmitting(true);
     setError('');
@@ -52,7 +64,7 @@ export default function LeaveRequest() {
         employeeId: getUserId(), 
         startDate, endDate, leaveType, reason 
       });
-      await fetchLeaves();
+      await fetchData();
       setShowNew(false);
       setStartDate('');
       setEndDate('');
@@ -91,6 +103,27 @@ export default function LeaveRequest() {
       </div>
 
       <div className="flex-1 p-4">
+        {/* Balances Widget */}
+        {!showNew && balances.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-3 px-1">My Balances ({balances[0]?.year})</h3>
+            <div className="grid grid-cols-2 gap-3">
+              {balances.map(b => (
+                <div key={b._id} className="bg-slate-700 p-3 rounded-xl border border-slate-700 shadow-sm flex flex-col">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase mb-1">{b.leaveType}</span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xl font-black text-white">{b.assigned - b.used}</span>
+                    <span className="text-xs font-bold text-slate-500">/ {b.assigned}</span>
+                  </div>
+                  <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2">
+                    <div className="bg-sky-500 h-1.5 rounded-full" style={{width: `${Math.min(100, Math.max(0, ((b.assigned-b.used)/b.assigned)*100))}%`}}></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {showNew && (
           <div className="bg-slate-700 rounded-2xl border border-slate-700 p-4 mb-6 shadow-xl">
             <h2 className="text-sm font-bold text-white mb-4">New Leave Request</h2>
@@ -112,7 +145,12 @@ export default function LeaveRequest() {
                 <label className="block text-[11px] font-semibold text-slate-200 uppercase tracking-wider mb-1.5">Leave Type</label>
                 <select value={leaveType} onChange={e => setLeaveType(e.target.value)}
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2.5 text-white text-sm focus:border-sky-500 focus:outline-none appearance-none">
-                  {LEAVE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {balances.length === 0 && <option value="">No Leave Balances Assigned</option>}
+                  {balances.map(b => (
+                    <option key={b._id} value={b.leaveType}>
+                      {b.leaveType} ({b.assigned - b.used} remaining)
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -135,7 +173,7 @@ export default function LeaveRequest() {
         <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-3 px-1">Leave History</h3>
         
         {loading ? (
-          <p className="text-center text-sm text-slate-500 mt-10">Loading history...</p>
+          <p className="text-center text-sm text-slate-500 mt-10">Loading...</p>
         ) : leaves.length === 0 ? (
           <p className="text-center text-sm text-slate-500 mt-10">No past leaves found.</p>
         ) : (
