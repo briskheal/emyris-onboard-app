@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Trash2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -114,7 +114,32 @@ export default function LeaveRequest() {
     return u ? `${u.firstName} ${u.lastName || ''}` : 'Unknown User';
   };
 
+
+  const exportToCSV = () => {
+    const headers = ['Sr no.', 'Employee', 'Start Date', 'End Date', 'Leave Type', 'Reason for Leave', 'Status'];
+    const rows = leaves.map((l, i) => [
+      i + 1,
+      getUserName(l.employeeId),
+      l.startDate,
+      l.endDate,
+      l.leaveType,
+      (l.reason || '').replace(/,/g, ' '),
+      l.status || 'Pending'
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'Leave_Requests.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   // Calendar Logic
+
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
 
@@ -153,7 +178,7 @@ export default function LeaveRequest() {
   };
 
   return (
-    <div className="min-h-screen md:h-dvh bg-slate-900 flex flex-col text-slate-100 font-sans pb-24 md:pb-0 relative overflow-hidden">
+    <div className="min-h-screen bg-slate-900 flex flex-col text-slate-100 font-sans pb-24 md:pb-8 relative">
       
       {/* Mobile Sticky Header */}
       <div className="md:hidden flex items-center gap-4 px-5 pt-12 pb-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
@@ -167,7 +192,7 @@ export default function LeaveRequest() {
       </div>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col px-5 py-6 md:p-8 overflow-y-auto">
+      <div className="flex-1 flex flex-col px-5 py-6 md:p-8">
         
         {/* DESKTOP HEADER */}
         <div className="hidden md:flex items-center justify-between mb-8">
@@ -288,8 +313,7 @@ export default function LeaveRequest() {
           <div className="px-6 py-4 bg-slate-800/80 border-b border-slate-700/50 flex flex-col md:flex-row items-center justify-between gap-4">
             <h3 className="text-sm font-bold text-slate-300 uppercase tracking-widest">Showing ({leaves.length}) Entries</h3>
             
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="flex flex-col gap-1.5 w-full md:w-48">
+            <div className="flex items-center gap-4 w-full md:w-auto"><button onClick={exportToCSV} className="hidden md:flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-colors mt-5"><Download size={16} /> Export</button><div className="flex flex-col gap-1.5 w-full md:w-48">
                 <label className="text-[10px] font-bold text-sky-400 uppercase tracking-wider pl-1">Select Month</label>
                 <input type="month" className="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500 transition-colors w-full"
                   value={filterMonth} onChange={e=>setFilterMonth(e.target.value)} />
@@ -352,5 +376,8 @@ export default function LeaveRequest() {
     </div>
   );
 }
+
+
+
 
 
