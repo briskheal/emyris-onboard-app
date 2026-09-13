@@ -34,7 +34,7 @@ function CreateLeaveTypeTab() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col">
       <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest border-b border-slate-700 pb-2">Create Leave Type</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
@@ -124,7 +124,7 @@ function AssignLeaveTab({ users }: { users: any[] }) {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col">
       <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest border-b border-slate-700 pb-2">Assign Leave</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
@@ -234,9 +234,46 @@ function AssignedLeavesTab({ users }: { users: any[] }) {
     }
   };
 
+  const exportToCSV = () => {
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "Employee ID,Employee Name,Leave Type,Assigned Leaves,Used Leaves,Remaining Leaves\n";
+    
+    const rows: string[] = [];
+    data.forEach((d:any) => {
+      const u = users.find((usr:any) => usr.uid === d.employeeId);
+      const empId = u?.employeeId || d.employeeId;
+      const empName = u ? `${u.firstName} ${u.lastName || ''}` : 'Unknown';
+      const remaining = (d.leaveType === 'Leave Without Pay' || d.leaveType === 'LWP') ? 0 : (d.assigned - d.used);
+      
+      const row = [
+        `"${empId}"`,
+        `"${empName}"`,
+        `"${d.leaveType}"`,
+        d.assigned,
+        d.used,
+        remaining
+      ].join(",");
+      rows.push(row);
+    });
+    
+    csvContent += rows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Leave_Status_Report_${year}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <div className="flex flex-col h-full overflow-y-auto relative">
-      <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest border-b border-slate-700 pb-2">Assigned Leaves</h2>
+    <div className="flex flex-col relative">
+      <div className="flex items-center justify-between border-b border-slate-700 pb-2 mb-6">
+        <h2 className="text-xl font-bold text-white uppercase tracking-widest">Assigned Leaves</h2>
+        <button onClick={exportToCSV} className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded-lg text-sm transition-colors flex items-center gap-2">
+          Export to CSV
+        </button>
+      </div>
       <div className="mb-4">
         <select className="bg-slate-800 text-white p-2 rounded-lg border border-slate-700 w-48" value={year} onChange={e=>setYear(e.target.value)}>
           <option>2026-2027</option>
@@ -428,7 +465,7 @@ function CreateLeaveTemplateTab() {
   }
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col">
       <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest border-b border-slate-700 pb-2">Create Leave Template</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div>
@@ -519,7 +556,7 @@ function AssignLeaveTemplateTab({ users }: { users: any[] }) {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col">
       <h2 className="text-xl font-bold text-white mb-6 uppercase tracking-widest border-b border-slate-700 pb-2">Assign Leave Templates</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
@@ -569,7 +606,7 @@ export default function ManageLeave() {
   ];
 
   return (
-    <div className="h-screen flex flex-col bg-slate-900 font-sans">
+    <div className="min-h-screen flex flex-col bg-slate-900 font-sans">
       <div className="bg-slate-800 p-4 border-b border-slate-700 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-white transition-colors">
@@ -585,7 +622,7 @@ export default function ManageLeave() {
         </button>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 relative">
         {/* Sidebar */}
         <div className={`absolute inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-200 ease-in-out z-10`}>
           <div className="p-4 border-b border-slate-800 flex justify-between items-center">
@@ -606,7 +643,7 @@ export default function ManageLeave() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-8 overflow-y-auto">
+        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-8">
           {activeTab === 'create-type' && <CreateLeaveTypeTab />}
           {activeTab === 'assign-leave' && <AssignLeaveTab users={users} />}
           {activeTab === 'assigned-leaves' && <AssignedLeavesTab users={users} />}
