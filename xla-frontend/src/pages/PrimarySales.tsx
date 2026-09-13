@@ -214,7 +214,7 @@ export default function PrimarySales() {
 
             {/* Row 1/Col 4: All Primary Sales Button */}
             <div className="flex flex-col justify-end md:col-span-1">
-              <button className="h-[36px] bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
+              <button onClick={() => navigate('/extras/primary-sales/all')} className="h-[36px] bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
                 <Folder size={14} /> All Pri Sales
               </button>
             </div>
@@ -266,7 +266,7 @@ export default function PrimarySales() {
       {/* SCROLLING TABLE BLOCK */}
       <div className="flex-1 px-3 md:px-4 pb-3">
         {/* DATA TABLE */}
-        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 mb-20">
+        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 mb-96">
           <div className="w-full">
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
