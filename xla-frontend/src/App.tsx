@@ -67,6 +67,7 @@ function App() {
             <Route path="gifts" element={<GiftsListReport />} />
             <Route path="routes" element={<RoutesListReport />} />
           </Route>
+          <Route path="/extras/primary-sales" element={<PrimarySales />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />
@@ -79,7 +80,6 @@ function App() {
           <Route path="extras/settings" element={<Settings />} />
           <Route path="extras/performance" element={<PerformanceMenu />} />
           <Route path="extras/e-detailing" element={<EDetailing />} />
-          <Route path="extras/primary-sales" element={<PrimarySales />} />
           <Route path="extras/secondary" element={<SecondarySales />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
