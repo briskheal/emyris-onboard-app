@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2, Save, CheckCircle } from 'lucide-react';
+import { Folder, ArrowLeft, Trash2, Save, CheckCircle } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
@@ -146,6 +146,11 @@ export default function SecondarySales() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.stockist, formData.month, formData.year]);
 
+
+  const filteredProducts = formData.division ? products.filter(p => p.division === formData.division) : products;
+  const filteredStockists = formData.headquarter ? stockists.filter(s => s.headquarter === formData.headquarter) : stockists;
+  const filteredHqs = formData.division ? hqs.filter(h => h.division === formData.division || !h.division) : hqs; // fallback if hq has no division
+
   const totals = rows.reduce((acc, row) => {
     const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
     const ptr = prod ? (prod.ptr || 0) : 0;
@@ -273,7 +278,7 @@ export default function SecondarySales() {
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Headquarter <span className="text-rose-500">*</span></label>
                 <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
-                  options={hqs.map(h => ({ value: h.uid || h._id, label: h.uid }))} 
+                  options={filteredHqs.map(h => ({ value: h.uid || h._id, label: h.uid }))} 
                   value={formData.headquarter} 
                   onChange={(val) => setFormData({...formData, headquarter: val})} 
                   placeholder="Select HQ"
@@ -283,7 +288,7 @@ export default function SecondarySales() {
               <div className="space-y-2 lg:col-span-2">
                 <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Stockist <span className="text-rose-500">*</span></label>
                 <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
-                  options={stockists.map(s => ({ value: s.uid || s._id, label: s.businessName || s.name || s.uid }))} 
+                  options={filteredStockists.map(s => ({ value: s.uid || s._id, label: s.businessName || s.name || s.uid }))} 
                   value={formData.stockist} 
                   onChange={(val) => setFormData({...formData, stockist: val})} 
                   placeholder="Select Stockist"
@@ -295,15 +300,20 @@ export default function SecondarySales() {
                 <input type="date" value={formData.invoiceDate} onChange={e => setFormData({...formData, invoiceDate: e.target.value})} className="w-full h-[42px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-lg px-3 text-sm text-white focus:border-sky-500 outline-none" />
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 lg:col-span-1">
                 <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Invoice Number</label>
-                <input type="text" value={formData.invoiceNumber} onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} className="w-full h-[42px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-lg px-3 text-sm text-white focus:border-sky-500 outline-none" placeholder="Enter invoice number" />
+                <div className="flex gap-2">
+                  <input type="text" value={formData.invoiceNumber} onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} className="w-full h-[42px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-lg px-3 text-sm text-white focus:border-sky-500 outline-none" placeholder="Enter invoice number" />
+                  <button onClick={() => navigate('/extras/secondary/all')} className="h-[42px] px-4 shrink-0 bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 rounded-lg font-bold text-xs flex items-center justify-center gap-1.5 transition-colors" title="All Secondary Sales">
+                    <Folder size={14} /> All Sec Sales
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Table */}
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-x-auto relative mb-96">
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-x-auto relative mb-96 z-[60]">
             <div className="min-w-[1200px]">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -347,7 +357,7 @@ export default function SecondarySales() {
                         <td className="p-1.5 text-center text-xs font-semibold border-r border-[#3b3b5a]/50">{index + 1}</td>
                         
                         <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[250px]"><div className="h-[34px] [&>div>div]:min-h-[34px] [&>div>div]:py-1 z-[100]"><CustomSelect 
-                            options={products.map((p: any) => ({ value: p.uid || p._id, label: p.productName }))}
+                            options={filteredProducts.map((p: any) => ({ value: p.uid || p._id, label: p.productName }))}
                             value={row.productId}
                             onChange={(val) => handleRowChange(index, 'productId', val)}
                             placeholder="Select"
@@ -372,7 +382,9 @@ export default function SecondarySales() {
                           </div>
                         </td>
 
-                        <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-orange-300 bg-orange-950/10">{opening}</td>
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-orange-950/10 w-16">
+                          <input type="number" min="0" value={row.openingQty} onChange={e => handleRowChange(index, 'openingQty', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-orange-900/50 rounded px-1 text-xs text-orange-400 font-bold outline-none focus:border-orange-500 text-center" />
+                        </td>
                         <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-300 bg-sky-950/10">{received}</td>
                         <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-black text-white bg-white/5">{totalQty}</td>
                         
