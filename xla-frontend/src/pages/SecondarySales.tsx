@@ -39,9 +39,11 @@ export default function SecondarySales() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pRes, sRes] = await Promise.all([
+        const [pRes, sRes, hRes, dRes] = await Promise.all([
           axios.get('/api/xl/reports/products').catch(() => ({ data: { data: [] } })),
-          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } }))
+          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/hq').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/division').catch(() => ({ data: { data: [] } }))
         ]);
         
         const fetchedProducts = pRes.data.data || [];
@@ -50,13 +52,12 @@ export default function SecondarySales() {
         const fetchedStockists = sRes.data.data || [];
         setStockists(fetchedStockists);
 
-        // Extract unique HQs from stockists
-        const uniqueHqs = [...new Set(fetchedStockists.map((s: any) => s.headquarter).filter(Boolean))].sort();
-        setHqs(uniqueHqs as string[]);
+        // Fetch master list of HQs and Divisions
+        const fetchedHQs = hRes.data.data || [];
+        setHqs(fetchedHQs.map((h: any) => h.uid || h.hqName).filter(Boolean));
 
-        // Extract unique divisions from products
-        const uniqueDivs = [...new Set(fetchedProducts.map((p: any) => p.division).filter(Boolean))].sort();
-        setDivisions(uniqueDivs as string[]);
+        const fetchedDivs = dRes.data.data || [];
+        setDivisions(fetchedDivs.map((d: any) => d.uid || d.divisionName).filter(Boolean));
       } catch (error) {
         console.error(error);
       } finally {
@@ -246,11 +247,11 @@ export default function SecondarySales() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto p-4 md:p-6 custom-scrollbar pb-32">
-        <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
+        <div className="max-w-[1400px] w-full mx-auto flex-1 flex flex-col space-y-4 md:space-y-6 h-full overflow-hidden">
           
           {/* Form Header */}
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] p-6 shadow-xl relative z-10">
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] p-6 shadow-xl relative z-10 shrink-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
               <div className="space-y-2">
@@ -321,7 +322,7 @@ export default function SecondarySales() {
           </div>
 
           {/* Table */}
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-x-auto relative mb-96 z-[60]">
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-auto custom-scrollbar relative z-[60] flex-1 mb-24">
             <div className="min-w-[1200px]">
               <table className="w-full text-left border-collapse">
                 <thead>

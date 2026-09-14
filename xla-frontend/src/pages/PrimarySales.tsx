@@ -29,9 +29,11 @@ export default function PrimarySales() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pRes, sRes] = await Promise.all([
+        const [pRes, sRes, hRes, dRes] = await Promise.all([
           axios.get('/api/xl/reports/products').catch(() => ({ data: { data: [] } })),
-          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } }))
+          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/hq').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/division').catch(() => ({ data: { data: [] } }))
         ]);
         
         const fetchedProducts = pRes.data.data || [];
@@ -40,13 +42,12 @@ export default function PrimarySales() {
         const fetchedStockists = sRes.data.data || [];
         setStockists(fetchedStockists);
 
-        // Extract unique HQs from stockists
-        const uniqueHqs = [...new Set(fetchedStockists.map((s: any) => s.headquarter).filter(Boolean))].sort();
-        setHqs(uniqueHqs as string[]);
+        // Fetch master list of HQs and Divisions
+        const fetchedHQs = hRes.data.data || [];
+        setHqs(fetchedHQs.map((h: any) => h.uid || h.hqName).filter(Boolean));
 
-        // Extract unique divisions from products
-        const uniqueDivs = [...new Set(fetchedProducts.map((p: any) => p.division).filter(Boolean))].sort();
-        setDivisions(uniqueDivs as string[]);
+        const fetchedDivs = dRes.data.data || [];
+        setDivisions(fetchedDivs.map((d: any) => d.uid || d.divisionName).filter(Boolean));
 
       } catch (err) {
         console.error("Failed to fetch data:", err);
