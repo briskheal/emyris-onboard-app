@@ -1696,6 +1696,7 @@ router.get('/division', async (req, res) => {
 });
 
 
+
 router.get('/user-performance/userwise', async (req, res) => {
     try {
         const { month, year, reportType, userId } = req.query;
@@ -1757,85 +1758,6 @@ router.get('/user-performance/userwise', async (req, res) => {
                 data = [];
             }
         }
-        res.json({ success: true, data });
-    } catch (e) {
-        console.error(e);
-        res.status(500).json({ success: false, error: e.message });
-    }
-});
-        }
-
-        const user = await XlUser.findByPk(userId);
-        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-
-        const settingsDoc = await XlGlobalSettings.findOne();
-        const settings = settingsDoc?.settings?.userPerformance || {};
-
-        let data = {};
-
-        if (reportType === 'Effort Analysis') {
-            const dcrs = await XlDCR.findAll({ where: { employeeId: userId, month, year } });
-            
-            let totalDoctorsMet = 0;
-            let totalUniqueDoctors = new Set();
-
-            dcrs.forEach(dcr => {
-                if (dcr.doctorsData) {
-                    try {
-                        const docs = JSON.parse(dcr.doctorsData);
-                        docs.forEach(doc => {
-                            if (doc.uid) {
-                                totalDoctorsMet++;
-                                totalUniqueDoctors.add(doc.uid);
-                            }
-                        });
-                    } catch(e) {}
-                }
-            });
-
-            const uniqueDocsCount = totalUniqueDoctors.size;
-            
-            data = {
-                totalDoctors: 1000, 
-                totalDoctorsMet,
-                totalUniqueDoctors: uniqueDocsCount,
-                totalMissedDoctors: Math.max(0, 1000 - uniqueDocsCount),
-                totalNonCore: Math.floor(uniqueDocsCount * 0.3),
-                totalCore: Math.floor(uniqueDocsCount * 0.5),
-                totalSuperCore: Math.floor(uniqueDocsCount * 0.2)
-            };
-        } else if (reportType === 'Brand Analysis') {
-            const products = settings.brandProducts || [];
-            const SaleModel = settings.brandSalesSelection === 'Secondary Sales' ? XlSecondarySales : XlPrimarySales;
-            const sales = await SaleModel.findAll({ where: { employeeId: userId, month, year } });
-            
-            const productSales = {};
-            sales.forEach(sale => {
-                if (sale.productsData) {
-                    try {
-                        const rows = JSON.parse(sale.productsData);
-                        rows.forEach(r => {
-                            if (products.includes(r.productId)) {
-                                if (!productSales[r.productId]) productSales[r.productId] = 0;
-                                productSales[r.productId] += Number(r.quantity || r.salesQty || 0);
-                            }
-                        });
-                    } catch(e){}
-                }
-            });
-
-            data = products.map((pid, idx) => ({
-                productId: pid,
-                monthlyTarget: settings.brandTargetAuto ? 500 : 1000,
-                week1Plan: 125, week1Achieved: Math.floor((productSales[pid] || 0) * 0.25),
-                week2Plan: 125, week2Achieved: Math.floor((productSales[pid] || 0) * 0.25),
-                week3Plan: 125, week3Achieved: Math.floor((productSales[pid] || 0) * 0.25),
-                week4Plan: 125, week4Achieved: Math.floor((productSales[pid] || 0) * 0.25)
-            }));
-        } else {
-            data = [];
-        }
-
         res.json({ success: true, data });
     } catch (e) {
         console.error(e);
