@@ -71,6 +71,8 @@ function App() {
           <Route path="/extras/primary-sales" element={<PrimarySales />} />
           <Route path="/extras/primary-sales/edit/:id" element={<PrimarySales />} />
           <Route path="/extras/primary-sales/all" element={<AllPrimarySales />} />
+          <Route path="/extras/secondary" element={<SecondarySales />} />
+          <Route path="/extras/secondary/edit/:id" element={<SecondarySales />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="extras" element={<Extras />} />
@@ -83,7 +85,6 @@ function App() {
           <Route path="extras/settings" element={<Settings />} />
           <Route path="extras/performance" element={<PerformanceMenu />} />
           <Route path="extras/e-detailing" element={<EDetailing />} />
-          <Route path="extras/secondary" element={<SecondarySales />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
           <Route path="utilities" element={<Utilities />} />

@@ -28,7 +28,7 @@ export default function SecondarySales() {
   });
 
   const [rows, setRows] = useState([
-    { id: Date.now(), productId: '', price: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }
+    { id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }
   ]);
 
   const monthOptions = [
@@ -85,7 +85,7 @@ export default function SecondarySales() {
   }, [id, products.length]);
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), productId: '', price: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+    setRows([...rows, { id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
   };
 
   const removeRow = (index: number) => {
@@ -155,6 +155,7 @@ export default function SecondarySales() {
     let activePrice = ptr;
     if (row.selectedPriceType === 'MRP') activePrice = mrp;
     else if (row.selectedPriceType === 'PTS') activePrice = pts;
+    else if (row.selectedPriceType === 'CUS') activePrice = Number(row.customPrice) || 0;
     
     const sQty = Number(row.salesQty) || 0;
     const salesValue = sQty * activePrice;
@@ -204,7 +205,7 @@ export default function SecondarySales() {
         alert(id ? 'Secondary Sales updated successfully!' : 'Secondary Sales saved successfully!');
         if (!id) {
             setFormData({ ...formData, invoiceNumber: '' });
-            setRows([{ id: Date.now(), productId: '', price: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+            setRows([{ id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
         }
       } else {
         alert('Failed to save.');
@@ -330,6 +331,7 @@ export default function SecondarySales() {
                     let activePrice = ptr;
                     if (row.selectedPriceType === 'MRP') activePrice = mrp;
                     else if (row.selectedPriceType === 'PTS') activePrice = pts;
+    else if (row.selectedPriceType === 'CUS') activePrice = Number(row.customPrice) || 0;
                     
                     const opening = Number(row.openingQty) || 0;
                     const received = Number(row.receivedQty) || 0;
@@ -352,15 +354,20 @@ export default function SecondarySales() {
                           /></div></td>
                           
                         {/* Price Type Selector */}
-                        <td className="p-1.5 border-r border-[#3b3b5a]/50">
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 w-[140px]">
                           <div className="flex items-center gap-1 justify-center">
                             <div className="flex flex-col gap-[2px] w-10">
                               <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
                               <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
                               <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
+                              <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>Cus</button>
                             </div>
-                            <div className="flex-1 min-w-[60px] text-center text-xs font-bold text-sky-400 bg-[#1a1a2e] h-full flex items-center justify-center rounded">
-                              {activePrice.toFixed(2)}
+                            <div className="w-16 shrink-0">
+                              {row.selectedPriceType === 'CUS' ? (
+                                <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
+                              ) : (
+                                <div className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 flex items-center justify-center text-xs text-[#8b8baf] font-bold">{activePrice.toFixed(2)}</div>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -369,11 +376,11 @@ export default function SecondarySales() {
                         <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-300 bg-sky-950/10">{received}</td>
                         <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-black text-white bg-white/5">{totalQty}</td>
                         
-                        <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-emerald-950/10 w-20">
-                          <input type="number" min="0" value={row.salesQty} onChange={e => handleRowChange(index, 'salesQty', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-emerald-900/50 rounded px-2 text-sm text-emerald-400 font-bold outline-none focus:border-emerald-500 text-center" />
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
+                          <input type="number" min="0" value={row.salesQty} onChange={e => handleRowChange(index, 'salesQty', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-white outline-none focus:border-sky-500 text-center" />
                         </td>
-                        <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-purple-950/10 w-20">
-                          <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-purple-900/50 rounded px-2 text-sm text-purple-400 font-bold outline-none focus:border-purple-500 text-center" />
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16">
+                          <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-white outline-none focus:border-sky-500 text-center" />
                         </td>
                         
                         <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-400">{salesValue.toFixed(2)}</td>
