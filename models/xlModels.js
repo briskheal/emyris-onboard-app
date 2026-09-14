@@ -39,6 +39,8 @@ const XlPrimarySales = sequelize.define('xl_primary_sales', {
     amount: { type: DataTypes.FLOAT },
     grossInvValue: { type: DataTypes.FLOAT },
     netInvValue: { type: DataTypes.FLOAT },
+    salableRtnValue: { type: DataTypes.FLOAT },
+    expiryRtnValue: { type: DataTypes.FLOAT },
     productsData: { type: DataTypes.TEXT },
     status: { type: DataTypes.STRING, defaultValue: 'Pending' },
     adminRemarks: { type: DataTypes.STRING },

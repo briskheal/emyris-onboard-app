@@ -122,7 +122,8 @@ export default function AllPrimarySales() {
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Stockist</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Headquarter</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Total (₹)</th>
-                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Return<br/>Sale</th>
+                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Salable<br/>Rtn</th>
+                    <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Expiry<br/>Rtn</th>
                   <th className="p-3 font-semibold text-center">Actions</th>
                 </tr>
               </thead>
@@ -138,6 +139,8 @@ export default function AllPrimarySales() {
                 ) : (
                   sales.map((sale, index) => {
                     const returnTotal = sale.grossInvValue && sale.netInvValue ? sale.grossInvValue - sale.netInvValue : 0;
+                    const sRtn = sale.salableRtnValue !== undefined ? sale.salableRtnValue : returnTotal;
+                    const eRtn = sale.expiryRtnValue !== undefined ? sale.expiryRtnValue : 0;
                     return (
                       <tr key={sale._id} className="hover:bg-[#1a1a2e]/50 transition-colors">
                         <td className="p-3 text-center text-[#8b8baf] border-r border-[#3b3b5a]/50">{index + 1}</td>
@@ -149,9 +152,12 @@ export default function AllPrimarySales() {
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">
                           {sale.netInvValue ? sale.netInvValue.toFixed(2) : '-'}
                         </td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-rose-400">
-                          {returnTotal > 0 ? returnTotal.toFixed(2) : <X size={14} className="mx-auto text-[#8b8baf]" />}
-                        </td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-rose-400 font-bold">
+                            {sRtn > 0 ? sRtn.toFixed(2) : <X size={14} className="mx-auto text-[#8b8baf]" />}
+                          </td>
+                          <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-rose-500 font-bold bg-rose-950/10">
+                            {eRtn > 0 ? eRtn.toFixed(2) : <X size={14} className="mx-auto text-[#8b8baf]" />}
+                          </td>
                         <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-3">
                               <button onClick={() => navigate(`/extras/primary-sales/edit/${sale._id}`)} className="text-emerald-400 hover:text-emerald-300 transition-colors p-1.5 rounded-full hover:bg-emerald-500/10" title="Edit">

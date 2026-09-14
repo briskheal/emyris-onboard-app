@@ -23,7 +23,7 @@ export default function PrimarySales() {
   });
 
   const [rows, setRows] = useState([
-    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS' }
+    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }
   ]);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function PrimarySales() {
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS' }]);
+    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }]);
   };
 
   const removeRow = (index: number) => {
@@ -130,8 +130,19 @@ export default function PrimarySales() {
 
     acc.grossInvValue += finalPrice;
     acc.netInvValue += finalValue;
+    
+    
+
+    if (rtn > 0) {
+      if (row.isExpiry) {
+        acc.expiryRtnValue += returnValue;
+      } else {
+        acc.salableRtnValue += returnValue;
+      }
+    }
+
     return acc;
-  }, { grossInvValue: 0, netInvValue: 0 });
+  }, { grossInvValue: 0, netInvValue: 0, salableRtnValue: 0, expiryRtnValue: 0 });
 
   const handleSave = async () => {
     if (!formData.headquarter || !formData.stockist || !formData.date || !formData.invoiceNumber) {
@@ -153,7 +164,9 @@ export default function PrimarySales() {
         ...formData,
         employeeId: user.employeeId || user._id || 'ADMIN',
         grossInvValue: totals.grossInvValue,
-        netInvValue: totals.netInvValue,
+          netInvValue: totals.netInvValue,
+          salableRtnValue: totals.salableRtnValue,
+          expiryRtnValue: totals.expiryRtnValue,
         productsData: validRows
       };
 
@@ -169,7 +182,7 @@ export default function PrimarySales() {
           ...formData,
           invoiceNumber: ''
         });
-        setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS' }]);
+        setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }]);
       } else {
         alert('Failed to save invoice.');
       }
@@ -406,7 +419,13 @@ export default function PrimarySales() {
 
                       {/* Purc. Rtn */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 w-16 bg-rose-950/10">
-                        <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center" />
+                        <div className="flex flex-col items-center gap-1">
+                          <input type="number" min="0" value={row.purcRtn} onChange={e => handleRowChange(index, 'purcRtn', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center" />
+                          <label className="flex items-center gap-1 text-[9px] text-rose-300 font-bold cursor-pointer hover:text-rose-200">
+                            <input type="checkbox" checked={row.isExpiry || false} onChange={e => handleRowChange(index, 'isExpiry', e.target.checked)} className="accent-rose-500 w-3 h-3" />
+                            EXP
+                          </label>
+                        </div>
                       </td>
 
                       {/* Rtn Price Block */}
@@ -455,17 +474,25 @@ export default function PrimarySales() {
 
       {/* FLOATING TOTALS FOOTER */}
       <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
-        <div className="flex gap-8 mb-3 md:mb-0">
-          <div className="flex flex-col">
-            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Gross Inv Value</span>
-            <span className="text-xl font-black text-sky-400">₹ {totals.grossInvValue.toFixed(2)}</span>
+        <div className="flex gap-4 md:gap-8 mb-3 md:mb-0 flex-wrap">
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Gross Inv Value</span>
+              <span className="text-xl font-black text-sky-400">₹ {totals.grossInvValue.toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Salable Rtn</span>
+              <span className="text-xl font-black text-rose-400">₹ {totals.salableRtnValue.toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Expiry Rtn</span>
+              <span className="text-xl font-black text-rose-500">₹ {totals.expiryRtnValue.toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Net Inv Value</span>
+              <span className="text-xl font-black text-emerald-400">₹ {totals.netInvValue.toFixed(2)}</span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Net Inv Value</span>
-            <span className="text-xl font-black text-emerald-400">₹ {totals.netInvValue.toFixed(2)}</span>
-          </div>
-        </div>
-        <button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2">
+          <button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2">
           {id ? 'Update Invoice' : 'Save Invoice'}
         </button>
       </div>

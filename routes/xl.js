@@ -1957,7 +1957,7 @@ router.delete('/leave-templates/:id', async (req, res) => {
 // Save Primary Sales Invoice
 router.post('/primary-sales/save', async (req, res) => {
     try {
-        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, productsData } = req.body;
+        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData } = req.body;
         
         const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
         const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
@@ -1972,6 +1972,8 @@ router.post('/primary-sales/save', async (req, res) => {
             stockist,
             grossInvValue,
             netInvValue,
+            salableRtnValue,
+            expiryRtnValue,
             amount: netInvValue, // Legacy fallback
             month,
             year,
@@ -2031,7 +2033,7 @@ router.get('/primary-sales/:id', async (req, res) => {
 // [NEW] Update an existing invoice
 router.put('/primary-sales/update/:id', async (req, res) => {
     try {
-        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, productsData } = req.body;
+        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData } = req.body;
         
         const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
         const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
@@ -2048,6 +2050,8 @@ router.put('/primary-sales/update/:id', async (req, res) => {
             stockist,
             grossInvValue,
             netInvValue,
+            salableRtnValue,
+            expiryRtnValue,
             amount: netInvValue,
             month,
             year,
