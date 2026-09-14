@@ -93,6 +93,37 @@ export default function SecondarySales() {
     }
   }, [id, products.length]);
 
+  
+  useEffect(() => {
+    if (id) return; // Don't auto-populate if editing an existing record
+    if (!formData.stockist || !formData.month || !formData.year) return;
+
+    const autoPopulate = async () => {
+      try {
+        const res = await axios.get(`/api/xl/secondary-sales-data/auto-populate?stockist=${formData.stockist}&month=${formData.month}&year=${formData.year}`);
+        if (res.data.success && res.data.data.length > 0) {
+          const newRows = res.data.data.map((item: any) => ({
+            id: Date.now() + Math.random(),
+            productId: item.productId,
+            price: '',
+            openingQty: item.openingQty,
+            receivedQty: item.receivedQty,
+            salesQty: '',
+            freeStocks: '',
+            selectedPriceType: 'PTR',
+            customPrice: ''
+          }));
+          setRows(newRows);
+        } else {
+          setRows([{ id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+        }
+      } catch(e) {
+        console.error(e);
+      }
+    };
+    autoPopulate();
+  }, [formData.stockist, formData.month, formData.year, id]);
+
   const addRow = () => {
     setRows([...rows, { id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
   };
