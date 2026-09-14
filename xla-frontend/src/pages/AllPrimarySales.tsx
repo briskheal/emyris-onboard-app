@@ -82,7 +82,7 @@ export default function AllPrimarySales() {
       {/* HEADER */}
       <div className="flex items-center justify-between px-5 py-3 bg-[#1e1e30] border-b border-[#3b3b5a] shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
+          <button onClick={() => navigate('/extras/primary-sales')} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
             <ArrowLeft size={18} />
           </button>
           <h1 className="text-lg font-bold text-white tracking-wide uppercase">ALL PRIMARY SALES</h1>
@@ -121,7 +121,8 @@ export default function AllPrimarySales() {
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Invoice<br/>Date</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Stockist</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Headquarter</th>
-                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Total (₹)</th>
+                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Gross (₹)</th>
+     <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Net (₹)</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Salable<br/>Rtn</th>
                     <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Expiry<br/>Rtn</th>
                   <th className="p-3 font-semibold text-center">Actions</th>
@@ -149,9 +150,12 @@ export default function AllPrimarySales() {
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50">{sale.invoiceDate || '-'}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[150px]">{getStockistName(sale.stockist) || '-'}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[120px]">{sale.headquarter || '-'}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">
-                          {sale.netInvValue ? sale.netInvValue.toFixed(2) : '-'}
-                        </td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-[#8b8baf]">
+                            {sale.grossInvValue ? sale.grossInvValue.toFixed(2) : '-'}
+                          </td>
+                          <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">
+                            {sale.netInvValue ? sale.netInvValue.toFixed(2) : '-'}
+                          </td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-rose-400 font-bold">
                             {sRtn > 0 ? sRtn.toFixed(2) : <X size={14} className="mx-auto text-[#8b8baf]" />}
                           </td>
