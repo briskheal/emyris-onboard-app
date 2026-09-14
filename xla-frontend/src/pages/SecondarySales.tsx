@@ -11,8 +11,8 @@ export default function SecondarySales() {
   const [loading, setLoading] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
   const [stockists, setStockists] = useState<any[]>([]);
-  const [hqs, setHqs] = useState<any[]>([]);
-  const [divisions, setDivisions] = useState<any[]>([]);
+  const [hqs, setHqs] = useState<string[]>([]);
+  const [divisions, setDivisions] = useState<string[]>([]);
   
   const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }) + ' ' + new Date().getFullYear();
   
@@ -39,16 +39,24 @@ export default function SecondarySales() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pRes, sRes, hRes, dRes] = await Promise.all([
-          axios.get('/api/xl/products'),
-          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } })),
-          axios.get('/api/xl/hq').catch(() => ({ data: { data: [] } })),
-          axios.get('/api/xl/division').catch(() => ({ data: { data: [] } }))
+        const [pRes, sRes] = await Promise.all([
+          axios.get('/api/xl/reports/products').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } }))
         ]);
-        setProducts(pRes.data.data || []);
-        setStockists(sRes.data.data || []);
-        setHqs(hRes.data.data || []);
-        setDivisions(dRes.data.data || []);
+        
+        const fetchedProducts = pRes.data.data || [];
+        setProducts(fetchedProducts);
+        
+        const fetchedStockists = sRes.data.data || [];
+        setStockists(fetchedStockists);
+
+        // Extract unique HQs from stockists
+        const uniqueHqs = [...new Set(fetchedStockists.map((s: any) => s.headquarter).filter(Boolean))].sort();
+        setHqs(uniqueHqs as string[]);
+
+        // Extract unique divisions from products
+        const uniqueDivs = [...new Set(fetchedProducts.map((p: any) => p.division).filter(Boolean))].sort();
+        setDivisions(uniqueDivs as string[]);
       } catch (error) {
         console.error(error);
       } finally {
@@ -149,7 +157,7 @@ export default function SecondarySales() {
 
   const filteredProducts = formData.division ? products.filter(p => p.division === formData.division) : products;
   const filteredStockists = formData.headquarter ? stockists.filter(s => s.headquarter === formData.headquarter) : stockists;
-  const filteredHqs = formData.division ? hqs.filter(h => h.division === formData.division || !h.division) : hqs; // fallback if hq has no division
+  // fallback if hq has no division
 
   const totals = rows.reduce((acc, row) => {
     const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
@@ -268,7 +276,7 @@ export default function SecondarySales() {
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Division</label>
                 <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
-                  options={divisions.map(d => ({ value: d.uid || d._id, label: d.uid }))} 
+                  options={divisions.map(d => ({ value: d, label: d }))} 
                   value={formData.division} 
                   onChange={(val) => setFormData({...formData, division: val})} 
                   placeholder="Select Division"
@@ -278,7 +286,7 @@ export default function SecondarySales() {
               <div className="space-y-2">
                 <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Headquarter <span className="text-rose-500">*</span></label>
                 <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
-                  options={filteredHqs.map(h => ({ value: h.uid || h._id, label: h.uid }))} 
+                  options={hqs.map(h => ({ value: h, label: h }))} 
                   value={formData.headquarter} 
                   onChange={(val) => setFormData({...formData, headquarter: val})} 
                   placeholder="Select HQ"
@@ -382,7 +390,7 @@ export default function SecondarySales() {
                           </div>
                         </td>
 
-                        <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-orange-950/10 w-16">
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-orange-950/10 w-[88px]">
                           <input type="number" min="0" value={row.openingQty} onChange={e => handleRowChange(index, 'openingQty', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-orange-900/50 rounded px-1 text-xs text-orange-400 font-bold outline-none focus:border-orange-500 text-center" />
                         </td>
                         <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-300 bg-sky-950/10">{received}</td>
