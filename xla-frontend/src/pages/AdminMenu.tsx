@@ -10,7 +10,7 @@ export default function AdminMenu() {
     { label: 'MANAGE LOCATIONS', icon: Building2, path: '/admin/locations' },
     { label: 'MANAGE USERS', icon: Users, path: '/admin/users' },
     { label: 'MANAGE PRODUCTS', icon: ClipboardList, path: '/admin/products' },
-    { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart },
+    { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart, path: '/admin/user-performance-analysis' },
     { label: 'ALLOWANCES', icon: DollarSign, path: '/admin/expenses' },
     { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope, path: '/admin/dcs' },
     { label: 'SAMPLES & GIFTS', icon: Gift },

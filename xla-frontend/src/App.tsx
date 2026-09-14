@@ -12,6 +12,7 @@ import Backlog from './pages/Backlog';
 import Settings from './pages/Settings';
 import PerformanceMenu from './pages/PerformanceMenu';
 import AdminMenu from './pages/AdminMenu';
+import UserPerformanceAnalysis from './pages/UserPerformanceAnalysis';
 import Utilities from './pages/Utilities';
 import CallReport from './pages/CallReport';
 import Hierarchy from './pages/Hierarchy';
@@ -54,6 +55,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/admin/locations" element={<ManageLocations />} />
           <Route path="/admin/users" element={<ManageUsers />} />
+          <Route path="/admin/user-performance-analysis" element={<UserPerformanceAnalysis />} />
           <Route path="/admin/products" element={<ManageProducts />} />`n          <Route path="/admin/leave" element={<ManageLeave />} />
           <Route path="/admin/expenses" element={<ManageAllowances />} />
           <Route path="/admin/dcs" element={<ManageDCS />} />
