@@ -475,7 +475,7 @@ export default function SecondarySales() {
       </div>
 
       {/* FOOTER */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+      <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-[90] shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
         <div className="flex gap-4 md:gap-8 mb-3 md:mb-0">
           <div className="flex flex-col">
             <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Total Sales Value</span>
