@@ -321,15 +321,15 @@ export default function UserPerformanceAnalysis() {
                                 <h3 className="font-bold text-lg uppercase tracking-wider text-slate-200">Set Minimum Performance Thresholds (KPIs) For Effort Analysis</h3>
                                 <p className="text-sm text-slate-400 mt-1">Define minimum performance standards that users must achieve to qualify.</p>
                             </div>
-                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="bg-slate-900/50 border border-slate-700 rounded p-5 flex flex-col">
-                                    <span className="font-semibold text-slate-200 mb-2">Minimum Compliance Rate</span>
-                                    <span className="text-xs text-slate-400 mb-4 h-8">Percentage of completed tasks that must meet quality standards.</span>
+                                    <span className="font-semibold text-slate-200 mb-2">Minimum Coverage Required</span>
+                                    <span className="text-xs text-slate-400 mb-4 h-8">Percentage of doctors that must be visited in a month.</span>
                                     <div className="relative">
                                         <input 
                                             type="number" 
-                                            value={settings.effortThresholds?.compliance || 90}
-                                            onChange={(e) => setSettings({...settings, effortThresholds: {...settings.effortThresholds, compliance: Number(e.target.value)}})}
+                                            value={settings.effortThresholds?.coverage || 90}
+                                            onChange={(e) => setSettings({...settings, effortThresholds: {...settings.effortThresholds, coverage: Number(e.target.value)}})}
                                             className="w-full bg-[#1e1e30] border border-slate-700 rounded p-3 pr-10 text-white focus:outline-none focus:border-sky-500"
                                         />
                                         <span className="absolute right-4 top-3 text-slate-400 font-bold">%</span>
@@ -359,9 +359,21 @@ export default function UserPerformanceAnalysis() {
                                         />
                                     </div>
                                 </div>
+                                <div className="bg-slate-900/50 border border-slate-700 rounded p-5 flex flex-col">
+                                    <span className="font-semibold text-slate-200 mb-2">Minimum Compliance Rate</span>
+                                    <span className="text-xs text-slate-400 mb-4 h-8">Percentage of completed tasks that must meet quality standards.</span>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            value={settings.effortThresholds?.compliance || 90}
+                                            onChange={(e) => setSettings({...settings, effortThresholds: {...settings.effortThresholds, compliance: Number(e.target.value)}})}
+                                            className="w-full bg-[#1e1e30] border border-slate-700 rounded p-3 pr-10 text-white focus:outline-none focus:border-sky-500"
+                                        />
+                                        <span className="absolute right-4 top-3 text-slate-400 font-bold">%</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
                     </div>
                 )}
                 
