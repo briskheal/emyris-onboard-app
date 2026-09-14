@@ -2211,7 +2211,7 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
                     rows.forEach(r => {
                         if (!r.productId) return;
                         if (!productMap[r.productId]) productMap[r.productId] = 0;
-                        productMap[r.productId] += (Number(r.quantity) || 0) + (Number(r.freeStocks) || 0) - (Number(r.purcRtn) || 0);
+                        productMap[r.productId] += (Number(r.quantity) || 0) + (Number(r.freeStocks) || 0);
                     });
                 } catch(e) {}
             }
@@ -2273,8 +2273,7 @@ router.get('/secondary-sales-data/primary-received', async (req, res) => {
                         if (r.productId === productId) {
                             // Sum up normal quantity (and free stocks if applicable, we will just sum quantity)
                             receivedQty += (Number(r.quantity) || 0) + (Number(r.freeStocks) || 0);
-                            // Subtract returns if it's a purchase return
-                            receivedQty -= (Number(r.purcRtn) || 0);
+                            
                         }
                     });
                 } catch(e) {}
