@@ -64,7 +64,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
           const res = await axios.get('/api/xl/reports/products');
           if (res.data.success) {
             entities = (Array.isArray(res.data.data) ? res.data.data : []).map((p: any) => ({
-              id: p.id || p.productName,
+              id: p._id || p.id || p.productName,
               name: p.productName,
               type: 'Product'
             }));
@@ -83,7 +83,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
           const res = await axios.get(`/api/xl/doctors?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
           if (res.data.success) {
             entities = (Array.isArray(res.data.data) ? res.data.data : []).map((d: any) => ({
-              id: d.id,
+              id: d._id || d.id,
               name: d.businessName || d.name,
               type: 'Doctor'
             }));
@@ -92,7 +92,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
           const res = await axios.get(`/api/xl/stockists?hq=${encodeURIComponent(user.hq || '')}&designation=${encodeURIComponent(user.designation || '')}`);
           if (res.data.success) {
             entities = (Array.isArray(res.data.data) ? res.data.data : []).map((s: any) => ({
-              id: s.id,
+              id: s._id || s.id,
               name: s.businessName || s.name,
               type: 'Stockist'
             }));

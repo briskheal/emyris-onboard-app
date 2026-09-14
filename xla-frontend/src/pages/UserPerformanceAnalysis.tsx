@@ -459,7 +459,7 @@ export default function UserPerformanceAnalysis() {
                                                     <td className="p-3 border-r border-slate-700/50 text-left font-medium text-slate-200">
                                                         {(() => {
                                                             if (row.entityId) {
-                                                                const foundEntity = entities.find(e => e.uid === row.entityId || e._id === row.entityId);
+                                                                const foundEntity = entities.find(e => (row.entityId && (e.uid === row.entityId || e._id === row.entityId)) || (row.entityName && e.name === row.entityName));
                                                                 if (foundEntity) {
                                                                     return foundEntity.businessName || foundEntity.name || row.entityName;
                                                                 }

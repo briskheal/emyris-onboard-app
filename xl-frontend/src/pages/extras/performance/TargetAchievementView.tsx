@@ -201,7 +201,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
                 <h3 className="text-base font-bold text-white max-w-[70%]">
                   {(() => {
                       if (t.entityId) {
-                          const e = entities.find(x => x.uid === t.entityId || x._id === t.entityId);
+                          const e = entities.find(x => (t.entityId && (x.uid === t.entityId || x._id === t.entityId)) || (t.entityName && x.name === t.entityName));
                           if (e) return e.businessName || e.name || t.entityName;
                       }
                       return t.entityName;
