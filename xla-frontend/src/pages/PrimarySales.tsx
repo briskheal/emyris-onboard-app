@@ -10,8 +10,8 @@ export default function PrimarySales() {
   
   const [products, setProducts] = useState<any[]>([]);
   const [stockists, setStockists] = useState<any[]>([]);
-  const [hqs, setHqs] = useState<string[]>([]);
-  const [divisions, setDivisions] = useState<string[]>([]);
+  const [hqs, setHqs] = useState<any[]>([]);
+  const [divisions, setDivisions] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -44,10 +44,10 @@ export default function PrimarySales() {
 
         // Fetch master list of HQs and Divisions
         const fetchedHQs = hRes.data.data || [];
-        setHqs(fetchedHQs.map((h: any) => h.uid || h.hqName).filter(Boolean));
+        setHqs(fetchedHQs.map((h: any) => ({ value: h.uid || h._id || h.hqName, label: h.hqName || h.uid })).filter(Boolean));
 
         const fetchedDivs = dRes.data.data || [];
-        setDivisions(fetchedDivs.map((d: any) => d.uid || d.divisionName).filter(Boolean));
+        setDivisions(fetchedDivs.map((d: any) => ({ value: d.uid || d._id || d.divisionName, label: d.divisionName || d.uid })).filter(Boolean));
 
       } catch (err) {
         console.error("Failed to fetch data:", err);
@@ -271,7 +271,7 @@ export default function PrimarySales() {
               <label className="text-[11px] font-semibold text-[#8b8baf]">Select Division <span className="text-rose-500">*</span></label>
               <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
                 <CustomSelect 
-                  options={divisions.map(d => ({ value: d, label: d }))}
+                  options={divisions}
                   value={formData.division}
                   onChange={(val) => setFormData({...formData, division: val})}
                   placeholder="Select Division"
