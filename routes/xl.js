@@ -35,7 +35,7 @@ router.get('/user-performance/rankings', async (req, res) => {
             });
             const totalDocs = allocatedDoctors.length || 1;
 
-            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId, month: fullMonth, year } });
+            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId || null, month: fullMonth, year } });
             
             let doctorVisitCounts = {}; 
 
@@ -85,7 +85,7 @@ router.get('/user-performance/rankings', async (req, res) => {
             kpiBreakdown['Effort'] = { points: effortPoints, max: maxEffortPts };
 
             // 2. SALES KPIs
-            const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId, month: fullMonth, year } });
+            const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month: fullMonth, year } });
             
             const calcSalesKpi = (dataStr, weightStr) => {
                 const weight = Number(weightStr) || 0;
@@ -153,7 +153,7 @@ router.get('/user-performance/rankings', async (req, res) => {
 
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Failed to generate rankings' });
+        res.status(500).json({ error: 'Failed to generate rankings: ' + e.message, stack: e.stack });
     }
 });
 
@@ -1868,7 +1868,7 @@ router.get('/user-performance/userwise', async (req, res) => {
 
         if (reportType === 'Effort Analysis') {
             
-            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId, month, year } });
+            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId || null, month, year } });
 
             let totalDoctorsMet = 0;
             let totalUniqueDoctors = new Set();
@@ -1900,7 +1900,7 @@ router.get('/user-performance/userwise', async (req, res) => {
             
             const monthMap = { 'Jan': 'january', 'Feb': 'february', 'Mar': 'march', 'Apr': 'april', 'May': 'may', 'Jun': 'june', 'Jul': 'july', 'Aug': 'august', 'Sep': 'september', 'Oct': 'october', 'Nov': 'november', 'Dec': 'december' };
             const fullMonth = monthMap[month] || month.toLowerCase();
-            const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId, month: fullMonth, year } });
+            const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month: fullMonth, year } });
 
             
             if (perf) {
