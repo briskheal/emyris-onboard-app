@@ -372,7 +372,7 @@ export default function UserPerformanceAnalysis() {
                                 <label className="block text-xs text-slate-400 mb-1">Select User</label>
                                 <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5 [&>div]:bg-slate-900/50 [&>div>div]:border-slate-700 [&>div>div>div]:text-white">
                                     <CustomSelect 
-                                        options={users.map(u => ({ value: u._id, label: u.firstName + ' ' + (u.lastName || '') + (u.designation ? ' - ' + u.designation : '') }))}
+                                        options={users.map(u => ({ value: u._id, label: `${u.firstName} ${u.lastName || ''}`, subLabel: u.designation, showDefaultAvatar: true, avatarUrl: u.profilePic }))} showAllOption={false}
                                         value={selectedUser}
                                         onChange={(val) => setSelectedUser(val)}
                                         placeholder="Search user..."
