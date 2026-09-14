@@ -100,7 +100,7 @@ export default function AllSecondarySales() {
       </div>
 
       <div className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col relative z-10">
-        <div className="max-w-[1400px] w-full mx-auto flex-1 flex flex-col">
+        <div className="w-full px-2 mx-auto flex-1 flex flex-col">
           <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-auto custom-scrollbar flex-1 relative z-10">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead className="bg-[#27273f] sticky top-0 z-20 shadow-md">

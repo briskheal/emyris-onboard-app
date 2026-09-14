@@ -54,10 +54,10 @@ export default function SecondarySales() {
 
         // Fetch master list of HQs and Divisions
         const fetchedHQs = hRes.data.data || [];
-        setHqs(fetchedHQs.map((h: any) => ({ value: h.uid || h._id || h.hqName, label: h.hqName || h.uid })).filter(Boolean));
+        setHqs(fetchedHQs.map((h: any) => ({ value: h.hqName || h.uid, label: h.hqName || h.uid })).filter(Boolean));
 
         const fetchedDivs = dRes.data.data || [];
-        setDivisions(fetchedDivs.map((d: any) => ({ value: d.uid || d._id || d.divisionName, label: d.divisionName || d.uid })).filter(Boolean));
+        setDivisions(fetchedDivs.map((d: any) => ({ value: d.divisionName || d.uid, label: d.divisionName || d.uid })).filter(Boolean));
       } catch (error) {
         console.error(error);
       } finally {
