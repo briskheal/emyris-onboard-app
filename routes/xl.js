@@ -2098,6 +2098,14 @@ router.delete('/primary-sales/delete/:id', async (req, res) => {
     }
 });
 
+
+router.get('/debug-primary-sales', async (req, res) => {
+    try {
+        const sales = await XlPrimarySales.findAll({ order: [['createdAt', 'DESC']], limit: 5 });
+        res.json({ sales });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;
 
 

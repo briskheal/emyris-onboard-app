@@ -232,7 +232,7 @@ export default function SecondarySales() {
   if (loading) return <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center text-white">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex flex-col font-sans relative">
+    <div className="h-screen overflow-hidden bg-[#1a1a2e] flex flex-col font-sans relative">
       {/* HEADER */}
       <div className="bg-[#1e1e30] border-b border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div className="flex items-center gap-4">
@@ -247,7 +247,7 @@ export default function SecondarySales() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col p-4 md:p-6 overflow-hidden">
+      <div className="flex-1 flex flex-col p-4 md:p-6 pb-[120px] overflow-hidden">
         <div className="max-w-[1400px] w-full mx-auto flex-1 flex flex-col space-y-4 md:space-y-6 h-full overflow-hidden">
           
           {/* Form Header */}
