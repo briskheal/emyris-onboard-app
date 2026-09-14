@@ -1710,7 +1710,9 @@ router.get('/user-performance/userwise', async (req, res) => {
         let data = {};
 
         if (reportType === 'Effort Analysis') {
-            const dcrs = await XlDCR.findAll({ where: { employeeId: userId, month, year } });
+            
+            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId, month, year } });
+
             let totalDoctorsMet = 0;
             let totalUniqueDoctors = new Set();
             dcrs.forEach(dcr => {
@@ -1738,7 +1740,11 @@ router.get('/user-performance/userwise', async (req, res) => {
             };
         } else {
             // Fetch from XlPerformanceAnalysis
-            const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: userId, month, year } });
+            
+            const monthMap = { 'Jan': 'january', 'Feb': 'february', 'Mar': 'march', 'Apr': 'april', 'May': 'may', 'Jun': 'june', 'Jul': 'july', 'Aug': 'august', 'Sep': 'september', 'Oct': 'october', 'Nov': 'november', 'Dec': 'december' };
+            const fullMonth = monthMap[month] || month.toLowerCase();
+            const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId, month: fullMonth, year } });
+
             
             if (perf) {
                 if (reportType === 'Brand Analysis' && perf.brandData) {
