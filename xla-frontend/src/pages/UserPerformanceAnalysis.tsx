@@ -358,17 +358,21 @@ export default function UserPerformanceAnalysis() {
                 
                 
                 {activeTab === 'rankings' && (
-                    <div className="max-w-6xl mx-auto pb-32">
-                        <div className="flex justify-between items-center mb-8">
-                            <div>
-                                <h2 className="text-2xl font-bold uppercase tracking-wider text-slate-100">Global Leaderboard</h2>
-                                <p className="text-sm text-slate-400 mt-1">Ranking of all employees based on overall performance score</p>
-                            </div>
-                            
-                            <div className="w-48">
-                                <label className="block text-xs text-slate-400 mb-1">Select Month</label>
+                    <div className="max-w-7xl mx-auto pb-32">
+                        <div className="mb-6 flex items-center text-[#a1a5b7] gap-2 w-max">
+                            <h2 className="text-[15px] font-bold uppercase tracking-wider text-[#b5b5c3] flex items-center gap-2">
+                                <span onClick={() => setActiveTab('settings')} className="cursor-pointer hover:text-white transition-colors">
+                                    <ChevronLeft size={20} />
+                                </span>
+                                RANKINGS FOR {selectedMonth.toUpperCase()}
+                            </h2>
+                        </div>
+                        
+                        <div className="w-64 mb-6">
+                            <label className="block text-[11px] font-bold text-sky-400 mb-1 uppercase tracking-wider">Select Year *</label>
+                            <div className="relative">
                                 <select 
-                                    className="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg text-sm border border-slate-700 outline-none focus:border-sky-500 transition-colors cursor-pointer"
+                                    className="w-full bg-transparent text-slate-200 p-2.5 rounded text-sm border border-sky-500/50 outline-none focus:border-sky-500 transition-colors cursor-pointer appearance-none"
                                     value={selectedMonth} 
                                     onChange={e => setSelectedMonth(e.target.value)}
                                 >
@@ -376,126 +380,78 @@ export default function UserPerformanceAnalysis() {
                                         const d = new Date();
                                         d.setMonth(d.getMonth() - i);
                                         const val = d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getFullYear();
-                                        return <option key={i} value={val}>{val}</option>;
+                                        return <option key={i} value={val} className="bg-slate-800">{val}</option>;
                                     })}
                                 </select>
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Top 3 Podium */}
-                        {rankingsData.length >= 3 && (
-                            <div className="flex justify-center items-end gap-6 mb-12 mt-8">
-                                {/* 2nd Place */}
-                                <div className="flex flex-col items-center">
-                                    <div className="relative">
-                                        <div className="w-20 h-20 rounded-full border-4 border-slate-300 overflow-hidden bg-slate-800 flex items-center justify-center">
-                                            {rankingsData[1].avatar ? <img src={`/api/uploads/${rankingsData[1].avatar}`} className="w-full h-full object-cover" /> : <User size={32} className="text-slate-500" />}
-                                        </div>
-                                        <div className="absolute -bottom-3 -right-2 bg-slate-300 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg border-2 border-slate-900">2</div>
-                                    </div>
-                                    <h3 className="font-bold text-slate-200 mt-4 text-center">{rankingsData[1].user}</h3>
-                                    <p className="text-xs text-slate-400">{rankingsData[1].designation}</p>
-                                    <div className="mt-3 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 font-black text-lg text-slate-300">
-                                        {rankingsData[1].totalScore.toFixed(1)} <span className="text-xs font-normal text-slate-500 uppercase tracking-widest ml-1">Pts</span>
-                                    </div>
-                                    <div className="w-24 h-24 bg-slate-800 mt-4 rounded-t-xl border-t border-l border-r border-slate-700 flex items-start justify-center pt-2">
-                                    </div>
-                                </div>
-
-                                {/* 1st Place */}
-                                <div className="flex flex-col items-center">
-                                    <div className="relative">
-                                        <div className="w-28 h-28 rounded-full border-4 border-yellow-400 overflow-hidden bg-slate-800 flex items-center justify-center shadow-[0_0_20px_rgba(250,204,21,0.3)]">
-                                            {rankingsData[0].avatar ? <img src={`/api/uploads/${rankingsData[0].avatar}`} className="w-full h-full object-cover" /> : <User size={48} className="text-slate-500" />}
-                                        </div>
-                                        <div className="absolute -bottom-3 -right-2 bg-yellow-400 text-yellow-900 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg border-2 border-slate-900">1</div>
-                                    </div>
-                                    <h3 className="font-bold text-slate-200 mt-4 text-center text-lg">{rankingsData[0].user}</h3>
-                                    <p className="text-xs text-slate-400">{rankingsData[0].designation}</p>
-                                    <div className="mt-3 bg-slate-800 px-5 py-2.5 rounded-lg border border-yellow-500/30 font-black text-xl text-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.1)]">
-                                        {rankingsData[0].totalScore.toFixed(1)} <span className="text-xs font-normal text-slate-500 uppercase tracking-widest ml-1">Pts</span>
-                                    </div>
-                                    <div className="w-32 h-32 bg-slate-800 mt-4 rounded-t-xl border-t border-l border-r border-slate-700 flex items-start justify-center pt-2">
-                                        <Award className="text-yellow-400/50" size={32} />
-                                    </div>
-                                </div>
-
-                                {/* 3rd Place */}
-                                <div className="flex flex-col items-center">
-                                    <div className="relative">
-                                        <div className="w-20 h-20 rounded-full border-4 border-amber-600 overflow-hidden bg-slate-800 flex items-center justify-center">
-                                            {rankingsData[2].avatar ? <img src={`/api/uploads/${rankingsData[2].avatar}`} className="w-full h-full object-cover" /> : <User size={32} className="text-slate-500" />}
-                                        </div>
-                                        <div className="absolute -bottom-3 -right-2 bg-amber-600 text-amber-100 w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg border-2 border-slate-900">3</div>
-                                    </div>
-                                    <h3 className="font-bold text-slate-200 mt-4 text-center">{rankingsData[2].user}</h3>
-                                    <p className="text-xs text-slate-400">{rankingsData[2].designation}</p>
-                                    <div className="mt-3 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 font-black text-lg text-amber-600">
-                                        {rankingsData[2].totalScore.toFixed(1)} <span className="text-xs font-normal text-slate-500 uppercase tracking-widest ml-1">Pts</span>
-                                    </div>
-                                    <div className="w-24 h-20 bg-slate-800 mt-4 rounded-t-xl border-t border-l border-r border-slate-700 flex items-start justify-center pt-2">
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Full Leaderboard Table */}
-                        <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
-                            <div className="overflow-x-auto custom-scrollbar">
+                        {/* Full Leaderboard Table matching Medorn ERP design */}
+                        <div className="bg-[#242b47] rounded-md border border-[#363e63] shadow-xl overflow-hidden mt-6">
+                            <div className="overflow-x-auto">
                                 <table className="w-full text-sm text-slate-300">
-                                    <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                                    <thead className="bg-[#282f4d] border-b border-[#363e63]">
                                         <tr>
-                                            <th className="px-6 py-4 text-center font-bold w-16">Rank</th>
-                                            <th className="px-6 py-4 text-left font-bold">Employee</th>
-                                            <th className="px-6 py-4 text-left font-bold">Performance Breakdown</th>
-                                            <th className="px-6 py-4 text-right font-bold w-32">Final Score</th>
+                                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3] w-24">Rankings</th>
+                                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                                    Name
+                                                </div>
+                                            </th>
+                                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                                                    Headquarter &uarr;
+                                                </div>
+                                            </th>
+                                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3] w-40">
+                                                Total Points<br/>Achieved &uarr;
+                                            </th>
+                                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3] w-20">View</th>
+                                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3] w-24">Download</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {rankingsData.map((row) => (
-                                            <tr key={row.user} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors group">
+                                            <tr key={row.user} className="border-b border-[#363e63] hover:bg-[#2a3152] transition-colors">
                                                 <td className="px-6 py-4 text-center">
-                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto font-black ${
-                                                        row.rank === 1 ? 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/50' : 
-                                                        row.rank === 2 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/50' :
-                                                        row.rank === 3 ? 'bg-amber-600/20 text-amber-500 border border-amber-600/50' : 
-                                                        'bg-slate-800 text-slate-500 border border-slate-700'
-                                                    }`}>
-                                                        {row.rank}
+                                                    <div className="flex items-center justify-center gap-2 font-bold text-[15px]">
+                                                        {row.rank === 1 && <Award className="text-yellow-400" size={18} />}
+                                                        {row.rank === 2 && <Award className="text-slate-300" size={18} />}
+                                                        {row.rank === 3 && <Award className="text-amber-600" size={18} />}
+                                                        <span className={row.rank <= 3 ? (row.rank === 1 ? 'text-yellow-400' : row.rank === 2 ? 'text-slate-300' : 'text-amber-600') : 'text-slate-400'}>
+                                                            {row.rank}
+                                                        </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-600">
-                                                            {row.avatar ? <img src={`/api/uploads/${row.avatar}`} className="w-full h-full object-cover" /> : <User size={16} className="text-slate-500" />}
-                                                        </div>
-                                                        <div>
-                                                            <div className="font-bold text-slate-200">{row.user}</div>
-                                                            <div className="text-xs text-slate-500">{row.designation}</div>
-                                                        </div>
-                                                    </div>
+                                                <td className="px-6 py-4 text-center text-[#b5b5c3] text-[15px]">
+                                                    {row.user}
                                                 </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="flex flex-wrap gap-2">
-                                                        {Object.keys(row.kpiBreakdown).map(kpi => (
-                                                            <div key={kpi} className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-2 py-1 rounded-md text-[10px]">
-                                                                <span className="text-slate-400 uppercase tracking-wider">{kpi}</span>
-                                                                <span className="font-bold text-slate-200">{row.kpiBreakdown[kpi].points.toFixed(1)}<span className="text-slate-600 font-normal">/{row.kpiBreakdown[kpi].max}</span></span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
+                                                <td className="px-6 py-4 text-center text-[#b5b5c3] text-[15px]">
+                                                    {row.hq}
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="text-xl font-black text-sky-400">{row.totalScore.toFixed(1)}</div>
-                                                    <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                                                        <div className="h-full bg-sky-400 rounded-full" style={{ width: `${Math.min(row.totalScore, 100)}%` }}></div>
-                                                    </div>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="text-slate-200 text-[15px]">{row.totalScore.toFixed(2)}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button className="text-[#a1a5b7] hover:text-white transition-colors">
+                                                        <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                                    </button>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button className="text-[#a1a5b7] hover:text-white transition-colors">
+                                                        <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                                    </button>
                                                 </td>
                                             </tr>
                                         ))}
                                         {rankingsData.length === 0 && !loading && (
                                             <tr>
-                                                <td colSpan={4} className="px-6 py-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">
+                                                <td colSpan={6} className="px-6 py-12 text-center text-[#a1a5b7] font-bold uppercase tracking-widest text-sm">
                                                     No rankings data found for this month
                                                 </td>
                                             </tr>
@@ -506,7 +462,6 @@ export default function UserPerformanceAnalysis() {
                         </div>
                     </div>
                 )}
-
                 
                 {activeTab === 'userwise' && (
                     <div className="max-w-6xl mx-auto pb-32">

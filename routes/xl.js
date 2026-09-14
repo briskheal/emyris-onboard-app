@@ -13,7 +13,7 @@ router.get('/user-performance/rankings', async (req, res) => {
         const { XlUser, XlSettings, XlPerformanceAnalysis, XlDCR, XlDoctor, sequelize } = require('../db');
         const { Op } = require('sequelize');
 
-        const users = await XlUser.findAll({ where: { status: 'active' } });
+        const users = await XlUser.findAll();
         
         const settingsRecord = await XlSettings.findOne({ where: { key: 'preferences' } });
         let settings = { weightages: { effort: 30, brand: 15, keyCustomer: 15, customerRoi: 10, outstanding: 15, account: 15 }};
