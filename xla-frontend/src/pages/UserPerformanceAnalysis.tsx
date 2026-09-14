@@ -14,6 +14,7 @@ export default function UserPerformanceAnalysis() {
     
     // Master data
     const [products, setProducts] = useState<any[]>([]);
+    const [entities, setEntities] = useState<any[]>([]);
 
     const [users, setUsers] = useState<any[]>([]);
 
@@ -71,8 +72,18 @@ export default function UserPerformanceAnalysis() {
 
     const fetchMasterData = async () => {
         try {
-            const pRes = await axios.get('/api/xl/reports/products');
+            const [pRes, sRes, cRes, dRes] = await Promise.all([
+                axios.get('/api/xl/reports/products'),
+                axios.get('/api/xl/stockists'),
+                axios.get('/api/xl/chemists'),
+                axios.get('/api/xl/doctors')
+            ]);
             setProducts(pRes.data.data || []);
+            setEntities([
+                ...(sRes.data.data || []),
+                ...(cRes.data.data || []),
+                ...(dRes.data.data || [])
+            ]);
         } catch (e) {
             console.error('Failed to fetch master data', e);
         }
@@ -446,7 +457,15 @@ export default function UserPerformanceAnalysis() {
                                                 <tr key={i} className="text-center hover:bg-slate-700/30 transition-colors">
                                                     <td className="p-3 border-r border-slate-700/50">{i + 1}</td>
                                                     <td className="p-3 border-r border-slate-700/50 text-left font-medium text-slate-200">
-                                                        {row.entityName || (row.productId && (products.find(p => p.uid === row.productId || p._id === row.productId)?.productName)) || row.productName || '-'}
+                                                        {(() => {
+                                                            if (row.entityId) {
+                                                                const foundEntity = entities.find(e => e.uid === row.entityId || e._id === row.entityId);
+                                                                if (foundEntity) {
+                                                                    return foundEntity.businessName || foundEntity.name || row.entityName;
+                                                                }
+                                                            }
+                                                            return row.entityName || (row.productId && (products.find(p => p.uid === row.productId || p._id === row.productId)?.productName)) || row.productName || '-';
+                                                        })()}
                                                     </td>
                                                     <td className="p-3 border-r border-slate-700/50 text-slate-400">{row.entityType || '-'}</td>
                                                     <td className="p-3 border-r border-slate-700/50 font-bold">{row.monthlyTarget || 0}</td>
