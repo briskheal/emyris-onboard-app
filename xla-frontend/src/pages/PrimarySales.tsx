@@ -179,11 +179,19 @@ export default function PrimarySales() {
         }
       if (res.data.success) {
         alert(id ? 'Invoice updated successfully!' : 'Invoice saved successfully!');
-        setFormData({
-          ...formData,
-          invoiceNumber: ''
-        });
-        setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }]);
+        if (id) {
+            navigate('/extras/primary-sales/all');
+        } else {
+            setFormData({
+                date: new Date().toISOString().split('T')[0],
+                invoiceDate: new Date().toISOString().split('T')[0],
+                invoiceNumber: '',
+                division: '',
+                headquarter: '',
+                stockist: ''
+            });
+            setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }]);
+        }
       } else {
         alert('Failed to save invoice.');
       }

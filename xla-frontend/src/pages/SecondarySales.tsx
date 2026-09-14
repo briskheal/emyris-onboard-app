@@ -217,8 +217,19 @@ export default function SecondarySales() {
       
       if (res.data.success) {
         alert(id ? 'Secondary Sales updated successfully!' : 'Secondary Sales saved successfully!');
-        if (!id) {
-            setFormData({ ...formData, invoiceNumber: '' });
+        if (id) {
+            navigate('/extras/secondary/all');
+        } else {
+            setFormData({
+                date: new Date().toISOString().split('T')[0],
+                year: currentMonth.split(' ')[1],
+                month: currentMonth.split(' ')[0],
+                invoiceDate: new Date().toISOString().split('T')[0],
+                invoiceNumber: '',
+                division: '',
+                headquarter: '',
+                stockist: ''
+            });
             setRows([{ id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
         }
       } else {
@@ -232,7 +243,8 @@ export default function SecondarySales() {
   if (loading) return <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center text-white">Loading...</div>;
 
   return (
-    <div className="h-screen overflow-hidden bg-[#1a1a2e] flex flex-col font-sans relative">
+    <div className="min-h-screen bg-[#1a1a2e] flex flex-col font-sans relative">
+      <div className="sticky top-0 z-[80] bg-[#1a1a2e] pb-4 shadow-xl border-b border-[#3b3b5a]/80">
       {/* HEADER */}
       <div className="bg-[#1e1e30] border-b border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div className="flex items-center gap-4">
@@ -247,8 +259,8 @@ export default function SecondarySales() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col p-4 md:p-6 pb-[120px] overflow-hidden">
-        <div className="max-w-[1400px] w-full mx-auto flex-1 flex flex-col space-y-4 md:space-y-6 h-full overflow-hidden">
+      <div className="max-w-[1400px] w-full mx-auto px-4 md:px-6 mt-4">
+        
           
           {/* Form Header */}
           <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] p-6 shadow-xl relative z-[70] shrink-0">
@@ -322,7 +334,11 @@ export default function SecondarySales() {
           </div>
 
           {/* Table */}
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-auto custom-scrollbar relative z-[60] flex-1 mb-24 pb-48">
+          </div>
+      </div>
+      <div className="flex-1 px-4 md:px-6 pb-3">
+        <div className="max-w-[1400px] w-full mx-auto">
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl relative z-[60] mb-96 overflow-x-auto custom-scrollbar">
             <div className="min-w-[1200px]">
               <table className="w-full text-left border-collapse">
                 <thead>
