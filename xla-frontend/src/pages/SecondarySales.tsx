@@ -251,7 +251,7 @@ export default function SecondarySales() {
         <div className="max-w-[1400px] w-full mx-auto flex-1 flex flex-col space-y-4 md:space-y-6 h-full overflow-hidden">
           
           {/* Form Header */}
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] p-6 shadow-xl relative z-10 shrink-0">
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] p-6 shadow-xl relative z-[70] shrink-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               
               <div className="space-y-2">
@@ -322,7 +322,7 @@ export default function SecondarySales() {
           </div>
 
           {/* Table */}
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-auto custom-scrollbar relative z-[60] flex-1 mb-24">
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-auto custom-scrollbar relative z-[60] flex-1 mb-24 pb-48">
             <div className="min-w-[1200px]">
               <table className="w-full text-left border-collapse">
                 <thead>
