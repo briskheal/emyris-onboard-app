@@ -2194,6 +2194,67 @@ router.get('/secondary-sales-data/opening-balance', async (req, res) => {
     }
 });
 
+
+router.get('/secondary-sales-data/auto-populate', async (req, res) => {
+    try {
+        const { stockist, month, year } = req.query;
+        if (!stockist || !month || !year) return res.json({ success: true, data: [] });
+
+        const sales = await XlPrimarySales.findAll({ where: { stockist, month, year } });
+
+        const productMap = {}; // productId -> receivedQty
+
+        sales.forEach(sale => {
+            if (sale.productsData) {
+                try {
+                    const rows = JSON.parse(sale.productsData);
+                    rows.forEach(r => {
+                        if (!r.productId) return;
+                        if (!productMap[r.productId]) productMap[r.productId] = 0;
+                        productMap[r.productId] += (Number(r.quantity) || 0) + (Number(r.freeStocks) || 0) - (Number(r.purcRtn) || 0);
+                    });
+                } catch(e) {}
+            }
+        });
+
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        const prevMonthIndex = months.indexOf(month) - 1;
+        const prevMonth = prevMonthIndex >= 0 ? months[prevMonthIndex] : 'Dec';
+        const prevYear = prevMonthIndex >= 0 ? year : String(Number(year) - 1);
+
+        const prevSecSales = await XlSecondarySales.findAll({
+            where: { stockist, month: prevMonth, year: prevYear }
+        });
+
+        const closingMap = {}; // productId -> closingQty
+        prevSecSales.forEach(sale => {
+            if (sale.productsData) {
+                try {
+                    const rows = JSON.parse(sale.productsData);
+                    rows.forEach(r => {
+                        if (r.productId && r.closingQty !== undefined) {
+                            closingMap[r.productId] = Number(r.closingQty) || 0;
+                        }
+                    });
+                } catch(e) {}
+            }
+        });
+
+        const result = Object.keys(productMap).map(productId => {
+            return {
+                productId,
+                receivedQty: productMap[productId],
+                openingQty: closingMap[productId] || 0
+            };
+        });
+
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 router.get('/secondary-sales-data/primary-received', async (req, res) => {
     try {
         const { stockist, month, year, productId } = req.query;
