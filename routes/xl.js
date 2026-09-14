@@ -2014,6 +2014,67 @@ router.get('/primary-sales/all', async (req, res) => {
     }
 });
 
+
+
+// [NEW] Fetch single invoice by ID
+router.get('/primary-sales/:id', async (req, res) => {
+    try {
+        const sale = await XlPrimarySales.findByPk(req.params.id);
+        if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
+        res.json({ success: true, data: sale });
+    } catch (error) {
+        console.error('Error fetching primary sale by ID:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch primary sale' });
+    }
+});
+
+// [NEW] Update an existing invoice
+router.put('/primary-sales/update/:id', async (req, res) => {
+    try {
+        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, productsData } = req.body;
+        
+        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
+        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+
+        const sale = await XlPrimarySales.findByPk(req.params.id);
+        if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
+
+        await sale.update({
+            date,
+            invoiceDate,
+            invoiceNumber,
+            division,
+            headquarter,
+            stockist,
+            grossInvValue,
+            netInvValue,
+            amount: netInvValue,
+            month,
+            year,
+            productsData: JSON.stringify(productsData)
+        });
+
+        res.json({ success: true, message: 'Invoice updated successfully', data: sale });
+    } catch (error) {
+        console.error('Error updating primary sale:', error);
+        res.status(500).json({ success: false, message: 'Failed to update invoice' });
+    }
+});
+
+// [NEW] Delete an invoice
+router.delete('/primary-sales/delete/:id', async (req, res) => {
+    try {
+        const sale = await XlPrimarySales.findByPk(req.params.id);
+        if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
+        
+        await sale.destroy();
+        res.json({ success: true, message: 'Invoice deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting primary sale:', error);
+        res.status(500).json({ success: false, message: 'Failed to delete invoice' });
+    }
+});
+
 module.exports = router;
 
 

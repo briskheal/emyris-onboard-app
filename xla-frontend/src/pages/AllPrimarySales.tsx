@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Eye, X } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -7,12 +7,18 @@ export default function AllPrimarySales() {
   const navigate = useNavigate();
   const [sales, setSales] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [stockists, setStockists] = useState<any[]>([]);
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date();
     return d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getFullYear();
   });
 
   const fetchSales = async () => {
+    try {
+      const sRes = await axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } }));
+      setStockists(sRes.data.data || []);
+    } catch(e) {}
+
     try {
       setLoading(true);
       const userStr = localStorage.getItem('user');
@@ -35,6 +41,27 @@ export default function AllPrimarySales() {
       console.error('Failed to fetch sales', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  
+  const getStockistName = (id: string) => {
+    const s = stockists.find(x => x.uid === id || x._id === id);
+    return s ? (s.businessName || s.name || id) : id;
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      try {
+        const res = await axios.delete(`/api/xl/primary-sales/delete/${id}`);
+        if (res.data.success) {
+          fetchSales();
+        } else {
+          alert('Failed to delete.');
+        }
+      } catch (error) {
+        alert('Error deleting invoice.');
+      }
     }
   };
 
@@ -96,7 +123,7 @@ export default function AllPrimarySales() {
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Headquarter</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Total (₹)</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Return<br/>Sale</th>
-                  <th className="p-3 font-semibold text-center">View</th>
+                  <th className="p-3 font-semibold text-center">Actions</th>
                 </tr>
               </thead>
               <tbody className="text-sm divide-y divide-[#3b3b5a]/30">
@@ -117,7 +144,7 @@ export default function AllPrimarySales() {
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50">{sale.date || '-'}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-medium text-white">{sale.invoiceNumber || '-'}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50">{sale.invoiceDate || '-'}</td>
-                        <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[150px]">{sale.stockist || '-'}</td>
+                        <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[150px]">{getStockistName(sale.stockist) || '-'}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[120px]">{sale.headquarter || '-'}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">
                           {sale.netInvValue ? sale.netInvValue.toFixed(2) : '-'}
@@ -126,9 +153,14 @@ export default function AllPrimarySales() {
                           {returnTotal > 0 ? returnTotal.toFixed(2) : <X size={14} className="mx-auto text-[#8b8baf]" />}
                         </td>
                         <td className="p-3 text-center">
-                          <button className="text-sky-400 hover:text-sky-300 transition-colors p-1.5 rounded-full hover:bg-sky-500/10 mx-auto">
-                            <Eye size={16} />
-                          </button>
+                          <div className="flex items-center justify-center gap-3">
+                              <button onClick={() => navigate(`/extras/primary-sales/edit/${sale._id}`)} className="text-emerald-400 hover:text-emerald-300 transition-colors p-1.5 rounded-full hover:bg-emerald-500/10" title="Edit">
+                                <Edit2 size={16} />
+                              </button>
+                              <button onClick={() => handleDelete(sale._id)} className="text-rose-400 hover:text-rose-300 transition-colors p-1.5 rounded-full hover:bg-rose-500/10" title="Delete">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                         </td>
                       </tr>
                     );

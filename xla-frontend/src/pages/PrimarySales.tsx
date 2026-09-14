@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Plus, Trash2, Folder, Upload } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 
 export default function PrimarySales() {
   const navigate = useNavigate();
+  const { id } = useParams();
+  
   const [products, setProducts] = useState<any[]>([]);
   const [stockists, setStockists] = useState<any[]>([]);
   const [hqs, setHqs] = useState<string[]>([]);
@@ -75,6 +77,32 @@ export default function PrimarySales() {
   const filteredStockists = stockists.filter(s => !formData.headquarter || s.headquarter === formData.headquarter);
 
   
+  
+  useEffect(() => {
+    if (id && products.length > 0 && stockists.length > 0) {
+      axios.get(`/api/xl/primary-sales/${id}`).then(res => {
+        if (res.data.success) {
+          const d = res.data.data;
+          setFormData({
+            date: d.date || '',
+            invoiceDate: d.invoiceDate || '',
+            invoiceNumber: d.invoiceNumber || '',
+            division: d.division || '',
+            headquarter: d.headquarter || '',
+            stockist: d.stockist || ''
+          });
+          if (d.productsData) {
+            try {
+               const pData = JSON.parse(d.productsData);
+               if (pData.length > 0) setRows(pData);
+            } catch(e){}
+          }
+          
+        }
+      });
+    }
+  }, [id, products.length, stockists.length]);
+
   const totals = rows.reduce((acc, row) => {
     const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
     const ptr = prod ? (prod.ptr || 0) : 0;
@@ -129,9 +157,14 @@ export default function PrimarySales() {
         productsData: validRows
       };
 
-      const res = await axios.post('/api/xl/primary-sales/save', payload);
+      let res;
+        if (id) {
+            res = await axios.put('/api/xl/primary-sales/update/' + id, payload);
+        } else {
+            res = await axios.post('/api/xl/primary-sales/save', payload);
+        }
       if (res.data.success) {
-        alert('Invoice saved successfully!');
+        alert(id ? 'Invoice updated successfully!' : 'Invoice saved successfully!');
         setFormData({
           ...formData,
           invoiceNumber: ''
@@ -433,7 +466,7 @@ export default function PrimarySales() {
           </div>
         </div>
         <button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2">
-          Save Invoice
+          {id ? 'Update Invoice' : 'Save Invoice'}
         </button>
       </div>
     </div>

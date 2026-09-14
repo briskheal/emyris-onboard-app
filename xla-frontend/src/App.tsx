@@ -69,6 +69,7 @@ function App() {
             <Route path="routes" element={<RoutesListReport />} />
           </Route>
           <Route path="/extras/primary-sales" element={<PrimarySales />} />
+          <Route path="/extras/primary-sales/edit/:id" element={<PrimarySales />} />
           <Route path="/extras/primary-sales/all" element={<AllPrimarySales />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
