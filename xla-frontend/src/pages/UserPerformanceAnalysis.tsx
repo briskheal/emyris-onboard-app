@@ -359,6 +359,10 @@ export default function UserPerformanceAnalysis() {
                                 <select value={selectedReportType} onChange={e => setSelectedReportType(e.target.value)} className="w-full bg-[#141421] border border-[#3b3b5a] rounded p-2 text-white">
                                     <option value="Effort Analysis">Effort Analysis</option>
                                     <option value="Brand Analysis">Brand Analysis</option>
+                                    <option value="Key Customer Analysis">Key Customer Analysis</option>
+                                    <option value="Customer ROI Analysis">Customer ROI Analysis</option>
+                                    <option value="Outstanding Analysis">Outstanding Analysis</option>
+                                    <option value="Account Analysis">Account Analysis</option>
                                 </select>
                             </div>
                             <div className="w-56">
@@ -401,20 +405,25 @@ export default function UserPerformanceAnalysis() {
                                 </div>
                             )}
 
-                            {selectedReportType === 'Brand Analysis' && reportData && Array.isArray(reportData) && (
+                            
+                            {selectedReportType !== 'Effort Analysis' && reportData && Array.isArray(reportData) && (
                                 <div className="overflow-x-auto custom-scrollbar">
                                     <table className="w-full text-left whitespace-nowrap">
                                         <thead>
                                             <tr className="border-b border-[#3b3b5a] bg-[#2a2a40] text-slate-300 text-xs text-center">
                                                 <th className="p-3 border-r border-[#3b3b5a]/50" rowSpan={2}>Sr<br/>no.</th>
-                                                <th className="p-3 border-r border-[#3b3b5a]/50" rowSpan={2}>Product Name</th>
+                                                <th className="p-3 border-r border-[#3b3b5a]/50" rowSpan={2}>Entity Name</th>
+                                                <th className="p-3 border-r border-[#3b3b5a]/50" rowSpan={2}>Type</th>
                                                 <th className="p-3 border-r border-[#3b3b5a]/50" rowSpan={2}>Monthly<br/>Target</th>
                                                 <th className="p-3 border-r border-[#3b3b5a]/50" colSpan={2}>Week 1</th>
                                                 <th className="p-3 border-r border-[#3b3b5a]/50" colSpan={2}>Week 2</th>
                                                 <th className="p-3 border-r border-[#3b3b5a]/50" colSpan={2}>Week 3</th>
                                                 <th className="p-3 border-r border-[#3b3b5a]/50" colSpan={2}>Week 4</th>
+                                                <th className="p-3 border-r border-[#3b3b5a]/50" colSpan={2}>Week 5</th>
                                             </tr>
                                             <tr className="border-b border-[#3b3b5a] bg-[#141421] text-slate-400 text-xs text-center">
+                                                <th className="p-2 border-r border-[#3b3b5a]/50">Plan</th>
+                                                <th className="p-2 border-r border-[#3b3b5a]/50">Achieved</th>
                                                 <th className="p-2 border-r border-[#3b3b5a]/50">Plan</th>
                                                 <th className="p-2 border-r border-[#3b3b5a]/50">Achieved</th>
                                                 <th className="p-2 border-r border-[#3b3b5a]/50">Plan</th>
@@ -427,25 +436,28 @@ export default function UserPerformanceAnalysis() {
                                         </thead>
                                         <tbody>
                                             {reportData.map((row, i) => (
-                                                <tr key={i} className="text-center hover:bg-[#2a2a40]/30">
+                                                <tr key={i} className="text-center hover:bg-[#2a2a40]/30 transition-colors">
                                                     <td className="p-3 border-r border-[#3b3b5a]/50">{i + 1}</td>
                                                     <td className="p-3 border-r border-[#3b3b5a]/50 text-left font-medium text-slate-200">
-                                                        {products.find(p => p.uid === row.productId || p._id === row.productId)?.productName || row.productName}
+                                                        {row.entityName || (row.productId && (products.find(p => p.uid === row.productId || p._id === row.productId)?.productName)) || row.productName || '-'}
                                                     </td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-bold">{row.monthlyTarget}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week1Plan}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week1Achieved}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week2Plan}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week2Achieved}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week3Plan}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week3Achieved}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week4Plan}</td>
-                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week4Achieved}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.entityType || '-'}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-bold">{row.monthlyTarget || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week1?.planned || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week1?.achieved || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week2?.planned || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week2?.achieved || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week3?.planned || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week3?.achieved || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week4?.planned || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week4?.achieved || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 text-slate-400">{row.week5?.planned || 0}</td>
+                                                    <td className="p-3 border-r border-[#3b3b5a]/50 font-semibold text-[#00e5ff]">{row.week5?.achieved || 0}</td>
                                                 </tr>
                                             ))}
                                             {reportData.length === 0 && (
                                                 <tr>
-                                                    <td colSpan={11} className="p-6 text-center text-slate-500 italic">No products tracked. Please configure products in Settings.</td>
+                                                    <td colSpan={14} className="p-6 text-center text-slate-500 italic">No targets or achievements found for this report type.</td>
                                                 </tr>
                                             )}
                                         </tbody>
