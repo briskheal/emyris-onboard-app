@@ -2084,3 +2084,145 @@ module.exports = router;
 
 
 
+
+
+// ================= SECONDARY SALES =================
+
+router.get('/secondary-sales', async (req, res) => {
+    try {
+        const sales = await XlSecondarySales.findAll({ order: [['createdAt', 'DESC']] });
+        res.json({ success: true, data: sales });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/secondary-sales/:id', async (req, res) => {
+    try {
+        const sale = await XlSecondarySales.findByPk(req.params.id);
+        res.json({ success: true, data: sale });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.post('/secondary-sales/save', async (req, res) => {
+    try {
+        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
+        
+        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
+        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+
+        const sale = await XlSecondarySales.create({
+            employeeId,
+            date,
+            month,
+            year,
+            invoiceDate,
+            invoiceNumber,
+            division,
+            headquarter,
+            stockist,
+            amount,
+            productsData: typeof productsData === 'string' ? productsData : JSON.stringify(productsData)
+        });
+        res.json({ success: true, data: sale });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.put('/secondary-sales/update/:id', async (req, res) => {
+    try {
+        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
+        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
+        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+
+        await XlSecondarySales.update({
+            date,
+            month,
+            year,
+            invoiceDate,
+            invoiceNumber,
+            division,
+            headquarter,
+            stockist,
+            amount,
+            productsData: typeof productsData === 'string' ? productsData : JSON.stringify(productsData)
+        }, { where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.delete('/secondary-sales/delete/:id', async (req, res) => {
+    try {
+        await XlSecondarySales.destroy({ where: { _id: req.params.id } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/secondary-sales-data/opening-balance', async (req, res) => {
+    try {
+        const { stockist, prevMonth, prevYear, productId } = req.query;
+        // Search previous month's secondary sales for this stockist
+        const sales = await XlSecondarySales.findAll({
+            where: { stockist, month: prevMonth, year: prevYear }
+        });
+        
+        let openingQty = 0;
+        
+        sales.forEach(sale => {
+            if (sale.productsData) {
+                try {
+                    const rows = JSON.parse(sale.productsData);
+                    rows.forEach(r => {
+                        if (r.productId === productId) {
+                            openingQty += (Number(r.closingQty) || 0);
+                        }
+                    });
+                } catch(e) {}
+            }
+        });
+        
+        res.json({ success: true, openingQty });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/secondary-sales-data/primary-received', async (req, res) => {
+    try {
+        const { stockist, month, year, productId } = req.query;
+        // Search this month's primary sales for this stockist
+        const sales = await XlPrimarySales.findAll({
+            where: { stockist, month, year }
+        });
+        
+        let receivedQty = 0;
+        
+        sales.forEach(sale => {
+            if (sale.productsData) {
+                try {
+                    const rows = JSON.parse(sale.productsData);
+                    rows.forEach(r => {
+                        if (r.productId === productId) {
+                            // Sum up normal quantity (and free stocks if applicable, we will just sum quantity)
+                            receivedQty += (Number(r.quantity) || 0) + (Number(r.freeStocks) || 0);
+                            // Subtract returns if it's a purchase return
+                            receivedQty -= (Number(r.purcRtn) || 0);
+                        }
+                    });
+                } catch(e) {}
+            }
+        });
+        
+        res.json({ success: true, receivedQty });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+

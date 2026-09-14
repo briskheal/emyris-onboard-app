@@ -1,179 +1,420 @@
-import { ArrowLeft, ChevronDown, Upload, FileText, CalendarDays } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Trash2, Save, CheckCircle } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import CustomSelect from '../components/CustomSelect';
+import axios from 'axios';
+import { useState, useEffect } from 'react';
 
 export default function SecondarySales() {
   const navigate = useNavigate();
+  const { id } = useParams();
+
+  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState<any[]>([]);
+  const [stockists, setStockists] = useState<any[]>([]);
+  const [hqs, setHqs] = useState<any[]>([]);
+  const [divisions, setDivisions] = useState<any[]>([]);
+  
+  const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }) + ' ' + new Date().getFullYear();
+  
+  const [formData, setFormData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    month: currentMonth.split(' ')[0],
+    year: currentMonth.split(' ')[1],
+    invoiceDate: new Date().toISOString().split('T')[0],
+    invoiceNumber: '',
+    division: '',
+    headquarter: '',
+    stockist: ''
+  });
+
+  const [rows, setRows] = useState([
+    { id: Date.now(), productId: '', price: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }
+  ]);
+
+  const monthOptions = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ];
+  const yearOptions = ['2023', '2024', '2025', '2026', '2027', '2028'];
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [pRes, sRes, hRes, dRes] = await Promise.all([
+          axios.get('/api/xl/products'),
+          axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/hq').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/xl/division').catch(() => ({ data: { data: [] } }))
+        ]);
+        setProducts(pRes.data.data || []);
+        setStockists(sRes.data.data || []);
+        setHqs(hRes.data.data || []);
+        setDivisions(dRes.data.data || []);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (id && products.length > 0) {
+      axios.get(`/api/xl/secondary-sales/${id}`).then(res => {
+        if (res.data.success) {
+          const d = res.data.data;
+          setFormData({
+            date: d.date || '',
+            month: d.month || currentMonth.split(' ')[0],
+            year: d.year || currentMonth.split(' ')[1],
+            invoiceDate: d.invoiceDate || '',
+            invoiceNumber: d.invoiceNumber || '',
+            division: d.division || '',
+            headquarter: d.headquarter || '',
+            stockist: d.stockist || ''
+          });
+          if (d.productsData) {
+            try {
+               const pData = JSON.parse(d.productsData);
+               if (pData.length > 0) setRows(pData);
+            } catch(e){}
+          }
+        }
+      });
+    }
+  }, [id, products.length]);
+
+  const addRow = () => {
+    setRows([...rows, { id: Date.now(), productId: '', price: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+  };
+
+  const removeRow = (index: number) => {
+    const newRows = [...rows];
+    newRows.splice(index, 1);
+    setRows(newRows);
+  };
+
+  const fetchBalances = async (stockist: string, month: string, year: string, productId: string, index: number) => {
+      if (!stockist || !month || !year || !productId) return;
+      
+      const mIndex = monthOptions.indexOf(month);
+      let prevMonth = month;
+      let prevYear = year;
+      if (mIndex === 0) {
+          prevMonth = 'Dec';
+          prevYear = (parseInt(year) - 1).toString();
+      } else if (mIndex > 0) {
+          prevMonth = monthOptions[mIndex - 1];
+      }
+
+      try {
+          const [obRes, prRes] = await Promise.all([
+              axios.get(`/api/xl/secondary-sales-data/opening-balance?stockist=${stockist}&prevMonth=${prevMonth}&prevYear=${prevYear}&productId=${productId}`),
+              axios.get(`/api/xl/secondary-sales-data/primary-received?stockist=${stockist}&month=${month}&year=${year}&productId=${productId}`)
+          ]);
+          
+          setRows(prev => {
+              const newRows = [...prev];
+              if (newRows[index]) {
+                  newRows[index].openingQty = obRes.data.openingQty || 0;
+                  newRows[index].receivedQty = prRes.data.receivedQty || 0;
+              }
+              return newRows;
+          });
+      } catch (e) {
+          console.error('Failed to fetch balances', e);
+      }
+  };
+
+  const handleRowChange = (index: number, field: string, value: any) => {
+    const newRows = [...rows];
+    newRows[index] = { ...newRows[index], [field]: value };
+    setRows(newRows);
+
+    if (field === 'productId') {
+        fetchBalances(formData.stockist, formData.month, formData.year, value, index);
+    }
+  };
+
+  useEffect(() => {
+      // Re-fetch all balances if month, year, or stockist changes
+      rows.forEach((row, idx) => {
+          if (row.productId) {
+              fetchBalances(formData.stockist, formData.month, formData.year, row.productId, idx);
+          }
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.stockist, formData.month, formData.year]);
+
+  const totals = rows.reduce((acc, row) => {
+    const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
+    const ptr = prod ? (prod.ptr || 0) : 0;
+    const mrp = prod ? (prod.mrp || 0) : 0;
+    const pts = prod ? (prod.pts || 0) : 0;
+    
+    let activePrice = ptr;
+    if (row.selectedPriceType === 'MRP') activePrice = mrp;
+    else if (row.selectedPriceType === 'PTS') activePrice = pts;
+    
+    const sQty = Number(row.salesQty) || 0;
+    const salesValue = sQty * activePrice;
+
+    acc.amount += salesValue;
+    return acc;
+  }, { amount: 0 });
+
+  const handleSave = async (isDraft = false) => {
+    if (!formData.headquarter || !formData.stockist || !formData.month || !formData.year) {
+      alert('Please fill all mandatory fields (Month, Year, HQ, Stockist)');
+      return;
+    }
+    
+    // Map closingQty into validRows for saving
+    const validRows = rows.filter(r => r.productId && (Number(r.salesQty) > 0 || Number(r.freeStocks) > 0 || r.openingQty > 0 || r.receivedQty > 0)).map(r => {
+        const totalQty = (Number(r.openingQty) || 0) + (Number(r.receivedQty) || 0);
+        const closingQty = totalQty - (Number(r.salesQty) || 0) - (Number(r.freeStocks) || 0);
+        return { ...r, closingQty };
+    });
+    
+    if (validRows.length === 0) {
+      alert('Please add at least one valid product.');
+      return;
+    }
+
+    try {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : {};
+      
+      const payload = {
+        ...formData,
+        employeeId: user.employeeId || user._id || 'ADMIN',
+        amount: totals.amount,
+        status: isDraft ? 'Draft' : 'Pending',
+        productsData: validRows
+      };
+
+      let res;
+      if (id) {
+          res = await axios.put('/api/xl/secondary-sales/update/' + id, payload);
+      } else {
+          res = await axios.post('/api/xl/secondary-sales/save', payload);
+      }
+      
+      if (res.data.success) {
+        alert(id ? 'Secondary Sales updated successfully!' : 'Secondary Sales saved successfully!');
+        if (!id) {
+            setFormData({ ...formData, invoiceNumber: '' });
+            setRows([{ id: Date.now(), productId: '', price: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+        }
+      } else {
+        alert('Failed to save.');
+      }
+    } catch (error) {
+      alert('Error saving data.');
+    }
+  };
+
+  if (loading) return <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center text-white">Loading...</div>;
 
   return (
-    <div className="min-h-screen md:h-dvh bg-slate-900 flex flex-col text-slate-100 font-sans pb-24 md:pb-0 relative overflow-hidden">
-      
-      {/* Mobile Sticky Header */}
-      <div className="md:hidden flex items-center gap-4 px-5 pt-12 pb-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate(-1)} className="text-white active:scale-95 transition-transform flex items-center gap-1">
-          <ArrowLeft size={22} />
-        </button>
-        <div>
-          <h1 className="text-lg font-black text-white tracking-tight leading-none">EMYRIS</h1>
-          <p className="text-[9px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
+    <div className="min-h-screen bg-[#1a1a2e] flex flex-col font-sans relative">
+      {/* HEADER */}
+      <div className="bg-[#1e1e30] border-b border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+        <div className="flex items-center gap-4">
+          <button onClick={() => id ? navigate(-1) : navigate('/')} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
+            <ArrowLeft size={18} />
+          </button>
+          <h1 className="text-lg font-bold text-white tracking-wide uppercase">SECONDARY SALES</h1>
+        </div>
+        
+        <div className="flex items-center gap-4">
+            {/* We will add All Sec Sales navigation later when the page is built */}
         </div>
       </div>
 
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col px-5 py-4 md:p-8 overflow-y-auto">
-        
-        {/* DESKTOP HEADER */}
-        <div className="hidden md:flex items-center justify-between mb-8">
-          <h2 className="text-xl font-black text-white uppercase tracking-wider">Secondary Sales</h2>
+      <div className="flex-1 overflow-auto p-4 md:p-6 custom-scrollbar pb-32">
+        <div className="max-w-[1400px] mx-auto space-y-6">
           
-          <div className="flex items-center gap-6">
-            <button className="bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors">
-              <Upload size={16} /> Upload Secondary Sales
-            </button>
+          {/* Form Header */}
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] p-6 shadow-xl relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Year <span className="text-rose-500">*</span></label>
+                <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
+                  options={yearOptions.map(y => ({ value: y, label: y }))} 
+                  value={formData.year} 
+                  onChange={(val) => setFormData({...formData, year: val})} 
+                  placeholder="Select"
+                /></div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Month <span className="text-rose-500">*</span></label>
+                <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
+                  options={monthOptions.map(m => ({ value: m, label: m }))} 
+                  value={formData.month} 
+                  onChange={(val) => setFormData({...formData, month: val})} 
+                  placeholder="Select"
+                /></div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Division</label>
+                <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
+                  options={divisions.map(d => ({ value: d.uid || d._id, label: d.uid }))} 
+                  value={formData.division} 
+                  onChange={(val) => setFormData({...formData, division: val})} 
+                  placeholder="Select Division"
+                /></div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Headquarter <span className="text-rose-500">*</span></label>
+                <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
+                  options={hqs.map(h => ({ value: h.uid || h._id, label: h.uid }))} 
+                  value={formData.headquarter} 
+                  onChange={(val) => setFormData({...formData, headquarter: val})} 
+                  placeholder="Select HQ"
+                /></div>
+              </div>
+              
+              <div className="space-y-2 lg:col-span-2">
+                <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Stockist <span className="text-rose-500">*</span></label>
+                <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
+                  options={stockists.map(s => ({ value: s.uid || s._id, label: s.businessName || s.name || s.uid }))} 
+                  value={formData.stockist} 
+                  onChange={(val) => setFormData({...formData, stockist: val})} 
+                  placeholder="Select Stockist"
+                /></div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Invoice Date</label>
+                <input type="date" value={formData.invoiceDate} onChange={e => setFormData({...formData, invoiceDate: e.target.value})} className="w-full h-[42px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-lg px-3 text-sm text-white focus:border-sky-500 outline-none" />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Invoice Number</label>
+                <input type="text" value={formData.invoiceNumber} onChange={e => setFormData({...formData, invoiceNumber: e.target.value})} className="w-full h-[42px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-lg px-3 text-sm text-white focus:border-sky-500 outline-none" placeholder="Enter invoice number" />
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-x-auto relative mb-96">
+            <div className="min-w-[1200px]">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#27273f] text-[#8b8baf] text-[10px] uppercase tracking-wider">
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-12">Sr</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a]">Product Name</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-[140px]">Price (₹)</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-orange-300">Opening<br/>Balance Qty</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-300">Received<br/>Qty</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-white">Total<br/>Quantity</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400">Sales<br/>Qty</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-purple-400">Free<br/>Stocks</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400">Sales<br/>Value</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-amber-300">Closing<br/>Quantity</th>
+                    <th className="p-2 font-bold text-center w-12">Del</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row, index) => {
+                    const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
+                    const ptr = prod ? (prod.ptr || 0) : 0;
+                    const mrp = prod ? (prod.mrp || 0) : 0;
+                    const pts = prod ? (prod.pts || 0) : 0;
+                    
+                    let activePrice = ptr;
+                    if (row.selectedPriceType === 'MRP') activePrice = mrp;
+                    else if (row.selectedPriceType === 'PTS') activePrice = pts;
+                    
+                    const opening = Number(row.openingQty) || 0;
+                    const received = Number(row.receivedQty) || 0;
+                    const totalQty = opening + received;
+                    const salesQty = Number(row.salesQty) || 0;
+                    const freeStocks = Number(row.freeStocks) || 0;
+                    
+                    const closingQty = totalQty - salesQty - freeStocks;
+                    const salesValue = salesQty * activePrice;
+
+                    return (
+                      <tr key={row.id} className="border-b border-[#3b3b5a]/50 hover:bg-[#1a1a2e]/50 transition-colors">
+                        <td className="p-1.5 text-center text-xs font-semibold border-r border-[#3b3b5a]/50">{index + 1}</td>
+                        
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[250px]"><div className="h-[34px] [&>div>div]:min-h-[34px] [&>div>div]:py-1 z-[100]"><CustomSelect 
+                            options={products.map((p: any) => ({ value: p.uid || p._id, label: p.productName }))}
+                            value={row.productId}
+                            onChange={(val) => handleRowChange(index, 'productId', val)}
+                            placeholder="Select"
+                          /></div></td>
+                          
+                        {/* Price Type Selector */}
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50">
+                          <div className="flex items-center gap-1 justify-center">
+                            <div className="flex flex-col gap-[2px] w-10">
+                              <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
+                              <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
+                              <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
+                            </div>
+                            <div className="flex-1 min-w-[60px] text-center text-xs font-bold text-sky-400 bg-[#1a1a2e] h-full flex items-center justify-center rounded">
+                              {activePrice.toFixed(2)}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-orange-300 bg-orange-950/10">{opening}</td>
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-300 bg-sky-950/10">{received}</td>
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-black text-white bg-white/5">{totalQty}</td>
+                        
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-emerald-950/10 w-20">
+                          <input type="number" min="0" value={row.salesQty} onChange={e => handleRowChange(index, 'salesQty', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-emerald-900/50 rounded px-2 text-sm text-emerald-400 font-bold outline-none focus:border-emerald-500 text-center" />
+                        </td>
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-purple-950/10 w-20">
+                          <input type="number" min="0" value={row.freeStocks} onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-purple-900/50 rounded px-2 text-sm text-purple-400 font-bold outline-none focus:border-purple-500 text-center" />
+                        </td>
+                        
+                        <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-400">{salesValue.toFixed(2)}</td>
+                        <td className={`p-1.5 border-r border-[#3b3b5a]/50 text-center font-black ${closingQty < 0 ? 'text-rose-500 bg-rose-950/20' : 'text-amber-300 bg-amber-950/10'}`}>{closingQty}</td>
+
+                        <td className="p-1.5 text-center">
+                          <button onClick={() => removeRow(index)} className="text-[#8b8baf] hover:text-rose-400 transition-colors p-1.5 rounded hover:bg-rose-500/10 mx-auto">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              <div className="p-3 border-t border-[#3b3b5a]/50 bg-[#1e1e30]">
+                <button onClick={addRow} className="text-sm font-bold text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1 px-2 py-1 rounded hover:bg-sky-500/10">
+                  + Add Product
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* SECONDARY SALES FORM */}
-        <div className="bg-slate-800/50 border border-slate-700/50 rounded-3xl p-6 md:p-8 mb-8 shadow-2xl relative">
-          
-          <button className="absolute top-6 right-6 hidden md:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-4 py-2 rounded-lg text-sm font-bold hover:bg-emerald-500/20 transition-colors">
-            All Secondary Sales
+      {/* FOOTER */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+        <div className="flex gap-4 md:gap-8 mb-3 md:mb-0">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Total Sales Value</span>
+            <span className="text-xl font-black text-sky-400">₹ {totals.amount.toFixed(2)}</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          <button onClick={() => handleSave(true)} className="flex-1 md:flex-none bg-[#27273f] hover:bg-[#3b3b5a] text-white px-6 py-2 rounded-lg font-bold transition-colors flex items-center justify-center gap-2">
+            <Save size={16} /> Save as Draft
           </button>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Year *</label>
-              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 transition-colors">
-                <span className="font-semibold text-sm text-slate-400">Select Year</span>
-                <ChevronDown size={18} className="text-slate-400" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Month *</label>
-              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 transition-colors">
-                <span className="font-semibold text-sm text-slate-400">Select Month</span>
-                <ChevronDown size={18} className="text-slate-400" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Headquarter *</label>
-              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 transition-colors">
-                <span className="font-semibold text-sm text-slate-400">Select Headquarter</span>
-                <ChevronDown size={18} className="text-slate-400" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Stockist *</label>
-              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 transition-colors">
-                <span className="font-semibold text-sm text-slate-400">Select Stockist</span>
-                <ChevronDown size={18} className="text-slate-400" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-rose-500 uppercase tracking-wider pl-1">Select Division *</label>
-              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 transition-colors">
-                <span className="font-semibold text-sm text-slate-400">Select Division</span>
-                <ChevronDown size={18} className="text-slate-400" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Select Product</label>
-              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 transition-colors">
-                <span className="font-semibold text-sm text-slate-400">Select Product</span>
-                <ChevronDown size={18} className="text-slate-400" />
-              </button>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Upload File</label>
-              <div className="flex items-center bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
-                <button className="bg-slate-700 text-slate-300 font-semibold text-sm px-4 py-3 hover:bg-slate-600 transition-colors border-r border-slate-600">Choose file</button>
-                <span className="font-semibold text-sm text-slate-500 px-4">No file chosen</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Invoice Number</label>
-              <div className="bg-slate-800 border border-slate-700 rounded-xl px-4 py-3">
-                <span className="font-semibold text-sm text-slate-500">Create Invoice Number</span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider pl-1">Invoice Date</label>
-              <button className="flex items-center justify-between bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 active:bg-slate-700 transition-colors">
-                <span className="font-semibold text-sm text-slate-400">dd-mm-yyyy</span>
-                <CalendarDays size={18} className="text-slate-400" />
-              </button>
-            </div>
-            
-            <div className="flex flex-col justify-end">
-              <button className="w-full bg-sky-500 hover:bg-sky-600 text-white rounded-xl px-4 py-3 font-bold shadow-lg shadow-sky-500/20 transition-colors flex items-center justify-center gap-2">
-                Add Product
-              </button>
-            </div>
-
-          </div>
+          <button onClick={() => handleSave(false)} className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center justify-center gap-2">
+            <CheckCircle size={16} /> {id ? 'Update Data' : 'Submit Data'}
+          </button>
         </div>
-
-        {/* DATA TABLE */}
-        <div className="hidden md:flex flex-col flex-1 bg-slate-800/50 border border-slate-700/50 rounded-2xl overflow-hidden shadow-2xl relative">
-          
-          <div className="flex-1 overflow-auto pb-16">
-            <table className="w-[1200px] xl:w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-900/50 border-b border-slate-700/50">
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center w-16">Sr no.</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest"><div className="flex items-center gap-1.5"><FileText size={14}/> Product Name</div></th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-20">Pack</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Price (₹)</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Opening Balance Qty</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Received Qty</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Total Quantity</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Total Value (₹)</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Sales Qty</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Free Stocks</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Sales Value (₹)</th>
-                  <th className="p-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest w-24">Closing Quantity</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700/30">
-                {/* No Data State */}
-                <tr className="bg-slate-900/10">
-                  <td colSpan={12} className="p-8 text-center text-sm font-semibold text-slate-500 italic">No data found</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Desktop Table Footer */}
-          <div className="absolute bottom-0 left-0 right-0 bg-slate-900/95 border-t border-slate-700/50 backdrop-blur flex items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold">
-                <ChevronDown size={14} className="rotate-90" /> Prev
-              </div>
-              <span className="text-xs font-bold text-sky-400 bg-sky-500/10 px-2 py-1 rounded">Page 1 of 1</span>
-              <div className="flex items-center gap-2 text-slate-400 text-sm font-semibold">
-                Next <ChevronDown size={14} className="-rotate-90" />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <button className="text-slate-400 hover:text-white text-sm font-bold flex items-center gap-2 transition-colors">
-                <FileText size={16} /> Export
-              </button>
-              <button className="text-slate-400 hover:text-white text-sm font-bold flex items-center gap-2 transition-colors">
-                Show 10 <ChevronDown size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-
       </div>
     </div>
   );
