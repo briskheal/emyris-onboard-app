@@ -17,8 +17,8 @@ router.get('/user-performance/rankings', async (req, res) => {
         
         const settingsRecord = await XlGlobalSettings.findOne();
         let settings = { weightages: { effort: 30, brand: 15, keyCustomer: 15, customerRoi: 10, outstanding: 15, account: 15 }};
-        if (settingsRecord && settingsRecord.settings && settingsRecord.settings.performanceWeightages) {
-            settings.weightages = settingsRecord.settings.performanceWeightages;
+        if (settingsRecord && settingsRecord.settings && settingsRecord.settings.userPerformance) {
+            settings = settingsRecord.settings.userPerformance;
         }
         const weightages = settings.weightages || {};
 
@@ -56,11 +56,6 @@ router.get('/user-performance/rankings', async (req, res) => {
             const uniqueDoctorsMet = Object.keys(doctorVisitCounts).length;
             const coveragePercent = Math.min((uniqueDoctorsMet / totalDocs) * 100, 100);
             
-            const maxEffortPts = Number(weightages.effort) || 30;
-            const maxCoveragePts = maxEffortPts / 2;
-            let coveragePts = (coveragePercent / 90) * maxCoveragePts;
-            if (coveragePts > maxCoveragePts) coveragePts = maxCoveragePts; 
-
             let compliantDoctorsCount = 0;
             allocatedDoctors.forEach(doc => {
                 const visits = doctorVisitCounts[doc.uid] || doctorVisitCounts[doc._id] || 0;
@@ -77,11 +72,40 @@ router.get('/user-performance/rankings', async (req, res) => {
             const docsRequiringVisits = allocatedDoctors.filter(d => d.category && (d.category.includes('Core') || d.category.includes('SuperCore') || d.category.includes('Non-Core'))).length;
             const compliancePercent = docsRequiringVisits > 0 ? (compliantDoctorsCount / docsRequiringVisits) * 100 : 0;
 
-            const maxCompliancePts = maxEffortPts / 2;
-            let compliancePts = (compliancePercent / 90) * maxCompliancePts;
-            if (compliancePts > maxCompliancePts) compliancePts = maxCompliancePts;
+            // 4-Way Split Logic
+            const effortThresholds = settings.effortThresholds || { coverage: 90, compliance: 90, drCallAvg: 8, chemistCallAvg: 2 };
+            const targetCoverage = Number(effortThresholds.coverage) || 90;
+            const targetCompliance = Number(effortThresholds.compliance) || 90;
+            const targetDrCallAvg = Number(effortThresholds.drCallAvg) || 8;
+            const targetChemistCallAvg = Number(effortThresholds.chemistCallAvg) || 2;
 
-            const effortPoints = coveragePts + compliancePts;
+            const maxEffortPts = Number(weightages.effort) || 30;
+            const maxPerMetric = maxEffortPts / 4;
+
+            // 1. Coverage Pts
+            let coveragePts = (coveragePercent / targetCoverage) * maxPerMetric;
+            if (coveragePts > maxPerMetric) coveragePts = maxPerMetric; 
+
+            // 2. Compliance Pts
+            let compliancePts = (compliancePercent / targetCompliance) * maxPerMetric;
+            if (compliancePts > maxPerMetric) compliancePts = maxPerMetric;
+
+            // 3. Dr Call Average
+            const totalDaysWorked = new Set(dcrs.map(d => d.date)).size;
+            const totalDrCalls = dcrs.filter(d => d.entityType === 'Doctor').length;
+            const actualDrCallAvg = totalDaysWorked > 0 ? (totalDrCalls / totalDaysWorked) : 0;
+            
+            let drCallPts = (actualDrCallAvg / targetDrCallAvg) * maxPerMetric;
+            if (drCallPts > maxPerMetric) drCallPts = maxPerMetric;
+
+            // 4. Chemist Call Average
+            const totalChemistCalls = dcrs.filter(d => d.entityType === 'Chemist').length;
+            const actualChemistCallAvg = totalDaysWorked > 0 ? (totalChemistCalls / totalDaysWorked) : 0;
+
+            let chemistCallPts = (actualChemistCallAvg / targetChemistCallAvg) * maxPerMetric;
+            if (chemistCallPts > maxPerMetric) chemistCallPts = maxPerMetric;
+
+            const effortPoints = coveragePts + compliancePts + drCallPts + chemistCallPts;
             userScore += effortPoints;
             kpiBreakdown['Effort'] = { points: effortPoints, max: maxEffortPts };
 

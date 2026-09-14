@@ -73,10 +73,7 @@ export default function UserPerformanceAnalysis() {
         brandProducts: [] as string[],
         brandSalesSelection: 'Secondary Sales',
         brandTargetAuto: true,
-        effortThresholds: {
-            coverage: 90,
-            compliance: 90
-        }
+        effortThresholds: { coverage: 90, compliance: 90, drCallAvg: 8, chemistCallAvg: 2 }
     });
 
     useEffect(() => {
@@ -326,33 +323,45 @@ export default function UserPerformanceAnalysis() {
                             </div>
                             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="bg-slate-900/50 border border-slate-700 rounded p-5 flex flex-col">
-                                    <span className="font-semibold text-slate-200 mb-2">Minimum Coverage Required</span>
-                                    <span className="text-xs text-slate-400 mb-4 h-8">Percentage of doctors that must be visited in a month.</span>
-                                    <div className="relative">
-                                        <input 
-                                            type="number" 
-                                            value={settings.effortThresholds.coverage}
-                                            onChange={(e) => setSettings({...settings, effortThresholds: {...settings.effortThresholds, coverage: Number(e.target.value)}})}
-                                            className="w-full bg-[#1e1e30] border border-slate-700 rounded p-3 pr-10 text-white focus:outline-none focus:border-sky-500"
-                                        />
-                                        <span className="absolute right-4 top-3 text-slate-400 font-bold">%</span>
-                                    </div>
-                                </div>
-                                <div className="bg-slate-900/50 border border-slate-700 rounded p-5 flex flex-col">
                                     <span className="font-semibold text-slate-200 mb-2">Minimum Compliance Rate</span>
                                     <span className="text-xs text-slate-400 mb-4 h-8">Percentage of completed tasks that must meet quality standards.</span>
                                     <div className="relative">
                                         <input 
                                             type="number" 
-                                            value={settings.effortThresholds.compliance}
+                                            value={settings.effortThresholds?.compliance || 90}
                                             onChange={(e) => setSettings({...settings, effortThresholds: {...settings.effortThresholds, compliance: Number(e.target.value)}})}
                                             className="w-full bg-[#1e1e30] border border-slate-700 rounded p-3 pr-10 text-white focus:outline-none focus:border-sky-500"
                                         />
                                         <span className="absolute right-4 top-3 text-slate-400 font-bold">%</span>
                                     </div>
                                 </div>
+                                <div className="bg-slate-900/50 border border-slate-700 rounded p-5 flex flex-col">
+                                    <span className="font-semibold text-slate-200 mb-2">Doctor Call Average</span>
+                                    <span className="text-xs text-slate-400 mb-4 h-8">Average doctor calls required per worked day.</span>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            value={settings.effortThresholds?.drCallAvg || 8}
+                                            onChange={(e) => setSettings({...settings, effortThresholds: {...settings.effortThresholds, drCallAvg: Number(e.target.value)}})}
+                                            className="w-full bg-[#1e1e30] border border-slate-700 rounded p-3 text-white focus:outline-none focus:border-sky-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="bg-slate-900/50 border border-slate-700 rounded p-5 flex flex-col">
+                                    <span className="font-semibold text-slate-200 mb-2">Chemist Call Average</span>
+                                    <span className="text-xs text-slate-400 mb-4 h-8">Average chemist calls required per worked day.</span>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            value={settings.effortThresholds?.chemistCallAvg || 2}
+                                            onChange={(e) => setSettings({...settings, effortThresholds: {...settings.effortThresholds, chemistCallAvg: Number(e.target.value)}})}
+                                            className="w-full bg-[#1e1e30] border border-slate-700 rounded p-3 text-white focus:outline-none focus:border-sky-500"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                    </div>
                     </div>
                 )}
                 
