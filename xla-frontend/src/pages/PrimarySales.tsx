@@ -284,7 +284,7 @@ export default function PrimarySales() {
               <label className="text-[11px] font-semibold text-[#8b8baf]">Select Headquarter <span className="text-rose-500">*</span></label>
               <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
                 <CustomSelect 
-                  options={hqs.map(hq => ({ value: hq, label: hq }))}
+                  options={hqs}
                   value={formData.headquarter}
                   onChange={(val) => setFormData({...formData, headquarter: val, stockist: ''})}
                   placeholder="Select Headquarter"
