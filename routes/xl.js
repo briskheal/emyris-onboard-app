@@ -1106,11 +1106,11 @@ router.put('/performance/achieve', async (req, res) => {
         const { id, brandData, roiData, accountData, keyCustomerData, outstandingData } = req.body;
         
         await XlPerformanceAnalysis.update({
-            brandData: JSON.stringify(brandData),
-            roiData: JSON.stringify(roiData),
-            accountData: JSON.stringify(accountData),
-            keyCustomerData: JSON.stringify(keyCustomerData),
-            outstandingData: JSON.stringify(outstandingData)
+            brandData: brandData !== undefined ? (typeof brandData === 'string' ? brandData : JSON.stringify(brandData)) : undefined,
+            roiData: roiData !== undefined ? (typeof roiData === 'string' ? roiData : JSON.stringify(roiData)) : undefined,
+            accountData: accountData !== undefined ? (typeof accountData === 'string' ? accountData : JSON.stringify(accountData)) : undefined,
+            keyCustomerData: keyCustomerData !== undefined ? (typeof keyCustomerData === 'string' ? keyCustomerData : JSON.stringify(keyCustomerData)) : undefined,
+            outstandingData: outstandingData !== undefined ? (typeof outstandingData === 'string' ? outstandingData : JSON.stringify(outstandingData)) : undefined
         }, { where: { _id: id } });
 
         res.json({ success: true, message: 'Achievements saved successfully!' });
@@ -1749,14 +1749,19 @@ router.get('/user-performance/userwise', async (req, res) => {
             if (perf) {
                 if (reportType === 'Brand Analysis' && perf.brandData) {
                     data = JSON.parse(perf.brandData);
+                    if (typeof data === 'string') data = JSON.parse(data); // Fix double-stringified corruption
                 } else if (reportType === 'Key Customer Analysis' && perf.keyCustomerData) {
                     data = JSON.parse(perf.keyCustomerData);
+                    if (typeof data === 'string') data = JSON.parse(data); // Fix double-stringified corruption
                 } else if (reportType === 'Account Analysis' && perf.accountData) {
                     data = JSON.parse(perf.accountData);
+                    if (typeof data === 'string') data = JSON.parse(data); // Fix double-stringified corruption
                 } else if (reportType === 'Customer ROI Analysis' && perf.roiData) {
                     data = JSON.parse(perf.roiData);
+                    if (typeof data === 'string') data = JSON.parse(data); // Fix double-stringified corruption
                 } else if (reportType === 'Outstanding Analysis' && perf.outstandingData) {
                     data = JSON.parse(perf.outstandingData);
+                    if (typeof data === 'string') data = JSON.parse(data); // Fix double-stringified corruption
                 } else {
                     data = [];
                 }
