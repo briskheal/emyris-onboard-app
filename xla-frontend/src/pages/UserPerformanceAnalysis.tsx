@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import CustomSelect from '../components/CustomSelect';
 import { useNavigate } from 'react-router-dom';
 import { 
     ChevronLeft, Settings, Award, User, Save, Check
-,  Search,
-  ChevronDown
+
 } from 'lucide-react';
 
 export default function UserPerformanceAnalysis() {
@@ -16,9 +16,6 @@ export default function UserPerformanceAnalysis() {
     const [products, setProducts] = useState<any[]>([]);
 
     const [users, setUsers] = useState<any[]>([]);
-
-    const [userSearchQuery, setUserSearchQuery] = useState('');
-    const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
 
     const [selectedMonth, setSelectedMonth] = useState('');
     const [selectedReportType, setSelectedReportType] = useState('Effort Analysis');
@@ -371,54 +368,17 @@ export default function UserPerformanceAnalysis() {
                                     <option value="Account Analysis">Account Analysis</option>
                                 </select>
                             </div>
-                            <div className="w-64 relative">
+                            <div className="w-64">
                                 <label className="block text-xs text-slate-400 mb-1">Select User</label>
-                                <div 
-                                    onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-                                    className="w-full bg-slate-900/50 border border-slate-700 rounded p-2 text-white flex items-center justify-between cursor-pointer"
-                                >
-                                    <span className="truncate">
-                                        {selectedUser ? (users.find(u => u._id === selectedUser) ? (users.find(u => u._id === selectedUser)?.firstName + ' ' + (users.find(u => u._id === selectedUser)?.lastName || '')) : 'Select User') : 'Select User'}
-                                    </span>
-                                    <ChevronDown size={16} className="text-slate-400" />
+                                <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5 [&>div]:bg-slate-900/50 [&>div>div]:border-slate-700 [&>div>div>div]:text-white">
+                                    <CustomSelect 
+                                        options={users.map(u => ({ value: u._id, label: u.firstName + ' ' + (u.lastName || '') + (u.designation ? ' - ' + u.designation : '') }))}
+                                        value={selectedUser}
+                                        onChange={(val) => setSelectedUser(val)}
+                                        placeholder="Search user..."
+                                    />
                                 </div>
-                                
-                                {isUserDropdownOpen && (
-                                    <div className="absolute top-full left-0 mt-1 w-full bg-slate-800 border border-slate-700 rounded-lg shadow-xl z-50 max-h-60 overflow-hidden flex flex-col">
-                                        <div className="p-2 border-b border-slate-700 relative">
-                                            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                                            <input 
-                                                type="text" 
-                                                autoFocus
-                                                placeholder="Search user..."
-                                                value={userSearchQuery}
-                                                onChange={e => setUserSearchQuery(e.target.value)}
-                                                className="w-full bg-slate-900 text-sm text-white rounded pl-8 pr-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                                            />
-                                        </div>
-                                        <div className="overflow-y-auto flex-1 custom-scrollbar">
-                                            {users.filter(u => (u.firstName + ' ' + (u.lastName || '')).toLowerCase().includes(userSearchQuery.toLowerCase())).map(u => (
-                                                <div 
-                                                    key={u._id}
-                                                    onClick={() => {
-                                                        setSelectedUser(u._id);
-                                                        setIsUserDropdownOpen(false);
-                                                        setUserSearchQuery('');
-                                                    }}
-                                                    className={`px-3 py-2 text-sm cursor-pointer hover:bg-sky-600 transition-colors ${selectedUser === u._id ? 'bg-sky-500 text-white' : 'text-slate-300'}`}
-                                                >
-                                                    <div className="font-semibold">{u.firstName} {u.lastName}</div>
-                                                    {u.designation && <div className="text-[10px] text-slate-400 opacity-80 uppercase">{u.designation}</div>}
-                                                </div>
-                                            ))}
-                                            {users.filter(u => (u.firstName + ' ' + (u.lastName || '')).toLowerCase().includes(userSearchQuery.toLowerCase())).length === 0 && (
-                                                <div className="px-3 py-4 text-center text-xs text-slate-500">No users found</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                            </div></div>
 
                         <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
                             {selectedReportType === 'Effort Analysis' && reportData && (
