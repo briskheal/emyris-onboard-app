@@ -61,8 +61,8 @@ export default function AllSecondarySales() {
   };
 
   const getStockistName = (uid: string) => {
-    const st = stockists.find(s => s.uid === uid || s.stockistName === uid);
-    return st ? st.stockistName : uid;
+    const st = stockists.find(s => s.uid === uid || s.businessName === uid || s.name === uid);
+    return st ? (st.businessName || st.name || uid) : uid;
   };
 
   const generateMonths = () => {
