@@ -10,15 +10,15 @@ router.get('/user-performance/rankings', async (req, res) => {
         const monthMap = { 'Jan': 'january', 'Feb': 'february', 'Mar': 'march', 'Apr': 'april', 'May': 'may', 'Jun': 'june', 'Jul': 'july', 'Aug': 'august', 'Sep': 'september', 'Oct': 'october', 'Nov': 'november', 'Dec': 'december' };
         const fullMonth = monthMap[month] || month.toLowerCase();
 
-        const { XlUser, XlSettings, XlPerformanceAnalysis, XlDCR, XlDoctor, sequelize } = require('../db');
+        const { XlUser, XlGlobalSettings, XlPerformanceAnalysis, XlDCR, XlDoctor, sequelize } = require('../db');
         const { Op } = require('sequelize');
 
         const users = await XlUser.findAll();
         
-        const settingsRecord = await XlSettings.findOne({ where: { key: 'preferences' } });
+        const settingsRecord = await XlGlobalSettings.findOne();
         let settings = { weightages: { effort: 30, brand: 15, keyCustomer: 15, customerRoi: 10, outstanding: 15, account: 15 }};
-        if (settingsRecord && settingsRecord.value) {
-            settings = JSON.parse(settingsRecord.value);
+        if (settingsRecord && settingsRecord.settings && settingsRecord.settings.performanceWeightages) {
+            settings.weightages = settingsRecord.settings.performanceWeightages;
         }
         const weightages = settings.weightages || {};
 
