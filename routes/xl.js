@@ -2107,6 +2107,42 @@ module.exports = router;
 
 // ================= SECONDARY SALES =================
 
+
+router.get('/secondary-sales/all', async (req, res) => {
+    try {
+        const { employeeId, designation, month, year } = req.query;
+        let whereClause = {};
+        
+        if (month) whereClause.month = month;
+        if (year) whereClause.year = year;
+        
+        if (designation !== 'ADMIN' && designation !== 'HO' && employeeId) {
+            whereClause.employeeId = employeeId;
+        }
+
+        const sales = await XlSecondarySales.findAll({
+            where: whereClause,
+            order: [['createdAt', 'DESC']]
+        });
+        res.json({ success: true, data: sales });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+router.delete('/secondary-sales/:id', async (req, res) => {
+    try {
+        const sale = await XlSecondarySales.findByPk(req.params.id);
+        if (!sale) return res.status(404).json({ success: false, message: 'Not found' });
+        await sale.destroy();
+        res.json({ success: true });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 router.get('/secondary-sales', async (req, res) => {
     try {
         const sales = await XlSecondarySales.findAll({ order: [['createdAt', 'DESC']] });

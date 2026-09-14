@@ -21,6 +21,7 @@ import EDetailing from './pages/EDetailing';
 import PrimarySales from './pages/PrimarySales';
 import AllPrimarySales from './pages/AllPrimarySales';
 import SecondarySales from './pages/SecondarySales';
+import AllSecondarySales from './pages/AllSecondarySales';
 import Attendance from './pages/Attendance';
 import Reminders from './pages/Reminders';
 import CRM from './pages/CRM';
@@ -72,6 +73,7 @@ function App() {
           <Route path="/extras/primary-sales/edit/:id" element={<PrimarySales />} />
           <Route path="/extras/primary-sales/all" element={<AllPrimarySales />} />
           <Route path="/extras/secondary" element={<SecondarySales />} />
+            <Route path="/extras/secondary/all" element={<AllSecondarySales />} />
           <Route path="/extras/secondary/edit/:id" element={<SecondarySales />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
