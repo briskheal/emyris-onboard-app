@@ -75,7 +75,7 @@ router.get('/user-performance/rankings', async (req, res) => {
             });
 
             const docsRequiringVisits = allocatedDoctors.filter(d => d.category && (d.category.includes('Core') || d.category.includes('SuperCore') || d.category.includes('Non-Core'))).length;
-            const compliancePercent = docsRequiringVisits > 0 ? (compliantDoctorsCount / docsRequiringVisits) * 100 : 100;
+            const compliancePercent = docsRequiringVisits > 0 ? (compliantDoctorsCount / docsRequiringVisits) * 100 : 0;
 
             const maxCompliancePts = maxEffortPts / 2;
             let compliancePts = (compliancePercent / 90) * maxCompliancePts;
@@ -136,8 +136,10 @@ router.get('/user-performance/rankings', async (req, res) => {
             kpiBreakdown['Account'] = accountRes;
             kpiBreakdown['Key Customer'] = keyCustomerRes;
 
+            const fullName = [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ');
             leaderboard.push({
-                user: user.name,
+                user: fullName,
+                hq: user.hq || '-',
                 designation: user.designation,
                 avatar: user.profilePic,
                 totalScore: userScore,
