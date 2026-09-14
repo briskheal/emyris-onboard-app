@@ -22,6 +22,20 @@ export default function UserPerformanceAnalysis() {
     const [selectedReportType, setSelectedReportType] = useState('Effort Analysis');
     const [selectedUser, setSelectedUser] = useState('');
     const [reportData, setReportData] = useState<any>(null);
+    const [rankingsData, setRankingsData] = useState<any[]>([]);
+
+    
+    useEffect(() => {
+        if(activeTab === 'rankings' && selectedMonth) {
+            setLoading(true);
+            const [m, y] = selectedMonth.split(' ');
+            axios.get(`/api/xl/user-performance/rankings?month=${m}&year=${y}`)
+                .then(res => {
+                    if(res.data.success) setRankingsData(res.data.data);
+                })
+                .finally(() => setLoading(false));
+        }
+    }, [activeTab, selectedMonth]);
 
     useEffect(() => {
         const d = new Date();
@@ -342,11 +356,154 @@ export default function UserPerformanceAnalysis() {
                     </div>
                 )}
                 
+                
                 {activeTab === 'rankings' && (
-                    <div className="text-center p-20 text-slate-500">
-                        <Award size={64} className="mx-auto mb-4 opacity-50" />
-                        <h2 className="text-2xl font-bold uppercase tracking-wider mb-2">Rankings</h2>
-                        <p>This module is currently under construction (Phase 3).</p>
+                    <div className="max-w-6xl mx-auto pb-32">
+                        <div className="flex justify-between items-center mb-8">
+                            <div>
+                                <h2 className="text-2xl font-bold uppercase tracking-wider text-slate-100">Global Leaderboard</h2>
+                                <p className="text-sm text-slate-400 mt-1">Ranking of all employees based on overall performance score</p>
+                            </div>
+                            
+                            <div className="w-48">
+                                <label className="block text-xs text-slate-400 mb-1">Select Month</label>
+                                <select 
+                                    className="w-full bg-slate-800 text-slate-200 p-2.5 rounded-lg text-sm border border-slate-700 outline-none focus:border-sky-500 transition-colors cursor-pointer"
+                                    value={selectedMonth} 
+                                    onChange={e => setSelectedMonth(e.target.value)}
+                                >
+                                    {[...Array(6)].map((_, i) => {
+                                        const d = new Date();
+                                        d.setMonth(d.getMonth() - i);
+                                        const val = d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getFullYear();
+                                        return <option key={i} value={val}>{val}</option>;
+                                    })}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Top 3 Podium */}
+                        {rankingsData.length >= 3 && (
+                            <div className="flex justify-center items-end gap-6 mb-12 mt-8">
+                                {/* 2nd Place */}
+                                <div className="flex flex-col items-center">
+                                    <div className="relative">
+                                        <div className="w-20 h-20 rounded-full border-4 border-slate-300 overflow-hidden bg-slate-800 flex items-center justify-center">
+                                            {rankingsData[1].avatar ? <img src={`/api/uploads/${rankingsData[1].avatar}`} className="w-full h-full object-cover" /> : <User size={32} className="text-slate-500" />}
+                                        </div>
+                                        <div className="absolute -bottom-3 -right-2 bg-slate-300 text-slate-900 w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg border-2 border-slate-900">2</div>
+                                    </div>
+                                    <h3 className="font-bold text-slate-200 mt-4 text-center">{rankingsData[1].user}</h3>
+                                    <p className="text-xs text-slate-400">{rankingsData[1].designation}</p>
+                                    <div className="mt-3 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 font-black text-lg text-slate-300">
+                                        {rankingsData[1].totalScore.toFixed(1)} <span className="text-xs font-normal text-slate-500 uppercase tracking-widest ml-1">Pts</span>
+                                    </div>
+                                    <div className="w-24 h-24 bg-slate-800 mt-4 rounded-t-xl border-t border-l border-r border-slate-700 flex items-start justify-center pt-2">
+                                    </div>
+                                </div>
+
+                                {/* 1st Place */}
+                                <div className="flex flex-col items-center">
+                                    <div className="relative">
+                                        <div className="w-28 h-28 rounded-full border-4 border-yellow-400 overflow-hidden bg-slate-800 flex items-center justify-center shadow-[0_0_20px_rgba(250,204,21,0.3)]">
+                                            {rankingsData[0].avatar ? <img src={`/api/uploads/${rankingsData[0].avatar}`} className="w-full h-full object-cover" /> : <User size={48} className="text-slate-500" />}
+                                        </div>
+                                        <div className="absolute -bottom-3 -right-2 bg-yellow-400 text-yellow-900 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg shadow-lg border-2 border-slate-900">1</div>
+                                    </div>
+                                    <h3 className="font-bold text-slate-200 mt-4 text-center text-lg">{rankingsData[0].user}</h3>
+                                    <p className="text-xs text-slate-400">{rankingsData[0].designation}</p>
+                                    <div className="mt-3 bg-slate-800 px-5 py-2.5 rounded-lg border border-yellow-500/30 font-black text-xl text-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.1)]">
+                                        {rankingsData[0].totalScore.toFixed(1)} <span className="text-xs font-normal text-slate-500 uppercase tracking-widest ml-1">Pts</span>
+                                    </div>
+                                    <div className="w-32 h-32 bg-slate-800 mt-4 rounded-t-xl border-t border-l border-r border-slate-700 flex items-start justify-center pt-2">
+                                        <Award className="text-yellow-400/50" size={32} />
+                                    </div>
+                                </div>
+
+                                {/* 3rd Place */}
+                                <div className="flex flex-col items-center">
+                                    <div className="relative">
+                                        <div className="w-20 h-20 rounded-full border-4 border-amber-600 overflow-hidden bg-slate-800 flex items-center justify-center">
+                                            {rankingsData[2].avatar ? <img src={`/api/uploads/${rankingsData[2].avatar}`} className="w-full h-full object-cover" /> : <User size={32} className="text-slate-500" />}
+                                        </div>
+                                        <div className="absolute -bottom-3 -right-2 bg-amber-600 text-amber-100 w-8 h-8 rounded-full flex items-center justify-center font-bold shadow-lg border-2 border-slate-900">3</div>
+                                    </div>
+                                    <h3 className="font-bold text-slate-200 mt-4 text-center">{rankingsData[2].user}</h3>
+                                    <p className="text-xs text-slate-400">{rankingsData[2].designation}</p>
+                                    <div className="mt-3 bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 font-black text-lg text-amber-600">
+                                        {rankingsData[2].totalScore.toFixed(1)} <span className="text-xs font-normal text-slate-500 uppercase tracking-widest ml-1">Pts</span>
+                                    </div>
+                                    <div className="w-24 h-20 bg-slate-800 mt-4 rounded-t-xl border-t border-l border-r border-slate-700 flex items-start justify-center pt-2">
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Full Leaderboard Table */}
+                        <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-xl overflow-hidden">
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <table className="w-full text-sm text-slate-300">
+                                    <thead className="text-xs text-slate-400 uppercase bg-slate-900 border-b border-slate-700">
+                                        <tr>
+                                            <th className="px-6 py-4 text-center font-bold w-16">Rank</th>
+                                            <th className="px-6 py-4 text-left font-bold">Employee</th>
+                                            <th className="px-6 py-4 text-left font-bold">Performance Breakdown</th>
+                                            <th className="px-6 py-4 text-right font-bold w-32">Final Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {rankingsData.map((row) => (
+                                            <tr key={row.user} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors group">
+                                                <td className="px-6 py-4 text-center">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto font-black ${
+                                                        row.rank === 1 ? 'bg-yellow-400/20 text-yellow-400 border border-yellow-400/50' : 
+                                                        row.rank === 2 ? 'bg-slate-300/20 text-slate-300 border border-slate-300/50' :
+                                                        row.rank === 3 ? 'bg-amber-600/20 text-amber-500 border border-amber-600/50' : 
+                                                        'bg-slate-800 text-slate-500 border border-slate-700'
+                                                    }`}>
+                                                        {row.rank}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center overflow-hidden border border-slate-600">
+                                                            {row.avatar ? <img src={`/api/uploads/${row.avatar}`} className="w-full h-full object-cover" /> : <User size={16} className="text-slate-500" />}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-bold text-slate-200">{row.user}</div>
+                                                            <div className="text-xs text-slate-500">{row.designation}</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {Object.keys(row.kpiBreakdown).map(kpi => (
+                                                            <div key={kpi} className="flex items-center gap-1.5 bg-slate-900 border border-slate-700 px-2 py-1 rounded-md text-[10px]">
+                                                                <span className="text-slate-400 uppercase tracking-wider">{kpi}</span>
+                                                                <span className="font-bold text-slate-200">{row.kpiBreakdown[kpi].points.toFixed(1)}<span className="text-slate-600 font-normal">/{row.kpiBreakdown[kpi].max}</span></span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="text-xl font-black text-sky-400">{row.totalScore.toFixed(1)}</div>
+                                                    <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
+                                                        <div className="h-full bg-sky-400 rounded-full" style={{ width: `${Math.min(row.totalScore, 100)}%` }}></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {rankingsData.length === 0 && !loading && (
+                                            <tr>
+                                                <td colSpan={4} className="px-6 py-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">
+                                                    No rankings data found for this month
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 )}
 

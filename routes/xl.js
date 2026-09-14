@@ -1,5 +1,162 @@
 const express = require('express');
 const router = express.Router();
+
+// RANKINGS ENDPOINT
+router.get('/user-performance/rankings', async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        if (!month || !year) return res.status(400).json({ success: false, message: 'Missing month/year' });
+
+        const monthMap = { 'Jan': 'january', 'Feb': 'february', 'Mar': 'march', 'Apr': 'april', 'May': 'may', 'Jun': 'june', 'Jul': 'july', 'Aug': 'august', 'Sep': 'september', 'Oct': 'october', 'Nov': 'november', 'Dec': 'december' };
+        const fullMonth = monthMap[month] || month.toLowerCase();
+
+        const { XlUser, XlSettings, XlPerformanceAnalysis, XlDCR, XlDoctor, sequelize } = require('../db');
+        const { Op } = require('sequelize');
+
+        const users = await XlUser.findAll({ where: { status: 'active' } });
+        
+        const settingsRecord = await XlSettings.findOne({ where: { key: 'preferences' } });
+        let settings = { weightages: { effort: 30, brand: 15, keyCustomer: 15, customerRoi: 10, outstanding: 15, account: 15 }};
+        if (settingsRecord && settingsRecord.value) {
+            settings = JSON.parse(settingsRecord.value);
+        }
+        const weightages = settings.weightages || {};
+
+        let leaderboard = [];
+
+        for (const user of users) {
+            let userScore = 0;
+            let kpiBreakdown = {};
+
+            // 1. EFFORT ANALYSIS
+            let hqCondition = (user.hq || '').trim().toLowerCase();
+            const allocatedDoctors = await XlDoctor.findAll({ 
+                where: sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), hqCondition) 
+            });
+            const totalDocs = allocatedDoctors.length || 1;
+
+            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId, month: fullMonth, year } });
+            
+            let doctorVisitCounts = {}; 
+
+            dcrs.forEach(dcr => {
+                if (dcr.doctorsData) {
+                    try {
+                        const docs = JSON.parse(dcr.doctorsData);
+                        docs.forEach(doc => {
+                            if (doc.uid) {
+                                doctorVisitCounts[doc.uid] = (doctorVisitCounts[doc.uid] || 0) + 1;
+                            }
+                        });
+                    } catch(e) {}
+                }
+            });
+
+            const uniqueDoctorsMet = Object.keys(doctorVisitCounts).length;
+            const coveragePercent = Math.min((uniqueDoctorsMet / totalDocs) * 100, 100);
+            
+            const maxEffortPts = Number(weightages.effort) || 30;
+            const maxCoveragePts = maxEffortPts / 2;
+            let coveragePts = (coveragePercent / 90) * maxCoveragePts;
+            if (coveragePts > maxCoveragePts) coveragePts = maxCoveragePts; 
+
+            let compliantDoctorsCount = 0;
+            allocatedDoctors.forEach(doc => {
+                const visits = doctorVisitCounts[doc.uid] || doctorVisitCounts[doc._id] || 0;
+                let requiredVisits = 0;
+                if (doc.category && doc.category.includes('SuperCore')) requiredVisits = 3;
+                else if (doc.category && doc.category.includes('Core')) requiredVisits = 2;
+                else if (doc.category && doc.category.includes('Non-Core')) requiredVisits = 1;
+
+                if (requiredVisits > 0 && visits >= requiredVisits) {
+                    compliantDoctorsCount++;
+                }
+            });
+
+            const docsRequiringVisits = allocatedDoctors.filter(d => d.category && (d.category.includes('Core') || d.category.includes('SuperCore') || d.category.includes('Non-Core'))).length;
+            const compliancePercent = docsRequiringVisits > 0 ? (compliantDoctorsCount / docsRequiringVisits) * 100 : 100;
+
+            const maxCompliancePts = maxEffortPts / 2;
+            let compliancePts = (compliancePercent / 90) * maxCompliancePts;
+            if (compliancePts > maxCompliancePts) compliancePts = maxCompliancePts;
+
+            const effortPoints = coveragePts + compliancePts;
+            userScore += effortPoints;
+            kpiBreakdown['Effort'] = { points: effortPoints, max: maxEffortPts };
+
+            // 2. SALES KPIs
+            const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId, month: fullMonth, year } });
+            
+            const calcSalesKpi = (dataStr, weightStr) => {
+                const weight = Number(weightStr) || 0;
+                if (!dataStr) return { points: 0, max: weight };
+                let data = [];
+                try {
+                    data = JSON.parse(dataStr);
+                    if (typeof data === 'string') data = JSON.parse(data);
+                } catch(e) { return { points: 0, max: weight }; }
+                
+                let totalPlanned = 0;
+                let totalAchieved = 0;
+                data.forEach(item => {
+                    ['week1', 'week2', 'week3', 'week4', 'week5'].forEach(w => {
+                        if (item[w]) {
+                            totalPlanned += Number(item[w].planned || 0);
+                            totalAchieved += Number(item[w].achieved || 0);
+                        }
+                    });
+                });
+
+                if (totalPlanned === 0) return { points: 0, max: weight };
+                let percent = (totalAchieved / totalPlanned) * 100;
+                if (percent > 100) percent = 100; 
+                return { points: (percent / 100) * weight, max: weight };
+            };
+
+            let brandRes = { points: 0, max: Number(weightages.brand) || 15 };
+            let roiRes = { points: 0, max: Number(weightages.customerRoi) || 10 };
+            let outstandingRes = { points: 0, max: Number(weightages.outstanding) || 15 };
+            let accountRes = { points: 0, max: Number(weightages.account) || 15 };
+            let keyCustomerRes = { points: 0, max: Number(weightages.keyCustomer) || 15 };
+
+            if (perf) {
+                brandRes = calcSalesKpi(perf.brandData, weightages.brand || 15);
+                roiRes = calcSalesKpi(perf.roiData, weightages.customerRoi || 10);
+                outstandingRes = calcSalesKpi(perf.outstandingData, weightages.outstanding || 15);
+                accountRes = calcSalesKpi(perf.accountData, weightages.account || 15);
+                keyCustomerRes = calcSalesKpi(perf.keyCustomerData, weightages.keyCustomer || 15);
+            }
+
+            userScore += brandRes.points + roiRes.points + outstandingRes.points + accountRes.points + keyCustomerRes.points;
+            
+            kpiBreakdown['Brand'] = brandRes;
+            kpiBreakdown['ROI'] = roiRes;
+            kpiBreakdown['Outstanding'] = outstandingRes;
+            kpiBreakdown['Account'] = accountRes;
+            kpiBreakdown['Key Customer'] = keyCustomerRes;
+
+            leaderboard.push({
+                user: user.name,
+                designation: user.designation,
+                avatar: user.profilePic,
+                totalScore: userScore,
+                kpiBreakdown
+            });
+        }
+
+        leaderboard.sort((a, b) => b.totalScore - a.totalScore);
+        
+        // Add rank
+        leaderboard = leaderboard.map((l, idx) => ({ ...l, rank: idx + 1 }));
+
+        res.json({ success: true, data: leaderboard });
+
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to generate rankings' });
+    }
+});
+
 const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, XlHQ, XlDivision, generateId } = require('../db');
 const { Op } = require('sequelize');
 
