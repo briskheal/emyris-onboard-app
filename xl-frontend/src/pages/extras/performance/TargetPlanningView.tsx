@@ -84,7 +84,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
           if (res.data.success) {
             entities = (Array.isArray(res.data.data) ? res.data.data : []).map((d: any) => ({
               id: d.id,
-              name: d.name,
+              name: d.businessName || d.name,
               type: 'Doctor'
             }));
           }
@@ -93,7 +93,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
           if (res.data.success) {
             entities = (Array.isArray(res.data.data) ? res.data.data : []).map((s: any) => ({
               id: s.id,
-              name: s.name,
+              name: s.businessName || s.name,
               type: 'Stockist'
             }));
           }

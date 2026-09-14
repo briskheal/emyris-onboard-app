@@ -53,6 +53,7 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
   const [activeWeek, setActiveWeek] = useState('week1');
   const [targets, setTargets] = useState<any[]>(Array.isArray(initialTargets) ? initialTargets : []);
   const [isSaving, setIsSaving] = useState(false);
+  const [entities, setEntities] = useState<any[]>([]);
 
   useEffect(() => {
       setWeeks(getCalendarWeeks(month, year));
@@ -198,7 +199,13 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
               
               <div className="flex justify-between items-start pl-2">
                 <h3 className="text-base font-bold text-white max-w-[70%]">
-                  {t.entityName} <span className="text-sm font-medium text-slate-200 block mt-0.5">{t.entityType}</span>
+                  {(() => {
+                      if (t.entityId) {
+                          const e = entities.find(x => x.uid === t.entityId || x._id === t.entityId);
+                          if (e) return e.businessName || e.name || t.entityName;
+                      }
+                      return t.entityName;
+                  })()} <span className="text-sm font-medium text-slate-200 block mt-0.5">{t.entityType}</span>
                 </h3>
                 <div className={`px-3 py-1 rounded-full text-xs font-black ${barColor} text-white`}>
                   {progressRaw}%
