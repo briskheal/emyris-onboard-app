@@ -35,20 +35,21 @@ router.get('/user-performance/rankings', async (req, res) => {
             });
             const totalDocs = allocatedDoctors.length || 1;
 
-            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId || null, month: fullMonth, year } });
+            const monthNumMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
+            const monthNum = monthNumMap[month] || '01';
+            const datePrefix = `${year}-${monthNum}-`; // e.g. "2026-09-"
+
+            const dcrs = await XlDCR.findAll({ 
+                where: { 
+                    employeeId: user.employeeId || null, 
+                    date: { [Op.like]: datePrefix + '%' } 
+                } 
+            });
             
             let doctorVisitCounts = {}; 
-
             dcrs.forEach(dcr => {
-                if (dcr.doctorsData) {
-                    try {
-                        const docs = JSON.parse(dcr.doctorsData);
-                        docs.forEach(doc => {
-                            if (doc.uid) {
-                                doctorVisitCounts[doc.uid] = (doctorVisitCounts[doc.uid] || 0) + 1;
-                            }
-                        });
-                    } catch(e) {}
+                if (dcr.entityType === 'Doctor' && dcr.entityId) {
+                    doctorVisitCounts[dcr.entityId] = (doctorVisitCounts[dcr.entityId] || 0) + 1;
                 }
             });
 
