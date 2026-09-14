@@ -107,19 +107,33 @@ router.get('/user-performance/rankings', async (req, res) => {
 
             const effortPoints = coveragePts + compliancePts + drCallPts + chemistCallPts;
             userScore += effortPoints;
-            kpiBreakdown['Effort'] = { points: effortPoints, max: maxEffortPts };
+            const effortPercent = maxEffortPts > 0 ? (effortPoints / maxEffortPts) * 100 : 0;
+            kpiBreakdown['Effort Analysis'] = { 
+                points: effortPoints, 
+                max: maxEffortPts, 
+                percentage: effortPercent,
+                data: {
+                    workingDays: totalDaysWorked,
+                    totalDrCalls: totalDrCalls,
+                    actualDrCallAvg: actualDrCallAvg,
+                    totalChemistCalls: totalChemistCalls,
+                    actualChemistCallAvg: actualChemistCallAvg,
+                    coveragePercent: coveragePercent,
+                    compliancePercent: compliancePercent
+                }
+            };
 
             // 2. SALES KPIs
             const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month: fullMonth, year } });
             
             const calcSalesKpi = (dataStr, weightStr) => {
                 const weight = Number(weightStr) || 0;
-                if (!dataStr) return { points: 0, max: weight };
+                if (!dataStr) return { points: 0, max: weight, percentage: 0, data: [] };
                 let data = [];
                 try {
                     data = JSON.parse(dataStr);
                     if (typeof data === 'string') data = JSON.parse(data);
-                } catch(e) { return { points: 0, max: weight }; }
+                } catch(e) { return { points: 0, max: weight, percentage: 0, data: [] }; }
                 
                 let totalPlanned = 0;
                 let totalAchieved = 0;
@@ -132,10 +146,10 @@ router.get('/user-performance/rankings', async (req, res) => {
                     });
                 });
 
-                if (totalPlanned === 0) return { points: 0, max: weight };
+                if (totalPlanned === 0) return { points: 0, max: weight, percentage: 0, data };
                 let percent = (totalAchieved / totalPlanned) * 100;
-                if (percent > 100) percent = 100; 
-                return { points: (percent / 100) * weight, max: weight };
+                let cappedPercent = percent > 100 ? 100 : percent; 
+                return { points: (cappedPercent / 100) * weight, max: weight, percentage: percent, data };
             };
 
             let brandRes = { points: 0, max: Number(weightages.brand) || 15 };
@@ -154,11 +168,11 @@ router.get('/user-performance/rankings', async (req, res) => {
 
             userScore += brandRes.points + roiRes.points + outstandingRes.points + accountRes.points + keyCustomerRes.points;
             
-            kpiBreakdown['Brand'] = brandRes;
-            kpiBreakdown['ROI'] = roiRes;
-            kpiBreakdown['Outstanding'] = outstandingRes;
-            kpiBreakdown['Account'] = accountRes;
-            kpiBreakdown['Key Customer'] = keyCustomerRes;
+            kpiBreakdown['Brand Analysis'] = brandRes;
+            kpiBreakdown['Customer ROI Analysis'] = roiRes;
+            kpiBreakdown['Outstanding Analysis'] = outstandingRes;
+            kpiBreakdown['Account Analysis'] = accountRes;
+            kpiBreakdown['Key Customer Analysis'] = keyCustomerRes;
 
             const fullName = [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ');
             leaderboard.push({

@@ -7,9 +7,207 @@ import {
 
 } from 'lucide-react';
 
+
+function UserKpisView({ userRow, onBack, onViewKpi }: { userRow: any, onBack: () => void, onViewKpi: (k: string) => void }) {
+    const kpis = [
+        'Customer ROI Analysis',
+        'Outstanding Analysis',
+        'Effort Analysis',
+        'Brand Analysis',
+        'Key Customer Analysis',
+        'Account Analysis'
+    ];
+    return (
+        <div className="max-w-7xl mx-auto pb-32">
+            <div className="mb-6 flex items-center text-[#a1a5b7] gap-2 w-max">
+                <h2 className="text-[15px] font-bold uppercase tracking-wider text-[#b5b5c3] flex items-center gap-2">
+                    <span onClick={onBack} className="cursor-pointer hover:text-white transition-colors">
+                        <ChevronLeft size={20} />
+                    </span>
+                    ANALYSIS REPORTS OF {userRow.user.toUpperCase()}
+                </h2>
+            </div>
+            
+            <div className="bg-[#242b47] rounded-md border border-[#363e63] shadow-xl overflow-hidden mt-6">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-slate-300">
+                        <thead className="bg-[#282f4d] border-b border-[#363e63]">
+                            <tr>
+                                <th className="px-6 py-4 text-center font-bold text-[#b5b5c3] w-24">Sr no.</th>
+                                <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Report Name</th>
+                                <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Percentage &uarr;<br/>Achieved</th>
+                                <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Total Points &uarr;</th>
+                                <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Achieved Points</th>
+                                <th className="px-6 py-4 text-center font-bold text-[#b5b5c3] w-20">View</th>
+                                <th className="px-6 py-4 text-center font-bold text-[#b5b5c3] w-24">Download</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {kpis.map((kpiName, idx) => {
+                                const kpiData = userRow.kpiBreakdown && userRow.kpiBreakdown[kpiName] ? userRow.kpiBreakdown[kpiName] : { percentage: 0, max: 0, points: 0 };
+                                return (
+                                    <tr key={kpiName} className="border-b border-[#363e63] hover:bg-[#2a3152] transition-colors">
+                                        <td className="px-6 py-4 text-center text-[#b5b5c3]">{idx + 1}</td>
+                                        <td className="px-6 py-4 text-center text-[#b5b5c3]">{kpiName}</td>
+                                        <td className="px-6 py-4 text-center text-[#b5b5c3]">{(kpiData.percentage || 0).toFixed(2)} %</td>
+                                        <td className="px-6 py-4 text-center text-[#b5b5c3]">{(kpiData.max || 0).toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-center text-[#b5b5c3]">{(kpiData.points || 0).toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button onClick={() => onViewKpi(kpiName)} className="text-[#a1a5b7] hover:text-white transition-colors">
+                                                <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                            </button>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button className="text-[#a1a5b7] hover:text-white transition-colors">
+                                                <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function KpiDetailsView({ userRow, kpiName, selectedMonth, onBack }: { userRow: any, kpiName: string, selectedMonth: string, onBack: () => void }) {
+    const kpiData = userRow.kpiBreakdown && userRow.kpiBreakdown[kpiName] ? userRow.kpiBreakdown[kpiName] : { percentage: 0, max: 0, points: 0, data: [] };
+    const [monthStr, yearStr] = selectedMonth.split(' ');
+    const isEffort = kpiName === 'Effort Analysis';
+
+    let tableContent;
+    
+    if (isEffort) {
+        const d = kpiData.data || {};
+        tableContent = (
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-slate-300">
+                    <thead className="bg-[#282f4d] border-b border-[#363e63]">
+                        <tr>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Working Days</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Total Dr Calls</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Actual Dr Call Avg</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Total Chemist Calls</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Actual Chemist Call Avg</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Coverage %</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Compliance %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr className="border-b border-[#363e63] hover:bg-[#2a3152] transition-colors">
+                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{d.workingDays || 0}</td>
+                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{d.totalDrCalls || 0}</td>
+                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.actualDrCallAvg || 0).toFixed(2)}</td>
+                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{d.totalChemistCalls || 0}</td>
+                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.actualChemistCallAvg || 0).toFixed(2)}</td>
+                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.coveragePercent || 0).toFixed(2)}%</td>
+                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.compliancePercent || 0).toFixed(2)}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        );
+    } else {
+        const rows = Array.isArray(kpiData.data) ? kpiData.data : [];
+        tableContent = (
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm text-slate-300">
+                    <thead className="bg-[#282f4d] border-b border-[#363e63]">
+                        <tr>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Sr no.</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Entity Name</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Entity Type</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Monthly Target (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 1 Planned (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 1 Achieved (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 2 Planned (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 2 Achieved (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 3 Planned (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 3 Achieved (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 4 Planned (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 4 Achieved (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 5 Planned (₹)</th>
+                            <th className="px-4 py-4 text-center font-bold text-[#b5b5c3] whitespace-nowrap">Week 5 Achieved (₹)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.length === 0 ? (
+                            <tr><td colSpan={14} className="px-6 py-8 text-center text-slate-500">No raw data available for this report</td></tr>
+                        ) : (
+                            rows.map((r: any, i: number) => {
+                                const parseVal = (v: any) => !v || v === '' || Number(v) === 0 ? 'N/A' : Number(v);
+                                return (
+                                <tr key={i} className="border-b border-[#363e63] hover:bg-[#2a3152] transition-colors">
+                                    <td className="px-4 py-4 text-center">{i + 1}</td>
+                                    <td className="px-4 py-4 text-center">{r.entityName || 'N/A'}</td>
+                                    <td className="px-4 py-4 text-center">{r.entityType || 'Doctor'}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.monthlyTarget)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week1?.planned)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week1?.achieved)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week2?.planned)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week2?.achieved)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week3?.planned)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week3?.achieved)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week4?.planned)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week4?.achieved)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week5?.planned)}</td>
+                                    <td className="px-4 py-4 text-center">{parseVal(r.week5?.achieved)}</td>
+                                </tr>
+                                )
+                            })
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-[95%] mx-auto pb-32">
+            <div className="mb-6 flex items-center text-[#a1a5b7] gap-2 w-max">
+                <h2 className="text-[15px] font-bold uppercase tracking-wider text-[#b5b5c3] flex items-center gap-2">
+                    <span onClick={onBack} className="cursor-pointer hover:text-white transition-colors">
+                        <ChevronLeft size={20} />
+                    </span>
+                    {kpiName.toUpperCase()} REPORT OF {userRow.user.toUpperCase()}
+                </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div className="bg-[#242b47] rounded-md border border-[#363e63] p-6 shadow-lg">
+                    <div className="text-[#a1a5b7] font-bold uppercase mb-2">Month</div>
+                    <div className="text-xl font-medium text-slate-200">{monthStr}</div>
+                </div>
+                <div className="bg-[#242b47] rounded-md border border-[#363e63] p-6 shadow-lg">
+                    <div className="text-[#a1a5b7] font-bold uppercase mb-2">Year</div>
+                    <div className="text-xl font-medium text-slate-200">{yearStr}</div>
+                </div>
+                <div className="bg-[#242b47] rounded-md border border-[#363e63] p-6 shadow-lg">
+                    <div className="text-[#a1a5b7] font-bold uppercase mb-2">Percentage Achieved</div>
+                    <div className="text-xl font-medium text-slate-200">{(kpiData.percentage || 0).toFixed(2)} %</div>
+                </div>
+                <div className="bg-[#242b47] rounded-md border border-[#363e63] p-6 shadow-lg">
+                    <div className="text-[#a1a5b7] font-bold uppercase mb-2">Total Points Achieved</div>
+                    <div className="text-xl font-medium text-slate-200">{(kpiData.points || 0).toFixed(2)}/{(kpiData.max || 0).toFixed(2)}</div>
+                </div>
+            </div>
+            
+            <div className="bg-[#242b47] rounded-md border border-[#363e63] shadow-xl mt-6">
+                {tableContent}
+            </div>
+        </div>
+    );
+}
+
 export default function UserPerformanceAnalysis() {
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('settings');
+    const [viewState, setViewState] = useState('leaderboard');
+    const [selectedRankingUser, setSelectedRankingUser] = useState<any>(null);
+    const [selectedKpi, setSelectedKpi] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     
     // Master data
@@ -378,7 +576,7 @@ export default function UserPerformanceAnalysis() {
                 )}
                 
                 
-                {activeTab === 'rankings' && (
+                {activeTab === 'rankings' && viewState === 'leaderboard' && (
                     <div className="max-w-7xl mx-auto pb-32">
                         <div className="mb-6 flex items-center text-[#a1a5b7] gap-2 w-max">
                             <h2 className="text-[15px] font-bold uppercase tracking-wider text-[#b5b5c3] flex items-center gap-2">
@@ -459,7 +657,7 @@ export default function UserPerformanceAnalysis() {
                                                     <span className="text-slate-200 text-[15px]">{row.totalScore.toFixed(2)}</span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <button className="text-[#a1a5b7] hover:text-white transition-colors">
+                                                    <button onClick={() => { setSelectedRankingUser(row); setViewState('user_kpis'); }} className="text-[#a1a5b7] hover:text-white transition-colors">
                                                         <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                                     </button>
                                                 </td>
@@ -484,6 +682,23 @@ export default function UserPerformanceAnalysis() {
                     </div>
                 )}
                 
+                
+                {activeTab === 'rankings' && viewState === 'user_kpis' && selectedRankingUser && (
+                    <UserKpisView 
+                        userRow={selectedRankingUser} 
+                        onBack={() => setViewState('leaderboard')} 
+                        onViewKpi={(kpiKey) => { setSelectedKpi(kpiKey); setViewState('kpi_details'); }} 
+                    />
+                )}
+                {activeTab === 'rankings' && viewState === 'kpi_details' && selectedRankingUser && selectedKpi && (
+                    <KpiDetailsView 
+                        userRow={selectedRankingUser} 
+                        kpiName={selectedKpi}
+                        selectedMonth={selectedMonth}
+                        onBack={() => setViewState('user_kpis')}
+                    />
+                )}
+
                 {activeTab === 'userwise' && (
                     <div className="max-w-6xl mx-auto pb-32">
                         <div className="flex justify-between items-center mb-8">
