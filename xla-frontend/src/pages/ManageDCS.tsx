@@ -34,7 +34,8 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       (d.proprietorName || '').toLowerCase().includes(q) ||
       (d.address || '').toLowerCase().includes(q) ||
       (d.uid || '').toLowerCase().includes(q) ||
-      (d.mobile || '').toLowerCase().includes(q)
+      (d.mobile || '').toLowerCase().includes(q) ||
+        (d.category || '').toLowerCase().includes(q)
     );
   }
 
@@ -102,7 +103,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
   );
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-screen overflow-hidden relative z-10 w-full">
+    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-full overflow-y-auto custom-scrollbar relative z-10 w-full">
       
       {/* TOP TOOLBAR (Fixed) */}
       <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm z-20">
@@ -158,7 +159,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       </div>
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-1 min-w-0 overflow-y-scroll overflow-x-auto bg-[#1e1e2d] custom-scrollbar w-full max-h-[calc(100vh-260px)]">
+      <div className="flex-1 min-w-0 overflow-x-auto bg-[#1e1e2d] w-full">
         <table className="w-full text-left border-collapse min-w-max">
           <thead className="sticky top-0 z-10 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
