@@ -2864,22 +2864,38 @@ router.get('/user-performance/export', async (req, res) => {
         const { userId, month, year } = req.query;
         if (!userId || !month || !year) return res.status(400).send('Missing params');
 
-        const xlsx = require('xlsx');
+        const ExcelJS = require('exceljs');
         const { Op } = require('sequelize');
         
         const user = await XlUser.findByPk(userId);
         if(!user) return res.status(404).send('User not found');
 
-        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month, year } });
+        // Fix Month Mapping to match database ('Sep' -> 'september')
+        const monthMap = { 'Jan': 'january', 'Feb': 'february', 'Mar': 'march', 'Apr': 'april', 'May': 'may', 'Jun': 'june', 'Jul': 'july', 'Aug': 'august', 'Sep': 'september', 'Oct': 'october', 'Nov': 'november', 'Dec': 'december' };
+        const fullMonth = monthMap[month] || month.toLowerCase();
 
-        const wb = xlsx.utils.book_new();
-        const wsData = [];
+        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month: fullMonth, year } });
 
-        wsData.push(['Report Name:', 'Performance Analysis Reports']);
-        wsData.push(['Username:', `${user.firstName || ''} ${user.lastName || ''}`.trim()]);
-        wsData.push(['Report Month:', `${month} ${year}`]);
-        wsData.push(['Generated On:', new Date().toLocaleString()]);
-        wsData.push([]);
+        const workbook = new ExcelJS.Workbook();
+        const sheet = workbook.addWorksheet('Performance_Analysis');
+
+        // Styles
+        const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF282F4D' } }; // Dark blue theme
+        const headerFont = { color: { argb: 'FFFFFFFF' }, bold: true, size: 12 };
+        const titleFont = { bold: true, size: 14 };
+        const borderStyle = {
+            top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+            left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+            bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+            right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+        };
+
+        // Header info
+        sheet.addRow(['Report Name:', 'Performance Analysis Reports']).font = titleFont;
+        sheet.addRow(['Username:', `${user.firstName || ''} ${user.lastName || ''}`.trim()]).font = { bold: true };
+        sheet.addRow(['Report Month:', `${month} ${year}`]).font = { bold: true };
+        sheet.addRow(['Generated On:', new Date().toLocaleString()]).font = { bold: true };
+        sheet.addRow([]);
 
         const parseData = (dataStr) => {
             if(!dataStr) return [];
@@ -2892,10 +2908,31 @@ router.get('/user-performance/export', async (req, res) => {
 
         const getVal = (v) => Number(v) || 0;
 
+        const applyHeaderStyle = (row) => {
+            row.eachCell((cell) => {
+                cell.fill = headerFill;
+                cell.font = headerFont;
+                cell.border = borderStyle;
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            });
+        };
+
+        const applyDataStyle = (row) => {
+            row.eachCell((cell, colNumber) => {
+                cell.border = borderStyle;
+                if (colNumber > 1) cell.alignment = { horizontal: 'center' };
+            });
+        };
+
         const addSalesKpi = (title, dataStr, typeColName, targetColName) => {
-            wsData.push([title]);
+            const titleRow = sheet.addRow([title.toUpperCase()]);
+            titleRow.font = { bold: true, size: 13, color: { argb: 'FF000000' } };
+            titleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAEAEA' } };
+            titleRow.getCell(1).border = borderStyle;
+
+            let headerRow;
             if (title === 'Brand Analysis') {
-                wsData.push([
+                headerRow = sheet.addRow([
                     'Product Name', 'Monthly Sales', 'Monthly Target', 
                     'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
                     'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
@@ -2903,7 +2940,7 @@ router.get('/user-performance/export', async (req, res) => {
                     'Total Plan', 'Total Achieved'
                 ]);
             } else if (title === 'Outstanding Analysis') {
-                wsData.push([
+                headerRow = sheet.addRow([
                     'Stockist Name', 'Total Outstandings', 
                     'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
                     'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
@@ -2911,7 +2948,7 @@ router.get('/user-performance/export', async (req, res) => {
                     'Total Plan', 'Total Achieved'
                 ]);
             } else {
-                wsData.push([
+                headerRow = sheet.addRow([
                     'Entity Name', 'Entity Type', targetColName, 
                     'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
                     'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
@@ -2919,66 +2956,80 @@ router.get('/user-performance/export', async (req, res) => {
                     'Total Plan', 'Total Achieved'
                 ]);
             }
+            
+            applyHeaderStyle(headerRow);
 
             const data = parseData(dataStr);
-            data.forEach(item => {
-                let tp = 0; let ta = 0;
-                ['week1', 'week2', 'week3', 'week4', 'week5', 'week6'].forEach(w => {
-                    if (item[w]) {
-                        tp += getVal(item[w].planned);
-                        ta += getVal(item[w].achieved);
-                    }
-                });
+            if (data.length === 0) {
+                const emptyRow = sheet.addRow(['No data available']);
+                emptyRow.getCell(1).border = borderStyle;
+            } else {
+                data.forEach(item => {
+                    let tp = 0; let ta = 0;
+                    ['week1', 'week2', 'week3', 'week4', 'week5', 'week6'].forEach(w => {
+                        if (item[w]) {
+                            tp += getVal(item[w].planned);
+                            ta += getVal(item[w].achieved);
+                        }
+                    });
 
-                if (title === 'Brand Analysis') {
-                     wsData.push([
-                        item.entityName, 0,
-                        getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                } else if (title === 'Outstanding Analysis') {
-                    wsData.push([
-                        item.entityName, getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                } else {
-                    wsData.push([
-                        item.entityName, item.entityType || 'Doctor',
-                        getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                }
-            });
+                    let dataRow;
+                    if (title === 'Brand Analysis') {
+                        dataRow = sheet.addRow([
+                            item.entityName, 0,
+                            getVal(item.monthlyTarget), 
+                            getVal(item.week1?.planned), getVal(item.week1?.achieved),
+                            getVal(item.week2?.planned), getVal(item.week2?.achieved),
+                            getVal(item.week3?.planned), getVal(item.week3?.achieved),
+                            getVal(item.week4?.planned), getVal(item.week4?.achieved),
+                            getVal(item.week5?.planned), getVal(item.week5?.achieved),
+                            getVal(item.week6?.planned), getVal(item.week6?.achieved),
+                            tp, ta
+                        ]);
+                    } else if (title === 'Outstanding Analysis') {
+                        dataRow = sheet.addRow([
+                            item.entityName, getVal(item.monthlyTarget), 
+                            getVal(item.week1?.planned), getVal(item.week1?.achieved),
+                            getVal(item.week2?.planned), getVal(item.week2?.achieved),
+                            getVal(item.week3?.planned), getVal(item.week3?.achieved),
+                            getVal(item.week4?.planned), getVal(item.week4?.achieved),
+                            getVal(item.week5?.planned), getVal(item.week5?.achieved),
+                            getVal(item.week6?.planned), getVal(item.week6?.achieved),
+                            tp, ta
+                        ]);
+                    } else {
+                        dataRow = sheet.addRow([
+                            item.entityName, item.entityType || 'Doctor',
+                            getVal(item.monthlyTarget), 
+                            getVal(item.week1?.planned), getVal(item.week1?.achieved),
+                            getVal(item.week2?.planned), getVal(item.week2?.achieved),
+                            getVal(item.week3?.planned), getVal(item.week3?.achieved),
+                            getVal(item.week4?.planned), getVal(item.week4?.achieved),
+                            getVal(item.week5?.planned), getVal(item.week5?.achieved),
+                            getVal(item.week6?.planned), getVal(item.week6?.achieved),
+                            tp, ta
+                        ]);
+                    }
+                    applyDataStyle(dataRow);
+                });
+            }
+            sheet.addRow([]);
         };
 
         if (perf) {
             addSalesKpi('Brand Analysis', perf.brandData, 'Product Name', 'Monthly Target');
             addSalesKpi('Outstanding Analysis', perf.outstandingData, 'Stockist Name', 'Total Outstandings');
-            wsData.push([]);
         }
 
         const effortMatrix = await buildEffortMatrix(user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist);
         
-        wsData.push(['Effort Analysis']);
-        wsData.push(['Metrics', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Total']);
+        const effortTitleRow = sheet.addRow(['EFFORT ANALYSIS']);
+        effortTitleRow.font = { bold: true, size: 13, color: { argb: 'FF000000' } };
+        effortTitleRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAEAEA' } };
+        effortTitleRow.getCell(1).border = borderStyle;
+
+        const effortHeaderRow = sheet.addRow(['Metrics', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Total']);
+        applyHeaderStyle(effortHeaderRow);
         
         effortMatrix.forEach(row => {
             const formattedData = row.data.map((val) => {
@@ -2986,10 +3037,11 @@ router.get('/user-performance/export', async (req, res) => {
                 if (row.label.includes('Average')) return val.toFixed(2);
                 return val;
             });
-            wsData.push([row.label, ...formattedData]);
+            const dataRow = sheet.addRow([row.label, ...formattedData]);
+            applyDataStyle(dataRow);
         });
         
-        wsData.push([]);
+        sheet.addRow([]);
 
         if (perf) {
             addSalesKpi('Customer ROI Analysis', perf.roiData, 'Entity Name', 'Activity Amount');
@@ -2997,10 +3049,16 @@ router.get('/user-performance/export', async (req, res) => {
             addSalesKpi('Account Analysis', perf.accountData, 'Hospital Name', 'Monthly Target');
         }
 
-        const ws = xlsx.utils.aoa_to_sheet(wsData);
-        xlsx.utils.book_append_sheet(wb, ws, 'Performance_Analysis');
-        
-        const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        // Adjust column widths
+        sheet.columns.forEach((column, i) => {
+            if (i === 0) {
+                column.width = 35; // Wider for Entity Name / Metrics
+            } else {
+                column.width = 15;
+            }
+        });
+
+        const buffer = await workbook.xlsx.writeBuffer();
         
         res.setHeader('Content-Disposition', `attachment; filename="Performance_Analysis_${user.firstName}_${month}_${year}.xlsx"`);
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
