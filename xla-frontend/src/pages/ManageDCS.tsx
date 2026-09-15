@@ -1,7 +1,7 @@
 import * as XLSX from 'xlsx';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, Search, ArrowUp, Download, MapPinOff } from 'lucide-react';
+import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, ArrowUp, Download, MapPinOff } from 'lucide-react';
 import CustomUserSelect from '../components/CustomUserSelect';
 import { useNavigate } from 'react-router-dom';
 
@@ -87,15 +87,14 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
   };
 
   const ThBase = ({ children, align = 'left', border = true }: { children: React.ReactNode, align?: 'left'|'center', border?: boolean }) => (
-    <th className={`p-4 ${border ? 'border-r border-[#3b3b5a]' : ''} font-bold text-slate-300 text-sm whitespace-nowrap bg-[#252538] text-${align}`}>
+    <th className={`px-2 py-3 ${border ? 'border-r border-[#3b3b5a]' : ''} font-bold text-slate-300 text-sm whitespace-nowrap bg-[#252538] text-${align}`}>
       {children}
     </th>
   );
 
-  const ThWithIcons = ({ label, searchable, sortable }: { label: string, searchable?: boolean, sortable?: boolean }) => (
+  const ThWithIcons = ({ label, sortable }: { label: string, sortable?: boolean }) => (
     <ThBase>
       <div className="flex items-center justify-center gap-2 w-full">
-        {searchable && <Search size={14} className="text-slate-500 shrink-0" />}
         <span className="flex-1 min-w-0 text-center">{label}</span>
         {sortable && <ArrowUp size={14} className="text-slate-500 shrink-0" />}
       </div>
@@ -159,7 +158,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       </div>
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-1 min-w-0 overflow-auto bg-[#1e1e2d] custom-scrollbar w-full">
+      <div className="flex-1 min-w-0 overflow-y-scroll overflow-x-auto bg-[#1e1e2d] custom-scrollbar w-full max-h-[calc(100vh-260px)]">
         <table className="w-full text-left border-collapse min-w-max">
           <thead className="sticky top-0 z-10 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
@@ -169,50 +168,52 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
               
               {filterType === 'Doctor' ? (
                 <>
-                  <ThWithIcons label="Doctor Name" searchable sortable />
-                  <ThWithIcons label="Degree" searchable sortable />
-                  <ThWithIcons label="Specialization" searchable sortable />
-                  <ThWithIcons label="Hospital" searchable />
+                  <ThWithIcons label="Doctor Name" sortable />
+                  <ThWithIcons label="Degree" sortable />
+                  <ThWithIcons label="Specialization" sortable />
+                  <ThWithIcons label="Category" sortable />
+                  <ThWithIcons label="Hospital" />
                 </>
               ) : (
                 <>
-                  <ThWithIcons label="Business Name" searchable sortable />
-                  <ThWithIcons label="Propreitor Name" searchable sortable />
-                  <ThWithIcons label="Address" searchable />
+                  <ThWithIcons label="Business Name" sortable />
+                  <ThWithIcons label="Propreitor Name" sortable />
+                  <ThWithIcons label="Address" />
                 </>
               )}
               
-              <ThWithIcons label="Mobile Number" searchable />
-              <ThWithIcons label="HQ" searchable sortable />
+              <ThWithIcons label="Mobile Number" />
+              <ThWithIcons label="HQ" sortable />
               <ThBase align="center" border={false}>Actions</ThBase>
             </tr>
           </thead>
           <tbody>
             {paginatedList.length === 0 ? (
-              <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-medium">No records found.</td></tr>
+              <tr><td colSpan={10} className="py-12 text-center text-slate-500 font-medium">No records found.</td></tr>
             ) : paginatedList.map((d, i) => (
               <tr key={d._id} className="border-b border-[#3b3b5a]/50 hover:bg-[#252538] text-white text-sm transition-colors">
-                <td className="p-4 border-r border-[#3b3b5a]/50 text-center"><input type="checkbox" checked={selectedIds.includes(d._id)} onChange={() => handleSelectOne(d._id)} className="cursor-pointer accent-sky-500" /></td>
-                <td className="p-4 border-r border-[#3b3b5a]/50 text-center font-medium text-slate-400">{(currentPage - 1) * itemsPerPage + i + 1}</td>
+                <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-center"><input type="checkbox" checked={selectedIds.includes(d._id)} onChange={() => handleSelectOne(d._id)} className="cursor-pointer accent-sky-500" /></td>
+                <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-center font-medium text-slate-400">{(currentPage - 1) * itemsPerPage + i + 1}</td>
                 
                 {filterType === 'Doctor' ? (
                   <>
-                    <td className="p-4 border-r border-[#3b3b5a]/50 font-bold">{d.name}</td>
-                    <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300">{d.degree || '-'}</td>
-                    <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300">{d.specialization || '-'}</td>
-                    <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300 truncate max-w-xs">{d.hospital || '-'}</td>
+                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 font-bold">{d.name}</td>
+                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.degree || '-'}</td>
+                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.specialization || '-'}</td>
+                      <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-emerald-400 font-semibold">{d.category || '-'}</td>
+                      <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300 truncate max-w-[200px]">{d.hospital || '-'}</td>
                   </>
                 ) : (
                   <>
-                    <td className="p-4 border-r border-[#3b3b5a]/50 font-bold text-sky-400">{d.businessName}</td>
-                    <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300">{d.proprietorName || d.name || '-'}</td>
-                    <td className="p-4 border-r border-[#3b3b5a]/50 text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed">{d.address || '-'}</td>
+                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 font-bold text-sky-400">{d.businessName}</td>
+                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.proprietorName || d.name || '-'}</td>
+                    <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300 max-w-[200px] break-words whitespace-normal leading-relaxed">{d.address || '-'}</td>
                   </>
                 )}
                 
-                <td className="p-4 border-r border-[#3b3b5a]/50">{d.mobile || d.contact || '-'}</td>
-                <td className="p-4 border-r border-[#3b3b5a]/50 font-medium">{d.headquarter || '-'}</td>
-                <td className="p-4 text-center">
+                <td className="px-2 py-3 border-r border-[#3b3b5a]/50">{d.mobile || d.contact || '-'}</td>
+                <td className="px-2 py-3 border-r border-[#3b3b5a]/50 font-medium">{d.headquarter || '-'}</td>
+                <td className="px-2 py-3 text-center">
                   <div className="flex items-center justify-center gap-3">
                     <button title="Edit Record" onClick={() => onEdit(d, filterType)} className="text-emerald-400 hover:text-emerald-300 hover:scale-110 transition-transform"><Edit2 size={16} /></button>
                     <button title="Reset GPS Locations" onClick={async () => {
