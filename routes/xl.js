@@ -51,8 +51,8 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
         let target = 0;
         let cat = '';
         if (d.category && d.category.includes('SuperCore')) { superCoreCount++; target = 3; cat = 'SuperCore'; }
-        else if (d.category && d.category.includes('Core')) { coreCount++; target = 2; cat = 'Core'; }
         else if (d.category && d.category.includes('Non-Core')) { nonCoreCount++; target = 1; cat = 'Non-Core'; }
+        else if (d.category && d.category.includes('Core')) { coreCount++; target = 2; cat = 'Core'; }
         expectedDoctorCalls += target;
         if (d.uid) { docTargetMap[d.uid] = target; docCategoryMap[d.uid] = cat; }
         if (d._id) { docTargetMap[d._id] = target; docCategoryMap[d._id] = cat; }
