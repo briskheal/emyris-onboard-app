@@ -160,7 +160,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
       <div className="flex-none overflow-x-auto bg-[#1e1e2d] w-full">
-        <table className="w-full text-left border-collapse min-w-max">
+        <table className="w-full text-left border-collapse">
           <thead className="sticky top-0 z-10 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
               <th className="p-4 border-r border-[#3b3b5a] text-center w-12 bg-[#252538]"><input type="checkbox" onChange={handleSelectAll} checked={paginatedList.length > 0 && selectedIds.length === paginatedList.length} className="cursor-pointer accent-sky-500" /></th>
