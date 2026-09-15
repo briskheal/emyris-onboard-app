@@ -54,8 +54,8 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
         else if (d.category && d.category.includes('Core')) { coreCount++; target = 2; cat = 'Core'; }
         else if (d.category && d.category.includes('Non-Core')) { nonCoreCount++; target = 1; cat = 'Non-Core'; }
         expectedDoctorCalls += target;
-        docTargetMap[d.uid || d._id] = target;
-        docCategoryMap[d.uid || d._id] = cat;
+        if (d.uid) { docTargetMap[d.uid] = target; docCategoryMap[d.uid] = cat; }
+        if (d._id) { docTargetMap[d._id] = target; docCategoryMap[d._id] = cat; }
     });
 
     const totalDocs = doctors.length;
