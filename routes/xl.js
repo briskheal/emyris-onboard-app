@@ -2,198 +2,6 @@ const express = require('express');
 const router = express.Router();
 
 
-// EXCEL EXPORT ENDPOINT
-router.get('/user-performance/export', async (req, res) => {
-    try {
-        const { userId, month, year } = req.query;
-        if (!userId || !month || !year) return res.status(400).send('Missing params');
-
-        const xlsx = require('xlsx');
-        const { Op } = require('sequelize');
-        
-        const user = await XlUser.findByPk(userId);
-        if(!user) return res.status(404).send('User not found');
-
-        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month, year } });
-
-        // Fetch DCRs for Effort Analysis
-        const monthMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
-        let fullMonth = monthMap[month] || '01';
-        let datePrefix = `${year}-${fullMonth}-`;
-        const dcrs = await XlDCR.findAll({
-            where: {
-                userId: user._id,
-                date: { [Op.like]: `${datePrefix}%` }
-            }
-        });
-
-        const wb = xlsx.utils.book_new();
-        const wsData = [];
-
-        wsData.push(['Report Name:', 'Performance Analysis Reports']);
-        wsData.push(['Username:', `${user.firstName || ''} ${user.lastName || ''}`.trim()]);
-        wsData.push(['Report Month:', `${month} ${year}`]);
-        wsData.push(['Generated On:', new Date().toLocaleString()]);
-        wsData.push([]);
-
-        const parseData = (dataStr) => {
-            if(!dataStr) return [];
-            try {
-                let d = JSON.parse(dataStr);
-                if(typeof d === 'string') d = JSON.parse(d);
-                return Array.isArray(d) ? d : [];
-            } catch(e) { return []; }
-        };
-
-        const getVal = (v) => (!v || v === '' || Number(v) === 0) ? 0 : Number(v);
-
-        const addSalesKpi = (title, dataStr, typeColName, targetColName) => {
-            wsData.push([title]);
-            if (title === 'Brand Analysis') {
-                wsData.push([
-                    'Product Name', 'Monthly Sales', 'Monthly Target', 
-                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
-                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
-                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
-                    'Total Plan', 'Total Achieved'
-                ]);
-            } else if (title === 'Outstanding Analysis') {
-                wsData.push([
-                    'Stockist Name', 'Total Outstandings', 
-                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
-                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
-                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
-                    'Total Plan', 'Total Achieved'
-                ]);
-            } else {
-                wsData.push([
-                    'Entity Name', 'Entity Type', targetColName, 
-                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
-                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
-                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
-                    'Total Plan', 'Total Achieved'
-                ]);
-            }
-
-            const data = parseData(dataStr);
-            data.forEach(item => {
-                let tp = 0; let ta = 0;
-                ['week1', 'week2', 'week3', 'week4', 'week5', 'week6'].forEach(w => {
-                    if (item[w]) {
-                        tp += getVal(item[w].planned);
-                        ta += getVal(item[w].achieved);
-                    }
-                });
-
-                if (title === 'Brand Analysis') {
-                     wsData.push([
-                        item.entityName, 0, // Monthly Sales is 0 since it's not stored
-                        getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                } else if (title === 'Outstanding Analysis') {
-                    wsData.push([
-                        item.entityName, getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                } else {
-                    wsData.push([
-                        item.entityName, item.entityType || 'Doctor',
-                        getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                }
-            });
-            wsData.push([]);
-        };
-
-        if(perf) {
-            addSalesKpi('Brand Analysis', perf.brandData, 'Product Name', 'Monthly Target');
-            addSalesKpi('Outstanding Analysis', perf.outstandingData, 'Stockist Name', 'Total Outstandings');
-            
-            wsData.push(['Effort Analysis']);
-            wsData.push(['Metrics', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Total']);
-            
-            const effortMetrics = {
-                workingDays: [0,0,0,0,0,0],
-                drCalls: [0,0,0,0,0,0],
-                chemistCalls: [0,0,0,0,0,0]
-            };
-
-            const getWeek = (dateStr) => {
-                if(!dateStr) return 0;
-                const d = new Date(dateStr).getDate();
-                if(isNaN(d)) return 0;
-                if(d <= 7) return 0;
-                if(d <= 14) return 1;
-                if(d <= 21) return 2;
-                if(d <= 28) return 3;
-                let val = Math.floor((d-1)/7);
-                if (val < 0) val = 0;
-                if (val > 5) val = 5;
-                return val;
-            };
-
-            const uniqueDays = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
-
-            dcrs.forEach(d => {
-                const w = getWeek(d.date);
-                uniqueDays[w].add(d.date);
-                if(d.entityType === 'Doctor') effortMetrics.drCalls[w]++;
-                if(d.entityType === 'Chemist') effortMetrics.chemistCalls[w]++;
-            });
-
-            for(let i=0; i<6; i++) {
-                effortMetrics.workingDays[i] = uniqueDays[i].size;
-            }
-
-            const sum = (arr) => arr.reduce((a,b)=>a+b,0);
-
-            wsData.push(['Working Days', ...effortMetrics.workingDays, sum(effortMetrics.workingDays)]);
-            wsData.push(['Total Dr Calls', ...effortMetrics.drCalls, sum(effortMetrics.drCalls)]);
-            wsData.push(['Total Chemist Calls', ...effortMetrics.chemistCalls, sum(effortMetrics.chemistCalls)]);
-            wsData.push([]);
-
-            addSalesKpi('Customer ROI Analysis', perf.roiData, 'Entity Name', 'Activity Amount');
-            addSalesKpi('Key Customer Analysis', perf.keyCustomerData, 'Entity Name', 'Monthly Target');
-            addSalesKpi('Account Analysis', perf.accountData, 'Hospital Name', 'Monthly Target');
-        } else {
-            wsData.push(['No performance data found for this month']);
-        }
-
-        const ws = xlsx.utils.aoa_to_sheet(wsData);
-        xlsx.utils.book_append_sheet(wb, ws, 'Performance_Analysis');
-        
-        const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-        
-        res.setHeader('Content-Disposition', `attachment; filename="Performance_Analysis_${user.firstName}_${month}_${year}.xlsx"`);
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.send(buffer);
-        
-    } catch(e) {
-        console.error("Export Error:", e);
-        res.status(500).send(e.stack || e.message || 'Unknown error');
-    }
-});
-
 // RANKINGS ENDPOINT
 router.get('/user-performance/rankings', async (req, res) => {
     try {
@@ -2819,6 +2627,200 @@ router.get('/secondary-sales-data/primary-received', async (req, res) => {
         res.json({ success: true, receivedQty });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
+
+// EXCEL EXPORT ENDPOINT
+router.get('/user-performance/export', async (req, res) => {
+    try {
+        const { userId, month, year } = req.query;
+        if (!userId || !month || !year) return res.status(400).send('Missing params');
+
+        const xlsx = require('xlsx');
+        const { Op } = require('sequelize');
+        
+        const user = await XlUser.findByPk(userId);
+        if(!user) return res.status(404).send('User not found');
+
+        const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month, year } });
+
+        // Fetch DCRs for Effort Analysis
+        const monthMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
+        let fullMonth = monthMap[month] || '01';
+        let datePrefix = `${year}-${fullMonth}-`;
+        const dcrs = await XlDCR.findAll({
+            where: {
+                userId: user._id,
+                date: { [Op.like]: `${datePrefix}%` }
+            }
+        });
+
+        const wb = xlsx.utils.book_new();
+        const wsData = [];
+
+        wsData.push(['Report Name:', 'Performance Analysis Reports']);
+        wsData.push(['Username:', `${user.firstName || ''} ${user.lastName || ''}`.trim()]);
+        wsData.push(['Report Month:', `${month} ${year}`]);
+        wsData.push(['Generated On:', new Date().toLocaleString()]);
+        wsData.push([]);
+
+        const parseData = (dataStr) => {
+            if(!dataStr) return [];
+            try {
+                let d = JSON.parse(dataStr);
+                if(typeof d === 'string') d = JSON.parse(d);
+                return Array.isArray(d) ? d : [];
+            } catch(e) { return []; }
+        };
+
+        const getVal = (v) => (!v || v === '' || Number(v) === 0) ? 0 : Number(v);
+
+        const addSalesKpi = (title, dataStr, typeColName, targetColName) => {
+            wsData.push([title]);
+            if (title === 'Brand Analysis') {
+                wsData.push([
+                    'Product Name', 'Monthly Sales', 'Monthly Target', 
+                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
+                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
+                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
+                    'Total Plan', 'Total Achieved'
+                ]);
+            } else if (title === 'Outstanding Analysis') {
+                wsData.push([
+                    'Stockist Name', 'Total Outstandings', 
+                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
+                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
+                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
+                    'Total Plan', 'Total Achieved'
+                ]);
+            } else {
+                wsData.push([
+                    'Entity Name', 'Entity Type', targetColName, 
+                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
+                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
+                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
+                    'Total Plan', 'Total Achieved'
+                ]);
+            }
+
+            const data = parseData(dataStr);
+            data.forEach(item => {
+                let tp = 0; let ta = 0;
+                ['week1', 'week2', 'week3', 'week4', 'week5', 'week6'].forEach(w => {
+                    if (item[w]) {
+                        tp += getVal(item[w].planned);
+                        ta += getVal(item[w].achieved);
+                    }
+                });
+
+                if (title === 'Brand Analysis') {
+                     wsData.push([
+                        item.entityName, 0, // Monthly Sales is 0 since it's not stored
+                        getVal(item.monthlyTarget), 
+                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
+                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
+                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
+                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
+                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
+                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
+                        tp, ta
+                    ]);
+                } else if (title === 'Outstanding Analysis') {
+                    wsData.push([
+                        item.entityName, getVal(item.monthlyTarget), 
+                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
+                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
+                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
+                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
+                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
+                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
+                        tp, ta
+                    ]);
+                } else {
+                    wsData.push([
+                        item.entityName, item.entityType || 'Doctor',
+                        getVal(item.monthlyTarget), 
+                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
+                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
+                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
+                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
+                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
+                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
+                        tp, ta
+                    ]);
+                }
+            });
+            wsData.push([]);
+        };
+
+        if(perf) {
+            addSalesKpi('Brand Analysis', perf.brandData, 'Product Name', 'Monthly Target');
+            addSalesKpi('Outstanding Analysis', perf.outstandingData, 'Stockist Name', 'Total Outstandings');
+            
+            wsData.push(['Effort Analysis']);
+            wsData.push(['Metrics', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Total']);
+            
+            const effortMetrics = {
+                workingDays: [0,0,0,0,0,0],
+                drCalls: [0,0,0,0,0,0],
+                chemistCalls: [0,0,0,0,0,0]
+            };
+
+            const getWeek = (dateStr) => {
+                if(!dateStr) return 0;
+                const d = new Date(dateStr).getDate();
+                if(isNaN(d)) return 0;
+                if(d <= 7) return 0;
+                if(d <= 14) return 1;
+                if(d <= 21) return 2;
+                if(d <= 28) return 3;
+                let val = Math.floor((d-1)/7);
+                if (val < 0) val = 0;
+                if (val > 5) val = 5;
+                return val;
+            };
+
+            const uniqueDays = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
+
+            dcrs.forEach(d => {
+                const w = getWeek(d.date);
+                uniqueDays[w].add(d.date);
+                if(d.entityType === 'Doctor') effortMetrics.drCalls[w]++;
+                if(d.entityType === 'Chemist') effortMetrics.chemistCalls[w]++;
+            });
+
+            for(let i=0; i<6; i++) {
+                effortMetrics.workingDays[i] = uniqueDays[i].size;
+            }
+
+            const sum = (arr) => arr.reduce((a,b)=>a+b,0);
+
+            wsData.push(['Working Days', ...effortMetrics.workingDays, sum(effortMetrics.workingDays)]);
+            wsData.push(['Total Dr Calls', ...effortMetrics.drCalls, sum(effortMetrics.drCalls)]);
+            wsData.push(['Total Chemist Calls', ...effortMetrics.chemistCalls, sum(effortMetrics.chemistCalls)]);
+            wsData.push([]);
+
+            addSalesKpi('Customer ROI Analysis', perf.roiData, 'Entity Name', 'Activity Amount');
+            addSalesKpi('Key Customer Analysis', perf.keyCustomerData, 'Entity Name', 'Monthly Target');
+            addSalesKpi('Account Analysis', perf.accountData, 'Hospital Name', 'Monthly Target');
+        } else {
+            wsData.push(['No performance data found for this month']);
+        }
+
+        const ws = xlsx.utils.aoa_to_sheet(wsData);
+        xlsx.utils.book_append_sheet(wb, ws, 'Performance_Analysis');
+        
+        const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        
+        res.setHeader('Content-Disposition', `attachment; filename="Performance_Analysis_${user.firstName}_${month}_${year}.xlsx"`);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+        
+    } catch(e) {
+        console.error("Export Error:", e);
+        res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
 
