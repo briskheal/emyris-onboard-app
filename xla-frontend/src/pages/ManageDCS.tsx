@@ -159,7 +159,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       </div>
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-1 min-w-0 overflow-x-auto bg-[#1e1e2d] w-full">
+      <div className="flex-none overflow-x-auto bg-[#1e1e2d] w-full">
         <table className="w-full text-left border-collapse min-w-max">
           <thead className="sticky top-0 z-10 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
