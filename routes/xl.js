@@ -3058,6 +3058,9 @@ router.get('/user-performance/export', async (req, res) => {
         const buffer = await workbook.xlsx.writeBuffer();
         
         res.setHeader('Content-Disposition', `attachment; filename="Performance_Analysis_${user.firstName}_${month}_${year}.xlsx"`);
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.send(buffer);
         
