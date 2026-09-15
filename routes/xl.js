@@ -3016,11 +3016,6 @@ router.get('/user-performance/export', async (req, res) => {
             sheet.addRow([]);
         };
 
-        if (perf) {
-            addSalesKpi('Brand Analysis', perf.brandData, 'Product Name', 'Monthly Target');
-            addSalesKpi('Outstanding Analysis', perf.outstandingData, 'Stockist Name', 'Total Outstandings');
-        }
-
         const effortMatrix = await buildEffortMatrix(user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist);
         
         const effortTitleRow = sheet.addRow(['EFFORT ANALYSIS']);
@@ -3044,9 +3039,11 @@ router.get('/user-performance/export', async (req, res) => {
         sheet.addRow([]);
 
         if (perf) {
-            addSalesKpi('Customer ROI Analysis', perf.roiData, 'Entity Name', 'Activity Amount');
-            addSalesKpi('Key Customer Analysis', perf.keyCustomerData, 'Entity Name', 'Monthly Target');
+            addSalesKpi('Brand Analysis', perf.brandData, 'Product Name', 'Monthly Target');
             addSalesKpi('Account Analysis', perf.accountData, 'Hospital Name', 'Monthly Target');
+            addSalesKpi('Key Customer Analysis', perf.keyCustomerData, 'Entity Name', 'Monthly Target');
+            addSalesKpi('Customer ROI Analysis', perf.roiData, 'Entity Name', 'Activity Amount');
+            addSalesKpi('Outstanding Analysis', perf.outstandingData, 'Stockist Name', 'Total Outstandings');
         }
 
         // Adjust column widths
