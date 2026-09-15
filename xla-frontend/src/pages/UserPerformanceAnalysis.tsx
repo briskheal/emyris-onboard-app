@@ -81,31 +81,40 @@ function KpiDetailsView({ userRow, kpiName, selectedMonth, onBack }: { userRow: 
     let tableContent;
     
     if (isEffort) {
-        const d = kpiData.data || {};
+        const matrix = kpiData.matrix || [];
         tableContent = (
             <div className="overflow-x-auto">
                 <table className="w-full text-sm text-slate-300">
                     <thead className="bg-[#282f4d] border-b border-[#363e63]">
                         <tr>
-                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Working Days</th>
-                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Total Dr Calls</th>
-                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Actual Dr Call Avg</th>
-                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Total Chemist Calls</th>
-                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Actual Chemist Call Avg</th>
-                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Coverage %</th>
-                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Compliance %</th>
+                            <th className="px-6 py-4 text-left font-bold text-[#b5b5c3]">Metrics</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Week 1</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Week 2</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Week 3</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Week 4</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Week 5</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Week 6</th>
+                            <th className="px-6 py-4 text-center font-bold text-[#b5b5c3]">Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr className="border-b border-[#363e63] hover:bg-[#2a3152] transition-colors">
-                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{d.workingDays || 0}</td>
-                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{d.totalDrCalls || 0}</td>
-                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.actualDrCallAvg || 0).toFixed(2)}</td>
-                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{d.totalChemistCalls || 0}</td>
-                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.actualChemistCallAvg || 0).toFixed(2)}</td>
-                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.coveragePercent || 0).toFixed(2)}%</td>
-                            <td className="px-6 py-4 text-center text-[#b5b5c3]">{(d.compliancePercent || 0).toFixed(2)}%</td>
-                        </tr>
+                        {matrix.map((row: any, i: number) => (
+                            <tr key={i} className="border-b border-[#363e63] hover:bg-[#282f4d] transition-colors">
+                                <td className="px-6 py-4 font-semibold text-white whitespace-nowrap">{row.label}</td>
+                                {row.data.map((val: any, colIdx: number) => {
+                                    let displayVal = val;
+                                    if (typeof val === 'number') {
+                                        if (row.label.includes('Percentage')) displayVal = val.toFixed(2) + '%';
+                                        else if (row.label.includes('Average')) displayVal = val.toFixed(2);
+                                    }
+                                    return (
+                                        <td key={colIdx} className="px-6 py-4 text-center">
+                                            {displayVal}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>

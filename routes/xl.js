@@ -14,6 +14,196 @@ router.get('/user-performance/rankings', async (req, res) => {
         const { XlUser, XlGlobalSettings, XlPerformanceAnalysis, XlDCR, XlDoctor, sequelize } = require('../db');
         const { Op } = require('sequelize');
 
+
+const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist) => {
+    const monthNumMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
+    const monthNum = monthNumMap[month] || '01';
+    const datePrefix = `${year}-${monthNum}-`;
+
+    // 1. Fetch baselines
+    const doctors = await XlDoctor.findAll({ where: { userAllotted: user.uid || user._id } });
+    const chemists = await XlChemist.findAll({ where: { userAllotted: user.uid || user._id } });
+    const stockists = await XlStockist.findAll({ where: { userAllotted: user.uid || user._id } });
+
+    let nonCoreCount = 0, coreCount = 0, superCoreCount = 0;
+    let expectedDoctorCalls = 0;
+    const docTargetMap = {};
+    doctors.forEach(d => {
+        let target = 0;
+        if (d.category && d.category.includes('SuperCore')) { superCoreCount++; target = 3; }
+        else if (d.category && d.category.includes('Core')) { coreCount++; target = 2; }
+        else if (d.category && d.category.includes('Non-Core')) { nonCoreCount++; target = 1; }
+        expectedDoctorCalls += target;
+        docTargetMap[d.uid || d._id] = target;
+    });
+
+    const totalDocs = doctors.length;
+    const totalChems = chemists.length;
+    const totalStocks = stockists.length;
+
+    // 2. Fetch DCRs
+    const { Op } = require('sequelize');
+    const dcrs = await XlDCR.findAll({
+        where: {
+            [Op.or]: [{ userId: user._id }, { employeeId: user.employeeId || null }],
+            date: { [Op.like]: datePrefix + '%' }
+        }
+    });
+
+    const getWeek = (dateStr) => {
+        if (!dateStr) return 0;
+        const d = new Date(dateStr).getDate();
+        if (isNaN(d)) return 0;
+        if (d <= 7) return 0;
+        if (d <= 14) return 1;
+        if (d <= 21) return 2;
+        if (d <= 28) return 3;
+        let val = Math.floor((d - 1) / 7);
+        if (val < 0) val = 0;
+        if (val > 5) val = 5;
+        return val;
+    };
+
+    // Arrays: index 0 to 5 for Week 1-6, index 6 for Total
+    const initArr = () => [0, 0, 0, 0, 0, 0, 0];
+    
+    // Discrete weekly containers
+    const drCalls = initArr();
+    const chemCalls = initArr();
+    const stockCalls = initArr();
+    const workingDays = initArr();
+    
+    // Tracking sets for unique days/entities per week
+    const weeklyDays = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
+    
+    // Time-series of DCRs
+    const weeklyDrVisits = [{}, {}, {}, {}, {}, {}];
+    const weeklyChemVisits = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
+    const weeklyStockVisits = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
+
+    dcrs.forEach(dcr => {
+        const w = getWeek(dcr.date);
+        weeklyDays[w].add(dcr.date);
+        
+        if (dcr.entityType === 'Doctor' && dcr.entityId) {
+            drCalls[w]++;
+            weeklyDrVisits[w][dcr.entityId] = (weeklyDrVisits[w][dcr.entityId] || 0) + 1;
+        } else if (dcr.entityType === 'Chemist' && dcr.entityId) {
+            chemCalls[w]++;
+            weeklyChemVisits[w].add(dcr.entityId);
+        } else if (dcr.entityType === 'Stockist' && dcr.entityId) {
+            stockCalls[w]++;
+            weeklyStockVisits[w].add(dcr.entityId);
+        } else if (!dcr.entityType && dcr.doctorsData) {
+            // Fallback for older multi-doctor payload
+            try {
+                const docs = JSON.parse(dcr.doctorsData);
+                docs.forEach(doc => {
+                    if (doc.uid) {
+                        drCalls[w]++;
+                        weeklyDrVisits[w][doc.uid] = (weeklyDrVisits[w][doc.uid] || 0) + 1;
+                    }
+                });
+            } catch(e) {}
+        }
+    });
+
+    for (let i = 0; i < 6; i++) {
+        workingDays[i] = weeklyDays[i].size;
+        drCalls[6] += drCalls[i];
+        chemCalls[6] += chemCalls[i];
+        stockCalls[6] += stockCalls[i];
+        workingDays[6] += workingDays[i];
+    }
+
+    // Cumulative Tracking
+    const drUniqueCum = initArr();
+    const drMissedCum = initArr();
+    const chemUniqueCum = initArr();
+    const chemMissedCum = initArr();
+    const stockUniqueCum = initArr();
+    const stockMissedCum = initArr();
+    
+    const drCoverageCum = initArr();
+    const drComplianceCum = initArr();
+    const drCallAvg = initArr();
+
+    const cumulativeDrVisits = {};
+    const cumulativeChem = new Set();
+    const cumulativeStock = new Set();
+
+    for (let i = 0; i < 6; i++) {
+        // Averages
+        drCallAvg[i] = workingDays[i] > 0 ? (drCalls[i] / workingDays[i]) : 0;
+        
+        // Doctors Accumulation
+        Object.keys(weeklyDrVisits[i]).forEach(id => {
+            cumulativeDrVisits[id] = (cumulativeDrVisits[id] || 0) + weeklyDrVisits[i][id];
+        });
+        drUniqueCum[i] = Object.keys(cumulativeDrVisits).length;
+        drMissedCum[i] = Math.max(0, totalDocs - drUniqueCum[i]);
+        
+        drCoverageCum[i] = totalDocs > 0 ? (drUniqueCum[i] / totalDocs) * 100 : 0;
+        
+        // Progressive Compliance: (Sum of valid calls so far / Expected Calls) * 100
+        let validCalls = 0;
+        Object.keys(cumulativeDrVisits).forEach(id => {
+            const actual = cumulativeDrVisits[id];
+            const target = docTargetMap[id] || 0;
+            if (target > 0) {
+                validCalls += Math.min(actual, target);
+            }
+        });
+        drComplianceCum[i] = expectedDoctorCalls > 0 ? (validCalls / expectedDoctorCalls) * 100 : 0;
+
+        // Chemists Accumulation
+        weeklyChemVisits[i].forEach(id => cumulativeChem.add(id));
+        chemUniqueCum[i] = cumulativeChem.size;
+        chemMissedCum[i] = Math.max(0, totalChems - chemUniqueCum[i]);
+
+        // Stockists Accumulation
+        weeklyStockVisits[i].forEach(id => cumulativeStock.add(id));
+        stockUniqueCum[i] = cumulativeStock.size;
+        stockMissedCum[i] = Math.max(0, totalStocks - stockUniqueCum[i]);
+    }
+
+    // Fill Totals (index 6) for Cumulative items (which is just the Week 6 value)
+    drCallAvg[6] = workingDays[6] > 0 ? (drCalls[6] / workingDays[6]) : 0;
+    drUniqueCum[6] = drUniqueCum[5];
+    drMissedCum[6] = drMissedCum[5];
+    drCoverageCum[6] = drCoverageCum[5];
+    drComplianceCum[6] = drComplianceCum[5];
+    
+    chemUniqueCum[6] = chemUniqueCum[5];
+    chemMissedCum[6] = chemMissedCum[5];
+    
+    stockUniqueCum[6] = stockUniqueCum[5];
+    stockMissedCum[6] = stockMissedCum[5];
+
+    const staticArr = (val) => [val, val, val, val, val, val, val];
+
+    return [
+        { label: 'Total Doctors', data: staticArr(totalDocs) },
+        { label: 'Doctors Call', data: drCalls },
+        { label: 'Unique Doctors Visited', data: drUniqueCum },
+        { label: 'Missed Doctors', data: drMissedCum },
+        { label: 'No. Non-Core Doctors', data: staticArr(nonCoreCount) },
+        { label: 'No. Core Doctors', data: staticArr(coreCount) },
+        { label: 'No. Super-Core Doctors', data: staticArr(superCoreCount) },
+        { label: 'Doctors Call Average', data: drCallAvg },
+        { label: "Doctor's Coverage Percentage", data: drCoverageCum },
+        { label: "Doctor's Compliance Percentage", data: drComplianceCum },
+        { label: 'Total Chemists', data: staticArr(totalChems) },
+        { label: 'Chemists Call', data: chemCalls },
+        { label: 'Missed Chemists', data: chemMissedCum },
+        { label: 'Total Stockists', data: staticArr(totalStocks) },
+        { label: 'Stockists Call', data: stockCalls },
+        { label: 'Stockists Met', data: stockUniqueCum },
+        { label: 'Missed Stockists', data: stockMissedCum }
+    ];
+};
+
+
         const users = await XlUser.findAll();
         
         const settingsRecord = await XlGlobalSettings.findOne();
@@ -109,19 +299,12 @@ router.get('/user-performance/rankings', async (req, res) => {
             const effortPoints = coveragePts + compliancePts + drCallPts + chemistCallPts;
             userScore += effortPoints;
             const effortPercent = maxEffortPts > 0 ? (effortPoints / maxEffortPts) * 100 : 0;
+            const effortMatrix = await buildEffortMatrix(user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist);
             kpiBreakdown['Effort Analysis'] = { 
                 points: effortPoints, 
                 max: maxEffortPts, 
                 percentage: effortPercent,
-                data: {
-                    workingDays: totalDaysWorked,
-                    totalDrCalls: totalDrCalls,
-                    actualDrCallAvg: actualDrCallAvg,
-                    totalChemistCalls: totalChemistCalls,
-                    actualChemistCallAvg: actualChemistCallAvg,
-                    coveragePercent: coveragePercent,
-                    compliancePercent: compliancePercent
-                }
+                matrix: effortMatrix
             };
 
             // 2. SALES KPIs
@@ -2646,160 +2829,21 @@ router.get('/user-performance/export', async (req, res) => {
 
         const perf = await XlPerformanceAnalysis.findOne({ where: { employeeId: user.employeeId || null, month, year } });
 
-        // Fetch DCRs for Effort Analysis
-        const monthMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
-        let fullMonth = monthMap[month] || '01';
-        let datePrefix = `${year}-${fullMonth}-`;
-        const dcrs = await XlDCR.findAll({
-            where: {
-                userId: user._id,
-                date: { [Op.like]: `${datePrefix}%` }
-            }
-        });
-
-        const wb = xlsx.utils.book_new();
-        const wsData = [];
-
-        wsData.push(['Report Name:', 'Performance Analysis Reports']);
-        wsData.push(['Username:', `${user.firstName || ''} ${user.lastName || ''}`.trim()]);
-        wsData.push(['Report Month:', `${month} ${year}`]);
-        wsData.push(['Generated On:', new Date().toLocaleString()]);
-        wsData.push([]);
-
-        const parseData = (dataStr) => {
-            if(!dataStr) return [];
-            try {
-                let d = JSON.parse(dataStr);
-                if(typeof d === 'string') d = JSON.parse(d);
-                return Array.isArray(d) ? d : [];
-            } catch(e) { return []; }
-        };
-
-        const getVal = (v) => (!v || v === '' || Number(v) === 0) ? 0 : Number(v);
-
-        const addSalesKpi = (title, dataStr, typeColName, targetColName) => {
-            wsData.push([title]);
-            if (title === 'Brand Analysis') {
-                wsData.push([
-                    'Product Name', 'Monthly Sales', 'Monthly Target', 
-                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
-                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
-                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
-                    'Total Plan', 'Total Achieved'
-                ]);
-            } else if (title === 'Outstanding Analysis') {
-                wsData.push([
-                    'Stockist Name', 'Total Outstandings', 
-                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
-                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
-                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
-                    'Total Plan', 'Total Achieved'
-                ]);
-            } else {
-                wsData.push([
-                    'Entity Name', 'Entity Type', targetColName, 
-                    'Week 1 Plan', 'Week 1 Achieved', 'Week 2 Plan', 'Week 2 Achieved', 
-                    'Week 3 Plan', 'Week 3 Achieved', 'Week 4 Plan', 'Week 4 Achieved', 
-                    'Week 5 Plan', 'Week 5 Achieved', 'Week 6 Plan', 'Week 6 Achieved', 
-                    'Total Plan', 'Total Achieved'
-                ]);
-            }
-
-            const data = parseData(dataStr);
-            data.forEach(item => {
-                let tp = 0; let ta = 0;
-                ['week1', 'week2', 'week3', 'week4', 'week5', 'week6'].forEach(w => {
-                    if (item[w]) {
-                        tp += getVal(item[w].planned);
-                        ta += getVal(item[w].achieved);
-                    }
-                });
-
-                if (title === 'Brand Analysis') {
-                     wsData.push([
-                        item.entityName, 0, // Monthly Sales is 0 since it's not stored
-                        getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                } else if (title === 'Outstanding Analysis') {
-                    wsData.push([
-                        item.entityName, getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                } else {
-                    wsData.push([
-                        item.entityName, item.entityType || 'Doctor',
-                        getVal(item.monthlyTarget), 
-                        getVal(item.week1?.planned), getVal(item.week1?.achieved),
-                        getVal(item.week2?.planned), getVal(item.week2?.achieved),
-                        getVal(item.week3?.planned), getVal(item.week3?.achieved),
-                        getVal(item.week4?.planned), getVal(item.week4?.achieved),
-                        getVal(item.week5?.planned), getVal(item.week5?.achieved),
-                        getVal(item.week6?.planned), getVal(item.week6?.achieved),
-                        tp, ta
-                    ]);
-                }
-            });
-            wsData.push([]);
-        };
-
-        if(perf) {
-            addSalesKpi('Brand Analysis', perf.brandData, 'Product Name', 'Monthly Target');
-            addSalesKpi('Outstanding Analysis', perf.outstandingData, 'Stockist Name', 'Total Outstandings');
-            
-            wsData.push(['Effort Analysis']);
-            wsData.push(['Metrics', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Total']);
-            
-            const effortMetrics = {
-                workingDays: [0,0,0,0,0,0],
-                drCalls: [0,0,0,0,0,0],
-                chemistCalls: [0,0,0,0,0,0]
-            };
-
-            const getWeek = (dateStr) => {
-                if(!dateStr) return 0;
-                const d = new Date(dateStr).getDate();
-                if(isNaN(d)) return 0;
-                if(d <= 7) return 0;
-                if(d <= 14) return 1;
-                if(d <= 21) return 2;
-                if(d <= 28) return 3;
-                let val = Math.floor((d-1)/7);
-                if (val < 0) val = 0;
-                if (val > 5) val = 5;
+        // Generate the Effort Matrix using the shared utility function
+        const effortMatrix = await buildEffortMatrix(user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist);
+        
+        wsData.push(['Effort Analysis']);
+        wsData.push(['Metrics', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6', 'Total']);
+        
+        effortMatrix.forEach(row => {
+            // For percentages and averages, format them to 2 decimal places if needed
+            const formattedData = row.data.map((val, idx) => {
+                if (row.label.includes('Percentage')) return val.toFixed(2) + '%';
+                if (row.label.includes('Average')) return val.toFixed(2);
                 return val;
-            };
-
-            const uniqueDays = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
-
-            dcrs.forEach(d => {
-                const w = getWeek(d.date);
-                uniqueDays[w].add(d.date);
-                if(d.entityType === 'Doctor') effortMetrics.drCalls[w]++;
-                if(d.entityType === 'Chemist') effortMetrics.chemistCalls[w]++;
             });
-
-            for(let i=0; i<6; i++) {
-                effortMetrics.workingDays[i] = uniqueDays[i].size;
-            }
-
-            const sum = (arr) => arr.reduce((a,b)=>a+b,0);
-
-            wsData.push(['Working Days', ...effortMetrics.workingDays, sum(effortMetrics.workingDays)]);
-            wsData.push(['Total Dr Calls', ...effortMetrics.drCalls, sum(effortMetrics.drCalls)]);
-            wsData.push(['Total Chemist Calls', ...effortMetrics.chemistCalls, sum(effortMetrics.chemistCalls)]);
+            wsData.push([row.label, ...formattedData]);
+        });
             wsData.push([]);
 
             addSalesKpi('Customer ROI Analysis', perf.roiData, 'Entity Name', 'Activity Amount');
