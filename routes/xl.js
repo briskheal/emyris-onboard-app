@@ -1,20 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-
-// RANKINGS ENDPOINT
-router.get('/user-performance/rankings', async (req, res) => {
-    try {
-        const { month, year } = req.query;
-        if (!month || !year) return res.status(400).json({ success: false, message: 'Missing month/year' });
-
-        const monthMap = { 'Jan': 'january', 'Feb': 'february', 'Mar': 'march', 'Apr': 'april', 'May': 'may', 'Jun': 'june', 'Jul': 'july', 'Aug': 'august', 'Sep': 'september', 'Oct': 'october', 'Nov': 'november', 'Dec': 'december' };
-        const fullMonth = monthMap[month] || month.toLowerCase();
-
-        const { XlUser, XlGlobalSettings, XlPerformanceAnalysis, XlDCR, XlDoctor, sequelize } = require('../db');
-        const { Op } = require('sequelize');
-
-
 const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist) => {
     const monthNumMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
     const monthNum = monthNumMap[month] || '01';
@@ -243,6 +229,22 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
         { label: 'Missed Stockists', data: stockMissedCum }
     ];
 };
+
+
+
+// RANKINGS ENDPOINT
+router.get('/user-performance/rankings', async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        if (!month || !year) return res.status(400).json({ success: false, message: 'Missing month/year' });
+
+        const monthMap = { 'Jan': 'january', 'Feb': 'february', 'Mar': 'march', 'Apr': 'april', 'May': 'may', 'Jun': 'june', 'Jul': 'july', 'Aug': 'august', 'Sep': 'september', 'Oct': 'october', 'Nov': 'november', 'Dec': 'december' };
+        const fullMonth = monthMap[month] || month.toLowerCase();
+
+        const { XlUser, XlGlobalSettings, XlPerformanceAnalysis, XlDCR, XlDoctor, sequelize } = require('../db');
+        const { Op } = require('sequelize');
+
+
 
 
         const users = await XlUser.findAll();
