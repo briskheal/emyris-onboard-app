@@ -45,7 +45,7 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
     const { Op } = require('sequelize');
     const dcrs = await XlDCR.findAll({
         where: {
-            [Op.or]: [{ userId: user._id }, { employeeId: user.employeeId || null }],
+            employeeId: user.employeeId || null,
             date: { [Op.like]: datePrefix + '%' }
         }
     });
