@@ -106,7 +106,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
     <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] min-h-screen relative z-10">
       
       {/* TOP TOOLBAR (Fixed) */}
-      <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-40">
+      <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-[60]">
         <button onClick={() => {}} className="text-sky-400 font-bold mb-6 hover:underline flex items-center gap-2 w-fit text-sm">
           <ArrowLeft size={16} /> EDIT / DELETE
         </button>
