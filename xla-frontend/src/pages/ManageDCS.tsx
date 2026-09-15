@@ -103,7 +103,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
   );
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] min-h-screen relative z-10 w-full">
+    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] min-h-screen relative z-10">
       
       {/* TOP TOOLBAR (Fixed) */}
       <div className="sticky top-0 flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm z-50">
@@ -678,7 +678,7 @@ export default function ManageDCS() {
       {activeTab === 'create_doctor' && <CreateDoctorTab />}
       {activeTab === 'create_chemist' && <CreateChemistTab />}
       {activeTab === 'create_stockist' && <CreateStockistTab />}
-      <div className="flex-1 min-w-0 w-full" style={{ display: (activeTab === 'edit_delete' && !editingRecord) ? 'flex' : 'none' }}>
+      <div className="flex-1 min-w-0" style={{ display: (activeTab === 'edit_delete' && !editingRecord) ? 'flex' : 'none' }}>
         <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} users={users} fetchData={fetchData} />
       </div>
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Doctor' && <CreateDoctorTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
