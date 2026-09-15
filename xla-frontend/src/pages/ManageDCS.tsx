@@ -35,7 +35,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       (d.address || '').toLowerCase().includes(q) ||
       (d.uid || '').toLowerCase().includes(q) ||
       (d.mobile || '').toLowerCase().includes(q) ||
-        (d.category || '').toLowerCase().includes(q)
+        ((q === 'core') ? (d.category || '').toLowerCase().startsWith('core') : (d.category || '').toLowerCase().includes(q))
     );
   }
 
@@ -103,10 +103,10 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
   );
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-full overflow-y-auto custom-scrollbar relative z-10 w-full">
+    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] min-h-screen relative z-10 w-full">
       
       {/* TOP TOOLBAR (Fixed) */}
-      <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm z-20">
+      <div className="sticky top-0 flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm z-50">
         <button onClick={() => {}} className="text-sky-400 font-bold mb-6 hover:underline flex items-center gap-2 w-fit text-sm">
           <ArrowLeft size={16} /> EDIT / DELETE
         </button>
@@ -642,13 +642,13 @@ export default function ManageDCS() {
   };
 
   return (
-    <div className="flex h-screen bg-slate-900 font-sans relative overflow-hidden">
+    <div className="flex min-h-screen bg-slate-900 font-sans relative">
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-sky-900/20 blur-[120px]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-900/20 blur-[120px]"></div>
       </div>
       
-      <div className="w-64 shrink-0 bg-slate-900/80 border-r border-slate-800 flex flex-col relative z-10 backdrop-blur-xl">
+      <div className="w-64 shrink-0 bg-slate-900/80 border-r border-slate-800 flex flex-col sticky top-0 h-screen z-40 backdrop-blur-xl">
         <div className="p-8 border-b border-slate-800 flex flex-col gap-4">
           <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
             <ArrowLeft size={18} /> <span className="font-black text-xs tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
