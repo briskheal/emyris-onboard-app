@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 
-function UserKpisView({ userRow, onBack, onViewKpi }: { userRow: any, onBack: () => void, onViewKpi: (k: string) => void }) {
+function UserKpisView({ userRow, selectedMonth, onBack, onViewKpi }: { userRow: any, selectedMonth: string, onBack: () => void, onViewKpi: (k: string) => void }) { userRow: any, onBack: () => void, onViewKpi: (k: string) => void }) {
     const kpis = [
         'Customer ROI Analysis',
         'Outstanding Analysis',
@@ -58,7 +58,7 @@ function UserKpisView({ userRow, onBack, onViewKpi }: { userRow: any, onBack: ()
                                             </button>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button className="text-[#a1a5b7] hover:text-white transition-colors">
+                                            <button onClick={() => handleDownloadExcel(userRow.userId, selectedMonth)} className="text-[#a1a5b7] hover:text-white transition-colors">
                                                 <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                             </button>
                                         </td>
@@ -200,6 +200,16 @@ function KpiDetailsView({ userRow, kpiName, selectedMonth, onBack }: { userRow: 
             </div>
         </div>
     );
+}
+
+
+function handleDownloadExcel(userId: string, selectedMonth: string) {
+    if (!userId) {
+        alert('User ID is missing');
+        return;
+    }
+    const [month, year] = selectedMonth.split(' ');
+    window.location.href = `/api/xl/user-performance/export?userId=${userId}&month=${month}&year=${year}`;
 }
 
 export default function UserPerformanceAnalysis() {
@@ -662,7 +672,7 @@ export default function UserPerformanceAnalysis() {
                                                     </button>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <button className="text-[#a1a5b7] hover:text-white transition-colors">
+                                                    <button onClick={() => handleDownloadExcel(row.userId, selectedMonth)} className="text-[#a1a5b7] hover:text-white transition-colors">
                                                         <svg className="w-5 h-5 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                                     </button>
                                                 </td>
@@ -685,6 +695,7 @@ export default function UserPerformanceAnalysis() {
                 
                 {activeTab === 'rankings' && viewState === 'user_kpis' && selectedRankingUser && (
                     <UserKpisView 
+                        selectedMonth={selectedMonth}
                         userRow={selectedRankingUser} 
                         onBack={() => setViewState('leaderboard')} 
                         onViewKpi={(kpiKey) => { setSelectedKpi(kpiKey); setViewState('kpi_details'); }} 
