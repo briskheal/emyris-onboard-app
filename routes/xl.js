@@ -21,9 +21,27 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
     const datePrefix = `${year}-${monthNum}-`;
 
     // 1. Fetch baselines
-    const doctors = await XlDoctor.findAll({ where: { userAllotted: user.uid || user._id } });
-    const chemists = await XlChemist.findAll({ where: { userAllotted: user.uid || user._id } });
-    const stockists = await XlStockist.findAll({ where: { userAllotted: user.uid || user._id } });
+    const { Op } = require('sequelize');
+    const { sequelize } = require('../db');
+    const hqCondition = (user.hq || '').trim().toLowerCase();
+    
+    const getWhere = () => {
+        const conditions = [];
+        if (user.uid) conditions.push({ userAllotted: user.uid });
+        if (user._id) conditions.push({ userAllotted: user._id });
+        if (user.employeeId) conditions.push({ userAllotted: user.employeeId });
+        if (user.email) conditions.push({ userAllotted: user.email });
+        
+        if (hqCondition) {
+            conditions.push(sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), hqCondition));
+        }
+        
+        return conditions.length > 0 ? { [Op.or]: conditions } : { _id: 'never_match' };
+    };
+
+    const doctors = await XlDoctor.findAll({ where: getWhere() });
+    const chemists = await XlChemist.findAll({ where: getWhere() });
+    const stockists = await XlStockist.findAll({ where: getWhere() });
 
     let nonCoreCount = 0, coreCount = 0, superCoreCount = 0;
     let expectedDoctorCalls = 0;
@@ -42,7 +60,6 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
     const totalStocks = stockists.length;
 
     // 2. Fetch DCRs
-    const { Op } = require('sequelize');
     const dcrs = await XlDCR.findAll({
         where: {
             employeeId: user.employeeId || null,
