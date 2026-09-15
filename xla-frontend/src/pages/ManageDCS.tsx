@@ -106,7 +106,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
     <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] min-h-screen relative z-10">
       
       {/* TOP TOOLBAR (Fixed) */}
-      <div className="sticky top-0 flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm z-50">
+      <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-40">
         <button onClick={() => {}} className="text-sky-400 font-bold mb-6 hover:underline flex items-center gap-2 w-fit text-sm">
           <ArrowLeft size={16} /> EDIT / DELETE
         </button>
@@ -159,9 +159,9 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       </div>
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-none overflow-x-auto bg-[#1e1e2d] w-full">
+      <div className="flex-none bg-[#1e1e2d] w-full">
         <table className="w-full text-left border-collapse">
-          <thead className="sticky top-0 z-10 shadow-md">
+          <thead className="sticky top-0 z-50 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
               <th className="p-4 border-r border-[#3b3b5a] text-center w-12 bg-[#252538]"><input type="checkbox" onChange={handleSelectAll} checked={paginatedList.length > 0 && selectedIds.length === paginatedList.length} className="cursor-pointer accent-sky-500" /></th>
               
