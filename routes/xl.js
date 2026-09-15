@@ -46,13 +46,16 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
     let nonCoreCount = 0, coreCount = 0, superCoreCount = 0;
     let expectedDoctorCalls = 0;
     const docTargetMap = {};
+    const docCategoryMap = {};
     doctors.forEach(d => {
         let target = 0;
-        if (d.category && d.category.includes('SuperCore')) { superCoreCount++; target = 3; }
-        else if (d.category && d.category.includes('Core')) { coreCount++; target = 2; }
-        else if (d.category && d.category.includes('Non-Core')) { nonCoreCount++; target = 1; }
+        let cat = '';
+        if (d.category && d.category.includes('SuperCore')) { superCoreCount++; target = 3; cat = 'SuperCore'; }
+        else if (d.category && d.category.includes('Core')) { coreCount++; target = 2; cat = 'Core'; }
+        else if (d.category && d.category.includes('Non-Core')) { nonCoreCount++; target = 1; cat = 'Non-Core'; }
         expectedDoctorCalls += target;
         docTargetMap[d.uid || d._id] = target;
+        docCategoryMap[d.uid || d._id] = cat;
     });
 
     const totalDocs = doctors.length;
@@ -144,6 +147,9 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
     const drCoverageCum = initArr();
     const drComplianceCum = initArr();
     const drCallAvg = initArr();
+    const nonCoreCum = initArr();
+    const coreCum = initArr();
+    const superCoreCum = initArr();
 
     const cumulativeDrVisits = {};
     const cumulativeChem = new Set();
@@ -173,6 +179,21 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
         });
         drComplianceCum[i] = expectedDoctorCalls > 0 ? (validCalls / expectedDoctorCalls) * 100 : 0;
 
+        let nonCoreMet = 0;
+        let coreMet = 0;
+        let superCoreMet = 0;
+
+        Object.keys(cumulativeDrVisits).forEach(id => {
+            const cat = docCategoryMap[id];
+            if (cat === 'Non-Core') nonCoreMet++;
+            else if (cat === 'Core') coreMet++;
+            else if (cat === 'SuperCore') superCoreMet++;
+        });
+
+        nonCoreCum[i] = `${nonCoreMet} / ${nonCoreCount}`;
+        coreCum[i] = `${coreMet} / ${coreCount}`;
+        superCoreCum[i] = `${superCoreMet} / ${superCoreCount}`;
+
         // Chemists Accumulation
         weeklyChemVisits[i].forEach(id => cumulativeChem.add(id));
         chemUniqueCum[i] = cumulativeChem.size;
@@ -190,6 +211,9 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
     drMissedCum[6] = drMissedCum[5];
     drCoverageCum[6] = drCoverageCum[5];
     drComplianceCum[6] = drComplianceCum[5];
+    nonCoreCum[6] = nonCoreCum[5];
+    coreCum[6] = coreCum[5];
+    superCoreCum[6] = superCoreCum[5];
     
     chemUniqueCum[6] = chemUniqueCum[5];
     chemMissedCum[6] = chemMissedCum[5];
@@ -204,9 +228,9 @@ const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, 
         { label: 'Doctors Call', data: drCalls },
         { label: 'Unique Doctors Visited', data: drUniqueCum },
         { label: 'Missed Doctors', data: drMissedCum },
-        { label: 'No. Non-Core Doctors', data: staticArr(nonCoreCount) },
-        { label: 'No. Core Doctors', data: staticArr(coreCount) },
-        { label: 'No. Super-Core Doctors', data: staticArr(superCoreCount) },
+        { label: 'Non-Core Doctors (Met/Total)', data: nonCoreCum },
+        { label: 'Core Doctors (Met/Total)', data: coreCum },
+        { label: 'Super-Core Doctors (Met/Total)', data: superCoreCum },
         { label: 'Doctors Call Average', data: drCallAvg },
         { label: "Doctor's Coverage Percentage", data: drCoverageCum },
         { label: "Doctor's Compliance Percentage", data: drComplianceCum },
