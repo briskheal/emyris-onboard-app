@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 
-function UserKpisView({ userRow, selectedMonth, onBack, onViewKpi }: { userRow: any, selectedMonth: string, onBack: () => void, onViewKpi: (k: string) => void }) { userRow: any, onBack: () => void, onViewKpi: (k: string) => void }) {
+function UserKpisView({ userRow, selectedMonth, onBack, onViewKpi }: { userRow: any, selectedMonth: string, onBack: () => void, onViewKpi: (k: string) => void }) {
     const kpis = [
         'Customer ROI Analysis',
         'Outstanding Analysis',
