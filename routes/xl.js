@@ -139,12 +139,17 @@ router.get('/user-performance/export', async (req, res) => {
             };
 
             const getWeek = (dateStr) => {
+                if(!dateStr) return 0;
                 const d = new Date(dateStr).getDate();
+                if(isNaN(d)) return 0;
                 if(d <= 7) return 0;
                 if(d <= 14) return 1;
                 if(d <= 21) return 2;
                 if(d <= 28) return 3;
-                return Math.min(Math.floor((d-1)/7), 5);
+                let val = Math.floor((d-1)/7);
+                if (val < 0) val = 0;
+                if (val > 5) val = 5;
+                return val;
             };
 
             const uniqueDays = [new Set(), new Set(), new Set(), new Set(), new Set(), new Set()];
@@ -185,7 +190,7 @@ router.get('/user-performance/export', async (req, res) => {
         
     } catch(e) {
         console.error("Export Error:", e);
-        res.status(500).send('Server Error generating export');
+        res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
 
