@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Edit2, Info, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import CustomUserSelect from '../components/CustomUserSelect';
 
 export default function Expense() {
   const navigate = useNavigate();
@@ -208,15 +209,7 @@ export default function Expense() {
             {/* DESKTOP USER SELECTOR */}
             <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
               <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Select User</label>
-              <select 
-                value={selectedUser}
-                onChange={e => setSelectedUser(e.target.value)}
-                className="w-full bg-[#0b0f19] border border-slate-700/60 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500 cursor-pointer appearance-none"
-              >
-                {users.map(u => (
-                  <option key={u.employeeId} value={u.employeeId}>{u.firstName} {u.lastName} ({u.designation || 'Staff'})</option>
-                ))}
-              </select>
+              <CustomUserSelect users={users} selectedUser={selectedUser} onChange={(id) => setSelectedUser(id)} />
             </div>
 
             {/* ACTION MENU */}
