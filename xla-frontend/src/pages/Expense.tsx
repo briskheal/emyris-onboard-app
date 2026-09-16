@@ -1,8 +1,9 @@
 
 import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Edit2, Info, Eye, ChevronDown, Calendar, Search, User } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Edit2, Info, Eye, ChevronDown, Calendar, } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import CustomUserSelect from '../components/CustomUserSelect';
 
 export default function Expense() {
   const navigate = useNavigate();
@@ -15,10 +16,8 @@ export default function Expense() {
   
   const [isMonthOpen, setIsMonthOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isUserOpen, setIsUserOpen] = useState(false);
-  const [filterStatus, setFilterStatus] = useState('All');
-  const [userSearch, setUserSearch] = useState('');
-
+    const [filterStatus, setFilterStatus] = useState('All');
+  
   const [rawExpenses, setRawExpenses] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
@@ -36,8 +35,7 @@ export default function Expense() {
       const target = e.target as HTMLElement;
       if (!target.closest('.month-dropdown')) setIsMonthOpen(false);
       if (!target.closest('.filter-dropdown')) setIsFilterOpen(false);
-      if (!target.closest('.user-dropdown')) setIsUserOpen(false);
-    };
+          };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
@@ -201,14 +199,9 @@ export default function Expense() {
       return `${d.toLocaleString('default', { month: 'short' })}, ${selectedYear}`;
   };
 
-  const activeUserInfo = users.find(u => u.employeeId === selectedUser);
-  const filteredUsers = users.filter(u => 
-      (u.firstName+' '+u.lastName).toLowerCase().includes(userSearch.toLowerCase()) || 
-      (u.designation||'').toLowerCase().includes(userSearch.toLowerCase())
-  );
-
+    
   return (
-    <div className="min-h-screen md:h-dvh bg-[#0b0f19] flex flex-col text-slate-100 font-sans pb-24 md:pb-0 relative overflow-hidden">
+    <div className="bg-[#0b0f19] flex flex-col text-slate-100 font-sans pb-24 md:pb-0 relative w-full">
       <div className="md:hidden flex items-center gap-4 px-5 pt-12 pb-4 bg-[#0b0f19] border-b border-slate-800 sticky top-0 z-10 shadow-lg">
         <button onClick={() => navigate(-1)} className="text-white active:scale-95 transition-transform flex items-center gap-1">
           <ArrowLeft size={22} />
@@ -219,7 +212,7 @@ export default function Expense() {
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col px-5 py-4 md:p-8 overflow-y-auto custom-scrollbar">
+      <div className="flex-1 flex flex-col px-5 py-4 md:p-8">
         <div className="hidden md:block mb-6">
           <div className="bg-[#1e271c] border border-emerald-500/30 rounded-xl p-3 shadow-lg flex items-center gap-3">
             <Info className="text-emerald-400 shrink-0" size={18} />
@@ -285,55 +278,10 @@ export default function Expense() {
 
             <div className="flex-1 hidden md:block"></div>
 
-            <div className="flex flex-col gap-1.5 min-w-[300px] user-dropdown relative">
+            <div className="flex flex-col gap-1.5 min-w-[300px] relative">
               <label className="text-[11px] font-bold text-emerald-400 tracking-wide text-right">Select User</label>
-              <div 
-                onClick={() => setIsUserOpen(!isUserOpen)}
-                className="w-full bg-[#1e2336] border border-emerald-500/50 text-white rounded-lg pl-2 pr-4 py-1.5 text-sm font-semibold flex items-center justify-between cursor-pointer hover:bg-[#252b42] transition-colors shadow-[0_0_10px_rgba(16,185,129,0.1)]"
-              >
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center overflow-hidden">
-                        <User size={16} className="text-slate-300" />
-                    </div>
-                    <div className="flex flex-col text-left">
-                        <span className="text-[13px] font-bold text-white leading-none mb-1">{activeUserInfo?.firstName} {activeUserInfo?.lastName}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase leading-none tracking-wider">{activeUserInfo?.designation || 'Staff'}</span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-px h-5 bg-slate-600"></div>
-                    <ChevronDown size={16} className="text-emerald-400" />
-                </div>
-              </div>
-              {isUserOpen && (
-                  <div className="absolute top-[100%] right-0 w-full mt-1 bg-[#151c2c] border border-[#3b82f6] rounded-lg shadow-2xl overflow-hidden z-50 flex flex-col max-h-[400px]">
-                      <div className="p-3 border-b border-slate-700/50 sticky top-0 bg-[#151c2c]">
-                          <div className="relative">
-                              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                              <input 
-                                  type="text" 
-                                  placeholder="Search users..." 
-                                  value={userSearch}
-                                  onChange={e => setUserSearch(e.target.value)}
-                                  className="w-full bg-[#0b0f19] border border-slate-700 rounded text-sm text-white pl-9 pr-3 py-2 outline-none focus:border-sky-500"
-                              />
-                          </div>
-                      </div>
-                      <div className="overflow-y-auto custom-scrollbar">
-                          {filteredUsers.map(u => (
-                              <div 
-                                  key={u.employeeId}
-                                  onClick={() => { setSelectedUser(u.employeeId); setIsUserOpen(false); setUserSearch(''); }}
-                                  className="px-4 py-3 text-[13px] font-medium text-slate-200 hover:bg-[#3b82f6] hover:text-white cursor-pointer transition-colors border-b border-slate-800/50"
-                              >
-                                  {u.firstName} {u.lastName} <span className="text-slate-400 ml-1">({u.designation || 'Staff'})</span>
-                              </div>
-                          ))}
-                      </div>
-                  </div>
-              )}
+              <CustomUserSelect users={users} selectedUser={selectedUser} onChange={(id) => setSelectedUser(id)} />
             </div>
-
           </div>
         </div>
 
@@ -370,7 +318,7 @@ export default function Expense() {
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Misc.</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Total ↑</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300">Remarks</th>
-                  <th className="p-4 text-[11px] font-bold text-slate-300 text-center sticky right-0 bg-[#242b42] z-10 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">View</th>
+                  <th className="p-4 text-[11px] font-bold text-slate-300 text-center sticky right-0 bg-[#242b42] z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
@@ -389,7 +337,7 @@ export default function Expense() {
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{item.misc || '-'}</td>
                     <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{item.total || '-'}</td>
                     <td className="p-4 text-[12px] font-medium text-slate-400 max-w-[150px] truncate" title={item.dayRemarks}>{item.dayRemarks || '-'}</td>
-                    <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-10 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">
+                    <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer">
                       {item.day !== 'SUN' && (
                         <button 
                           onClick={() => handleOpenModal(item)}
@@ -413,7 +361,7 @@ export default function Expense() {
                     <td className="p-4 text-sky-400 text-[14px] text-right">{expenses.totals.misc || '0'}</td>
                     <td className="p-4 text-sky-400 text-[14px] text-right border-r border-slate-700/30">{expenses.totals.total || '0'}</td>
                     <td className="p-4 bg-transparent border-r border-slate-700/30"></td>
-                    <td className="p-4 bg-[#242b42] sticky right-0 z-10 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] border-l border-slate-700/50"></td>
+                    <td className="p-4 bg-[#242b42] sticky right-0 z-30 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] border-l border-slate-700/50"></td>
                 </tr>
               </tbody>
             </table>
