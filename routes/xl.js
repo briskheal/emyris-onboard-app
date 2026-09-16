@@ -2613,6 +2613,86 @@ router.get('/debug-primary-sales', async (req, res) => {
     } catch(e) { res.status(500).json({ error: e.message }); }
 });
 
+
+
+router.get('/expense/limits', async (req, res) => {
+    try {
+        const { email, date } = req.query;
+        if (!email || !date) return res.status(400).json({ error: 'Missing params' });
+        
+        const { XlUser, XlTourProgram, XlRoute, XlTravelAllowance, XlDesignation } = require('../db');
+        const { Op } = require('sequelize');
+
+        const user = await XlUser.findOne({ where: { employeeId: email } }) || await XlUser.findOne({ where: { email } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        
+        const [year, monthNum, day] = date.split('-');
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const monthStr = monthNames[parseInt(monthNum, 10) - 1];
+        
+        const tp = await XlTourProgram.findOne({ where: { employeeId: user.employeeId, month: monthStr, year } });
+        let workAreaType = 'Out-Station';
+        let toMarket = '';
+        
+        if (tp && tp.entries) {
+            try {
+                let parsed = JSON.parse(tp.entries);
+                if (!Array.isArray(parsed)) parsed = Object.values(parsed);
+                const entry = parsed.find(e => e.date === date || (e.date && e.date.startsWith(date)));
+                if (entry) {
+                    workAreaType = entry.type || entry.areaType || 'Out-Station';
+                    toMarket = entry.toMarket || '';
+                }
+            } catch(e) {}
+        }
+        
+        // Let's get the allowances from XlUser or XlDesignation
+        let uDaily = user.dailyAllowance || 0;
+        let uEx = user.exStationAllowance || 0;
+        let uOut = user.outStationAllowance || 0;
+        let des = user.designation;
+        
+        // Fallback to designation table if not on user
+        if (uDaily === 0 && uEx === 0 && uOut === 0) {
+            const desRecord = await XlDesignation.findOne({ where: { designationName: des } });
+            if (desRecord) {
+                uDaily = desRecord.dailyAllowance || 0;
+                uEx = desRecord.exStationAllowance || 0;
+                uOut = desRecord.outStationAllowance || 0;
+            }
+        }
+        
+        let dailyAllowance = uOut;
+        if (workAreaType === 'Local' || workAreaType === 'HQ') dailyAllowance = uDaily;
+        else if (workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt') dailyAllowance = uEx;
+        
+        let travelAllowance = 0;
+        if ((workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt') && toMarket) {
+            const route = await XlRoute.findOne({ 
+                where: { hq: user.hq, toCity: toMarket } 
+            });
+            if (route && route.distance) {
+                const fareRule = await XlTravelAllowance.findOne({
+                    where: {
+                        state: user.state,
+                        designation: des,
+                        fromDistance: { [Op.lte]: route.distance },
+                        toDistance: { [Op.gte]: route.distance }
+                    }
+                });
+                if (fareRule) {
+                    travelAllowance = route.distance * fareRule.allowancePerKm;
+                }
+            }
+        }
+        
+        res.json({ success: true, dailyAllowance, travelAllowance, workAreaType, toMarket });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch expense limits' });
+    }
+});
+
 module.exports = router;
 
 
