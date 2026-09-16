@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { ArrowLeft, ChevronDown, CheckCircle2, Clock, Plus, Settings as SettingsIcon, Trash2, UserPlus, Eye, Info, DollarSign } from 'lucide-react';
+import { ArrowLeft, ChevronDown, CheckCircle2, Clock, Plus, Settings as SettingsIcon, Trash2, UserPlus, Eye, Info, DollarSign, X, Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function Expense() {
   const navigate = useNavigate();
   const [selectedMonth] = useState('Aug, 2026');
   const [selectedYear] = useState('2026');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedExpense, setSelectedExpense] = useState<any>(null);
 
   const expenses = [
     { date: 1, day: 'SAT', status: 'Allowed', badge: 'Out-Station', workingType: 'Meeting', total: '300', food: '300', workArea: 'Hyderabad Vadodara', fullDate: '1 Aug 2026' },
@@ -170,8 +172,11 @@ export default function Expense() {
                     <td className="p-3 text-sm font-black text-sky-400">{item.total || '-'}</td>
                     <td className="p-3 text-center">
                       {item.day !== 'SUN' && (
-                        <button className="text-slate-500 hover:text-sky-400 transition-colors p-1.5 rounded-lg hover:bg-sky-500/10 inline-flex items-center justify-center">
-                          <Eye size={16} />
+                        <button 
+                          onClick={() => { setSelectedExpense(item); setIsModalOpen(true); }}
+                          className="text-slate-500 hover:text-sky-400 transition-colors p-1.5 rounded-lg hover:bg-sky-500/10 inline-flex items-center justify-center"
+                        >
+                          {item.total ? <Eye size={16} /> : <Edit2 size={16} />}
                         </button>
                       )}
                     </td>
@@ -244,7 +249,7 @@ export default function Expense() {
                         {item.total ? (
                           <span className="text-sm font-bold text-white">Total - ₹ {item.total}</span>
                         ) : (
-                          <span className="text-sm font-bold text-sky-400 underline decoration-sky-400/30">Add Expense</span>
+                          <button onClick={() => { setSelectedExpense(item); setIsModalOpen(true); }} className="text-sm font-bold text-sky-400 underline decoration-sky-400/30 text-left">Add Expense</button>
                         )}
                         {item.badge && (
                           <span className="text-[9px] font-black uppercase text-emerald-400 bg-emerald-400/10 self-start px-2 py-0.5 rounded-full border border-emerald-400/20">
@@ -257,7 +262,10 @@ export default function Expense() {
                   
                   {/* Action Icon */}
                   {(!isSunday && !item.noTp && !item.total) && (
-                    <button className="w-10 h-10 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center active:scale-95 transition-transform">
+                    <button 
+                      onClick={() => { setSelectedExpense(item); setIsModalOpen(true); }}
+                      className="w-10 h-10 rounded-full bg-sky-500/10 text-sky-400 flex items-center justify-center active:scale-95 transition-transform"
+                    >
                       <Plus size={20} strokeWidth={2.5} />
                     </button>
                   )}
@@ -268,6 +276,83 @@ export default function Expense() {
         </div>
 
       </div>
+
+      {/* ADD EXPENSE MODAL */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-[#0b0f19]/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+          <div className="bg-[#131b2c] border border-slate-700/60 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="p-5 border-b border-slate-700/50 flex justify-between items-center bg-[#172136]">
+              <h3 className="text-sm font-black text-white uppercase tracking-widest">Complete Expense</h3>
+              <button onClick={() => { setIsModalOpen(false); setSelectedExpense(null); }} className="text-slate-400 hover:text-rose-400 transition-colors bg-slate-800 p-1.5 rounded-full">
+                <X size={18} strokeWidth={2.5} />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto space-y-5 custom-scrollbar">
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Working Area Type</label>
+                  <div className="w-full bg-[#0b0f19] border border-slate-700/50 text-slate-300 rounded-xl px-4 py-3 text-sm font-medium">
+                    {selectedExpense?.badge || 'Out-Station'}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Working Areas</label>
+                  <div className="w-full bg-[#0b0f19] border border-slate-700/50 text-slate-300 rounded-xl px-4 py-3 text-sm font-medium truncate" title={selectedExpense?.workArea || 'N/A'}>
+                    {selectedExpense?.workArea || 'N/A'}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-5">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Food Allowance</label>
+                    <input type="number" defaultValue={selectedExpense?.food || 0} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Ticket Allowance</label>
+                    <input type="number" defaultValue={0} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Hotel Allowance</label>
+                    <input type="number" defaultValue={0} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Daily Allowance</label>
+                    <input type="number" defaultValue={0} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Miscellaneous Expense</label>
+                    <input type="number" defaultValue={0} className="w-full bg-sky-900/10 border border-sky-500/30 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500 transition-colors placeholder:text-slate-500" placeholder="Enter misc amount..." />
+                  </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Upload Bill / Image</label>
+                <div className="w-full border-2 border-dashed border-slate-600 rounded-xl p-5 flex flex-col items-center justify-center text-slate-400 hover:text-sky-400 hover:border-sky-500 transition-colors cursor-pointer bg-[#0b0f19]">
+                  <div className="bg-slate-800 p-3 rounded-full mb-3">
+                     <Plus size={24} className="text-sky-400" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Tap to upload</span>
+                  <span className="text-[10px] text-slate-500 mt-1">JPG, PNG, PDF up to 5MB</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Remarks</label>
+                <textarea rows={2} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-sky-500 resize-none" placeholder="Add any comments..."></textarea>
+              </div>
+            </div>
+            
+            <div className="p-5 border-t border-slate-700/50 bg-[#172136]">
+              <button onClick={() => { setIsModalOpen(false); setSelectedExpense(null); }} className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-widest py-4 rounded-xl shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all">
+                Submit Expense
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
