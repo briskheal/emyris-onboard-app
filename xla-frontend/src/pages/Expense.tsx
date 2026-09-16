@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, } from 'react';
 
-import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera, Upload } , Edit2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera , Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CustomUserSelect from '../components/CustomUserSelect';
@@ -433,91 +433,173 @@ export default function Expense() {
 
       {/* MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-[#0b0f19]/90 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 transition-opacity">
-          <div className="bg-[#151c2c] border border-slate-700/60 w-full max-w-lg rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden scale-100 transition-transform">
-            <div className="p-5 border-b border-slate-700/50 flex justify-between items-center bg-[#0b0f19]">
-              <div>
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">Complete Expense</h3>
-                <p className="text-[10px] font-bold text-sky-400 uppercase tracking-widest mt-1">{selectedExpense?.fullDateStr || 'New Expense'}</p>
-              </div>
-              <button onClick={() => { setIsModalOpen(false); setSelectedExpense(null); }} className="text-slate-400 hover:text-rose-400 transition-colors bg-slate-800/50 p-2 rounded-full border border-slate-700/50 hover:bg-slate-800 active:scale-95">
+        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
+          <div className="w-full max-w-[1000px] h-[85vh] bg-[#151c2c] rounded-xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-700/50">
+            
+            <div className="flex justify-between items-center p-4 border-b border-slate-800/80 bg-[#0b0f19]">
+              <h2 className="text-[13px] font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <PlusCircle size={16} className="text-sky-400" /> 
+                Add / Edit Expense
+              </h2>
+              <button onClick={() => { setIsModalOpen(false); setSelectedExpense(null); }} className="text-slate-400 hover:text-rose-400 transition-colors p-1.5 rounded-full hover:bg-slate-800 active:scale-95">
                 <X size={18} strokeWidth={2.5} />
               </button>
             </div>
-            
-            <div className="p-6 overflow-y-auto space-y-5 custom-scrollbar">
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-                {!selectedExpense && (
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Expense Date <span className="text-rose-500">*</span></label>
-                    <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-2">Working Area Type</label>
-                  <div className="w-full bg-[#0b0f19] border border-slate-700/50 text-slate-300 rounded-xl px-4 py-3 text-sm font-semibold">
-                    {selectedExpense?.badge || 'Out-Station'}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-2">Working Areas</label>
-                  <div className="w-full bg-[#0b0f19] border border-slate-700/50 text-slate-300 rounded-xl px-4 py-3 text-sm font-semibold truncate" title={selectedExpense?.workArea || 'N/A'}>
-                    {selectedExpense?.workArea || 'N/A'}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-5">
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Food Allowance</label>
-                    <input type="number" value={foodAmt || ''} onChange={e => setFoodAmt(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ticket Allowance</label>
-                    <input type="number" value={ticketAmt || ''} onChange={e => setTicketAmt(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Hotel Allowance</label>
-                    <input type="number" value={hotelAmt || ''} onChange={e => setHotelAmt(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Daily Allowance</label>
-                    <input type="number" value={dailyAmt || ''} onChange={e => setDailyAmt(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Miscellaneous Expense</label>
-                    <input type="number" value={miscAmt || ''} onChange={e => setMiscAmt(parseFloat(e.target.value)||0)} className="w-full bg-sky-900/10 border border-sky-500/30 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500 transition-colors placeholder:text-slate-600" placeholder="Enter misc amount..." />
-                  </div>
-              </div>
 
-              <div>
-                <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Remarks</label>
-                <textarea rows={2} value={remarks} onChange={e => setRemarks(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-sky-500 resize-none" placeholder="Add any comments..."></textarea>
-              </div>
-
-              <div>
-                <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Upload Voucher</label>
-                <div className="relative w-full bg-[#0b0f19] border border-dashed border-slate-700/50 rounded-xl px-4 py-4 text-center hover:border-sky-500/50 transition-colors cursor-pointer group">
-                    <input type="file" accept="image/*" onChange={e => setVoucherFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    <div className="flex flex-col items-center justify-center gap-2">
-                        <Upload size={24} className={voucherFile ? "text-emerald-400" : "text-slate-500 group-hover:text-sky-400"} />
-                        <span className="text-xs font-semibold text-slate-400">{voucherFile ? voucherFile.name : 'Click or drag to upload receipt'}</span>
+            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+              {/* LEFT COLUMN: Calendar & DCR Info */}
+              <div className="w-full md:w-[40%] flex flex-col border-r border-slate-800/80 p-5 bg-[#0b0f19]/30 overflow-y-auto custom-scrollbar">
+                  
+                  {/* Working Area Type / Areas (Top) */}
+                  <div className="grid grid-cols-2 gap-4 mb-5">
+                    <div>
+                        <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Working Area Type</label>
+                        <div className="text-[12px] font-semibold text-slate-300 bg-[#151c2c] py-2 px-3 rounded-lg border border-slate-800/50 min-h-[34px]">
+                          {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.badge || 'Out-Station'}
+                        </div>
                     </div>
-                </div>
+                    <div>
+                        <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Working Areas</label>
+                        <div className="text-[12px] font-semibold text-slate-300 bg-[#151c2c] py-2 px-3 rounded-lg border border-slate-800/50 truncate min-h-[34px]" title={expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}>
+                          {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}
+                        </div>
+                    </div>
+                  </div>
+
+                  {/* Calendar (Middle) */}
+                  <div className="bg-[#151c2c] rounded-xl border border-slate-800/50 p-4 mb-5 flex flex-col shadow-inner">
+                    <div className="text-center mb-3">
+                        <span className="font-bold text-emerald-400 text-sm capitalize">
+                          {new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' })} {selectedYear}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 mb-1">
+                        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                          <div key={d} className="text-center text-[10px] font-bold text-slate-500 uppercase">{d}</div>
+                        ))}
+                    </div>
+                    <div className="grid grid-cols-7 gap-1">
+                        {(() => {
+                          const days = [];
+                          const firstDay = new Date(selectedYear, selectedMonth, 1).getDay();
+                          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+                          
+                          for(let i = 0; i < firstDay; i++) {
+                              days.push(<div key={`empty-${i}`} className="h-8"></div>);
+                          }
+                          
+                          for(let d = 1; d <= daysInMonth; d++) {
+                              const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                              const isSelected = expenseDate === dateStr;
+                              const hasDcr = expenses.daysArr.find((e: any) => e.dateStr === dateStr);
+                              
+                              days.push(
+                                <div 
+                                  key={d} 
+                                  onClick={() => setExpenseDate(dateStr)}
+                                  className={`h-8 flex items-center justify-center rounded-full text-[12px] font-bold cursor-pointer transition-colors ${isSelected ? 'bg-sky-500 text-white shadow-[0_0_10px_rgba(14,165,233,0.5)]' : (hasDcr ? 'text-slate-200 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-800/50')}`}
+                                >
+                                  {d}
+                                </div>
+                              );
+                          }
+                          return days;
+                        })()}
+                    </div>
+                  </div>
+
+                  {/* Remarks (Bottom) */}
+                  <div className="mt-auto">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Remarks</label>
+                      <textarea rows={2} value={remarks} onChange={(e: any) => setRemarks(e.target.value)} className="w-full bg-[#151c2c] border border-slate-800/80 text-white rounded-lg px-3 py-2 text-[12px] font-medium focus:border-sky-500/50 outline-none resize-none placeholder:text-slate-600" placeholder="Enter Remarks..."></textarea>
+                  </div>
+
               </div>
-            </div>
-            
-            <div className="p-5 border-t border-slate-700/50 bg-[#0b0f19]">
-              <button 
-                onClick={handleSubmitExpense}
-                disabled={submitting}
-                className="w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-black text-xs uppercase tracking-widest py-4 rounded-xl shadow-[0_0_15px_rgba(14,165,233,0.3)] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center"
-              >
-                {submitting ? 'Submitting...' : (selectedExpense?.total ? 'Update Expense' : 'Submit Expense')}
-              </button>
+
+              {/* RIGHT COLUMN: Expense Fields */}
+              <div className="w-full md:w-[60%] flex flex-col p-6 overflow-y-auto custom-scrollbar">
+                  
+                  {/* Warning if no Tour Program */}
+                  {!expenses.daysArr.find((e: any) => e.dateStr === expenseDate) && (
+                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-bold px-4 py-3 rounded-lg mb-6 flex items-center gap-2 shrink-0">
+                        <Info size={14} />
+                        No Existing Tour Program. Please Create One to Add Expense.
+                    </div>
+                  )}
+
+                  <div className="flex-1 flex flex-col gap-4 max-w-md mx-auto w-full">
+                    
+                    {/* Reusable row rendering */}
+                    {[
+                      { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true },
+                      { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true },
+                      { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: true },
+                    ].map((f, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 w-[45%]">
+                            <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">{f.label}</label>
+                            {f.icon && <Edit2 size={10} className="text-slate-500" />}
+                          </div>
+                          <div className="w-[55%]">
+                            <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-transparent border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500/50 text-right" placeholder="0" />
+                          </div>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 w-[45%]">
+                          <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">Vehicle Type</label>
+                          <Edit2 size={10} className="text-slate-500" />
+                        </div>
+                        <div className="w-[55%]">
+                          <select className="w-full bg-transparent border border-slate-700/80 text-white text-[12px] font-bold rounded-lg px-2 py-1.5 focus:outline-none focus:border-sky-500/50 appearance-none">
+                              <option className="bg-[#151c2c]">2 Wheeler</option>
+                              <option className="bg-[#151c2c]">4 Wheeler</option>
+                              <option className="bg-[#151c2c]">Public Transport</option>
+                          </select>
+                        </div>
+                    </div>
+
+                    {[
+                      { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: true },
+                      { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false },
+                    ].map((f, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 w-[45%]">
+                            <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">{f.label}</label>
+                            {f.icon && <Edit2 size={10} className="text-slate-500" />}
+                          </div>
+                          <div className="w-[55%]">
+                            <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-transparent border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500/50 text-right" placeholder="0" />
+                          </div>
+                      </div>
+                    ))}
+
+                    <div className="flex items-center justify-between mt-2">
+                        <div className="w-[45%]">
+                          <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">Upload An Image</label>
+                        </div>
+                        <div className="w-[55%] flex items-center">
+                          <label className="w-full bg-sky-900/10 border border-sky-500/30 text-sky-400 text-[11px] font-bold rounded-lg px-3 py-2 cursor-pointer hover:border-sky-500/60 truncate flex items-center justify-between transition-colors">
+                              <span className="truncate pr-2">{voucherFile ? voucherFile.name : 'No file chosen'}</span>
+                              <span className="bg-sky-500 text-white px-2 py-0.5 rounded text-[9px] shrink-0">Choose File</span>
+                              <input type="file" className="hidden" accept="image/*" onChange={(e: any) => setVoucherFile(e.target.files?.[0] || null)} />
+                          </label>
+                        </div>
+                    </div>
+
+                  </div>
+
+                  <div className="flex justify-end mt-auto pt-8">
+                      <button 
+                        onClick={handleSubmitExpense} 
+                        disabled={submitting || !expenses.daysArr.find((e: any) => e.dateStr === expenseDate)} 
+                        className="bg-sky-500 hover:bg-sky-400 text-white text-[12px] font-bold px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 active:scale-95"
+                      >
+                        {submitting ? 'Submitting...' : 'Submit Expense'}
+                      </button>
+                  </div>
+              </div>
             </div>
           </div>
         </div>
@@ -535,8 +617,8 @@ export default function Expense() {
               </div>
               <div className="bg-[#151c2c] rounded-xl overflow-hidden border border-slate-700/50 shadow-2xl flex items-center justify-center min-h-[400px]">
                   <img src={previewVoucherUrl} alt="Voucher" className="max-w-full max-h-[80vh] object-contain" />
-              </div>
-          </div>
+                          </div>
+                    </div>
         </div>
       )}
     </div>
