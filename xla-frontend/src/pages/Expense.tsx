@@ -26,7 +26,7 @@ export default function Expense() {
   
   useEffect(() => {
     if (isModalOpen) {
-      setCalMonth(selectedMonth);
+      setCalMonth(selectedMonth - 1);
       setCalYear(selectedYear);
     }
   }, [isModalOpen, selectedMonth, selectedYear]);
@@ -443,7 +443,7 @@ export default function Expense() {
                         {(() => {
                           const currentType = expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workAreaType || 'Out-Station';
                           const isLocal = currentType === 'Local';
-                          const isExStation = currentType === 'Ex-Station';
+                          const isExStation = (currentType === 'Ex-Station' || currentType === 'Ex-Mkt');
                           
                           return (
                             <>
