@@ -3,6 +3,32 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Edit2, Upload, X, CheckCircle2, Info } from 'lucide-react';
 import axios from 'axios';
 
+const convertToWebp = (file: File): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.src = e.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if(ctx) ctx.drawImage(img, 0, 0);
+        canvas.toBlob((blob) => {
+          if (blob) {
+             const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".webp", { type: 'image/webp' });
+             resolve(newFile);
+          } else reject('Conversion failed');
+        }, 'image/webp', 0.8);
+      };
+      img.onerror = () => reject('Image load failed');
+    };
+    reader.onerror = () => reject('File read failed');
+  });
+};
+
 const getUserId = () => {
   const u = localStorage.getItem('xl_user');
   return u ? JSON.parse(u).employeeId : '';
@@ -119,7 +145,21 @@ export default function Expense() {
     return { days: data, approvedSum, pendingSum };
   }, [selectedYear, selectedMonth, daysInMonth, expenses, tpEntries, holidays]);
 
-  const handleRowClick = (dayData: any) => {
+  const handleRowClick = async (dayData: any) => {
+    if (!dayData.hasExpense) {
+        // Pre-check DCR
+        try {
+           const dcrRes = await axios.get(`/api/xl/dcr/my?email=${getUserId()}&date=${dayData.dateStr}`);
+           const dcrs = dcrRes.data.data || [];
+           if (dcrs.length === 0 || !dcrs.some((d: any) => d.status === 'Submitted' || d.status === 'Approved')) {
+               alert('You must submit your Daily Call Report (DCR) for this date before claiming expenses!');
+               return;
+           }
+        } catch(e) {
+           alert('Failed to verify DCR status.');
+           return;
+        }
+    }
     setSelectedDate(dayData.dateStr);
     if (dayData.hasExpense) {
       setView('view');
@@ -158,7 +198,10 @@ export default function Expense() {
       let uploadedStr = '';
       if (attachments.length > 0) {
          const urls = [];
-         for (const file of attachments) {
+         for (let file of attachments) {
+           if (file.type.startsWith('image/')) {
+              try { file = await convertToWebp(file); } catch(e){}
+           }
            const formData = new FormData();
            formData.append('file', file);
            const upRes = await axios.post('/api/upload', formData);
@@ -215,8 +258,8 @@ export default function Expense() {
             <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
               <CheckCircle2 size={40} className="text-emerald-500" />
             </div>
-            <h2 className="text-emerald-500 font-bold text-xl mb-2">Auto Approved !</h2>
-            <p className="text-slate-300 font-medium text-[15px]">Expense successfully created</p>
+            <h2 className="text-emerald-500 font-bold text-xl mb-2">Successfully Submitted!</h2>
+            <p className="text-slate-300 font-medium text-[15px]">Pending Admin Approval</p>
          </div>
       </div>
     );

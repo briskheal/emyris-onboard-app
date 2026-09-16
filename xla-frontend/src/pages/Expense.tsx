@@ -19,6 +19,7 @@ export default function Expense() {
     const [filterStatus, setFilterStatus] = useState('All');
   
   const [rawExpenses, setRawExpenses] = useState<any[]>([]);
+  const [tpEntries, setTpEntries] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
@@ -76,16 +77,28 @@ export default function Expense() {
     }).catch(console.error);
   }, []);
 
-  const fetchExpenses = () => {
+  const fetchExpenses = async () => {
     if (!selectedUser) return;
-    axios.get(`/api/xl/expense/my?email=${selectedUser}`).then(res => {
-      if (res.data.success) setRawExpenses(res.data.data || []);
-    }).catch(() => {});
+    try {
+      const monthLabel = new Date(selectedYear, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' });
+      const [expRes, tpRes] = await Promise.all([
+        axios.get(`/api/xl/expense/my?email=${selectedUser}`),
+        axios.get(`/api/xl/tour-program/my?email=${selectedUser}&month=${monthLabel}&year=${selectedYear}`)
+      ]);
+      if (expRes.data.success) setRawExpenses(expRes.data.data || []);
+      
+      let parsed = [];
+      if (tpRes.data.success && tpRes.data.data && tpRes.data.data.status === 'Approved') {
+        try { parsed = JSON.parse(tpRes.data.data.entries || '[]'); } catch(e){}
+      }
+      if (!Array.isArray(parsed)) parsed = Object.values(parsed);
+      setTpEntries(parsed);
+    } catch (e) {}
   };
 
   useEffect(() => {
     fetchExpenses();
-  }, [selectedUser]);
+  }, [selectedUser, selectedMonth, selectedYear]);
 
   const expenses = useMemo(() => {
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
@@ -107,6 +120,15 @@ export default function Expense() {
       
       let travel = 0, food = 0, hotel = 0, ticket = 0, daily = 0, misc = 0, total = 0;
       let workArea = '';
+      let workAreaType = 'Out-Station';
+      const tp = tpEntries.find(t => {
+         try { return new Date(t.date).toISOString().split('T')[0] === dateStr; } catch(x){ return t.date === dateStr; }
+      });
+      if (tp) {
+         workArea = tp.workingArea || '';
+         workAreaType = tp.workAreaType || 'Out-Station';
+      }
+      
       let status = '';
 
       dayExps.forEach((e: any) => {
@@ -143,6 +165,7 @@ export default function Expense() {
         fullDateStr,
         travel, food, hotel, ticket, daily, misc, total: total > 0 ? total : null,
         badge: total > 0 ? 'Submitted' : '',
+        workAreaType,
         workArea,
         status: finalStatus,
         noTp: false,
@@ -351,7 +374,7 @@ export default function Expense() {
                      <div>
                         <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Working Area Type</label>
                         <div className="text-[13px] font-bold text-slate-200">
-                           {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.badge || 'Out-Station'}
+                           {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workAreaType || 'Out-Station'}
                         </div>
                      </div>
                      <div>
@@ -417,50 +440,71 @@ export default function Expense() {
 
                      {/* Right: Input Fields */}
                      <div className="w-full md:w-[55%] flex flex-col gap-4">
-                        {[
-                          { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true },
-                          { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true },
-                          { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: true },
-                        ].map((f, i) => (
-                          <div key={i} className="flex items-center justify-between group">
-                              <div className="flex items-center gap-2 w-[40%]">
-                                <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">{f.label}</label>
-                                {f.icon && <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />}
-                              </div>
-                              <div className="w-[60%]">
-                                <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
-                              </div>
-                          </div>
-                        ))}
+                        {(() => {
+                          const currentType = expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workAreaType || 'Out-Station';
+                          const isLocal = currentType === 'Local';
+                          const isExStation = currentType === 'Ex-Station';
+                          
+                          return (
+                            <>
+                              {isExStation && (
+                                <div className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-2 w-[40%]">
+                                      <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">Travel Allowance</label>
+                                    </div>
+                                    <div className="w-[60%]">
+                                      <input type="number" value={ticketAmt || ''} onChange={(e: any) => setTicketAmt(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
+                                    </div>
+                                </div>
+                              )}
 
-                        <div className="flex items-center justify-between group">
-                            <div className="flex items-center gap-2 w-[40%]">
-                              <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">Vehicle Type</label>
-                              <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />
-                            </div>
-                            <div className="w-[60%]">
-                              <select className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500/50 appearance-none">
-                                  <option className="bg-[#151c2c]">2 Wheeler</option>
-                                  <option className="bg-[#151c2c]">4 Wheeler</option>
-                                  <option className="bg-[#151c2c]">Public Transport</option>
-                              </select>
-                            </div>
-                        </div>
+                              {!isLocal && !isExStation && [
+                                { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true },
+                                { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true },
+                                { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: true },
+                              ].map((f, i) => (
+                                <div key={i} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-2 w-[40%]">
+                                      <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">{f.label}</label>
+                                      {f.icon && <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />}
+                                    </div>
+                                    <div className="w-[60%]">
+                                      <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
+                                    </div>
+                                </div>
+                              ))}
 
-                        {[
-                          { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: true },
-                          { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false },
-                        ].map((f, i) => (
-                          <div key={i} className="flex items-center justify-between group">
-                              <div className="flex items-center gap-2 w-[40%]">
-                                <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">{f.label}</label>
-                                {f.icon && <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />}
+                              <div className="flex items-center justify-between group">
+                                  <div className="flex items-center gap-2 w-[40%]">
+                                    <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">Vehicle Type</label>
+                                    <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />
+                                  </div>
+                                  <div className="w-[60%]">
+                                    <select className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500/50 appearance-none">
+                                        <option className="bg-[#151c2c]">2-Wheeler</option>
+                                        <option className="bg-[#151c2c]">4-Wheeler</option>
+                                        <option className="bg-[#151c2c]">Public Transport</option>
+                                    </select>
+                                  </div>
                               </div>
-                              <div className="w-[60%]">
-                                <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
-                              </div>
-                          </div>
-                        ))}
+
+                              {[
+                                { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: true },
+                                { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false },
+                              ].map((f, i) => (
+                                <div key={i} className="flex items-center justify-between group">
+                                    <div className="flex items-center gap-2 w-[40%]">
+                                      <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">{f.label}</label>
+                                      {f.icon && <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />}
+                                    </div>
+                                    <div className="w-[60%]">
+                                      <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
+                                    </div>
+                                </div>
+                              ))}
+                            </>
+                          );
+                        })()}
 
                         <div className="flex items-center justify-between mt-1 group">
                             <div className="w-[40%]">
