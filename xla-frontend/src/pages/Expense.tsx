@@ -1,6 +1,6 @@
+import { useState, useEffect, useMemo, } from 'react';
 
-import { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Edit2, Info, Eye, ChevronDown, Calendar, } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera, Upload } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CustomUserSelect from '../components/CustomUserSelect';
@@ -30,11 +30,19 @@ export default function Expense() {
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [expenseDate, setExpenseDate] = useState('');
+  const [voucherFile, setVoucherFile] = useState<File | null>(null);
+  
+  const [isVoucherPreviewOpen, setIsVoucherPreviewOpen] = useState(false);
+  const [previewVoucherUrl, setPreviewVoucherUrl] = useState('');
+
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
       if (!target.closest('.month-dropdown')) setIsMonthOpen(false);
       if (!target.closest('.filter-dropdown')) setIsFilterOpen(false);
+      if (!target.closest('.actions-dropdown')) setIsActionsOpen(false);
           };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -86,13 +94,13 @@ export default function Expense() {
       const dateStr = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
       const fullDateStr = `${i} ${dt.toLocaleString('default', { month: 'short' })} ${selectedYear}`;
 
-      const dayExps = rawExpenses.filter(e => e.date === dateStr);
+      const dayExps = rawExpenses.filter((e: any) => e.date === dateStr);
       
       let travel = 0, food = 0, hotel = 0, ticket = 0, daily = 0, misc = 0, total = 0;
       let workArea = '';
       let status = '';
 
-      dayExps.forEach(e => {
+      dayExps.forEach((e: any) => {
         const amt = parseFloat(e.amount) || 0;
         total += amt;
         const cat = (e.category || '').toLowerCase();
@@ -146,23 +154,13 @@ export default function Expense() {
     };
   }, [selectedMonth, selectedYear, rawExpenses, filterStatus]);
 
-  const handleOpenModal = (item: any) => {
-    setSelectedExpense(item);
-    setFoodAmt(item.food || 0);
-    setTicketAmt(item.ticket || 0);
-    setHotelAmt(item.hotel || 0);
-    setDailyAmt(item.daily || 0);
-    setMiscAmt(item.misc || 0);
-    setRemarks(item.dayRemarks || '');
-    setIsModalOpen(true);
-  };
-
+  
   const handleSubmitExpense = async () => {
     if (!selectedExpense || !selectedUser) return;
     setSubmitting(true);
     
     const submits = [];
-    const base = { employeeId: selectedUser, date: selectedExpense.dateStr, remarks, status: 'Pending' };
+    const base = { employeeId: selectedUser, date: selectedExpense ? selectedExpense.dateStr : expenseDate, remarks, status: 'Pending' };
 
     if (foodAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Food', amount: foodAmt }));
     if (ticketAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Ticket', amount: ticketAmt }));
@@ -236,7 +234,7 @@ export default function Expense() {
               </div>
               {isMonthOpen && (
                   <div className="absolute top-[100%] left-0 w-full mt-1 bg-[#151c2c] border border-[#3b82f6] rounded-lg shadow-2xl overflow-hidden z-50">
-                      {monthOptions.map((opt, i) => (
+                      {monthOptions.map((opt: any, i: number) => (
                           <div 
                               key={i} 
                               onClick={() => { setSelectedMonth(opt.m); setSelectedYear(opt.y); setIsMonthOpen(false); }}
@@ -294,10 +292,39 @@ export default function Expense() {
               <div className="flex items-center gap-2 shrink-0"><div className="w-3 h-3 rounded-full bg-purple-500"></div><span className="text-[12px] font-bold text-slate-300">Not Submitted</span></div>
             </div>
             
-            <div className="hidden md:flex flex-col justify-end">
-               <button className="flex items-center justify-center gap-2 bg-[#0b0f19] border border-slate-700/60 rounded-full px-4 py-2 text-[12px] font-bold text-slate-300 hover:text-white hover:border-sky-500/50 transition-colors">
+            <div className="hidden md:flex flex-col justify-end relative actions-dropdown z-40">
+               <button 
+                 onClick={() => setIsActionsOpen(!isActionsOpen)}
+                 className="flex items-center justify-center gap-2 bg-[#0b0f19] border border-slate-700/60 rounded-full px-4 py-2 text-[12px] font-bold text-slate-300 hover:text-white hover:border-sky-500/50 transition-colors"
+               >
                  Actions <SettingsIcon size={14} className="text-sky-400" />
                </button>
+               
+               {isActionsOpen && (
+                  <div className="absolute top-[100%] right-0 mt-2 w-32 bg-[#151c2c] border border-slate-700 rounded-lg shadow-2xl overflow-hidden py-1">
+                      <button 
+                        onClick={() => { 
+                          setIsActionsOpen(false); 
+                          setSelectedExpense(null);
+                          setExpenseDate(new Date().toISOString().split('T')[0]);
+                          setFoodAmt(0); setTicketAmt(0); setHotelAmt(0); setDailyAmt(0); setMiscAmt(0); setRemarks(''); setVoucherFile(null);
+                          setIsModalOpen(true); 
+                        }}
+                        className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-300 hover:bg-[#3b82f6] hover:text-white transition-colors flex items-center gap-2"
+                      >
+                        <PlusCircle size={14} /> Add
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setIsActionsOpen(false);
+                          alert('Select an expense row to delete (Implementation pending backend support)');
+                        }}
+                        className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-400 hover:bg-rose-500 hover:text-white transition-colors flex items-center gap-2"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                  </div>
+               )}
             </div>
           </div>
           
@@ -322,7 +349,7 @@ export default function Expense() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
-                {expenses.daysArr.map((item, idx) => (
+                {expenses.daysArr.map((item: any, idx: number) => (
                   <tr key={idx} className="hover:bg-[#1e2336] transition-colors group">
                     <td className="p-4 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{item.date}</td>
                     <td className="p-4 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10">{item.fullDateStr}</td>
@@ -338,12 +365,13 @@ export default function Expense() {
                     <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{item.total || '-'}</td>
                     <td className="p-4 text-[12px] font-medium text-slate-400 max-w-[150px] truncate" title={item.dayRemarks}>{item.dayRemarks || '-'}</td>
                     <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer">
-                      {item.day !== 'SUN' && (
+                      {(item.total || 0) > 0 && (
                         <button 
-                          onClick={() => handleOpenModal(item)}
-                          className="text-slate-400 hover:text-sky-400 p-2 transition-all inline-flex items-center justify-center active:scale-95"
+                          onClick={(e) => { e.stopPropagation(); setPreviewVoucherUrl(item.rawExps[0]?.voucherUrl || 'https://via.placeholder.com/600x800?text=No+Voucher+Found'); setIsVoucherPreviewOpen(true); }}
+                          className="text-slate-400 hover:text-sky-400 p-2 transition-all inline-flex items-center justify-center active:scale-95 z-20 relative"
+                          title="View Voucher"
                         >
-                          {item.total ? <Eye size={16} /> : <Edit2 size={16} />}
+                          <Camera size={18} />
                         </button>
                       )}
                     </td>
@@ -410,7 +438,7 @@ export default function Expense() {
             <div className="p-5 border-b border-slate-700/50 flex justify-between items-center bg-[#0b0f19]">
               <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-widest">Complete Expense</h3>
-                <p className="text-[10px] font-bold text-sky-400 uppercase tracking-widest mt-1">{selectedExpense?.fullDateStr}</p>
+                <p className="text-[10px] font-bold text-sky-400 uppercase tracking-widest mt-1">{selectedExpense?.fullDateStr || 'New Expense'}</p>
               </div>
               <button onClick={() => { setIsModalOpen(false); setSelectedExpense(null); }} className="text-slate-400 hover:text-rose-400 transition-colors bg-slate-800/50 p-2 rounded-full border border-slate-700/50 hover:bg-slate-800 active:scale-95">
                 <X size={18} strokeWidth={2.5} />
@@ -419,6 +447,14 @@ export default function Expense() {
             
             <div className="p-6 overflow-y-auto space-y-5 custom-scrollbar">
               
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+                {!selectedExpense && (
+                  <div className="col-span-1 sm:col-span-2">
+                    <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Expense Date <span className="text-rose-500">*</span></label>
+                    <input type="date" value={expenseDate} onChange={e => setExpenseDate(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-semibold focus:outline-none focus:border-sky-500/80 transition-colors" />
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
                   <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest block mb-2">Working Area Type</label>
@@ -461,6 +497,17 @@ export default function Expense() {
                 <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Remarks</label>
                 <textarea rows={2} value={remarks} onChange={e => setRemarks(e.target.value)} className="w-full bg-[#0b0f19] border border-slate-700/50 text-white rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-sky-500 resize-none" placeholder="Add any comments..."></textarea>
               </div>
+
+              <div>
+                <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest block mb-2">Upload Voucher</label>
+                <div className="relative w-full bg-[#0b0f19] border border-dashed border-slate-700/50 rounded-xl px-4 py-4 text-center hover:border-sky-500/50 transition-colors cursor-pointer group">
+                    <input type="file" accept="image/*" onChange={e => setVoucherFile(e.target.files?.[0] || null)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
+                    <div className="flex flex-col items-center justify-center gap-2">
+                        <Upload size={24} className={voucherFile ? "text-emerald-400" : "text-slate-500 group-hover:text-sky-400"} />
+                        <span className="text-xs font-semibold text-slate-400">{voucherFile ? voucherFile.name : 'Click or drag to upload receipt'}</span>
+                    </div>
+                </div>
+              </div>
             </div>
             
             <div className="p-5 border-t border-slate-700/50 bg-[#0b0f19]">
@@ -472,6 +519,23 @@ export default function Expense() {
                 {submitting ? 'Submitting...' : (selectedExpense?.total ? 'Update Expense' : 'Submit Expense')}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* VOUCHER PREVIEW MODAL */}
+      {isVoucherPreviewOpen && (
+        <div className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 transition-opacity">
+          <div className="w-full max-w-3xl flex flex-col relative">
+              <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Voucher Preview</h3>
+                  <button onClick={() => setIsVoucherPreviewOpen(false)} className="text-slate-400 hover:text-white transition-colors bg-slate-800/50 p-2 rounded-full border border-slate-700/50 hover:bg-slate-800 active:scale-95">
+                    <X size={20} strokeWidth={2.5} />
+                  </button>
+              </div>
+              <div className="bg-[#151c2c] rounded-xl overflow-hidden border border-slate-700/50 shadow-2xl flex items-center justify-center min-h-[400px]">
+                  <img src={previewVoucherUrl} alt="Voucher" className="max-w-full max-h-[80vh] object-contain" />
+              </div>
           </div>
         </div>
       )}
