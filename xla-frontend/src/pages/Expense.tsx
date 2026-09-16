@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, } from 'react';
 
-import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera , Edit2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera , Edit2 , ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CustomUserSelect from '../components/CustomUserSelect';
@@ -20,6 +20,15 @@ export default function Expense() {
   
   const [rawExpenses, setRawExpenses] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  
+  useEffect(() => {
+    if (isModalOpen) {
+      setCalMonth(selectedMonth);
+      setCalYear(selectedYear);
+    }
+  }, [isModalOpen, selectedMonth, selectedYear]);
   const [selectedExpense, setSelectedExpense] = useState<any>(null);
 
   const [foodAmt, setFoodAmt] = useState(0);
@@ -292,43 +301,202 @@ export default function Expense() {
               <div className="flex items-center gap-2 shrink-0"><div className="w-3 h-3 rounded-full bg-purple-500"></div><span className="text-[12px] font-bold text-slate-300">Not Submitted</span></div>
             </div>
             
-            <div className="hidden md:flex flex-col justify-end relative actions-dropdown z-40">
-               <button 
-                 onClick={() => setIsActionsOpen(!isActionsOpen)}
-                 className="flex items-center justify-center gap-2 bg-[#0b0f19] border border-slate-700/60 rounded-full px-4 py-2 text-[12px] font-bold text-slate-300 hover:text-white hover:border-sky-500/50 transition-colors"
-               >
-                 Actions <SettingsIcon size={14} className="text-sky-400" />
-               </button>
-               
-               {isActionsOpen && (
-                  <div className="absolute top-[100%] right-0 mt-2 w-32 bg-[#151c2c] border border-slate-700 rounded-lg shadow-2xl overflow-hidden py-1">
-                      <button 
-                        onClick={() => { 
-                          setIsActionsOpen(false); 
-                          setSelectedExpense(null);
-                          setExpenseDate(new Date().toISOString().split('T')[0]);
-                          setFoodAmt(0); setTicketAmt(0); setHotelAmt(0); setDailyAmt(0); setMiscAmt(0); setRemarks(''); setVoucherFile(null);
-                          setIsModalOpen(true); 
-                        }}
-                        className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-300 hover:bg-[#3b82f6] hover:text-white transition-colors flex items-center gap-2"
-                      >
-                        <PlusCircle size={14} /> Add
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setIsActionsOpen(false);
-                          alert('Select an expense row to delete (Implementation pending backend support)');
-                        }}
-                        className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-400 hover:bg-rose-500 hover:text-white transition-colors flex items-center gap-2"
-                      >
-                        <Trash2 size={14} /> Delete
-                      </button>
-                  </div>
-               )}
+            {isModalOpen ? (
+                <button onClick={() => { setIsModalOpen(false); setSelectedExpense(null); }} className="text-rose-500 hover:text-white transition-colors bg-rose-500/10 hover:bg-rose-500 p-1.5 rounded-full border border-rose-500/50 active:scale-95 shrink-0">
+                  <X size={16} strokeWidth={2.5} />
+                </button>
+              ) : (
+                <div className="hidden md:flex flex-col justify-end relative actions-dropdown z-40 shrink-0">
+                   <button 
+                     onClick={() => setIsActionsOpen(!isActionsOpen)}
+                     className="flex items-center justify-center gap-2 bg-[#0b0f19] border border-slate-700/60 rounded-full px-4 py-2 text-[12px] font-bold text-slate-300 hover:text-white hover:border-sky-500/50 transition-colors"
+                   >
+                     Actions <SettingsIcon size={14} className="text-sky-400" />
+                   </button>
+                   
+                   {isActionsOpen && (
+                      <div className="absolute top-[100%] right-0 mt-2 w-32 bg-[#151c2c] border border-slate-700 rounded-lg shadow-2xl overflow-hidden py-1">
+                          <button 
+                            onClick={() => { 
+                              setIsActionsOpen(false); 
+                              setSelectedExpense(null);
+                              setExpenseDate(new Date().toISOString().split('T')[0]);
+                              setFoodAmt(0); setTicketAmt(0); setHotelAmt(0); setDailyAmt(0); setMiscAmt(0); setRemarks(''); setVoucherFile(null);
+                              setIsModalOpen(true); 
+                            }}
+                            className="w-full text-left px-4 py-2 text-[13px] font-semibold text-slate-300 hover:bg-[#3b82f6] hover:text-white transition-colors flex items-center gap-2"
+                          >
+                            <PlusCircle size={14} /> Add
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setIsActionsOpen(false);
+                              alert('Select an expense row to delete (Implementation pending backend support)');
+                            }}
+                            className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-400 hover:bg-rose-500 hover:text-white transition-colors flex items-center gap-2"
+                          >
+                            <Trash2 size={14} /> Delete
+                          </button>
+                      </div>
+                   )}
+                </div>
+              )}
             </div>
-          </div>
-          
-          <div className="overflow-x-auto custom-scrollbar">
+
+            {/* EXPANDED INLINE EXPENSE PANEL */}
+            {isModalOpen && (
+               <div className="bg-[#151c2c] p-6 border-b-4 border-slate-800 flex flex-col gap-6 shadow-inner">
+                  {/* Top: Working Area Info */}
+                  <div className="flex gap-16 border-b border-emerald-500/80 pb-4">
+                     <div>
+                        <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Working Area Type</label>
+                        <div className="text-[13px] font-bold text-slate-200">
+                           {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.badge || 'Out-Station'}
+                        </div>
+                     </div>
+                     <div>
+                        <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Working Areas</label>
+                        <div className="text-[13px] font-bold text-slate-200 truncate max-w-lg" title={expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}>
+                           {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Middle: 2-Columns */}
+                  <div className="flex flex-col md:flex-row gap-10">
+                     
+                     {/* Left: Calendar Block */}
+                     <div className="w-full md:w-[45%] bg-[#1a2235] p-5 rounded-xl border border-slate-700/50 flex flex-col shadow-lg shadow-black/20">
+                        <div className="flex justify-between items-center mb-6 px-2">
+                           <button onClick={() => {
+                               if (calMonth === 0) { setCalMonth(11); setCalYear(calYear - 1); }
+                               else { setCalMonth(calMonth - 1); }
+                           }} className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors active:scale-95"><ChevronLeft size={16}/></button>
+                           <span className="font-black text-slate-200 text-sm tracking-wide capitalize">
+                              {new Date(calYear, calMonth).toLocaleString('default', { month: 'long' })} {calYear}
+                           </span>
+                           <button onClick={() => {
+                               if (calMonth === 11) { setCalMonth(0); setCalYear(calYear + 1); }
+                               else { setCalMonth(calMonth + 1); }
+                           }} className="p-1.5 bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors active:scale-95"><ChevronRight size={16}/></button>
+                        </div>
+                        
+                        <div className="grid grid-cols-7 gap-y-3 gap-x-1 mb-2">
+                            {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                              <div key={d} className="text-center text-[11px] font-black text-slate-500 uppercase">{d}</div>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-7 gap-y-2 gap-x-1">
+                            {(() => {
+                              const days = [];
+                              const firstDay = new Date(calYear, calMonth, 1).getDay();
+                              const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+                              
+                              for(let i = 0; i < firstDay; i++) {
+                                  days.push(<div key={`empty-${i}`} className="h-8"></div>);
+                              }
+                              
+                              for(let d = 1; d <= daysInMonth; d++) {
+                                  const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                                  const isSelected = expenseDate === dateStr;
+                                  
+                                  days.push(
+                                    <div 
+                                      key={d} 
+                                      onClick={() => setExpenseDate(dateStr)}
+                                      className={`h-8 flex items-center justify-center rounded-full text-[13px] font-bold cursor-pointer transition-colors mx-1 ${isSelected ? 'bg-sky-500 text-white shadow-[0_0_10px_rgba(14,165,233,0.5)]' : 'text-slate-300 hover:bg-slate-800'}`}
+                                    >
+                                      {d}
+                                    </div>
+                                  );
+                              }
+                              return days;
+                            })()}
+                        </div>
+                     </div>
+
+                     {/* Right: Input Fields */}
+                     <div className="w-full md:w-[55%] flex flex-col gap-4">
+                        {[
+                          { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true },
+                          { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true },
+                          { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: true },
+                        ].map((f, i) => (
+                          <div key={i} className="flex items-center justify-between group">
+                              <div className="flex items-center gap-2 w-[40%]">
+                                <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">{f.label}</label>
+                                {f.icon && <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />}
+                              </div>
+                              <div className="w-[60%]">
+                                <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
+                              </div>
+                          </div>
+                        ))}
+
+                        <div className="flex items-center justify-between group">
+                            <div className="flex items-center gap-2 w-[40%]">
+                              <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">Vehicle Type</label>
+                              <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />
+                            </div>
+                            <div className="w-[60%]">
+                              <select className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500/50 appearance-none">
+                                  <option className="bg-[#151c2c]">2 Wheeler</option>
+                                  <option className="bg-[#151c2c]">4 Wheeler</option>
+                                  <option className="bg-[#151c2c]">Public Transport</option>
+                              </select>
+                            </div>
+                        </div>
+
+                        {[
+                          { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: true },
+                          { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false },
+                        ].map((f, i) => (
+                          <div key={i} className="flex items-center justify-between group">
+                              <div className="flex items-center gap-2 w-[40%]">
+                                <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">{f.label}</label>
+                                {f.icon && <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />}
+                              </div>
+                              <div className="w-[60%]">
+                                <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
+                              </div>
+                          </div>
+                        ))}
+
+                        <div className="flex items-center justify-between mt-1 group">
+                            <div className="w-[40%]">
+                              <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">Upload An Image</label>
+                            </div>
+                            <div className="w-[60%] flex items-center">
+                              <label className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-slate-400 text-[12px] font-bold rounded-lg px-4 py-2 cursor-pointer hover:border-sky-500/60 flex items-center justify-between transition-colors">
+                                  <span className="truncate pr-4">{voucherFile ? voucherFile.name : 'No file chosen'}</span>
+                                  <span className="bg-slate-700 text-white px-3 py-1 rounded text-[10px] shrink-0 uppercase tracking-widest">Choose File</span>
+                                  <input type="file" className="hidden" accept="image/*" onChange={(e: any) => setVoucherFile(e.target.files?.[0] || null)} />
+                              </label>
+                            </div>
+                        </div>
+                     </div>
+                  </div>
+
+                  {/* Bottom: Remarks & Submit */}
+                  <div className="flex flex-col md:flex-row gap-10 mt-2">
+                     <div className="w-full md:w-[60%]">
+                        <label className="text-[11px] font-black text-slate-500 uppercase tracking-widest block mb-2">Remarks</label>
+                        <textarea rows={1} value={remarks} onChange={(e: any) => setRemarks(e.target.value)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white rounded-lg px-4 py-2.5 text-[13px] font-medium focus:border-sky-500/50 outline-none resize-none placeholder:text-slate-600" placeholder="Enter Remarks"></textarea>
+                     </div>
+                     <div className="w-full md:w-[40%] flex items-end justify-end">
+                        <button 
+                          onClick={handleSubmitExpense} 
+                          disabled={submitting} 
+                          className="bg-transparent hover:bg-sky-500 border border-sky-500 text-sky-400 hover:text-white text-[13px] font-bold px-10 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-widest active:scale-95"
+                        >
+                          {submitting ? 'Submitting...' : 'Submit Expense'}
+                        </button>
+                     </div>
+                  </div>
+               </div>
+            )}
+
+            <div className="overflow-x-auto custom-scrollbar">
             <table className="min-w-[1200px] w-full text-left border-collapse relative">
               <thead>
                 <tr className="bg-[#242b42] border-b border-slate-700/50">
@@ -430,180 +598,6 @@ export default function Expense() {
         </div>
 
       </div>
-
-      {/* MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4">
-          <div className="w-full max-w-[1000px] h-[85vh] bg-[#151c2c] rounded-xl overflow-hidden shadow-2xl flex flex-col relative border border-slate-700/50">
-            
-            <div className="flex justify-between items-center p-4 border-b border-slate-800/80 bg-[#0b0f19]">
-              <h2 className="text-[13px] font-black text-white uppercase tracking-widest flex items-center gap-2">
-                <PlusCircle size={16} className="text-sky-400" /> 
-                Add / Edit Expense
-              </h2>
-              <button onClick={() => { setIsModalOpen(false); setSelectedExpense(null); }} className="text-slate-400 hover:text-rose-400 transition-colors p-1.5 rounded-full hover:bg-slate-800 active:scale-95">
-                <X size={18} strokeWidth={2.5} />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
-              {/* LEFT COLUMN: Calendar & DCR Info */}
-              <div className="w-full md:w-[40%] flex flex-col border-r border-slate-800/80 p-5 bg-[#0b0f19]/30 overflow-y-auto custom-scrollbar">
-                  
-                  {/* Working Area Type / Areas (Top) */}
-                  <div className="grid grid-cols-2 gap-4 mb-5">
-                    <div>
-                        <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Working Area Type</label>
-                        <div className="text-[12px] font-semibold text-slate-300 bg-[#151c2c] py-2 px-3 rounded-lg border border-slate-800/50 min-h-[34px]">
-                          {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.badge || 'Out-Station'}
-                        </div>
-                    </div>
-                    <div>
-                        <label className="text-[10px] font-bold text-sky-400 uppercase tracking-widest block mb-2">Working Areas</label>
-                        <div className="text-[12px] font-semibold text-slate-300 bg-[#151c2c] py-2 px-3 rounded-lg border border-slate-800/50 truncate min-h-[34px]" title={expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}>
-                          {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}
-                        </div>
-                    </div>
-                  </div>
-
-                  {/* Calendar (Middle) */}
-                  <div className="bg-[#151c2c] rounded-xl border border-slate-800/50 p-4 mb-5 flex flex-col shadow-inner">
-                    <div className="text-center mb-3">
-                        <span className="font-bold text-emerald-400 text-sm capitalize">
-                          {new Date(selectedYear, selectedMonth).toLocaleString('default', { month: 'long' })} {selectedYear}
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-7 gap-1 mb-1">
-                        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
-                          <div key={d} className="text-center text-[10px] font-bold text-slate-500 uppercase">{d}</div>
-                        ))}
-                    </div>
-                    <div className="grid grid-cols-7 gap-1">
-                        {(() => {
-                          const days = [];
-                          const firstDay = new Date(selectedYear, selectedMonth, 1).getDay();
-                          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-                          
-                          for(let i = 0; i < firstDay; i++) {
-                              days.push(<div key={`empty-${i}`} className="h-8"></div>);
-                          }
-                          
-                          for(let d = 1; d <= daysInMonth; d++) {
-                              const dateStr = `${selectedYear}-${String(selectedMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-                              const isSelected = expenseDate === dateStr;
-                              const hasDcr = expenses.daysArr.find((e: any) => e.dateStr === dateStr);
-                              
-                              days.push(
-                                <div 
-                                  key={d} 
-                                  onClick={() => setExpenseDate(dateStr)}
-                                  className={`h-8 flex items-center justify-center rounded-full text-[12px] font-bold cursor-pointer transition-colors ${isSelected ? 'bg-sky-500 text-white shadow-[0_0_10px_rgba(14,165,233,0.5)]' : (hasDcr ? 'text-slate-200 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-800/50')}`}
-                                >
-                                  {d}
-                                </div>
-                              );
-                          }
-                          return days;
-                        })()}
-                    </div>
-                  </div>
-
-                  {/* Remarks (Bottom) */}
-                  <div className="mt-auto">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Remarks</label>
-                      <textarea rows={2} value={remarks} onChange={(e: any) => setRemarks(e.target.value)} className="w-full bg-[#151c2c] border border-slate-800/80 text-white rounded-lg px-3 py-2 text-[12px] font-medium focus:border-sky-500/50 outline-none resize-none placeholder:text-slate-600" placeholder="Enter Remarks..."></textarea>
-                  </div>
-
-              </div>
-
-              {/* RIGHT COLUMN: Expense Fields */}
-              <div className="w-full md:w-[60%] flex flex-col p-6 overflow-y-auto custom-scrollbar">
-                  
-                  {/* Warning if no Tour Program */}
-                  {!expenses.daysArr.find((e: any) => e.dateStr === expenseDate) && (
-                    <div className="bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-bold px-4 py-3 rounded-lg mb-6 flex items-center gap-2 shrink-0">
-                        <Info size={14} />
-                        No Existing Tour Program. Please Create One to Add Expense.
-                    </div>
-                  )}
-
-                  <div className="flex-1 flex flex-col gap-4 max-w-md mx-auto w-full">
-                    
-                    {/* Reusable row rendering */}
-                    {[
-                      { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true },
-                      { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true },
-                      { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: true },
-                    ].map((f, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 w-[45%]">
-                            <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">{f.label}</label>
-                            {f.icon && <Edit2 size={10} className="text-slate-500" />}
-                          </div>
-                          <div className="w-[55%]">
-                            <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-transparent border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500/50 text-right" placeholder="0" />
-                          </div>
-                      </div>
-                    ))}
-
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 w-[45%]">
-                          <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">Vehicle Type</label>
-                          <Edit2 size={10} className="text-slate-500" />
-                        </div>
-                        <div className="w-[55%]">
-                          <select className="w-full bg-transparent border border-slate-700/80 text-white text-[12px] font-bold rounded-lg px-2 py-1.5 focus:outline-none focus:border-sky-500/50 appearance-none">
-                              <option className="bg-[#151c2c]">2 Wheeler</option>
-                              <option className="bg-[#151c2c]">4 Wheeler</option>
-                              <option className="bg-[#151c2c]">Public Transport</option>
-                          </select>
-                        </div>
-                    </div>
-
-                    {[
-                      { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: true },
-                      { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false },
-                    ].map((f, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 w-[45%]">
-                            <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">{f.label}</label>
-                            {f.icon && <Edit2 size={10} className="text-slate-500" />}
-                          </div>
-                          <div className="w-[55%]">
-                            <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-transparent border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500/50 text-right" placeholder="0" />
-                          </div>
-                      </div>
-                    ))}
-
-                    <div className="flex items-center justify-between mt-2">
-                        <div className="w-[45%]">
-                          <label className="text-[12px] font-semibold text-slate-300 whitespace-nowrap">Upload An Image</label>
-                        </div>
-                        <div className="w-[55%] flex items-center">
-                          <label className="w-full bg-sky-900/10 border border-sky-500/30 text-sky-400 text-[11px] font-bold rounded-lg px-3 py-2 cursor-pointer hover:border-sky-500/60 truncate flex items-center justify-between transition-colors">
-                              <span className="truncate pr-2">{voucherFile ? voucherFile.name : 'No file chosen'}</span>
-                              <span className="bg-sky-500 text-white px-2 py-0.5 rounded text-[9px] shrink-0">Choose File</span>
-                              <input type="file" className="hidden" accept="image/*" onChange={(e: any) => setVoucherFile(e.target.files?.[0] || null)} />
-                          </label>
-                        </div>
-                    </div>
-
-                  </div>
-
-                  <div className="flex justify-end mt-auto pt-8">
-                      <button 
-                        onClick={handleSubmitExpense} 
-                        disabled={submitting || !expenses.daysArr.find((e: any) => e.dateStr === expenseDate)} 
-                        className="bg-sky-500 hover:bg-sky-400 text-white text-[12px] font-bold px-6 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-sky-500/20 active:scale-95"
-                      >
-                        {submitting ? 'Submitting...' : 'Submit Expense'}
-                      </button>
-                  </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* VOUCHER PREVIEW MODAL */}
       {isVoucherPreviewOpen && (
