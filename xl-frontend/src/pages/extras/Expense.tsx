@@ -311,10 +311,10 @@ export default function Expense() {
         <div className="bg-[#242b42] p-5 rounded-b-3xl shadow-lg relative z-10">
            <button onClick={() => setView('list')} className="absolute top-4 right-4 bg-white/10 text-white p-1.5 rounded-full"><X size={16}/></button>
            <h3 className="text-slate-400 text-[12px] font-bold uppercase tracking-wide mb-1">Working Area Type:</h3>
-           <p className="text-slate-200 text-[14px] font-medium mb-3">{tp ? tp.workAreaType || 'Out-Station' : 'Out-Station'}</p>
+           <p className="text-slate-200 text-[14px] font-medium mb-3">{tp ? (tp.type || tp.workAreaType || 'Out-Station') : 'Out-Station'}</p>
            
            <h3 className="text-slate-400 text-[12px] font-bold uppercase tracking-wide mb-1">Working Areas:</h3>
-           <p className="text-slate-200 text-[14px] font-medium mb-3">{tp ? tp.workingArea || '-' : '-'}</p>
+           <p className="text-slate-200 text-[14px] font-medium mb-3">{tp ? (tp.toMarket || tp.workingArea || '-') : '-'}</p>
            
            <h3 className="text-slate-400 text-[12px] font-bold uppercase tracking-wide mb-1">Date:</h3>
            <p className="text-slate-200 text-[14px] font-medium">{selectedDate}</p>
@@ -418,7 +418,7 @@ export default function Expense() {
     <div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col">
        {/* Top Nav */}
        <div className="flex items-center p-4">
-         <button onClick={() => navigate('/xl/extras')} className="text-white mr-4"><ChevronLeft size={24}/></button>
+         <button onClick={() => navigate('/extras')} className="text-white mr-4"><ChevronLeft size={24}/></button>
          <h1 className="text-white font-bold text-lg">Expense</h1>
        </div>
 

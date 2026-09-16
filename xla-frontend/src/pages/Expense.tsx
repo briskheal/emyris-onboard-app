@@ -125,8 +125,8 @@ export default function Expense() {
          try { return new Date(t.date).toISOString().split('T')[0] === dateStr; } catch(x){ return t.date === dateStr; }
       });
       if (tp) {
-         workArea = tp.workingArea || '';
-         workAreaType = tp.workAreaType || 'Out-Station';
+         workArea = tp.toMarket || tp.workingArea || '';
+         workAreaType = tp.type || tp.workAreaType || 'Out-Station';
       }
       
       let status = '';
