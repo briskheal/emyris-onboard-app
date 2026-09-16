@@ -581,7 +581,7 @@ export default function Expense() {
                     </div>
                     <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1.5">Total Pending Expense</p>
-                    <p className="text-[18px] font-black text-amber-400 leading-none">,1 {expenses.pending}</p>
+                    <p className="text-[18px] font-black text-amber-400 leading-none">₹ {Number(expenses.pending || 0).toFixed(2)}</p>
                     </div>
                 </div>
                 
@@ -591,7 +591,7 @@ export default function Expense() {
                     </div>
                     <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1.5">Total Approved Expense</p>
-                    <p className="text-[18px] font-black text-emerald-400 leading-none">,1 {expenses.approved}</p>
+                    <p className="text-[18px] font-black text-emerald-400 leading-none">₹ {Number(expenses.approved || 0).toFixed(2)}</p>
                     </div>
                 </div>
             </div>
