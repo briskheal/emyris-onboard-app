@@ -418,7 +418,7 @@ export default function Expense() {
     <div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col">
        {/* Top Nav */}
        <div className="flex items-center p-4">
-         <button onClick={() => navigate('/extras')} className="text-white mr-4"><ChevronLeft size={24}/></button>
+         <button onClick={() => navigate(-1)} className="text-white mr-4"><ChevronLeft size={24}/></button>
          <h1 className="text-white font-bold text-lg">Expense</h1>
        </div>
 
@@ -483,9 +483,9 @@ export default function Expense() {
                    
                    <div className="shrink-0 ml-2">
                       {d.hasExpense ? (
-                         <span className="border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase">OUT</span>
+                         <span className="border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase">{d.tpEntry?.type || d.tpEntry?.workAreaType || 'OUT'}</span>
                       ) : d.tpEntry ? (
-                         <span className="border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase">OUT</span>
+                         <span className="border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase">{d.tpEntry?.type || d.tpEntry?.workAreaType || 'OUT'}</span>
                       ) : (
                          <span className="text-slate-600 font-medium px-3 text-[16px]">+</span>
                       )}
