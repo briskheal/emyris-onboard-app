@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, } from 'react';
 
-import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera, Upload } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera, Upload } , Edit2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import CustomUserSelect from '../components/CustomUserSelect';
