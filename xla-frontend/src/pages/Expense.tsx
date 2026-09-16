@@ -150,7 +150,7 @@ export default function Expense() {
                   <th className="p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Daily</th>
                   <th className="p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Misc.</th>
                   <th className="p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</th>
-                  <th className="p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center">View</th>
+                  <th className="p-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center sticky right-0 bg-slate-900/90 backdrop-blur z-10 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">View</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
@@ -170,7 +170,7 @@ export default function Expense() {
                     <td className="p-3 text-sm font-medium text-slate-500 text-center">-</td>
                     <td className="p-3 text-sm font-medium text-slate-500 text-center">-</td>
                     <td className="p-3 text-sm font-black text-sky-400">{item.total || '-'}</td>
-                    <td className="p-3 text-center">
+                    <td className="p-3 text-center sticky right-0 bg-slate-900/90 backdrop-blur z-10 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">
                       {item.day !== 'SUN' && (
                         <button 
                           onClick={() => { setSelectedExpense(item); setIsModalOpen(true); }}
