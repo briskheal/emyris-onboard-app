@@ -2688,13 +2688,14 @@ router.get('/expense/limits', async (req, res) => {
                 if (!route) route = await XlRoute.findOne({ where: { toCity } });
             }
             if (route && route.distance) {
-                // Determine limits purely on one-way distance
+                // Calculate round-trip distance for limits comparison
+                const roundTripDistance = route.distance * 2;
                 const fareRule = await XlTravelAllowance.findOne({
                     where: {
                         state: user.state,
                         designation: des,
-                        fromDistance: { [Op.lte]: route.distance },
-                        toDistance: { [Op.gte]: route.distance }
+                        fromDistance: { [Op.lte]: roundTripDistance },
+                        toDistance: { [Op.gte]: roundTripDistance }
                     }
                 });
                 if (fareRule) {

@@ -206,7 +206,17 @@ export default function Expense() {
 
   
   const handleSubmitExpense = async () => {
-    if (!selectedExpense || !selectedUser) return;
+    if (!expenseDate || !selectedUser) return;
+    
+    const dayData = expenses?.daysArr?.find((e: any) => e.dateStr === expenseDate);
+    const workAreaType = dayData?.workAreaType || 'Out-Station';
+    const isLocalOrEx = workAreaType === 'Local' || workAreaType === 'HQ' || workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt';
+
+    if (!voucherFile && (Number(miscAmt) > 0 || (Number(ticketAmt) > 0 && !isLocalOrEx))) {
+       alert("Miscellaneous or Manual claims need support vouchers (image uploads) for approval.");
+       return;
+    }
+
     setSubmitting(true);
     
     const submits = [];
