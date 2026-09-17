@@ -2688,8 +2688,6 @@ router.get('/expense/limits', async (req, res) => {
             } else {
                 route = await XlRoute.findOne({ where: { toCity: { [Op.like]: `%${toCity}%` }, hq: user.hq } });
                 if (!route) route = await XlRoute.findOne({ where: { toCity: { [Op.like]: `%${toCity}%` } } });
-            } });
-                if (!route) route = await XlRoute.findOne({ where: { toCity } });
             }
             if (route && route.distance) {
                 // Calculate round-trip distance for limits comparison
