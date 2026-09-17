@@ -754,9 +754,27 @@ export default function Expense() {
                     <X size={20} strokeWidth={2.5} />
                   </button>
               </div>
-              <div className="bg-[#151c2c] rounded-xl overflow-hidden border border-slate-700/50 shadow-2xl flex items-center justify-center min-h-[400px]">
-                  <img src={previewVoucherUrl} alt="Voucher" className="max-w-full max-h-[80vh] object-contain" />
-                          </div>
+              <div className="bg-[#151c2c] rounded-xl overflow-y-auto border border-slate-700/50 shadow-2xl flex flex-col items-center min-h-[400px] p-6 gap-8">
+                  {!previewVoucherUrl || previewVoucherUrl.split(',').filter(Boolean).length === 0 ? (
+                      <div className="text-slate-500 font-bold uppercase tracking-widest my-auto">No Voucher Uploaded</div>
+                  ) : (
+                      previewVoucherUrl.split(',').filter(Boolean).map((url, i) => {
+                          const isPdf = url.toLowerCase().endsWith('.pdf');
+                          return (
+                              <div key={i} className="w-full flex flex-col items-center bg-[#1e2738] p-4 rounded-lg border border-slate-700/50">
+                                {isPdf ? (
+                                    <iframe src={`${url}#view=FitH`} className="w-full h-[600px] rounded-lg border border-slate-700/50 bg-white" />
+                                ) : (
+                                    <img src={url} alt={`Voucher ${i+1}`} className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-md" />
+                                )}
+                                <a href={url} target="_blank" rel="noreferrer" className="mt-4 px-6 py-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-lg font-bold text-sm hover:bg-emerald-500/20 transition-colors">
+                                    Open File in New Tab
+                                </a>
+                              </div>
+                          )
+                      })
+                  )}
+              </div>
                     </div>
         </div>
       )}
