@@ -2668,10 +2668,19 @@ router.get('/expense/limits', async (req, res) => {
         
         let travelAllowance = 0;
         if ((workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt') && toMarket) {
-            const route = await XlRoute.findOne({ 
-                where: { hq: user.hq, toCity: toMarket } 
-            });
+            // toMarket comes from Tour Program as "FromCity - ToCity" (e.g. "Vadodara - Anand")
+            let routeWhere = { hq: user.hq };
+            if (toMarket.includes(' - ')) {
+                const parts = toMarket.split(' - ');
+                routeWhere.fromCity = parts[0].trim();
+                routeWhere.toCity = parts[1].trim();
+            } else {
+                routeWhere.toCity = toMarket;
+            }
+
+            const route = await XlRoute.findOne({ where: routeWhere });
             if (route && route.distance) {
+                // Determine limits purely on one-way distance
                 const fareRule = await XlTravelAllowance.findOne({
                     where: {
                         state: user.state,
@@ -2681,7 +2690,8 @@ router.get('/expense/limits', async (req, res) => {
                     }
                 });
                 if (fareRule) {
-                    travelAllowance = route.distance * fareRule.allowancePerKm;
+                    // Multiply by 2 to account for round trip reimbursement based on one-way distance
+                    travelAllowance = (route.distance * 2) * fareRule.allowancePerKm;
                 }
             }
         }
