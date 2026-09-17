@@ -1341,6 +1341,17 @@ router.get('/leave/my', async (req, res) => {
 
 // ─── PHASE 3: EXPENSE ──────────────────────────────────────────────────────
 
+router.delete('/expense', async (req, res) => {
+    try {
+        const { email, date } = req.query;
+        if (!email || !date) return res.status(400).json({ success: false, message: 'Email and date required' });
+        await XlExpense.destroy({ where: { employeeId: email, date } });
+        res.json({ success: true, message: 'Deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ success: false, error: e.message });
+    }
+});
+
 router.post('/expense', async (req, res) => {
     try {
         const exp = await XlExpense.create({ _id: generateId(), ...req.body });

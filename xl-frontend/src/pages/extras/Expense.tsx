@@ -166,10 +166,30 @@ export default function Expense() {
     } else {
       // Reset form
       setVehicleType('2-Wheeler');
-      setHotelAmt(''); setFoodAmt(''); setTicketAmt(''); setDailyAmt(''); setMiscAmt('');
+      setHotelAmt(''); setFoodAmt(''); setTicketAmt(''); setMiscAmt('');
       setRemarks('');
       setAttachments([]);
       setUploadedUrls([]);
+      
+      // Auto fetch limits
+      try {
+        const tpEntry = dayData.tpEntry || {};
+        const workAreaType = tpEntry.type || tpEntry.workAreaType || 'Out-Station';
+        const toMarket = tpEntry.toMarket || tpEntry.workingArea || '';
+        
+        const res = await axios.get(`/api/xl/expense/limits?email=${getUserId()}&date=${dayData.dateStr}&workAreaType=${encodeURIComponent(workAreaType)}&toMarket=${encodeURIComponent(toMarket)}`);
+        if (res.data.success) {
+           setDailyAmt(res.data.dailyAllowance || 0);
+           setTicketAmt(res.data.travelAllowance || 0);
+        } else {
+           setDailyAmt(0);
+           setTicketAmt(0);
+        }
+      } catch (e) {
+        setDailyAmt(0);
+        setTicketAmt(0);
+      }
+      
       setView('form');
     }
   };

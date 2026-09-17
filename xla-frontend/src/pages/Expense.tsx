@@ -400,14 +400,22 @@ export default function Expense() {
                             <PlusCircle size={14} /> Add
                           </button>
                           <button 
-                            onClick={() => {
-                              setIsActionsOpen(false);
-                              alert('Select an expense row to delete (Implementation pending backend support)');
-                            }}
-                            className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-400 hover:bg-rose-500 hover:text-white transition-colors flex items-center gap-2"
-                          >
-                            <Trash2 size={14} /> Delete
-                          </button>
+                              onClick={() => {
+                                setIsActionsOpen(false);
+                                const dateStr = prompt('Enter the exact date to delete (YYYY-MM-DD):');
+                                if (dateStr) {
+                                  axios.delete(`/api/xl/expense?email=${selectedUser}&date=${dateStr}`).then(res => {
+                                    if(res.data.success) {
+                                      alert('Deleted successfully');
+                                      fetchExpenses();
+                                    }
+                                  });
+                                }
+                              }}
+                              className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-400 hover:bg-rose-500 hover:text-white transition-colors flex items-center gap-2"
+                            >
+                              <Trash2 size={14} /> Delete Date
+                            </button>
                       </div>
                    )}
                 </div>
@@ -635,7 +643,23 @@ export default function Expense() {
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).misc || '-'}</td>
                     <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{(item as any).total || '-'}</td>
                     <td className="p-4 text-[12px] font-medium text-slate-400 max-w-[150px] truncate" title={(item as any).dayRemarks}>{(item as any).dayRemarks || '-'}</td>
-                    <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer">
+                    <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer flex justify-center gap-2">
+                      {((item as any).total || 0) > 0 && (
+                        <button 
+                          onClick={(e) => { 
+                            e.stopPropagation();
+                            if(confirm(`Delete expense for ${(item as any).date}?`)) {
+                               axios.delete(`/api/xl/expense?email=${selectedUser}&date=${(item as any).dateStr}`).then(res => {
+                                  if(res.data.success) fetchExpenses();
+                               });
+                            }
+                          }}
+                          className="text-slate-400 hover:text-rose-400 p-2 transition-all inline-flex items-center justify-center active:scale-95 z-20 relative"
+                          title="Delete Expense"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                       {((item as any).total || 0) > 0 && (
                         <button 
                           onClick={(e) => { e.stopPropagation(); setPreviewVoucherUrl((item as any).rawExps[0]?.voucherUrl || 'https://via.placeholder.com/600x800?text=No+Voucher+Found'); setIsVoucherPreviewOpen(true); }}
