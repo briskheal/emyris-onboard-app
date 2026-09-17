@@ -299,10 +299,9 @@ export default function Expense() {
                 <span className="text-white font-bold text-[16px]">₹ {total}</span>
              </div>
              <div className="space-y-4">
-                <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Travel Allowance</span><span className="text-slate-200 font-medium text-[14px]">₹ 0</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Hotel Allowance</span><span className="text-slate-200 font-medium text-[14px]">₹ {hotelAmt||0}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Food Allowance</span><span className="text-slate-200 font-medium text-[14px]">₹ {foodAmt||0}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Ticket Allowance</span><span className="text-slate-200 font-medium text-[14px]">₹ {ticketAmt||0}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Travel / Ticket Fare</span><span className="text-slate-200 font-medium text-[14px]">₹ {ticketAmt||0}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Daily Allowance</span><span className="text-slate-200 font-medium text-[14px]">₹ {dailyAmt||0}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Miscellaneous</span><span className="text-slate-200 font-medium text-[14px]">₹ {miscAmt||0}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Remarks</span><span className="text-slate-200 font-medium text-[14px] text-right max-w-[60%]">{remarks || '-'}</span></div>
@@ -360,7 +359,7 @@ export default function Expense() {
                             {[
                  { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true, show: !isExStation && !isLocal },
                  { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true, show: !isExStation && !isLocal },
-                 { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: false, show: !isExStation && !isLocal },
+                 { label: 'Travel / Ticket Fare', val: ticketAmt, set: setTicketAmt, icon: false, readOnly: isExStation, show: !isLocal },
                  { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false, readOnly: isLocal || isExStation, show: true },
                  { label: 'Miscellaneous Allowance', val: miscAmt, set: setMiscAmt, icon: false, readOnly: false, show: true },
                ].filter(f => f.show).map((f, i) => (
