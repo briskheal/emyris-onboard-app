@@ -321,10 +321,10 @@ export default function Expense() {
            </div>
         </div>
       </div>
-    );
-  }
+      );
+    }
 
-  if (view === 'form' || view === 'view') {
+    if (view === 'form' || view === 'view') {
     const dayData = listData.days.find(d => d.dateStr === selectedDate);
     const tp = dayData?.tpEntry;
       const workAreaType = tp ? (tp.type || tp.workAreaType || 'Out-Station') : 'Out-Station';
@@ -332,6 +332,7 @@ export default function Expense() {
       const isExStation = (workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt');
       
       return (
+<div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col relative overflow-x-hidden">
 <style>{`
     input[type="number"]::-webkit-inner-spin-button,
     input[type="number"]::-webkit-outer-spin-button {
@@ -342,7 +343,6 @@ export default function Expense() {
       -moz-appearance: textfield;
     }
   `}</style>
-<div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col relative overflow-x-hidden">
         {/* Header Block matching the screenshot */}
         <div className="bg-[#242b42] p-5 rounded-b-3xl shadow-lg relative z-10">
            <button onClick={() => setView('list')} className="absolute top-4 right-4 bg-white/10 text-white p-1.5 rounded-full"><X size={16}/></button>
@@ -446,10 +446,10 @@ export default function Expense() {
           </div>
         )}
       </div>
-    );
-  }
+      );
+    }
 
-  // MAIN LIST VIEW
+    // MAIN LIST VIEW
   return (
     <div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col">
        {/* Top Nav */}
