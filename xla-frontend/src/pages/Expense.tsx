@@ -19,6 +19,9 @@ export default function Expense() {
     const [filterStatus, setFilterStatus] = useState('All');
   
   const [rawExpenses, setRawExpenses] = useState<any[]>([]);
+  const [holidays, setHolidays] = useState<Record<string, string>>({});
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  console.log(holidays);
   const [tpEntries, setTpEntries] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -46,6 +49,8 @@ export default function Expense() {
   
   const [isVoucherPreviewOpen, setIsVoucherPreviewOpen] = useState(false);
   const [previewVoucherUrl, setPreviewVoucherUrl] = useState('');
+
+  
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -81,10 +86,23 @@ export default function Expense() {
     if (!selectedUser) return;
     try {
       const monthLabel = new Date(selectedYear, selectedMonth - 1, 1).toLocaleString('default', { month: 'long' });
-      const [expRes, tpRes] = await Promise.all([
+      const [expRes, tpRes, holRes] = await Promise.all([
         axios.get(`/api/xl/expense/my?email=${selectedUser}`),
-        axios.get(`/api/xl/tour-program/my?email=${selectedUser}&month=${monthLabel}&year=${selectedYear}`)
+        axios.get(`/api/xl/tour-program/my?email=${selectedUser}&month=${monthLabel}&year=${selectedYear}`),
+        axios.get('/api/xl/settings/holidays')
       ]);
+      const holidayMap: Record<string, string> = {};
+      if (holRes.data.success) {
+        // Need user state. Let's find user object from users list
+        const activeUser = users.find((u:any) => u.employeeId === selectedUser);
+        holRes.data.data.forEach((h: any) => {
+          if (h.type === 'National' || h.state === activeUser?.state) {
+            const hd = new Date(h.date);
+            holidayMap[`${hd.getFullYear()}-${String(hd.getMonth()+1).padStart(2,'0')}-${String(hd.getDate()).padStart(2,'0')}`] = h.title;
+          }
+        });
+      }
+      setHolidays(holidayMap);
       if (expRes.data.success) setRawExpenses(expRes.data.data || []);
       
       let parsed = [];
@@ -102,7 +120,7 @@ export default function Expense() {
 
   const expenses = useMemo(() => {
     const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
-    const daysArr = [];
+    const daysArr: any[] = [];
     
     let pending = 0;
     let approved = 0;
@@ -374,13 +392,13 @@ export default function Expense() {
                      <div>
                         <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Working Area Type</label>
                         <div className="text-[13px] font-bold text-slate-200">
-                           {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workAreaType || 'Out-Station'}
+                           {expenses.daysArr.find((e: any) => (e as any).dateStr === expenseDate)?.workAreaType || (expenses.daysArr.find((e: any) => (e as any).dateStr === expenseDate)?.holidayName ? 'Holiday' : (expenses.daysArr.find((e: any) => (e as any).dateStr === expenseDate)?.isSunday ? 'Sunday' : 'Out-Station'))}
                         </div>
                      </div>
                      <div>
                         <label className="text-[12px] font-bold text-slate-400 uppercase tracking-widest block mb-1">Working Areas</label>
-                        <div className="text-[13px] font-bold text-slate-200 truncate max-w-lg" title={expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}>
-                           {expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workArea || '-'}
+                        <div className="text-[13px] font-bold text-slate-200 truncate max-w-lg" title={expenses.daysArr.find((e: any) => (e as any).dateStr === expenseDate)?.workArea || '-'}>
+                           {expenses.daysArr.find((e: any) => (e as any).dateStr === expenseDate)?.workArea || '-'}
                         </div>
                      </div>
                   </div>
@@ -441,9 +459,20 @@ export default function Expense() {
                      {/* Right: Input Fields */}
                      <div className="w-full md:w-[55%] flex flex-col gap-4">
                         {(() => {
-                          const currentType = expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workAreaType || 'Out-Station';
+                          const dayData = expenses.daysArr.find((e: any) => (e as any).dateStr === expenseDate);
+                          const currentType = dayData?.workAreaType || (dayData?.holidayName ? 'Holiday' : (dayData?.isSunday ? 'Sunday' : 'Out-Station'));
                           const isLocal = (currentType === 'Local' || currentType === 'HQ');
                           const isExStation = (currentType === 'Ex-Station' || currentType === 'Ex-Mkt');
+                          const isBlocked = (currentType === 'Holiday' || currentType === 'Sunday');
+                          
+                          if (isBlocked) {
+                            return (
+                              <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                                <div className="text-rose-500 font-bold uppercase mb-2">{currentType}</div>
+                                <div className="text-[13px]">{dayData?.holidayName || 'No Working Area Found'}</div>
+                              </div>
+                            );
+                          }
                           
                           return (
                             <>
@@ -563,23 +592,23 @@ export default function Expense() {
               <tbody className="divide-y divide-slate-700/30">
                 {expenses.daysArr.map((item: any, idx: number) => (
                   <tr key={idx} className="hover:bg-[#1e2336] transition-colors group">
-                    <td className="p-4 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{item.date}</td>
-                    <td className="p-4 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10">{item.fullDateStr}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 bg-slate-800/10 border-r border-slate-700/30">{item.day}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{item.badge || '-'}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 border-r border-slate-700/30 max-w-[150px] truncate">{item.workArea || '-'}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{item.travel || '-'}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{item.food || '-'}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{item.hotel || '-'}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{item.ticket || '-'}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{item.daily || '-'}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{item.misc || '-'}</td>
-                    <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{item.total || '-'}</td>
-                    <td className="p-4 text-[12px] font-medium text-slate-400 max-w-[150px] truncate" title={item.dayRemarks}>{item.dayRemarks || '-'}</td>
+                    <td className="p-4 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{(item as any).date}</td>
+                    <td className="p-4 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10">{(item as any).fullDateStr}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 bg-slate-800/10 border-r border-slate-700/30">{(item as any).day}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{(item as any).badge || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 border-r border-slate-700/30 max-w-[150px] truncate">{(item as any).workArea || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).travel || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).food || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).hotel || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).ticket || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).daily || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).misc || '-'}</td>
+                    <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{(item as any).total || '-'}</td>
+                    <td className="p-4 text-[12px] font-medium text-slate-400 max-w-[150px] truncate" title={(item as any).dayRemarks}>{(item as any).dayRemarks || '-'}</td>
                     <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer">
-                      {(item.total || 0) > 0 && (
+                      {((item as any).total || 0) > 0 && (
                         <button 
-                          onClick={(e) => { e.stopPropagation(); setPreviewVoucherUrl(item.rawExps[0]?.voucherUrl || 'https://via.placeholder.com/600x800?text=No+Voucher+Found'); setIsVoucherPreviewOpen(true); }}
+                          onClick={(e) => { e.stopPropagation(); setPreviewVoucherUrl((item as any).rawExps[0]?.voucherUrl || 'https://via.placeholder.com/600x800?text=No+Voucher+Found'); setIsVoucherPreviewOpen(true); }}
                           className="text-slate-400 hover:text-sky-400 p-2 transition-all inline-flex items-center justify-center active:scale-95 z-20 relative"
                           title="View Voucher"
                         >
