@@ -673,7 +673,12 @@ export default function Expense() {
                         <>
                           {((item as any).total || 0) > 0 && (
                             <button 
-                              onClick={(e) => { e.stopPropagation(); setPreviewVoucherUrl((item as any).rawExps[0]?.voucherUrl || 'https://via.placeholder.com/600x800?text=No+Voucher+Found'); setIsVoucherPreviewOpen(true); }}
+                              onClick={(e) => { 
+  e.stopPropagation(); 
+  const imgs = (item as any).rawExps.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean).join(',');
+  setPreviewVoucherUrl(imgs);
+  setIsVoucherPreviewOpen(true); 
+}}
                               className="text-slate-400 hover:text-sky-400 p-2 transition-all inline-flex items-center justify-center active:scale-95 z-20 relative"
                               title="View Voucher"
                             >
