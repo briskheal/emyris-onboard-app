@@ -338,8 +338,8 @@ export default function Expense() {
                { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true },
                { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true },
                { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: false },
-               { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false },
-               { label: 'Miscellaneous Allowance', val: miscAmt, set: setMiscAmt, icon: false },
+               { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false, readOnly: isLocal || isExStation },
+               { label: 'Miscellaneous Allowance', val: miscAmt, set: setMiscAmt, icon: false, readOnly: false },
              ].map((f, i) => (
                 <div key={i} className="flex items-center justify-between border-b border-slate-700/50 pb-2">
                    <label className="text-slate-300 text-[13px] font-medium flex items-center gap-2">

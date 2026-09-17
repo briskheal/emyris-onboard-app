@@ -453,7 +453,7 @@ export default function Expense() {
                                       <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">Travel Allowance</label>
                                     </div>
                                     <div className="w-[60%]">
-                                      <input type="number" value={ticketAmt || ''} onChange={(e: any) => setTicketAmt(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
+                                      <input type="number" value={ticketAmt || ''} onChange={(e: any) => setTicketAmt(parseFloat(e.target.value)||0)} readOnly={isExStation} className={"w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" + (isExStation ? ' opacity-70 cursor-not-allowed' : '')} placeholder="0" />
                                     </div>
                                 </div>
                               )}
@@ -469,7 +469,7 @@ export default function Expense() {
                                       {f.icon && <Edit2 size={12} className="text-sky-500/50 group-hover:text-sky-400 transition-colors" />}
                                     </div>
                                     <div className="w-[60%]">
-                                      <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
+                                      <input type="number" value={f.val || ''} onChange={(e: any) => f.set(parseFloat(e.target.value)||0)} readOnly={(f as any).readOnly} className={"w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" + ((f as any).readOnly ? ' opacity-70 cursor-not-allowed' : '')} placeholder="0" />
                                     </div>
                                 </div>
                               ))}
@@ -489,8 +489,8 @@ export default function Expense() {
                               </div>
 
                               {[
-                                { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: true },
-                                { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false },
+                                { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false, readOnly: isLocal || isExStation },
+                                { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false, readOnly: false },
                               ].map((f, i) => (
                                 <div key={i} className="flex items-center justify-between group">
                                     <div className="flex items-center gap-2 w-[40%]">
