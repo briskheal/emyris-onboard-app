@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Edit2, Upload, X, CheckCircle2, Info } from 'lucide-react';
+import { ChevronLeft, Edit2, Upload, X, CheckCircle2, Info, FileText } from 'lucide-react';
 import axios from 'axios';
 
 const convertToWebp = (file: File): Promise<File> => {
@@ -378,7 +378,7 @@ export default function Expense() {
                   {attachments.map((file, idx) => (
                      <div key={idx} className="relative w-16 h-16 bg-[#242b42] border border-slate-700 rounded-lg flex items-center justify-center overflow-hidden">
                        <button onClick={() => removeAttachment(idx)} className="absolute top-0.5 right-0.5 bg-rose-500 text-white rounded-full p-0.5 z-10"><X size={10}/></button>
-                       {file.type.startsWith('image/') ? <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="" /> : <File size={24} className="text-slate-400" />}
+                       {file.type.startsWith('image/') ? <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="" /> : <FileText size={24} className="text-slate-400" />}
                      </div>
                   ))}
                   <label className="w-16 h-16 bg-[#242b42] border border-slate-700 rounded-lg flex items-center justify-center cursor-pointer hover:bg-slate-800 transition-colors">
