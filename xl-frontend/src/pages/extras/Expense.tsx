@@ -304,8 +304,11 @@ export default function Expense() {
   if (view === 'form' || view === 'view') {
     const dayData = listData.days.find(d => d.dateStr === selectedDate);
     const tp = dayData?.tpEntry;
-    
-    return (
+      const workAreaType = tp ? (tp.type || tp.workAreaType || 'Out-Station') : 'Out-Station';
+      const isLocal = (workAreaType === 'Local' || workAreaType === 'HQ');
+      const isExStation = (workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt');
+      
+      return (
       <div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col relative overflow-x-hidden">
         {/* Header Block matching the screenshot */}
         <div className="bg-[#242b42] p-5 rounded-b-3xl shadow-lg relative z-10">

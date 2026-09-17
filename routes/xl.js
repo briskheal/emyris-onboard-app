@@ -2669,16 +2669,24 @@ router.get('/expense/limits', async (req, res) => {
         let travelAllowance = 0;
         if ((workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt') && toMarket) {
             // toMarket comes from Tour Program as "FromCity - ToCity" (e.g. "Vadodara - Anand")
-            let routeWhere = { hq: user.hq };
+            let fromCity = '';
+            let toCity = toMarket;
             if (toMarket.includes(' - ')) {
                 const parts = toMarket.split(' - ');
-                routeWhere.fromCity = parts[0].trim();
-                routeWhere.toCity = parts[1].trim();
-            } else {
-                routeWhere.toCity = toMarket;
+                fromCity = parts[0].trim();
+                toCity = parts[1].trim();
             }
 
-            const route = await XlRoute.findOne({ where: routeWhere });
+            // Try exact match with HQ first
+            let route = null;
+            if (fromCity) {
+                route = await XlRoute.findOne({ where: { fromCity, toCity, hq: user.hq } });
+                // If not found with exact HQ, try just matching fromCity and toCity
+                if (!route) route = await XlRoute.findOne({ where: { fromCity, toCity } });
+            } else {
+                route = await XlRoute.findOne({ where: { toCity, hq: user.hq } });
+                if (!route) route = await XlRoute.findOne({ where: { toCity } });
+            }
             if (route && route.distance) {
                 // Determine limits purely on one-way distance
                 const fareRule = await XlTravelAllowance.findOne({
