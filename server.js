@@ -204,6 +204,18 @@ app.use(globalLimiter);
 // Serve uploads directory safely
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
+app.post('/api/upload', upload.single('file'), (req, res) => {
+    if (!req.file) return res.status(400).json({ success: false, error: 'No file' });
+    const fs2 = require('fs');
+    const path2 = require('path');
+    const ext = path2.extname(req.file.originalname) || '';
+    fs2.renameSync(req.file.path, req.file.path + ext);
+    res.json({ success: true, url: '/uploads/' + req.file.filename + ext });
+});
+
+
 // Serve React assets for Admin panel
 app.use('/assets', express.static(path.join(__dirname, 'frontend', 'dist', 'assets')));
 

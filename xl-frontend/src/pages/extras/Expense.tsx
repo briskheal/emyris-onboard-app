@@ -304,6 +304,10 @@ export default function Expense() {
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Travel / Ticket Fare</span><span className="text-slate-200 font-medium text-[14px]">₹ {ticketAmt||0}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Daily Allowance</span><span className="text-slate-200 font-medium text-[14px]">₹ {dailyAmt||0}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Miscellaneous</span><span className="text-slate-200 font-medium text-[14px]">₹ {miscAmt||0}</span></div>
+                  <div className="flex justify-between pt-3 border-t border-slate-700/50 mt-3">
+                     <span className="text-emerald-400 font-bold text-[16px]">Total Claim Amount</span>
+                     <span className="text-emerald-400 font-bold text-[16px]">₹ {total}</span>
+                  </div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Remarks</span><span className="text-slate-200 font-medium text-[14px] text-right max-w-[60%]">{remarks || '-'}</span></div>
                 <div className="flex justify-between"><span className="text-slate-400 font-medium text-[14px]">Vehicle Type</span><span className="text-slate-200 font-medium text-[14px]">{vehicleType}</span></div>
              </div>
@@ -392,7 +396,7 @@ export default function Expense() {
                <input type="text" value={remarks} onChange={e => setRemarks(e.target.value)} placeholder="Please enter your remarks" className="w-full bg-[#242b42] border border-slate-700 text-white rounded-xl p-3.5 focus:outline-none focus:border-sky-500" />
              </div>
 
-             <button onClick={handleReview} className="w-full mt-6 bg-transparent border border-emerald-500 text-emerald-500 font-bold py-3.5 rounded-lg active:scale-95 transition-all mb-10">
+             <button onClick={handleReview} className="w-full mt-6 bg-transparent border border-emerald-500 text-emerald-500 font-bold py-3.5 rounded-lg active:scale-95 transition-all mb-20">
                 Review Expense
              </button>
           </div>
@@ -474,7 +478,7 @@ export default function Expense() {
        </div>
 
        {/* List of Days */}
-       <div className="flex-1 px-4 pb-6 overflow-y-auto custom-scrollbar">
+       <div className="flex-1 px-4 pb-6 overflow-y-auto [&::-webkit-scrollbar]:hidden">
           {loading ? (
              <div className="text-center text-slate-400 py-10">Loading...</div>
           ) : (
