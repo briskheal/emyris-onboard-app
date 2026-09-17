@@ -442,7 +442,7 @@ export default function Expense() {
                      <div className="w-full md:w-[55%] flex flex-col gap-4">
                         {(() => {
                           const currentType = expenses.daysArr.find((e: any) => e.dateStr === expenseDate)?.workAreaType || 'Out-Station';
-                          const isLocal = currentType === 'Local';
+                          const isLocal = (currentType === 'Local' || currentType === 'HQ');
                           const isExStation = (currentType === 'Ex-Station' || currentType === 'Ex-Mkt');
                           
                           return (
