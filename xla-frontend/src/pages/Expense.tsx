@@ -45,6 +45,8 @@ export default function Expense() {
 
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [expenseDate, setExpenseDate] = useState('');
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<string[]>([]);
 
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   
@@ -324,8 +326,9 @@ export default function Expense() {
                           </div>
                       ))}
                   </div>
+                   )}
+                </div>
               )}
-            </div>
             
             <div className="flex flex-col gap-1.5 min-w-[200px] filter-dropdown relative">
               <label className="text-[11px] font-bold text-white tracking-wide">Filter Data</label>
@@ -377,6 +380,24 @@ export default function Expense() {
                   <X size={16} strokeWidth={2.5} />
                 </button>
               ) : (
+                {isDeleteMode ? (
+                <div className="hidden md:flex gap-2 items-center shrink-0 z-40">
+                   <button onClick={() => { setIsDeleteMode(false); setSelectedForDelete([]); }} className="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2 rounded-full text-[12px] font-bold transition-colors">Cancel</button>
+                   <button onClick={async () => {
+                      if (selectedForDelete.length === 0) { setIsDeleteMode(false); return; }
+                      setSubmitting(true);
+                      try {
+                        await Promise.all(selectedForDelete.map(d => axios.delete(`/api/xl/expense?email=${selectedUser}&date=${d}`)));
+                        fetchExpenses();
+                      } catch(e) {}
+                      setSubmitting(false);
+                      setIsDeleteMode(false);
+                      setSelectedForDelete([]);
+                   }} disabled={submitting} className="bg-rose-600 hover:bg-rose-500 text-white px-5 py-2 rounded-full text-[12px] font-bold transition-colors shadow-[0_0_10px_rgba(225,29,72,0.5)]">
+                     {submitting ? 'Deleting...' : `Confirm Delete (${selectedForDelete.length})`}
+                   </button>
+                </div>
+              ) : (
                 <div className="hidden md:flex flex-col justify-end relative actions-dropdown z-40 shrink-0">
                    <button 
                      onClick={() => setIsActionsOpen(!isActionsOpen)}
@@ -402,19 +423,12 @@ export default function Expense() {
                           <button 
                               onClick={() => {
                                 setIsActionsOpen(false);
-                                const dateStr = prompt('Enter the exact date to delete (YYYY-MM-DD):');
-                                if (dateStr) {
-                                  axios.delete(`/api/xl/expense?email=${selectedUser}&date=${dateStr}`).then(res => {
-                                    if(res.data.success) {
-                                      alert('Deleted successfully');
-                                      fetchExpenses();
-                                    }
-                                  });
-                                }
+                                setIsDeleteMode(true);
+                                setSelectedForDelete([]);
                               }}
                               className="w-full text-left px-4 py-2 text-[13px] font-semibold text-rose-400 hover:bg-rose-500 hover:text-white transition-colors flex items-center gap-2"
                             >
-                              <Trash2 size={14} /> Delete Date
+                              <Trash2 size={14} /> Delete Selected
                             </button>
                       </div>
                    )}
@@ -624,7 +638,7 @@ export default function Expense() {
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Misc.</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Total ↑</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300">Remarks</th>
-                  <th className="p-4 text-[11px] font-bold text-slate-300 text-center sticky right-0 bg-[#242b42] z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">View</th>
+                  <th className="p-4 text-[11px] font-bold text-slate-300 text-center sticky right-0 bg-[#242b42] z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">{isDeleteMode ? 'Select' : 'View'}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
@@ -643,31 +657,32 @@ export default function Expense() {
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).misc || '-'}</td>
                     <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{(item as any).total || '-'}</td>
                     <td className="p-4 text-[12px] font-medium text-slate-400 max-w-[150px] truncate" title={(item as any).dayRemarks}>{(item as any).dayRemarks || '-'}</td>
-                    <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer flex justify-center gap-2">
-                      {((item as any).total || 0) > 0 && (
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation();
-                            if(confirm(`Delete expense for ${(item as any).date}?`)) {
-                               axios.delete(`/api/xl/expense?email=${selectedUser}&date=${(item as any).dateStr}`).then(res => {
-                                  if(res.data.success) fetchExpenses();
-                               });
-                            }
-                          }}
-                          className="text-slate-400 hover:text-rose-400 p-2 transition-all inline-flex items-center justify-center active:scale-95 z-20 relative"
-                          title="Delete Expense"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                      {((item as any).total || 0) > 0 && (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setPreviewVoucherUrl((item as any).rawExps[0]?.voucherUrl || 'https://via.placeholder.com/600x800?text=No+Voucher+Found'); setIsVoucherPreviewOpen(true); }}
-                          className="text-slate-400 hover:text-sky-400 p-2 transition-all inline-flex items-center justify-center active:scale-95 z-20 relative"
-                          title="View Voucher"
-                        >
-                          <Camera size={18} />
-                        </button>
+                    <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer flex items-center justify-center gap-2 h-full min-h-[56px]">
+                      {isDeleteMode ? (
+                         ((item as any).total || 0) > 0 ? (
+                           <input 
+                             type="checkbox" 
+                             checked={selectedForDelete.includes((item as any).dateStr)}
+                             onClick={(e) => e.stopPropagation()}
+                             onChange={(e) => {
+                               if(e.target.checked) setSelectedForDelete(p => [...p, (item as any).dateStr]);
+                               else setSelectedForDelete(p => p.filter(d => d !== (item as any).dateStr));
+                             }}
+                             className="w-4 h-4 cursor-pointer accent-rose-500 rounded border-slate-600"
+                           />
+                         ) : <span className="text-slate-600">-</span>
+                      ) : (
+                        <>
+                          {((item as any).total || 0) > 0 && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setPreviewVoucherUrl((item as any).rawExps[0]?.voucherUrl || 'https://via.placeholder.com/600x800?text=No+Voucher+Found'); setIsVoucherPreviewOpen(true); }}
+                              className="text-slate-400 hover:text-sky-400 p-2 transition-all inline-flex items-center justify-center active:scale-95 z-20 relative"
+                              title="View Voucher"
+                            >
+                              <Camera size={18} />
+                            </button>
+                          )}
+                        </>
                       )}
                     </td>
                   </tr>
