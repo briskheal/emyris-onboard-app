@@ -45,6 +45,7 @@ export default function Expense() {
 
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [expenseDate, setExpenseDate] = useState('');
+
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   
   const [isVoucherPreviewOpen, setIsVoucherPreviewOpen] = useState(false);
@@ -203,6 +204,25 @@ export default function Expense() {
       totals: { travel: sumTravel, food: sumFood, hotel: sumHotel, ticket: sumTicket, daily: sumDaily, misc: sumMisc, total: sumTotal }
     };
   }, [selectedMonth, selectedYear, rawExpenses, filterStatus]);
+
+  // Auto fetch limits when Admin selects a date on the calendar
+  useEffect(() => {
+    if (expenseDate && selectedUser && expenses?.daysArr) {
+      const dayData = expenses.daysArr.find((e: any) => (e as any).dateStr === expenseDate);
+      if (dayData && !dayData.holidayName && !dayData.isSunday) {
+         const currentType = dayData.workAreaType || 'Out-Station';
+         const toMarket = dayData.workArea || dayData.toMarket || '';
+         axios.get(`/api/xl/expense/limits?email=${selectedUser}&date=${expenseDate}&workAreaType=${encodeURIComponent(currentType)}&toMarket=${encodeURIComponent(toMarket)}`)
+           .then(res => {
+              if (res.data.success) {
+                 setDailyAmt(res.data.dailyAllowance || 0);
+                 setTicketAmt(res.data.travelAllowance || 0);
+              }
+           })
+           .catch(() => { setDailyAmt(0); setTicketAmt(0); });
+      }
+    }
+  }, [expenseDate, selectedUser, expenses]);
 
   
   const handleSubmitExpense = async () => {

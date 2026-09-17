@@ -337,13 +337,13 @@ export default function Expense() {
                 </div>
              </div>
 
-             {[
-               { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true },
-               { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true },
-               { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: false },
-               { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false, readOnly: isLocal || isExStation },
-               { label: 'Miscellaneous Allowance', val: miscAmt, set: setMiscAmt, icon: false, readOnly: false },
-             ].map((f, i) => (
+                            {[
+                 { label: 'Hotel Allowance', val: hotelAmt, set: setHotelAmt, icon: true, show: !isExStation && !isLocal },
+                 { label: 'Food Allowance', val: foodAmt, set: setFoodAmt, icon: true, show: !isExStation && !isLocal },
+                 { label: 'Ticket Allowance', val: ticketAmt, set: setTicketAmt, icon: false, show: !isExStation && !isLocal },
+                 { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false, readOnly: isLocal || isExStation, show: true },
+                 { label: 'Miscellaneous Allowance', val: miscAmt, set: setMiscAmt, icon: false, readOnly: false, show: true },
+               ].filter(f => f.show).map((f, i) => (
                 <div key={i} className="flex items-center justify-between border-b border-slate-700/50 pb-2">
                    <label className="text-slate-300 text-[13px] font-medium flex items-center gap-2">
                      {f.label} {f.icon && <Edit2 size={12} className="text-sky-500" />}
