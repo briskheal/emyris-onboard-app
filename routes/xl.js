@@ -1,6 +1,27 @@
 const express = require('express');
 const router = express.Router();
 
+const fs = require('fs');
+const path = require('path');
+
+function deleteExpenseFiles(receiptImageStr) {
+    if (!receiptImageStr) return;
+    const urls = receiptImageStr.split(',').filter(Boolean);
+    for (const fileUrl of urls) {
+        try {
+            const filename = fileUrl.split('/').pop();
+            if (filename) {
+                const filepath = path.join(__dirname, '..', 'uploads', filename);
+                if (fs.existsSync(filepath)) {
+                    fs.unlinkSync(filepath);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to delete file:', fileUrl, err);
+        }
+    }
+}
+
 const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist) => {
     const monthNumMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
     const monthNum = monthNumMap[month] || '01';
@@ -1345,6 +1366,13 @@ router.delete('/expense', async (req, res) => {
     try {
         const { email, date } = req.query;
         if (!email || !date) return res.status(400).json({ success: false, message: 'Email and date required' });
+        
+        // Fetch to get the files and delete them physically
+        const expenses = await XlExpense.findAll({ where: { employeeId: email, date } });
+        for (const exp of expenses) {
+            if (exp.receiptImage) deleteExpenseFiles(exp.receiptImage);
+        }
+        
         await XlExpense.destroy({ where: { employeeId: email, date } });
         res.json({ success: true, message: 'Deleted successfully' });
     } catch (e) {
@@ -1816,6 +1844,7 @@ router.post('/approvals/action', async (req, res) => {
             
             for (const rec of records) {
                 if (action === 'Deleted' || action === 'Delete') {
+                    if (rec.receiptImage) deleteExpenseFiles(rec.receiptImage);
                     await rec.destroy();
                 } else {
                     if (rec.category === 'Misc' && miscExpense !== undefined) {
