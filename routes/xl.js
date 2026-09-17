@@ -2631,8 +2631,8 @@ router.get('/expense/limits', async (req, res) => {
         const monthStr = monthNames[parseInt(monthNum, 10) - 1];
         
         const tp = await XlTourProgram.findOne({ where: { employeeId: user.employeeId, month: monthStr, year } });
-        let workAreaType = 'Out-Station';
-        let toMarket = '';
+                let workAreaType = req.query.workAreaType || 'Out-Station';
+        let toMarket = req.query.toMarket || '';
         
         if (tp && tp.entries) {
             try {
@@ -2640,8 +2640,8 @@ router.get('/expense/limits', async (req, res) => {
                 if (!Array.isArray(parsed)) parsed = Object.values(parsed);
                 const entry = parsed.find(e => e.date === date || (e.date && e.date.startsWith(date)));
                 if (entry) {
-                    workAreaType = entry.type || entry.areaType || 'Out-Station';
-                    toMarket = entry.toMarket || '';
+                    if (!req.query.workAreaType) workAreaType = entry.type || entry.workAreaType || entry.areaType || 'Out-Station';
+                    if (!req.query.toMarket) toMarket = entry.toMarket || entry.workingArea || '';
                 }
             } catch(e) {}
         }
@@ -2680,11 +2680,15 @@ router.get('/expense/limits', async (req, res) => {
             // Try exact match with HQ first
             let route = null;
             if (fromCity) {
-                route = await XlRoute.findOne({ where: { fromCity, toCity, hq: user.hq } });
-                // If not found with exact HQ, try just matching fromCity and toCity
-                if (!route) route = await XlRoute.findOne({ where: { fromCity, toCity } });
+                route = await XlRoute.findOne({ where: { fromCity: { [Op.like]: `%${fromCity}%` }, toCity: { [Op.like]: `%${toCity}%` }, hq: user.hq } });
+                if (!route) route = await XlRoute.findOne({ where: { fromCity: { [Op.like]: `%${fromCity}%` }, toCity: { [Op.like]: `%${toCity}%` } } });
+                
+                // Fallback reversing just in case
+                if (!route) route = await XlRoute.findOne({ where: { fromCity: { [Op.like]: `%${toCity}%` }, toCity: { [Op.like]: `%${fromCity}%` } } });
             } else {
-                route = await XlRoute.findOne({ where: { toCity, hq: user.hq } });
+                route = await XlRoute.findOne({ where: { toCity: { [Op.like]: `%${toCity}%` }, hq: user.hq } });
+                if (!route) route = await XlRoute.findOne({ where: { toCity: { [Op.like]: `%${toCity}%` } } });
+            } });
                 if (!route) route = await XlRoute.findOne({ where: { toCity } });
             }
             if (route && route.distance) {
