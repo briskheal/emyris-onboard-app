@@ -746,12 +746,12 @@ export default function Expense() {
 
       {/* VOUCHER PREVIEW MODAL */}
       {isVoucherPreviewOpen && (
-        <div className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 sm:p-8 transition-opacity">
-          <div className="w-full max-w-3xl flex flex-col relative">
-              <div className="flex justify-between items-center mb-4">
+        <div className="fixed inset-0 z-[120] bg-black/90 backdrop-blur-md flex items-start justify-center p-4 sm:p-8 overflow-y-auto transition-opacity">
+            <div className="w-full max-w-3xl flex flex-col relative my-4 sm:my-8">
+              <div className="sticky top-0 z-50 flex justify-between items-center mb-4 bg-[#151c2c]/80 backdrop-blur-md p-4 rounded-xl border border-slate-700/50 shadow-lg">
                   <h3 className="text-sm font-black text-white uppercase tracking-widest">Voucher Preview</h3>
-                  <button onClick={() => setIsVoucherPreviewOpen(false)} className="text-slate-400 hover:text-white transition-colors bg-slate-800/50 p-2 rounded-full border border-slate-700/50 hover:bg-slate-800 active:scale-95">
-                    <X size={20} strokeWidth={2.5} />
+                  <button onClick={() => setIsVoucherPreviewOpen(false)} className="text-white hover:text-red-400 transition-colors bg-slate-800 p-2 rounded-full border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-md">
+                    <X size={24} strokeWidth={2.5} />
                   </button>
               </div>
               <div className="bg-[#151c2c] rounded-xl overflow-y-auto border border-slate-700/50 shadow-2xl flex flex-col items-center min-h-[400px] p-6 gap-8">
