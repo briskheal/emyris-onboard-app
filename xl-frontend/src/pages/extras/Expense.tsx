@@ -259,7 +259,7 @@ export default function Expense() {
       setView('success');
     } catch (e) {
       console.error(e);
-      alert('Failed to submit expense. Please try again.');
+      alert('Failed to submit expense: ' + (e.response?.data?.error || e.message));
     } finally {
       setSubmitting(false);
     }
@@ -332,7 +332,17 @@ export default function Expense() {
       const isExStation = (workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt');
       
       return (
-      <div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col relative overflow-x-hidden">
+<style>{`
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  `}</style>
+<div className="min-h-[100dvh] bg-[#1a1e2d] flex flex-col relative overflow-x-hidden">
         {/* Header Block matching the screenshot */}
         <div className="bg-[#242b42] p-5 rounded-b-3xl shadow-lg relative z-10">
            <button onClick={() => setView('list')} className="absolute top-4 right-4 bg-white/10 text-white p-1.5 rounded-full"><X size={16}/></button>
