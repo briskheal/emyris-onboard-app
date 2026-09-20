@@ -1739,13 +1739,30 @@ router.get('/approvals/counts', async (req, res) => {
         const counts = {};
         
         // Modules that support approvals
-        counts['Call Report'] = await XlDCR.count({ where: condition });
+        // Group Call Reports by employeeId and date
+        const callGroups = await XlDCR.findAll({
+            where: condition,
+            attributes: ['employeeId', 'date'],
+            group: ['employeeId', 'date'],
+            raw: true
+        });
+        counts['Call Report'] = callGroups.length;
+        
         counts['Tour Program'] = await XlTourProgram.count({ where: condition });
         counts['Call Plans'] = await XlCallPlan.count({ where: condition });
         counts['Doctors'] = await XlDoctor.count({ where: condition });
         counts['Chemists'] = await XlChemist.count({ where: condition });
         counts['Stockists'] = await XlStockist.count({ where: condition });
-        counts['Expense'] = await XlExpense.count({ where: condition });
+        
+        // Group Expenses by employeeId and date to match the UI behavior
+        const expenseGroups = await XlExpense.findAll({
+            where: condition,
+            attributes: ['employeeId', 'date'],
+            group: ['employeeId', 'date'],
+            raw: true
+        });
+        counts['Expense'] = expenseGroups.length;
+
         counts['Leave Request'] = await XlLeave.count({ where: condition });
 
         counts['Performance KPI'] = await XlPerformanceAnalysis.count({
@@ -1830,9 +1847,9 @@ router.get('/approvals/pending', async (req, res) => {
         for (const p of pending) {
             const pData = p.toJSON();
             if (pData.employeeId) {
-                const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: pData.employeeId }, { uid: pData.employeeId }] } });
+                const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: pData.employeeId }, { uid: pData.employeeId }, { email: pData.employeeId }] } });
                 if (u) {
-                    pData.employeeName = pData.employeeName || (u.firstName + ' ' + u.lastName) || u.name;
+                    pData.employeeName = pData.employeeName || ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || u.name;
                     pData.employeeEmail = pData.employeeEmail || u.email;
                     pData.designation = u.designation || '-';
                     pData.reportingManager = u.reportingManager || '-';
