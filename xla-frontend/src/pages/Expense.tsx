@@ -257,7 +257,7 @@ export default function Expense() {
         if (voucherFile) {
             const formData = new FormData();
             formData.append('file', voucherFile);
-            const upRes = await axios.post('/api/admin/dcs/upload', formData); // Admin upload endpoint
+            const upRes = await axios.post('/api/upload', formData); // Correct generic image upload endpoint
             if (upRes.data.success && upRes.data.url) {
                 // If a new file is uploaded, we overwrite or append. Let's overwrite for simplicity as they only select 1 file here.
                 finalImageUrl = upRes.data.url;
