@@ -234,29 +234,52 @@ export default function Expense() {
     const workAreaType = dayData?.workAreaType || 'Out-Station';
     const isLocalOrEx = workAreaType === 'Local' || workAreaType === 'HQ' || workAreaType === 'Ex-Station' || workAreaType === 'Ex-Mkt';
 
-    if (!voucherFile && (Number(miscAmt) > 0 || (Number(ticketAmt) > 0 && !isLocalOrEx))) {
+    if (!voucherFile && !selectedExpense && (Number(miscAmt) > 0 || (Number(ticketAmt) > 0 && !isLocalOrEx))) {
        alert("Miscellaneous or Manual claims need support vouchers (image uploads) for approval.");
        return;
     }
 
     setSubmitting(true);
     
-    const submits = [];
-    const base = { employeeId: selectedUser, date: selectedExpense ? selectedExpense.dateStr : expenseDate, remarks, status: 'Pending' };
+    try {
+        let finalImageUrl = '';
+        if (selectedExpense) {
+            // Extract old images and deduplicate
+            const rawUrls = (selectedExpense as any).rawExps?.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean) || [];
+            const allUrls = rawUrls.flatMap((s: string) => s.split(',')).filter(Boolean);
+            finalImageUrl = Array.from(new Set(allUrls)).join(',');
+            
+            // Soft delete old records to replace them (preserves files)
+            await axios.delete(`/api/xl/expense?email=${selectedUser}&date=${selectedExpense.dateStr}&preserveFiles=true`);
+        }
 
-    if (foodAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Food', amount: foodAmt }));
-    if (ticketAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Ticket', amount: ticketAmt }));
-    if (hotelAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Hotel', amount: hotelAmt }));
-    if (dailyAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Daily', amount: dailyAmt }));
-    if (miscAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Misc', amount: miscAmt }));
+        // Upload new file if provided
+        if (voucherFile) {
+            const formData = new FormData();
+            formData.append('file', voucherFile);
+            const upRes = await axios.post('/api/admin/dcs/upload', formData); // Admin upload endpoint
+            if (upRes.data.success && upRes.data.url) {
+                // If a new file is uploaded, we overwrite or append. Let's overwrite for simplicity as they only select 1 file here.
+                finalImageUrl = upRes.data.url;
+            }
+        }
 
-    if (submits.length > 0) {
-      try {
-        await Promise.all(submits);
-        fetchExpenses();
-      } catch (e) {
+        const submits = [];
+        const base = { employeeId: selectedUser, date: selectedExpense ? selectedExpense.dateStr : expenseDate, remarks, status: 'Pending', receiptImage: finalImageUrl };
+
+        if (foodAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Food', amount: foodAmt }));
+        if (ticketAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Ticket', amount: ticketAmt }));
+        if (hotelAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Hotel', amount: hotelAmt }));
+        if (dailyAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Daily', amount: dailyAmt }));
+        if (miscAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Misc', amount: miscAmt }));
+
+        if (submits.length > 0) {
+            await Promise.all(submits);
+            fetchExpenses();
+        }
+    } catch (e) {
         console.error("Failed to submit expenses", e);
-      }
+        alert("An error occurred while saving the expense.");
     }
     
     setSubmitting(false);
@@ -674,8 +697,9 @@ export default function Expense() {
                           {((item as any).total || 0) > 0 && (
                             <button 
                               onClick={(e) => { 
-  e.stopPropagation(); 
-  const imgs = (item as any).rawExps.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean).join(',');
+  e.stopPropagation();  const rawUrls = (item as any).rawExps.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean);
+  const allUrls = rawUrls.flatMap((s: string) => s.split(',')).filter(Boolean);
+  const imgs = Array.from(new Set(allUrls)).join(',');
   setPreviewVoucherUrl(imgs);
   setIsVoucherPreviewOpen(true); 
 }}

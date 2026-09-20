@@ -1429,13 +1429,15 @@ router.get('/leave/my', async (req, res) => {
 
 router.delete('/expense', async (req, res) => {
     try {
-        const { email, date } = req.query;
+        const { email, date, preserveFiles } = req.query;
         if (!email || !date) return res.status(400).json({ success: false, message: 'Email and date required' });
         
-        // Fetch to get the files and delete them physically
-        const expenses = await XlExpense.findAll({ where: { employeeId: email, date } });
-        for (const exp of expenses) {
-            if (exp.receiptImage) deleteExpenseFiles(exp.receiptImage);
+        // Fetch to get the files and delete them physically if preserveFiles is not true
+        if (preserveFiles !== 'true') {
+            const expenses = await XlExpense.findAll({ where: { employeeId: email, date } });
+            for (const exp of expenses) {
+                if (exp.receiptImage) deleteExpenseFiles(exp.receiptImage);
+            }
         }
         
         await XlExpense.destroy({ where: { employeeId: email, date } });
