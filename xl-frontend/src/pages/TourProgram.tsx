@@ -329,7 +329,6 @@ export default function TourProgram() {
             <label className="text-slate-300 text-sm mb-1.5 block font-medium">Activity Type <span className="text-red-500">*</span></label>
             <div className="relative">
               <SearchableSelect 
-                  hideSearch={true}
                   value={formActivity}
                   onChange={val => setFormActivity(val)}
                   options={[
@@ -355,7 +354,6 @@ export default function TourProgram() {
               <label className="text-slate-300 text-sm mb-1.5 block font-medium">Area Type <span className="text-red-500">*</span></label>
               <div className="relative">
                 <SearchableSelect 
-                    hideSearch={true}
                     value={formArea}
                     onChange={val => { setFormArea(val); setFormLocation(''); }}
                     options={[
