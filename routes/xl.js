@@ -1,6 +1,17 @@
 const express = require('express');
 const router = express.Router();
 
+// [NEW] Cleanup Ghost Admin Expenses
+router.get('/cleanup-ghost-expenses', async (req, res) => {
+    try {
+        const deleted = await XlExpense.destroy({ where: { employeeId: 'admin@admin.com' } });
+        res.json({ success: true, message: `Successfully deleted ${deleted} ghost expenses from admin@admin.com!` });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 // [NEW] Cleanup Orphaned Uploaded Files
 router.get('/cleanup-orphaned-files', async (req, res) => {
     try {
