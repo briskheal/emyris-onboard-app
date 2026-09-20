@@ -76,6 +76,18 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
 
   const handleAction = async (action: string) => {
     if (!editingDay) return;
+    
+    let finalRemarks = editingDay.remarks || '';
+    if (action === 'Rejected') {
+        const reason = window.prompt("Please enter the reason for rejection (this will be shown to the employee):");
+        if (reason === null) return; // Cancelled
+        if (!reason.trim()) {
+            alert("A rejection reason is mandatory.");
+            return;
+        }
+        finalRemarks = reason.trim();
+    }
+
     try {
       const res = await axios.post('/api/xl/approvals/action', {
         type: 'ExpenseGroup',
@@ -83,7 +95,7 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
         employeeId: editingDay.employeeId,
         date: editingDay.date,
         miscExpense: editingDay.miscExpense,
-        remarks: editingDay.remarks
+        remarks: finalRemarks
       });
       if (res.data.success) {
         setEditingDay(null);
