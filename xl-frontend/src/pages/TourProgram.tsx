@@ -515,11 +515,6 @@ export default function TourProgram() {
                         <span className="text-sm font-bold text-slate-200 leading-snug truncate">
                           {entry.toMarket ? entry.toMarket : entry.type}
                         </span>
-                        {entry.isEdited && (
-                          <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                            Edited
-                          </span>
-                        )}
                       </div>
                       {(entry.activityType && entry.activityType !== 'Working') && (
                           <span className="text-xs text-sky-400 font-semibold">{entry.activityType}</span>
@@ -541,7 +536,14 @@ export default function TourProgram() {
                   )
                 ) : (
                   !isBlocked && entry ? (
-                    getBadge(entry.type)
+                    <div className="flex items-center gap-2">
+                        {entry.isEdited && (
+                          <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            Edited
+                          </span>
+                        )}
+                        {getBadge(entry.type)}
+                    </div>
                   ) : !isBlocked ? (
                     <span className="w-6 h-6 text-emerald-500 flex items-center justify-center font-bold text-xl">+</span>
                   ) : null
