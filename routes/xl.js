@@ -1,6 +1,47 @@
 const express = require('express');
 const router = express.Router();
 
+// [NEW] Cleanup Orphaned Uploaded Files
+router.get('/cleanup-orphaned-files', async (req, res) => {
+    try {
+        const fs = require('fs');
+        const path = require('path');
+        const dbPath = path.join(__dirname, '..', 'database.sqlite');
+        const uploadsPath = path.join(__dirname, '..', 'uploads');
+
+        if (!fs.existsSync(uploadsPath)) return res.json({ success: true, message: 'Uploads folder not found' });
+        if (!fs.existsSync(dbPath)) return res.json({ success: false, message: 'Database file not found' });
+
+        const files = fs.readdirSync(uploadsPath);
+        const dbContent = fs.readFileSync(dbPath, 'latin1'); 
+
+        let deletedCount = 0;
+        let keptCount = 0;
+        let deletedSize = 0;
+
+        for (const file of files) {
+            const filePath = path.join(uploadsPath, file);
+            const stats = fs.statSync(filePath);
+            if (stats.isDirectory()) continue;
+            
+            // Check if filename exists anywhere in the database file
+            if (!dbContent.includes(file)) {
+                deletedSize += stats.size;
+                fs.unlinkSync(filePath);
+                deletedCount++;
+            } else {
+                keptCount++;
+            }
+        }
+
+        const sizeMB = (deletedSize / (1024 * 1024)).toFixed(2);
+        res.json({ success: true, message: `Successfully deleted ${deletedCount} orphaned files and freed ${sizeMB} MB of space! Kept ${keptCount} active files.` });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 const fs = require('fs');
 const path = require('path');
 
