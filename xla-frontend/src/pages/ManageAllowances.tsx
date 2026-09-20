@@ -374,7 +374,7 @@ export default function ManageAllowances() {
   // --- DA ELIGIBILITY TAB ---
   const DaEligibilityTab = () => {
     const [eligibleActivities, setEligibleActivities] = useState<string[]>([]);
-    const ACTIVITY_OPTIONS = ['Working', 'Half Day', 'Training', 'Seminar', 'Transit', 'Meeting', 'Conference'];
+    const ACTIVITY_OPTIONS = ['Working', 'Half Day', 'Training', 'Seminar', 'Transit', 'Meeting', 'Conference', 'Half Day (Meeting)', 'Half Day (Field work)', 'Admin', 'Market Survey and camp', 'Leave'];
 
     useEffect(() => {
       fetchSettings();
@@ -409,12 +409,12 @@ export default function ManageAllowances() {
       <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">ACTIVITY DA ELIGIBILITY</h2>
         
-        <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl p-8 max-w-2xl">
+        <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl p-8 max-w-4xl">
           <p className="text-slate-400 mb-8 text-sm">Select which activities are eligible for Daily Allowance (DA). If turned off, DA will not be applicable when this activity is selected.</p>
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {ACTIVITY_OPTIONS.map(activity => (
-               <div key={activity} className="flex justify-between items-center bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-                 <span className="text-white font-bold tracking-wide uppercase">{activity}</span>
+               <div key={activity} className="flex justify-between items-center bg-slate-900/50 px-3 py-2.5 rounded-xl border border-slate-700/50">
+                 <span className="text-slate-200 font-bold tracking-wide uppercase text-[11px] leading-tight">{activity}</span>
                  <label className="relative inline-flex items-center cursor-pointer">
                    <input type="checkbox" className="sr-only peer" checked={eligibleActivities.includes(activity)} onChange={() => handleToggle(activity)} />
                    <div className="w-11 h-6 bg-slate-700 rounded-full peer peer-focus:ring-4 peer-focus:ring-sky-500/20 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
@@ -477,3 +477,4 @@ export default function ManageAllowances() {
     </div>
   );
 }
+

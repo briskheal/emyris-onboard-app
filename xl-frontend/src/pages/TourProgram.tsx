@@ -340,9 +340,9 @@ export default function TourProgram() {
                     {value: 'Meeting', label: 'Meeting'},
                     {value: 'Conference', label: 'Conference'},
                     {value: 'Half Day (Meeting)', label: 'Half Day (Meeting)'},
-                    {value: 'Half Day (Field Work)', label: 'Half Day (Field Work)'},
+                    {value: 'Half Day (Field work)', label: 'Half Day (Field work)'},
                     {value: 'Admin', label: 'Admin'},
-                    {value: 'Market Survey', label: 'Market Survey'},
+                    {value: 'Market Survey and camp', label: 'Market Survey and camp'},
                     {value: 'Leave', label: 'Leave'}
                   ]}
                 />
@@ -636,3 +636,4 @@ function UserIcon() {
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
   );
 }
+
