@@ -2825,6 +2825,7 @@ router.get('/expense/limits', async (req, res) => {
         const tp = await XlTourProgram.findOne({ where: { employeeId: user.employeeId, month: monthStr, year } });
                 let workAreaType = req.query.workAreaType || 'Out-Station';
         let toMarket = req.query.toMarket || '';
+        let activityType = req.query.activityType || 'Working';
         
         if (tp && tp.entries) {
             try {
@@ -2834,6 +2835,7 @@ router.get('/expense/limits', async (req, res) => {
                 if (entry) {
                     if (!req.query.workAreaType) workAreaType = entry.type || entry.workAreaType || entry.areaType || 'Out-Station';
                     if (!req.query.toMarket) toMarket = entry.toMarket || entry.workingArea || '';
+                    if (!req.query.activityType) activityType = entry.activityType || entry.activity || '';
                 }
             } catch(e) {}
         }
@@ -2843,6 +2845,16 @@ router.get('/expense/limits', async (req, res) => {
         let uEx = user.exStationAllowance || 0;
         let uOut = user.outStationAllowance || 0;
         let des = user.designation;
+
+        const { XlGlobalSettings } = require('../db');
+        const settingsRecord = await XlGlobalSettings.findOne();
+        if (settingsRecord && settingsRecord.settings && Array.isArray(settingsRecord.settings.daEligibleActivities)) {
+            if (!settingsRecord.settings.daEligibleActivities.includes(activityType)) {
+                uDaily = 0;
+                uEx = 0;
+                uOut = 0;
+            }
+        }
         
         // Fallback to designation table if not on user
         if (uDaily === 0 || uEx === 0 || uOut === 0) {
@@ -3362,3 +3374,5 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
+
