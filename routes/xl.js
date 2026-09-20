@@ -1922,7 +1922,7 @@ router.get('/approvals/pending', async (req, res) => {
             if (type === 'Expense') {
                 try {
                     const dateObj = new Date(pData.date);
-                    const month = dateObj.toLocaleString('en-US', { month: 'long' });
+                    const month = dateObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
                     const year = String(dateObj.getFullYear());
                     const tp = await XlTourProgram.findOne({ where: { employeeId: pData.employeeId, month, year } });
                     if (tp && tp.entries) {
@@ -2820,7 +2820,7 @@ router.get('/expense/limits', async (req, res) => {
         
         const [year, monthNum, day] = date.split('-');
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-        const monthStr = monthNames[parseInt(monthNum, 10) - 1];
+        const monthStr = monthNames[parseInt(monthNum, 10) - 1].toLowerCase();
         
         const tp = await XlTourProgram.findOne({ where: { employeeId: user.employeeId, month: monthStr, year } });
                 let workAreaType = req.query.workAreaType || 'Out-Station';

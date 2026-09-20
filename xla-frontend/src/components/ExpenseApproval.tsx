@@ -1,13 +1,12 @@
 import { useState, useMemo } from 'react';
 import axios from 'axios';
-import { CheckCircle, Eye, ChevronLeft, Edit3, XCircle } from 'lucide-react';
+import { CheckCircle, Eye, ChevronLeft, XCircle } from 'lucide-react';
 
 export default function ExpenseApproval({ items, fetchPending, fetchCounts, selectedModule }: any) {
   const [selectedUser, setSelectedUser] = useState('');
   const [isMonthlyView, setIsMonthlyView] = useState(false);
   const [detailedMonthData, setDetailedMonthData] = useState<{employeeId: string, month: string, year: string, name: string} | null>(null);
-  const [editingDay, setEditingDay] = useState<{employeeId: string, date: string, miscExpense: number, remarks: string, workAreas: string} | null>(null);
-
+  
   // Users for dropdown
   const users = useMemo(() => {
     const map = new Map();
@@ -74,10 +73,8 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
     return Object.values(grouped);
   }, [dayWiseData]);
 
-  const handleAction = async (action: string) => {
-    if (!editingDay) return;
-    
-    let finalRemarks = editingDay.remarks || '';
+  const handleAction = async (action: string, record: any) => {
+    let finalRemarks = record.remarks || '';
     if (action === 'Rejected') {
         const reason = window.prompt("Please enter the reason for rejection (this will be shown to the employee):");
         if (reason === null) return; // Cancelled
@@ -92,13 +89,11 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
       const res = await axios.post('/api/xl/approvals/action', {
         type: 'ExpenseGroup',
         action,
-        employeeId: editingDay.employeeId,
-        date: editingDay.date,
-        miscExpense: editingDay.miscExpense,
+        employeeId: record.employeeId,
+        date: record.date,
         remarks: finalRemarks
       });
       if (res.data.success) {
-        setEditingDay(null);
         fetchPending();
         fetchCounts();
       } else {
@@ -127,35 +122,8 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
             </div>
          </div>
          
-         {/* Edit Modal (shared) */}
-         {editingDay && (
-            <div className="absolute inset-0 bg-[#151521]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-               <div className="bg-[#1c1c2e] border border-[#3b3b5a] shadow-2xl rounded-2xl w-full max-w-md p-6">
-                 <div className="flex justify-between items-center mb-6 border-b border-[#3b3b5a] pb-4">
-                   <h3 className="text-white font-black uppercase tracking-wider text-sm">EDIT DETAILS</h3>
-                   <button onClick={() => setEditingDay(null)} className="text-rose-500 hover:text-rose-400"><XCircle size={20} /></button>
-                 </div>
-                 <div className="space-y-4">
-                   <div>
-                     <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">MIS Expense *</label>
-                     <input type="number" value={editingDay.miscExpense} onChange={e => setEditingDay({...editingDay, miscExpense: parseFloat(e.target.value) || 0})} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-sky-500" />
-                   </div>
-                   <div>
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Remarks (Mandatory if changes made)</label>
-                     <textarea rows={3} value={editingDay.remarks} onChange={e => setEditingDay({...editingDay, remarks: e.target.value})} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-sky-500 resize-none"></textarea>
-                   </div>
-                   <div>
-                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Work Areas</label>
-                     <div className="w-full bg-[#151521] border border-[#3b3b5a] text-sky-400 rounded-lg px-4 py-2 text-sm font-medium">{editingDay.workAreas}</div>
-                   </div>
-                   <div className="flex gap-3 pt-4">
-                     <button onClick={() => handleAction('Approved')} className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Approve</button>
-                     <button onClick={() => handleAction('Rejected')} className="flex-1 bg-rose-500 hover:bg-rose-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Reject</button>
-                   </div>
-                 </div>
-               </div>
-            </div>
-         )}
+         
+         
 
          <div className="p-6 md:p-8 flex-1 overflow-y-auto">
             <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
@@ -196,11 +164,16 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
                            <td className="px-4 py-4 text-sm text-slate-300 text-right">{d.daily || 0}</td>
                            <td className="px-4 py-4 text-sm text-slate-300 text-right">{d.misc || 0}</td>
                            <td className="px-4 py-4 text-sm font-bold text-sky-400 text-right">{d.total}</td>
-                           <td className="px-4 py-4 text-center">
-                             <button onClick={() => setEditingDay({ employeeId: d.employeeId, date: d.date, miscExpense: d.misc, remarks: d.remarks, workAreas: d.workAreas })} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm mx-auto block">
-                               <Edit3 size={16} />
-                             </button>
-                           </td>
+                            <td className="px-4 py-4 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                <button onClick={() => handleAction('Approved', d)} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm" title="Approve">
+                                  <CheckCircle size={16} strokeWidth={2.5} />
+                                </button>
+                                <button onClick={() => handleAction('Rejected', d)} className="p-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm" title="Reject">
+                                  <XCircle size={16} strokeWidth={2.5} />
+                                </button>
+                              </div>
+                            </td>
                          </tr>
                        );
                      })}
@@ -215,34 +188,7 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
-       {editingDay && (
-          <div className="absolute inset-0 bg-[#151521]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-             <div className="bg-[#1c1c2e] border border-[#3b3b5a] shadow-2xl rounded-2xl w-full max-w-md p-6">
-               <div className="flex justify-between items-center mb-6 border-b border-[#3b3b5a] pb-4">
-                 <h3 className="text-white font-black uppercase tracking-wider text-sm">EDIT DETAILS</h3>
-                 <button onClick={() => setEditingDay(null)} className="text-rose-500 hover:text-rose-400"><XCircle size={20} /></button>
-               </div>
-               <div className="space-y-4">
-                 <div>
-                   <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">MIS Expense *</label>
-                   <input type="number" value={editingDay.miscExpense} onChange={e => setEditingDay({...editingDay, miscExpense: parseFloat(e.target.value) || 0})} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-sky-500" />
-                 </div>
-                 <div>
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Remarks (Mandatory if changes made)</label>
-                   <textarea rows={3} value={editingDay.remarks} onChange={e => setEditingDay({...editingDay, remarks: e.target.value})} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-sky-500 resize-none"></textarea>
-                 </div>
-                 <div>
-                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block">Work Areas</label>
-                   <div className="w-full bg-[#151521] border border-[#3b3b5a] text-sky-400 rounded-lg px-4 py-2 text-sm font-medium">{editingDay.workAreas}</div>
-                 </div>
-                 <div className="flex gap-3 pt-4">
-                   <button onClick={() => handleAction('Approved')} className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Approve</button>
-                   <button onClick={() => handleAction('Rejected')} className="flex-1 bg-rose-500 hover:bg-rose-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Reject</button>
-                 </div>
-               </div>
-             </div>
-          </div>
-       )}
+       
 
        <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
           <div className="flex justify-between items-start mb-6">
@@ -350,11 +296,16 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
                         <td className="px-4 py-4 text-sm text-slate-300 text-right">{d.misc || 0}</td>
                         <td className="px-4 py-4 text-sm font-bold text-sky-400 text-right">{d.total}</td>
                         <td className="px-4 py-4 text-sm text-slate-300 truncate max-w-[150px]">{d.remarks}</td>
-                        <td className="px-4 py-4 text-center">
-                          <button onClick={() => setEditingDay({ employeeId: d.employeeId, date: d.date, miscExpense: d.misc, remarks: d.remarks, workAreas: d.workAreas })} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm mx-auto block">
-                            <Edit3 size={16} />
-                          </button>
-                        </td>
+                          <td className="px-4 py-4 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => handleAction('Approved', d)} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm" title="Approve">
+                                <CheckCircle size={16} strokeWidth={2.5} />
+                              </button>
+                              <button onClick={() => handleAction('Rejected', d)} className="p-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-lg hover:bg-rose-500 hover:text-white transition-all shadow-sm" title="Reject">
+                                <XCircle size={16} strokeWidth={2.5} />
+                              </button>
+                            </div>
+                          </td>
                       </tr>
                     ))
                   )}
