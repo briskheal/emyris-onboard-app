@@ -377,8 +377,14 @@ export default function Expense() {
             formData.append('file', voucherFile);
             const upRes = await axios.post('/api/upload', formData); // Correct generic image upload endpoint
             if (upRes.data.success && upRes.data.url) {
-                // If a new file is uploaded, overwrite the old images
-                finalImageUrl = upRes.data.url;
+                // If a new file is uploaded, append it to the old images so they aren't lost
+                if (finalImageUrl) {
+                    const currentSet = new Set(finalImageUrl.split(',').filter(Boolean));
+                    currentSet.add(upRes.data.url);
+                    finalImageUrl = Array.from(currentSet).join(',');
+                } else {
+                    finalImageUrl = upRes.data.url;
+                }
             }
         }
 
