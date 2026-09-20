@@ -319,14 +319,18 @@ export default function Expense() {
     
     try {
         let finalImageUrl = '';
-        if (selectedExpense) {
-            // Extract old images and deduplicate
-            const rawUrls = (selectedExpense as any).rawExps?.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean) || [];
+        
+        // Check if there are existing records for this date (either being edited directly, or selected via calendar)
+        const existingData = selectedExpense || dayData;
+        
+        if (existingData && existingData.rawExps && existingData.rawExps.length > 0) {
+            // Extract old images and deduplicate to preserve them
+            const rawUrls = existingData.rawExps.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean) || [];
             const allUrls = rawUrls.flatMap((s: string) => s.split(',')).filter(Boolean);
             finalImageUrl = Array.from(new Set(allUrls)).join(',');
             
-            // Soft delete old records to replace them (preserves files)
-            await axios.delete(`/api/xl/expense?email=${selectedUser}&date=${selectedExpense.dateStr}&preserveFiles=true`);
+            // Soft delete old records for this specific date to replace them completely and prevent doubling
+            await axios.delete(`/api/xl/expense?email=${selectedUser}&date=${expenseDate}&preserveFiles=true`);
         }
 
         // Upload new file if provided
@@ -335,13 +339,13 @@ export default function Expense() {
             formData.append('file', voucherFile);
             const upRes = await axios.post('/api/upload', formData); // Correct generic image upload endpoint
             if (upRes.data.success && upRes.data.url) {
-                // If a new file is uploaded, we overwrite or append. Let's overwrite for simplicity as they only select 1 file here.
+                // If a new file is uploaded, overwrite the old images
                 finalImageUrl = upRes.data.url;
             }
         }
 
         const submits = [];
-        const base = { employeeId: selectedUser, date: selectedExpense ? selectedExpense.dateStr : expenseDate, remarks, status: 'Pending', receiptImage: finalImageUrl };
+        const base = { employeeId: selectedUser, date: expenseDate, remarks, status: 'Pending', receiptImage: finalImageUrl };
 
         if (foodAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Food', amount: foodAmt }));
         if (ticketAmt > 0) submits.push(axios.post('/api/xl/expense', { ...base, category: 'Ticket', amount: ticketAmt }));
