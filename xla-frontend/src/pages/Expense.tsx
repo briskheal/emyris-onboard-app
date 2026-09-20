@@ -802,7 +802,7 @@ export default function Expense() {
                     <td className="p-4 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{(item as any).date}</td>
                     <td className="p-4 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10">{(item as any).fullDateStr}</td>
                     <td className="p-4 text-[13px] font-medium text-slate-300 bg-slate-800/10 border-r border-slate-700/30">{(item as any).day}</td>
-                    <td className="p-4 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{(item as any).badge || '-'}</td>
+                    <td className="p-4 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{(item as any).workAreaType || '-'}</td>
                     <td className="p-4 text-[13px] font-medium text-slate-300 border-r border-slate-700/30 max-w-[150px] truncate">{(item as any).workArea || '-'}</td>
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).travel || '-'}</td>
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).food || '-'}</td>
