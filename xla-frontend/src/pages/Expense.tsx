@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo, } from 'react';
 
-import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera , Edit2 , ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, DollarSign, Settings as SettingsIcon, X, Info, ChevronDown, Calendar, PlusCircle, Trash2, Camera , Edit2 , ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import CustomUserSelect from '../components/CustomUserSelect';
 
 export default function Expense() {
@@ -226,6 +227,81 @@ export default function Expense() {
     }
   }, [expenseDate, selectedUser, expenses]);
 
+  const handleExportExcel = () => {
+    if (!expenses || !expenses.daysArr) return;
+
+    let maxImages = 0;
+    expenses.daysArr.forEach((item: any) => {
+        const rawUrls = item.rawExps?.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean) || [];
+        const allUrls = rawUrls.flatMap((s: string) => s.split(',')).filter(Boolean);
+        const uniqueUrls = Array.from(new Set(allUrls));
+        if (uniqueUrls.length > maxImages) maxImages = uniqueUrls.length;
+    });
+
+    const wsData = [];
+    const headers = ['Date', 'Day', 'Area Type', 'Work Areas', 'Travel', 'Food', 'Hotel', 'Ticket', 'Daily', 'Misc', 'Total', 'Remarks'];
+    for (let i = 1; i <= maxImages; i++) {
+        headers.push(`Image ${i}`);
+    }
+    wsData.push(headers);
+
+    expenses.daysArr.forEach((item: any) => {
+        const rawUrls = item.rawExps?.map((ex: any) => ex.receiptImage || ex.voucherUrl).filter(Boolean) || [];
+        const allUrls = rawUrls.flatMap((s: string) => s.split(',')).filter(Boolean);
+        const uniqueUrls = Array.from(new Set(allUrls));
+
+        const row: any[] = [
+            item.fullDateStr || item.dateStr,
+            item.day || '',
+            item.badge || '',
+            item.workArea || '',
+            item.travel || 0,
+            item.food || 0,
+            item.hotel || 0,
+            item.ticket || 0,
+            item.daily || 0,
+            item.misc || 0,
+            item.total || 0,
+            item.dayRemarks || ''
+        ];
+
+        for (let i = 0; i < maxImages; i++) {
+            if (i < uniqueUrls.length) {
+                const rawUrl = uniqueUrls[i] as string;
+                const url = rawUrl.startsWith('http') ? rawUrl : `https://emyrishr.in${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+                row.push({ t: 's', v: '⬇ View Voucher', l: { Target: url } });
+            } else {
+                row.push('');
+            }
+        }
+        wsData.push(row);
+    });
+
+    // Append the total row
+    const totalRow = [
+      'Total', '', '', '',
+      expenses.totals.travel || 0,
+      expenses.totals.food || 0,
+      expenses.totals.hotel || 0,
+      expenses.totals.ticket || 0,
+      expenses.totals.daily || 0,
+      expenses.totals.misc || 0,
+      expenses.totals.total || 0,
+      ''
+    ];
+    wsData.push(totalRow);
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Expenses");
+
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'short' });
+    const uInfo = users.find(u => u.employeeId === selectedUser);
+    const userName = uInfo ? (uInfo.name || uInfo.employeeId) : selectedUser;
+    const fileName = `Expense_${userName.replace(/[^a-zA-Z0-9]/g, '_')}_${monthName}_${selectedYear}.xlsx`;
+
+    XLSX.writeFile(wb, fileName);
+  };
   
   const handleSubmitExpense = async () => {
     if (!expenseDate || !selectedUser) return;
@@ -379,7 +455,16 @@ export default function Expense() {
               )}
             </div>
 
-            <div className="flex-1 hidden md:block"></div>
+              <div className="flex flex-col gap-1.5 mt-auto">
+                  <button
+                      onClick={handleExportExcel}
+                      className="h-[42px] bg-[#1e271c] border border-emerald-500/50 hover:bg-emerald-500 hover:text-white text-emerald-400 rounded-lg px-5 text-sm font-bold flex items-center gap-2 transition-all active:scale-95 shadow-lg whitespace-nowrap"
+                  >
+                      <Download size={16} />
+                      Export to Excel
+                  </button>
+              </div>
+              <div className="flex-1 hidden md:block"></div>
 
             <div className="flex flex-col gap-1.5 min-w-[300px] relative">
               <label className="text-[11px] font-bold text-emerald-400 tracking-wide text-right">Select User</label>
