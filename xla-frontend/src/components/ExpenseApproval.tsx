@@ -47,7 +47,7 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
       else grouped[key].misc += amt;
       if (i.remarks && !grouped[key].remarks) grouped[key].remarks = i.remarks;
     });
-    return Object.values(grouped).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return Object.values(grouped).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }, [items, selectedUser]);
 
   // Group by Employee + Month
