@@ -10,38 +10,49 @@ function SearchableSelect({ value, onChange, options, placeholder, hideSearch }:
 
     const filtered = options.filter(o => o.label.toLowerCase().includes(search.toLowerCase()));
 
+    const handleSelect = (val: string) => {
+        onChange(val);
+        setIsOpen(false);
+        setSearch('');
+    };
+
     return (
         <div className="relative">
-            <button 
-               type="button"
-               onClick={() => setIsOpen(!isOpen)}
-               className="w-full text-left bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] focus:border-sky-500 shadow-sm flex justify-between items-center"
-            >
-               <span className="truncate">{value || placeholder}</span>
-               <span className="text-slate-400 text-xs">▼</span>
-            </button>
+            {hideSearch ? (
+                <button 
+                   type="button"
+                   onClick={() => setIsOpen(!isOpen)}
+                   className="w-full text-left bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] focus:border-sky-500 shadow-sm flex justify-between items-center"
+                >
+                   <span className="truncate">{value || placeholder}</span>
+                   <span className="text-slate-400 text-xs">▼</span>
+                </button>
+            ) : (
+                <div className="relative flex items-center">
+                    <input 
+                       type="text"
+                       onClick={() => setIsOpen(true)}
+                       value={isOpen ? search : (value || '')}
+                       onChange={e => {
+                           setSearch(e.target.value);
+                           if (!isOpen) setIsOpen(true);
+                       }}
+                       placeholder={placeholder || 'Search...'}
+                       className="w-full bg-[#27273f] text-sky-300 font-bold p-3.5 rounded-lg border border-[#3b3b5a] focus:border-sky-500 shadow-sm outline-none placeholder:font-normal placeholder:text-slate-500"
+                    />
+                    <span className="absolute right-4 text-slate-400 text-xs pointer-events-none">▼</span>
+                </div>
+            )}
             
             {isOpen && (
                 <>
-                    <div className="fixed inset-0 z-[90]" onClick={() => setIsOpen(false)}></div>
+                    <div className="fixed inset-0 z-[90]" onClick={() => { setIsOpen(false); setSearch(''); }}></div>
                     <div className="absolute top-full left-0 right-0 mt-2 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-2xl z-[100] overflow-hidden">
-                        {!hideSearch && (
-                            <div className="p-2 border-b border-[#3b3b5a]">
-                                <input 
-                                   type="text" 
-                                   autoFocus
-                                   placeholder="Search..."
-                                   value={search}
-                                   onChange={e => setSearch(e.target.value)}
-                                   className="w-full bg-[#1e1e2d] text-white border border-[#3b3b5a] rounded p-2 text-sm focus:outline-none focus:border-sky-500"
-                                />
-                            </div>
-                        )}
                         <div className="max-h-[350px] overflow-y-auto">
                             {filtered.map((o, i) => (
                                 <div 
                                     key={i} 
-                                    onClick={() => { onChange(o.value); setIsOpen(false); setSearch(''); }}
+                                    onClick={() => handleSelect(o.value)}
                                     className="p-3 hover:bg-[#3b3b5a] text-white font-bold border-b border-[#3b3b5a] last:border-0 cursor-pointer text-sm"
                                 >
                                     {o.label}
