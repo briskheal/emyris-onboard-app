@@ -279,7 +279,19 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                          <td className="px-6 py-4 text-sm font-bold text-white">{d} {tp.month.substring(0,3)}</td>
                          <td className="px-4 py-4 text-sm font-medium text-slate-300">{dayName}</td>
                          <td className="px-4 py-4 text-sm text-slate-300">{entry.type || entry.areaType || '-'}</td>
-                         <td className="px-4 py-4 text-sm text-sky-400">{entry.toMarket || '-'}</td>
+                          <td className="px-4 py-4 text-sm text-sky-400">
+                            <div className="flex items-center gap-2">
+                                <span>{entry.toMarket || '-'}</span>
+                                {entry.isEdited && (
+                                    <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                        Edited
+                                    </span>
+                                )}
+                            </div>
+                            {entry.activityType && entry.activityType !== 'Working' && (
+                                <div className="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider">{entry.activityType}</div>
+                            )}
+                          </td>
                          <td className="px-4 py-4 text-center">
                            <span className={`px-3 py-1 text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm ${status === 'Approved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : status === 'Rejected' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
                              {status}

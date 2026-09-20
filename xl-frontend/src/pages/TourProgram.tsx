@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, Check } from 'lucide-react';
 
 
-function SearchableSelect({ value, onChange, options, placeholder }: { value: string, onChange: (val: string) => void, options: any[], placeholder?: string }) {
+function SearchableSelect({ value, onChange, options, placeholder, hideSearch }: { value: string, onChange: (val: string) => void, options: any[], placeholder?: string, hideSearch?: boolean }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
 
@@ -25,15 +25,15 @@ function SearchableSelect({ value, onChange, options, placeholder }: { value: st
                 <>
                     <div className="fixed inset-0 z-[90]" onClick={() => setIsOpen(false)}></div>
                     <div className="absolute top-full left-0 right-0 mt-2 bg-[#27273f] border border-[#3b3b5a] rounded-lg shadow-2xl z-[100] overflow-hidden">
-                        {options.length > 8 && (
-                            <div className="p-2 border-b border-[#3b3b5a] bg-[#1e2335]">
+                        {!hideSearch && (
+                            <div className="p-2 border-b border-[#3b3b5a]">
                                 <input 
-                                    type="text" 
-                                    autoFocus
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                    placeholder="Search..."
-                                    className="w-full bg-[#1c1c2e] text-white p-2 rounded-md border border-[#3b3b5a] outline-none text-sm placeholder:text-slate-500"
+                                   type="text" 
+                                   autoFocus
+                                   placeholder="Search..."
+                                   value={search}
+                                   onChange={e => setSearch(e.target.value)}
+                                   className="w-full bg-[#1e1e2d] text-white border border-[#3b3b5a] rounded p-2 text-sm focus:outline-none focus:border-sky-500"
                                 />
                             </div>
                         )}
@@ -92,6 +92,7 @@ export default function TourProgram() {
   const [remarkText, setRemarkText] = useState('');
   
   const [holidays, setHolidays] = useState<Record<string, string>>({});
+  const [dcrStatuses, setDcrStatuses] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const storedUser = localStorage.getItem('xl_user');
@@ -107,8 +108,23 @@ export default function TourProgram() {
       fetchTP();
       fetchMarkets();
       fetchHolidays();
+      fetchDCRs();
     }
   }, [month, year, user]);
+
+  const fetchDCRs = async () => {
+      try {
+          const monthIndex = monthNames.indexOf(month) + 1;
+          const res = await axios.get(`/api/xl/dcr/monthly?email=${user.employeeId}&month=${monthIndex}&year=${year}`);
+          if (res.data.success) {
+              const statusMap: Record<string, string> = {};
+              res.data.data.forEach((d: any) => {
+                  statusMap[d.date] = d.status;
+              });
+              setDcrStatuses(statusMap);
+          }
+      } catch(e) {}
+  };
 
   const fetchHolidays = async () => {
     try {
@@ -184,6 +200,10 @@ export default function TourProgram() {
   const daysInMonth = getDaysInMonth();
 
   const toggleSelection = (dateStr: string) => {
+    if (dcrStatuses[dateStr] === 'Submitted' || dcrStatuses[dateStr] === 'Approved') {
+        showToast('Report already submitted for this day. TP is not editable.');
+        return;
+    }
     if (selectedDates.includes(dateStr)) {
       setSelectedDates(selectedDates.filter(d => d !== dateStr));
     } else {
@@ -213,11 +233,13 @@ export default function TourProgram() {
     // 1. Update Local State
     const newEntries = { ...entries };
     formDates.forEach(d => {
+      const isExisting = !!entries[d];
       newEntries[d] = { 
         activityType: formActivity, 
         type: formArea, 
         areaType: formArea, 
-        toMarket: formLocation 
+        toMarket: formLocation,
+        isEdited: entries[d]?.isEdited || (isExisting && tpStatus !== 'Draft')
       };
     });
     setEntries(newEntries);
@@ -226,7 +248,14 @@ export default function TourProgram() {
     setSaving(true);
     try {
       const entriesArr = Object.entries(newEntries).map(([date, val]) => {
-        return { date, type: val.type || val.areaType, toMarket: val.toMarket };
+        return { 
+          date, 
+          type: val.type || val.areaType, 
+          areaType: val.areaType || val.type,
+          activityType: val.activityType,
+          toMarket: val.toMarket,
+          isEdited: val.isEdited
+        };
       });
       const saveRes = await axios.post('/api/xl/tour-program', {
         employeeId: user?.employeeId, 
@@ -289,6 +318,7 @@ export default function TourProgram() {
             <label className="text-slate-300 text-sm mb-1.5 block font-medium">Activity Type <span className="text-red-500">*</span></label>
             <div className="relative">
               <SearchableSelect 
+                  hideSearch={true}
                   value={formActivity}
                   onChange={val => setFormActivity(val)}
                   options={[
@@ -310,13 +340,14 @@ export default function TourProgram() {
           </div>
 
           {/* Area Type */}
-          <div>
-            <label className="text-slate-300 text-sm mb-1.5 block font-medium">Area Type <span className="text-red-500">*</span></label>
-            <div className="relative">
-              <SearchableSelect 
-                  value={formArea}
-                  onChange={val => { setFormArea(val); setFormLocation(''); }}
-                  options={[
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block font-medium">Area Type <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <SearchableSelect 
+                    hideSearch={true}
+                    value={formArea}
+                    onChange={val => { setFormArea(val); setFormLocation(''); }}
+                    options={[
                     {value: 'HQ', label: 'HQ'},
                     {value: 'Ex-Mkt', label: 'Ex-Mkt'},
                     {value: 'Out-Mkt', label: 'Out-Mkt'},
@@ -437,8 +468,12 @@ export default function TourProgram() {
               onClick={() => {
                   if (selectionMode && !isBlocked) toggleSelection(dateStr);
                   else if (!selectionMode && !isBlocked) {
+                    if (dcrStatuses[dateStr] === 'Submitted' || dcrStatuses[dateStr] === 'Approved') {
+                        showToast('Report already submitted for this day. TP is not editable.');
+                        return;
+                    }
                     if (entry) {
-                      setFormActivity(entry.activityType || entry.type || 'Working');
+                      setFormActivity(entry.activityType || 'Working');
                       setFormArea(entry.areaType || entry.type || 'HQ');
                       setFormLocation(entry.toMarket || '');
                       setFormDates([dateStr]);
@@ -464,8 +499,20 @@ export default function TourProgram() {
                        {isHoliday && <span className="text-xs font-medium text-slate-500 truncate">{holidays[dateStr]}</span>}
                     </div>
                   ) : entry ? (
-                    <div className="text-sm font-bold text-slate-200 leading-snug truncate">
-                      {entry.toMarket ? entry.toMarket : entry.type}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-slate-200 leading-snug truncate">
+                          {entry.toMarket ? entry.toMarket : entry.type}
+                        </span>
+                        {entry.isEdited && (
+                          <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
+                            Edited
+                          </span>
+                        )}
+                      </div>
+                      {(entry.activityType && entry.activityType !== 'Working') && (
+                          <span className="text-xs text-sky-400 font-semibold">{entry.activityType}</span>
+                      )}
                     </div>
                   ) : (
                     <span className="text-sm font-bold text-slate-400">
