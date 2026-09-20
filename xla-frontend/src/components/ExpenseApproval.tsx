@@ -31,10 +31,10 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
           designation: i.designation || '-',
           reportingManager: i.reportingManager || '-',
           date: i.date,
-          areaType: 'Local', // Can be refined if area info is stored
+          areaType: i.areaType || 'Out-Station',
           travel: 0, food: 0, hotel: 0, ticket: 0, daily: 0, misc: 0, total: 0,
           remarks: i.remarks || '',
-          workAreas: '-'
+          workAreas: i.workAreas || '-'
         };
       }
       const amt = parseFloat(i.amount) || 0;

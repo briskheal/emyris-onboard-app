@@ -1919,6 +1919,14 @@ router.get('/approvals/pending', async (req, res) => {
                 pData.location = pData.geoAddress || `${pData.latitude}, ${pData.longitude}`;
             }
 
+            if (type === 'Expense') {
+                const tp = await XlTourProgram.findOne({ where: { employeeId: pData.employeeId, date: pData.date } });
+                if (tp) {
+                    pData.areaType = tp.workAreaType || 'Out-Station';
+                    pData.workAreas = tp.workArea || '-';
+                }
+            }
+
             data.push(pData);
         }
 
