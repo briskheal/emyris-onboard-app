@@ -794,7 +794,7 @@ export default function Expense() {
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Ticket</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Daily</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Misc.</th>
-                  <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Total ↑</th>
+                  <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Total</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-center">Status</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300">Remarks</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-center sticky right-0 bg-[#242b42] z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">{isDeleteMode ? 'Select' : 'View'}</th>
