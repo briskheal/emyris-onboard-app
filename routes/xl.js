@@ -1920,10 +1920,22 @@ router.get('/approvals/pending', async (req, res) => {
             }
 
             if (type === 'Expense') {
-                const tp = await XlTourProgram.findOne({ where: { employeeId: pData.employeeId, date: pData.date } });
-                if (tp) {
-                    pData.areaType = tp.workAreaType || 'Out-Station';
-                    pData.workAreas = tp.workArea || '-';
+                try {
+                    const dateObj = new Date(pData.date);
+                    const month = dateObj.toLocaleString('en-US', { month: 'long' });
+                    const year = String(dateObj.getFullYear());
+                    const tp = await XlTourProgram.findOne({ where: { employeeId: pData.employeeId, month, year } });
+                    if (tp && tp.entries) {
+                        let entries = [];
+                        try { entries = typeof tp.entries === 'string' ? JSON.parse(tp.entries) : tp.entries; } catch(e){}
+                        const dayEntry = entries.find(e => e.dateStr === pData.date);
+                        if (dayEntry) {
+                            pData.areaType = dayEntry.workAreaType || 'Out-Station';
+                            pData.workAreas = dayEntry.workArea || '-';
+                        }
+                    }
+                } catch(e) {
+                    // ignore mapping error
                 }
             }
 
