@@ -1888,7 +1888,7 @@ router.get('/approvals/pending', async (req, res) => {
                     status: { [Op.notIn]: ['Pending', 'Submitted', 'pending', 'submitted'] }
                 } : {
                     [Op.or]: [
-                        { status: ['Pending', 'Submitted', 'pending', 'submitted'] },
+                        { status: ['Pending', 'Submitted', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] },
                         { status: null }
                     ]
                 })
@@ -1992,7 +1992,7 @@ router.post('/approvals/action', async (req, res) => {
         
         if (type === 'ExpenseGroup') {
             const { employeeId, date, miscExpense } = req.body;
-            const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted'] } });
+            const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] } });
             
             for (const rec of records) {
                 if (action === 'Deleted' || action === 'Delete') {

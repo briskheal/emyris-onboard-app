@@ -63,6 +63,10 @@ export default function Expense() {
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Resubmit tracking
+  const [isResubmit, setIsResubmit] = useState(false);
+  const [existingReceiptUrl, setExistingReceiptUrl] = useState('');
+
   useEffect(() => {
     fetchMonthData();
   }, [selectedMonth, selectedYear]);
@@ -169,6 +173,8 @@ export default function Expense() {
       setView('view');
     } else {
       // Reset form
+      setIsResubmit(false);
+      setExistingReceiptUrl('');
       setVehicleType('2-Wheeler');
       setHotelAmt(''); setFoodAmt(''); setTicketAmt(''); setMiscAmt('');
       setRemarks('');
@@ -232,6 +238,8 @@ export default function Expense() {
            if (upRes.data.success && upRes.data.url) urls.push(upRes.data.url);
          }
          uploadedStr = urls.join(',');
+      } else if (isResubmit && existingReceiptUrl) {
+         uploadedStr = existingReceiptUrl;
       }
 
       // Prepare records
@@ -248,6 +256,10 @@ export default function Expense() {
         return;
       }
 
+      if (isResubmit) {
+          await axios.delete(`/api/xl/expense?email=${email}&date=${selectedDate}&preserveFiles=true`);
+      }
+
       // Submit each
       await Promise.all(records.map(r => 
         axios.post('/api/xl/expense', {
@@ -256,7 +268,8 @@ export default function Expense() {
           amount: r.amount,
           category: r.category,
           remarks: (r.vehicle ? `Vehicle: ${r.vehicle} | ` : '') + remarks,
-          receiptImage: uploadedStr
+          receiptImage: uploadedStr,
+          status: isResubmit ? 'Re-Submitted' : 'Pending'
         })
       ));
 
@@ -271,6 +284,8 @@ export default function Expense() {
 
   const handleEditResubmit = (dayData: any) => {
     const exps = dayData.dayExps || [];
+    setIsResubmit(true);
+    setExistingReceiptUrl(exps[0]?.receiptImage || '');
     setHotelAmt(''); setFoodAmt(''); setTicketAmt(''); setMiscAmt(''); setDailyAmt('');
     exps.forEach((e: any) => {
        const cat = (e.category || '').toLowerCase();
@@ -545,6 +560,7 @@ export default function Expense() {
                             {d.status === 'Rejected' && <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Rejected</span>}
                             {d.status === 'Approved' && <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Approved</span>}
                             {(d.status === 'Pending' || d.status === 'Submitted') && <span className="text-[10px] font-bold text-sky-500 uppercase tracking-widest">Pending</span>}
+                            {d.status === 'Re-Submitted' && <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest">Re-Submitted</span>}
                           </div>
                       ) : d.tpEntry ? (
                         <span className="text-slate-200 font-medium text-[14px]">Add Expense</span>

@@ -819,6 +819,7 @@ export default function Expense() {
                       {item.status === 'Rejected' && <span className="px-2 py-1 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 uppercase">Rejected</span>}
                       {item.status === 'Approved' && <span className="px-2 py-1 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">Approved</span>}
                       {(item.status === 'Pending' || item.status === 'Submitted') && <span className="px-2 py-1 rounded text-[10px] font-bold bg-sky-500/20 text-sky-400 border border-sky-500/30 uppercase">Pending</span>}
+                      {item.status === 'Re-Submitted' && <span className="px-2 py-1 rounded text-[10px] font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 uppercase">Re-Submitted</span>}
                       {item.status === 'Not Submitted' && <span className="px-2 py-1 rounded text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase">Not Sub.</span>}
                     </td>
                     <td className="p-4 text-[12px] font-medium text-slate-400 border-r border-slate-700/30">
