@@ -301,7 +301,8 @@ export default function Expense() {
                 // Use the force download endpoint
                 if (finalUrl.includes('emyrishr.in/uploads')) {
                     const justPath = finalUrl.split('emyrishr.in')[1];
-                    finalUrl = `https://emyrishr.in/api/xl/download?file=${encodeURIComponent(justPath)}`;
+                    const ext = justPath.includes('.') ? justPath.substring(justPath.lastIndexOf('.')) : '.jpg';
+                    finalUrl = `https://emyrishr.in/api/xl/download?file=${encodeURIComponent(justPath)}&name=Voucher-${i + 1}${ext}`;
                 }
                 row.push({ t: 's', v: '⬇ Down', l: { Target: finalUrl } });
             } else {
@@ -688,7 +689,7 @@ export default function Expense() {
                                       <label className="text-[13px] font-bold text-slate-300 whitespace-nowrap">Travel Allowance</label>
                                     </div>
                                     <div className="w-[60%]">
-                                      <input type="number" value={ticketAmt || ''} onChange={(e: any) => setTicketAmt(parseFloat(e.target.value)||0)} readOnly={isExStation} className={"w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" + (isExStation ? ' opacity-70 cursor-not-allowed' : '')} placeholder="0" />
+                                      <input type="number" value={ticketAmt || ''} onChange={(e: any) => setTicketAmt(parseFloat(e.target.value)||0)} className="w-full bg-[#0b0f19]/50 border border-slate-700/80 text-white text-[13px] font-bold rounded-lg px-4 py-2 focus:outline-none focus:border-sky-500/50" placeholder="0" />
                                     </div>
                                 </div>
                               )}
@@ -724,8 +725,8 @@ export default function Expense() {
                               </div>
 
                               {[
-                                { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false, readOnly: isLocal || isExStation },
-                                { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false, readOnly: false },
+                                { label: 'Daily Allowance', val: dailyAmt, set: setDailyAmt, icon: false },
+                                { label: 'Miscellaneous Expense', val: miscAmt, set: setMiscAmt, icon: false },
                               ].map((f, i) => (
                                 <div key={i} className="flex items-center justify-between group">
                                     <div className="flex items-center gap-2 w-[40%]">
@@ -810,7 +811,11 @@ export default function Expense() {
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).daily || '-'}</td>
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).misc || '-'}</td>
                     <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{(item as any).total || '-'}</td>
-                    <td className="p-4 text-[12px] font-medium text-slate-400 max-w-[150px] truncate" title={(item as any).dayRemarks}>{(item as any).dayRemarks || '-'}</td>
+                    <td className="p-4 text-[12px] font-medium text-slate-400 border-r border-slate-700/30">
+                      <div className="max-w-[200px] max-h-[60px] overflow-y-auto whitespace-normal break-words custom-scrollbar pr-2" title={(item as any).dayRemarks}>
+                        {(item as any).dayRemarks || '-'}
+                      </div>
+                    </td>
                     <td className="p-3 text-center sticky right-0 bg-[#151c2c] group-hover:bg-[#1e2336] transition-colors z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] cursor-pointer flex items-center justify-center gap-2 h-full min-h-[56px]">
                       {isDeleteMode ? (
                          ((item as any).total || 0) > 0 ? (

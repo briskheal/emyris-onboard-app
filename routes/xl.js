@@ -1271,11 +1271,16 @@ router.get('/dcr/monthly', async (req, res) => {
 router.get('/download', (req, res) => {
     try {
         const fileUrl = req.query.file;
+        const customName = req.query.name;
         if (!fileUrl) return res.status(400).json({ error: 'File required' });
         // fileUrl is like /uploads/abc.jpg
         const filePath = path.join(__dirname, '..', fileUrl);
         if (fs.existsSync(filePath)) {
-            res.download(filePath);
+            if (customName) {
+                res.download(filePath, customName);
+            } else {
+                res.download(filePath);
+            }
         } else {
             res.status(404).send('File not found');
         }
