@@ -128,6 +128,7 @@ export default function Expense() {
     
     let pending = 0;
     let approved = 0;
+    let rejected = 0;
     
     // Summary totals
     let sumTravel = 0, sumFood = 0, sumHotel = 0, sumTicket = 0, sumDaily = 0, sumMisc = 0, sumTotal = 0;
@@ -168,6 +169,7 @@ export default function Expense() {
       });
 
       if (status.toLowerCase() === 'approved') approved += total;
+      else if (status.toLowerCase() === 'rejected') rejected += total;
       else if (total > 0) pending += total;
       
       let finalStatus = status || (total > 0 ? 'Pending' : 'Not Submitted');
@@ -204,6 +206,7 @@ export default function Expense() {
       daysArr: filteredArr, 
       pending, 
       approved,
+      rejected,
       totals: { travel: sumTravel, food: sumFood, hotel: sumHotel, ticket: sumTicket, daily: sumDaily, misc: sumMisc, total: sumTotal }
     };
   }, [selectedMonth, selectedYear, rawExpenses, filterStatus]);
@@ -792,6 +795,7 @@ export default function Expense() {
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Daily</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Misc.</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-right">Total ↑</th>
+                  <th className="p-4 text-[11px] font-bold text-slate-300 text-center">Status</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300">Remarks</th>
                   <th className="p-4 text-[11px] font-bold text-slate-300 text-center sticky right-0 bg-[#242b42] z-30 border-l border-slate-700/50 shadow-[-4px_0_10px_rgba(0,0,0,0.2)]">{isDeleteMode ? 'Select' : 'View'}</th>
                 </tr>
@@ -811,6 +815,12 @@ export default function Expense() {
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).daily || '-'}</td>
                     <td className="p-4 text-[13px] font-medium text-slate-300 text-right border-r border-slate-700/30">{(item as any).misc || '-'}</td>
                     <td className="p-4 text-[13px] font-black text-sky-400 text-right border-r border-slate-700/30">{(item as any).total || '-'}</td>
+                    <td className="p-4 text-[12px] font-medium text-center border-r border-slate-700/30">
+                      {item.status === 'Rejected' && <span className="px-2 py-1 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 uppercase">Rejected</span>}
+                      {item.status === 'Approved' && <span className="px-2 py-1 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase">Approved</span>}
+                      {(item.status === 'Pending' || item.status === 'Submitted') && <span className="px-2 py-1 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">Pending</span>}
+                      {item.status === 'Not Submitted' && <span className="text-slate-500 text-[10px] uppercase font-bold">-</span>}
+                    </td>
                     <td className="p-4 text-[12px] font-medium text-slate-400 border-r border-slate-700/30">
                       <div className="max-w-[200px] max-h-[60px] overflow-y-auto whitespace-normal break-words custom-scrollbar pr-2" title={(item as any).dayRemarks}>
                         {(item as any).dayRemarks || '-'}
@@ -854,7 +864,7 @@ export default function Expense() {
                 ))}
                 
                 {/* MEDORN STYLE TOTALS ROW */}
-                <tr className="bg-[#242b42] font-bold group border-t-2 border-sky-500">
+                  <tr className="bg-[#242b42] font-bold group border-t-2 border-sky-500">
                     <td colSpan={5} className="p-4 text-center text-sky-400 text-[14px]">Total</td>
                     <td className="p-4 text-sky-400 text-[14px] text-right">{expenses.totals.travel || '0'}</td>
                     <td className="p-4 text-sky-400 text-[14px] text-right">{expenses.totals.food || '0'}</td>
@@ -864,8 +874,9 @@ export default function Expense() {
                     <td className="p-4 text-sky-400 text-[14px] text-right">{expenses.totals.misc || '0'}</td>
                     <td className="p-4 text-sky-400 text-[14px] text-right border-r border-slate-700/30">{expenses.totals.total || '0'}</td>
                     <td className="p-4 bg-transparent border-r border-slate-700/30"></td>
+                    <td className="p-4 bg-transparent border-r border-slate-700/30"></td>
                     <td className="p-4 bg-[#242b42] sticky right-0 z-30 shadow-[-4px_0_10px_rgba(0,0,0,0.2)] border-l border-slate-700/50"></td>
-                </tr>
+                  </tr>
               </tbody>
             </table>
           </div>
@@ -881,7 +892,7 @@ export default function Expense() {
                 </div>
             </div>
 
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
                 <div className="flex items-center gap-4 bg-[#1e2336] p-4 rounded-xl border border-slate-700/50 shadow-md w-full md:flex-1">
                     <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center">
                     <DollarSign size={20} className="text-amber-400" />
@@ -889,6 +900,16 @@ export default function Expense() {
                     <div>
                     <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1.5">Total Pending Expense</p>
                     <p className="text-[18px] font-black text-amber-400 leading-none">₹ {Number(expenses.pending || 0).toFixed(2)}</p>
+                    </div>
+                </div>
+                
+                <div className="flex items-center gap-4 bg-[#1e2336] p-4 rounded-xl border border-slate-700/50 shadow-md w-full md:flex-1">
+                    <div className="w-10 h-10 rounded-full bg-rose-500/10 flex items-center justify-center">
+                    <X size={20} className="text-rose-400" />
+                    </div>
+                    <div>
+                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1.5">Total Rejected Expense</p>
+                    <p className="text-[18px] font-black text-rose-400 leading-none">₹ {Number(expenses.rejected || 0).toFixed(2)}</p>
                     </div>
                 </div>
                 

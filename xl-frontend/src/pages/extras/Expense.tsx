@@ -109,6 +109,7 @@ export default function Expense() {
     const data = [];
     let approvedSum = 0;
     let pendingSum = 0;
+    let rejectedSum = 0;
 
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${selectedYear}-${currentMonthStr}-${String(d).padStart(2, '0')}`;
@@ -116,7 +117,9 @@ export default function Expense() {
       const totalAmt = dayExps.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
       
       if (dayExps.length > 0) {
-        if (dayExps[0].status === 'Approved') approvedSum += totalAmt;
+        const status = dayExps[0].status || 'Pending';
+        if (status === 'Approved') approvedSum += totalAmt;
+        else if (status === 'Rejected') rejectedSum += totalAmt;
         else pendingSum += totalAmt;
       }
 
@@ -136,13 +139,14 @@ export default function Expense() {
         dayExps,
         totalAmt,
         hasExpense: dayExps.length > 0,
+        status: dayExps.length > 0 ? (dayExps[0].status || 'Pending') : '',
         tpEntry,
         holidayName,
         isSunday
       });
     }
     
-    return { days: data, approvedSum, pendingSum };
+    return { days: data, approvedSum, pendingSum, rejectedSum };
   }, [selectedYear, selectedMonth, daysInMonth, expenses, tpEntries, holidays]);
 
   const handleRowClick = async (dayData: any) => {
@@ -263,6 +267,22 @@ export default function Expense() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditResubmit = (dayData: any) => {
+    const exps = dayData.dayExps || [];
+    setHotelAmt(''); setFoodAmt(''); setTicketAmt(''); setMiscAmt(''); setDailyAmt('');
+    exps.forEach((e: any) => {
+       const cat = (e.category || '').toLowerCase();
+       const amt = parseFloat(e.amount) || '';
+       if (cat.includes('hotel')) setHotelAmt(amt);
+       else if (cat.includes('food')) setFoodAmt(amt);
+       else if (cat.includes('ticket') || cat.includes('travel')) setTicketAmt(amt);
+       else if (cat.includes('da') || cat.includes('daily')) setDailyAmt(amt);
+       else setMiscAmt(amt);
+    });
+    setRemarks(exps[0]?.remarks || '');
+    setView('form');
   };
 
   const closeSuccess = () => {
@@ -439,11 +459,22 @@ export default function Expense() {
                 </div>
              </div>
 
-             <div className="mt-6">
-                <h3 className="text-slate-400 text-[13px] mb-1">Remarks</h3>
-                <p className="text-white text-[14px]">{dayData?.dayExps[0]?.remarks || '-'}</p>
-             </div>
-          </div>
+               <div className="mt-6">
+                  <h3 className="text-slate-400 text-[13px] mb-1">Remarks</h3>
+                  <p className="text-white text-[14px]">{dayData?.dayExps[0]?.remarks || '-'}</p>
+               </div>
+               
+               {dayData?.status === 'Rejected' && (
+                 <div className="mt-8">
+                    <button 
+                      onClick={() => handleEditResubmit(dayData)}
+                      className="w-full bg-rose-500 hover:bg-rose-400 text-white font-bold py-4 rounded-xl shadow-[0_0_15px_rgba(244,63,94,0.3)] active:scale-95 transition-all uppercase tracking-widest text-[14px]"
+                    >
+                      Edit & Resubmit
+                    </button>
+                 </div>
+               )}
+            </div>
         )}
       </div>
       );
@@ -475,10 +506,14 @@ export default function Expense() {
              </div>
           </div>
           
-          <div className="flex border border-yellow-500/50 rounded-xl overflow-hidden mb-4 bg-[#242b42]/50">
-             <div className="flex-1 p-3 border-r border-yellow-500/50 text-center">
+          <div className="flex bg-[#242b42] rounded-xl border border-slate-800 divide-x divide-slate-800 mb-4">
+             <div className="flex-1 p-3 text-center">
                 <div className="text-emerald-500 font-bold text-[13px] mb-1">Approved</div>
                 <div className="text-white font-black text-xl">{listData.approvedSum}</div>
+             </div>
+             <div className="flex-1 p-3 text-center">
+                <div className="text-rose-500 font-bold text-[13px] mb-1">Rejected</div>
+                <div className="text-white font-black text-xl">{listData.rejectedSum}</div>
              </div>
              <div className="flex-1 p-3 text-center">
                 <div className="text-yellow-500 font-bold text-[13px] mb-1">Pending</div>
@@ -496,16 +531,20 @@ export default function Expense() {
                 <div 
                    key={idx} 
                    onClick={() => handleRowClick(d)}
-                   className="flex items-center justify-between bg-[#242b42] mb-2 p-2.5 rounded-xl cursor-pointer active:scale-95 transition-transform"
+                   className={`flex items-center justify-between bg-[#242b42] mb-2 p-2.5 rounded-xl cursor-pointer active:scale-95 transition-transform border border-transparent ${d.status === 'Rejected' ? '!border-rose-500/50 !bg-rose-500/5' : ''}`}
                 >
-                   <div className="w-12 h-12 bg-sky-500 rounded-lg flex flex-col items-center justify-center text-white shrink-0 shadow-lg">
+                   <div className={`w-12 h-12 rounded-lg flex flex-col items-center justify-center text-white shrink-0 shadow-lg ${d.status === 'Rejected' ? 'bg-rose-500' : 'bg-sky-500'}`}>
                       <span className="font-bold text-[18px] leading-none">{d.day}</span>
                       <span className="text-[10px] uppercase font-medium">{d.dayOfWeek}</span>
                    </div>
                    
                    <div className="flex-1 ml-4 overflow-hidden">
                       {d.hasExpense ? (
-                        <span className="text-slate-200 font-medium text-[14px]">Total- ₹ {d.totalAmt}</span>
+                        <div className="flex flex-col">
+                          <span className={`${d.status === 'Rejected' ? 'text-rose-400' : 'text-slate-200'} font-medium text-[14px]`}>Total- ₹ {d.totalAmt}</span>
+                          {d.status === 'Rejected' && <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Rejected</span>}
+                          {d.status === 'Approved' && <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Approved</span>}
+                        </div>
                       ) : d.tpEntry ? (
                         <span className="text-slate-200 font-medium text-[14px]">Add Expense</span>
                       ) : d.holidayName ? (
@@ -519,11 +558,11 @@ export default function Expense() {
                    
                    <div className="shrink-0 ml-2">
                       {d.hasExpense ? (
-                         <span className="border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase">{d.tpEntry?.type || d.tpEntry?.workAreaType || 'OUT'}</span>
+                         <span className={`border px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase ${d.status === 'Rejected' ? 'border-rose-500/50 text-rose-400' : 'border-emerald-500/50 text-emerald-400'}`}>{d.tpEntry?.type || d.tpEntry?.workAreaType || 'OUT'}</span>
                       ) : d.tpEntry ? (
                          <span className="border border-emerald-500/50 text-emerald-400 px-3 py-1 rounded-full text-[11px] font-bold tracking-widest uppercase">{d.tpEntry?.type || d.tpEntry?.workAreaType || 'OUT'}</span>
                       ) : (
-                         <span className="text-slate-600 font-medium px-3 text-[16px]">+</span>
+                         <span className="text-slate-600 font-bold text-[14px]">+</span>
                       )}
                    </div>
                 </div>
