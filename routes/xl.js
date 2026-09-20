@@ -6,15 +6,25 @@ router.get('/cleanup-orphaned-files', async (req, res) => {
     try {
         const fs = require('fs');
         const path = require('path');
-        const dbPath = path.join(__dirname, '..', 'database.sqlite');
+        const { sequelize } = require('../db');
         const uploadsPath = path.join(__dirname, '..', 'uploads');
 
         if (!fs.existsSync(uploadsPath)) return res.json({ success: true, message: 'Uploads folder not found' });
-        if (!fs.existsSync(dbPath)) return res.json({ success: false, message: 'Database file not found' });
+
+        // Fetch ALL data from ALL tables to create a universal reference string
+        let dbContent = '';
+        const models = Object.values(sequelize.models);
+        for (const model of models) {
+            try {
+                const records = await model.findAll({ raw: true });
+                dbContent += JSON.stringify(records);
+            } catch(e) {
+                // skip unqueryable models
+            }
+        }
 
         const files = fs.readdirSync(uploadsPath);
-        const dbContent = fs.readFileSync(dbPath, 'latin1'); 
-
+        
         let deletedCount = 0;
         let keptCount = 0;
         let deletedSize = 0;
@@ -24,7 +34,10 @@ router.get('/cleanup-orphaned-files', async (req, res) => {
             const stats = fs.statSync(filePath);
             if (stats.isDirectory()) continue;
             
-            // Check if filename exists anywhere in the database file
+            // Exclude common static or non-uploaded files if they somehow got in
+            if (file === '.gitkeep' || file === 'test.webp') continue;
+            
+            // Check if filename exists anywhere in the database dump
             if (!dbContent.includes(file)) {
                 deletedSize += stats.size;
                 fs.unlinkSync(filePath);
