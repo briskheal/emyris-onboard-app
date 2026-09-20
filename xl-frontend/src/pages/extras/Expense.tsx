@@ -516,7 +516,7 @@ export default function Expense() {
                 <div className="text-white font-black text-xl">{listData.rejectedSum}</div>
              </div>
              <div className="flex-1 p-3 text-center">
-                <div className="text-yellow-500 font-bold text-[13px] mb-1">Pending</div>
+                <div className="text-sky-500 font-bold text-[13px] mb-1">Pending</div>
                 <div className="text-white font-black text-xl">{listData.pendingSum}</div>
              </div>
           </div>
@@ -540,11 +540,12 @@ export default function Expense() {
                    
                    <div className="flex-1 ml-4 overflow-hidden">
                       {d.hasExpense ? (
-                        <div className="flex flex-col">
-                          <span className={`${d.status === 'Rejected' ? 'text-rose-400' : 'text-slate-200'} font-medium text-[14px]`}>Total- ₹ {d.totalAmt}</span>
-                          {d.status === 'Rejected' && <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Rejected</span>}
-                          {d.status === 'Approved' && <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Approved</span>}
-                        </div>
+                          <div className="flex flex-col">
+                            <span className={`${d.status === 'Rejected' ? 'text-rose-400' : 'text-slate-200'} font-medium text-[14px]`}>Total- ₹ {d.totalAmt}</span>
+                            {d.status === 'Rejected' && <span className="text-[10px] font-bold text-rose-500 uppercase tracking-widest">Rejected</span>}
+                            {d.status === 'Approved' && <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">Approved</span>}
+                            {(d.status === 'Pending' || d.status === 'Submitted') && <span className="text-[10px] font-bold text-sky-500 uppercase tracking-widest">Pending</span>}
+                          </div>
                       ) : d.tpEntry ? (
                         <span className="text-slate-200 font-medium text-[14px]">Add Expense</span>
                       ) : d.holidayName ? (

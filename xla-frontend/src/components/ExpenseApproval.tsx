@@ -117,8 +117,8 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
             <div className="flex flex-wrap gap-6 items-center text-xs font-black uppercase tracking-widest text-slate-400">
                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Approved</div>
                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500"></div> Rejected</div>
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div> Pending</div>
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-slate-600"></div> Not Submitted</div>
+               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-sky-500"></div> Pending</div>
+               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-purple-500"></div> Not Submitted</div>
             </div>
          </div>
          
