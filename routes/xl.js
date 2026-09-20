@@ -1928,10 +1928,18 @@ router.get('/approvals/pending', async (req, res) => {
                     if (tp && tp.entries) {
                         let entries = [];
                         try { entries = typeof tp.entries === 'string' ? JSON.parse(tp.entries) : tp.entries; } catch(e){}
-                        const dayEntry = entries.find(e => e.dateStr === pData.date);
+                        const dayEntry = entries.find(e => {
+                            if (e.dateStr) return e.dateStr === pData.date;
+                            if (e.date) {
+                                if (typeof e.date === 'string' && e.date.length === 10) return e.date === pData.date;
+                                const d = new Date(e.date);
+                                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` === pData.date;
+                            }
+                            return false;
+                        });
                         if (dayEntry) {
-                            pData.areaType = dayEntry.workAreaType || 'Out-Station';
-                            pData.workAreas = dayEntry.workArea || '-';
+                            pData.areaType = dayEntry.type || dayEntry.workAreaType || 'Out-Station';
+                            pData.workAreas = dayEntry.toMarket || dayEntry.workingArea || dayEntry.workArea || '-';
                         }
                     }
                 } catch(e) {
