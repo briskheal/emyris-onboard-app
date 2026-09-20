@@ -227,8 +227,19 @@ export default function Expense() {
     }
   }, [expenseDate, selectedUser, expenses]);
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!expenses || !expenses.daysArr) return;
+
+    // Fetch DCRs to get Total Calls per day
+    let dcrMap: Record<string, number> = {};
+    try {
+       const res = await axios.get(`/api/xl/dcr/monthly?email=${selectedUser}&month=${selectedMonth}&year=${selectedYear}`);
+       if (res.data.success) {
+          res.data.data.forEach((dcr: any) => {
+             dcrMap[dcr.date] = (dcrMap[dcr.date] || 0) + 1;
+          });
+       }
+    } catch(e) { console.error(e); }
 
     let maxImages = 0;
     expenses.daysArr.forEach((item: any) => {
@@ -238,8 +249,14 @@ export default function Expense() {
         if (uniqueUrls.length > maxImages) maxImages = uniqueUrls.length;
     });
 
-    const wsData = [];
-    const headers = ['Date', 'Day', 'Area Type', 'Work Areas', 'Travel', 'Food', 'Hotel', 'Ticket', 'Daily', 'Misc', 'Total', 'Remarks'];
+    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' });
+    const declaration = `This is to declare that the daily allowance as claimed for the month of ${monthName} are out of pocket expenses such as parking, snacks, stationary and other such expenses for which bills are not available.`;
+
+    const wsData: any[][] = [];
+    wsData.push([declaration]); // Row 1
+    wsData.push([]);            // Row 2
+
+    const headers = ['Date', 'Day', 'Area Type', 'Working Type', 'Total Calls', 'Work Areas', 'Travel', 'Food', 'Hotel', 'Ticket', 'Daily', 'Misc', 'Total', 'Remarks', 'Admin/Manager Remarks'];
     for (let i = 1; i <= maxImages; i++) {
         headers.push(`Image ${i}`);
     }
@@ -250,10 +267,21 @@ export default function Expense() {
         const allUrls = rawUrls.flatMap((s: string) => s.split(',')).filter(Boolean);
         const uniqueUrls = Array.from(new Set(allUrls));
 
+        const totalCalls = dcrMap[item.dateStr] || 0;
+        
+        // Derive Working Type
+        let workingType = 'Out-Station'; 
+        if (item.workAreaType === 'HQ' || item.workAreaType === 'Local') workingType = 'Working';
+        else if (item.workAreaType === 'Out-Station') workingType = 'Working';
+        else if (item.workAreaType === 'Ex-Station' || item.workAreaType === 'Ex-Mkt') workingType = 'Meeting';
+        else workingType = item.workAreaType || 'Working';
+
         const row: any[] = [
             item.fullDateStr || item.dateStr,
             item.day || '',
-            item.badge || '',
+            item.workAreaType || 'Out-Station',
+            workingType,
+            totalCalls > 0 ? totalCalls : '',
             item.workArea || '',
             item.travel || 0,
             item.food || 0,
@@ -262,14 +290,20 @@ export default function Expense() {
             item.daily || 0,
             item.misc || 0,
             item.total || 0,
-            item.dayRemarks || ''
+            item.dayRemarks || '',
+            item.rawExps?.[0]?.adminRemarks || ''
         ];
 
         for (let i = 0; i < maxImages; i++) {
             if (i < uniqueUrls.length) {
                 const rawUrl = uniqueUrls[i] as string;
-                const url = rawUrl.startsWith('http') ? rawUrl : `https://emyrishr.in${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
-                row.push({ t: 's', v: '⬇ View Voucher', l: { Target: url } });
+                let finalUrl = rawUrl.startsWith('http') ? rawUrl : `https://emyrishr.in${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+                // Use the force download endpoint
+                if (finalUrl.includes('emyrishr.in/uploads')) {
+                    const justPath = finalUrl.split('emyrishr.in')[1];
+                    finalUrl = `https://emyrishr.in/api/xl/download?file=${encodeURIComponent(justPath)}`;
+                }
+                row.push({ t: 's', v: '⬇ Down', l: { Target: finalUrl } });
             } else {
                 row.push('');
             }
@@ -279,7 +313,7 @@ export default function Expense() {
 
     // Append the total row
     const totalRow = [
-      'Total', '', '', '',
+      'Total', '', '', '', '', '',
       expenses.totals.travel || 0,
       expenses.totals.food || 0,
       expenses.totals.hotel || 0,
@@ -287,18 +321,22 @@ export default function Expense() {
       expenses.totals.daily || 0,
       expenses.totals.misc || 0,
       expenses.totals.total || 0,
-      ''
+      '', ''
     ];
     wsData.push(totalRow);
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Merge Row 1 across all columns
+    ws['!merges'] = [ { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } } ];
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Expenses");
 
-    const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'short' });
+    const monthNameShort = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'short' });
     const uInfo = users.find(u => u.employeeId === selectedUser);
     const userName = uInfo ? (uInfo.name || uInfo.employeeId) : selectedUser;
-    const fileName = `Expense_${userName.replace(/[^a-zA-Z0-9]/g, '_')}_${monthName}_${selectedYear}.xlsx`;
+    const fileName = `Expense_${userName.replace(/[^a-zA-Z0-9]/g, '_')}_${monthNameShort}_${selectedYear}.xlsx`;
 
     XLSX.writeFile(wb, fileName);
   };

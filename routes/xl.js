@@ -1249,6 +1249,41 @@ router.get('/dcr/my', async (req, res) => {
     }
 });
 
+// Get my DCRs for a whole month
+router.get('/dcr/monthly', async (req, res) => {
+    try {
+        const { email, month, year } = req.query; // month should be 1-12
+        if (!email || !month || !year) return res.status(400).json({ error: 'Missing params' });
+        const datePrefix = `${year}-${String(month).padStart(2, '0')}`;
+        const dcrs = await XlDCR.findAll({ 
+            where: { 
+                employeeId: email, 
+                date: { [Op.startsWith]: datePrefix } 
+            } 
+        });
+        res.json({ success: true, data: dcrs });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch monthly DCRs' });
+    }
+});
+
+// Force download file
+router.get('/download', (req, res) => {
+    try {
+        const fileUrl = req.query.file;
+        if (!fileUrl) return res.status(400).json({ error: 'File required' });
+        // fileUrl is like /uploads/abc.jpg
+        const filePath = path.join(__dirname, '..', fileUrl);
+        if (fs.existsSync(filePath)) {
+            res.download(filePath);
+        } else {
+            res.status(404).send('File not found');
+        }
+    } catch(e) {
+        res.status(500).send('Error');
+    }
+});
+
 // ─── PHASE 3: ATTENDANCE ─────────────────────────────────────────────────────
 
 // Punch In
