@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   X, Moon, MessageCircle, Users, Activity, ListTodo, Wallet, 
-  CreditCard, Share2, HelpCircle, BookOpen, Key, LogOut 
+  CreditCard, Share2, HelpCircle, BookOpen, Key, LogOut, FileText
 } from 'lucide-react';
 
 interface NavigationDrawerProps {
@@ -22,6 +22,7 @@ export default function NavigationDrawer({ isOpen, onClose }: NavigationDrawerPr
   };
 
   const menuItems = [
+    { label: 'Reports', icon: FileText, onClick: () => navigateTo('/admin/reports') },
     { label: 'Contact Us', icon: MessageCircle, onClick: () => alert('Opening WhatsApp...') },
     { label: 'My Hierarchy', icon: Users, onClick: () => navigateTo('/hierarchy') },
     { label: 'Consolidated Activity', icon: Activity, onClick: () => navigateTo('/consolidated-activity') },
@@ -119,3 +120,4 @@ export default function NavigationDrawer({ isOpen, onClose }: NavigationDrawerPr
     </>
   );
 }
+
