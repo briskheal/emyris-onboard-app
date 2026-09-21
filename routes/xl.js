@@ -2846,16 +2846,6 @@ router.get('/expense/limits', async (req, res) => {
         let uOut = user.outStationAllowance || 0;
         let des = user.designation;
 
-        const { XlGlobalSettings } = require('../db');
-        const settingsRecord = await XlGlobalSettings.findOne();
-        if (settingsRecord && settingsRecord.settings && Array.isArray(settingsRecord.settings.daEligibleActivities)) {
-            if (!settingsRecord.settings.daEligibleActivities.includes(activityType)) {
-                uDaily = 0;
-                uEx = 0;
-                uOut = 0;
-            }
-        }
-        
         // Fallback to designation table if not on user
         if (uDaily === 0 || uEx === 0 || uOut === 0) {
             const desRecord = await XlDesignation.findOne({ where: { designationName: des } });
@@ -2863,6 +2853,16 @@ router.get('/expense/limits', async (req, res) => {
                 if (uDaily === 0) uDaily = desRecord.dailyAllowance || 0;
                 if (uEx === 0) uEx = desRecord.exStationAllowance || 0;
                 if (uOut === 0) uOut = desRecord.outStationAllowance || 0;
+            }
+        }
+
+        const { XlGlobalSettings } = require('../db');
+        const settingsRecord = await XlGlobalSettings.findOne();
+        if (settingsRecord && settingsRecord.settings && Array.isArray(settingsRecord.settings.daEligibleActivities)) {
+            if (!settingsRecord.settings.daEligibleActivities.includes(activityType)) {
+                uDaily = 0;
+                uEx = 0;
+                uOut = 0;
             }
         }
         
@@ -3374,5 +3374,6 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
