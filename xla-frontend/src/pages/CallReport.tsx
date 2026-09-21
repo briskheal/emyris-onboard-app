@@ -1,133 +1,129 @@
-import { useOutletContext } from 'react-router-dom';
-import { Menu, MessageSquare, Bell, Calendar, Lock, User, Store, Building2, Phone } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ChevronLeft, UserPlus, ChevronDown, RefreshCw } from 'lucide-react';
+import MedornDateRangePicker from '../components/MedornDateRangePicker';
 
 export default function CallReport() {
-  const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
+  const navigate = useNavigate();
+  const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
+  const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 21));
+  const [reportType, setReportType] = useState('Call Report');
+
+  const reportData = [
+    { id: 1, date: '01 Sep 2026', name: 'Jigar Joshi', areaType: 'Out-Station', docs: 12, chems: 5, stockists: 2, pob: '15,000', activity: 'Working', workedWith: 'Admin' },
+    { id: 2, date: '02 Sep 2026', name: 'Jigar Joshi', areaType: 'Local', docs: 8, chems: 3, stockists: 0, pob: '4,500', activity: 'Working', workedWith: '-' },
+  ];
 
   return (
-    <div className="min-h-full bg-slate-900 flex flex-col pb-40 text-slate-100 font-sans">
+    <div className="min-h-screen bg-[#1a1a27] flex flex-col text-slate-100 font-sans pb-24 md:pb-0 overflow-hidden">
       
-      {/* Sticky Header */}
-      <div className="flex items-center justify-between px-5 pt-12 pb-4 sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
-        <div className="flex items-center gap-4">
-          <button onClick={openDrawer} className="text-white active:scale-95 transition-transform">
-            <Menu size={26} />
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-5 border-b border-[#3b3b5a] bg-[#1a1a27]">
+        <div className="flex items-center gap-3">
+          <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-white transition-colors">
+            <ChevronLeft size={20} />
           </button>
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight leading-none">EMYRIS</h1>
-            <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="text-sky-400 relative">
-            <MessageSquare size={22} />
-          </button>
-          <button className="text-emerald-400 relative">
-            <Bell size={22} />
-          </button>
+          <h1 className="text-[13px] font-black text-white tracking-widest uppercase">CALL REPORTS</h1>
         </div>
       </div>
 
-      <div className="px-5 mt-6">
+      <div className="flex-1 p-6 overflow-y-auto">
         
-        {/* Welcome Section */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-14 h-14 bg-slate-700 rounded-full border-2 border-sky-400 flex items-center justify-center overflow-hidden">
-             <User size={28} className="text-slate-400 mt-2" />
-          </div>
+        {/* Filters Area */}
+        <div className="mb-6 flex flex-wrap gap-6 items-end">
+          {/* Select User Area */}
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Welcome,</p>
-            <h2 className="text-xl font-black text-white">Jnana Dash</h2>
+            <label className="text-xs font-bold text-emerald-400 mb-2 block">Select User</label>
+            <div className="flex items-center gap-3">
+              <button className="flex items-center justify-between bg-[#242538] border border-emerald-500/30 rounded-md px-4 py-2 min-w-[250px]">
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
+                    <UserPlus size={12} className="text-slate-300" />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-white leading-none">Jigar Joshi</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Sales Manager</p>
+                  </div>
+                </div>
+                <ChevronDown size={14} className="text-slate-400" />
+              </button>
+              <button className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-full transition-colors">
+                <RefreshCw size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Select Report Type */}
+          <div>
+            <label className="text-xs font-bold text-sky-400 mb-2 block">Select Report Type</label>
+            <div className="relative">
+              <select 
+                value={reportType}
+                onChange={(e) => setReportType(e.target.value)}
+                className="appearance-none bg-[#242538] border border-sky-500/30 rounded-md px-4 py-2 min-w-[250px] text-xs font-bold text-white outline-none cursor-pointer pr-10"
+              >
+                <option>Call Report</option>
+                <option>Show Less Call Report</option>
+                <option>Working Report</option>
+                <option>Detailed Report</option>
+                <option>Detailed With Report</option>
+                <option>Joint Call Report</option>
+              </select>
+              <ChevronDown size={14} className="text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
+            </div>
           </div>
         </div>
 
-        {/* Working Status */}
-        <div className="bg-slate-800 border border-slate-700 rounded-3xl p-5 shadow-lg mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold text-slate-300">Today's Working Area</h3>
-            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase px-3 py-1 rounded-full">
-              Working
-            </span>
-          </div>
-          <p className="text-sm font-medium text-slate-400 flex items-center gap-2">
-            <Calendar size={16} className="text-rose-400" />
-            Tour Program not found. Click to create!
-          </p>
+        {/* Date Picker */}
+        <MedornDateRangePicker 
+          startDate={startDate}
+          endDate={endDate}
+          onChange={(start, end) => { setStartDate(start); setEndDate(end); }}
+        />
+
+        {/* Summary Stats */}
+        <div className="mt-6 flex flex-wrap gap-4">
+          {[{label: 'Avg. Doctors', val: '6.56'}, {label: 'Avg. Chemists', val: '3.67'}, {label: 'Avg. Stockists', val: '0.8'}].map(stat => (
+            <div key={stat.label} className="bg-[#242538] border border-[#3b3b5a] rounded-xl px-5 py-3 flex flex-col min-w-[140px] shadow-lg">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
+              <span className="text-lg font-black text-white mt-1">{stat.val}</span>
+            </div>
+          ))}
         </div>
 
-        {/* Action Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Doctor Call */}
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg">
-            <div className="absolute top-4 right-4 text-slate-500 bg-slate-700/50 p-1.5 rounded-full">
-              <Lock size={14} />
-            </div>
-            <div className="w-16 h-16 rounded-full bg-emerald-400/10 flex items-center justify-center">
-              <User size={32} className="text-emerald-400" />
-            </div>
-            <span className="font-bold text-slate-300 text-sm">Doctor Call</span>
-          </div>
-
-          {/* Chemist Call */}
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg">
-            <div className="absolute top-4 right-4 text-slate-500 bg-slate-700/50 p-1.5 rounded-full">
-              <Lock size={14} />
-            </div>
-            <div className="w-16 h-16 rounded-full bg-sky-400/10 flex items-center justify-center">
-              <Store size={32} className="text-sky-400" />
-            </div>
-            <span className="font-bold text-slate-300 text-sm">Chemist Call</span>
-          </div>
-
-          {/* Stockist Call */}
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg">
-            <div className="absolute top-4 right-4 text-slate-500 bg-slate-700/50 p-1.5 rounded-full">
-              <Lock size={14} />
-            </div>
-            <div className="w-16 h-16 rounded-full bg-amber-400/10 flex items-center justify-center">
-              <Building2 size={32} className="text-amber-400" />
-            </div>
-            <span className="font-bold text-slate-300 text-sm">Stockist Call</span>
-          </div>
-
-          {/* Reminder Call */}
-          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 flex flex-col items-center justify-center gap-3 relative shadow-lg">
-            <div className="absolute top-4 right-4 text-slate-500 bg-slate-700/50 p-1.5 rounded-full">
-              <Lock size={14} />
-            </div>
-            <div className="w-16 h-16 rounded-full bg-rose-400/10 flex items-center justify-center">
-              <Phone size={32} className="text-rose-400" />
-            </div>
-            <span className="font-bold text-slate-300 text-sm text-center leading-tight">Reminder Call</span>
+        {/* Data Table */}
+        <div className="mt-6 bg-[#242538] rounded-xl border border-[#3b3b5a] overflow-hidden shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-[#1e1e2d] border-b border-[#3b3b5a]">
+                  {['Sr no.', 'Date', 'Name', 'Area Type', 'Doctors', 'Chemists', 'Stockists', 'POB', 'Activity', 'Worked with'].map(th => (
+                    <th key={th} className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">
+                      {th}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {reportData.map((row, idx) => (
+                  <tr key={row.id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
+                    <td className="px-4 py-3 text-xs text-slate-300">{idx + 1}</td>
+                    <td className="px-4 py-3 text-xs font-bold text-white whitespace-nowrap">{row.date}</td>
+                    <td className="px-4 py-3 text-xs text-sky-400 font-bold whitespace-nowrap">{row.name}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 whitespace-nowrap">{row.areaType}</td>
+                    <td className="px-4 py-3 text-xs font-bold text-emerald-400">{row.docs}</td>
+                    <td className="px-4 py-3 text-xs font-bold text-amber-400">{row.chems}</td>
+                    <td className="px-4 py-3 text-xs font-bold text-purple-400">{row.stockists}</td>
+                    <td className="px-4 py-3 text-xs font-bold text-white">₹{row.pob}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300">{row.activity}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300">{row.workedWith}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
-
-      {/* Sticky Final Call Report Footer */}
-      <div className="fixed bottom-[80px] w-full bg-slate-800 border-t border-slate-700 px-5 py-4 flex items-center justify-between shadow-[0_-10px_20px_rgba(0,0,0,0.2)]">
-        <div>
-          <h4 className="font-bold text-white text-sm">Final Call Report List</h4>
-          <div className="flex gap-4 mt-1">
-            <div className="flex items-center gap-1.5">
-              <User size={12} className="text-emerald-400" />
-              <span className="text-[10px] font-bold text-slate-400">0</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Store size={12} className="text-sky-400" />
-              <span className="text-[10px] font-bold text-slate-400">0</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Building2 size={12} className="text-amber-400" />
-              <span className="text-[10px] font-bold text-slate-400">0</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-emerald-500 w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <span className="text-white font-black text-xl">0</span>
-        </div>
-      </div>
-
     </div>
   );
 }
