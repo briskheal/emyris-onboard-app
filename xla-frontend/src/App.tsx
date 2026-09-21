@@ -12,7 +12,7 @@ import Backlog from './pages/Backlog';
 import Settings from './pages/Settings';
 import PerformanceMenu from './pages/PerformanceMenu';
 import AdminMenu from './pages/AdminMenu';
-import ReportsMenu from './pages/ReportsMenu';
+
 import UserPerformanceAnalysis from './pages/UserPerformanceAnalysis';
 import Utilities from './pages/Utilities';
 import CallReport from './pages/CallReport';
@@ -92,7 +92,7 @@ function App() {
           <Route path="extras/e-detailing" element={<EDetailing />} />
           <Route path="report" element={<CallReport />} />
           <Route path="admin" element={<AdminMenu />} />
-          <Route path="admin/reports" element={<ReportsMenu />} />
+          
           <Route path="utilities" element={<Utilities />} />
 
           <Route path="hierarchy" element={<Hierarchy />} />
@@ -110,5 +110,6 @@ function App() {
 }
 
 export default App;
+
 
 

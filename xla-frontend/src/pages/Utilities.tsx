@@ -10,8 +10,8 @@ export default function Utilities() {
   const navigate = useNavigate();
 
   const utilitiesOptions = [
-    { label: 'TOUR PROGRAM', description: 'Access detailed reports of field Tour Programs submitted by users, outlining their planned doctor visits, working areas, and daily schedule.', icon: CalendarDays, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { label: 'CALL REPORTS', description: 'Access official records of doctor, chemist, and stockist visits made by Medical Representatives, including visit dates, covered areas, and key visit details.', icon: FileText, color: 'text-sky-400', bg: 'bg-sky-400/10' },
+    { id: 'tour-program', path: '/extras/tour-program', label: 'TOUR PROGRAM', description: 'Access detailed reports of field Tour Programs submitted by users, outlining their planned doctor visits, working areas, and daily schedule.', icon: CalendarDays, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+    { id: 'call-reports', path: '/report', label: 'CALL REPORTS', description: 'Access official records of doctor, chemist, and stockist visits made by Medical Representatives, including visit dates, covered areas, and key visit details.', icon: FileText, color: 'text-sky-400', bg: 'bg-sky-400/10' },
     { label: 'REMINDER CALLS REPORTS', description: 'Reminder Calls Reports record all reminder calls, including dates and outcomes, ensuring timely follow-ups and effective communication tracking.', icon: BellRing, color: 'text-blue-400', bg: 'bg-blue-400/10' },
     { label: 'MISSED REPORTS', description: 'Missed Call Reports track visits made to doctors, stockists, and chemists, highlighting those missed. They help identify coverage gaps and improve follow-up efficiency.', icon: Clock, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
     { label: 'DCS DUPLICATE ENTRIES', description: 'DCS Duplicate Entries help find and fix repeated records of doctors, chemists, and stockists to keep the information accurate and organized.', icon: List, color: 'text-rose-400', bg: 'bg-rose-400/10' },
@@ -65,7 +65,7 @@ export default function Utilities() {
         {/* Desktop Grid / Mobile List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-8">
           {utilitiesOptions.map((report, idx) => (
-            <div key={idx} onClick={() => report.id === 'lists' && navigate('/utilities/lists/doctors')} className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 rounded-2xl p-5 md:p-6 transition-all group shadow-lg flex gap-4 md:gap-5 items-start relative overflow-hidden cursor-pointer">
+            <div key={idx} onClick={() => report.path ? navigate(report.path) : (report.id === 'lists' && navigate('/utilities/lists/doctors'))} className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 rounded-2xl p-5 md:p-6 transition-all group shadow-lg flex gap-4 md:gap-5 items-start relative overflow-hidden cursor-pointer">
               {/* Desktop Decorative Glow */}
               <div className="hidden md:block absolute -inset-1 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 blur-xl transition-opacity z-0 pointer-events-none"></div>
 
@@ -96,3 +96,4 @@ export default function Utilities() {
     </div>
   );
 }
+
