@@ -24,13 +24,16 @@ export default function GeoFencingTag() {
   const [success, setSuccess] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
 
-  const refreshLocation = () => {
+  const refreshLocation = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!navigator.geolocation) {
       setError('GPS is not supported on this device.');
       return;
     }
     setGeoLoading(true);
     setError('');
+    
+    // Try high accuracy first
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setMyLat(pos.coords.latitude);
@@ -38,10 +41,21 @@ export default function GeoFencingTag() {
         setGeoLoading(false);
       },
       (err) => {
-        setError('Failed to get precise location. Ensure GPS is enabled.');
-        setGeoLoading(false);
+        // Fallback to low accuracy for desktop or poor signal
+        navigator.geolocation.getCurrentPosition(
+          (posLow) => {
+            setMyLat(posLow.coords.latitude);
+            setMyLng(posLow.coords.longitude);
+            setGeoLoading(false);
+          },
+          (errLow) => {
+            setError('Failed to get location. Ensure GPS is enabled.');
+            setGeoLoading(false);
+          },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
@@ -239,6 +253,7 @@ export default function GeoFencingTag() {
             
             {/* Target overlay button for precise location refresh */}
             <button 
+              type="button"
               onClick={refreshLocation}
               disabled={geoLoading}
               className={`absolute top-4 right-4 w-12 h-12 bg-[#1c1c2e] border-2 ${geoLoading ? 'border-sky-500 animate-pulse' : 'border-[#3b3b5a] active:border-sky-400'} rounded-full shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex items-center justify-center text-sky-400 active:scale-90 transition-all z-10 hover:bg-[#27273f]`}

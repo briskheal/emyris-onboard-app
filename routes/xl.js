@@ -2516,7 +2516,16 @@ router.get('/backlog/overview', async (req, res) => {
         const attendances = await XlAttendance.findAll({ 
             where: { employeeId: email, date: { [require('sequelize').Op.startsWith]: `${year}-${String(month).padStart(2, '0')}` } }
         });
-        const submittedDates = new Set(attendances.filter(a => a.daySubmitted).map(a => a.date));
+        
+        // Fetch DCRs for the month
+        const dcrs = await XlDCR.findAll({ 
+            where: { employeeId: email, date: { [require('sequelize').Op.startsWith]: `${year}-${String(month).padStart(2, '0')}` } }
+        });
+
+        const submittedDates = new Set([
+            ...attendances.filter(a => a.daySubmitted).map(a => a.date),
+            ...dcrs.map(d => d.date)
+        ]);
 
         // Fetch existing requests for the month
         const requests = await XlBacklogRequest.findAll({ 

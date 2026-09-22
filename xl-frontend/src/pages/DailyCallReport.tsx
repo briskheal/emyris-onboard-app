@@ -210,19 +210,30 @@ export default function DailyCallReport() {
       .finally(() => setLoading(false));
   };
 
-  const captureLocation = () => {
+  const captureLocation = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (!navigator.geolocation) { setError('GPS not supported'); return; }
     setGeoLoading(true);
     setError('');
+    
+    const successCallback = (pos: GeolocationPosition) => {
+      setMyLat(pos.coords.latitude);
+      setMyLng(pos.coords.longitude);
+      setGeoAddress(`${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+      setGeoLoading(false);
+    };
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setMyLat(pos.coords.latitude);
-        setMyLng(pos.coords.longitude);
-        setGeoAddress(`${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
-        setGeoLoading(false);
+      successCallback,
+      () => { 
+        // Fallback to low accuracy
+        navigator.geolocation.getCurrentPosition(
+          successCallback,
+          () => { setError('Failed to get location.'); setGeoLoading(false); },
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
+        );
       },
-      () => { setError('Failed to get precise location.'); setGeoLoading(false); },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
     );
   };
 
