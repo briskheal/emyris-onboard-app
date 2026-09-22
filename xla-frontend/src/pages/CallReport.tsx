@@ -58,7 +58,15 @@ export default function CallReport() {
       
       let allTPEntries: any[] = [];
       let allDCRs: any[] = [];
+      let allHolidays: any[] = [];
       
+      try {
+          const hRes = await axios.get('/api/xl/settings/holidays');
+          if (hRes.data && hRes.data.success) {
+              allHolidays = hRes.data.data;
+          }
+      } catch (e) { console.error('Holidays error', e); }
+
       for (const [, meta] of monthsToFetch.entries()) {
          try {
            const [tpRes, dcrRes] = await Promise.all([
@@ -104,6 +112,15 @@ export default function CallReport() {
           const tp = allTPEntries.find(e => e.date === dStr) || {};
           const dcrsForDay = allDCRs.filter(d => d.date === dStr);
           const backlog = allBacklogs.find(b => b.date === dStr);
+          const holiday = allHolidays.find(h => h.date === dStr);
+          const isSunday = new Date(dStr).getDay() === 0;
+
+          let finalActivity = tp.activityType || tp.activity;
+          if (!finalActivity) {
+              if (holiday) finalActivity = holiday.title || 'Holiday';
+              else if (isSunday) finalActivity = 'Weekly Off';
+              else finalActivity = 'Working';
+          }
           
           formatted.push({
              id: idx++,
@@ -113,7 +130,7 @@ export default function CallReport() {
              date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
              day: new Date(dStr).toLocaleDateString('en-GB', { weekday: 'long' }),
              name: name,
-             activity: tp.activityType || tp.activity || 'Working',
+             activity: finalActivity,
              areaType: tp.type || tp.workAreaType || tp.areaType || '-',
              areas: tp.toMarket || tp.workingArea || tp.workArea || '-',
              docs: dcrsForDay.filter(d => d.entityType === 'Doctor').length,
