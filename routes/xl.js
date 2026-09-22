@@ -1959,7 +1959,7 @@ router.get('/approvals/pending', async (req, res) => {
 
 router.post('/approvals/action', async (req, res) => {
     try {
-        const { recordId, type, action, remarks } = req.body;
+        const { recordId, type, action, remarks, approvedBy } = req.body;
         let Model;
         if (type === 'Call Report') Model = XlDCR;
         else if (type === 'Tour Program') Model = XlTourProgram;
@@ -1984,6 +1984,7 @@ router.post('/approvals/action', async (req, res) => {
             
             for (const rec of records) {
                 rec.status = action;
+                if(action === 'Approved' && approvedBy) rec.approvedBy = approvedBy;
                 rec.adminRemarks = remarks || rec.adminRemarks || '';
                 await rec.save();
             }
@@ -2003,6 +2004,7 @@ router.post('/approvals/action', async (req, res) => {
                         rec.amount = parseFloat(miscExpense) || 0;
                     }
                     rec.status = action;
+                if(action === 'Approved' && approvedBy) rec.approvedBy = approvedBy;
                     rec.remarks = remarks || rec.remarks || '';
                     await rec.save();
                 }
@@ -2044,6 +2046,7 @@ router.post('/approvals/action', async (req, res) => {
             if (allHandled) {
                 const hasRejected = entries.some(e => e.status === 'Rejected');
                 record.status = hasRejected ? 'Rejected' : 'Approved';
+                if(!hasRejected && approvedBy) record.approvedBy = approvedBy;
             }
             
             record.adminRemarks = remarks || record.adminRemarks || '';
@@ -2091,6 +2094,7 @@ router.post('/approvals/action', async (req, res) => {
             }
 
             record.status = action;
+            if(action === 'Approved' && approvedBy) record.approvedBy = approvedBy;
             record.adminRemarks = remarks || '';
             await record.save();
         }

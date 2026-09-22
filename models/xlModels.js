@@ -341,6 +341,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         adminRemarks: { type: DataTypes.TEXT },
         submittedAt: { type: DataTypes.DATE },
         approvedAt: { type: DataTypes.DATE },
+        approvedBy: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -433,6 +434,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         reason: { type: DataTypes.TEXT },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending / Approved / Rejected
         adminRemarks: { type: DataTypes.TEXT },
+        approvedBy: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -459,6 +461,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         reason: { type: DataTypes.TEXT },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' }, // Pending / Approved / Rejected
         adminRemarks: { type: DataTypes.TEXT },
+        approvedBy: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
@@ -471,6 +474,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         doctors: { type: DataTypes.TEXT, defaultValue: '[]' }, chemists: { type: DataTypes.TEXT, defaultValue: '[]' }, stockists: { type: DataTypes.TEXT, defaultValue: '[]' }, // JSON array of doctor IDs
           status: { type: DataTypes.STRING, defaultValue: 'Pending' },
           adminRemarks: { type: DataTypes.TEXT },
+        approvedBy: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });

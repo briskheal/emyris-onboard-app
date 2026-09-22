@@ -108,6 +108,7 @@ export default function CallReport() {
           formatted.push({
              id: idx++,
              rawDate: dStr,
+             approvedBy: tpRes.data.data.approvedBy,
              date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
              day: new Date(dStr).toLocaleDateString('en-GB', { weekday: 'long' }),
              name: name,
@@ -315,6 +316,12 @@ export default function CallReport() {
                   <p className="text-xs font-bold text-slate-300 mb-1">Approved By</p>
                   <p className="text-xs font-medium text-slate-400">
                     {(() => {
+                      const approverId = selectedView.approvedBy;
+                      if (approverId) {
+                        const manager = users.find(u => u.uid === approverId || u.employeeId === approverId);
+                        if (manager) return `${manager.firstName} ${manager.lastName} (${manager.designation})`;
+                        return approverId;
+                      }
                       const employee = users.find(u => u.employeeId === selectedUser);
                       if (!employee || !employee.reportingManager) return 'Admin';
                       const manager = users.find(u => u.uid === employee.reportingManager || u.employeeId === employee.reportingManager);
