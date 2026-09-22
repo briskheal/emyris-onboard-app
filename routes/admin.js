@@ -5384,12 +5384,13 @@ router.get('/xl-backlog', async (req, res) => {
 router.post('/xl-backlog/:id/action', async (req, res) => {
     try {
         const { XlBacklogRequest, XlNotification } = require('../db');
-        const { action, remarks } = req.body; // action = 'Approved' or 'Rejected'
+        const { action, remarks, approvedBy } = req.body; // action = 'Approved' or 'Rejected'
         
         const reqs = await XlBacklogRequest.findOne({ where: { _id: req.params.id } });
         if (!reqs) return res.status(404).json({ error: 'Request not found' });
 
         reqs.status = action === 'Approve' ? 'Approved' : 'Rejected';
+        if(reqs.status === 'Approved' && approvedBy) reqs.approvedBy = approvedBy;
         reqs.adminRemarks = remarks || '';
         await reqs.save();
 

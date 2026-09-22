@@ -65,7 +65,11 @@ export default function Backlog() {
     try {
       const promises = Array.from(selectedIds).map(id => {
         const remarks = remarksMap[id] || '';
-        return axios.post(`/api/admin/xl-backlog/${id}/action`, { action, remarks });
+        return axios.post(`/api/admin/xl-backlog/${id}/action`, { 
+          action, 
+          remarks,
+          approvedBy: (JSON.parse(localStorage.getItem('user') || '{}').employeeId || JSON.parse(localStorage.getItem('user') || '{}').uid || 'Admin')
+        });
       });
 
       await Promise.all(promises);

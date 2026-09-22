@@ -1897,8 +1897,12 @@ router.get('/approvals/pending', async (req, res) => {
         });
         
         const data = [];
+        const allBacklogs = type === 'Call Report' ? await require('../db').XlBacklogRequest.findAll({ where: { status: 'Approved' } }) : [];
         for (const p of pending) {
             const pData = p.toJSON();
+            if (type === 'Call Report') {
+                pData.isBacklog = allBacklogs.some(b => b.employeeId === pData.employeeId && b.date === pData.date);
+            }
             if (pData.employeeId) {
                 const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: pData.employeeId }, { uid: pData.employeeId }, { email: pData.employeeId }] } });
                 if (u) {
