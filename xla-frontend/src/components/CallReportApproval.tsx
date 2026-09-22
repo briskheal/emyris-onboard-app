@@ -250,32 +250,34 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
             
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="border-b border-[#3b3b5a] bg-[#151521]">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Date ↑</th>
-                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Employee Name ↑</th>
-                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">Backlog</th>
-                    <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">View</th>
-                    <th className="p-4 w-16 text-center">
-                       <div className="flex items-center justify-center gap-2">
-                         <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Select</span>
-                         <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === groupedData.length} onChange={toggleAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                       </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupedData.length === 0 ? (
-                    <tr><td colSpan={6} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Reports</td></tr>
-                  ) : groupedData.map((d: any, idx: number) => {
-                    const rowId = `${d.employeeId}_${d.date}`;
-                    const dt = new Date(d.date);
-                    return (
-                      <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
-                        <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                        <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                        <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName}</td>
+                  <thead>
+                    <tr className="border-b border-[#3b3b5a] bg-[#151521]">
+                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Date &uarr;</th>
+                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Day</th>
+                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Employee Name &uarr;</th>
+                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">Backlog</th>
+                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">View</th>
+                      <th className="p-4 w-16 text-center">
+                         <div className="flex items-center justify-center gap-2">
+                           <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Select</span>
+                           <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === groupedData.length} onChange={toggleAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
+                         </div>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupedData.length === 0 ? (
+                      <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Reports</td></tr>
+                    ) : groupedData.map((d: any, idx: number) => {
+                      const rowId = `${d.employeeId}_${d.date}`;
+                      const dt = new Date(d.date);
+                      return (
+                        <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
+                          <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-slate-300 whitespace-nowrap">{dt.toLocaleDateString('en-GB', { weekday: 'long' })}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName}</td>
                         <td className="px-4 py-4 text-center">
                           {d.isBacklog ? <CheckCircle size={18} className="text-rose-500 mx-auto" /> : <XCircle size={18} className="text-slate-500 mx-auto opacity-30" />}
                         </td>
