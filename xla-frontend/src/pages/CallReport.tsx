@@ -66,8 +66,11 @@ export default function CallReport() {
       try {
           const hRes = await axios.get('/api/xl/settings/holidays');
           if (hRes.data && hRes.data.success) {
-              const userState = selectedUserObj?.state;
-              allHolidays = hRes.data.data.filter((h: any) => !h.state || h.state === 'All' || h.state === 'N/A' || h.state === userState);
+              const userState = (selectedUserObj?.state || '').toLowerCase().trim();
+              allHolidays = hRes.data.data.filter((h: any) => {
+                  if (!h.state || h.state === 'All' || h.state === 'N/A') return true;
+                  return h.state.toLowerCase().trim() === userState;
+              });
           }
       } catch (e) { console.error('Holidays error', e); }
 
