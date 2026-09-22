@@ -2,12 +2,38 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, UserPlus, ChevronDown, RefreshCw } from 'lucide-react';
 import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
+import CustomUserSelect from '../components/CustomUserSelect';
+import axios from 'axios';
 
 export default function TourProgramReport() {
   const navigate = useNavigate();
   const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
   const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 21));
   const [frequencyReport, setFrequencyReport] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const [adminsRes, usersRes] = await Promise.all([
+          axios.get('/api/admin/admins'),
+          axios.get('/api/admin/users')
+        ]);
+        let all: any[] = [];
+        if (adminsRes.data && adminsRes.data.success) {
+          all = [...all, ...adminsRes.data.admins.map((x: any) => ({ ...x, isAdmin: true }))];
+        }
+        if (usersRes.data && usersRes.data.success) {
+          all = [...all, ...usersRes.data.users.map((x: any) => ({ ...x, isAdmin: false }))];
+        }
+        setUsers(all);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   // Dummy data based on standard report columns
   const reportData = [
