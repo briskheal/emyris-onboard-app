@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, RefreshCw, ChevronDown, X } from 'lucide-react';
 import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
@@ -156,6 +156,21 @@ export default function CallReport() {
     fetchReports();
   }, [startDate, endDate, selectedUser, users]);
 
+  const { workingDaysCount, totalDocs, totalChems, totalStockists } = useMemo(() => {
+    let wd = 0, d = 0, c = 0, s = 0;
+    reportData.forEach(r => {
+      if ((r.activity || '').toLowerCase().includes('working')) wd++;
+      d += (r.docs || 0);
+      c += (r.chems || 0);
+      s += (r.stockists || 0);
+    });
+    return { workingDaysCount: wd, totalDocs: d, totalChems: c, totalStockists: s };
+  }, [reportData]);
+
+  const avgDocs = workingDaysCount > 0 ? (totalDocs / workingDaysCount).toFixed(2) : '0';
+  const avgChems = workingDaysCount > 0 ? (totalChems / workingDaysCount).toFixed(2) : '0';
+  const avgStockists = workingDaysCount > 0 ? (totalStockists / workingDaysCount).toFixed(2) : '0';
+
   return (
     <div className="min-h-screen bg-[#1a1a27] flex flex-col text-slate-100 font-sans pb-24 md:pb-0 overflow-hidden">
       
@@ -220,7 +235,7 @@ export default function CallReport() {
 
         {/* Summary Stats */}
         <div className="mt-6 flex flex-wrap gap-4">
-          {[{label: 'Avg. Doctors', val: '6.56'}, {label: 'Avg. Chemists', val: '3.67'}, {label: 'Avg. Stockists', val: '0.8'}].map(stat => (
+          {[{label: 'Avg. Doctors', val: avgDocs}, {label: 'Avg. Chemists', val: avgChems}, {label: 'Avg. Stockists', val: avgStockists}].map(stat => (
             <div key={stat.label} className="bg-[#242538] border border-[#3b3b5a] rounded-xl px-5 py-3 flex flex-col min-w-[140px] shadow-lg">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{stat.label}</span>
               <span className="text-lg font-black text-white mt-1">{stat.val}</span>
