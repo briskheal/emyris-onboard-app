@@ -35,10 +35,96 @@ export default function CallReport() {
     fetchUsers();
   }, []);
 
-  const reportData = [
-    { id: 1, date: '01 Sep 2026', name: 'Jigar Joshi', areaType: 'Out-Station', docs: 12, chems: 5, stockists: 2, pob: '15,000', activity: 'Working', workedWith: 'Admin' },
-    { id: 2, date: '02 Sep 2026', name: 'Jigar Joshi', areaType: 'Local', docs: 8, chems: 3, stockists: 0, pob: '4,500', activity: 'Working', workedWith: '-' },
-  ];
+  const [reportData, setReportData] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!selectedUser || !startDate || !endDate) {
+      setReportData([]);
+      return;
+    }
+    
+    const fetchReports = async () => {
+      const monthsToFetch = new Map<string, any>();
+      let current = new Date(startDate);
+      while (current <= endDate) {
+         const mText = current.toLocaleString('default', { month: 'long' }).toLowerCase();
+         const mNum = current.getMonth() + 1;
+         const y = current.getFullYear().toString();
+         monthsToFetch.set(`${y}-${mNum}`, { mText, mNum, y });
+         current.setDate(current.getDate() + 1);
+      }
+      
+      let allTPEntries: any[] = [];
+      let allDCRs: any[] = [];
+      
+      for (const [metaKey, meta] of monthsToFetch.entries()) {
+         try {
+           const [tpRes, dcrRes] = await Promise.all([
+               axios.get(`/api/xl/tour-program/my?email=${encodeURIComponent(selectedUser)}&month=${meta.mText}&year=${meta.y}`),
+               axios.get(`/api/xl/dcr/monthly?email=${encodeURIComponent(selectedUser)}&month=${meta.mNum}&year=${meta.y}`)
+           ]);
+           
+           if (tpRes.data && tpRes.data.success && tpRes.data.data) {
+              let entries = [];
+              try { entries = typeof tpRes.data.data.entries === 'string' ? JSON.parse(tpRes.data.data.entries) : tpRes.data.data.entries; } catch(e) {}
+              if (Array.isArray(entries)) allTPEntries = [...allTPEntries, ...entries];
+           }
+           
+           if (dcrRes.data && dcrRes.data.success && Array.isArray(dcrRes.data.data)) {
+               allDCRs = [...allDCRs, ...dcrRes.data.data];
+           }
+         } catch (e) {
+           console.error(e);
+         }
+      }
+      
+      const selectedUserObj = users.find(u => u.employeeId === selectedUser);
+      const name = selectedUserObj ? `${selectedUserObj.firstName} ${selectedUserObj.lastName}` : selectedUser;
+      
+      let allBacklogs: any[] = [];
+      try {
+         const backRes = await axios.get(`/api/xl/backlog/my?email=${encodeURIComponent(selectedUser)}`);
+         if (backRes.data && backRes.data.success) allBacklogs = backRes.data.data;
+      } catch(e) {}
+      
+      const formatDateStr = (d: Date) => {
+          const offset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - offset).toISOString().split('T')[0];
+      };
+      
+      let dateIter = new Date(startDate);
+      const formatted = [];
+      let idx = 1;
+      
+      while (dateIter <= endDate) {
+          const dStr = formatDateStr(dateIter);
+          
+          const tp = allTPEntries.find(e => e.date === dStr) || {};
+          const dcrsForDay = allDCRs.filter(d => d.date === dStr);
+          const backlog = allBacklogs.find(b => b.date === dStr);
+          
+          formatted.push({
+             id: idx++,
+             date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+             day: new Date(dStr).toLocaleDateString('en-GB', { weekday: 'long' }),
+             name: name,
+             activity: tp.activityType || tp.activity || 'Working',
+             areaType: tp.type || tp.workAreaType || tp.areaType || '-',
+             areas: tp.toMarket || tp.workingArea || tp.workArea || '-',
+             docs: dcrsForDay.filter(d => d.entityType === 'Doctor').length,
+             chems: dcrsForDay.filter(d => d.entityType === 'Chemist').length,
+             stockists: dcrsForDay.filter(d => d.entityType === 'Stockist').length,
+             backlog: backlog ? '✓' : '-'
+          });
+          
+          dateIter.setDate(dateIter.getDate() + 1);
+      }
+      
+      setReportData(formatted);
+    };
+    
+    fetchReports();
+  }, [startDate, endDate, selectedUser, users]);
 
   return (
     <div className="min-h-screen bg-[#1a1a27] flex flex-col text-slate-100 font-sans pb-24 md:pb-0 overflow-hidden">
@@ -145,29 +231,28 @@ export default function CallReport() {
                 </tr>
               </thead>
               <tbody>
-                {reportData.map((row) => (
-                  <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.date}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">Tuesday</td>
-                    <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.activity}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">Vadodara</td>
-                    <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.docs}</td>
-                    <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.chems}</td>
-                    <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.stockists}</td>
-                    <td className="px-4 py-3 text-xs text-emerald-400 border-r border-[#2d2f45] text-center">✓</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 text-center"><span className="cursor-pointer hover:text-white text-slate-400 text-lg">👁</span></td>
-                  </tr>
-                ))}
+                  {reportData.map((row) => (
+                    <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
+                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.date}</td>
+                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.day}</td>
+                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
+                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.activity}</td>
+                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
+                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areas}</td>
+                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.docs}</td>
+                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.chems}</td>
+                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.stockists}</td>
+                      <td className="px-4 py-3 text-xs text-emerald-400 border-r border-[#2d2f45] text-center">{row.backlog}</td>
+                      <td className="px-4 py-3 text-xs text-slate-300 text-center"><span className="cursor-pointer hover:text-white text-slate-400 text-lg">👁</span></td>
+                    </tr>
+                  ))}
                 {/* Total Row */}
                 <tr className="bg-[#171f3a] border-b-2 border-sky-500 font-bold">
                   <td colSpan={6} className="px-4 py-3 text-xs text-sky-400 text-right border-r border-[#2d2f45]">Total</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">20</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">8</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">2</td>
-                  <td className="px-4 py-3 text-xs border-r border-[#2d2f45]"></td>
-                  <td className="px-4 py-3 text-xs"></td>
+                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{reportData.reduce((acc, r) => acc + (r.docs || 0), 0)}</td>
+                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{reportData.reduce((acc, r) => acc + (r.chems || 0), 0)}</td>
+                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{reportData.reduce((acc, r) => acc + (r.stockists || 0), 0)}</td>
+                  <td colSpan={2}></td>
                 </tr>
               </tbody>
             </table>
