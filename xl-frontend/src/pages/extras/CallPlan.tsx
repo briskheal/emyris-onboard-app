@@ -82,15 +82,17 @@ function CallPlan() {
       const res = await axios.get('/api/xl/settings/holidays');
       if (res.data.success) {
         const holidayMap: Record<string, string> = {};
-        res.data.data.forEach((h: any) => {
-          if (h.type === 'National' || h.state === activeUser?.state) {
-            const d = new Date(h.date);
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            holidayMap[`${y}-${m}-${day}`] = h.title;
-          }
-        });
+          res.data.data.forEach((h: any) => {
+            const hState = (h.state || '').toLowerCase().trim();
+            const uState = (activeUser?.state || '').toLowerCase().trim();
+            if (!h.state || h.state === 'All' || h.state === 'N/A' || hState === uState) {
+              const d = new Date(h.date);
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              holidayMap[`${y}-${m}-${day}`] = h.title;
+            }
+          });
         setHolidays(holidayMap);
       }
     } catch (e) {

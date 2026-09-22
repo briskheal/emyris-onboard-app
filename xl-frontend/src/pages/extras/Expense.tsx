@@ -92,9 +92,13 @@ export default function Expense() {
       setTpEntries(parsedTp);
       
       const hMap: Record<string, string> = {};
+      const uState = (JSON.parse(localStorage.getItem('xl_user') || '{}').state || '').toLowerCase().trim();
       (holRes.data.data || []).forEach((h: any) => {
-         const hd = new Date(h.date);
-         hMap[`${hd.getFullYear()}-${String(hd.getMonth()+1).padStart(2,'0')}-${String(hd.getDate()).padStart(2,'0')}`] = h.name;
+         const hState = (h.state || '').toLowerCase().trim();
+         if (!h.state || h.state === 'All' || h.state === 'N/A' || hState === uState) {
+             const hd = new Date(h.date);
+             hMap[`${hd.getFullYear()}-${String(hd.getMonth()+1).padStart(2,'0')}-${String(hd.getDate()).padStart(2,'0')}`] = h.title || h.name;
+         }
       });
       setHolidays(hMap);
       

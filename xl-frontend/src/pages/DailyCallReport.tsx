@@ -130,9 +130,13 @@ export default function DailyCallReport() {
 
     axios.get('/api/xl/settings/holidays').then(hRes => {
        const hMap: Record<string, boolean> = {};
+       const userState = (user?.state || '').toLowerCase().trim();
        (hRes.data.data || []).forEach((h: any) => {
-           const hd = new Date(h.date);
-           hMap[`${hd.getFullYear()}-${String(hd.getMonth()+1).padStart(2,'0')}-${String(hd.getDate()).padStart(2,'0')}`] = true;
+           const hState = (h.state || '').toLowerCase().trim();
+           if (!h.state || h.state === 'All' || h.state === 'N/A' || hState === userState) {
+               const hd = new Date(h.date);
+               hMap[`${hd.getFullYear()}-${String(hd.getMonth()+1).padStart(2,'0')}-${String(hd.getDate()).padStart(2,'0')}`] = true;
+           }
        });
        if (hMap[dcrDate]) locked = true;
        setIsLockedDay(locked);
