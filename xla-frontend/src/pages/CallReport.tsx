@@ -8,7 +8,7 @@ import axios from 'axios';
 export default function CallReport() {
   const navigate = useNavigate();
   const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
-  const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 21));
+  const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 30));
   const [reportType, setReportType] = useState('Call Report');
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');

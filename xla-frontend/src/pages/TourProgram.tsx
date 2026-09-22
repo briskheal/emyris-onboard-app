@@ -8,7 +8,7 @@ import axios from 'axios';
 export default function TourProgramReport() {
   const navigate = useNavigate();
   const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
-  const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 21));
+  const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 30));
   const [frequencyReport, setFrequencyReport] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
@@ -93,12 +93,12 @@ export default function TourProgramReport() {
          id: idx,
          date: new Date(e.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
          name: e.employeeName || selectedUser,
-         areaType: e.areaType || '-',
-         areas: e.workAreas || '-',
+         areaType: e.type || e.workAreaType || e.areaType || '-',
+         areas: e.toMarket || e.workingArea || e.workArea || '-',
          oldAreas: '-',
          edited: e.isEdited ? 'Yes' : 'No',
          remarks: e.remarks || '-',
-         activity: e.activity || 'Working',
+         activity: e.activityType || e.activity || 'Working',
          workedWith: e.workedWith || '-',
          status: e.tpStatus
       }));
