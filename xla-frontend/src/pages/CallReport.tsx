@@ -130,6 +130,7 @@ export default function CallReport() {
           formatted.push({
              id: idx++,
              rawDate: dStr,
+             hasDCR: dcrsForDay.length > 0,
              status: dcrsForDay.length > 0 ? dcrsForDay[0].status : (tp.tpStatus || tp.status || 'Pending'),
              approvedBy: (dcrsForDay.length > 0 && dcrsForDay[0].approvedBy) ? dcrsForDay[0].approvedBy : tp.approvedBy,
              date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -159,7 +160,12 @@ export default function CallReport() {
   const { workingDaysCount, totalDocs, totalChems, totalStockists } = useMemo(() => {
     let wd = 0, d = 0, c = 0, s = 0;
     reportData.forEach(r => {
-      if ((r.activity || '').toLowerCase().includes('working')) wd++;
+      // Only count as a "working" day for averages if they actually submitted DCRs 
+      // (or if they submitted and it's approved). The user specifically requested 
+      // not dividing by future/unsubmitted working days in the month.
+      if ((r.activity || '').toLowerCase().includes('working') && r.hasDCR) {
+        wd++;
+      }
       d += (r.docs || 0);
       c += (r.chems || 0);
       s += (r.stockists || 0);
