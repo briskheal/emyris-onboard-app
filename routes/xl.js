@@ -2524,7 +2524,7 @@ router.get('/backlog/overview', async (req, res) => {
 
         const submittedDates = new Set([
             ...attendances.filter(a => a.daySubmitted).map(a => a.date),
-            ...dcrs.map(d => d.date)
+            ...dcrs.filter(d => d.status === 'Approved').map(d => d.date)
         ]);
 
         // Fetch existing requests for the month
