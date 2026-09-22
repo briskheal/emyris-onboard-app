@@ -254,12 +254,12 @@ export default function CallReport() {
                 onChange={(e) => setReportType(e.target.value)}
                 className="appearance-none bg-[#242538] border border-sky-500/30 rounded-md px-4 py-2 min-w-[250px] text-xs font-bold text-white outline-none cursor-pointer pr-10"
               >
-                <option>Call Report</option>
-                <option>Show Less Call Report</option>
-                <option>Working Report</option>
-                <option>Detailed Report</option>
-                <option>Detailed With Report</option>
-                <option>Joint Call Report</option>
+                  <option>Call Report</option>
+                  <option>Show Last Call Report</option>
+                  <option>Backlog Report</option>
+                  <option>Detailed Report</option>
+                  <option>Worked With Report</option>
+                  <option>Joint Call Report</option>
               </select>
               <ChevronDown size={14} className="text-slate-400 absolute right-3 top-2.5 pointer-events-none" />
             </div>
