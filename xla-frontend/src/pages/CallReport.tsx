@@ -61,10 +61,11 @@ export default function CallReport() {
 
       let allTPEntries: any[] = [];
       let allDCRs: any[] = [];
+      let allAttendances: any[] = [];
       let allHolidays: any[] = [];
       
       try {
-          const hRes = await axios.get('/api/xl/settings/holidays');
+          const hRes = await axios.get('/api/xl/extras/holidays');
           if (hRes.data && hRes.data.success) {
               const userState = (selectedUserObj?.state || '').toLowerCase().trim();
               allHolidays = hRes.data.data.filter((h: any) => {
@@ -76,9 +77,10 @@ export default function CallReport() {
 
       for (const [, meta] of monthsToFetch.entries()) {
          try {
-           const [tpRes, dcrRes] = await Promise.all([
+           const [tpRes, dcrRes, attRes] = await Promise.all([
                axios.get(`/api/xl/tour-program/my?email=${encodeURIComponent(selectedUser)}&month=${meta.mText}&year=${meta.y}`),
-               axios.get(`/api/xl/dcr/monthly?email=${encodeURIComponent(selectedUser)}&month=${meta.mNum}&year=${meta.y}`)
+               axios.get(`/api/xl/dcr/monthly?email=${encodeURIComponent(selectedUser)}&month=${meta.mNum}&year=${meta.y}`),
+               axios.get(`/api/xl/attendance/monthly?email=${encodeURIComponent(selectedUser)}&month=${meta.mNum}&year=${meta.y}`)
            ]);
            
            if (tpRes.data && tpRes.data.success && tpRes.data.data) {
@@ -89,6 +91,10 @@ export default function CallReport() {
            
            if (dcrRes.data && dcrRes.data.success && Array.isArray(dcrRes.data.data)) {
                allDCRs = [...allDCRs, ...dcrRes.data.data];
+           }
+
+           if (attRes.data && attRes.data.success && Array.isArray(attRes.data.data)) {
+               allAttendances = [...allAttendances, ...attRes.data.data];
            }
          } catch (e) {
            console.error(e);
@@ -118,6 +124,7 @@ export default function CallReport() {
           const dcrsForDay = allDCRs.filter(d => d.date === dStr);
           const backlog = allBacklogs.find(b => b.date === dStr);
           const holiday = allHolidays.find(h => h.date === dStr);
+          const att = allAttendances.find(a => a.date === dStr);
           const isSunday = new Date(dStr).getDay() === 0;
 
           let finalActivity = tp.activityType || tp.activity;
@@ -131,6 +138,7 @@ export default function CallReport() {
              id: idx++,
              rawDate: dStr,
              hasDCR: dcrsForDay.length > 0,
+             daySubmitted: att ? att.daySubmitted : false,
              status: dcrsForDay.length > 0 ? dcrsForDay[0].status : (tp.tpStatus || tp.status || 'Pending'),
              approvedBy: (dcrsForDay.length > 0 && dcrsForDay[0].approvedBy) ? dcrsForDay[0].approvedBy : tp.approvedBy,
              date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
@@ -144,17 +152,19 @@ export default function CallReport() {
              docs: dcrsForDay.filter(d => d.entityType === 'Doctor').length,
              chems: dcrsForDay.filter(d => d.entityType === 'Chemist').length,
              stockists: dcrsForDay.filter(d => d.entityType === 'Stockist').length,
-             backlog: backlog ? (backlog.status === 'Approved' ? '✓' : (backlog.status === 'Pending' || backlog.status === 'Submitted' ? '⌛' : '✗')) : '-'
+             backlog: backlog ? (backlog.status === 'Approved' ? '✅' : (backlog.status === 'Pending' || backlog.status === 'Submitted' ? '⏳' : '❌')) : '-'
           });
           
           dateIter.setDate(dateIter.getDate() + 1);
       }
       
       const finalFormatted = formatted.filter(r => {
-          if ((r.activity || '').toLowerCase().includes('working')) {
-              return r.hasDCR;
-          }
-          return true; 
+          // Include holidays/weekly offs
+          if (r.isHoliday || r.isWeeklyOff) return true;
+          // For any scheduled activity (Working, Admin, Transit, Camp), ONLY show if the user 
+          // actually clicked "Submit Day Final Report" (daySubmitted === true)
+          // OR if the admin already approved the calls (status === 'Approved')
+          return r.daySubmitted || r.status === 'Approved';
       });
 
       setReportData(finalFormatted);

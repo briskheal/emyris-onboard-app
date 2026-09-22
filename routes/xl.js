@@ -1380,6 +1380,23 @@ router.get('/attendance/my', async (req, res) => {
     }
 });
 
+// Get Monthly Attendances
+router.get('/attendance/monthly', async (req, res) => {
+    try {
+        const { email, month, year } = req.query; // month is 1-12
+        const datePrefix = `${year}-${String(month).padStart(2, '0')}`;
+        const atts = await XlAttendance.findAll({ 
+            where: { 
+                employeeId: email, 
+                date: { [require('sequelize').Op.startsWith]: datePrefix } 
+            } 
+        });
+        res.json({ success: true, data: atts });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch monthly attendance' });
+    }
+});
+
 // ─── PHASE 3: LEAVE REQUEST ────────────────────────────────────────────────
 
 
