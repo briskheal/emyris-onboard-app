@@ -347,7 +347,12 @@ export default function CallReport() {
                   <tbody>
                     {rawDCRs.filter(l => l.date === selectedView.rawDate).map((dcr, i) => (
                       <tr key={i} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
-                        <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{dcr.entityType}</td>
+                        <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] ${
+                          dcr.entityType === 'Doctor' ? 'text-sky-400' :
+                          dcr.entityType === 'Chemist' ? 'text-emerald-400' :
+                          dcr.entityType === 'Stockist' ? 'text-amber-400' :
+                          'text-slate-400'
+                        }`}>{dcr.entityType}</td>
                         <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{dcr.entityName}</td>
                         <td className="px-4 py-3 text-xs text-slate-400">POB: -</td>
                       </tr>
