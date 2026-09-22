@@ -163,8 +163,8 @@ export default function CallReport() {
           if (r.isHoliday || r.isWeeklyOff) return true;
           // For any scheduled activity (Working, Admin, Transit, Camp), ONLY show if the user 
           // actually clicked "Submit Day Final Report" (daySubmitted === true)
-          // OR if the admin already approved the calls (status === 'Approved')
-          return r.daySubmitted || r.status === 'Approved';
+          // OR if the admin already approved the calls (so hasDCR is true AND status is Approved)
+          return r.daySubmitted || (r.hasDCR && r.status === 'Approved');
       });
 
       setReportData(finalFormatted);
