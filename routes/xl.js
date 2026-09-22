@@ -1898,9 +1898,15 @@ router.get('/approvals/pending', async (req, res) => {
         
         const data = [];
         const allBacklogs = type === 'Call Report' ? await require('../db').XlBacklogRequest.findAll({ where: { status: 'Approved' } }) : [];
+        const attendances = type === 'Call Report' && status !== 'History' ? await require('../db').XlAttendance.findAll({ where: { daySubmitted: true } }) : [];
+        
         for (const p of pending) {
             const pData = p.toJSON();
             if (type === 'Call Report') {
+                if (status !== 'History') {
+                    const isDaySubmitted = attendances.some(a => a.employeeId === pData.employeeId && a.date === pData.date);
+                    if (!isDaySubmitted) continue;
+                }
                 pData.isBacklog = allBacklogs.some(b => b.employeeId === pData.employeeId && b.date === pData.date);
             }
             if (pData.employeeId) {
