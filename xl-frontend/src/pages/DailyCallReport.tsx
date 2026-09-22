@@ -85,6 +85,16 @@ export default function DailyCallReport() {
   const [pobQty, setPobQty] = useState('');
   const [pobItems, setPobItems] = useState<any[]>([]);
 
+  // Worked With
+  const [workedWith, setWorkedWith] = useState<string[]>([]);
+  const [isWorkedWithDropdownOpen, setIsWorkedWithDropdownOpen] = useState(false);
+
+  // Gifts
+  const [showGifts, setShowGifts] = useState(false);
+  const [giftItem, setGiftItem] = useState('');
+  const [giftQty, setGiftQty] = useState('');
+  const [giftsGiven, setGiftsGiven] = useState<any[]>([]);
+
   // Remarks
   const [remarks, setRemarks] = useState('');
 
@@ -185,6 +195,11 @@ export default function DailyCallReport() {
       }).catch(() => { setHasApprovedTP(false); setIsLockedDay(true); });
 
     axios.get('/api/xl/reports/products').then(r => setProducts(r.data.data || [])).catch(()=>{});
+    axios.get('/api/xl/reports/gifts').then(r => setGifts(r.data.data || [])).catch(()=>{});
+    axios.get('/api/admin/users').then(r => {
+        const allUsers = r.data.data || [];
+        setCoworkers(allUsers.filter((u:any) => u.employeeId !== USER_EMAIL));
+    }).catch(()=>{});
     
     axios.get(`/api/xl/dcr/my?email=${USER_EMAIL}&date=${dcrDate}`)
       .then(r => setTodaysDcrs(r.data.data || []))
@@ -312,6 +327,9 @@ export default function DailyCallReport() {
         checkOutTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
         productsDetailed,
         pobItems,
+        samplesGiven: pobItems.map(p => ({ product: p.productId, qty: p.sampleQty })).filter(s => s.qty && s.qty !== '0'),
+        gifts: giftsGiven,
+        workedWith,
         discussion: remarks,
         rating
       };
@@ -612,6 +630,32 @@ export default function DailyCallReport() {
               </div>
 
               <div className="bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
+                <div className="relative">
+                  <div onClick={() => setIsWorkedWithDropdownOpen(!isWorkedWithDropdownOpen)} className="w-full min-h-[50px] px-4 border border-[#3b3b5a] rounded-xl text-white font-semibold bg-[#27273f] flex items-center justify-between cursor-pointer">
+                    <span className="truncate text-sm">{workedWith.length > 0 ? `${workedWith.length} Coworker(s) Selected` : 'Worked With (Optional)'}</span>
+                    <ChevronDown size={18} className="text-slate-400" />
+                  </div>
+                  {isWorkedWithDropdownOpen && (
+                    <div className="absolute z-40 left-0 right-0 top-[55px] bg-[#27273f] border border-[#3b3b5a] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[200px]">
+                      <div className="overflow-y-auto">
+                        {coworkers.map(c => (
+                          <label key={c.employeeId} className="flex items-center gap-3 px-4 py-3 border-b border-[#3b3b5a]/50 hover:bg-[#3b3b5a] cursor-pointer">
+                            <input type="checkbox" checked={workedWith.includes(c.firstName + ' ' + (c.lastName||''))} onChange={(e) => {
+                              const name = c.firstName + ' ' + (c.lastName||'');
+                              if (e.target.checked) setWorkedWith([...workedWith, name]);
+                              else setWorkedWith(workedWith.filter(n => n !== name));
+                            }} className="w-4 h-4 rounded border-gray-600 text-emerald-500 bg-gray-700" />
+                            <span className="text-sm text-slate-200">{c.firstName} {c.lastName}</span>
+                          </label>
+                        ))}
+                        {coworkers.length === 0 && <div className="p-4 text-center text-slate-500 text-sm">No coworkers found</div>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-white">POB/Sample Details</span>
                   <button onClick={() => setShowPob(!showPob)} className={`w-10 h-5 rounded-full transition-colors relative ${showPob ? 'bg-emerald-500' : 'bg-[#1c1c2e] border border-[#3b3b5a]'}`}>
@@ -652,6 +696,47 @@ export default function DailyCallReport() {
                               <p className="text-[10px] text-emerald-400">Sample: {item.sampleQty} | POB: {item.pobQty}</p>
                             </div>
                             <button onClick={() => setPobItems(pobItems.filter((_, i) => i !== idx))} className="text-rose-400"><X size={14} /></button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-white">Gifts Given</span>
+                  <button onClick={() => setShowGifts(!showGifts)} className={`w-10 h-5 rounded-full transition-colors relative ${showGifts ? 'bg-emerald-500' : 'bg-[#1c1c2e] border border-[#3b3b5a]'}`}>
+                    <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-white transition-all ${showGifts ? 'left-6' : 'left-1'}`} />
+                  </button>
+                </div>
+                {showGifts && (
+                  <div className="mt-4 space-y-4 pt-4 border-t border-[#3b3b5a]">
+                    <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                      <select value={giftItem} onChange={e => setGiftItem(e.target.value)} className="w-full bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-white">
+                        <option value="">Select Gift *</option>
+                        {gifts.map(g => <option key={g._id} value={g._id}>{g.name || (g as any).giftName}</option>)}
+                      </select>
+                      <input type="number" placeholder="Qty" value={giftQty} onChange={e => setGiftQty(e.target.value)} className="w-20 bg-[#1c1c2e] border border-[#3b3b5a] rounded-lg px-2 py-2 text-sm text-white [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" />
+                    </div>
+                    <button onClick={() => {
+                      if (!giftItem || !giftQty) return;
+                      const gName = gifts.find(g => g._id === giftItem)?.name || (gifts.find(g => g._id === giftItem) as any)?.giftName || 'Unknown';
+                      setGiftsGiven([...giftsGiven, { itemId: giftItem, item: gName, qty: giftQty }]);
+                      setGiftItem(''); setGiftQty('');
+                    }} className="w-full h-10 bg-[#3b3b5a] text-white text-xs font-bold rounded-lg hover:bg-sky-500 transition-colors flex items-center justify-center gap-2">
+                      <Plus size={14} /> Add Gift
+                    </button>
+                    {giftsGiven.length > 0 && (
+                      <div className="space-y-2 mt-4">
+                        {giftsGiven.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between bg-[#1c1c2e] p-3 rounded-lg border border-[#3b3b5a]">
+                            <div>
+                              <p className="text-sm font-semibold text-white">{item.item}</p>
+                              <p className="text-[10px] text-emerald-400">Qty: {item.qty}</p>
+                            </div>
+                            <button onClick={() => setGiftsGiven(giftsGiven.filter((_, i) => i !== idx))} className="text-rose-400"><X size={14} /></button>
                           </div>
                         ))}
                       </div>
