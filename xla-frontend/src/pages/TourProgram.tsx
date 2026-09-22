@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, UserPlus, ChevronDown, RefreshCw } from 'lucide-react';
-import MedornDateRangePicker from '../components/MedornDateRangePicker';
+import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
 
 export default function TourProgramReport() {
   const navigate = useNavigate();
@@ -61,7 +61,7 @@ export default function TourProgramReport() {
         </div>
 
         {/* Date Picker */}
-        <MedornDateRangePicker 
+        <EmyrisDateRangePicker 
           startDate={startDate}
           endDate={endDate}
           onChange={(start, end) => { setStartDate(start); setEndDate(end); }}

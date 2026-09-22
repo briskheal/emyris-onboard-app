@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-interface MedornDateRangePickerProps {
+interface EmyrisDateRangePickerProps {
   startDate: Date | null;
   endDate: Date | null;
   onChange: (start: Date | null, end: Date | null) => void;
 }
 
-export default function MedornDateRangePicker({ startDate, endDate, onChange }: MedornDateRangePickerProps) {
+export default function EmyrisDateRangePicker({ startDate, endDate, onChange }: EmyrisDateRangePickerProps) {
   const [currentMonth, setCurrentMonth] = useState(new Date(2026, 8, 1)); // September 2026 default based on screenshot
 
   const handlePrevMonth = () => {
