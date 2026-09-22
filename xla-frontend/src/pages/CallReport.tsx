@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, UserPlus, ChevronDown, RefreshCw } from 'lucide-react';
+import { ChevronLeft, RefreshCw } from 'lucide-react';
 import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
 import CustomUserSelect from '../components/CustomUserSelect';
 import axios from 'axios';
@@ -10,6 +10,30 @@ export default function CallReport() {
   const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
   const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 21));
   const [reportType, setReportType] = useState('Call Report');
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const [adminsRes, usersRes] = await Promise.all([
+          axios.get('/api/admin/admins'),
+          axios.get('/api/admin/users')
+        ]);
+        let all: any[] = [];
+        if (adminsRes.data && adminsRes.data.success) {
+          all = [...all, ...adminsRes.data.admins.map((x: any) => ({ ...x, isAdmin: true }))];
+        }
+        if (usersRes.data && usersRes.data.success) {
+          all = [...all, ...usersRes.data.users.map((x: any) => ({ ...x, isAdmin: false }))];
+        }
+        setUsers(all);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const reportData = [
     { id: 1, date: '01 Sep 2026', name: 'Jigar Joshi', areaType: 'Out-Station', docs: 12, chems: 5, stockists: 2, pob: '15,000', activity: 'Working', workedWith: 'Admin' },
@@ -35,20 +59,15 @@ export default function CallReport() {
         <div className="mb-6 flex flex-wrap gap-6 items-end">
           {/* Select User Area */}
           <div>
-            <label className="text-xs font-bold text-emerald-400 mb-2 block">Select User</label>
+            <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2 block">Select User</label>
             <div className="flex items-center gap-3">
-              <button className="flex items-center justify-between bg-[#242538] border border-emerald-500/30 rounded-md px-4 py-2 min-w-[250px]">
-                <div className="flex items-center gap-3">
-                  <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
-                    <UserPlus size={12} className="text-slate-300" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-white leading-none">Jigar Joshi</p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Sales Manager</p>
-                  </div>
-                </div>
-                <ChevronDown size={14} className="text-slate-400" />
-              </button>
+              <div className="flex-grow min-w-[250px] max-w-sm">
+                <CustomUserSelect 
+                  users={users}
+                  selectedUser={selectedUser}
+                  onChange={(id) => setSelectedUser(id)}
+                />
+              </div>
               <button className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-full transition-colors">
                 <RefreshCw size={16} />
               </button>

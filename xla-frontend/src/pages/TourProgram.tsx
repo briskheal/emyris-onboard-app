@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, UserPlus, ChevronDown, RefreshCw } from 'lucide-react';
+import { ChevronLeft, RefreshCw } from 'lucide-react';
 import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
 import CustomUserSelect from '../components/CustomUserSelect';
 import axios from 'axios';
@@ -66,20 +66,15 @@ export default function TourProgramReport() {
       <div className="flex-1 p-6 overflow-y-auto">
         {/* Select User Area */}
         <div className="mb-6">
-          <label className="text-xs font-bold text-emerald-400 mb-2 block">Select User</label>
+          <label className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2 block">Select User</label>
           <div className="flex items-center gap-3">
-            <button className="flex items-center justify-between bg-[#242538] border border-emerald-500/30 rounded-md px-4 py-2 min-w-[250px]">
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
-                  <UserPlus size={12} className="text-slate-300" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs font-bold text-white leading-none">Jigar Joshi</p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Sales Manager</p>
-                </div>
-              </div>
-              <ChevronDown size={14} className="text-slate-400" />
-            </button>
+            <div className="w-full max-w-sm">
+              <CustomUserSelect 
+                users={users}
+                selectedUser={selectedUser}
+                onChange={(id) => setSelectedUser(id)}
+              />
+            </div>
             <button className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-full transition-colors">
               <RefreshCw size={16} />
             </button>
