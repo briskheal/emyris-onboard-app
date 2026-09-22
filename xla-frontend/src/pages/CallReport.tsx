@@ -57,7 +57,7 @@ export default function CallReport() {
       let allTPEntries: any[] = [];
       let allDCRs: any[] = [];
       
-      for (const [metaKey, meta] of monthsToFetch.entries()) {
+      for (const [, meta] of monthsToFetch.entries()) {
          try {
            const [tpRes, dcrRes] = await Promise.all([
                axios.get(`/api/xl/tour-program/my?email=${encodeURIComponent(selectedUser)}&month=${meta.mText}&year=${meta.y}`),
