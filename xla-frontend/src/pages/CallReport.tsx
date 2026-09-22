@@ -134,6 +134,14 @@ export default function CallReport() {
               else finalActivity = 'Working';
           }
           
+          let jointCallsCount = 0;
+          dcrsForDay.forEach(d => {
+             try {
+                let w = typeof d.workedWith === 'string' ? JSON.parse(d.workedWith) : d.workedWith;
+                if (Array.isArray(w) && w.length > 0) jointCallsCount++;
+             } catch(e) {}
+          });
+
           formatted.push({
              id: idx++,
              rawDate: dStr,
@@ -152,6 +160,7 @@ export default function CallReport() {
              docs: dcrsForDay.filter(d => d.entityType === 'Doctor').length,
              chems: dcrsForDay.filter(d => d.entityType === 'Chemist').length,
              stockists: dcrsForDay.filter(d => d.entityType === 'Stockist').length,
+             jointCalls: jointCallsCount,
              backlog: backlog ? (backlog.status === 'Approved' ? '✅' : (backlog.status === 'Pending' || backlog.status === 'Submitted' ? '⏳' : '❌')) : '-'
           });
           
@@ -180,15 +189,24 @@ export default function CallReport() {
   }, [startDate, endDate, selectedUser, users]);
 
   const displayedData = useMemo(() => {
-    return reportData.filter(r => {
-        if (reportType === 'Working Report') {
-            return (r.activity || '').toLowerCase().includes('working');
+    if (reportType === 'Show Last Call Report') {
+        const workingDays = reportData.filter(r => !r.isHoliday && !r.isWeeklyOff);
+        if (workingDays.length > 0) {
+            workingDays.sort((a,b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime());
+            return [workingDays[0]];
         }
-        if (reportType === 'Joint Call Report') {
-            return (r.activity || '').toLowerCase().includes('joint');
-        }
-        return true;
-    });
+        return [];
+    }
+
+    if (reportType === 'Backlog Report') {
+        return reportData.filter(r => r.backlog !== '-' && !r.isHoliday && !r.isWeeklyOff);
+    }
+
+    if (reportType === 'Joint Call Report') {
+        return reportData.filter(r => r.jointCalls > 0);
+    }
+
+    return reportData;
   }, [reportData, reportType]);
 
   const { workingDaysCount, totalDocs, totalChems, totalStockists } = useMemo(() => {
@@ -206,6 +224,29 @@ export default function CallReport() {
     });
     return { workingDaysCount: wd, totalDocs: d, totalChems: c, totalStockists: s };
   }, [displayedData]);
+
+  const detailedData = useMemo(() => {
+    if (reportType !== 'Detailed Report' && reportType !== 'Worked With Report') return [];
+    
+    let filtered = [...rawDCRs];
+    
+    if (reportType === 'Worked With Report') {
+        filtered = filtered.filter(d => {
+            try {
+                let w = typeof d.workedWith === 'string' ? JSON.parse(d.workedWith) : d.workedWith;
+                return Array.isArray(w) && w.length > 0;
+            } catch(e) { return false; }
+        });
+    }
+    
+    // Sort by date (descending) then time
+    filtered.sort((a,b) => {
+        if (a.date !== b.date) return new Date(b.date).getTime() - new Date(a.date).getTime();
+        return (a.checkInTime || '').localeCompare(b.checkInTime || '');
+    });
+    
+    return filtered;
+  }, [rawDCRs, reportType]);
 
   const avgDocs = workingDaysCount > 0 ? (totalDocs / workingDaysCount).toFixed(2) : '0';
   const avgChems = workingDaysCount > 0 ? (totalChems / workingDaysCount).toFixed(2) : '0';
@@ -285,61 +326,152 @@ export default function CallReport() {
 
         {/* Table Header Info */}
         <div className="mt-8 mb-4">
-          <h2 className="text-[11px] font-black text-slate-300 uppercase tracking-widest">SHOWING ({displayedData.length}) ENTRIES</h2>
+          <h2 className="text-[11px] font-black text-slate-300 uppercase tracking-widest">SHOWING ({(reportType === 'Detailed Report' || reportType === 'Worked With Report') ? detailedData.length : displayedData.length}) ENTRIES</h2>
         </div>
 
         {/* Data Table */}
         <div className="bg-[#1e2032] overflow-hidden">
           <div className="overflow-x-auto pb-4 custom-scrollbar">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#171f3a] border-b border-[#2d2f45]">
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">↑</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <span className="text-slate-400">⚲</span> Day
-                    </div>
-                  </th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
-                    <div className="flex items-center gap-1">
-                      <span className="text-slate-400">⚲</span> Name
-                    </div>
-                  </th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Activity</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Area-Type</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Working Areas</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Doctors ↑</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Chemists ↑</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Stockists ↑</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Backlog</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white whitespace-nowrap">View</th>
-                </tr>
-              </thead>
-              <tbody>
-                  {displayedData.map((row) => (
-                    <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.date}</td>
-                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.day}</td>
-                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
-                      <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] whitespace-nowrap ${row.isWeeklyOff ? 'text-amber-400 font-bold' : row.isHoliday ? 'text-fuchsia-400 font-bold' : 'text-slate-300'}`}>{row.activity}</td>
-                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
-                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areas}</td>
-                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.docs}</td>
-                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.chems}</td>
-                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.stockists}</td>
-                      <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] text-center ${row.backlog === '✓' ? 'text-emerald-400 font-bold' : row.backlog === '⌛' ? 'text-amber-400' : row.backlog === '✗' ? 'text-rose-400' : 'text-slate-500'}`}>{row.backlog}</td>
-                      <td className="px-4 py-3 text-xs text-slate-300 text-center"><span onClick={() => setSelectedView(row)} className="cursor-pointer hover:text-white text-slate-400 text-lg">👁</span></td>
+              {(reportType === 'Detailed Report' || reportType === 'Worked With Report') ? (
+                <>
+                  <thead>
+                    <tr className="bg-[#171f3a] border-b border-[#2d2f45]">
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Sr</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Submitter</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">ActivityType</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">AreaType</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Date</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Time</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Type</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Name</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Campaign</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Products</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">POB</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Samples</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Gifts</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Remarks</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Work Areas</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white whitespace-nowrap">Worked With</th>
                     </tr>
-                  ))}
-                {/* Total Row */}
-                <tr className="bg-[#171f3a] border-b-2 border-sky-500 font-bold">
-                  <td colSpan={6} className="px-4 py-3 text-xs text-sky-400 text-right border-r border-[#2d2f45]">Total</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.docs || 0), 0)}</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.chems || 0), 0)}</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.stockists || 0), 0)}</td>
-                  <td colSpan={2}></td>
-                </tr>
-              </tbody>
+                  </thead>
+                  <tbody>
+                    {detailedData.map((dcr, index) => {
+                      let workedWithStr = '-';
+                      try {
+                        let w = typeof dcr.workedWith === 'string' ? JSON.parse(dcr.workedWith) : dcr.workedWith;
+                        if (Array.isArray(w)) workedWithStr = w.join(', ');
+                      } catch(e) {}
+                      let productsStr = '-';
+                      try {
+                        let p = typeof dcr.productsDetailed === 'string' ? JSON.parse(dcr.productsDetailed) : dcr.productsDetailed;
+                        if (Array.isArray(p)) productsStr = p.map((x:any) => x.product || x).join(', ');
+                      } catch(e) {}
+                      let samplesStr = '-';
+                      try {
+                        let s = typeof dcr.samplesGiven === 'string' ? JSON.parse(dcr.samplesGiven) : dcr.samplesGiven;
+                        if (Array.isArray(s)) samplesStr = s.map((x:any) => `${x.qty} ${x.product || x.item}`).join(', ');
+                      } catch(e) {}
+                      let giftsStr = '-';
+                      try {
+                        let g = typeof dcr.gifts === 'string' ? JSON.parse(dcr.gifts) : dcr.gifts;
+                        if (Array.isArray(g)) giftsStr = g.map((x:any) => `${x.qty} ${x.item}`).join(', ');
+                      } catch(e) {}
+                      
+                      let pobAmt = 0;
+                      try {
+                        let pob = typeof dcr.pobItems === 'string' ? JSON.parse(dcr.pobItems) : dcr.pobItems;
+                        if (Array.isArray(pob)) pobAmt = pob.reduce((sum:number, item:any) => sum + (parseFloat(item.amount) || 0), 0);
+                      } catch(e) {}
+
+                      return (
+                        <tr key={dcr._id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{index + 1}</td>
+                          <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45] whitespace-nowrap">{dcr.employeeName || (users.find(u => u.employeeId === dcr.employeeId)?.firstName || dcr.employeeId)}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">Working</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{dcr.workingAreaType || '-'}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{dcr.date}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{dcr.checkInTime || '-'}</td>
+                          <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] whitespace-nowrap ${
+                            dcr.entityType === 'Doctor' ? 'text-sky-400' :
+                            dcr.entityType === 'Chemist' ? 'text-emerald-400' :
+                            dcr.entityType === 'Stockist' ? 'text-amber-400' : 'text-slate-400'
+                          }`}>{dcr.entityType}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{dcr.entityName}</td>
+                          <td className="px-4 py-3 text-xs text-slate-400 border-r border-[#2d2f45]">-</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{productsStr}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">₹{pobAmt}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{samplesStr}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{giftsStr}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{dcr.discussion || '-'}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{dcr.workingAreas || '-'}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 whitespace-nowrap">{workedWithStr || '-'}</td>
+                        </tr>
+                      );
+                    })}
+                    {detailedData.length === 0 && (
+                      <tr>
+                        <td colSpan={16} className="px-4 py-8 text-center text-slate-500 text-sm">No detailed calls found for this period.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </>
+              ) : (
+                <>
+                  <thead>
+                    <tr className="bg-[#171f3a] border-b border-[#2d2f45]">
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Sr</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <span className="text-slate-400">📅</span> Day
+                        </div>
+                      </th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
+                        <div className="flex items-center gap-1">
+                          <span className="text-slate-400">👤</span> Name
+                        </div>
+                      </th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Activity</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Area-Type</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Working Areas</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Doctors ⚕️</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Chemists 💊</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Stockists 📦</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
+                        {reportType === 'Joint Call Report' ? 'Joint Calls' : 'Backlog'}
+                      </th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white whitespace-nowrap">View</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                      {displayedData.map((row) => (
+                        <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.date}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.day}</td>
+                          <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
+                          <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] whitespace-nowrap ${row.isWeeklyOff ? 'text-amber-400 font-bold' : row.isHoliday ? 'text-fuchsia-400 font-bold' : 'text-slate-300'}`}>{row.activity}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
+                          <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areas}</td>
+                          <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.docs}</td>
+                          <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.chems}</td>
+                          <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.stockists}</td>
+                          <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] text-center ${reportType === 'Joint Call Report' ? 'text-emerald-400 font-bold' : row.backlog === '✅' ? 'text-emerald-400 font-bold' : row.backlog === '⏳' ? 'text-amber-400' : row.backlog === '❌' ? 'text-rose-400' : 'text-slate-500'}`}>
+                            {reportType === 'Joint Call Report' ? row.jointCalls : row.backlog}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-300 text-center"><span onClick={() => setSelectedView(row)} className="cursor-pointer hover:text-white text-slate-400 text-lg">👁️</span></td>
+                        </tr>
+                      ))}
+                    {/* Total Row */}
+                    <tr className="bg-[#171f3a] border-b-2 border-sky-500 font-bold">
+                      <td colSpan={6} className="px-4 py-3 text-xs text-sky-400 text-right border-r border-[#2d2f45]">Total</td>
+                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.docs || 0), 0)}</td>
+                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.chems || 0), 0)}</td>
+                      <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.stockists || 0), 0)}</td>
+                      <td colSpan={2}></td>
+                    </tr>
+                  </tbody>
+                </>
+              )}
             </table>
           </div>
         </div>
