@@ -67,7 +67,8 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
           type: 'CallReportGroup',
           action,
           employeeId,
-          date
+          date,
+          approvedBy: (JSON.parse(localStorage.getItem('user') || '{}').employeeId || JSON.parse(localStorage.getItem('user') || '{}').uid || 'Admin')
         });
         if (res.data.success) successCount++;
       }

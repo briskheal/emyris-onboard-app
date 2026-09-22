@@ -91,7 +91,8 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
         action,
         employeeId: record.employeeId,
         date: record.date,
-        remarks: finalRemarks
+        remarks: finalRemarks,
+        approvedBy: (JSON.parse(localStorage.getItem('user') || '{}').employeeId || JSON.parse(localStorage.getItem('user') || '{}').uid || 'Admin')
       });
       if (res.data.success) {
         fetchPending();

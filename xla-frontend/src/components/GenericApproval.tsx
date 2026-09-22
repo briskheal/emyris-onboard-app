@@ -160,7 +160,8 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
         const res = await axios.post('/api/xl/approvals/action', {
           type: selectedModule,
           action,
-          recordId: id
+          recordId: id,
+          approvedBy: (JSON.parse(localStorage.getItem('user') || '{}').employeeId || JSON.parse(localStorage.getItem('user') || '{}').uid || 'Admin')
         });
         if (res.data.success) successCount++;
       }
