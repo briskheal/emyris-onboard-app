@@ -252,7 +252,14 @@ export default function TourProgramReport() {
                 </div>
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-emerald-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Approved By</p>
-                  <p className="text-xs font-medium text-slate-400">{selectedUser || 'Admin'}</p>
+                  <p className="text-xs font-medium text-slate-400">
+                    {(() => {
+                      const employee = users.find(u => u.employeeId === selectedUser);
+                      if (!employee || !employee.reportingManager) return 'Admin';
+                      const manager = users.find(u => u.uid === employee.reportingManager || u.employeeId === employee.reportingManager);
+                      return manager ? `${manager.firstName} ${manager.lastName}` : employee.reportingManager;
+                    })()}
+                  </p>
                 </div>
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-emerald-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Added By</p>
