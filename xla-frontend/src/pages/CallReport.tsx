@@ -298,7 +298,7 @@ export default function CallReport() {
             </div>
             
             <div className="p-6 overflow-y-auto flex-1">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-sky-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Date</p>
                   <p className="text-xs font-medium text-slate-400">{selectedView.date} - {selectedView.day}</p>
@@ -306,6 +306,21 @@ export default function CallReport() {
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-sky-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Activity</p>
                   <p className="text-xs font-medium text-slate-400">{selectedView.activity}</p>
+                </div>
+                <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-sky-500">
+                  <p className="text-xs font-bold text-slate-300 mb-1">Area Type</p>
+                  <p className="text-xs font-medium text-slate-400">{selectedView.areaType}</p>
+                </div>
+                <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-sky-500">
+                  <p className="text-xs font-bold text-slate-300 mb-1">Approved By</p>
+                  <p className="text-xs font-medium text-slate-400">
+                    {(() => {
+                      const employee = users.find(u => u.employeeId === selectedUser);
+                      if (!employee || !employee.reportingManager) return 'Admin';
+                      const manager = users.find(u => u.uid === employee.reportingManager || u.employeeId === employee.reportingManager);
+                      return manager ? `${manager.firstName} ${manager.lastName}` : employee.reportingManager;
+                    })()}
+                  </p>
                 </div>
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-sky-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Areas</p>
