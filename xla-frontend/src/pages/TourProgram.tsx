@@ -67,36 +67,70 @@ export default function TourProgramReport() {
           onChange={(start, end) => { setStartDate(start); setEndDate(end); }}
         />
 
+        {/* Table Header Info */}
+        <div className="mt-8 mb-4 flex justify-between items-end">
+          <h2 className="text-[11px] font-black text-slate-300 uppercase tracking-widest">SHOWING ({reportData.length}) ENTRIES</h2>
+          <button className="border border-sky-500 text-sky-400 px-4 py-1.5 rounded text-xs font-bold hover:bg-sky-500/10">
+            View Status
+          </button>
+        </div>
+
         {/* Data Table */}
-        <div className="mt-8 bg-[#242538] rounded-xl border border-[#3b3b5a] overflow-hidden shadow-xl">
-          <div className="overflow-x-auto">
+        <div className="bg-[#1e2032] overflow-hidden">
+          <div className="overflow-x-auto pb-4 custom-scrollbar">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-[#1e1e2d] border-b border-[#3b3b5a]">
-                  {['Sr no.', 'Date', 'Name', 'Area Type', 'Areas', 'Old Areas', 'Edited', 'Remarks', 'Activity', 'Worked with'].map(th => (
-                    <th key={th} className="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-wider whitespace-nowrap">
-                      {th}
-                    </th>
-                  ))}
+                <tr className="bg-[#171f3a] border-b border-[#2d2f45]">
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Date ↑</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-400">⚲</span> Name ↑
+                    </div>
+                  </th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Area Type</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Areas</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Old Areas</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Edited</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Remarks</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Activity</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Worked with</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white whitespace-nowrap">View Details</th>
                 </tr>
               </thead>
               <tbody>
-                {reportData.map((row, idx) => (
-                  <tr key={row.id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                    <td className="px-4 py-3 text-xs text-slate-300">{idx + 1}</td>
-                    <td className="px-4 py-3 text-xs font-bold text-white whitespace-nowrap">{row.date}</td>
-                    <td className="px-4 py-3 text-xs text-sky-400 font-bold whitespace-nowrap">{row.name}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 whitespace-nowrap">{row.areaType}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300">{row.areas}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300">{row.oldAreas}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300">{row.edited}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300">{row.remarks}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300">{row.activity}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300">{row.workedWith}</td>
+                {reportData.map((row) => (
+                  <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.date}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.areas}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.oldAreas}</td>
+                    <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.edited}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.remarks}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.activity}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.workedWith}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 text-center"><span className="cursor-pointer hover:text-white text-slate-400 text-lg">👁</span></td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-between items-center bg-[#171f3a] px-4 py-3 mt-1">
+          <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
+            <button className="hover:text-white transition-colors">&lt; Prev</button>
+            <span className="text-white">Page 1 of 1</span>
+            <button className="hover:text-white transition-colors">Next &gt;</button>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 bg-[#2d2f45] px-3 py-1.5 rounded text-xs font-bold text-white hover:bg-slate-600">
+              <span className="text-emerald-400">▤</span> Export
+            </button>
+            <div className="bg-[#2d2f45] rounded px-3 py-1.5 flex items-center gap-2 text-xs font-bold text-white cursor-pointer">
+              Show 50 <span className="text-slate-400">▼</span>
+            </div>
           </div>
         </div>
       </div>

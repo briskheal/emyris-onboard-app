@@ -130,9 +130,9 @@ export default function MedornDateRangePicker({ startDate, endDate, onChange }: 
   );
 
   return (
-    <div className="flex flex-col md:flex-row bg-[#242538] border border-[#3b3b5a] rounded-xl overflow-hidden shadow-2xl w-full max-w-4xl mt-4">
+    <div className="flex flex-col md:flex-row w-full mt-4 bg-[#1e2032]">
       {/* Sidebar Filters */}
-      <div className="w-full md:w-48 bg-[#1e1e2d] flex flex-col border-r border-[#3b3b5a]">
+      <div className="w-full md:w-64 bg-[#1a1b2d] flex flex-col border-r border-[#2d2f45]">
         {['Today', 'Yesterday', 'This Week', 'Last Week', 'This Month', 'Last Month'].map(f => (
           <button key={f} onClick={() => setQuickFilter(f)} className="text-left px-5 py-3 text-[11px] font-bold text-slate-400 hover:text-white hover:bg-[#27273f] border-b border-[#3b3b5a]/50 transition-colors">
             {f}
@@ -149,7 +149,7 @@ export default function MedornDateRangePicker({ startDate, endDate, onChange }: 
       </div>
 
       {/* Calendars Area */}
-      <div className="flex-1 p-5 flex flex-col bg-[#242538]">
+      <div className="flex-1 p-5 flex flex-col bg-transparent">
         {/* Top Selected Dates */}
         <div className="flex gap-4 mb-4">
           <div className="flex-1 bg-[#27273f] border border-[#3b3b5a] rounded-md py-2 px-4 text-center text-xs font-bold text-slate-300">
