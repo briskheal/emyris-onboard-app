@@ -106,8 +106,9 @@ export default function MedornDateRangePicker({ startDate, endDate, onChange }: 
     onChange(start, end);
   };
 
-  const renderCalendar = (days: (Date | null)[]) => (
+  const renderCalendar = (days: (Date | null)[], title: string) => (
     <div className="flex-1">
+      <div className="mb-4 text-xs font-bold text-slate-300 ml-2">{title}</div>
       <div className="grid grid-cols-7 gap-1 text-center mb-2">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
           <div key={d} className="text-[10px] uppercase font-bold text-slate-500 py-1">{d}</div>
@@ -162,29 +163,40 @@ export default function MedornDateRangePicker({ startDate, endDate, onChange }: 
 
         {/* Controls */}
         <div className="flex justify-between items-center mb-6 px-2">
-          <button onClick={handlePrevMonth} className="p-1 text-slate-400 hover:text-sky-400 transition-colors">
+          <button onClick={handlePrevMonth} className="p-2 bg-[#27273f] rounded text-slate-400 hover:text-sky-400 transition-colors">
             <ChevronLeft size={16} />
           </button>
           
-          <div className="flex gap-3">
-            <select className="bg-[#242538] text-xs font-bold text-slate-300 rounded outline-none border-none cursor-pointer">
-              <option>September</option>
-              <option>October</option>
+          <div className="flex gap-3 relative z-10">
+            <select 
+              className="bg-[#27273f] text-xs font-bold text-slate-300 px-3 py-1.5 rounded outline-none border border-[#3b3b5a] cursor-pointer"
+              value={currentMonth.getMonth()}
+              onChange={(e) => setCurrentMonth(new Date(currentMonth.getFullYear(), parseInt(e.target.value), 1))}
+            >
+              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, i) => (
+                <option key={m} value={i}>{m}</option>
+              ))}
             </select>
-            <select className="bg-[#242538] text-xs font-bold text-slate-300 rounded outline-none border-none cursor-pointer">
-              <option>2026</option>
+            <select 
+              className="bg-[#27273f] text-xs font-bold text-slate-300 px-3 py-1.5 rounded outline-none border border-[#3b3b5a] cursor-pointer"
+              value={currentMonth.getFullYear()}
+              onChange={(e) => setCurrentMonth(new Date(parseInt(e.target.value), currentMonth.getMonth(), 1))}
+            >
+              {[2024, 2025, 2026, 2027, 2028].map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
             </select>
           </div>
 
-          <button onClick={handleNextMonth} className="p-1 text-slate-400 hover:text-sky-400 transition-colors">
+          <button onClick={handleNextMonth} className="p-2 bg-[#27273f] rounded text-slate-400 hover:text-sky-400 transition-colors">
             <ChevronRight size={16} />
           </button>
         </div>
 
         {/* Dual Calendar Grid */}
         <div className="flex flex-col md:flex-row gap-6">
-          {renderCalendar(leftDays)}
-          {renderCalendar(rightDays)}
+          {renderCalendar(leftDays, leftCalendarDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))}
+          {renderCalendar(rightDays, rightCalendarDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))}
         </div>
       </div>
     </div>
