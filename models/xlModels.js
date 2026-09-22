@@ -374,6 +374,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         longitude: { type: DataTypes.FLOAT },
         geoAddress: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Submitted' },
+        approvedBy: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
