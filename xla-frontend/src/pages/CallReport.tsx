@@ -150,7 +150,14 @@ export default function CallReport() {
           dateIter.setDate(dateIter.getDate() + 1);
       }
       
-      setReportData(formatted);
+      const finalFormatted = formatted.filter(r => {
+          if ((r.activity || '').toLowerCase().includes('working')) {
+              return r.hasDCR;
+          }
+          return true; 
+      });
+
+      setReportData(finalFormatted);
       setRawDCRs(allDCRs);
     };
     
