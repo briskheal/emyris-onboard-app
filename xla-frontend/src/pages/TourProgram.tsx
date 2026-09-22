@@ -69,7 +69,8 @@ export default function TourProgramReport() {
                 entries = entries.map(e => ({
                    ...e, 
                    employeeName: res.data.data.employeeName,
-                   tpStatus: e.status || res.data.data.status
+                   tpStatus: e.status || res.data.data.status,
+                   approvedBy: res.data.data.approvedBy
                 }));
                 allEntries = [...allEntries, ...entries];
               }
@@ -254,7 +255,7 @@ export default function TourProgramReport() {
                   <p className="text-xs font-bold text-slate-300 mb-1">Approved By</p>
                   <p className="text-xs font-medium text-slate-400">
                     {(() => {
-                      const approverId = tpData && tpData[0] && tpData[0].approvedBy;
+                      const approverId = selectedView.approvedBy;
                       if (approverId) {
                         const manager = users.find(u => u.uid === approverId || u.employeeId === approverId);
                         if (manager) return `${manager.firstName} ${manager.lastName} (${manager.designation})`;

@@ -69,7 +69,7 @@ export default function CallReport() {
            if (tpRes.data && tpRes.data.success && tpRes.data.data) {
               let entries = [];
               try { entries = typeof tpRes.data.data.entries === 'string' ? JSON.parse(tpRes.data.data.entries) : tpRes.data.data.entries; } catch(e) {}
-              if (Array.isArray(entries)) allTPEntries = [...allTPEntries, ...entries];
+              if (Array.isArray(entries)) allTPEntries = [...allTPEntries, ...entries.map(e => ({ ...e, approvedBy: tpRes.data.data.approvedBy }))];
            }
            
            if (dcrRes.data && dcrRes.data.success && Array.isArray(dcrRes.data.data)) {
@@ -108,7 +108,7 @@ export default function CallReport() {
           formatted.push({
              id: idx++,
              rawDate: dStr,
-             approvedBy: tpRes.data.data.approvedBy,
+             approvedBy: tp.approvedBy,
              date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
              day: new Date(dStr).toLocaleDateString('en-GB', { weekday: 'long' }),
              name: name,
