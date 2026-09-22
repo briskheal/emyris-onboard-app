@@ -86,12 +86,16 @@ export default function TourProgramReport() {
       };
       
       let allHolidays: any[] = [];
+      const selectedUserObj = users.find(u => u.employeeId === selectedUser || u.email === selectedUser) || {};
+      
       try {
           const hRes = await axios.get('/api/xl/settings/holidays');
           if (hRes.data && hRes.data.success) {
-              const selectedUserObj = users.find(u => u.employeeId === selectedUser || u.email === selectedUser) || {};
-              const userState = selectedUserObj.state;
-              allHolidays = hRes.data.data.filter((h: any) => !h.state || h.state === 'All' || h.state === 'N/A' || h.state === userState);
+              const userState = (selectedUserObj.state || '').toLowerCase().trim();
+              allHolidays = hRes.data.data.filter((h: any) => {
+                  if (!h.state || h.state === 'All' || h.state === 'N/A') return true;
+                  return h.state.toLowerCase().trim() === userState;
+              });
           }
       } catch(e) {}
 
@@ -115,10 +119,10 @@ export default function TourProgramReport() {
           formatted.push({
              id: idx++,
              date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-             name: e.employeeName || selectedUser,
+             day: new Date(dStr).toLocaleDateString('en-GB', { weekday: 'long' }),
+             name: e.employeeName || selectedUserObj.firstName ? `${selectedUserObj.firstName} ${selectedUserObj.lastName}` : selectedUser,
              areaType: e.type || e.workAreaType || e.areaType || '-',
              areas: e.toMarket || e.workingArea || e.workArea || '-',
-             oldAreas: '-',
              edited: e.isEdited ? 'Yes' : 'No',
              remarks: e.remarks || '-',
              activity: finalActivity,
@@ -197,15 +201,15 @@ export default function TourProgramReport() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-[#171f3a] border-b border-[#2d2f45]">
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Date ↑</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Date &uarr;</th>
+                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Day</th>
                   <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
                     <div className="flex items-center gap-1">
-                      <span className="text-slate-400">⚲</span> Name ↑
+                      <span className="text-slate-400">&bull;</span> Name &uarr;
                     </div>
                   </th>
                   <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Area Type</th>
                   <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Areas</th>
-                  <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Old Areas</th>
                   <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Edited</th>
                   <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Remarks</th>
                   <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Activity</th>
@@ -217,10 +221,10 @@ export default function TourProgramReport() {
                 {reportData.map((row) => (
                   <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.date}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.day}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.areas}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.oldAreas}</td>
                     <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.edited}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.remarks}</td>
                       <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] ${row.isWeeklyOff ? 'text-amber-400 font-bold' : row.isHoliday ? 'text-fuchsia-400 font-bold' : 'text-slate-300'}`}>{row.activity}</td>
