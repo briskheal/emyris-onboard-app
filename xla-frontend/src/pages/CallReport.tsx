@@ -174,9 +174,21 @@ export default function CallReport() {
     fetchReports();
   }, [startDate, endDate, selectedUser, users]);
 
+  const displayedData = useMemo(() => {
+    return reportData.filter(r => {
+        if (reportType === 'Working Report') {
+            return (r.activity || '').toLowerCase().includes('working');
+        }
+        if (reportType === 'Joint Call Report') {
+            return (r.activity || '').toLowerCase().includes('joint');
+        }
+        return true;
+    });
+  }, [reportData, reportType]);
+
   const { workingDaysCount, totalDocs, totalChems, totalStockists } = useMemo(() => {
     let wd = 0, d = 0, c = 0, s = 0;
-    reportData.forEach(r => {
+    displayedData.forEach(r => {
       // Only count as a "working" day for averages if they actually submitted DCRs 
       // (or if they submitted and it's approved). The user specifically requested 
       // not dividing by future/unsubmitted working days in the month.
@@ -188,7 +200,7 @@ export default function CallReport() {
       s += (r.stockists || 0);
     });
     return { workingDaysCount: wd, totalDocs: d, totalChems: c, totalStockists: s };
-  }, [reportData]);
+  }, [displayedData]);
 
   const avgDocs = workingDaysCount > 0 ? (totalDocs / workingDaysCount).toFixed(2) : '0';
   const avgChems = workingDaysCount > 0 ? (totalChems / workingDaysCount).toFixed(2) : '0';
@@ -268,7 +280,7 @@ export default function CallReport() {
 
         {/* Table Header Info */}
         <div className="mt-8 mb-4">
-          <h2 className="text-[11px] font-black text-slate-300 uppercase tracking-widest">SHOWING ({reportData.length}) ENTRIES</h2>
+          <h2 className="text-[11px] font-black text-slate-300 uppercase tracking-widest">SHOWING ({displayedData.length}) ENTRIES</h2>
         </div>
 
         {/* Data Table */}
@@ -299,7 +311,7 @@ export default function CallReport() {
                 </tr>
               </thead>
               <tbody>
-                  {reportData.map((row) => (
+                  {displayedData.map((row) => (
                     <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
                       <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.date}</td>
                       <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.day}</td>
@@ -317,9 +329,9 @@ export default function CallReport() {
                 {/* Total Row */}
                 <tr className="bg-[#171f3a] border-b-2 border-sky-500 font-bold">
                   <td colSpan={6} className="px-4 py-3 text-xs text-sky-400 text-right border-r border-[#2d2f45]">Total</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{reportData.reduce((acc, r) => acc + (r.docs || 0), 0)}</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{reportData.reduce((acc, r) => acc + (r.chems || 0), 0)}</td>
-                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{reportData.reduce((acc, r) => acc + (r.stockists || 0), 0)}</td>
+                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.docs || 0), 0)}</td>
+                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.chems || 0), 0)}</td>
+                  <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{displayedData.reduce((acc, r) => acc + (r.stockists || 0), 0)}</td>
                   <td colSpan={2}></td>
                 </tr>
               </tbody>
