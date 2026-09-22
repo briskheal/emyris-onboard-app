@@ -92,11 +92,12 @@ export default function CallReport() {
       const name = selectedUserObj ? `${selectedUserObj.firstName} ${selectedUserObj.lastName}` : selectedUser;
       
       let allBacklogs: any[] = [];
-      try {
-         const backRes = await axios.get(`/api/xl/backlog/my?email=${encodeURIComponent(selectedUser)}`);
-         if (backRes.data && backRes.data.success) allBacklogs = backRes.data.data;
-      } catch(e) {}
-      
+        try {
+            const bRes = await axios.get(`/api/xl/backlog/my?email=${encodeURIComponent(selectedUser)}`);
+            if (bRes.data && bRes.data.success) {
+                allBacklogs = bRes.data.data;
+            }
+        } catch(e) {}
       const formatDateStr = (d: Date) => {
           const offset = d.getTimezoneOffset() * 60000;
           return new Date(d.getTime() - offset).toISOString().split('T')[0];
@@ -136,7 +137,7 @@ export default function CallReport() {
              docs: dcrsForDay.filter(d => d.entityType === 'Doctor').length,
              chems: dcrsForDay.filter(d => d.entityType === 'Chemist').length,
              stockists: dcrsForDay.filter(d => d.entityType === 'Stockist').length,
-             backlog: backlog ? '✓' : '-'
+             backlog: backlog ? (backlog.status === 'Approved' ? '✓' : (backlog.status === 'Pending' || backlog.status === 'Submitted' ? '⌛' : '✗')) : '-'
           });
           
           dateIter.setDate(dateIter.getDate() + 1);
@@ -265,7 +266,7 @@ export default function CallReport() {
                       <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.docs}</td>
                       <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.chems}</td>
                       <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.stockists}</td>
-                      <td className="px-4 py-3 text-xs text-emerald-400 border-r border-[#2d2f45] text-center">{row.backlog}</td>
+                      <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] text-center ${row.backlog === '✓' ? 'text-emerald-400 font-bold' : row.backlog === '⌛' ? 'text-amber-400' : row.backlog === '✗' ? 'text-rose-400' : 'text-slate-500'}`}>{row.backlog}</td>
                       <td className="px-4 py-3 text-xs text-slate-300 text-center"><span onClick={() => setSelectedView(row)} className="cursor-pointer hover:text-white text-slate-400 text-lg">👁</span></td>
                     </tr>
                   ))}
