@@ -88,7 +88,11 @@ export default function TourProgramReport() {
       let allHolidays: any[] = [];
       try {
           const hRes = await axios.get('/api/xl/settings/holidays');
-          if (hRes.data && hRes.data.success) allHolidays = hRes.data.data;
+          if (hRes.data && hRes.data.success) {
+              const selectedUserObj = users.find(u => u.employeeId === selectedUser || u.email === selectedUser) || {};
+              const userState = selectedUserObj.state;
+              allHolidays = hRes.data.data.filter((h: any) => !h.state || h.state === 'All' || h.state === 'N/A' || h.state === userState);
+          }
       } catch(e) {}
 
       const formatted = [];

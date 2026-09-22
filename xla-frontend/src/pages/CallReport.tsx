@@ -56,6 +56,9 @@ export default function CallReport() {
          current.setDate(current.getDate() + 1);
       }
       
+      const selectedUserObj = users.find(u => u.employeeId === selectedUser);
+      const name = selectedUserObj ? `${selectedUserObj.firstName} ${selectedUserObj.lastName}` : selectedUser;
+
       let allTPEntries: any[] = [];
       let allDCRs: any[] = [];
       let allHolidays: any[] = [];
@@ -63,7 +66,8 @@ export default function CallReport() {
       try {
           const hRes = await axios.get('/api/xl/settings/holidays');
           if (hRes.data && hRes.data.success) {
-              allHolidays = hRes.data.data;
+              const userState = selectedUserObj?.state;
+              allHolidays = hRes.data.data.filter((h: any) => !h.state || h.state === 'All' || h.state === 'N/A' || h.state === userState);
           }
       } catch (e) { console.error('Holidays error', e); }
 
@@ -87,9 +91,6 @@ export default function CallReport() {
            console.error(e);
          }
       }
-      
-      const selectedUserObj = users.find(u => u.employeeId === selectedUser);
-      const name = selectedUserObj ? `${selectedUserObj.firstName} ${selectedUserObj.lastName}` : selectedUser;
       
       let allBacklogs: any[] = [];
         try {
