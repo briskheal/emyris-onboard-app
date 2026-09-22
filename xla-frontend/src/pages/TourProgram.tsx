@@ -85,9 +85,6 @@ export default function TourProgramReport() {
           return new Date(d.getTime() - offset).toISOString().split('T')[0];
       };
       
-      const startStr = formatDateStr(startDate);
-      const endStr = formatDateStr(endDate);
-      
       let allHolidays: any[] = [];
       try {
           const hRes = await axios.get('/api/xl/settings/holidays');
