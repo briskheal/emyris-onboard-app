@@ -88,22 +88,46 @@ export default function TourProgramReport() {
       const startStr = formatDateStr(startDate);
       const endStr = formatDateStr(endDate);
       
-      const filtered = allEntries.filter(e => e.date >= startStr && e.date <= endStr);
-      filtered.sort((a, b) => a.date.localeCompare(b.date));
-      
-      const formatted = filtered.map((e, idx) => ({
-         id: idx,
-         date: new Date(e.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
-         name: e.employeeName || selectedUser,
-         areaType: e.type || e.workAreaType || e.areaType || '-',
-         areas: e.toMarket || e.workingArea || e.workArea || '-',
-         oldAreas: '-',
-         edited: e.isEdited ? 'Yes' : 'No',
-         remarks: e.remarks || '-',
-         activity: e.activityType || e.activity || 'Working',
-         workedWith: e.workedWith || '-',
-         status: e.tpStatus
-      }));
+      let allHolidays: any[] = [];
+      try {
+          const hRes = await axios.get('/api/xl/settings/holidays');
+          if (hRes.data && hRes.data.success) allHolidays = hRes.data.data;
+      } catch(e) {}
+
+      const formatted = [];
+      let dateIter = new Date(startDate);
+      let idx = 1;
+      while (dateIter <= endDate) {
+          const dStr = formatDateStr(dateIter);
+          const e = allEntries.find(entry => entry.date === dStr) || {};
+          
+          const holiday = allHolidays.find(h => h.date === dStr);
+          const isSunday = new Date(dStr).getDay() === 0;
+
+          let finalActivity = e.activityType || e.activity;
+          if (!finalActivity) {
+              if (holiday) finalActivity = holiday.title || 'Holiday';
+              else if (isSunday) finalActivity = 'Weekly Off';
+              else finalActivity = 'Working';
+          }
+
+          formatted.push({
+             id: idx++,
+             date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+             name: e.employeeName || selectedUser,
+             areaType: e.type || e.workAreaType || e.areaType || '-',
+             areas: e.toMarket || e.workingArea || e.workArea || '-',
+             oldAreas: '-',
+             edited: e.isEdited ? 'Yes' : 'No',
+             remarks: e.remarks || '-',
+             activity: finalActivity,
+             isHoliday: !!holiday,
+             isWeeklyOff: isSunday,
+             workedWith: e.workedWith || '-',
+             status: e.tpStatus || e.status || '-'
+          });
+          dateIter.setDate(dateIter.getDate() + 1);
+      }
       
       setReportData(formatted);
     };
@@ -198,7 +222,7 @@ export default function TourProgramReport() {
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.oldAreas}</td>
                     <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.edited}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.remarks}</td>
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.activity}</td>
+                      <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] ${row.isWeeklyOff ? 'text-amber-400 font-bold' : row.isHoliday ? 'text-fuchsia-400 font-bold' : 'text-slate-300'}`}>{row.activity}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.workedWith}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 text-center"><span onClick={() => setSelectedView(row)} className="cursor-pointer hover:text-white text-slate-400 text-lg">👁</span></td>
                   </tr>

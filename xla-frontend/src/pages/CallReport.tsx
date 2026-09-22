@@ -132,6 +132,8 @@ export default function CallReport() {
              day: new Date(dStr).toLocaleDateString('en-GB', { weekday: 'long' }),
              name: name,
              activity: finalActivity,
+             isHoliday: !!holiday,
+             isWeeklyOff: isSunday,
              areaType: tp.type || tp.workAreaType || tp.areaType || '-',
              areas: tp.toMarket || tp.workingArea || tp.workArea || '-',
              docs: dcrsForDay.filter(d => d.entityType === 'Doctor').length,
@@ -260,7 +262,7 @@ export default function CallReport() {
                       <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45]">{row.date}</td>
                       <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.day}</td>
                       <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
-                      <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.activity}</td>
+                      <td className={`px-4 py-3 text-xs border-r border-[#2d2f45] whitespace-nowrap ${row.isWeeklyOff ? 'text-amber-400 font-bold' : row.isHoliday ? 'text-fuchsia-400 font-bold' : 'text-slate-300'}`}>{row.activity}</td>
                       <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
                       <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areas}</td>
                       <td className="px-4 py-3 text-xs text-sky-400 border-r border-[#2d2f45]">{row.docs}</td>
