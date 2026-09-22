@@ -35,11 +35,79 @@ export default function TourProgramReport() {
     fetchUsers();
   }, []);
 
-  // Dummy data based on standard report columns
-  const reportData = [
-    { id: 1, date: '01 Sep 2026', name: 'Jigar Joshi', areaType: 'Out-Station', areas: 'Mumbai', oldAreas: '-', edited: 'No', remarks: 'Started early', activity: 'Working', workedWith: 'Admin' },
-    { id: 2, date: '02 Sep 2026', name: 'Jigar Joshi', areaType: 'Local', areas: 'Thane', oldAreas: '-', edited: 'Yes', remarks: '-', activity: 'Working', workedWith: '-' },
-  ];
+  const [reportData, setReportData] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (!selectedUser || !startDate || !endDate) {
+      setReportData([]);
+      return;
+    }
+    
+    const fetchTP = async () => {
+      const monthsToFetch = new Set<string>();
+      let current = new Date(startDate);
+      while (current <= endDate) {
+         const m = current.toLocaleString('default', { month: 'long' }).toLowerCase();
+         const y = current.getFullYear().toString();
+         monthsToFetch.add(`${m}-${y}`);
+         current.setDate(current.getDate() + 1);
+      }
+      
+      let allEntries: any[] = [];
+      for (const my of monthsToFetch) {
+         const [m, y] = my.split('-');
+         try {
+           const res = await axios.get(`/api/xl/tour-program/my?email=${encodeURIComponent(selectedUser)}&month=${m}&year=${y}`);
+           if (res.data && res.data.success && res.data.data) {
+              let entries = [];
+              try {
+                 entries = typeof res.data.data.entries === 'string' ? JSON.parse(res.data.data.entries) : res.data.data.entries;
+              } catch(e) {}
+              
+              if (Array.isArray(entries)) {
+                entries = entries.map(e => ({
+                   ...e, 
+                   employeeName: res.data.data.employeeName,
+                   tpStatus: e.status || res.data.data.status
+                }));
+                allEntries = [...allEntries, ...entries];
+              }
+           }
+         } catch (e) {
+           console.error(e);
+         }
+      }
+      
+      const formatDateStr = (d: Date) => {
+          const offset = d.getTimezoneOffset() * 60000;
+          return new Date(d.getTime() - offset).toISOString().split('T')[0];
+      };
+      
+      const startStr = formatDateStr(startDate);
+      const endStr = formatDateStr(endDate);
+      
+      const filtered = allEntries.filter(e => e.date >= startStr && e.date <= endStr);
+      filtered.sort((a, b) => a.date.localeCompare(b.date));
+      
+      const formatted = filtered.map((e, idx) => ({
+         id: idx,
+         date: new Date(e.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+         name: e.employeeName || selectedUser,
+         areaType: e.areaType || '-',
+         areas: e.workAreas || '-',
+         oldAreas: '-',
+         edited: e.isEdited ? 'Yes' : 'No',
+         remarks: e.remarks || '-',
+         activity: e.activity || 'Working',
+         workedWith: e.workedWith || '-',
+         status: e.tpStatus
+      }));
+      
+      setReportData(formatted);
+    };
+    
+    fetchTP();
+  }, [startDate, endDate, selectedUser]);
 
   return (
     <div className="min-h-screen bg-[#1a1a27] flex flex-col text-slate-100 font-sans pb-24 md:pb-0 overflow-hidden">
