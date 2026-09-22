@@ -2482,8 +2482,34 @@ router.get('/backlog/overview', async (req, res) => {
         
         const limitDate = endDate < yesterday ? endDate : yesterday; // Up to yesterday or end of month
 
-        // Fetch Holidays
-        const holidaysData = await XlHoliday.findAll();
+        // Fetch Holidays based on user state
+        const user = await XlUser.findOne({ where: { employeeId: email } });
+        const Op = require('sequelize').Op;
+        let holidaysData = [];
+        if (user && user.state) {
+            holidaysData = await XlHoliday.findAll({
+                where: {
+                    [Op.or]: [
+                        { state: user.state },
+                        { state: null },
+                        { state: 'All' },
+                        { state: 'N/A' },
+                        { state: '' }
+                    ]
+                }
+            });
+        } else {
+            holidaysData = await XlHoliday.findAll({
+                where: {
+                    [Op.or]: [
+                        { state: null },
+                        { state: 'All' },
+                        { state: 'N/A' },
+                        { state: '' }
+                    ]
+                }
+            });
+        }
         const holidayDates = new Set(holidaysData.map(h => h.date));
 
         // Fetch Attendances for the month
