@@ -108,7 +108,8 @@ export default function CallReport() {
           formatted.push({
              id: idx++,
              rawDate: dStr,
-             approvedBy: tp.approvedBy,
+             status: dcrsForDay.length > 0 ? dcrsForDay[0].status : (tp.tpStatus || tp.status || 'Pending'),
+             approvedBy: (dcrsForDay.length > 0 && dcrsForDay[0].approvedBy) ? dcrsForDay[0].approvedBy : tp.approvedBy,
              date: new Date(dStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
              day: new Date(dStr).toLocaleDateString('en-GB', { weekday: 'long' }),
              name: name,
@@ -313,21 +314,22 @@ export default function CallReport() {
                   <p className="text-xs font-medium text-slate-400">{selectedView.areaType}</p>
                 </div>
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-sky-500">
-                  <p className="text-xs font-bold text-slate-300 mb-1">Approved By</p>
-                  <p className="text-xs font-medium text-slate-400">
-                    {(() => {
-                      const approverId = selectedView.approvedBy;
-                      if (approverId) {
-                        const manager = users.find(u => u.uid === approverId || u.employeeId === approverId);
-                        if (manager) return `${manager.firstName} ${manager.lastName} (${manager.designation})`;
-                        return approverId;
-                      }
-                      const employee = users.find(u => u.employeeId === selectedUser);
-                      if (!employee || !employee.reportingManager) return 'Admin';
-                      const manager = users.find(u => u.uid === employee.reportingManager || u.employeeId === employee.reportingManager);
-                      return manager ? `${manager.firstName} ${manager.lastName}` : employee.reportingManager;
-                    })()}
-                  </p>
+                    <p className="text-xs font-bold text-slate-300 mb-1">Approved By</p>
+                    <p className="text-xs font-medium text-slate-400">
+                      {(() => {
+                        if (selectedView.status === 'Pending' || selectedView.status === 'Submitted' || selectedView.status === 'pending' || selectedView.status === 'submitted') return <span className="text-amber-400">Pending Approval</span>;
+                        const approverId = selectedView.approvedBy;
+                        if (approverId) {
+                          const manager = users.find(u => u.uid === approverId || u.employeeId === approverId);
+                          if (manager) return `${manager.firstName} ${manager.lastName} (${manager.designation})`;
+                          return approverId;
+                        }
+                        const employee = users.find(u => u.employeeId === selectedUser);
+                        if (!employee || !employee.reportingManager) return 'Admin (Assumed)';
+                        const manager = users.find(u => u.uid === employee.reportingManager || u.employeeId === employee.reportingManager);
+                        return manager ? `${manager.firstName} ${manager.lastName} (Assumed)` : employee.reportingManager;
+                      })()}
+                    </p>
                 </div>
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-sky-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Areas</p>
