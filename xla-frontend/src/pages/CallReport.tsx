@@ -159,13 +159,18 @@ export default function CallReport() {
       }
       
       const finalFormatted = formatted.filter(r => {
-          // Include holidays/weekly offs
-          if (r.isHoliday || r.isWeeklyOff) return true;
-          // For any scheduled activity (Working, Admin, Transit, Camp), ONLY show if the user 
-          // actually clicked "Submit Day Final Report" (daySubmitted === true)
-          // OR if the admin already approved the calls (so hasDCR is true AND status is Approved)
-          return r.daySubmitted || (r.hasDCR && r.status === 'Approved');
-      });
+            // Include holidays/weekly offs ONLY if they are in the past or today
+            if (r.isHoliday || r.isWeeklyOff) {
+                const rowDate = new Date(r.rawDate);
+                const today = new Date();
+                today.setHours(23, 59, 59, 999);
+                return rowDate <= today;
+            }
+            // For any scheduled activity (Working, Admin, Transit, Camp), ONLY show if the user 
+            // actually clicked "Submit Day Final Report" (daySubmitted === true)
+            // OR if the admin already approved the calls (so hasDCR is true AND status is Approved)
+            return r.daySubmitted || (r.hasDCR && r.status === 'Approved');
+        });
 
       setReportData(finalFormatted);
       setRawDCRs(allDCRs);
