@@ -5414,6 +5414,7 @@ router.post('/xl-backlog/:id/action', async (req, res) => {
 });
 // ------------------------------
 
+router.get('/fix-approved', async (req, res) => { try { const { XlDCR } = require('../db'); await XlDCR.update({ approvedBy: 'Admin' }, { where: { status: 'Approved', approvedBy: null } }); res.json({ success: true, message: 'Fixed approvedBy' }); } catch(e) { res.status(500).json({ error: e.message }); } });
 module.exports = router;
 
 
