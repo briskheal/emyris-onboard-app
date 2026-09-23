@@ -2161,9 +2161,21 @@ router.post('/approvals/action', async (req, res) => {
                 }
                 
                 // --- NEW LOGIC: INJECT INTO XlAttendance ---
-                const { XlAttendance } = require('../db');
+                const { XlAttendance, XlUser } = require('../db');
                 const sd = new Date(record.startDate);
                 const ed = new Date(record.endDate || record.startDate);
+                
+                let correctEmployeeId = record.employeeId;
+                try {
+                    // Try to convert email to employee code if it is an email
+                    const xlUser = await XlUser.findOne({ where: { email: record.employeeId } });
+                    if (xlUser && xlUser.employeeId) {
+                        correctEmployeeId = xlUser.employeeId;
+                    }
+                } catch (e) {
+                    console.error("Failed to lookup employeeId", e);
+                }
+
                 if (!isNaN(sd.getTime()) && !isNaN(ed.getTime())) {
                     const dateList = [];
                     let curr = new Date(sd);
@@ -2180,7 +2192,7 @@ router.post('/approvals/action', async (req, res) => {
                     if (action === 'Approved') {
                         for (const dStr of dateList) {
                             await XlAttendance.upsert({
-                                employeeId: record.employeeId,
+                                employeeId: correctEmployeeId,
                                 date: dStr,
                                 status: isLWP ? 'LWP' : 'Leave',
                                 punchInTime: 'Leave',
@@ -2193,7 +2205,7 @@ router.post('/approvals/action', async (req, res) => {
                         for (const dStr of dateList) {
                             await XlAttendance.destroy({
                                 where: {
-                                    employeeId: record.employeeId,
+                                    employeeId: correctEmployeeId,
                                     date: dStr
                                 }
                             });
@@ -2201,6 +2213,7 @@ router.post('/approvals/action', async (req, res) => {
                     }
                 }
                 // -------------------------------------------
+
 
                 
                 if (oldStatus === 'Approved' && action === 'Revoked' && record.leaveType !== 'Leave Without Pay' && record.leaveType !== 'LWP') {

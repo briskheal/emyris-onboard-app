@@ -4083,10 +4083,21 @@ router.put('/leave-requests/:id/status', async (req, res) => {
         const isLWP = request.leaveTypeName.toLowerCase().includes('leave without pay') || request.leaveTypeName.toLowerCase().includes('lwp');
 
         // NEW LOGIC: Link Leave Approval to XlAttendance
-        const { XlAttendance } = require('../db');
+        const { XlAttendance, Applicant } = require('../db');
         const start = new Date(request.fromDate);
         const end = new Date(request.toDate);
         
+        let correctEmployeeId = request.employeeEmail;
+        try {
+            // Find employee code from Applicant
+            const applicant = await Applicant.findOne({ email: request.employeeEmail }); // Mongoose query
+            if (applicant && applicant.employeeId) {
+                correctEmployeeId = applicant.employeeId;
+            }
+        } catch (e) {
+            console.error("Failed to lookup employeeId", e);
+        }
+
         if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
             const dateList = [];
             let curr = new Date(start);
@@ -4101,7 +4112,7 @@ router.put('/leave-requests/:id/status', async (req, res) => {
             if (status === 'Approved' && oldStatus !== 'Approved') {
                 for (const dStr of dateList) {
                     await XlAttendance.upsert({
-                        employeeId: request.employeeEmail,
+                        employeeId: correctEmployeeId,
                         date: dStr,
                         status: isLWP ? 'LWP' : 'Leave',
                         punchInTime: 'Leave',
@@ -4114,7 +4125,7 @@ router.put('/leave-requests/:id/status', async (req, res) => {
                 for (const dStr of dateList) {
                     await XlAttendance.destroy({
                         where: {
-                            employeeId: request.employeeEmail,
+                            employeeId: correctEmployeeId,
                             date: dStr
                         }
                     });
