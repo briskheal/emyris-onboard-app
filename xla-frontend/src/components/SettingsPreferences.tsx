@@ -159,7 +159,9 @@ export default function SettingsPreferences() {
                                key={day}
                                onClick={() => {
                                  const wd = settings.workingDays || { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true };
-                                 setSettings({ ...settings, workingDays: { ...wd, [day]: !wd[day] } });
+                                  const updatedWd = { ...wd, [day]: !wd[day] };
+                                  setSettings({ ...settings, workingDays: updatedWd });
+                                  handleToggle('workingDays', updatedWd as any);
                                }}
                                className={"px-4 py-2 rounded-md font-bold text-[13px] transition-colors " + ((settings.workingDays?.[day] ?? (day !== 'Sunday')) ? 'bg-sky-500 text-white hover:bg-sky-400 shadow-md shadow-sky-500/20' : 'bg-[#5b2b3a] text-[#ff8ba7] hover:bg-[#6c3345] shadow-md shadow-rose-900/20')}
                              >
