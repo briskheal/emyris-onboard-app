@@ -92,10 +92,12 @@ export default function Attendance() {
           const dailyMap: Record<string, string> = {}; 
           
           days.forEach(d => {
-              if (d.day === 'Sunday' || d.day === 'Saturday') {
-                  dailyMap[d.yyyymmdd] = 'H';
-              }
-          });
+                const isWeeklyOff = !workingDaysPref[d.day];
+                const isStateHoliday = monthHolidays.includes(d.yyyymmdd);
+                if (isWeeklyOff || isStateHoliday) {
+                    dailyMap[d.yyyymmdd] = 'H';
+                }
+            });
           
           const userAtts = attendances.filter(a => a.employeeId === user.employeeId || a.employeeId === user.email);
           userAtts.forEach(a => {
