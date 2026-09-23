@@ -1501,7 +1501,8 @@ router.delete('/leave/:id', async (req, res) => {
             
             let correctEmployeeId = leave.employeeId;
             try {
-                const xlUser = await XlUser.findOne({ where: { email: leave.employeeId } });
+                const users = await XlUser.findAll();
+                const xlUser = users.find(u => u.email && u.email.toLowerCase() === leave.employeeId.toLowerCase());
                 if (xlUser && xlUser.employeeId) {
                     correctEmployeeId = xlUser.employeeId;
                 }
@@ -1574,7 +1575,8 @@ router.post('/leave', async (req, res) => {
             let correctEmployeeId = employeeId;
             try {
                 // Try to convert email to employee code if it is an email
-                const xlUser = await XlUser.findOne({ where: { email: employeeId } });
+                const users = await XlUser.findAll();
+                  const xlUser = users.find(u => u.email && u.email.toLowerCase() === employeeId.toLowerCase());
                 if (xlUser && xlUser.employeeId) {
                     correctEmployeeId = xlUser.employeeId;
                 }
@@ -2268,7 +2270,8 @@ router.post('/approvals/action', async (req, res) => {
                 let correctEmployeeId = record.employeeId;
                 try {
                     // Try to convert email to employee code if it is an email
-                    const xlUser = await XlUser.findOne({ where: { email: record.employeeId } });
+                    const users = await XlUser.findAll();
+                      const xlUser = users.find(u => u.email && u.email.toLowerCase() === record.employeeId.toLowerCase());
                     if (xlUser && xlUser.employeeId) {
                         correctEmployeeId = xlUser.employeeId;
                     }

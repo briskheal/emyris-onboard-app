@@ -4092,12 +4092,14 @@ router.put('/leave-requests/:id/status', async (req, res) => {
         let correctEmployeeId = request.employeeEmail;
         try {
             // First check XlUser (Source of truth for XLA Attendance)
-            const xlUser = await XlUser.findOne({ where: { email: request.employeeEmail } });
+            const users = await XlUser.findAll();
+            const xlUser = users.find(u => u.email && u.email.toLowerCase() === request.employeeEmail.toLowerCase());
             if (xlUser && xlUser.employeeId) {
                 correctEmployeeId = xlUser.employeeId;
             } else {
                 // Fallback to Applicant
-                const applicant = await Applicant.findOne({ email: request.employeeEmail }); // Mongoose query
+                const apps = await Applicant.find({});
+                const applicant = apps.find(a => a.email && a.email.toLowerCase() === request.employeeEmail.toLowerCase());
                 if (applicant && applicant.employeeId) {
                     correctEmployeeId = applicant.employeeId;
                 }
