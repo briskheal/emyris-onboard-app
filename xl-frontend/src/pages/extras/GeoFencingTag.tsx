@@ -224,8 +224,8 @@ export default function GeoFencingTag() {
 
         {/* Modal Dropdown matching screenshot 3 */}
         {isDropdownOpen && (
-          <div className="fixed inset-0 z-50 bg-[#12121a]/80 flex flex-col justify-end">
-            <div className="bg-[#27273f] h-[80vh] rounded-t-3xl border-t border-[#3b3b5a] flex flex-col shadow-2xl">
+          <div className="fixed inset-0 z-[60] bg-[#12121a]/80 flex flex-col items-center justify-center p-4">
+            <div className="bg-[#27273f] w-full max-h-[85vh] rounded-3xl border border-[#3b3b5a] flex flex-col shadow-2xl">
               <div className="p-4 border-b border-[#3b3b5a] flex justify-between items-center relative">
                 <h2 className="text-lg font-bold text-white pl-2">{isMultiMode ? 'Select Tagged Doctor' : `Select ${displayType}`}</h2>
                 <button onClick={() => setIsDropdownOpen(false)} className="w-8 h-8 rounded-full bg-[#3b3b5a]/50 flex items-center justify-center text-slate-300">
