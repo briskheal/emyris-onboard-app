@@ -2984,6 +2984,66 @@ router.get('/expense/limits', async (req, res) => {
     }
 });
 
+// Endpoint to fetch hierarchical coworkers for Worked With dropdown
+router.get('/coworkers', async (req, res) => {
+    try {
+        const { email } = req.query;
+        if (!email) return res.status(400).json({ error: 'Email required' });
+
+        const { XlUser } = require('../db');
+        const { Op } = require('sequelize');
+
+        // 1. Fetch the user making the request
+        const user = await XlUser.findOne({ where: { employeeId: email } });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        let coworkersMap = new Map();
+
+        // 2. Crawl upwards to find all reporting managers
+        let currentDesignation = user.reportingManager;
+        const seenDesignations = new Set();
+        
+        while (currentDesignation && !seenDesignations.has(currentDesignation)) {
+            seenDesignations.add(currentDesignation);
+            const managers = await XlUser.findAll({ where: { designation: currentDesignation } });
+            managers.forEach(m => coworkersMap.set(m.employeeId, m));
+
+            if (managers.length > 0 && managers[0].reportingManager) {
+                currentDesignation = managers[0].reportingManager;
+            } else {
+                break;
+            }
+        }
+
+        // 3. Find Cross-functional teams (Product Managers, HR)
+        const crossFunctional = await XlUser.findAll({
+            where: {
+                [Op.or]: [
+                    { designation: { [Op.like]: '%Product%' } },
+                    { designation: { [Op.like]: '%PM%' } },
+                    { designation: { [Op.like]: '%HR%' } }
+                ]
+            }
+        });
+
+        crossFunctional.forEach(m => coworkersMap.set(m.employeeId, m));
+
+        let coworkersList = Array.from(coworkersMap.values()).filter(m => m.employeeId !== email);
+
+        const cleanList = coworkersList.map(u => ({
+            employeeId: u.employeeId,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            designation: u.designation
+        }));
+
+        res.json({ success: true, data: cleanList });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Failed to fetch coworkers' });
+    }
+});
+
 module.exports = router;
 
 

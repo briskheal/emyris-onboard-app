@@ -196,9 +196,8 @@ export default function DailyCallReport() {
 
     axios.get('/api/xl/reports/products').then(r => setProducts(r.data.data || [])).catch(()=>{});
     axios.get('/api/xl/reports/gifts').then(r => setGifts(r.data.data || [])).catch(()=>{});
-    axios.get('/api/admin/users').then(r => {
-        const allUsers = r.data.data || [];
-        setCoworkers(allUsers.filter((u:any) => u.employeeId !== USER_EMAIL));
+    axios.get(`/api/xl/coworkers?email=${USER_EMAIL}`).then(r => {
+        setCoworkers(r.data.data || []);
     }).catch(()=>{});
     
     axios.get(`/api/xl/dcr/my?email=${USER_EMAIL}&date=${dcrDate}`)
@@ -629,10 +628,11 @@ export default function DailyCallReport() {
                 </div>
               </div>
 
-              <div className="bg-[#27273f] p-4 rounded-xl border border-[#3b3b5a]">
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">Worked With (Optional)</label>
                 <div className="relative">
                   <div onClick={() => setIsWorkedWithDropdownOpen(!isWorkedWithDropdownOpen)} className="w-full min-h-[50px] px-4 border border-[#3b3b5a] rounded-xl text-white font-semibold bg-[#27273f] flex items-center justify-between cursor-pointer">
-                    <span className="truncate text-sm">{workedWith.length > 0 ? `${workedWith.length} Coworker(s) Selected` : 'Worked With (Optional)'}</span>
+                    <span className="truncate text-sm">{workedWith.length > 0 ? `${workedWith.length} Coworker(s) Selected` : 'Select Coworkers'}</span>
                     <ChevronDown size={18} className="text-slate-400" />
                   </div>
                   {isWorkedWithDropdownOpen && (
