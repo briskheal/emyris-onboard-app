@@ -1440,8 +1440,10 @@ router.get('/attendance/monthly/all', async (req, res) => {
         const pref = await XlGlobalSettings.findOne({ where: { _id: 'preferences' } });
         const workingDays = (pref && pref.settings && pref.settings.set_working_days) ? (pref.settings.workingDays || { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true }) : { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false };
         
+        const startDate = datePrefix + '-01';
+        const endDate = datePrefix + '-31';
         const holidays = await XlHoliday.findAll({
-            where: { date: { [require('sequelize').Op.startsWith]: datePrefix } }
+            where: { date: { [require('sequelize').Op.between]: [startDate, endDate] } }
         });
 
         res.json({ success: true, data: mergedData, workingDays, holidays: holidays.map(h => h.date) });
