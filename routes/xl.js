@@ -1400,6 +1400,12 @@ router.get('/attendance/monthly', async (req, res) => {
 // ─── PHASE 3: LEAVE REQUEST ────────────────────────────────────────────────
 
 
+router.get('/debug/dcrs', async (req, res) => {
+    try {
+        const dcrs = await XlDCR.findAll({ attributes: ['employeeId', 'date'] });
+        res.json({ success: true, data: dcrs });
+    } catch(e) { res.status(500).json({ error: e.message }); }
+});
 // Get ALL Monthly Attendances (for Admin ERP View)
 router.get('/attendance/monthly/all', async (req, res) => {
     try {
@@ -3533,6 +3539,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 
