@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ChevronLeft, MapPin, Navigation, AlertCircle, ChevronDown, Search } from 'lucide-react';
 import axios from 'axios';
@@ -17,46 +17,60 @@ export default function GeoFencingTag() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Map/GPS state
+  const watchIdRef = useRef<number | null>(null);
   const [myLat, setMyLat] = useState<number | null>(null);
   const [myLng, setMyLng] = useState<number | null>(null);
+  const [mapLat, setMapLat] = useState<number | null>(null);
+  const [mapLng, setMapLng] = useState<number | null>(null);
   const [tagging, setTagging] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [geoLoading, setGeoLoading] = useState(false);
 
-  const refreshLocation = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
+  const startGpsWatch = () => {
     if (!navigator.geolocation) {
       setError('GPS is not supported on this device.');
       return;
     }
     setGeoLoading(true);
     setError('');
-    
-    // Try high accuracy first
-    navigator.geolocation.getCurrentPosition(
+
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+
+    watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
+        if (pos.coords.accuracy > 1000) return; // ignore wild jumps
         setMyLat(pos.coords.latitude);
         setMyLng(pos.coords.longitude);
+        
+        // Only update map if it moved significantly (> 15m) or first time to stop map dancing
+        setMapLat(prev => {
+           if (!prev) return pos.coords.latitude;
+           if (Math.abs(prev - pos.coords.latitude) > 0.00015) return pos.coords.latitude;
+           return prev;
+        });
+        setMapLng(prev => {
+           if (!prev) return pos.coords.longitude;
+           if (Math.abs(prev - pos.coords.longitude) > 0.00015) return pos.coords.longitude;
+           return prev;
+        });
         setGeoLoading(false);
       },
       (err) => {
-        // Fallback to low accuracy for desktop or poor signal
-        navigator.geolocation.getCurrentPosition(
-          (posLow) => {
-            setMyLat(posLow.coords.latitude);
-            setMyLng(posLow.coords.longitude);
-            setGeoLoading(false);
-          },
-          (errLow) => {
-            setError('Failed to get location. Ensure GPS is enabled.');
-            setGeoLoading(false);
-          },
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
-        );
+        if (!myLat) {
+          setError('Failed to get location. Ensure GPS is enabled.');
+          setGeoLoading(false);
+        }
       },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
     );
+  };
+
+  const refreshLocation = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    startGpsWatch();
   };
 
   const displayType = type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Doctor';
@@ -93,29 +107,14 @@ export default function GeoFencingTag() {
       })
       .catch(() => setError(`Failed to load ${displayType}s.`));
 
-    // Instant low-accuracy lock for fast map rendering
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          if (!myLat) { // Only set if watchPosition hasn't fired yet
-            setMyLat(pos.coords.latitude);
-            setMyLng(pos.coords.longitude);
-          }
-        },
-        () => {},
-        { enableHighAccuracy: false, maximumAge: 60000, timeout: 5000 }
-      );
+    startGpsWatch();
 
-      // High accuracy watcher for precise tagging
-      navigator.geolocation.watchPosition(
-        (pos) => {
-          setMyLat(pos.coords.latitude);
-          setMyLng(pos.coords.longitude);
-        },
-        (err) => {},
-        { enableHighAccuracy: true, maximumAge: 10000 }
-      );
-    }
+    return () => {
+      if (watchIdRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
   }, [displayType]);
 
   const handleTag = () => {
@@ -236,12 +235,12 @@ export default function GeoFencingTag() {
           </label>
           
           <div className="h-[350px] w-full bg-[#27273f] rounded-3xl overflow-hidden relative border border-[#3b3b5a] shadow-lg shadow-black/20">
-            {myLat && myLng ? (
+            {mapLat && mapLng ? (
               <iframe
                 title="Map"
                 className="absolute top-0 left-0 w-full h-full"
                 style={{ width: '100%', height: '100%', border: 0, filter: 'invert(90%) hue-rotate(180deg)' }} 
-                src={`https://maps.google.com/maps?q=${myLat},${myLng}&z=16&output=embed`}
+                src={`https://maps.google.com/maps?q=${mapLat},${mapLng}&z=16&output=embed`}
                 allowFullScreen
               ></iframe>
             ) : (
