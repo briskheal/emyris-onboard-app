@@ -2990,7 +2990,7 @@ router.get('/coworkers', async (req, res) => {
         const { email } = req.query;
         if (!email) return res.status(400).json({ error: 'Email required' });
 
-        const { XlUser } = require('../db');
+        const { XlUser, XlDesignation } = require('../db');
         const { Op } = require('sequelize');
 
         // 1. Fetch the user making the request
@@ -2999,35 +2999,28 @@ router.get('/coworkers', async (req, res) => {
 
         let coworkersMap = new Map();
 
-        // 2. Crawl upwards to find all reporting managers
-        let currentDesignation = user.reportingManager;
-        const seenDesignations = new Set();
-        
-        while (currentDesignation && currentDesignation.trim() !== '' && !seenDesignations.has(currentDesignation)) {
-            seenDesignations.add(currentDesignation);
-            const managers = await XlUser.findAll({ where: { designation: currentDesignation } });
-            managers.forEach(m => coworkersMap.set(m.employeeId, m));
-
-            let nextDesig = null;
-            for (let m of managers) {
-                if (m.reportingManager && m.reportingManager.trim() !== '') {
-                    nextDesig = m.reportingManager.trim();
-                    break;
-                }
-            }
-            
-            if (nextDesig) {
-                currentDesignation = nextDesig;
-            } else {
-                break;
-            }
+        // 2. Fetch user's designation level
+        let userLevel = 0;
+        if (user.designation) {
+            const desigObj = await XlDesignation.findOne({ where: { designationName: user.designation } });
+            if (desigObj) userLevel = desigObj.level;
         }
 
-        // 3. Find Cross-functional teams (Product Managers, HR)
+        // 3. Find all users with a HIGHER level (managers across the hierarchy)
+        const allDesignations = await XlDesignation.findAll();
+        const higherDesigNames = allDesignations
+            .filter(d => d.level > userLevel)
+            .map(d => d.designationName);
+
+        if (higherDesigNames.length > 0) {
+            const managers = await XlUser.findAll({ where: { designation: { [Op.in]: higherDesigNames } } });
+            managers.forEach(m => coworkersMap.set(m.employeeId, m));
+        }
+
+        // 4. Also ensure Cross-functional teams (Product Managers, HR, Admin) are included regardless of level
         const allUsers = await XlUser.findAll();
         allUsers.forEach(u => {
             const d = (u.designation || '').toLowerCase();
-            // match product, hr, and exact 'pm' or 'pm ' etc to avoid matching words with pm in it if possible, but includes('pm') is fine since it's a designation
             if (d.includes('product') || d.includes(' pm') || d === 'pm' || d.includes('hr') || d.includes('admin')) {
                 coworkersMap.set(u.employeeId, u);
             }
