@@ -2153,11 +2153,55 @@ router.post('/approvals/action', async (req, res) => {
                     const assignment = await XlAssignedLeave.findOne({
                         where: { employeeId: record.employeeId, year: yearStr, leaveType: record.leaveType }
                     });
+                    
                     if (assignment) {
                         assignment.used = (assignment.used || 0) + days;
                         await assignment.save();
                     }
                 }
+                
+                // --- NEW LOGIC: INJECT INTO XlAttendance ---
+                const { XlAttendance } = require('../db');
+                const sd = new Date(record.startDate);
+                const ed = new Date(record.endDate || record.startDate);
+                if (!isNaN(sd.getTime()) && !isNaN(ed.getTime())) {
+                    const dateList = [];
+                    let curr = new Date(sd);
+                    while (curr <= ed) {
+                        const y = curr.getFullYear();
+                        const m = String(curr.getMonth() + 1).padStart(2, '0');
+                        const d = String(curr.getDate()).padStart(2, '0');
+                        dateList.push(`${y}-${m}-${d}`);
+                        curr.setDate(curr.getDate() + 1);
+                    }
+                    
+                    const isLWP = record.leaveType === 'Leave Without Pay' || record.leaveType === 'LWP';
+
+                    if (action === 'Approved') {
+                        for (const dStr of dateList) {
+                            await XlAttendance.upsert({
+                                employeeId: record.employeeId,
+                                date: dStr,
+                                status: isLWP ? 'LWP' : 'Leave',
+                                punchInTime: 'Leave',
+                                punchOutTime: 'Leave',
+                                dayRemarks: 'Auto-approved Leave',
+                                daySubmitted: true
+                            });
+                        }
+                    } else if (action === 'Revoked' || action === 'Rejected') {
+                        for (const dStr of dateList) {
+                            await XlAttendance.destroy({
+                                where: {
+                                    employeeId: record.employeeId,
+                                    date: dStr
+                                }
+                            });
+                        }
+                    }
+                }
+                // -------------------------------------------
+
                 
                 if (oldStatus === 'Approved' && action === 'Revoked' && record.leaveType !== 'Leave Without Pay' && record.leaveType !== 'LWP') {
                     const sd = new Date(record.startDate);

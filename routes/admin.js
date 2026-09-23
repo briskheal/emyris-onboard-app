@@ -4079,7 +4079,48 @@ router.put('/leave-requests/:id/status', async (req, res) => {
         request.status = status;
         await request.save();
 
+        
         const isLWP = request.leaveTypeName.toLowerCase().includes('leave without pay') || request.leaveTypeName.toLowerCase().includes('lwp');
+
+        // NEW LOGIC: Link Leave Approval to XlAttendance
+        const { XlAttendance } = require('../db');
+        const start = new Date(request.fromDate);
+        const end = new Date(request.toDate);
+        
+        if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+            const dateList = [];
+            let curr = new Date(start);
+            while (curr <= end) {
+                const y = curr.getFullYear();
+                const m = String(curr.getMonth() + 1).padStart(2, '0');
+                const d = String(curr.getDate()).padStart(2, '0');
+                dateList.push(`${y}-${m}-${d}`);
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            if (status === 'Approved' && oldStatus !== 'Approved') {
+                for (const dStr of dateList) {
+                    await XlAttendance.upsert({
+                        employeeId: request.employeeEmail,
+                        date: dStr,
+                        status: isLWP ? 'LWP' : 'Leave',
+                        punchInTime: 'Leave',
+                        punchOutTime: 'Leave',
+                        dayRemarks: 'Auto-approved Leave',
+                        daySubmitted: true
+                    });
+                }
+            } else if ((status === 'Revoked' || status === 'Rejected') && oldStatus === 'Approved') {
+                for (const dStr of dateList) {
+                    await XlAttendance.destroy({
+                        where: {
+                            employeeId: request.employeeEmail,
+                            date: dStr
+                        }
+                    });
+                }
+            }
+        }
 
         const now = new Date();
         const calYear = now.getFullYear();

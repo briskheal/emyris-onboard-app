@@ -351,7 +351,7 @@ const PayrunSystem: React.FC = () => {
         <div style={{ padding: '0', width: '100%', maxWidth: '100%', margin: '0' }}>
             <div className="dash-card" style={{ padding: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', width: '100%', paddingBottom: '10px', borderBottom: '1px solid #334155' }}>
-                    <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: '0' }}>Payrun & Attendance Module (v3)</h2>
+                    <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: '0' }}>Payrun & Attendance Module</h2>
                     
                 </div>
 
@@ -425,7 +425,7 @@ const PayrunSystem: React.FC = () => {
                                             </td>
                                             <td>
                                                 <div style={{ fontWeight: '600' }}>{p.empName}</div>
-                                                <div style={{ fontSize: '0.8rem', opacity: 0.8 }}>{p.empCode}</div>
+                                                <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>{p.empCode}</div>
                                             </td>
                                             <td style={{ textAlign: 'center', fontSize: '0.9rem' }}>
                                                 <span style={{ fontWeight: 'bold' }}>{p.present}</span> / 
@@ -434,16 +434,16 @@ const PayrunSystem: React.FC = () => {
                                                 <span> {p.holiday}</span>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                <input type="number" min="0" value={p.ptDed} onChange={(e) => handlePTChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
+                                                <input type="number" min="0" value={p.ptDed} onChange={(e) => handlePTChange(idx, e.target.value)} className="form-input-sm" style={{ width: '60px', textAlign: 'center', padding: '2px', fontSize: '0.85rem' }}/>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                <input type="number" min="0" value={p.pfDed} onChange={(e) => handlePFChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
+                                                <input type="number" min="0" value={p.pfDed} onChange={(e) => handlePFChange(idx, e.target.value)} className="form-input-sm" style={{ width: '60px', textAlign: 'center', padding: '2px', fontSize: '0.85rem' }}/>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                <input type="number" min="0" step="0.5" value={p.penaltyDays} onChange={(e) => handlePenaltyChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
+                                                <input type="number" min="0" step="0.5" value={p.penaltyDays} onChange={(e) => handlePenaltyChange(idx, e.target.value)} className="form-input-sm" style={{ width: '60px', textAlign: 'center', padding: '2px', fontSize: '0.85rem' }}/>
                                             </td>
                                             <td style={{ textAlign: 'center' }}>
-                                                <input type="number" min="0" value={p.expense} onChange={(e) => handleExpenseChange(idx, e.target.value)} className="form-input-sm" style={{ width: '70px', textAlign: 'center', padding: '4px' }}/>
+                                                <input type="number" min="0" value={p.expense} onChange={(e) => handleExpenseChange(idx, e.target.value)} className="form-input-sm" style={{ width: '60px', textAlign: 'center', padding: '2px', fontSize: '0.85rem' }}/>
                                             </td>
                                             <td style={{ textAlign: 'right', fontWeight: 'bold', fontSize: '1.05rem' }}>
                                                 {p.finalSalary}
@@ -468,7 +468,7 @@ const PayrunSystem: React.FC = () => {
                             <div style={{ width: '100%', padding: '15px', border: '1px solid #334155', borderRadius: '8px', background: 'transparent' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                     <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: '600' }}>Mail Configurations</h3>
-                                    <button onClick={saveMailConfig} className="btn btn-sm btn-outline-primary" style={{ padding: '2px 8px', fontSize: '0.8rem' }}>Save Config</button>
+                                    <button onClick={saveMailConfig} className="btn btn-sm btn-outline-primary" style={{ padding: '2px 8px', fontSize: '0.75rem' }}>Save Config</button>
                                 </div>
                                 <div style={{ marginBottom: '10px' }}>
                                     <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '4px', opacity: 0.8 }}>Message Body</label>
