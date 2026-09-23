@@ -263,7 +263,7 @@ export default function GeoFencingTag() {
                     >
                       <h3 className="text-base font-bold text-white mb-1 tracking-wide">{e.name || e.businessName}</h3>
                       <p className="text-[13px] text-slate-400 leading-snug mb-3">
-                        {e.hospital || e.specialization || ''}{e.hospital && e.specialization ? ',' : ''}{e.headquarter ? `, ${e.headquarter}` : ''}
+                        {[e.hospital, e.specialization, e.headquarter].filter(p => p && p.trim() !== '' && p.trim() !== '-').join(', ')}
                       </p>
                       {e.tagCount > 0 && (
                         <p className="text-[#4ade80] text-xs font-bold">Current locations: {e.tagCount}</p>
