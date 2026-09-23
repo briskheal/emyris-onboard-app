@@ -1404,7 +1404,7 @@ router.get('/attendance/monthly', async (req, res) => {
 router.get('/attendance/monthly/all', async (req, res) => {
     try {
         const { month, year } = req.query; // month is 1-12
-        const datePrefix = ${year}-${String(month).padStart(2, '0')};
+        const datePrefix = `${year}-${String(month).padStart(2, '0')}`;
         const atts = await XlAttendance.findAll({ 
             where: { 
                 date: { [require('sequelize').Op.startsWith]: datePrefix } 
