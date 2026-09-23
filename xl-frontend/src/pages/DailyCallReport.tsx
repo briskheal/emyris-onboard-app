@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   X, UserRound, Search, Navigation, 
@@ -103,11 +103,43 @@ export default function DailyCallReport() {
 
   const [todaysDcrs, setTodaysDcrs] = useState<any[]>([]);
 
+  const watchIdRef = useRef<number | null>(null);
+
   useEffect(() => {
     if (step === 'form' && dcrDate === today && entityType !== 'Reminder') {
-      captureLocation();
+      if (!navigator.geolocation) { setError('GPS not supported'); return; }
+      setGeoLoading(true);
+      setError('');
+      
+      const successCallback = (pos: GeolocationPosition) => {
+        // Discard terribly inaccurate readings (e.g. cell tower fallback)
+        if (pos.coords.accuracy > 1000) return; 
+
+        setMyLat(pos.coords.latitude);
+        setMyLng(pos.coords.longitude);
+        setGeoAddress(`${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
+        setGeoLoading(false);
+      };
+
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        successCallback,
+        (err) => { 
+          if (!myLat) { // Only show error if we haven't locked onto a location yet
+            setError('Failed to get location. Ensure GPS is enabled.'); 
+            setGeoLoading(false); 
+          }
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+      );
     }
-  }, [step, dcrDate, entityType]);
+
+    return () => {
+      if (watchIdRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [step, dcrDate, entityType]);;
 
   const sortedEntities = React.useMemo(() => {
     let filtered = entities.filter(e => (e.name||e.businessName||'').toLowerCase().includes(searchQuery.toLowerCase()));
@@ -224,32 +256,7 @@ export default function DailyCallReport() {
       .finally(() => setLoading(false));
   };
 
-  const captureLocation = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
-    if (!navigator.geolocation) { setError('GPS not supported'); return; }
-    setGeoLoading(true);
-    setError('');
-    
-    const successCallback = (pos: GeolocationPosition) => {
-      setMyLat(pos.coords.latitude);
-      setMyLng(pos.coords.longitude);
-      setGeoAddress(`${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`);
-      setGeoLoading(false);
-    };
 
-    navigator.geolocation.getCurrentPosition(
-      successCallback,
-      () => { 
-        // Fallback to low accuracy
-        navigator.geolocation.getCurrentPosition(
-          successCallback,
-          () => { setError('Failed to get location.'); setGeoLoading(false); },
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 0 }
-        );
-      },
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-    );
-  };
 
   const handleAddPob = () => {
     if (!pobProduct) { setError('Select a product for POB'); return; }
