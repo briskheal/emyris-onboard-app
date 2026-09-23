@@ -352,10 +352,7 @@ const PayrunSystem: React.FC = () => {
             <div className="dash-card" style={{ padding: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', width: '100%', paddingBottom: '10px', borderBottom: '1px solid #334155' }}>
                     <h2 style={{ fontSize: '1.75rem', fontWeight: 'bold', margin: '0' }}>Payrun & Attendance Module (v3)</h2>
-                    <button onClick={wipePayrun} disabled={wiping || finalizing} className="btn btn-danger" style={{ padding: '8px 15px', fontSize: '0.9rem', fontWeight: 'bold', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px', display: 'flex', alignItems: 'center' }}>
-                        <Trash2 size={16} style={{ marginRight: '8px' }} />
-                        {wiping ? 'Wiping...' : 'Test Mode: Wipe Data'}
-                    </button>
+                    
                 </div>
 
                 {error && (
