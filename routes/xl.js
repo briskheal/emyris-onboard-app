@@ -2162,6 +2162,7 @@ router.post('/approvals/action', async (req, res) => {
                 
                 // --- NEW LOGIC: INJECT INTO XlAttendance ---
                 const { XlAttendance, XlUser } = require('../db');
+                const generateId = () => Math.random().toString(36).substring(2, 15);
                 const sd = new Date(record.startDate);
                 const ed = new Date(record.endDate || record.startDate);
                 
@@ -2191,15 +2192,27 @@ router.post('/approvals/action', async (req, res) => {
 
                     if (action === 'Approved') {
                         for (const dStr of dateList) {
-                            await XlAttendance.upsert({
-                                employeeId: correctEmployeeId,
-                                date: dStr,
-                                status: isLWP ? 'LWP' : 'Leave',
-                                punchInTime: 'Leave',
-                                punchOutTime: 'Leave',
-                                dayRemarks: 'Auto-approved Leave',
-                                daySubmitted: true
-                            });
+                            const existing = await XlAttendance.findOne({ where: { employeeId: correctEmployeeId, date: dStr } });
+                            if (existing) {
+                                await existing.update({
+                                    status: isLWP ? 'LWP' : 'Leave',
+                                    punchInTime: 'Leave',
+                                    punchOutTime: 'Leave',
+                                    dayRemarks: 'Auto-approved Leave',
+                                    daySubmitted: true
+                                });
+                            } else {
+                                await XlAttendance.create({
+                                    _id: generateId() + Date.now().toString(36),
+                                    employeeId: correctEmployeeId,
+                                    date: dStr,
+                                    status: isLWP ? 'LWP' : 'Leave',
+                                    punchInTime: 'Leave',
+                                    punchOutTime: 'Leave',
+                                    dayRemarks: 'Auto-approved Leave',
+                                    daySubmitted: true
+                                });
+                            }
                         }
                     } else if (action === 'Revoked' || action === 'Rejected') {
                         for (const dStr of dateList) {
@@ -2212,7 +2225,7 @@ router.post('/approvals/action', async (req, res) => {
                         }
                     }
                 }
-                // -------------------------------------------
+                
 
 
                 

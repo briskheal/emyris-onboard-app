@@ -4083,16 +4083,24 @@ router.put('/leave-requests/:id/status', async (req, res) => {
         const isLWP = request.leaveTypeName.toLowerCase().includes('leave without pay') || request.leaveTypeName.toLowerCase().includes('lwp');
 
         // NEW LOGIC: Link Leave Approval to XlAttendance
-        const { XlAttendance, Applicant } = require('../db');
+        const { XlAttendance, Applicant, XlUser } = require('../db');
+        const { v4: uuidv4 } = require('uuid');
+        const generateId = () => Math.random().toString(36).substring(2, 15);
         const start = new Date(request.fromDate);
         const end = new Date(request.toDate);
         
         let correctEmployeeId = request.employeeEmail;
         try {
-            // Find employee code from Applicant
-            const applicant = await Applicant.findOne({ email: request.employeeEmail }); // Mongoose query
-            if (applicant && applicant.employeeId) {
-                correctEmployeeId = applicant.employeeId;
+            // First check XlUser (Source of truth for XLA Attendance)
+            const xlUser = await XlUser.findOne({ where: { email: request.employeeEmail } });
+            if (xlUser && xlUser.employeeId) {
+                correctEmployeeId = xlUser.employeeId;
+            } else {
+                // Fallback to Applicant
+                const applicant = await Applicant.findOne({ email: request.employeeEmail }); // Mongoose query
+                if (applicant && applicant.employeeId) {
+                    correctEmployeeId = applicant.employeeId;
+                }
             }
         } catch (e) {
             console.error("Failed to lookup employeeId", e);
@@ -4111,15 +4119,27 @@ router.put('/leave-requests/:id/status', async (req, res) => {
 
             if (status === 'Approved' && oldStatus !== 'Approved') {
                 for (const dStr of dateList) {
-                    await XlAttendance.upsert({
-                        employeeId: correctEmployeeId,
-                        date: dStr,
-                        status: isLWP ? 'LWP' : 'Leave',
-                        punchInTime: 'Leave',
-                        punchOutTime: 'Leave',
-                        dayRemarks: 'Auto-approved Leave',
-                        daySubmitted: true
-                    });
+                    const existing = await XlAttendance.findOne({ where: { employeeId: correctEmployeeId, date: dStr } });
+                    if (existing) {
+                        await existing.update({
+                            status: isLWP ? 'LWP' : 'Leave',
+                            punchInTime: 'Leave',
+                            punchOutTime: 'Leave',
+                            dayRemarks: 'Auto-approved Leave',
+                            daySubmitted: true
+                        });
+                    } else {
+                        await XlAttendance.create({
+                            _id: generateId() + Date.now().toString(36),
+                            employeeId: correctEmployeeId,
+                            date: dStr,
+                            status: isLWP ? 'LWP' : 'Leave',
+                            punchInTime: 'Leave',
+                            punchOutTime: 'Leave',
+                            dayRemarks: 'Auto-approved Leave',
+                            daySubmitted: true
+                        });
+                    }
                 }
             } else if ((status === 'Revoked' || status === 'Rejected') && oldStatus === 'Approved') {
                 for (const dStr of dateList) {
@@ -4133,11 +4153,9 @@ router.put('/leave-requests/:id/status', async (req, res) => {
             }
         }
 
-        const now = new Date();
-        const calYear = now.getFullYear();
-        const fyStart = now.getMonth() >= 3 ? calYear : calYear - 1;
-        const defaultYear = `${fyStart}-${fyStart + 1}`;
-        const targetYear = year || defaultYear;
+        
+
+        
 
         // If newly approved → increment usedLeaves
         if (status === 'Approved' && oldStatus !== 'Approved') {
