@@ -1576,7 +1576,12 @@ router.post('/leave', async (req, res) => {
             try {
                 // Try to convert email to employee code if it is an email
                 const users = await XlUser.findAll();
-                  const xlUser = users.find(u => u.email && u.email.toLowerCase() === employeeId.toLowerCase());
+                  const lookupVal = employeeId ? employeeId.toLowerCase() : '';
+            const xlUser = users.find(u => 
+                (u.email && u.email.toLowerCase() === lookupVal) || 
+                (u.uid && u.uid.toLowerCase() === lookupVal) || 
+                (u.employeeId && u.employeeId.toLowerCase() === lookupVal)
+            );
                 if (xlUser && xlUser.employeeId) {
                     correctEmployeeId = xlUser.employeeId;
                 }

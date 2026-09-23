@@ -4093,7 +4093,12 @@ router.put('/leave-requests/:id/status', async (req, res) => {
         try {
             // First check XlUser (Source of truth for XLA Attendance)
             const users = await XlUser.findAll();
-            const xlUser = users.find(u => u.email && u.email.toLowerCase() === request.employeeEmail.toLowerCase());
+            const lookupValXl = request.employeeEmail ? request.employeeEmail.toLowerCase() : '';
+            const xlUser = users.find(u => 
+                (u.email && u.email.toLowerCase() === lookupValXl) || 
+                (u.uid && u.uid.toLowerCase() === lookupValXl) || 
+                (u.employeeId && u.employeeId.toLowerCase() === lookupValXl)
+            );
             if (xlUser && xlUser.employeeId) {
                 correctEmployeeId = xlUser.employeeId;
             } else {
