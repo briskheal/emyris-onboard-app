@@ -93,7 +93,7 @@ export default function Attendance() {
               }
           });
           
-          const userAtts = attendances.filter(a => a.employeeId === user.email);
+          const userAtts = attendances.filter(a => a.employeeId === user.employeeId || a.employeeId === user.email);
           userAtts.forEach(a => {
               if (a.date && dailyMap[a.date] !== 'P') {
                   const status = a.status || 'Present';
@@ -151,7 +151,7 @@ export default function Attendance() {
       
       return users.map(user => {
           const fullName = (user.firstName || '') + ' ' + (user.lastName || '');
-          const att = attendances.find(a => a.employeeId === user.email && a.date === selectedDate);
+          const att = attendances.find(a => (a.employeeId === user.employeeId || a.employeeId === user.email) && a.date === selectedDate);
           
           let status = '';
           if (att) {
