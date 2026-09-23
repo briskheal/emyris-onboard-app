@@ -75,7 +75,7 @@ export default function GeoFencingTag() {
 
   const displayType = type ? type.charAt(0).toUpperCase() + type.slice(1) : 'Doctor';
 
-  useEffect(() => {
+  const loadEntities = () => {
     const uStr = localStorage.getItem('xl_user');
     let hq = '';
     let desig = '';
@@ -106,7 +106,10 @@ export default function GeoFencingTag() {
         setEntities(allEntities);
       })
       .catch(() => setError(`Failed to load ${displayType}s.`));
+  };
 
+  useEffect(() => {
+    loadEntities();
     startGpsWatch();
 
     return () => {
@@ -135,9 +138,8 @@ export default function GeoFencingTag() {
       .then(() => {
         setSuccess('Location tagged successfully!');
         setTagging(false);
-        // Remove from list
-        setEntities(entities.filter(e => e._id !== selectedId));
         setSelectedId('');
+        loadEntities();
         setTimeout(() => setSuccess(''), 3000);
       })
       .catch((err: any) => {
@@ -278,8 +280,8 @@ export default function GeoFencingTag() {
           
           {/* ONLY DOCTORS CAN HAVE ADDITIONAL LOCATIONS */}
           {displayType === 'Doctor' && (
-            <button className="w-full h-14 bg-[#27273f] border border-[#3b3b5a] text-sky-400 font-bold rounded-2xl hover:bg-[#3b3b5a]/50 transition-colors flex items-center justify-center gap-2">
-              <MapPin size={18} /> Additional Locations
+            <button onClick={() => navigate('/xl/extras/geo-fencing/tagged')} className="w-full h-14 bg-[#27273f] border border-[#3b3b5a] text-sky-400 font-bold rounded-2xl hover:bg-[#3b3b5a]/50 transition-colors flex items-center justify-center gap-2">
+              <MapPin size={18} /> Manage Tagged Locations
             </button>
           )}
         </div>
