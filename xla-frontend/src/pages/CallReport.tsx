@@ -196,10 +196,12 @@ export default function CallReport() {
 
   const displayedData = useMemo(() => {
     if (reportType === 'Calls with Holidays') {
-          return reportData.filter(r => (r.isHoliday || r.isWeeklyOff) && (r.docs > 0 || r.chems > 0 || r.stockists > 0));
-      }
-      
-      if (reportType === 'Show Last Call Report') {
+      return reportData;
+    }
+    if (reportType === 'Call Report') {
+      return reportData.filter(r => !r.isHoliday && !r.isWeeklyOff);
+    }
+    if (reportType === 'Show Last Call Report') {
         const workingDays = reportData.filter(r => !r.isHoliday && !r.isWeeklyOff);
         if (workingDays.length > 0) {
             workingDays.sort((a,b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime());
