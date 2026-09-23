@@ -28,10 +28,21 @@ const PayrunSystem: React.FC = () => {
 
     const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any | null>(null);
+    const [isFinalized, setIsFinalized] = useState(false);
 
     useEffect(() => {
         fetchPreview(false);
     }, [payrunMonth, payrunYear]);
+
+    
+    const handleSyncCRM = () => {
+        if (isFinalized) {
+            if (!confirm('This month is already finalized. Syncing with the live CRM will overwrite your saved data with fresh attendance data. Proceed?')) {
+                return;
+            }
+        }
+        fetchPreview(true);
+    };
 
     const fetchPreview = async (forceCsv = false) => {
         setLoadingPreview(true);
@@ -39,6 +50,7 @@ const PayrunSystem: React.FC = () => {
         try {
             const res = await api.get(`/admin/payrun-preview?month=${payrunMonth}&year=${payrunYear}&forceCsv=${forceCsv}`);
             if (res.data.success) {
+                setIsFinalized(!!res.data.loadedFromDb);
                 const initializedPreviews = res.data.previews.map((p: any) => {
                     const salDed = p.salDed !== undefined ? Math.round(parseFloat(p.salDed)) : 0;
                     const expense = p.expense !== undefined ? Math.round(parseFloat(p.expense)) : 0;
@@ -294,6 +306,7 @@ const PayrunSystem: React.FC = () => {
 
             if (res.data.success) {
                 setEmailSuccess(`Successfully finalized payrun for ${payrunMonth} ${payrunYear}!`);
+                setIsFinalized(true);
             } else {
                 setError(res.data.error || 'Failed to finalize payrun.');
             }
@@ -365,7 +378,13 @@ const PayrunSystem: React.FC = () => {
                     <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: 'auto', fontSize: '1rem', padding: '8px' }}>
                         {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <button onClick={() => fetchPreview(true)} disabled={loadingPreview} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                    {isFinalized && (
+                        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#10b981', color: 'white', padding: '8px 12px', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem' }}>
+                            <CheckCircle size={16} style={{ marginRight: '6px' }} />
+                            FINALIZED
+                        </div>
+                    )}
+                    <button onClick={handleSyncCRM} disabled={loadingPreview} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
                         <Upload size={16} style={{ marginRight: '8px' }} />
                         {loadingPreview ? 'Syncing...' : 'Sync with CRM'}
                     </button>
@@ -468,6 +487,10 @@ const PayrunSystem: React.FC = () => {
                                 </div>
                             </div>
                             <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                                <button onClick={wipePayrun} disabled={wiping || finalizing || previews.length === 0} className="btn btn-danger" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '6px' }}>
+                                    <Trash2 size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                                    {wiping ? 'Resetting...' : 'Reset Month'}
+                                </button>
                                 <button onClick={finalizePayrun} disabled={finalizing || previews.length === 0} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px' }}>
                                     <Save size={16} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
                                     {finalizing ? 'Saving...' : 'Finalize & Save Payrun'}
