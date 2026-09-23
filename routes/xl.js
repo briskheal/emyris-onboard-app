@@ -1453,7 +1453,7 @@ router.get('/attendance/monthly/all', async (req, res) => {
             where: { date: { [require('sequelize').Op.between]: [startDate, endDate] } }
         });
 
-        res.json({ success: true, data: mergedData, workingDays, holidays: holidays.map(h => h.date) });
+        res.json({ success: true, data: mergedData, workingDays, holidays });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch all monthly attendance', details: e.message, stack: e.stack });
     }
@@ -3539,6 +3539,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 
