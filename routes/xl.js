@@ -1448,7 +1448,7 @@ router.get('/attendance/monthly/all', async (req, res) => {
 
         res.json({ success: true, data: mergedData, workingDays, holidays: holidays.map(h => h.date) });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch all monthly attendance' });
+        res.status(500).json({ error: 'Failed to fetch all monthly attendance', details: e.message, stack: e.stack });
     }
 });
 // --- LEAVE ADMIN FETCH ROUTES ---
@@ -3531,6 +3531,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 
