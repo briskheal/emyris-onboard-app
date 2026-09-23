@@ -1502,7 +1502,14 @@ router.delete('/leave/:id', async (req, res) => {
             let correctEmployeeId = leave.employeeId;
             try {
                 const users = await XlUser.findAll();
-                const xlUser = users.find(u => u.email && u.email.toLowerCase() === leave.employeeId.toLowerCase());
+                
+    const lookupValLeave = leave.employeeId ? leave.employeeId.toLowerCase() : '';
+    const xlUser = users.find(u => 
+        (u.email && u.email.toLowerCase() === lookupValLeave) || 
+        (u.uid && u.uid.toLowerCase() === lookupValLeave) || 
+        (u.employeeId && u.employeeId.toLowerCase() === lookupValLeave)
+    );
+
                 if (xlUser && xlUser.employeeId) {
                     correctEmployeeId = xlUser.employeeId;
                 }
@@ -2276,7 +2283,14 @@ router.post('/approvals/action', async (req, res) => {
                 try {
                     // Try to convert email to employee code if it is an email
                     const users = await XlUser.findAll();
-                      const xlUser = users.find(u => u.email && u.email.toLowerCase() === record.employeeId.toLowerCase());
+                      
+    const lookupValRecord = record.employeeId ? record.employeeId.toLowerCase() : '';
+    const xlUser = users.find(u => 
+        (u.email && u.email.toLowerCase() === lookupValRecord) || 
+        (u.uid && u.uid.toLowerCase() === lookupValRecord) || 
+        (u.employeeId && u.employeeId.toLowerCase() === lookupValRecord)
+    );
+
                     if (xlUser && xlUser.employeeId) {
                         correctEmployeeId = xlUser.employeeId;
                     }
