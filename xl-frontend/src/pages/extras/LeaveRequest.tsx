@@ -7,7 +7,7 @@ const getUserId = () => {
   const u = localStorage.getItem('xl_user');
   if (!u) return '';
   const parsed = JSON.parse(u);
-  return parsed.uid || parsed.employeeId || ''; // MUST prioritize UID for XlAssignedLeave and XlLeave foreign keys!
+  return parsed.employeeId || parsed.uid || parsed.email || ''; // Use native employeeId first and XlLeave foreign keys!
 };
 
 export default function LeaveRequest() {
