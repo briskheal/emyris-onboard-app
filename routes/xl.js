@@ -2999,29 +2999,11 @@ router.get('/coworkers', async (req, res) => {
 
         let coworkersMap = new Map();
 
-        // 2. Fetch user's designation level
-        let userLevel = 0;
-        if (user.designation) {
-            const desigObj = await XlDesignation.findOne({ where: { designationName: user.designation } });
-            if (desigObj) userLevel = desigObj.level;
-        }
-
-        // 3. Find all users with a HIGHER level (managers across the hierarchy)
-        const allDesignations = await XlDesignation.findAll();
-        const higherDesigNames = allDesignations
-            .filter(d => d.level > userLevel)
-            .map(d => d.designationName);
-
-        if (higherDesigNames.length > 0) {
-            const managers = await XlUser.findAll({ where: { designation: { [Op.in]: higherDesigNames } } });
-            managers.forEach(m => coworkersMap.set(m.employeeId, m));
-        }
-
-        // 4. Also ensure Cross-functional teams (Product Managers, HR, Admin) are included regardless of level
+        // Return ALL other users in the company (to support both upward and downward joint working)
+        // The frontend already has a searchable dropdown, so they can easily find anyone they worked with.
         const allUsers = await XlUser.findAll();
         allUsers.forEach(u => {
-            const d = (u.designation || '').toLowerCase();
-            if (d.includes('product') || d.includes(' pm') || d === 'pm' || d.includes('hr') || d.includes('admin')) {
+            if (u.employeeId !== email) {
                 coworkersMap.set(u.employeeId, u);
             }
         });
