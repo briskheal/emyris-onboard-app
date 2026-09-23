@@ -133,12 +133,18 @@ export default function CallReport() {
           const att = allAttendances.find(a => a.date === dStr);
           const isSunday = new Date(dStr).getDay() === 0;
 
-          let finalActivity = tp.activityType || tp.activity;
-          if (!finalActivity) {
-              if (holiday) finalActivity = holiday.title || 'Holiday';
-              else if (isSunday) finalActivity = 'Weekly Off';
-              else finalActivity = 'Working';
-          }
+          
+            let finalActivity = tp.activityType || tp.activity;
+            if (!finalActivity) {
+                if (holiday) finalActivity = holiday.title || 'Holiday';
+                else if (isSunday) finalActivity = 'Weekly Off';
+                else finalActivity = 'Working';
+            }
+            // --- OVERRIDE WITH ACTUAL ATTENDANCE STATUS ---
+            if (att && (att.status === 'Leave' || att.status === 'LWP')) {
+                finalActivity = att.status;
+            }
+
           
           let jointCallsCount = 0;
           dcrsForDay.forEach(d => {

@@ -1138,7 +1138,18 @@ router.get('/tour-program/my', async (req, res) => {
         let { email, month, year } = req.query;
         if (!email || !month || !year) return res.status(400).json({ error: 'Missing params' });
         month = month.toLowerCase();
-        const tp = await XlTourProgram.findOne({ where: { employeeId: email, month, year } });
+        
+        const { Op } = require('sequelize');
+        const { XlUser } = require('../db');
+        const user = await XlUser.findOne({ where: { employeeId: email } }) || await XlUser.findOne({ where: { email } }) || await XlUser.findOne({ where: { uid: email } });
+        let idArray = [email];
+        if (user) {
+            if (user.employeeId) idArray.push(user.employeeId);
+            if (user.email) idArray.push(user.email);
+            if (user.uid) idArray.push(user.uid);
+        }
+        const tp = await XlTourProgram.findOne({ where: { employeeId: { [Op.in]: idArray }, month, year } });
+
         res.json({ success: true, data: tp || null });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch Tour Program' });
@@ -3138,7 +3149,15 @@ router.get('/expense/limits', async (req, res) => {
         const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
         const monthStr = monthNames[parseInt(monthNum, 10) - 1].toLowerCase();
         
-        const tp = await XlTourProgram.findOne({ where: { employeeId: user.employeeId, month: monthStr, year } });
+        
+        let idArray2 = [email];
+        if (user) {
+            if (user.employeeId) idArray2.push(user.employeeId);
+            if (user.email) idArray2.push(user.email);
+            if (user.uid) idArray2.push(user.uid);
+        }
+        const tp = await XlTourProgram.findOne({ where: { employeeId: { [Op.in]: idArray2 }, month: monthStr, year } });
+
                 let workAreaType = req.query.workAreaType || 'Out-Station';
         let toMarket = req.query.toMarket || '';
         let activityType = req.query.activityType || 'Working';
