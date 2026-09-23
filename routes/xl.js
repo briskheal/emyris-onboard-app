@@ -1405,12 +1405,38 @@ router.get('/attendance/monthly/all', async (req, res) => {
     try {
         const { month, year } = req.query; // month is 1-12
         const datePrefix = `${year}-${String(month).padStart(2, '0')}`;
+        
         const atts = await XlAttendance.findAll({ 
             where: { 
                 date: { [require('sequelize').Op.startsWith]: datePrefix } 
             } 
         });
-        res.json({ success: true, data: atts });
+        
+        const dcrs = await XlDCR.findAll({
+            attributes: ['employeeId', 'date'],
+            where: {
+                date: { [require('sequelize').Op.startsWith]: datePrefix } 
+            }
+        });
+        
+        // Merge DCRs into atts as fake attendances if they don't already exist
+        const attMap = new Set(atts.map(a => `${a.employeeId}_${a.date}`));
+        const mergedData = [...atts.map(a => a.toJSON())];
+        
+        for (const dcr of dcrs) {
+            const key = `${dcr.employeeId}_${dcr.date}`;
+            if (!attMap.has(key)) {
+                mergedData.push({
+                    employeeId: dcr.employeeId,
+                    date: dcr.date,
+                    status: 'Present',
+                    punchInTime: 'DCR Submitted'
+                });
+                attMap.add(key); // prevent duplicates from multiple DCRs on same day
+            }
+        }
+        
+        res.json({ success: true, data: mergedData });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch all monthly attendance' });
     }
