@@ -3421,8 +3421,8 @@ router.get('/payrun-preview', async (req, res) => {
             if (typeof parsedSettings === 'string') {
                 try { parsedSettings = JSON.parse(parsedSettings); } catch(e) {}
             }
-            if (parsedSettings.set_working_days && parsedSettings.workingDays) {
-                workingDaysPref = parsedSettings.workingDays;
+            if (parsedSettings.set_working_days) {
+                workingDaysPref = parsedSettings.workingDays || { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true };
             }
         }
 
