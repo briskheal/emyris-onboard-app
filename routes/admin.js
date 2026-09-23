@@ -3525,11 +3525,11 @@ router.get('/payrun-preview', async (req, res) => {
                 
                 let ptDed = 0;
                 let pfDed = 0;
-                if (sb.applyPt !== false) {
+                if (sb.applyPt !== false && sb.applyPt !== 'false' && sb.applyPt !== 0 && sb.applyPt !== '0') {
                     if (originalGross > 20000) ptDed = 200;
                     else if (originalGross > 15000) ptDed = 150;
                 }
-                if (sb.applyPf !== false) {
+                if (sb.applyPf !== false && sb.applyPf !== 'false' && sb.applyPf !== 0 && sb.applyPf !== '0') {
                     if (originalGross >= 15000) pfDed = 1800;
                     else pfDed = 1200;
                 }
