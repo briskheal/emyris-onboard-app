@@ -3003,30 +3003,35 @@ router.get('/coworkers', async (req, res) => {
         let currentDesignation = user.reportingManager;
         const seenDesignations = new Set();
         
-        while (currentDesignation && !seenDesignations.has(currentDesignation)) {
+        while (currentDesignation && currentDesignation.trim() !== '' && !seenDesignations.has(currentDesignation)) {
             seenDesignations.add(currentDesignation);
             const managers = await XlUser.findAll({ where: { designation: currentDesignation } });
             managers.forEach(m => coworkersMap.set(m.employeeId, m));
 
-            if (managers.length > 0 && managers[0].reportingManager) {
-                currentDesignation = managers[0].reportingManager;
+            let nextDesig = null;
+            for (let m of managers) {
+                if (m.reportingManager && m.reportingManager.trim() !== '') {
+                    nextDesig = m.reportingManager.trim();
+                    break;
+                }
+            }
+            
+            if (nextDesig) {
+                currentDesignation = nextDesig;
             } else {
                 break;
             }
         }
 
         // 3. Find Cross-functional teams (Product Managers, HR)
-        const crossFunctional = await XlUser.findAll({
-            where: {
-                [Op.or]: [
-                    { designation: { [Op.like]: '%Product%' } },
-                    { designation: { [Op.like]: '%PM%' } },
-                    { designation: { [Op.like]: '%HR%' } }
-                ]
+        const allUsers = await XlUser.findAll();
+        allUsers.forEach(u => {
+            const d = (u.designation || '').toLowerCase();
+            // match product, hr, and exact 'pm' or 'pm ' etc to avoid matching words with pm in it if possible, but includes('pm') is fine since it's a designation
+            if (d.includes('product') || d.includes(' pm') || d === 'pm' || d.includes('hr') || d.includes('admin')) {
+                coworkersMap.set(u.employeeId, u);
             }
         });
-
-        crossFunctional.forEach(m => coworkersMap.set(m.employeeId, m));
 
         let coworkersList = Array.from(coworkersMap.values()).filter(m => m.employeeId !== email);
 
