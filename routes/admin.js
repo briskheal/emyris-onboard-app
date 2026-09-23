@@ -3523,28 +3523,33 @@ router.get('/payrun-preview', async (req, res) => {
                 const originalGross = basic + hra + conv + med + lta + edu + special;
                 const factor = payableDays / totalMonthDays;
                 
-                let ptDed = 0;
-                let pfDed = 0;
-                if (sb.applyPt !== false && sb.applyPt !== 'false' && sb.applyPt !== 0 && sb.applyPt !== '0') {
-                    if (originalGross > 20000) ptDed = 200;
-                    else if (originalGross > 15000) ptDed = 150;
-                }
-                if (sb.applyPf !== false && sb.applyPf !== 'false' && sb.applyPf !== 0 && sb.applyPf !== '0') {
-                    if (originalGross >= 15000) pfDed = 1800;
-                    else pfDed = 1200;
-                }
+                
 
                 const calcBreakup = {
                     basic: Math.round(basic * factor),
                     hra: Math.round(hra * factor),
-                    conveyance: Math.round(conv), 
-                    medical: Math.round(med), 
+                    conveyance: Math.round(conv * factor), 
+                    medical: Math.round(med * factor), 
                     lta: Math.round(lta * factor),
-                    edu: Math.round(edu), 
+                    edu: Math.round(edu * factor), 
                     special: Math.round(special * factor)
                 };
                 
                 const baseNetSalary = Object.values(calcBreakup).reduce((a, b) => a + parseFloat(b), 0);
+                const earnedGross = baseNetSalary;
+                
+                let ptDed = 0;
+                let pfDed = 0;
+                if (sb.applyPt !== false && sb.applyPt !== 'false' && sb.applyPt !== 0 && sb.applyPt !== '0') {
+                    if (earnedGross > 20000) ptDed = 200;
+                    else if (earnedGross > 15000) ptDed = 150;
+                    else ptDed = 0;
+                }
+                if (sb.applyPf !== false && sb.applyPf !== 'false' && sb.applyPf !== 0 && sb.applyPf !== '0') {
+                    const earnedBasic = calcBreakup.basic || 0;
+                    const pfVal = Math.round(earnedBasic * 0.12);
+                    pfDed = pfVal > 1800 ? 1800 : pfVal;
+                }
                 const dailyRate = originalGross / totalMonthDays;
                 
                 // --- Loan & Advance Deduction Logic ---
