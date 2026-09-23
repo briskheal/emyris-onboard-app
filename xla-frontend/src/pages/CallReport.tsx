@@ -195,7 +195,11 @@ export default function CallReport() {
   }, [startDate, endDate, selectedUser, users]);
 
   const displayedData = useMemo(() => {
-    if (reportType === 'Show Last Call Report') {
+    if (reportType === 'Calls with Holidays') {
+          return reportData.filter(r => (r.isHoliday || r.isWeeklyOff) && (r.docs > 0 || r.chems > 0 || r.stockists > 0));
+      }
+      
+      if (reportType === 'Show Last Call Report') {
         const workingDays = reportData.filter(r => !r.isHoliday && !r.isWeeklyOff);
         if (workingDays.length > 0) {
             workingDays.sort((a,b) => new Date(b.rawDate).getTime() - new Date(a.rawDate).getTime());
@@ -302,7 +306,8 @@ export default function CallReport() {
                 className="appearance-none bg-[#242538] border border-sky-500/30 rounded-md px-4 py-2 min-w-[250px] text-xs font-bold text-white outline-none cursor-pointer pr-10"
               >
                   <option>Call Report</option>
-                  <option>Show Last Call Report</option>
+                  <option>Calls with Holidays</option>
+                    <option>Show Last Call Report</option>
                   <option>Backlog Report</option>
                   <option>Detailed Report</option>
                   <option>Worked With Report</option>
@@ -597,5 +602,7 @@ export default function CallReport() {
     </div>
   );
 }
+
+
 
 
