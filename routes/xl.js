@@ -1053,7 +1053,18 @@ router.post('/tour-program', async (req, res) => {
         // ---------------------
 
         // Upsert: one TP per employee per month/year
-        let tp = await XlTourProgram.findOne({ where: { employeeId, month, year } });
+        
+        const { Op } = require('sequelize');
+        const { XlUser } = require('../db');
+        const userForId = await XlUser.findOne({ where: { employeeId } }) || await XlUser.findOne({ where: { email: employeeId } }) || await XlUser.findOne({ where: { uid: employeeId } });
+        let idArray3 = [employeeId];
+        if (userForId) {
+            if (userForId.employeeId) idArray3.push(userForId.employeeId);
+            if (userForId.email) idArray3.push(userForId.email);
+            if (userForId.uid) idArray3.push(userForId.uid);
+        }
+        let tp = await XlTourProgram.findOne({ where: { employeeId: { [Op.in]: idArray3 }, month, year } });
+
         if (tp) {
             if ((tp.status === 'Submitted' || tp.status === 'Approved') && resubmitRemark) {
                 const u = await XlUser.findOne({ where: { employeeId } });
@@ -1148,7 +1159,21 @@ router.get('/tour-program/my', async (req, res) => {
             if (user.email) idArray.push(user.email);
             if (user.uid) idArray.push(user.uid);
         }
-        const tp = await XlTourProgram.findOne({ where: { employeeId: { [Op.in]: idArray }, month, year } });
+        
+          const tps = await XlTourProgram.findAll({ where: { employeeId: { [Op.in]: idArray }, month, year } });
+          let tp = null;
+          if (tps.length > 0) {
+              // Prefer Approved/Submitted over Draft, and longer entries over shorter ones
+              tps.sort((a, b) => {
+                  if (a.status === 'Approved' && b.status !== 'Approved') return -1;
+                  if (b.status === 'Approved' && a.status !== 'Approved') return 1;
+                  const aLen = a.entries ? a.entries.length : 0;
+                  const bLen = b.entries ? b.entries.length : 0;
+                  return bLen - aLen;
+              });
+              tp = tps[0];
+          }
+
 
         res.json({ success: true, data: tp || null });
     } catch (e) {

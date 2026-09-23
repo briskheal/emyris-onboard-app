@@ -3558,8 +3558,37 @@ router.get('/payrun-preview', async (req, res) => {
                 const dailyRate = originalGross / totalMonthDays;
                 
                 // --- Loan & Advance Deduction Logic ---
+                
                 let loanDed = 0;
                 let advDed = 0;
+                let approvedExpense = 0;
+                try {
+                    const { XlExpense } = require('../db');
+                    const { Op } = require('sequelize');
+                    const monthStrNum = String(monthNum).padStart(2, '0');
+                    // Find all expenses for this employee in this month
+                    const exps = await XlExpense.findAll({
+                        where: {
+                            [Op.or]: [
+                                { employeeId: applicant.empCode },
+                                { employeeId: applicant.email },
+                                { employeeId: applicant.uid }
+                            ],
+                            date: { [Op.like]: `${year}-${monthStrNum}%` },
+                            status: 'Approved'
+                        },
+                        raw: true
+                    });
+                    
+                    for (const ex of exps) {
+                        approvedExpense += (parseFloat(ex.dailyAllowance) || 0);
+                        approvedExpense += (parseFloat(ex.travelAllowance) || 0);
+                        approvedExpense += (parseFloat(ex.miscAllowance) || 0);
+                    }
+                } catch(err) {
+                    console.error('Error fetching expenses for payrun:', err);
+                }
+
                 let loanDetails = [];
                 let advDetails = [];
 
@@ -3646,8 +3675,8 @@ router.get('/payrun-preview', async (req, res) => {
                     advDetails,
                     penaltyDays: 0,
                     salDed: 0,
-                    expense: 0,
-                    finalSalary: Math.round(baseNetSalary - ptDed - pfDed - loanDed - advDed),
+                    expense: Math.round(approvedExpense),
+                    finalSalary: Math.round(baseNetSalary - ptDed - pfDed - loanDed - advDed + approvedExpense),
                     sendEmail: true,
                     calcBreakup
                 });
