@@ -272,7 +272,7 @@ export default function LeaveRequest() {
               <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-1">Select User *</label>
               <CustomSelect 
                 options={users.map(u => ({
-                  value: u.uid,
+                  value: u.employeeId || u.email || u.uid,
                   label: u.firstName + ' ' + (u.lastName || ''),
                   subLabel: u.designation || u.designationName,
                   showDefaultAvatar: true,
@@ -343,7 +343,7 @@ export default function LeaveRequest() {
                 <label className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider pl-1">Select User</label>
                 <div className="w-full"><CustomSelect 
                 options={users.map((u:any) => ({
-                  value: u.uid,
+                  value: u.employeeId || u.email || u.uid,
                   label: `${u.firstName} ${u.lastName || ''}`,
                   subLabel: u.designation || u.designationName || u.employeeId,
                   avatarUrl: u.profilePic,

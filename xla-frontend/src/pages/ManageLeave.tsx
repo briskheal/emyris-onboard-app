@@ -205,7 +205,7 @@ function AssignLeaveTab({ users }: { users: any[] }) {
         <div>
           <label className="text-xs font-bold text-slate-400 mb-1 block">SELECT EMPLOYEE *</label>
           <CustomSelect
-                options={users.map((u: any) => ({ value: u.uid || u.employeeId, label: `${u.firstName} ${u.lastName || ''}`, subLabel: u.designation, showDefaultAvatar: true, avatarUrl: u.profilePic }))}
+                options={users.map((u: any) => ({ value: u.employeeId || u.uid, label: `${u.firstName} ${u.lastName || ''}`, subLabel: u.designation, showDefaultAvatar: true, avatarUrl: u.profilePic }))}
                 value={formData.employeeId}
                 onChange={(val) => setFormData({...formData, employeeId: val})}
                 placeholder="Select Employee"

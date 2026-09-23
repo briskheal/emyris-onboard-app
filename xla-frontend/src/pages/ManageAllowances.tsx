@@ -300,7 +300,7 @@ export default function ManageAllowances() {
         <div className="mb-10 w-full md:w-1/3">
           <label className="text-xs text-slate-400 font-bold mb-1 block">SELECT USER *</label>
           <CustomSelect
-                options={users.map((u: any) => ({ value: u.uid || u.employeeId, label: `${u.firstName} ${u.lastName || ''}`, subLabel: u.designation, showDefaultAvatar: true, avatarUrl: u.profilePic }))}
+                options={users.map((u: any) => ({ value: u.employeeId || u.uid, label: `${u.firstName} ${u.lastName || ''}`, subLabel: u.designation, showDefaultAvatar: true, avatarUrl: u.profilePic }))}
                 value={selectedUser}
                 onChange={(val) => setSelectedUser(val)}
                 placeholder="Select User"
