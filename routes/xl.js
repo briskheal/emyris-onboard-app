@@ -1440,8 +1440,9 @@ router.get('/attendance/monthly/all', async (req, res) => {
         const pref = await XlGlobalSettings.findOne({ where: { _id: 'preferences' } });
         const workingDays = (pref && pref.settings && pref.settings.set_working_days) ? (pref.settings.workingDays || { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true }) : { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false };
         
+        const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
         const startDate = datePrefix + '-01';
-        const endDate = datePrefix + '-31';
+        const endDate = datePrefix + '-' + String(lastDay).padStart(2, '0');
         const holidays = await XlHoliday.findAll({
             where: { date: { [require('sequelize').Op.between]: [startDate, endDate] } }
         });
@@ -2252,7 +2253,8 @@ router.get('/call-plan/month', async (req, res) => {
         
         
         const startDate = `${year}-${month.padStart(2, '0')}-01`;
-        const endDate = `${year}-${month.padStart(2, '0')}-31`;
+        const _ld = new Date(parseInt(year), parseInt(month), 0).getDate();
+        const endDate = `${year}-${month.padStart(2, '0')}-${String(_ld).padStart(2, '0')}`;
         
         const plans = await XlCallPlan.findAll({
             where: {
