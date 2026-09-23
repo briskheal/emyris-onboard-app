@@ -3499,6 +3499,11 @@ router.get('/payrun-preview', async (req, res) => {
                 
                 if (totalMonthDays === 0) totalMonthDays = 31;
 
+                // SANDWICH EXCEPTION: If employee has 0 present and 0 approved leaves, holidays are treated as Loss of Pay (Absents)
+                if (present === 0 && leave === 0 && absent > 0) {
+                    absent += holiday;
+                    holiday = 0;
+                }
 
                 let payableDays = totalMonthDays - absent;
                 if (payableDays < 0) payableDays = 0;
