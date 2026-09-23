@@ -3414,10 +3414,17 @@ router.get('/payrun-preview', async (req, res) => {
             }
         });
 
-        const settings = await XlGlobalSettings.findOne({ raw: true });
-        const workingDaysPref = settings && settings.workingDays ? settings.workingDays : {
-            Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false
-        };
+        const pref = await XlGlobalSettings.findOne();
+        let workingDaysPref = { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false }; // Default fallback
+        if (pref && pref.settings) {
+            let parsedSettings = pref.settings;
+            if (typeof parsedSettings === 'string') {
+                try { parsedSettings = JSON.parse(parsedSettings); } catch(e) {}
+            }
+            if (parsedSettings.set_working_days && parsedSettings.workingDays) {
+                workingDaysPref = parsedSettings.workingDays;
+            }
+        }
 
         const holidays = await XlHoliday.findAll({
             where: { date: { [Op.between]: [startDate, endDate] } }, raw: true
@@ -3486,7 +3493,7 @@ router.get('/payrun-preview', async (req, res) => {
                         else present++;
                     } else {
                         if (isHoliday) holiday++;
-                        else if (isPast) absent++;
+                        else absent++; // Count ANY unreported non-holiday day as absent, even if it hasn't happened yet (for payroll projection)
                     }
                 }
                 
