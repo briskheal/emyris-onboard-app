@@ -12,27 +12,33 @@ export default function CallReport() {
   const [reportType, setReportType] = useState('Call Report');
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
+  const [products, setProducts] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    const fetchInitialData = async () => {
       try {
-        const [adminsRes, usersRes] = await Promise.all([
+        const [adminsRes, usersRes, productsRes] = await Promise.all([
           axios.get('/api/admin/admins'),
-          axios.get('/api/admin/users')
+          axios.get('/api/admin/users'),
+          axios.get('/api/admin/products')
         ]);
-        let all: any[] = [];
+        
+        let allUsers: any[] = [];
         if (adminsRes.data && adminsRes.data.success) {
-          all = [...all, ...adminsRes.data.admins.map((x: any) => ({ ...x, isAdmin: true }))];
+          allUsers = [...allUsers, ...adminsRes.data.admins.map((x: any) => ({ ...x, isAdmin: true }))];
         }
         if (usersRes.data && usersRes.data.success) {
-          all = [...all, ...usersRes.data.users.map((x: any) => ({ ...x, isAdmin: false }))];
+          allUsers = [...allUsers, ...usersRes.data.users.map((x: any) => ({ ...x, isAdmin: false }))];
         }
-        setUsers(all);
-      } catch (e) {
-        console.error(e);
-      }
+        
+        setUsers(allUsers);
+        
+        if (productsRes.data && productsRes.data.success) {
+            setProducts(productsRes.data.products || []);
+        }
+      } catch (e) { console.error(e); }
     };
-    fetchUsers();
+    fetchInitialData();
   }, []);
 
   const [reportData, setReportData] = useState<any[]>([]);
@@ -362,11 +368,17 @@ export default function CallReport() {
                         let w = typeof dcr.workedWith === 'string' ? JSON.parse(dcr.workedWith) : dcr.workedWith;
                         if (Array.isArray(w)) workedWithStr = w.join(', ');
                       } catch(e) {}
-                      let productsStr = '-';
-                      try {
-                        let p = typeof dcr.productsDetailed === 'string' ? JSON.parse(dcr.productsDetailed) : dcr.productsDetailed;
-                        if (Array.isArray(p)) productsStr = p.map((x:any) => x.product || x).join(', ');
-                      } catch(e) {}
+                        let productsStr = '-';
+                        try {
+                          let p = typeof dcr.productsDetailed === 'string' ? JSON.parse(dcr.productsDetailed) : dcr.productsDetailed;
+                          if (Array.isArray(p)) {
+                              productsStr = p.map((x:any) => {
+                                  const prodId = x.product || x;
+                                  const found = products.find((pr: any) => pr._id === prodId);
+                                  return found ? found.productName : prodId;
+                              }).join(', ');
+                          }
+                        } catch(e) {}
                       let samplesStr = '-';
                       try {
                         let s = typeof dcr.samplesGiven === 'string' ? JSON.parse(dcr.samplesGiven) : dcr.samplesGiven;
