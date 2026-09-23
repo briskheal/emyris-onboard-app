@@ -1,5 +1,5 @@
 import React, { useState, Suspense, lazy } from 'react';
-import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, Calendar, HandCoins } from 'lucide-react';
+import { Building2, Users, FileSignature, HelpCircle, ClipboardList, LogOut, FileSpreadsheet, Mic, Award, Menu, X, ChevronDown, ChevronUp, HandCoins } from 'lucide-react';
 import api from '../api/client';
 
 const CompanyProfile = lazy(() => import('../components/Admin/CompanyProfile'));
@@ -10,7 +10,7 @@ const PendingExams = lazy(() => import('../components/Admin/PendingExams'));
 const ReportsTab = lazy(() => import('../components/Admin/ReportsTab'));
 const DoctorDetailingStudio = lazy(() => import('../components/Dashboard/DoctorDetailingStudio'));
 const PayrunSystem = lazy(() => import('../components/Admin/PayrunSystem'));
-const LeaveManagement = lazy(() => import('../components/Admin/LeaveManagement'));
+
 const SupportManagement = lazy(() => import('../components/Admin/SupportManagement'));
 
 type AdminView = 'company' | 'applicants' | 'setup' | 'questions' | 'pending' | 'reports' | 'voice-studio' | 'psychometric' | 'payrun' | 'leave' | 'support';
@@ -22,8 +22,7 @@ const AdminPanel: React.FC = () => {
   const [loginError, setLoginError] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
   const [activeView, setActiveView] = useState<AdminView>('applicants');
-  const [leaveMenuExpanded, setLeaveMenuExpanded] = useState(false);
-  const [leaveSubView, setLeaveSubView] = useState('create_type');
+
   const [supportMenuExpanded, setSupportMenuExpanded] = useState(false);
   const [supportSubView, setSupportSubView] = useState('loan');
 
@@ -172,61 +171,6 @@ const AdminPanel: React.FC = () => {
             </button>
           )})}
 
-          {/* LEAVE MANAGEMENT ACCORDION */}
-          <div style={{ marginTop: '0.2rem' }}>
-            <button
-              className={`btn ${activeView === 'leave' ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setLeaveMenuExpanded(!leaveMenuExpanded)}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'space-between',
-                padding: '10px 14px',
-                fontSize: '0.82rem',
-                width: '100%',
-                textAlign: 'left'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Calendar size={16} style={{ flexShrink: 0 }} />
-                Manage Leave
-              </div>
-              {leaveMenuExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
-            
-            {leaveMenuExpanded && (
-              <div style={{ paddingLeft: '2rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.4rem' }}>
-                {[
-                  { id: 'create_type', label: 'Create Leave Type' },
-                  { id: 'assign_leave', label: 'Assign Leave' },
-                  { id: 'assigned_leaves', label: 'Assigned Leaves' },
-                  { id: 'leave_requests', label: 'Leave Requests' }
-                ].map(subItem => (
-                  <button
-                    key={subItem.id}
-                    onClick={() => {
-                      setActiveView('leave');
-                      setLeaveSubView(subItem.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    style={{
-                      padding: '6px 0',
-                      background: 'transparent',
-                      border: 'none',
-                      color: activeView === 'leave' && leaveSubView === subItem.id ? 'var(--primary)' : 'rgba(255,255,255,0.6)',
-                      fontSize: '0.7rem',
-                      textAlign: 'left',
-                      cursor: 'pointer',
-                      fontWeight: activeView === 'leave' && leaveSubView === subItem.id ? 'bold' : 'normal'
-                    }}
-                  >
-                    {subItem.label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* SUPPORT ACCORDION */}
           <div style={{ marginTop: '0.2rem' }}>
             <button
@@ -325,7 +269,7 @@ const AdminPanel: React.FC = () => {
           {activeView === 'pending' && <PendingExams />}
           {activeView === 'psychometric' && <ReportsTab initialTab="psychometric" isStandalone={true} />}
           {activeView === 'reports' && <ReportsTab initialTab="details" isStandalone={false} />}
-          {activeView === 'leave' && <LeaveManagement activeSubTab={leaveSubView} setSubTab={setLeaveSubView} />}
+
           {activeView === 'support' && <SupportManagement activeSubTab={supportSubView} setSubTab={setSupportSubView} />}
         </Suspense>
       </main>
@@ -335,3 +279,6 @@ const AdminPanel: React.FC = () => {
 };
 
 export default AdminPanel;
+
+
+
