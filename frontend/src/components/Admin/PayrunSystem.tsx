@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Play, CheckCircle, Download, Mail, Eye, X, AlertCircle, Save, Trash2 } from 'lucide-react';
+import { Upload, CheckCircle, Download, Mail, Eye, X, AlertCircle, Save, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx-js-style';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -7,9 +7,7 @@ import api from '../../api/client';
 import SalarySlipTemplate from './SalarySlipTemplate';
 
 const PayrunSystem: React.FC = () => {
-    const [file, setFile] = useState<File | null>(null);
-    const [uploading, setUploading] = useState(false);
-    const [uploadSuccess, setUploadSuccess] = useState(false);
+
     const [error, setError] = useState('');
 
     const [previews, setPreviews] = useState<any[]>([]);
@@ -34,41 +32,6 @@ const PayrunSystem: React.FC = () => {
     useEffect(() => {
         fetchPreview(false);
     }, [payrunMonth, payrunYear]);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            setFile(e.target.files[0]);
-            setUploadSuccess(false);
-            setError('');
-        }
-    };
-
-    const handleUpload = async () => {
-        if (!file) {
-            setError('Please select an Excel file first.');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        setUploading(true);
-        setError('');
-        try {
-            const res = await api.post('/admin/upload-attendance', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            if (res.data.success) {
-                setUploadSuccess(true);
-            } else {
-                setError(res.data.error || 'Upload failed');
-            }
-        } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to upload attendance file.');
-        } finally {
-            setUploading(false);
-        }
-    };
 
     const fetchPreview = async (forceCsv = false) => {
         setLoadingPreview(true);
@@ -346,7 +309,7 @@ const PayrunSystem: React.FC = () => {
         if (!confirm(`Are you sure you want to completely erase ALL finalized payslips for ${payrunMonth} ${payrunYear}? This action cannot be undone.`)) return;
         setWiping(true);
         setError('');
-        setUploadSuccess(false);
+        
         setEmailSuccess('');
         try {
             const res = await api.post('/admin/wipe-payrun', {
@@ -396,23 +359,16 @@ const PayrunSystem: React.FC = () => {
                 )}
 
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
-                    <input type="file" className="form-control" accept=".xlsx, .xls" onChange={handleFileChange} style={{ maxWidth: '250px', fontSize: '1rem', padding: '8px' }}/>
                     <select className="form-control" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: 'auto', fontSize: '1rem', padding: '8px' }}>
                         {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
                     </select>
                     <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: 'auto', fontSize: '1rem', padding: '8px' }}>
                         {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
-                    <button onClick={handleUpload} disabled={uploading || !file} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
+                    <button onClick={() => fetchPreview(true)} disabled={loadingPreview} className="btn btn-primary" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
                         <Upload size={16} style={{ marginRight: '8px' }} />
-                        {uploading ? 'Uploading...' : 'Upload Data'}
+                        {loadingPreview ? 'Syncing...' : 'Sync with CRM'}
                     </button>
-                    {uploadSuccess && (
-                        <button onClick={() => fetchPreview(true)} disabled={loadingPreview} className="btn btn-success" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#10b981', color: '#fff', border: 'none', borderRadius: '6px', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center' }}>
-                            <Play size={16} style={{ marginRight: '8px' }} />
-                            {loadingPreview ? 'Loading...' : 'Run Preview'}
-                        </button>
-                    )}
                     <button className="btn" style={{ padding: '10px 20px', fontSize: '1rem', fontWeight: 'bold', backgroundColor: '#f8f9fa', color: '#333', border: '1px solid #ddd', borderRadius: '6px', display: 'flex', alignItems: 'center' }} onClick={exportToExcel}>
                         <Download size={16} style={{ marginRight: '8px' }}/> Export Excel
                     </button>
@@ -558,3 +514,5 @@ const PayrunSystem: React.FC = () => {
 };
 
 export default PayrunSystem;
+
+

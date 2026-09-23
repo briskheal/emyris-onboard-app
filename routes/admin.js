@@ -3380,25 +3380,52 @@ router.get('/payrun-preview', async (req, res) => {
         }
         }
 
-        const filePath = path.join(__dirname, '../Attendance/LATEST_ATTENDANCE.xlsx');
-        if (!fs.existsSync(filePath)) {
-            const fallbackPath = path.join(__dirname, '../Attendance/JULY ATTENDANCE REPORT.xlsx');
-            if (fs.existsSync(fallbackPath)) {
-                fs.copyFileSync(fallbackPath, filePath);
-            } else {
-                return res.json({ success: true, previews: [], message: 'No attendance report found. Please upload one.' });
-            }
-        }
         
-        const workbook = xlsx.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = xlsx.utils.sheet_to_json(sheet);
+        const { XlUser, XlAttendance, XlDCR, XlHoliday, XlGlobalSettings } = require('../db');
+        const { Op } = require('sequelize');
+
+        const allApplicants = await Applicant.find({});
+        const allUsers = await XlUser.findAll({ raw: true });
+        
+        const monthNum = new Date(`${month} 1, ${year}`).getMonth() + 1;
+        const datePrefix = `${year}-${String(monthNum).padStart(2, '0')}`;
+        
+        const payrunStart = new Date(parseInt(year), monthNum - 1, 1);
+        const payrunEnd = new Date(parseInt(year), monthNum, 0);
+        const lastDay = payrunEnd.getDate();
+        
+        const startDate = datePrefix + '-01';
+        const endDate = datePrefix + '-' + String(lastDay).padStart(2, '0');
+
+        const atts = await XlAttendance.findAll({ 
+            where: { date: { [Op.between]: [startDate, endDate] } }, raw: true 
+        });
+        const dcrs = await XlDCR.findAll({
+            attributes: ['employeeId', 'date'],
+            where: { date: { [Op.between]: [startDate, endDate] } }, raw: true
+        });
+
+        const attMap = new Set(atts.map(a => `${a.employeeId}_${a.date}`));
+        const mergedData = [...atts];
+        dcrs.forEach(d => {
+            const key = `${d.employeeId}_${d.date}`;
+            if (!attMap.has(key)) {
+                mergedData.push({ employeeId: d.employeeId, date: d.date, punchInTime: 'DCR', punchOutTime: 'DCR' });
+            }
+        });
+
+        const settings = await XlGlobalSettings.findOne({ raw: true });
+        const workingDaysPref = settings && settings.workingDays ? settings.workingDays : {
+            Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false
+        };
+
+        const holidays = await XlHoliday.findAll({
+            where: { date: { [Op.between]: [startDate, endDate] } }, raw: true
+        });
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         
         const previews = [];
-        const allApplicants = await Applicant.find({});
-        
-        const payrunStart = new Date(parseInt(year), new Date(`${month} 1, ${year}`).getMonth(), 1);
-        const payrunEnd = new Date(parseInt(year), new Date(`${month} 1, ${year}`).getMonth() + 1, 0);
 
         const parseDMY = (dateString) => {
             if (!dateString) return null;
@@ -3417,47 +3444,54 @@ router.get('/payrun-preview', async (req, res) => {
         for (const applicant of allApplicants) {
             let adoj = applicant.actualJoiningDate ? parseDMY(applicant.actualJoiningDate) : null;
             
-            // If the employee joined AFTER the payrun month ended, completely exclude them
             if (adoj && !isNaN(adoj.getTime()) && adoj > payrunEnd) {
                 continue;
             }
 
             const sb = applicant.salaryBreakup || {};
 
-            const row = data.find(r => {
-                let rowEmpCode = '';
-                let rowEmpName = '';
-                for (const key of Object.keys(r)) {
-                    const k = key.toLowerCase().replace(/[^a-z0-9]/g, '');
-                    if (k === 'employeecode' || k === 'empcode' || k === 'code') rowEmpCode = (r[key] || '').toString().trim().toLowerCase();
-                    if (k === 'employeename' || k === 'empname' || k === 'name' || k === 'employee') rowEmpName = (r[key] || '').toString().trim().toLowerCase();
-                }
-                
-                const appEmpCode = (applicant.empCode || '').toString().toLowerCase().replace(/\s+/g, '');
-                const appFullName = (applicant.fullName || '').toString().trim().toLowerCase();
-                rowEmpCode = rowEmpCode.replace(/\s+/g, '');
-                
-                // Match by either exact Employee Code, partial Employee Code, exact Full Name, or partial Full Name
-                return (rowEmpCode && appEmpCode && (rowEmpCode === appEmpCode || rowEmpCode.includes(appEmpCode) || appEmpCode.includes(rowEmpCode))) || 
-                       (rowEmpName && appFullName && (rowEmpName === appFullName || rowEmpName.includes(appFullName) || appFullName.includes(rowEmpName)));
+            const appEmpCode = (applicant.empCode || '').toString().toLowerCase().replace(/\s+/g, '');
+            
+            let crmUser = allUsers.find(u => {
+                const uId = (u.employeeId || '').toString().toLowerCase().replace(/\s+/g, '');
+                return uId && appEmpCode && (uId === appEmpCode || uId.includes(appEmpCode) || appEmpCode.includes(uId));
             });
             
-            if (row) {
+            if (crmUser) {
                 let present = 0, holiday = 0, leave = 0, absent = 0, totalMonthDays = 0;
-                const dateRegex = /^\d{2} [A-Za-z]{3}/; 
                 
-                for (const key of Object.keys(row)) {
-                    if (dateRegex.test(key)) {
-                        totalMonthDays++;
-                        const val = (row[key] || '').toString().trim().toUpperCase();
-                        if (val === 'P') present++;
-                        else if (val === 'H') holiday++;
-                        else if (val === 'L') leave++;
-                        else if (val === 'A') absent++;
+                const today = new Date();
+                const todayYMD = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
+
+                for (let day = 1; day <= lastDay; day++) {
+                    totalMonthDays++;
+                    const currentDate = new Date(parseInt(year), monthNum - 1, day);
+                    const dStr = `${year}-${String(monthNum).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayStr = dayNames[currentDate.getDay()];
+                    
+                    const isWeeklyOff = !workingDaysPref[dayStr];
+                    const isStateHoliday = holidays.some((h) => 
+                        h.date === dStr && 
+                        (!h.state || h.state === 'All' || h.state === 'N/A' || h.state === '' || h.state === crmUser.state)
+                    );
+                    const isHoliday = isWeeklyOff || isStateHoliday;
+                    
+                    const hasAtt = mergedData.find(a => (a.employeeId === crmUser.employeeId || a.employeeId === crmUser.email) && a.date === dStr);
+                    const isPast = dStr < todayYMD;
+
+                    if (hasAtt) {
+                        const statusStr = (hasAtt.status || '').toLowerCase();
+                        if (statusStr.includes('leave')) leave++;
+                        else if (statusStr.includes('absent')) absent++;
+                        else present++;
+                    } else {
+                        if (isHoliday) holiday++;
+                        else if (isPast) absent++;
                     }
                 }
                 
                 if (totalMonthDays === 0) totalMonthDays = 31;
+
 
                 let payableDays = totalMonthDays - absent;
                 if (payableDays < 0) payableDays = 0;
