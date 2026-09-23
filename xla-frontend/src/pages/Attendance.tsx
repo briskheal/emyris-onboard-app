@@ -93,7 +93,7 @@ export default function Attendance() {
           
           days.forEach(d => {
                 const isWeeklyOff = !workingDaysPref[d.day];
-                const isStateHoliday = monthHolidays.includes(d.yyyymmdd);
+                const isStateHoliday = monthHolidays.some((h: any) => h.date === d.yyyymmdd && (!h.state || h.state === 'All' || h.state === 'N/A' || h.state === '' || h.state === user.state));
                 if (isWeeklyOff || isStateHoliday) {
                     dailyMap[d.yyyymmdd] = 'H';
                 }
@@ -151,7 +151,7 @@ export default function Attendance() {
       const dObj = new Date(selectedDate);
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const dayStr = dayNames[dObj.getDay()];
-      const isWeekend = !workingDaysPref[dayStr] || monthHolidays.includes(selectedDate);
+      const isWeeklyOff = !workingDaysPref[dayStr];
       
       const today = new Date();
       const todayYMD = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
@@ -168,7 +168,8 @@ export default function Attendance() {
               else if (s.toLowerCase().includes('absent')) status = 'A';
               else status = 'P';
           } else {
-              if (isWeekend) status = 'H';
+              const isHoliday = isWeeklyOff || monthHolidays.some((h: any) => h.date === selectedDate && (!h.state || h.state === 'All' || h.state === 'N/A' || h.state === '' || h.state === user.state));
+              if (isHoliday) status = 'H';
               else if (isPast) status = 'A';
           }
           

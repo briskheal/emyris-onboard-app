@@ -71,7 +71,7 @@ export default function CallReport() {
       let allHolidays: any[] = [];
       
       try {
-          const hRes = await axios.get('/api/xl/extras/holidays');
+          const hRes = await axios.get('/api/xl/settings/holidays');
           if (hRes.data && hRes.data.success) {
               const userState = (selectedUserObj?.state || '').toLowerCase().trim();
               allHolidays = hRes.data.data.filter((h: any) => {
@@ -604,6 +604,7 @@ export default function CallReport() {
     </div>
   );
 }
+
 
 
 
