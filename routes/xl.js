@@ -1443,7 +1443,7 @@ router.get('/attendance/monthly/all', async (req, res) => {
         }
         
         // Fetch Working Days Preference and Global Holidays
-        const pref = await XlGlobalSettings.findOne({ where: { _id: 'preferences' } });
+        const pref = await XlGlobalSettings.findOne();
         const workingDays = (pref && pref.settings && pref.settings.set_working_days) ? (pref.settings.workingDays || { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true }) : { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false };
         
         const lastDay = new Date(parseInt(year), parseInt(month), 0).getDate();
@@ -3539,6 +3539,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 
