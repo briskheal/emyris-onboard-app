@@ -1436,7 +1436,15 @@ router.get('/attendance/monthly/all', async (req, res) => {
             }
         }
         
-        res.json({ success: true, data: mergedData });
+        // Fetch Working Days Preference and Global Holidays
+        const pref = await XlGlobalSettings.findOne({ where: { _id: 'preferences' } });
+        const workingDays = (pref && pref.settings && pref.settings.set_working_days) ? (pref.settings.workingDays || { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: true }) : { Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false };
+        
+        const holidays = await XlHoliday.findAll({
+            where: { date: { [require('sequelize').Op.startsWith]: datePrefix } }
+        });
+
+        res.json({ success: true, data: mergedData, workingDays, holidays: holidays.map(h => h.date) });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch all monthly attendance' });
     }
@@ -3521,6 +3529,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 

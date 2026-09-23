@@ -9,6 +9,8 @@ export default function Attendance() {
   
   const [users, setUsers] = useState<any[]>([]);
   const [attendances, setAttendances] = useState<any[]>([]);
+  const [workingDaysPref, setWorkingDaysPref] = useState<any>({ Sunday: false, Monday: true, Tuesday: true, Wednesday: true, Thursday: true, Friday: true, Saturday: false });
+  const [monthHolidays, setMonthHolidays] = useState<string[]>([]);
   
   const [attendanceType, setAttendanceType] = useState<'monthly' | 'daily'>('monthly');
   const [showTypePicker, setShowTypePicker] = useState(false);
@@ -51,6 +53,8 @@ export default function Attendance() {
           const attRes = await axios.get(`/api/xl/attendance/monthly/all?month=${m}&year=${y}`);
           if (attRes.data && attRes.data.success) {
               setAttendances(attRes.data.data);
+                if (attRes.data.workingDays) setWorkingDaysPref(attRes.data.workingDays);
+                if (attRes.data.holidays) setMonthHolidays(attRes.data.holidays);
           }
       } catch (e) {
           console.error(e);
@@ -143,7 +147,9 @@ export default function Attendance() {
       if (attendanceType !== 'daily') return [];
       
       const dObj = new Date(selectedDate);
-      const isWeekend = dObj.getDay() === 0 || dObj.getDay() === 6;
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayStr = dayNames[dObj.getDay()];
+      const isWeekend = !workingDaysPref[dayStr] || monthHolidays.includes(selectedDate);
       
       const today = new Date();
       const todayYMD = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
@@ -524,3 +530,6 @@ export default function Attendance() {
     </div>
   );
 }
+
+
+
