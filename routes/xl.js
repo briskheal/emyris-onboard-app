@@ -1400,6 +1400,21 @@ router.get('/attendance/monthly', async (req, res) => {
 // ─── PHASE 3: LEAVE REQUEST ────────────────────────────────────────────────
 
 
+// Get ALL Monthly Attendances (for Admin ERP View)
+router.get('/attendance/monthly/all', async (req, res) => {
+    try {
+        const { month, year } = req.query; // month is 1-12
+        const datePrefix = ${year}-${String(month).padStart(2, '0')};
+        const atts = await XlAttendance.findAll({ 
+            where: { 
+                date: { [require('sequelize').Op.startsWith]: datePrefix } 
+            } 
+        });
+        res.json({ success: true, data: atts });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to fetch all monthly attendance' });
+    }
+});
 // --- LEAVE ADMIN FETCH ROUTES ---
 router.get('/leave', async (req, res) => {
     try {
