@@ -32,7 +32,7 @@ const sidebarItems = [
 
 export default function Approvals() {
   const navigate = useNavigate();
-  const [selectedModule, setSelectedModule] = useState('Tour Program');
+  const [selectedModule, setSelectedModule] = useState(sessionStorage.getItem('adminApprovalModule') || 'Tour Program');
   const [items, setItems] = useState<any[]>([]);
    // @ts-ignore
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -83,10 +83,10 @@ export default function Approvals() {
         const currentIndex = sidebarItems.findIndex(i => i.path === selectedModule);
         
         if (e.key === 'ArrowDown' && currentIndex < sidebarItems.length - 1) {
-          setSelectedModule(sidebarItems[currentIndex + 1].path);
+          const p = sidebarItems[currentIndex + 1].path; sessionStorage.setItem('adminApprovalModule', p); setSelectedModule(p);
           setSelectedRows([]);
         } else if (e.key === 'ArrowUp' && currentIndex > 0) {
-          setSelectedModule(sidebarItems[currentIndex - 1].path);
+          const p = sidebarItems[currentIndex - 1].path; sessionStorage.setItem('adminApprovalModule', p); setSelectedModule(p);
           setSelectedRows([]);
         }
       }
@@ -187,7 +187,7 @@ export default function Approvals() {
                   <button 
                     key={item.label}
                     id={`sidebar-item-${item.path}`}
-                    onClick={() => { setSelectedModule(item.path); setSelectedRows([]); }}
+                    onClick={() => { sessionStorage.setItem('adminApprovalModule', item.path); setSelectedModule(item.path); setSelectedRows([]); }}
                     className={`w-full text-left px-5 py-3.5 flex items-center justify-between transition-colors ${isSelected ? 'bg-emerald-500/10 text-emerald-400 border-r-[3px] border-emerald-400' : 'text-slate-400 hover:bg-[#27273f] hover:text-slate-200'}`}
                   >
                      <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
