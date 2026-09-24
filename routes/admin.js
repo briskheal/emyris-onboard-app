@@ -3581,9 +3581,7 @@ router.get('/payrun-preview', async (req, res) => {
                     });
                     
                     for (const ex of exps) {
-                        approvedExpense += (parseFloat(ex.dailyAllowance) || 0);
-                        approvedExpense += (parseFloat(ex.travelAllowance) || 0);
-                        approvedExpense += (parseFloat(ex.miscAllowance) || 0);
+                        approvedExpense += (parseFloat(ex.amount) || 0);
                     }
                 } catch(err) {
                     console.error('Error fetching expenses for payrun:', err);
