@@ -2091,6 +2091,8 @@ router.get('/approvals/counts', async (req, res) => {
         counts['Expense'] = expenseGroups.length;
 
         counts['Leave Request'] = await XlLeave.count({ where: condition });
+        counts['Primary Sales'] = await XlPrimarySales.count({ where: condition });
+        counts['Secondary Sales'] = await XlSecondarySales.count({ where: condition });
 
         counts['Performance KPI'] = await XlPerformanceAnalysis.count({
             where: designation === 'ADMIN' 

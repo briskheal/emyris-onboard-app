@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircle, Eye, XCircle } from 'lucide-react';
 
@@ -92,6 +93,7 @@ const MODULE_CONFIG: Record<string, any> = {
 };
 
 export default function GenericApproval({ items, fetchPending, fetchCounts, selectedModule }: any) {
+  const navigate = useNavigate();
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -293,7 +295,10 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                     <tr><td colSpan={columns.length + 3} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Data Found</td></tr>
                   ) : filteredItems.map((d: any, idx: number) => {
                     return (
-                      <tr key={d._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
+                      <tr key={d._id} onClick={() => {
+                          if (selectedModule === 'Primary Sales') navigate('/extras/primary-sales/edit/' + d._id);
+                          else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary-sales/edit/' + d._id);
+                        }} className={`border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors ${['Primary Sales', 'Secondary Sales'].includes(selectedModule) ? 'cursor-pointer' : ''}`}>
                         <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
                         {columns.map((col: any, i: number) => (
                           <td key={i} className={`px-4 py-4 text-sm font-bold ${i === 0 ? 'text-sky-400' : 'text-slate-300'}`}>
@@ -302,13 +307,18 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                         ))}
                         {hasView && (
                           <td className="px-4 py-4 text-center">
-                            <button onClick={() => alert('View details feature coming soon')} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
+                            <button onClick={(e) => {
+                                e.stopPropagation();
+                                if (selectedModule === 'Primary Sales') navigate('/extras/primary-sales/edit/' + d._id);
+                                else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary-sales/edit/' + d._id);
+                                else alert('View details feature coming soon');
+                              }} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
                               <Eye size={18} strokeWidth={2.5}/>
                             </button>
                           </td>
                         )}
-                        <td className="p-4 text-center">
-                          <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
+                        <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
+                            <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
                         </td>
                       </tr>
                     );
