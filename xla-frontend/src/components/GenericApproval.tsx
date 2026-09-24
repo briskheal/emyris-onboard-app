@@ -9,7 +9,7 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Edited By ↑', key: 'editedBy' },
     { label: 'Name ↑', key: 'name' },
     { label: 'Degree', key: 'degree' },
-    { label: 'HQ ↑', key: 'hq' },
+    { label: 'HQ ↑', key: 'headquarter' },
     { label: 'Status ↑', key: 'status' }
   ],
   'Chemists': [
@@ -18,7 +18,7 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Business Name', key: 'name' },
     { label: 'Proprietor Name', key: 'proprietorName' },
     { label: 'Address', key: 'address' },
-    { label: 'HQ', key: 'hq' },
+    { label: 'HQ', key: 'headquarter' },
     { label: 'Status', key: 'status' }
   ],
   'Stockists': [
@@ -32,7 +32,7 @@ const MODULE_CONFIG: Record<string, any> = {
   'City': [
     { label: 'Created By ↑', key: 'employeeName' },
     { label: 'City ↑', key: 'name' },
-    { label: 'HQ', key: 'hq' },
+    { label: 'HQ', key: 'headquarter' },
     { label: 'State', key: 'state' }
   ],
   'Route': [
@@ -41,7 +41,7 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'To City', key: 'toCity' },
     { label: 'Area Type', key: 'areaType' },
     { label: 'Distance ↑', key: 'distance' },
-    { label: 'HQ ↑', key: 'hq' },
+    { label: 'HQ ↑', key: 'headquarter' },
     { label: 'State', key: 'state' }
   ],
   'Secondary Sales': [
@@ -50,17 +50,17 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Invoice Date', key: 'invoiceDate', isDate: true },
     { label: 'Created By', key: 'employeeName' },
     { label: 'Month', key: 'month' },
-    { label: 'Stockist', key: 'stockistName' },
-    { label: 'Headquarter', key: 'hq' }
+    { label: 'Stockist', key: 'stockist' },
+    { label: 'Headquarter', key: 'headquarter' }
   ],
   'Primary Sales': [
     { label: 'Creation Date ↑', key: 'createdAt', isDate: true },
-    { label: 'Sales Date ↑', key: 'salesDate', isDate: true },
+    { label: 'Sales Date ↑', key: 'date', isDate: true },
     { label: 'Invoice Number ↑', key: 'invoiceNumber' },
     { label: 'Invoice Date', key: 'invoiceDate', isDate: true },
     { label: 'Created By', key: 'employeeName' },
-    { label: 'Stockist', key: 'stockistName' },
-    { label: 'Headquarter', key: 'hq' },
+    { label: 'Stockist', key: 'stockist' },
+    { label: 'Headquarter', key: 'headquarter' },
     
   ],
   'Samples': [
