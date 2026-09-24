@@ -1291,12 +1291,22 @@ router.get('/dcr/monthly', async (req, res) => {
         const { email, month, year } = req.query; // month should be 1-12
         if (!email || !month || !year) return res.status(400).json({ error: 'Missing params' });
         const datePrefix = `${year}-${String(month).padStart(2, '0')}`;
+        
+        const { XlUser } = require('../db');
+        const user = await XlUser.findOne({ where: { employeeId: email } }) || await XlUser.findOne({ where: { email } }) || await XlUser.findOne({ where: { uid: email } });
+        let idArrayDcr = [email];
+        if (user) {
+            if (user.employeeId) idArrayDcr.push(user.employeeId);
+            if (user.email) idArrayDcr.push(user.email);
+            if (user.uid) idArrayDcr.push(user.uid);
+        }
         const dcrs = await XlDCR.findAll({ 
             where: { 
-                employeeId: email, 
+                employeeId: { [Op.in]: idArrayDcr }, 
                 date: { [Op.startsWith]: datePrefix } 
             } 
         });
+
         res.json({ success: true, data: dcrs });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch monthly DCRs' });
@@ -1421,12 +1431,22 @@ router.get('/attendance/monthly', async (req, res) => {
     try {
         const { email, month, year } = req.query; // month is 1-12
         const datePrefix = `${year}-${String(month).padStart(2, '0')}`;
+        
+        const { XlUser } = require('../db');
+        const user = await XlUser.findOne({ where: { employeeId: email } }) || await XlUser.findOne({ where: { email } }) || await XlUser.findOne({ where: { uid: email } });
+        let idArrayAtt = [email];
+        if (user) {
+            if (user.employeeId) idArrayAtt.push(user.employeeId);
+            if (user.email) idArrayAtt.push(user.email);
+            if (user.uid) idArrayAtt.push(user.uid);
+        }
         const atts = await XlAttendance.findAll({ 
             where: { 
-                employeeId: email, 
+                employeeId: { [require('sequelize').Op.in]: idArrayAtt }, 
                 date: { [require('sequelize').Op.startsWith]: datePrefix } 
             } 
         });
+
         res.json({ success: true, data: atts });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch monthly attendance' });
@@ -1682,7 +1702,17 @@ router.post('/leave', async (req, res) => {
 
 router.get('/leave/my', async (req, res) => {
     try {
-        const leaves = await XlLeave.findAll({ where: { employeeId: req.query.email }, order: [['createdAt', 'DESC']] });
+        
+        const { XlUser } = require('../db');
+        const user = await XlUser.findOne({ where: { employeeId: req.query.email } }) || await XlUser.findOne({ where: { email: req.query.email } }) || await XlUser.findOne({ where: { uid: req.query.email } });
+        let idArrayLeaves = [req.query.email];
+        if (user) {
+            if (user.employeeId) idArrayLeaves.push(user.employeeId);
+            if (user.email) idArrayLeaves.push(user.email);
+            if (user.uid) idArrayLeaves.push(user.uid);
+        }
+        const leaves = await XlLeave.findAll({ where: { employeeId: { [require('sequelize').Op.in]: idArrayLeaves } }, order: [['createdAt', 'DESC']] });
+        
         res.json({ success: true, data: leaves });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch leaves' });
@@ -1722,7 +1752,17 @@ router.post('/expense', async (req, res) => {
 
 router.get('/expense/my', async (req, res) => {
     try {
-        const exps = await XlExpense.findAll({ where: { employeeId: req.query.email }, order: [['date', 'DESC']] });
+        
+        const { XlUser } = require('../db');
+        const user = await XlUser.findOne({ where: { employeeId: req.query.email } }) || await XlUser.findOne({ where: { email: req.query.email } }) || await XlUser.findOne({ where: { uid: req.query.email } });
+        let idArrayExps = [req.query.email];
+        if (user) {
+            if (user.employeeId) idArrayExps.push(user.employeeId);
+            if (user.email) idArrayExps.push(user.email);
+            if (user.uid) idArrayExps.push(user.uid);
+        }
+        const exps = await XlExpense.findAll({ where: { employeeId: { [require('sequelize').Op.in]: idArrayExps } }, order: [['date', 'DESC']] });
+        
         res.json({ success: true, data: exps });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch expenses' });
@@ -1756,7 +1796,17 @@ router.post('/backlog', async (req, res) => {
 
 router.get('/backlog/my', async (req, res) => {
     try {
-        const reqs = await XlBacklogRequest.findAll({ where: { employeeId: req.query.email }, order: [['date', 'DESC']] });
+        
+        const { XlUser } = require('../db');
+        const user = await XlUser.findOne({ where: { employeeId: req.query.email } }) || await XlUser.findOne({ where: { email: req.query.email } }) || await XlUser.findOne({ where: { uid: req.query.email } });
+        let idArrayReqs = [req.query.email];
+        if (user) {
+            if (user.employeeId) idArrayReqs.push(user.employeeId);
+            if (user.email) idArrayReqs.push(user.email);
+            if (user.uid) idArrayReqs.push(user.uid);
+        }
+        const reqs = await XlBacklogRequest.findAll({ where: { employeeId: { [require('sequelize').Op.in]: idArrayReqs } }, order: [['date', 'DESC']] });
+        
         res.json({ success: true, data: reqs });
     } catch (e) {
         res.status(500).json({ error: 'Failed to fetch backlog requests' });
