@@ -25,19 +25,21 @@ export default function PrimarySalesForm() {
   const [productsMaster, setProductsMaster] = useState<any[]>([]);
 
   useEffect(() => {
-    // Fetch Stockists for this HQ
-    axios.get('/api/xl/dcs/stockists').then(res => {
+    const hq = user.headquarter || '';
+    const desig = user.designation || '';
+    
+    // Fetch Stockists mapped to User
+    axios.get(`/api/xl/stockists?hq=${hq}&designation=${desig}`).then(res => {
       if (res.data.success) {
-        // Filter by user HQ if needed, or show all
-        const myStockists = res.data.stockists.filter((s:any) => s.headquarter === user.headquarter);
-        setStockists(myStockists.length > 0 ? myStockists : res.data.stockists);
+        setStockists(res.data.data || []);
       }
     }).catch(e => console.error(e));
 
-    // Fetch Products Master for dropdown (Mocked or real)
-    // If you have a products API, call it here. For now, assuming a generic list or user types it.
-    // To be perfectly aligned with your system, we allow text input if master is empty.
-  }, [user.headquarter]);
+    // Fetch Products Table
+    axios.get('/api/xl/reports/products').then(res => {
+      setProductsMaster(res.data.data || []);
+    }).catch(e => console.error(e));
+  }, [user.headquarter, user.designation]);
 
   // Line Items State
   const [items, setItems] = useState<any[]>([{
@@ -126,7 +128,7 @@ export default function PrimarySalesForm() {
         netInvValue: totals.net,
         salableRtnValue: totals.salableRtn,
         expiryRtnValue: totals.expiryRtn,
-        productsData: items // The backend does JSON.stringify() automatically
+        productsData: items
       };
 
       const res = await axios.post('/api/xl/primary-sales/save', payload);
@@ -145,6 +147,20 @@ export default function PrimarySalesForm() {
 
   return (
     <div className="min-h-screen bg-[#131422] flex flex-col text-slate-300 pb-32">
+      {/* Global CSS to hide number input spinners */}
+      <style>
+        {`
+          input[type=number]::-webkit-inner-spin-button, 
+          input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+          }
+          input[type=number] {
+            -moz-appearance: textfield;
+          }
+        `}
+      </style>
+
       {/* App Header */}
       <div className="bg-[#1e2032] p-4 flex items-center border-b border-slate-700 sticky top-0 z-10 shrink-0">
         <button onClick={() => navigate('/creation')} className="mr-3 text-slate-400 hover:text-white transition-colors">
@@ -208,13 +224,26 @@ export default function PrimarySalesForm() {
                 {/* Card Header */}
                 <div className="bg-[#1e2032] p-3 border-b border-[#3b3b5a] flex justify-between items-center gap-2">
                   <div className="flex-1">
-                    <input 
-                      type="text" 
-                      placeholder="Product Name *" 
-                      value={item.product}
-                      onChange={e => updateItem(item.id, 'product', e.target.value)}
-                      className="w-full bg-transparent text-sm text-white font-bold focus:outline-none placeholder-slate-500"
-                    />
+                    {productsMaster.length > 0 ? (
+                      <select 
+                        value={item.product}
+                        onChange={e => updateItem(item.id, 'product', e.target.value)}
+                        className="w-full bg-transparent text-sm text-white font-bold focus:outline-none"
+                      >
+                        <option value="">-- Select Product --</option>
+                        {productsMaster.map(p => (
+                          <option key={p._id} value={p.productName}>{p.productName}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input 
+                        type="text" 
+                        placeholder="Product Name *" 
+                        value={item.product}
+                        onChange={e => updateItem(item.id, 'product', e.target.value)}
+                        className="w-full bg-transparent text-sm text-white font-bold focus:outline-none placeholder-slate-500"
+                      />
+                    )}
                   </div>
                   <button onClick={() => handleRemoveItem(item.id)} className="text-red-400 hover:text-red-300 p-1 transition-colors bg-red-400/10 rounded">
                     <Trash2 size={16} />
