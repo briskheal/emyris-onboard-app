@@ -140,13 +140,34 @@ export default function EmyrisDateRangePicker({ startDate, endDate, onChange }: 
           </button>
         ))}
         <div className="p-4 mt-auto space-y-2">
-          <div className="bg-[#27273f] rounded px-3 py-2 text-xs text-slate-400 flex justify-between items-center border border-[#3b3b5a]">
-            <span className="font-bold text-slate-300">21</span> <span className="text-[10px]">days up to today</span>
+            <div 
+              className="bg-[#27273f] rounded px-3 py-2 text-xs text-slate-400 flex justify-between items-center border border-[#3b3b5a] cursor-pointer hover:bg-[#3b3b5a]"
+              onClick={() => {
+                const now = new Date();
+                const first = new Date(now.getFullYear(), now.getMonth(), 1);
+                onChange(first, now);
+              }}
+            >
+              <span className="font-bold text-slate-300">{new Date().getDate()}</span> <span className="text-[10px]">days up to today</span>
+            </div>
+            <div className="bg-[#27273f] rounded px-3 py-2 text-xs text-slate-400 flex justify-between items-center border border-[#3b3b5a]">
+              <input 
+                type="number" 
+                className="w-12 bg-transparent text-slate-300 font-bold outline-none border-b border-slate-500 focus:border-sky-500" 
+                placeholder="-" 
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val > 0) {
+                    const now = new Date();
+                    const future = new Date(now);
+                    future.setDate(now.getDate() + val);
+                    onChange(now, future);
+                  }
+                }}
+              />
+              <span className="text-[10px]">days starting today</span>
+            </div>
           </div>
-          <div className="bg-[#27273f] rounded px-3 py-2 text-xs text-slate-400 flex justify-between items-center border border-[#3b3b5a]">
-            <span className="font-bold text-slate-300">-</span> <span className="text-[10px]">days starting today</span>
-          </div>
-        </div>
       </div>
 
       {/* Calendars Area */}
