@@ -16,7 +16,7 @@ export default function PrimarySalesForm() {
     invoiceDate: new Date().toISOString().split('T')[0],
     invoiceNumber: '',
     division: user.division || '',
-    headquarter: user.headquarter || '',
+    headquarter: user.hq || '',
     stockist: ''
   });
 
@@ -32,7 +32,7 @@ export default function PrimarySalesForm() {
   const [productSearch, setProductSearch] = useState('');
 
   useEffect(() => {
-    const hq = user.headquarter || '';
+    const hq = user.hq || '';
     const desig = user.designation || '';
     
     // Fetch Stockists mapped to User
@@ -46,7 +46,7 @@ export default function PrimarySalesForm() {
     axios.get('/api/xl/reports/products').then(res => {
       setProductsMaster(res.data.data || []);
     }).catch(e => console.error(e));
-  }, [user.headquarter, user.designation]);
+  }, [user.hq, user.designation]);
 
   // Line Items State
   const [items, setItems] = useState<any[]>([{

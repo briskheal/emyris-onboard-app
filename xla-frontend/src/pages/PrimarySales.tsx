@@ -115,14 +115,14 @@ export default function PrimarySales() {
                    return {
                      id: row.id || Date.now() + i,
                      productId: prod ? (prod.uid || prod._id) : '',
-                     selectedPriceType: row.priceType || 'PTS',
+                     selectedPriceType: row.priceType ? row.priceType.toUpperCase() : 'PTS',
                      customPrice: row.basePrice || '',
                      quantity: row.qty || '',
                      freeStocks: row.free || '',
                      discount: row.discount || '',
                      isExpiry: !!row.exp,
                      purcRtn: row.purcRtn || '',
-                     selectedRtnPriceType: row.priceType || 'PTS',
+                     selectedRtnPriceType: row.priceType ? row.priceType.toUpperCase() : 'PTS',
                      customRtnPrice: row.rtnPrice || ''
                    };
                  });
