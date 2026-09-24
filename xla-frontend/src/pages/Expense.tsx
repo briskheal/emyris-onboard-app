@@ -143,14 +143,19 @@ export default function Expense() {
       
       let travel = 0, food = 0, hotel = 0, ticket = 0, daily = 0, misc = 0, total = 0;
       let workArea = '';
-      let workAreaType = 'Out-Station';
-      const tp = tpEntries.find(t => {
-         try { return new Date(t.date).toISOString().split('T')[0] === dateStr; } catch(x){ return t.date === dateStr; }
-      });
-      if (tp) {
-         workArea = tp.toMarket || tp.workingArea || '';
-         workAreaType = tp.type || tp.workAreaType || 'Out-Station';
-      }
+      
+        const isSunday = dt.getDay() === 0;
+        const holidayName = holidays[dateStr];
+        let workAreaType = isSunday ? 'Sunday' : (holidayName ? 'Holiday' : 'Out-Station');
+        
+        const tp = tpEntries.find(t => {
+           try { return new Date(t.date).toISOString().split('T')[0] === dateStr; } catch(x){ return t.date === dateStr; }
+        });
+        if (tp) {
+           workArea = tp.toMarket || tp.workingArea || '';
+           workAreaType = tp.type || tp.workAreaType || tp.activityType || workAreaType;
+        }
+
       
       let status = '';
 
