@@ -8,6 +8,7 @@ import ApprovalDetail from './pages/creation/ApprovalDetail';
 import DoctorForm from './pages/creation/DoctorForm';
 import ChemistForm from './pages/creation/ChemistForm';
 import StockistForm from './pages/creation/StockistForm';
+import PrimarySalesForm from './pages/creation/PrimarySalesForm';
 import CityForm from './pages/creation/CityForm';
 import RouteForm from './pages/creation/RouteForm';
 import Extras from './pages/Extras';
@@ -38,6 +39,7 @@ function App() {
           <Route path="creation/doctor" element={<DoctorForm />} />
           <Route path="creation/chemist" element={<ChemistForm />} />
           <Route path="creation/stockist" element={<StockistForm />} />
+          <Route path="creation/primary-sales" element={<PrimarySalesForm />} />
           <Route path="creation/city" element={<CityForm />} />
           <Route path="creation/route" element={<RouteForm />} />
           <Route path="creation/approvals" element={<ApprovalsLanding />} />
