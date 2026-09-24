@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Save, Plus, Trash2, PackageSearch } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Trash2, PackageSearch, Search, X } from 'lucide-react';
 
 export default function PrimarySalesForm() {
   const navigate = useNavigate();
@@ -23,6 +23,13 @@ export default function PrimarySalesForm() {
   // Master Data
   const [stockists, setStockists] = useState<any[]>([]);
   const [productsMaster, setProductsMaster] = useState<any[]>([]);
+
+  // Searchable Modal States
+  const [selectingStockist, setSelectingStockist] = useState(false);
+  const [stockistSearch, setStockistSearch] = useState('');
+  
+  const [selectingProductFor, setSelectingProductFor] = useState<string | null>(null);
+  const [productSearch, setProductSearch] = useState('');
 
   useEffect(() => {
     const hq = user.headquarter || '';
@@ -78,6 +85,48 @@ export default function PrimarySalesForm() {
 
   const updateItem = (id: string, field: string, value: any) => {
     setItems(items.map(item => item.id === id ? { ...item, [field]: value } : item));
+  };
+
+  // --- Auto-Pricing Logic ---
+  const handleProductSelect = (id: string, selectedProduct: any) => {
+    // Find the item to see its current priceType
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    
+    let newPrice = 0;
+    if (item.priceType === 'PTS') newPrice = selectedProduct.pts || 0;
+    else if (item.priceType === 'PTR') newPrice = selectedProduct.ptr || 0;
+    else if (item.priceType === 'MRP') newPrice = selectedProduct.mrp || 0;
+
+    setItems(items.map(i => i.id === id ? { 
+      ...i, 
+      product: selectedProduct.productName, 
+      basePrice: newPrice 
+    } : i));
+  };
+
+  const handlePriceTypeChange = (id: string, newType: string) => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    let newPrice = item.basePrice;
+    
+    // Attempt to auto-fetch price if a product is selected
+    if (item.product) {
+      const prodMaster = productsMaster.find(p => p.productName === item.product);
+      if (prodMaster) {
+        if (newType === 'PTS') newPrice = prodMaster.pts || 0;
+        else if (newType === 'PTR') newPrice = prodMaster.ptr || 0;
+        else if (newType === 'MRP') newPrice = prodMaster.mrp || 0;
+        else if (newType === 'Cus') newPrice = 0; // Custom resets to 0 or keeps current
+      }
+    }
+
+    setItems(items.map(i => i.id === id ? { 
+      ...i, 
+      priceType: newType, 
+      basePrice: newPrice 
+    } : i));
   };
 
   // Calculations
@@ -145,8 +194,12 @@ export default function PrimarySalesForm() {
     }
   };
 
+  // Filtered lists for modals
+  const filteredStockists = stockists.filter(s => (s.businessName || '').toLowerCase().includes(stockistSearch.toLowerCase()));
+  const filteredProducts = productsMaster.filter(p => (p.productName || '').toLowerCase().includes(productSearch.toLowerCase()));
+
   return (
-    <div className="min-h-screen bg-[#131422] flex flex-col text-slate-300 pb-32">
+    <div className="min-h-screen bg-[#131422] flex flex-col text-slate-300 pb-56 relative">
       {/* Global CSS to hide number input spinners */}
       <style>
         {`
@@ -198,14 +251,15 @@ export default function PrimarySalesForm() {
 
           <div>
             <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Select Stockist *</label>
-            {stockists.length > 0 ? (
-              <select value={header.stockist} onChange={e => setHeader({...header, stockist: e.target.value})} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500">
-                <option value="">-- Select Stockist --</option>
-                {stockists.map(s => <option key={s._id} value={s.businessName}>{s.businessName}</option>)}
-              </select>
-            ) : (
-              <input type="text" value={header.stockist} onChange={e => setHeader({...header, stockist: e.target.value})} placeholder="Type Stockist Name" className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
-            )}
+            <div 
+              onClick={() => setSelectingStockist(true)}
+              className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white flex justify-between items-center cursor-pointer"
+            >
+              <span className={header.stockist ? 'text-white' : 'text-slate-500'}>
+                {header.stockist || '-- Search & Select Stockist --'}
+              </span>
+              <Search size={16} className="text-slate-500" />
+            </div>
           </div>
         </div>
 
@@ -221,31 +275,18 @@ export default function PrimarySalesForm() {
             const calcs = calculateItemTotals(item);
             return (
               <div key={item.id} className="bg-[#27273f] rounded-xl border border-[#3b3b5a] overflow-hidden shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
-                {/* Card Header */}
+                {/* Card Header (Product Select) */}
                 <div className="bg-[#1e2032] p-3 border-b border-[#3b3b5a] flex justify-between items-center gap-2">
-                  <div className="flex-1">
-                    {productsMaster.length > 0 ? (
-                      <select 
-                        value={item.product}
-                        onChange={e => updateItem(item.id, 'product', e.target.value)}
-                        className="w-full bg-transparent text-sm text-white font-bold focus:outline-none"
-                      >
-                        <option value="">-- Select Product --</option>
-                        {productsMaster.map(p => (
-                          <option key={p._id} value={p.productName}>{p.productName}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input 
-                        type="text" 
-                        placeholder="Product Name *" 
-                        value={item.product}
-                        onChange={e => updateItem(item.id, 'product', e.target.value)}
-                        className="w-full bg-transparent text-sm text-white font-bold focus:outline-none placeholder-slate-500"
-                      />
-                    )}
+                  <div 
+                    onClick={() => setSelectingProductFor(item.id)}
+                    className="flex-1 flex justify-between items-center cursor-pointer py-1"
+                  >
+                    <span className={`text-sm font-bold truncate ${item.product ? 'text-white' : 'text-slate-500'}`}>
+                      {item.product || '-- Search & Select Product --'}
+                    </span>
+                    {!item.product && <Search size={14} className="text-slate-500 ml-2 shrink-0" />}
                   </div>
-                  <button onClick={() => handleRemoveItem(item.id)} className="text-red-400 hover:text-red-300 p-1 transition-colors bg-red-400/10 rounded">
+                  <button onClick={() => handleRemoveItem(item.id)} className="text-red-400 hover:text-red-300 p-1.5 transition-colors bg-red-400/10 rounded ml-2 shrink-0">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -255,7 +296,11 @@ export default function PrimarySalesForm() {
                   <div className="flex gap-2 items-end">
                     <div className="w-1/3">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Price Type</label>
-                      <select value={item.priceType} onChange={e => updateItem(item.id, 'priceType', e.target.value)} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-cyan-400 font-bold focus:outline-none">
+                      <select 
+                        value={item.priceType} 
+                        onChange={e => handlePriceTypeChange(item.id, e.target.value)} 
+                        className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-cyan-400 font-bold focus:outline-none appearance-none"
+                      >
                         <option value="PTS">PTS</option>
                         <option value="PTR">PTR</option>
                         <option value="MRP">MRP</option>
@@ -264,22 +309,29 @@ export default function PrimarySalesForm() {
                     </div>
                     <div className="w-2/3">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Base Price (₹)</label>
-                      <input type="number" min="0" value={item.basePrice || ''} onChange={e => updateItem(item.id, 'basePrice', e.target.value)} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white focus:outline-none focus:border-cyan-500" />
+                      <input 
+                        type="number" 
+                        min="0" 
+                        value={item.basePrice === 0 ? '' : item.basePrice} 
+                        onChange={e => updateItem(item.id, 'basePrice', e.target.value)} 
+                        placeholder="0.00"
+                        className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white focus:outline-none focus:border-cyan-500" 
+                      />
                     </div>
                   </div>
 
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Qty</label>
-                      <input type="number" min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input type="number" min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Free</label>
-                      <input type="number" min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input type="number" min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Disc %</label>
-                      <input type="number" min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input type="number" min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                   </div>
 
@@ -325,7 +377,7 @@ export default function PrimarySalesForm() {
       </div>
 
       {/* Sticky Bottom Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#1a1b2d] border-t border-slate-700 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.3)] z-20 md:ml-64 xl:ml-0">
+      <div className="fixed bottom-16 left-0 right-0 bg-[#1a1b2d] border-t border-slate-700 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.3)] z-20 md:ml-64 xl:ml-0">
         <div className="max-w-md mx-auto">
           <div className="flex justify-between mb-2 text-[11px]">
             <div className="text-slate-400">Gross: <span className="text-white">₹ {totals.gross.toFixed(2)}</span></div>
@@ -341,6 +393,100 @@ export default function PrimarySalesForm() {
           </button>
         </div>
       </div>
+
+      {/* MODALS */}
+      
+      {/* Stockist Selection Modal */}
+      {selectingStockist && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-[#1c1c2e] w-full sm:max-w-md h-[75vh] sm:h-[60vh] sm:rounded-xl rounded-t-2xl flex flex-col shadow-2xl border-t sm:border border-[#3b3b5a]">
+            <div className="p-4 border-b border-[#3b3b5a] flex items-center gap-3 shrink-0">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  autoFocus
+                  placeholder="Search stockist..." 
+                  value={stockistSearch}
+                  onChange={e => setStockistSearch(e.target.value)}
+                  className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+              <button onClick={() => { setSelectingStockist(false); setStockistSearch(''); }} className="p-2 text-slate-400 hover:text-white bg-[#27273f] rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto pb-6">
+              {filteredStockists.length === 0 ? (
+                <div className="p-6 text-center text-slate-500 text-sm">No stockists found.</div>
+              ) : (
+                filteredStockists.map(s => (
+                  <div 
+                    key={s._id}
+                    onClick={() => {
+                      setHeader({...header, stockist: s.businessName});
+                      setSelectingStockist(false);
+                      setStockistSearch('');
+                    }}
+                    className="p-4 border-b border-[#3b3b5a]/40 text-sm text-slate-300 hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
+                  >
+                    <div className="font-bold text-white">{s.businessName}</div>
+                    {s.headquarter && <div className="text-[10px] text-slate-500 mt-1 uppercase">{s.headquarter}</div>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Product Selection Modal */}
+      {selectingProductFor && (
+        <div className="fixed inset-0 z-[60] bg-black/80 flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-[#1c1c2e] w-full sm:max-w-md h-[75vh] sm:h-[60vh] sm:rounded-xl rounded-t-2xl flex flex-col shadow-2xl border-t sm:border border-[#3b3b5a]">
+            <div className="p-4 border-b border-[#3b3b5a] flex items-center gap-3 shrink-0">
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  autoFocus
+                  placeholder="Search product..." 
+                  value={productSearch}
+                  onChange={e => setProductSearch(e.target.value)}
+                  className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+              <button onClick={() => { setSelectingProductFor(null); setProductSearch(''); }} className="p-2 text-slate-400 hover:text-white bg-[#27273f] rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto pb-6">
+              {filteredProducts.length === 0 ? (
+                <div className="p-6 text-center text-slate-500 text-sm">No products found.</div>
+              ) : (
+                filteredProducts.map(p => (
+                  <div 
+                    key={p._id}
+                    onClick={() => {
+                      handleProductSelect(selectingProductFor, p);
+                      setSelectingProductFor(null);
+                      setProductSearch('');
+                    }}
+                    className="p-4 border-b border-[#3b3b5a]/40 text-sm text-slate-300 hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
+                  >
+                    <div className="font-bold text-cyan-400 flex justify-between">
+                      {p.productName}
+                      <span className="text-[10px] text-slate-500 ml-2">PTS: ₹{p.pts || 0}</span>
+                    </div>
+                    {p.category && <div className="text-[10px] text-slate-500 mt-1 uppercase">{p.category}</div>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
