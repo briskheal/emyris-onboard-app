@@ -3570,11 +3570,11 @@ router.get('/payrun-preview', async (req, res) => {
                     const exps = await XlExpense.findAll({
                         where: {
                             [Op.or]: [
-                                { employeeId: applicant.empCode },
-                                { employeeId: applicant.email },
-                                { employeeId: applicant.uid }
+                                { employeeId: String(applicant.empCode || "") },
+                                { employeeId: String(applicant.email || "") },
+                                { employeeId: String(applicant.uid || "") }
                             ],
-                            date: { [Op.like]: `${year}-${monthStrNum}%` },
+                            date: { [Op.startsWith]: `${year}-${monthStrNum}` },
                             status: 'Approved'
                         },
                         raw: true
