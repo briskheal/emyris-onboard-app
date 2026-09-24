@@ -90,7 +90,10 @@ export default function PrimarySales() {
           if (matchingStockist) st = matchingStockist.uid || matchingStockist._id;
           
           let hq = d.headquarter || '';
-          // Ensure exact string match for HQ if needed, though mobile usually passes uppercase.
+          if (hq) {
+             const matchingHq = hqs.find((h: any) => h.value.toLowerCase() === hq.toLowerCase() || h.label.toLowerCase() === hq.toLowerCase());
+             if (matchingHq) hq = matchingHq.value;
+          }
           
           setFormData({
             date: d.date || '',
@@ -237,7 +240,7 @@ export default function PrimarySales() {
       {/* HEADER */}
       <div className="flex items-center justify-between px-5 py-3 bg-[#1e1e30] border-b border-[#3b3b5a] shrink-0">
         <div className="flex items-center gap-4">
-          <button onClick={() => id ? navigate('/extras/primary-sales/all') : navigate('/')} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
+          <button onClick={() => navigate(-1)} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
             <ArrowLeft size={18} />
           </button>
           <h1 className="text-lg font-bold text-white tracking-wide uppercase">PRIMARY SALES</h1>

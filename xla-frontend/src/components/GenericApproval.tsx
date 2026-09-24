@@ -49,11 +49,9 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Invoice Number ↑', key: 'invoiceNumber' },
     { label: 'Invoice Date', key: 'invoiceDate', isDate: true },
     { label: 'Created By', key: 'employeeName' },
-    { label: 'Month ↑', key: 'month' },
+    { label: 'Month', key: 'month' },
     { label: 'Stockist', key: 'stockistName' },
-    { label: 'Headquarter', key: 'hq' },
-    { label: 'Total Quantity', key: 'totalQty' },
-    { label: 'Sales Quantity', key: 'salesQty' }
+    { label: 'Headquarter', key: 'hq' }
   ],
   'Primary Sales': [
     { label: 'Creation Date ↑', key: 'createdAt', isDate: true },
@@ -63,12 +61,7 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Created By', key: 'employeeName' },
     { label: 'Stockist', key: 'stockistName' },
     { label: 'Headquarter', key: 'hq' },
-    { label: 'Units', key: 'units' },
-    { label: 'Quantity', key: 'quantity' },
-    { label: 'Free Stock', key: 'freeStock' },
-    { label: 'Total Quantity', key: 'totalQty' },
-    { label: 'Final Price', key: 'finalPrice' },
-    { label: 'Return Value', key: 'returnValue' }
+    
   ],
   'Samples': [
     { label: 'Alloted To ↑', key: 'employeeName' },
@@ -104,7 +97,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
   ];
 
   // Some modules don't have View icon in video
-  const hasView = ['Doctors', 'Chemists', 'Stockists', 'Secondary Sales', 'Primary Sales', 'Deletion Request'].includes(selectedModule);
+  const hasView = ['Doctors', 'Chemists', 'Stockists', 'Deletion Request'].includes(selectedModule);
   const hasEntityToggles = ['Geo Fencing', 'Deletion Request'].includes(selectedModule);
   const [activeToggle, setActiveToggle] = useState('DOCTORS');
 
