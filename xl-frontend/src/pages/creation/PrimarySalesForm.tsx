@@ -118,7 +118,7 @@ export default function PrimarySalesForm() {
         if (newType === 'PTS') newPrice = prodMaster.pts || 0;
         else if (newType === 'PTR') newPrice = prodMaster.ptr || 0;
         else if (newType === 'MRP') newPrice = prodMaster.mrp || 0;
-        else if (newType === 'Cus') newPrice = 0; // Custom resets to 0 or keeps current
+        else if (newType === 'CUS') newPrice = 0; // Custom resets to 0 or keeps current
       }
     }
 
@@ -305,7 +305,7 @@ export default function PrimarySalesForm() {
                           <option value="PTS">PTS</option>
                           <option value="PTR">PTR</option>
                           <option value="MRP">MRP</option>
-                          <option value="Cus">Cus</option>
+                          <option value="CUS">CUS</option>
                         </select>
                         <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-cyan-400 pointer-events-none" />
                       </div>
