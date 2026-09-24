@@ -672,7 +672,7 @@ export default function DailyCallReport() {
                 {showPob && (
                   <div className="mt-4 space-y-4 pt-4 border-t border-[#3b3b5a]">
                     <div className="flex gap-4">
-                      {['PTS', 'MRP', 'PTR', 'Custom'].map(t => (
+                      {['PTS', 'MRP', 'PTR', 'CUS'].map(t => (
                         <label key={t} className="flex items-center gap-1.5 cursor-pointer">
                           <input type="radio" name="pobType" checked={pobType === t} onChange={() => setPobType(t)} className="text-emerald-500" />
                           <span className="text-xs text-slate-300">{t}</span>
