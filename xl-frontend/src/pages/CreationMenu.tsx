@@ -6,7 +6,7 @@ const creationOptions = [
   { path: '/creation/chemist', icon: ShoppingBag, label: 'Chemist', description: 'Add retail chemist outlets', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   { path: '/creation/stockist', icon: Building2, label: 'Stockist', description: 'Add stockists & distributors', color: 'text-amber-400', bg: 'bg-amber-500/10' },
   { path: '#', icon: BellRing, label: 'Reminder Call', description: 'Create reminder call logs', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-  { path: '/creation/primary-sales', icon: PackageSearch, label: 'Primary Sales', description: 'Log primary sales data', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
+  { path: '/creation/primary-sales/history', icon: PackageSearch, label: 'Primary Sales', description: 'Log primary sales data', color: 'text-cyan-400', bg: 'bg-cyan-500/10' },
   { path: '/creation/secondary-sales', icon: ShoppingCart, label: 'Secondary Sales', description: 'Log secondary sales data', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   { path: '/creation/city', icon: MapPin, label: 'City', description: 'Register HQ cities & areas', color: 'text-rose-400', bg: 'bg-rose-500/10' },
   { path: '/creation/route', icon: Navigation, label: 'Route', description: 'Define travel routes & distances', color: 'text-violet-400', bg: 'bg-violet-500/10' },

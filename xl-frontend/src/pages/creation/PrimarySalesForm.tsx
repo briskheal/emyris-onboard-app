@@ -1,15 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Save, Plus, Trash2, PackageSearch, Search, X, ChevronDown } from 'lucide-react';
 
 export default function PrimarySalesForm() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('id');
   const user = JSON.parse(localStorage.getItem('xl_user') || '{}');
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
+  
+  useEffect(() => {
+    if (editId) {
+      axios.get('/api/xl/primary-sales/' + editId).then(res => {
+        if (res.data.success && res.data.data) {
+          const d = res.data.data;
+          if (editId) { navigate(-1); return; }
+        setHeader({
+            date: d.date ? d.date.split('T')[0] : new Date().toISOString().split('T')[0],
+            invoiceDate: d.invoiceDate ? d.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0],
+            invoiceNumber: d.invoiceNumber || '',
+            division: d.division || user.division || '',
+            headquarter: d.headquarter || user.hq || '',
+            stockist: d.stockist || ''
+          });
+          
+          try {
+            const pData = typeof d.productsData === 'string' ? JSON.parse(d.productsData) : d.productsData;
+            if (Array.isArray(pData) && pData.length > 0) {
+              setItems(pData);
+            }
+          } catch(e) {}
+        }
+      }).catch(e => console.error(e));
+    }
+  }, [editId]);
+
   // Invoice Header State
   const [header, setHeader] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -205,7 +234,14 @@ export default function PrimarySalesForm() {
         productsData: items
       };
 
-      const res = await axios.post('/api/xl/primary-sales/save', payload);
+      
+        let res;
+        if (editId) {
+          res = await axios.put('/api/xl/primary-sales/update/' + editId, payload);
+        } else {
+          res = await axios.post('/api/xl/primary-sales/save', payload);
+        }
+    
       if (res.data.success) {
         alert('Primary Sales invoice saved as Pending successfully!');
         navigate('/creation');

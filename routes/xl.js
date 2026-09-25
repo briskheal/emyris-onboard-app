@@ -3100,6 +3100,7 @@ router.post('/primary-sales/save', async (req, res) => {
             month,
             year,
             productsData: JSON.stringify(productsData),
+            ...(status ? { status } : {}),
             status: 'Pending'
         });
 
@@ -3155,7 +3156,7 @@ router.get('/primary-sales/:id', async (req, res) => {
 // [NEW] Update an existing invoice
 router.put('/primary-sales/update/:id', async (req, res) => {
     try {
-        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData } = req.body;
+        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData, status } = req.body;
         
         const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
         const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
