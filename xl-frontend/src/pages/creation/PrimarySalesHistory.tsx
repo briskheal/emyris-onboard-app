@@ -106,13 +106,13 @@ export default function PrimarySalesHistory() {
 
               {/* Action Buttons */}
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-600/30">
-                {(inv.status === 'Rejected' || inv.status === 'Pending' || inv.status === 'Re-Submitted') && (
+                {(inv.status === 'Rejected' || inv.status === 'Pending' || inv.status === 'Re-Submitted' || inv.status === 'Approved') && (
                   <button 
                     onClick={() => navigate(`/creation/primary-sales?id=${inv._id}`)}
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500 text-white rounded text-xs font-bold shadow-md hover:bg-cyan-400 transition-colors active:scale-95"
                   >
-                    <Edit size={14} />
-                    {inv.status === 'Rejected' ? 'Edit & Resubmit' : 'Edit'}
+                    {inv.status === 'Approved' ? <Eye size={14} /> : <Edit size={14} />}
+                    {inv.status === 'Rejected' ? 'Edit & Resubmit' : (inv.status === 'Approved' ? 'View Details' : 'Edit')}
                   </button>
                 )}
               </div>

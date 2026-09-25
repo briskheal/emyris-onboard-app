@@ -2061,7 +2061,7 @@ router.get('/approvals/counts', async (req, res) => {
             if (reporteeEmails.length === 0) return res.json({ success: true, counts: {} });
         }
 
-        const condition = designation === 'ADMIN' ? { status: ['Submitted', 'Pending', 'pending', 'submitted'] } : { status: ['Submitted', 'Pending', 'pending', 'submitted'], employeeId: { [Op.in]: reporteeEmails } };
+        const condition = designation === 'ADMIN' ? { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] } : { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'], employeeId: { [Op.in]: reporteeEmails } };
         
         const counts = {};
         

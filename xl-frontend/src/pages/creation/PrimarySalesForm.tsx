@@ -7,6 +7,7 @@ export default function PrimarySalesForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('id');
+  const [loadedStatus, setLoadedStatus] = useState('');
   const user = JSON.parse(localStorage.getItem('xl_user') || '{}');
   
   const [loading, setLoading] = useState(false);
@@ -18,6 +19,7 @@ export default function PrimarySalesForm() {
       axios.get('/api/xl/primary-sales/' + editId).then(res => {
         if (res.data.success && res.data.data) {
           const d = res.data.data;
+          setLoadedStatus(d.status || '');
           setHeader({
             date: d.date ? d.date.split('T')[0] : new Date().toISOString().split('T')[0],
             invoiceDate: d.invoiceDate ? d.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0],
@@ -300,23 +302,23 @@ export default function PrimarySalesForm() {
           <div className="flex gap-3">
             <div className="flex-1">
               <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Date *</label>
-              <input type="date" value={header.date} onChange={e => setHeader({...header, date: e.target.value})} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
+              <input type="date" disabled={loadedStatus === 'Approved'} value={header.date} onChange={e => setHeader({...header, date: e.target.value})} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
             </div>
             <div className="flex-1">
               <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Inv Date *</label>
-              <input type="date" value={header.invoiceDate} onChange={e => setHeader({...header, invoiceDate: e.target.value})} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
+              <input type="date" disabled={loadedStatus === 'Approved'} value={header.invoiceDate} onChange={e => setHeader({...header, invoiceDate: e.target.value})} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
             </div>
           </div>
           
           <div>
             <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Invoice Number *</label>
-            <input type="text" value={header.invoiceNumber} onChange={e => setHeader({...header, invoiceNumber: e.target.value})} placeholder="Enter Invoice No" className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
+            <input type="text" disabled={loadedStatus === 'Approved'} value={header.invoiceNumber} onChange={e => setHeader({...header, invoiceNumber: e.target.value})} placeholder="Enter Invoice No" className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-cyan-500" />
           </div>
 
           <div>
             <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Select Stockist *</label>
             <div 
-              onClick={() => setSelectingStockist(true)}
+              onClick={() => loadedStatus !== 'Approved' && setSelectingStockist(true)}
               className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white flex justify-between items-center cursor-pointer"
             >
               <span className={header.stockist ? 'text-white' : 'text-slate-500'}>
@@ -475,6 +477,7 @@ export default function PrimarySalesForm() {
             <Save size={18} /> {loading ? 'Saving...' : 'Submit to Admin'}
           </button>
         </div>
+        )}
       </div>
 
       {/* MODALS */}
