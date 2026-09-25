@@ -242,7 +242,7 @@ export default function PrimarySalesForm() {
         }
     
       if (res.data.success) {
-        alert('Primary Sales invoice saved as Pending successfully!');
+        alert('Primary Sales invoice saved successfully!');
         navigate('/creation');
       } else {
         setError(res.data.message || 'Failed to save invoice.');

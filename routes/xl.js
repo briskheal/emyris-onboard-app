@@ -3178,7 +3178,8 @@ router.put('/primary-sales/update/:id', async (req, res) => {
             amount: netInvValue,
             month,
             year,
-            productsData: JSON.stringify(productsData)
+            productsData: JSON.stringify(productsData),
+            ...(status ? { status } : {})
         });
 
         res.json({ success: true, message: 'Invoice updated successfully', data: sale });
