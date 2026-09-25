@@ -281,7 +281,10 @@ export default function PrimarySalesForm() {
           <ArrowLeft size={20} />
         </button>
         <PackageSearch size={20} className="mr-2 text-cyan-400" />
-        <h1 className="text-white font-bold tracking-wide uppercase">Primary Sales</h1>
+        <h1 className="text-white font-bold tracking-wide uppercase flex-1">{editId ? "EDIT PRIMARY SALES" : "PRIMARY SALES ENTRY"}</h1>
+        <button onClick={() => navigate('/creation/primary-sales/history')} className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1.5 rounded-lg active:scale-95 border border-cyan-500/20">
+          HISTORY
+        </button>
       </div>
 
       <div className="p-4 space-y-6 flex-1 overflow-y-auto">
