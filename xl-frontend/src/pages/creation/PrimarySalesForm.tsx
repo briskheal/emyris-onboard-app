@@ -473,11 +473,12 @@ export default function PrimarySalesForm() {
             <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Net Inv Value</span>
             <span className="text-xl font-bold text-emerald-400">₹ {totals.net.toFixed(2)}</span>
           </div>
+          {loadedStatus !== 'Approved' && (
           <button onClick={handleSave} disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-sm transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
             <Save size={18} /> {loading ? 'Saving...' : 'Submit to Admin'}
           </button>
+          )}
         </div>
-        )}
       </div>
 
       {/* MODALS */}
