@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Edit2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2 , Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -80,6 +80,9 @@ export default function AllSecondarySales() {
     <div className="min-h-screen bg-[#1a1a2e] flex flex-col font-sans relative">
       <div className="bg-[#1e1e30] border-b border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 relative z-20">
         <div className="flex items-center gap-4">
+            <button onClick={() => navigate('/')} className="text-slate-300 hover:text-emerald-400 transition-colors bg-[#27273f] p-2 rounded-lg" title="Go to Dashboard">
+              <Home size={18} />
+            </button>
           <button onClick={() => navigate('/extras/secondary')} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
             <ArrowLeft size={20} />
           </button>
