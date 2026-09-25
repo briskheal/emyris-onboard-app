@@ -59,7 +59,8 @@ export default function PrimarySalesForm() {
     discount: 0,
     exp: false,
     purcRtn: 0,
-    rtnPrice: 0
+      rtnPriceType: 'PTS',
+      rtnPrice: 0
   }]);
 
   const handleAddItem = () => {
@@ -73,6 +74,7 @@ export default function PrimarySalesForm() {
       discount: 0,
       exp: false,
       purcRtn: 0,
+      rtnPriceType: 'PTS',
       rtnPrice: 0
     }]);
   };
@@ -98,11 +100,34 @@ export default function PrimarySalesForm() {
     else if (item.priceType === 'PTR') newPrice = selectedProduct.ptr || 0;
     else if (item.priceType === 'MRP') newPrice = selectedProduct.mrp || 0;
 
+    let newRtnPrice = 0;
+    const rtnType = item.rtnPriceType || 'PTS';
+    if (rtnType === 'PTS') newRtnPrice = selectedProduct.pts || 0;
+    else if (rtnType === 'PTR') newRtnPrice = selectedProduct.ptr || 0;
+    else if (rtnType === 'MRP') newRtnPrice = selectedProduct.mrp || 0;
+
     setItems(items.map(i => i.id === id ? { 
       ...i, 
       product: selectedProduct.productName, 
-      basePrice: newPrice 
+      basePrice: newPrice,
+      rtnPrice: newRtnPrice
     } : i));
+  };
+
+  const handleRtnPriceTypeChange = (id: string, newType: string) => {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    let newPrice = item.rtnPrice;
+    if (item.product) {
+      const prodMaster = productsMaster.find(p => p.productName === item.product);
+      if (prodMaster) {
+        if (newType === 'PTS') newPrice = prodMaster.pts || 0;
+        else if (newType === 'PTR') newPrice = prodMaster.ptr || 0;
+        else if (newType === 'MRP') newPrice = prodMaster.mrp || 0;
+      }
+    }
+    setItems(items.map(i => i.id === id ? { ...i, rtnPriceType: newType, rtnPrice: newPrice } : i));
   };
 
   const handlePriceTypeChange = (id: string, newType: string) => {
@@ -350,6 +375,22 @@ export default function PrimarySalesForm() {
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Purc. Rtn Qty</label>
                         <input type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                      </div>
+                      <div className="w-[75px]">
+                        <label className="text-[9px] text-slate-500 uppercase block">Type</label>
+                        <div className="relative">
+                          <select 
+                            value={item.rtnPriceType || 'PTS'} 
+                            onChange={e => handleRtnPriceTypeChange(item.id, e.target.value)} 
+                            className="w-full bg-transparent border-b border-[#3b3b5a] p-1 text-xs text-red-400 font-bold focus:outline-none appearance-none cursor-pointer"
+                          >
+                            <option value="PTS">PTS</option>
+                            <option value="PTR">PTR</option>
+                            <option value="MRP">MRP</option>
+                            <option value="CUS">CUS</option>
+                          </select>
+                          <ChevronDown size={10} className="absolute right-0 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none" />
+                        </div>
                       </div>
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Rtn Price (₹)</label>

@@ -122,7 +122,7 @@ export default function PrimarySales() {
                      discount: row.discount || '',
                      isExpiry: !!row.exp,
                      purcRtn: row.purcRtn || '',
-                     selectedRtnPriceType: row.priceType ? row.priceType.toUpperCase() : 'PTS',
+                     selectedRtnPriceType: row.rtnPriceType ? row.rtnPriceType.toUpperCase() : (row.priceType ? row.priceType.toUpperCase() : 'PTS'),
                      customRtnPrice: row.rtnPrice || ''
                    };
                  });
