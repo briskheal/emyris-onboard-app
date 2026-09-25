@@ -290,7 +290,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                     return (
                       <tr key={d._id} onClick={() => {
                           if (selectedModule === 'Primary Sales') navigate('/extras/primary-sales/edit/' + d._id);
-                          else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary-sales/edit/' + d._id);
+                          else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary/edit/' + d._id);
                         }} className={`border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors ${['Primary Sales', 'Secondary Sales'].includes(selectedModule) ? 'cursor-pointer' : ''}`}>
                         <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
                         {columns.map((col: any, i: number) => (
@@ -303,7 +303,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                             <button onClick={(e) => {
                                 e.stopPropagation();
                                 if (selectedModule === 'Primary Sales') navigate('/extras/primary-sales/edit/' + d._id);
-                                else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary-sales/edit/' + d._id);
+                                else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary/edit/' + d._id);
                                 else alert('View details feature coming soon');
                               }} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
                               <Eye size={18} strokeWidth={2.5}/>
