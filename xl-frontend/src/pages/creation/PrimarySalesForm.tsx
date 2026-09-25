@@ -40,6 +40,19 @@ export default function PrimarySalesForm() {
     }
   }, [editId]);
 
+  
+  const getStockistName = (val: string) => {
+    if (!val) return '';
+    const s = stockists.find(x => x.uid === val || x._id === val || x.businessName === val);
+    return s ? (s.businessName || s.name || val) : val;
+  };
+
+  const getProductName = (val: string) => {
+    if (!val) return '';
+    const p = productsMaster.find(x => x.uid === val || x._id === val || x.productName === val);
+    return p ? (p.productName || val) : val;
+  };
+
   // Invoice Header State
   const [header, setHeader] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -322,7 +335,7 @@ export default function PrimarySalesForm() {
               className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white flex justify-between items-center cursor-pointer"
             >
               <span className={header.stockist ? 'text-white' : 'text-slate-500'}>
-                {header.stockist || '-- Search & Select Stockist --'}
+                {getStockistName(header.stockist) || '-- Search & Select Stockist --'}
               </span>
               <Search size={16} className="text-slate-500" />
             </div>
@@ -348,7 +361,7 @@ export default function PrimarySalesForm() {
                     className="flex-1 flex justify-between items-center cursor-pointer py-1"
                   >
                     <span className={`text-sm font-bold truncate ${item.product ? 'text-white' : 'text-slate-500'}`}>
-                      {item.product || '-- Search & Select Product --'}
+                      {getProductName(item.product) || '-- Search & Select Product --'}
                     </span>
                     {!item.product && <Search size={14} className="text-slate-500 ml-2 shrink-0" />}
                   </div>
@@ -392,15 +405,15 @@ export default function PrimarySalesForm() {
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Qty</label>
-                      <input type="number" min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input type="number" disabled={loadedStatus === 'Approved'} min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Free</label>
-                      <input type="number" min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input type="number" disabled={loadedStatus === 'Approved'} min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Disc %</label>
-                      <input type="number" min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input type="number" disabled={loadedStatus === 'Approved'} min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                   </div>
 
@@ -409,13 +422,13 @@ export default function PrimarySalesForm() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Returns</span>
                       <label className="flex items-center gap-1 text-[10px] text-slate-300 cursor-pointer">
-                        <input type="checkbox" checked={item.exp} onChange={e => updateItem(item.id, 'exp', e.target.checked)} className="accent-red-500" /> EXP
+                        <input type="checkbox" disabled={loadedStatus === 'Approved'} checked={item.exp} onChange={e => updateItem(item.id, 'exp', e.target.checked)} className="accent-red-500" /> EXP
                       </label>
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Purc. Rtn Qty</label>
-                        <input type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <input type="number" disabled={loadedStatus === 'Approved'} min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
                       </div>
                       <div className="w-[75px]">
                         <label className="text-[9px] text-slate-500 uppercase block">Type</label>
@@ -435,7 +448,7 @@ export default function PrimarySalesForm() {
                       </div>
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Rtn Price (₹)</label>
-                        <input type="number" min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <input type="number" disabled={loadedStatus === 'Approved'} min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
                       </div>
                     </div>
                   </div>
@@ -455,7 +468,7 @@ export default function PrimarySalesForm() {
             );
           })}
 
-          <button onClick={handleAddItem} className="w-full py-3 rounded-lg border-2 border-dashed border-[#3b3b5a] text-cyan-400 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#27273f] transition-colors">
+          {loadedStatus !== 'Approved' && <button onClick={handleAddItem} className="w-full py-3 rounded-lg border-2 border-dashed border-[#3b3b5a] text-cyan-400 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#27273f] transition-colors">
             <Plus size={16} /> Add Product
           </button>
         </div>
