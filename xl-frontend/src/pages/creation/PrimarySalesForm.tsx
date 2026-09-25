@@ -230,7 +230,8 @@ export default function PrimarySalesForm() {
         netInvValue: totals.net,
         salableRtnValue: totals.salableRtn,
         expiryRtnValue: totals.expiryRtn,
-        productsData: items
+        productsData: items,
+        ...(editId ? { status: 'Re-Submitted' } : {})
       };
 
       
