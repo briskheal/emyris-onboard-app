@@ -18,8 +18,7 @@ export default function PrimarySalesForm() {
       axios.get('/api/xl/primary-sales/' + editId).then(res => {
         if (res.data.success && res.data.data) {
           const d = res.data.data;
-          if (editId) { navigate(-1); return; }
-        setHeader({
+          setHeader({
             date: d.date ? d.date.split('T')[0] : new Date().toISOString().split('T')[0],
             invoiceDate: d.invoiceDate ? d.invoiceDate.split('T')[0] : new Date().toISOString().split('T')[0],
             invoiceNumber: d.invoiceNumber || '',
