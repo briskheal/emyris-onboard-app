@@ -62,11 +62,11 @@ export default function PrimarySalesHistory() {
 
       <div className="flex-1 overflow-y-auto">
         {/* Table Header */}
-        <div className="grid grid-cols-[11fr_4fr_3fr_3fr] gap-2 px-4 py-2.5 bg-[#181826] border-b border-[#3b3b5a] shrink-0 sticky top-[53px] z-10">
-          <div className="text-[9px] text-slate-500 font-black uppercase tracking-widest">Stockist</div>
-          <div className="text-[9px] text-slate-500 font-black uppercase tracking-widest text-center">Date</div>
-          <div className="text-[9px] text-slate-500 font-black uppercase tracking-widest text-center">Status</div>
-          <div className="text-[9px] text-slate-500 font-black uppercase tracking-widest text-right">Act</div>
+        <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-[#3b3b5a]/40 w-full">
+          <div className="w-[20%] text-[9px] text-slate-500 font-black uppercase tracking-widest">Stockist</div>
+          <div className="w-[20%] text-[9px] text-slate-500 font-black uppercase tracking-widest text-center">Date</div>
+          <div className="w-[20%] text-[9px] text-slate-500 font-black uppercase tracking-widest text-center">Status</div>
+          <div className="w-[20%] text-[9px] text-slate-500 font-black uppercase tracking-widest text-right">Act</div>
         </div>
 
         {loading ? (
@@ -87,7 +87,7 @@ export default function PrimarySalesHistory() {
                 onClick={() => navigate(`/creation/primary-sales?id=${inv._id}`)} 
                 className={`grid grid-cols-[11fr_4fr_3fr_3fr] gap-2 px-4 py-3 border-b border-[#3b3b5a]/40 items-center hover:bg-[#27273f]/50 cursor-pointer transition-colors ${inv.status === 'Re-Submitted' ? 'bg-amber-500/5' : ''}`}
               >
-                <div className="flex flex-col overflow-hidden">
+                <div className="w-[40%] flex flex-col overflow-hidden">
                   <span className="text-xs font-bold text-white truncate pr-2">
                     {getStockistName(inv.stockist || 'N/A')}
                   </span>
@@ -95,13 +95,13 @@ export default function PrimarySalesHistory() {
                      <span className="text-[9px] text-rose-400 truncate pr-2 mt-0.5">Note: {inv.adminRemarks}</span>
                   )}
                 </div>
-                <div className="text-[10px] text-slate-400 text-center font-medium">
+                <div className="w-[20%] text-[10px] text-slate-400 text-center font-medium">
                   {inv.date ? new Date(inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : '-'}
                 </div>
-                <div className={`flex justify-center ${isApproved ? 'text-emerald-400' : isRejected ? 'text-rose-500' : 'text-amber-400'}`}>
+                <div className={`w-[20%] flex justify-center ${isApproved ? 'text-emerald-400' : isRejected ? 'text-rose-500' : 'text-amber-400'}`}>
                   {isApproved ? <CheckCheck size={16} strokeWidth={2.5} /> : isRejected ? <X size={16} strokeWidth={2.5} /> : <Clock size={16} strokeWidth={2.5} />}
                 </div>
-                <div className="flex justify-end">
+                <div className="w-[20%] flex justify-end">
                   {isApproved ? (
                     <div className="bg-sky-500/10 border border-sky-500/20 text-sky-400 p-1.5 rounded-md hover:bg-sky-500/20">
                       <Eye size={14} strokeWidth={2} />
