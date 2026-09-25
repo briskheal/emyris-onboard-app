@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, Edit, FileText } from 'lucide-react';
+import { ChevronLeft, Plus, Clock, CheckCircle2, AlertCircle, Edit, Eye, FileText } from 'lucide-react';
 import axios from 'axios';
 
 export default function PrimarySalesHistory() {
