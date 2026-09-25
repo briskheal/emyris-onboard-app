@@ -457,7 +457,7 @@ export default function PrimarySalesForm() {
       </div>
 
       {/* Sticky Bottom Footer */}
-      <div className="fixed bottom-16 left-0 right-0 bg-[#1a1b2d] border-t border-slate-700 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.3)] z-20 md:ml-64 xl:ml-0">
+      <div className="fixed bottom-16 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-[#1a1b2d] border-t border-slate-700 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.3)] z-20">
         <div className="max-w-md mx-auto">
           <div className="flex justify-between mb-2 text-[11px]">
             <div className="text-slate-400">Gross: <span className="text-white">₹ {totals.gross.toFixed(2)}</span></div>
