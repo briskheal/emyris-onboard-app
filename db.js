@@ -84,6 +84,8 @@ async function syncDatabase() {
         // Run standard sync first so any new tables (like onboard_exam_results) are guaranteed to be created
         await sequelize.sync();
         await XlTarget.sync({ alter: true });
+        await XlStockist.sync({ alter: true }).catch(() => {});
+        await XlProduct.sync({ alter: true }).catch(() => {});
         if (sequelize.getDialect() === 'sqlite') {
             await sequelize.query('PRAGMA journal_mode=WAL;');
             await sequelize.query('PRAGMA synchronous=NORMAL;');

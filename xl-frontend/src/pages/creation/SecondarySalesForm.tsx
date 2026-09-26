@@ -462,7 +462,7 @@ export default function SecondarySalesForm() {
 
       {/* PRODUCT SEARCH MODAL */}
       {showProductModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-200">
+        <div className="absolute inset-0 bg-black/80 backdrop-blur-sm z-50 flex flex-col animate-in fade-in duration-200">
           <div className="bg-[#1e2032] p-4 border-b border-[#3b3b5a] flex items-center gap-3 pt-safe">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
