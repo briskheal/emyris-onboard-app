@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import {  LayoutDashboard, PlusCircle, FileText, Layers, Wrench, Menu, Bell, AlertTriangle , ChevronLeft } from 'lucide-react';
+import {  LayoutDashboard, PlusCircle, FileText, Layers, Wrench, Menu, Bell, AlertTriangle , ChevronLeft, Trash2 } from 'lucide-react';
 import axios from 'axios';
 import NavigationDrawer from './NavigationDrawer';
 
@@ -51,6 +51,29 @@ export default function Layout() {
     }
   }, [user]);
 
+  
+  const clearNotifications = async () => {
+      await axios.post('/api/xl/notifications/clear', { email: user?.employeeId });
+      setNotifications([]);
+  };
+
+  const formatNotifDate = (dateString: string) => {
+      const d = new Date(dateString);
+      const today = new Date();
+      const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+      const datePart = isToday ? 'Today' : d.toLocaleDateString();
+      const timePart = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+      return { datePart, timePart };
+  };
+
+  const handleBack = () => {
+      if (showNotifMenu) {
+          setShowNotifMenu(false);
+      } else {
+          navigate(-1);
+      }
+  };
+
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const handleOpenNotifs = async () => {
       setShowNotifMenu(!showNotifMenu);
@@ -89,8 +112,8 @@ export default function Layout() {
       {/* TOP NAVIGATION BAR */}
       <header className="h-14 bg-slate-800 border-b border-slate-800 flex items-center justify-between px-4 z-40 relative">
         <div className="flex items-center gap-2">
-            {location.pathname !== '/dashboard' && (
-              <button onClick={() => navigate(-1)} className="text-slate-300 active:scale-95 p-1 bg-slate-700/50 rounded-md mr-1">
+            {(location.pathname !== '/dashboard' || showNotifMenu) && (
+              <button onClick={handleBack} className="text-slate-300 active:scale-95 p-1 bg-slate-700/50 rounded-md mr-1">
                 <ChevronLeft size={20} />
               </button>
             )}
@@ -110,20 +133,7 @@ export default function Layout() {
               <Bell size={20} />
               {unreadCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[9px] font-bold flex items-center justify-center bg-rose-500 text-white border-2 border-slate-900 rounded-full">{unreadCount}</span>}
             </button>
-            {showNotifMenu && (
-              <div className="absolute right-0 top-10 mt-2 w-72 max-h-96 overflow-y-auto bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl z-50 p-4">
-                <h3 className="text-white font-bold text-sm mb-3">Notifications</h3>
-                {notifications.length === 0 ? <p className="text-slate-400 text-xs">No new notifications</p> : 
-                 notifications.map(n => (
-                   <div key={n._id} className="mb-3 border-b border-slate-700/50 pb-3 last:border-0 last:pb-0">
-                     <p className="text-xs font-bold text-slate-200">{n.title}</p>
-                     <p className="text-xs text-slate-400 mt-1">{n.message}</p>
-                     <p className="text-[9px] text-slate-500 mt-1">{new Date(n.createdAt).toLocaleDateString()}</p>
-                   </div>
-                 ))
-                }
-              </div>
-            )}
+            
           </div>
           <button onClick={() => setIsDrawerOpen(true)} className="text-slate-300">
             <Menu size={24} />
@@ -157,9 +167,45 @@ export default function Layout() {
       )}
 
             {/* Main content area */}
-      <main className="flex-1 overflow-y-auto pb-24">
-        <Outlet />
-      </main>
+      {showNotifMenu ? (
+        <div className="absolute top-14 left-0 right-0 bottom-0 bg-[#212236] z-50 overflow-y-auto flex flex-col pb-16">
+          <h2 className="text-center text-sky-400 font-bold text-2xl py-3 shadow-[0_4px_10px_rgba(0,0,0,0.3)] bg-[#212236] z-10 border-b border-sky-400/50">
+            Notifications
+          </h2>
+          <div className="flex justify-between items-center px-4 py-2 border-b border-slate-700">
+            <span className="text-emerald-400 font-bold text-[13px]">Notifications: {notifications.length}</span>
+            <button onClick={clearNotifications} className="text-slate-300 font-semibold text-[13px] flex items-center gap-1 active:scale-95">
+              Clear notifications <Trash2 size={16} />
+            </button>
+          </div>
+          <div className="flex-1 p-3 space-y-3 pb-24">
+            {notifications.length === 0 ? (
+              <div className="text-center text-slate-500 mt-10 text-sm">No new notifications</div>
+            ) : (
+              notifications.map((n:any) => {
+                const { datePart, timePart } = formatNotifDate(n.createdAt);
+                return (
+                  <div key={n._id} className="bg-[#292a40] rounded-xl p-3 flex gap-3 shadow-md border border-slate-700/50">
+                    <Bell className="text-emerald-400 mt-1 shrink-0" size={24} fill="currentColor" />
+                    <div className="flex-1">
+                      <h3 className="text-white font-bold text-[13px] leading-tight">{n.title}</h3>
+                      <p className="text-slate-300 text-xs mt-1 leading-tight">{n.message}</p>
+                    </div>
+                    <div className="flex flex-col items-end justify-start shrink-0 gap-1">
+                      <span className="text-sky-400 text-xs font-semibold">{datePart}</span>
+                      <span className="text-sky-400 text-[11px] font-medium">{timePart}</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      ) : (
+        <main className="flex-1 overflow-y-auto pb-24">
+          <Outlet />
+        </main>
+      )}
 
       {/* Bottom Navigation Bar */}
       <nav

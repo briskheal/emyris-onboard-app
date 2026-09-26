@@ -2543,6 +2543,14 @@ router.get('/notifications', async (req, res) => {
     } catch(e) { res.status(500).json({ error: 'Failed' }); }
 });
 
+router.post('/notifications/clear', async (req, res) => {
+    try {
+        const { email } = req.body;
+        await XlNotification.destroy({ where: { employeeId: email } });
+        res.json({ success: true });
+    } catch(e) { res.status(500).json({ error: 'Failed' }); }
+});
+
 router.post('/notifications/read', async (req, res) => {
     try {
         const { email } = req.body;
