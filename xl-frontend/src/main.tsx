@@ -7,7 +7,8 @@ import App from './App.tsx'
 // Global Axios Interceptor for JWT
 axios.interceptors.request.use((config: any) => {
     const token = localStorage.getItem('xl_token');
-    if (token && config.headers) {
+    if (token) {
+        config.headers = config.headers || {};
         config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

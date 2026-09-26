@@ -42,7 +42,7 @@ class ErrorBoundary extends React.Component<any, any> {
 
 // Global Axios Interceptor for JWT
 axios.interceptors.request.use((config: any) => {
-    const token = localStorage.getItem('xl_token');
+    const token = localStorage.getItem('xla_token');
     if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -53,7 +53,7 @@ axios.interceptors.request.use((config: any) => {
 // Global Response Interceptor for 401 Unauthorized
 axios.interceptors.response.use((response) => response, (error) => {
     if (error.response && (error.response.status === 401)) {
-        localStorage.removeItem('xl_token');
+        localStorage.removeItem('xla_token');
         localStorage.removeItem('user');
         localStorage.removeItem('xl_user');
         window.location.href = '/xla/login';

@@ -36,7 +36,7 @@ export default function Login() {
       try {
         const res = await axios.post('/api/admin-login', { username: email, password });
         if (res.data.success) {
-          localStorage.setItem('xla_token', 'true');
+          localStorage.setItem('xla_token', res.data.token || 'true');
           navigate('/dashboard');
         } else {
           setError('Invalid credentials');
