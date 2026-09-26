@@ -716,7 +716,8 @@ router.post('/login', async (req, res) => {
             if (desigRec) userData.level = desigRec.level;
         }
 
-        res.json({ success: true, message: 'Login successful', user: userData });
+        const token = jwt.sign({ id: user._id, email: user.email, role: 'USER' }, JWT_SECRET, { expiresIn: '30d' });
+        res.json({ success: true, message: 'Login successful', user: userData, token });
     } catch (e) {
         console.error('XL Login Error:', e);
         res.status(500).json({ success: false, message: 'System error during login' });
