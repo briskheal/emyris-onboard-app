@@ -199,7 +199,19 @@ export default function PrimarySales() {
           netInvValue: totals.netInvValue,
           salableRtnValue: totals.salableRtnValue,
           expiryRtnValue: totals.expiryRtnValue,
-        productsData: validRows
+        productsData: validRows.map((r: any) => ({
+          id: r.id,
+          product: r.productId,
+          priceType: r.selectedPriceType || 'PTS',
+          basePrice: r.customPrice || 0,
+          qty: r.quantity || 0,
+          free: r.freeStocks || 0,
+          discount: r.discount || 0,
+          exp: !!r.isExpiry,
+          purcRtn: r.purcRtn || 0,
+          rtnPriceType: r.selectedRtnPriceType || 'PTS',
+          rtnPrice: r.customRtnPrice || 0
+        }))
       };
 
       let res;
