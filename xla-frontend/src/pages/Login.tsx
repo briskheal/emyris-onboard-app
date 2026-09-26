@@ -89,7 +89,7 @@ export default function Login() {
             
             <div className="relative">
               <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-              <<input 
+              <input 
                   type={showPassword ? "text" : "password"} 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -136,3 +136,4 @@ export default function Login() {
     </div>
   );
 }
+
