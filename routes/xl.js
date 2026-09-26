@@ -3204,9 +3204,18 @@ router.get('/primary-sales/all', async (req, res) => {
             whereClause.employeeId = employeeId;
         }
 
+        const { XlPrimarySalesItem } = require('../db');
         const sales = await XlPrimarySales.findAll({
             where: whereClause,
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            include: [{ model: XlPrimarySalesItem, as: 'items' }]
+        });
+        
+        // Backwards compatibility mapper
+        sales.forEach(sale => {
+            if (sale.items && sale.items.length > 0) {
+                sale.setDataValue('productsData', JSON.stringify(sale.items));
+            }
         });
 
         res.json({ success: true, data: sales });
@@ -3221,7 +3230,11 @@ router.get('/primary-sales/all', async (req, res) => {
 // [NEW] Fetch single invoice by ID
 router.get('/primary-sales/:id', async (req, res) => {
     try {
-        const sale = await XlPrimarySales.findByPk(req.params.id);
+        const { XlPrimarySalesItem } = require('../db');
+        let sale = await XlPrimarySales.findByPk(req.params.id, { include: [{ model: XlPrimarySalesItem, as: 'items' }] });
+        if (sale && sale.items && sale.items.length > 0) {
+            sale.setDataValue('productsData', JSON.stringify(sale.items));
+        }
         if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
         res.json({ success: true, data: sale });
     } catch (error) {
@@ -3278,6 +3291,29 @@ router.put('/primary-sales/update/:id', async (req, res) => {
             productsData: JSON.stringify(productsData),
             ...(status ? { status } : {})
         });
+
+        // Phase 2: Relational Updates
+        if (productsData && Array.isArray(productsData)) {
+            const { XlPrimarySalesItem } = require('../db');
+            await XlPrimarySalesItem.destroy({ where: { saleId: sale._id } });
+            
+            if (productsData.length > 0) {
+                const items = productsData.map(p => ({
+                    saleId: sale._id,
+                    product: p.product || p.productId,
+                    qty: parseInt(p.qty || p.quantity || 0),
+                    basePrice: parseFloat(p.basePrice || p.customPrice || 0),
+                    priceType: p.priceType || 'BASE PRICE',
+                    free: parseInt(p.free || 0),
+                    discount: parseFloat(p.discount || 0),
+                    exp: parseInt(p.exp || 0),
+                    purcRtn: parseInt(p.purcRtn || 0),
+                    rtnPriceType: p.rtnPriceType || 'BASE PRICE',
+                    rtnPrice: parseFloat(p.rtnPrice || 0)
+                }));
+                await XlPrimarySalesItem.bulkCreate(items);
+            }
+        }
 
         res.json({ success: true, message: 'Invoice updated successfully', data: sale });
     } catch (error) {
@@ -3509,9 +3545,18 @@ router.get('/secondary-sales/all', async (req, res) => {
             whereClause.employeeId = employeeId;
         }
 
+        const { XlSecondarySalesItem } = require('../db');
         const sales = await XlSecondarySales.findAll({
             where: whereClause,
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            include: [{ model: XlSecondarySalesItem, as: 'items' }]
+        });
+        
+        // Backwards compatibility mapper
+        sales.forEach(sale => {
+            if (sale.items && sale.items.length > 0) {
+                sale.setDataValue('productsData', JSON.stringify(sale.items));
+            }
         });
         res.json({ success: true, data: sales });
     } catch (error) {
@@ -3522,7 +3567,11 @@ router.get('/secondary-sales/all', async (req, res) => {
 
 router.delete('/secondary-sales/:id', async (req, res) => {
     try {
-        const sale = await XlSecondarySales.findByPk(req.params.id);
+        const { XlSecondarySalesItem } = require('../db');
+        let sale = await XlSecondarySales.findByPk(req.params.id, { include: [{ model: XlSecondarySalesItem, as: 'items' }] });
+        if (sale && sale.items && sale.items.length > 0) {
+            sale.setDataValue('productsData', JSON.stringify(sale.items));
+        }
         if (!sale) return res.status(404).json({ success: false, message: 'Not found' });
         await sale.destroy();
         res.json({ success: true });

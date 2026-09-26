@@ -39,7 +39,7 @@ const {
     XlAttendance,
     XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate,
     XlExpense,
-    XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlTarget,
+    XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlPrimarySalesItem, XlSecondarySales, XlSecondarySalesItem, XlGeoFencing, XlGlobalSettings, XlHoliday, XlTarget,
     XlCallPlan
 } = initXlModels(sequelize);
 
@@ -599,7 +599,7 @@ module.exports = {
     XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate,
     XlExpense,
     XlBacklogRequest,
-    XlCallPlan, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlTarget,
+    XlCallPlan, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlPrimarySalesItem, XlSecondarySales, XlSecondarySalesItem, XlGeoFencing, XlGlobalSettings, XlHoliday, XlTarget,
     generateId 
 };
 

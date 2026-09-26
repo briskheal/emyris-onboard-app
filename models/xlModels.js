@@ -612,6 +612,42 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });
 
+    
+    const XlPrimarySalesItem = sequelize.define('xl_primary_sales_item', {
+        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        saleId: { type: DataTypes.STRING, references: { model: 'xl_primary_sales', key: '_id' }, onDelete: 'CASCADE' },
+        product: { type: DataTypes.STRING },
+        qty: { type: DataTypes.INTEGER },
+        basePrice: { type: DataTypes.FLOAT },
+        priceType: { type: DataTypes.STRING },
+        free: { type: DataTypes.INTEGER },
+        discount: { type: DataTypes.FLOAT },
+        exp: { type: DataTypes.INTEGER },
+        purcRtn: { type: DataTypes.INTEGER },
+        rtnPriceType: { type: DataTypes.STRING },
+        rtnPrice: { type: DataTypes.FLOAT }
+    });
+
+    XlPrimarySales.hasMany(XlPrimarySalesItem, { foreignKey: 'saleId', as: 'items', onDelete: 'CASCADE' });
+    XlPrimarySalesItem.belongsTo(XlPrimarySales, { foreignKey: 'saleId' });
+
+    
+    const XlSecondarySalesItem = sequelize.define('xl_secondary_sales_item', {
+        id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        saleId: { type: DataTypes.STRING, references: { model: 'xl_secondary_sales', key: '_id' }, onDelete: 'CASCADE' },
+        product: { type: DataTypes.STRING },
+        qty: { type: DataTypes.INTEGER },
+        basePrice: { type: DataTypes.FLOAT },
+        priceType: { type: DataTypes.STRING },
+        openingQty: { type: DataTypes.INTEGER },
+        receivedQty: { type: DataTypes.INTEGER },
+        free: { type: DataTypes.INTEGER },
+        closingQty: { type: DataTypes.INTEGER }
+    });
+
+    XlSecondarySales.hasMany(XlSecondarySalesItem, { foreignKey: 'saleId', as: 'items', onDelete: 'CASCADE' });
+    XlSecondarySalesItem.belongsTo(XlSecondarySales, { foreignKey: 'saleId' });
+
     return {
         XlHoliday,
         XlDoctor,
@@ -647,5 +683,5 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         XlGeoFencing,
         XlGlobalSettings,
         XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlVacancyLog, XlTarget
-    };
+    , XlPrimarySalesItem , XlSecondarySalesItem};
 };
