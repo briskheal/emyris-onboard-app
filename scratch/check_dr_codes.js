@@ -1,1 +1,0 @@
-const { XlDoctor } = require('../db'); async function check() { const drs = await XlDoctor.findAll({ limit: 5 }); console.log(drs.map(d => ({ name: d.name, uid: d.uid, code: d.doctorCode }))); } check();
