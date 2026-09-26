@@ -402,15 +402,15 @@ export default function PrimarySalesForm() {
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Qty</label>
-                      <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Free</label>
-                      <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Disc %</label>
-                      <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                   </div>
 
@@ -419,13 +419,13 @@ export default function PrimarySalesForm() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Returns</span>
                       <label className="flex items-center gap-1 text-[10px] text-slate-300 cursor-pointer">
-                        <input disabled={loadedStatus === \'Approved\'} type="checkbox" checked={item.exp} onChange={e => updateItem(item.id, 'exp', e.target.checked)} className="accent-red-500" /> EXP
+                        <input disabled={loadedStatus === 'Approved'} type="checkbox" checked={item.exp} onChange={e => updateItem(item.id, 'exp', e.target.checked)} className="accent-red-500" /> EXP
                       </label>
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Purc. Rtn Qty</label>
-                        <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
                       </div>
                       <div className="w-[75px]">
                         <label className="text-[9px] text-slate-500 uppercase block">Type</label>
@@ -445,7 +445,7 @@ export default function PrimarySalesForm() {
                       </div>
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Rtn Price (뿯½‚뿯½)</label>
-                        <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
                       </div>
                     </div>
                   </div>
