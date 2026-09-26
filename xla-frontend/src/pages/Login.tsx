@@ -27,12 +27,22 @@ export default function Login() {
     fetchCompanyInfo();
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const [error, setError] = useState('');
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login for now
+    setError('');
     if (email && password) {
-      // In a real app, you would set a token here
-      navigate('/dashboard');
+      try {
+        const res = await axios.post('/api/admin-login', { username: email, password });
+        if (res.data.success) {
+          localStorage.setItem('xla_token', 'true');
+          navigate('/dashboard');
+        } else {
+          setError('Invalid credentials');
+        }
+      } catch (err) {
+        setError('Invalid credentials or server error');
+      }
     }
   };
 
@@ -59,7 +69,8 @@ export default function Login() {
         </div>
 
         {/* Login Form */}
-        <form onSubmit={handleLogin} className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+        {error && <div className="text-rose-500 text-sm font-bold mb-4 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">{error}</div>}
+          <form onSubmit={handleLogin} className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
           <h2 className="text-lg font-bold text-white mb-6">Admin Login,</h2>
           
           <div className="space-y-4 mb-6">
