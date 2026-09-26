@@ -36,6 +36,12 @@ router.post('/admin-login', async (req, res) => {
         const { email, password } = req.body;
         if (!email || !password) return res.json({ success: false, message: 'Email and password required' });
         
+        // Master Admin Check
+        if (email === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
+            const token = jwt.sign({ id: 'MASTER_ADMIN', email, role: 'ADMIN' }, JWT_SECRET, { expiresIn: '30d' });
+            return res.json({ success: true, user: { firstName: 'Super', lastName: 'Admin', designation: 'ADMIN', email }, token });
+        }
+        
         const { XlAdmin } = require('../db');
         const admin = await XlAdmin.findOne({ where: { email, password } });
         

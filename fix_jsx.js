@@ -1,15 +1,20 @@
 const fs = require('fs');
-const file = 'xla-frontend/src/pages/ManageUsers.tsx';
-let code = fs.readFileSync(file, 'utf8');
+const path = 'D:/MY WORK FLOW/Emyris Onboard App/xl-frontend/src/pages/creation/PrimarySalesForm.tsx';
+let f = fs.readFileSync(path, 'utf8');
 
-code = code.replace(
-    "px-8 rounded-xl transition-colors\">{loading ? 'Submitting...' : 'Submit'}</button>\r\n          </div>\r\n        </form>",
-    "px-8 rounded-xl transition-colors\">{loading ? 'Submitting...' : 'Submit'}</button>\r\n          </div>\r\n          </div>\r\n        </form>"
-);
-code = code.replace(
-    "px-8 rounded-xl transition-colors\">{loading ? 'Submitting...' : 'Submit'}</button>\n          </div>\n        </form>",
-    "px-8 rounded-xl transition-colors\">{loading ? 'Submitting...' : 'Submit'}</button>\n          </div>\n          </div>\n        </form>"
+// Remove the stray )
+f = f.replace("          )}\n        </div>\n  \n        {/* MODALS */}", "          \n        </div>\n  \n        {/* MODALS */}");
+
+// Safely wrap the button instead of the entire footer, so they can still see the net values
+f = f.replace(
+    '<button onClick={handleSave} disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600',
+    "{loadedStatus !== 'Approved' && (\n          <button onClick={handleSave} disabled={loading} className=\"w-full bg-emerald-500 hover:bg-emerald-600"
 );
 
-fs.writeFileSync(file, code);
-console.log('Fixed JSX!');
+f = f.replace(
+    "{loading ? 'Saving...' : 'Submit to Admin'}\n            </button>",
+    "{loading ? 'Saving...' : 'Submit to Admin'}\n            </button>\n          )}"
+);
+
+fs.writeFileSync(path, f);
+console.log('Fixed JSX syntax error');

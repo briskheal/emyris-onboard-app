@@ -1,0 +1,1 @@
+const { XlDoctor } = require('../db'); async function check() { const drs1 = await XlDoctor.findAll({ where: { employeeId: 'EMYFE118' } }); const drs2 = await XlDoctor.findAll({ where: { userAllotted: 'EMYFE118' } }); console.log('by employeeId:', drs1.length, 'by userAllotted:', drs2.length); } check();

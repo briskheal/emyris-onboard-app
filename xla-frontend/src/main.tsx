@@ -49,6 +49,18 @@ axios.interceptors.request.use((config: any) => {
     return config;
 }, (error: any) => Promise.reject(error));
 
+
+// Global Response Interceptor for 401 Unauthorized
+axios.interceptors.response.use((response) => response, (error) => {
+    if (error.response && (error.response.status === 401)) {
+        localStorage.removeItem('xl_token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('xl_user');
+        window.location.href = '/xla/login';
+    }
+    return Promise.reject(error);
+});
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ErrorBoundary>
