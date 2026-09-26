@@ -518,14 +518,26 @@ router.post('/login', loginLimiter, async (req, res) => {
 
     if (username && username.toUpperCase() === adminUser && password === adminPass) {
         console.log(`[LOGIN SUCCESS] ${req.body.username} (superadmin)`);
-        res.status(200).json({ success: true, role: 'superadmin' });
+        return res.status(200).json({ success: true, role: 'superadmin' });
     } else if (username && username.toUpperCase() === subAdminUser && password === subAdminPass) {
         console.log(`[LOGIN SUCCESS] ${req.body.username} (subadmin)`);
-        res.status(200).json({ success: true, role: 'subadmin' });
-    } else {
-        console.log(`[LOGIN FAILED] ${req.body.username}`);
-        res.status(401).json({ success: false });
+        return res.status(200).json({ success: true, role: 'subadmin' });
     }
+    
+    if (username && password) {
+        try {
+            const adminRecord = await XlAdmin.findOne({ where: { email: username, password: password } });
+            if (adminRecord) {
+                 console.log(`[LOGIN SUCCESS] ${username} (db admin)`);
+                 return res.status(200).json({ success: true, role: 'admin', user: adminRecord });
+            }
+        } catch(e) {
+            console.error("DB Admin lookup error", e);
+        }
+    }
+    
+    console.log(`[LOGIN FAILED] ${req.body.username}`);
+    res.status(401).json({ success: false });
 });
 
 router.get('/applicant-pin/:email', async (req, res) => {

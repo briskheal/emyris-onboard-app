@@ -86,6 +86,13 @@ async function syncDatabase() {
         await XlTarget.sync({ alter: true });
         await XlStockist.sync({ alter: true }).catch(() => {});
         await XlProduct.sync({ alter: true }).catch(() => {});
+        try {
+            await sequelize.query("ALTER TABLE xl_stockists ADD COLUMN uid VARCHAR(255);");
+        } catch(e) {}
+        try {
+            await sequelize.query("ALTER TABLE xl_products ADD COLUMN uid VARCHAR(255);");
+        } catch(e) {}
+
         if (sequelize.getDialect() === 'sqlite') {
             await sequelize.query('PRAGMA journal_mode=WAL;');
             await sequelize.query('PRAGMA synchronous=NORMAL;');
