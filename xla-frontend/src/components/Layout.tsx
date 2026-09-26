@@ -97,7 +97,7 @@ export default function Layout() {
         </div>
         
         <div className="p-4 border-t border-slate-800">
-          <button title={isSidebarCollapsed ? 'Log Out' : undefined} className={`w-full flex items-center justify-center ${isSidebarCollapsed ? 'px-0' : 'gap-2'} bg-slate-800 text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-700 transition-colors`}>
+          <button title={isSidebarCollapsed ? 'Log Out' : undefined} onClick={() => { localStorage.removeItem('xla_token'); navigate('/login'); }} className={`w-full flex items-center justify-center ${isSidebarCollapsed ? 'px-0' : 'gap-2'} bg-slate-800 text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-700 transition-colors`}>
             {isSidebarCollapsed ? <LogOut size={20} /> : 'Log Out'}
           </button>
         </div>
