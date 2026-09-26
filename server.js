@@ -234,6 +234,38 @@ const authRouter = require('./routes/auth');
 const xlRouter = require('./routes/xl');
 
 app.use('/api/applicant', applicantRouter);
+
+// ==========================================
+// EMERGENCY DB HEAL ROUTE (UNPROTECTED)
+// ==========================================
+app.get('/api/heal-db', async (req, res) => {
+    try {
+        const { sequelize, XlStockist, XlProduct } = require('./db');
+        let logs = [];
+        
+        try {
+            await sequelize.query("ALTER TABLE xl_stockists ADD COLUMN uid VARCHAR(255);");
+            logs.push("Added uid to xl_stockists");
+        } catch(e) { logs.push("xl_stockists error: " + e.message); }
+        
+        try {
+            await sequelize.query("ALTER TABLE xl_products ADD COLUMN uid VARCHAR(255);");
+            logs.push("Added uid to xl_products");
+        } catch(e) { logs.push("xl_products error: " + e.message); }
+        
+        try {
+            const scount = await XlStockist.count();
+            const pcount = await XlProduct.count();
+            logs.push(`Total Stockists in DB: ${scount}`);
+            logs.push(`Total Products in DB: ${pcount}`);
+        } catch(e) { logs.push("Count error: " + e.message); }
+
+        res.json({ success: true, logs });
+    } catch(e) {
+        res.json({ success: false, error: e.message });
+    }
+});
+
 app.use('/api/admin', adminRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/xl', xlRouter);
