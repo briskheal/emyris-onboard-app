@@ -446,7 +446,7 @@ export default function SecondarySalesForm() {
       </div>
 
       {/* STICKY FOOTER */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#1e2032]/90 backdrop-blur-md border-t border-[#3b3b5a] p-4 pb-safe flex justify-between items-center z-40">
+      <div className="fixed bottom-14 w-full max-w-md mx-auto bg-[#1e2032]/90 backdrop-blur-md border-t border-[#3b3b5a] p-4 pb-safe flex justify-between items-center z-40">
         <div className="flex flex-col">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Grand Total</span>
           <span className="text-xl font-black bg-gradient-to-r from-emerald-400 to-teal-400 bg-clip-text text-transparent">

@@ -938,7 +938,7 @@ router.get('/reports/products', async (req, res) => {
         const records = await XlProduct.findAll({ order: [['productName', 'ASC']] });
         res.json({ success: true, data: records });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to fetch products for reports' });
+        res.status(500).json({ error: 'Failed to fetch products for reports', details: e.message });
     }
 });
 
@@ -1075,7 +1075,7 @@ router.get('/stockists', async (req, res) => {
         res.json({ success: true, data: stockists });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ error: 'Failed to fetch stockists' });
+        res.status(500).json({ error: 'Failed to fetch stockists', details: e.message });
     }
 });
 
