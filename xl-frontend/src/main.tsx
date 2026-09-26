@@ -8,7 +8,7 @@ import App from './App.tsx'
 axios.interceptors.request.use((config: any) => {
     const token = localStorage.getItem('xl_token');
     if (token && config.headers) {
-        config.headers.Authorization = \`Bearer \${token}\`;
+        config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
 }, (error: any) => Promise.reject(error));
