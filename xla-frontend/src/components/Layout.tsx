@@ -30,6 +30,12 @@ export default function Layout() {
   const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
+    if (!localStorage.getItem('xla_token')) {
+      navigate('/login');
+    }
+  }, [navigate]);
+
+  useEffect(() => {
     const fetchCompanyInfo = async () => {
       try {
         const res = await axios.get('/api/company-profile');

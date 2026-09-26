@@ -152,7 +152,7 @@ export default function Login() {
         
         {/* Switch Portal Link */}
         <div className="mt-6 flex items-center justify-center">
-          <a href="/xla" className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors">
+          <a href="/xla/login" className="flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-slate-300 transition-colors">
             Switch to Admin Portal
             <ArrowRight size={14} />
           </a>
