@@ -155,7 +155,7 @@ export default function SecondarySalesForm() {
       handleRowChange(activeRowIndex, 'product', prodName);
       
       // Auto-set prices based on type
-      const pData = productsMaster.find((p:any) => p.name === prodName);
+      const pData = productsMaster.find((p:any) => (p.productName || p.name) === prodName);
       if (pData) {
         const type = productsData[activeRowIndex].priceType;
         if (type === 'PTR') handleRowChange(activeRowIndex, 'basePrice', pData.ptr || 0);
@@ -171,7 +171,7 @@ export default function SecondarySalesForm() {
   const handlePriceTypeChange = (index: number, type: string) => {
     handleRowChange(index, 'priceType', type);
     const prodName = productsData[index].product;
-    const pData = productsMaster.find((p:any) => p.name === prodName);
+    const pData = productsMaster.find((p:any) => (p.productName || p.name) === prodName);
     if (pData) {
       if (type === 'PTR') handleRowChange(index, 'basePrice', pData.ptr || 0);
       else if (type === 'PTS') handleRowChange(index, 'basePrice', pData.pts || 0);
@@ -302,8 +302,8 @@ export default function SecondarySalesForm() {
         >
           <option value="" className="bg-[#1e2032]">-- Select Stockist --</option>
           {stockists.map((s:any) => (
-            <option key={s.stockistName} value={s.stockistName} className="bg-[#1e2032]">{s.stockistName}</option>
-          ))}
+              <option key={s.businessName || s.name} value={s.businessName || s.name} className="bg-[#1e2032]">{s.businessName || s.name}</option>
+            ))}
         </select>
 
         <div className="grid grid-cols-2 gap-3">
@@ -434,11 +434,11 @@ export default function SecondarySalesForm() {
 
         {!isLocked && (
           <div className="flex gap-3">
-            <button onClick={addRow} className="flex-1 py-4 border border-dashed border-[#3b3b5a] hover:border-sky-500/50 hover:bg-sky-500/5 rounded-2xl flex items-center justify-center gap-2 text-sky-400 font-bold transition-all">
+            <button onClick={addRow} className="flex-1 py-3 border border-dashed border-[#3b3b5a] hover:border-sky-500/50 hover:bg-sky-500/5 rounded-2xl flex items-center justify-center gap-2 text-sky-400 font-bold transition-all text-sm">
               <Plus className="w-5 h-5" />
               <span>ADD PRODUCT</span>
             </button>
-            <button onClick={() => handleSave(false)} className="w-[120px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform">
+            <button onClick={() => handleSave(false)} className="w-[100px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform text-sm">
               SUBMIT
             </button>
           </div>
@@ -481,19 +481,19 @@ export default function SecondarySalesForm() {
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {productsMaster.filter((p:any) => p.name?.toLowerCase().includes(searchTerm.toLowerCase())).map((p:any) => (
+            {productsMaster.filter((p:any) => (p.productName || p.name)?.toLowerCase().includes(searchTerm.toLowerCase())).map((p:any) => (
               <div 
-                key={p.name} 
-                onClick={() => selectProductForRow(p.name)}
+                key={p.productName || p.name} 
+                onClick={() => selectProductForRow(p.productName || p.name)}
                 className="bg-[#0f1015] border border-[#3b3b5a] rounded-xl p-3 flex justify-between items-center active:scale-95 transition-transform"
               >
-                <div className="font-semibold text-sm text-sky-100">{p.name}</div>
+                <div className="font-semibold text-sm text-sky-100">{p.productName || p.name}</div>
                 <div className="text-xs font-bold text-sky-400 bg-sky-400/10 px-2 py-1 rounded-md border border-sky-400/20">
                   ₹{p.ptr}
                 </div>
               </div>
             ))}
-            {productsMaster.filter((p:any) => p.name?.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+            {productsMaster.filter((p:any) => (p.productName || p.name)?.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
               <div className="text-center text-slate-500 mt-10">No products found</div>
             )}
           </div>
