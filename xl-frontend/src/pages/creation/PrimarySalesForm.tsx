@@ -387,7 +387,7 @@ export default function PrimarySalesForm() {
                       </div>
                     </div>
                     <div className="w-2/3">
-                      <label className="text-[9px] text-slate-400 uppercase mb-1 block">Base Price (뿯½‚뿯½)</label>
+                      <label className="text-[9px] text-slate-400 uppercase mb-1 block">Base Price (₹)</label>
                       <input 
                         type="number" 
                         min="0" 
@@ -425,7 +425,7 @@ export default function PrimarySalesForm() {
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Purc. Rtn Qty</label>
-                        <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                       </div>
                       <div className="w-[75px]">
                         <label className="text-[9px] text-slate-500 uppercase block">Type</label>
@@ -433,7 +433,7 @@ export default function PrimarySalesForm() {
                           <select 
                             value={item.rtnPriceType || 'PTS'} 
                             onChange={e => handleRtnPriceTypeChange(item.id, e.target.value)} 
-                            className="w-full bg-transparent border-b border-[#3b3b5a] p-1 text-xs text-red-400 font-bold focus:outline-none appearance-none cursor-pointer"
+                            className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 pr-6 text-xs text-red-400 font-bold focus:outline-none appearance-none cursor-pointer"
                           >
                             <option value="PTS" className="bg-[#1e2032] text-white">PTS</option>
                             <option value="PTR" className="bg-[#1e2032] text-white">PTR</option>
@@ -444,8 +444,8 @@ export default function PrimarySalesForm() {
                         </div>
                       </div>
                       <div className="flex-1">
-                        <label className="text-[9px] text-slate-500 uppercase block">Rtn Price (뿯½‚뿯½)</label>
-                        <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <label className="text-[9px] text-slate-500 uppercase block">Rtn Price (₹)</label>
+                        <input disabled={loadedStatus === 'Approved'} type="number" min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                       </div>
                     </div>
                   </div>
