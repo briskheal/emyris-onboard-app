@@ -76,7 +76,7 @@ export default function PrimarySalesForm() {
     const desig = user.designation || '';
     
     // Fetch Stockists mapped to User
-    axios.get(`/api/xl/stockists?hq=${hq}&designation=${desig}`).then(res => {
+    axios.get(editId ? '/api/xl/reports/stockists' : `/api/xl/stockists?hq=${hq}&designation=${desig}`).then(res => {
       if (res.data.success) {
         setStockists(res.data.data || []);
       }
@@ -354,7 +354,7 @@ export default function PrimarySalesForm() {
                 {/* Card Header (Product Select) */}
                 <div className="bg-[#1e2032] p-3 border-b border-[#3b3b5a] flex justify-between items-center gap-2">
                   <div 
-                    onClick={() => setSelectingProductFor(item.id)}
+                    onClick={() => { if (loadedStatus !== 'Approved') setSelectingProductFor(item.id); }}
                     className="flex-1 flex justify-between items-center cursor-pointer py-1"
                   >
                     <span className={`text-sm font-bold truncate ${item.product ? 'text-white' : 'text-slate-500'}`}>
@@ -373,8 +373,8 @@ export default function PrimarySalesForm() {
                     <div className="w-1/3">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Price Type</label>
                       <div className="relative">
-                        <select 
-                          value={item.priceType} 
+                        <select disabled={loadedStatus === 'Approved'}
+                            value={item.priceType} 
                           onChange={e => handlePriceTypeChange(item.id, e.target.value)} 
                           className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 pr-6 text-xs text-cyan-400 font-bold focus:outline-none appearance-none cursor-pointer"
                         >
@@ -430,8 +430,8 @@ export default function PrimarySalesForm() {
                       <div className="w-[75px]">
                         <label className="text-[9px] text-slate-500 uppercase block">Type</label>
                         <div className="relative">
-                          <select 
-                            value={item.rtnPriceType || 'PTS'} 
+                          <select disabled={loadedStatus === 'Approved'}
+                              value={item.rtnPriceType || 'PTS'} 
                             onChange={e => handleRtnPriceTypeChange(item.id, e.target.value)} 
                             className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 pr-6 text-xs text-red-400 font-bold focus:outline-none appearance-none cursor-pointer"
                           >
