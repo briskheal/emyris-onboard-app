@@ -48,6 +48,7 @@ export default function Login() {
         if (res.data.success) {
             // Save user data to localStorage
             localStorage.setItem('xl_user', JSON.stringify(res.data.user));
+            if (res.data.token) localStorage.setItem('xl_token', res.data.token);
             navigate('/dashboard');
         } else {
             alert(res.data.message || "Login failed");
