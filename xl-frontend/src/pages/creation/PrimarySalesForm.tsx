@@ -378,10 +378,10 @@ export default function PrimarySalesForm() {
                           onChange={e => handlePriceTypeChange(item.id, e.target.value)} 
                           className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 pr-6 text-xs text-cyan-400 font-bold focus:outline-none appearance-none cursor-pointer"
                         >
-                          <option value="PTS">PTS</option>
-                          <option value="PTR">PTR</option>
-                          <option value="MRP">MRP</option>
-                          <option value="CUS">CUS</option>
+                          <option value="PTS" className="bg-[#1e2032] text-white">PTS</option>
+                          <option value="PTR" className="bg-[#1e2032] text-white">PTR</option>
+                          <option value="MRP" className="bg-[#1e2032] text-white">MRP</option>
+                          <option value="CUS" className="bg-[#1e2032] text-white">CUS</option>
                         </select>
                         <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-cyan-400 pointer-events-none" />
                       </div>
@@ -435,10 +435,10 @@ export default function PrimarySalesForm() {
                             onChange={e => handleRtnPriceTypeChange(item.id, e.target.value)} 
                             className="w-full bg-transparent border-b border-[#3b3b5a] p-1 text-xs text-red-400 font-bold focus:outline-none appearance-none cursor-pointer"
                           >
-                            <option value="PTS">PTS</option>
-                            <option value="PTR">PTR</option>
-                            <option value="MRP">MRP</option>
-                            <option value="CUS">CUS</option>
+                            <option value="PTS" className="bg-[#1e2032] text-white">PTS</option>
+                            <option value="PTR" className="bg-[#1e2032] text-white">PTR</option>
+                            <option value="MRP" className="bg-[#1e2032] text-white">MRP</option>
+                            <option value="CUS" className="bg-[#1e2032] text-white">CUS</option>
                           </select>
                           <ChevronDown size={10} className="absolute right-0 top-1/2 -translate-y-1/2 text-red-400 pointer-events-none" />
                         </div>
