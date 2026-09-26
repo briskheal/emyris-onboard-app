@@ -41,7 +41,17 @@ export default function PrimarySalesForm() {
   }, [editId]);
 
   // Invoice Header State
-  const [header, setHeader] = useState({
+  const getStockistName = (val: string) => {
+      if (!val) return '';
+      const s = stockists.find(x => x.uid === val || x._id === val || x.businessName === val);
+      return s ? (s.businessName || s.name || val) : val;
+    };
+    const getProductName = (val: string) => {
+      if (!val) return '';
+      const p = productsMaster.find(x => x.uid === val || x._id === val || x.productName === val);
+      return p ? (p.productName || val) : val;
+    };
+    const [header, setHeader] = useState({
     date: new Date().toISOString().split('T')[0],
     invoiceDate: new Date().toISOString().split('T')[0],
     invoiceNumber: '',
@@ -283,7 +293,7 @@ export default function PrimarySalesForm() {
           <ArrowLeft size={20} />
         </button>
         <PackageSearch size={20} className="mr-2 text-cyan-400" />
-        <h1 className="text-white font-bold tracking-wide uppercase flex-1">{editId ? "EDIT PRIMARY SALES" : "PRIMARY SALES ENTRY"}</h1>
+        <h1 className="text-white font-bold tracking-wide uppercase flex-1">{loadedStatus === 'Approved' ? 'VIEW PRIMARY SALES' : editId ? 'EDIT PRIMARY SALES' : 'PRIMARY SALES ENTRY'}</h1>
         <button onClick={() => navigate('/creation/primary-sales/history')} className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1.5 rounded-lg active:scale-95 border border-cyan-500/20">
           HISTORY
         </button>
@@ -322,7 +332,7 @@ export default function PrimarySalesForm() {
               className="w-full bg-[#27273f] border border-[#3b3b5a] rounded p-2 text-sm text-white flex justify-between items-center cursor-pointer"
             >
               <span className={header.stockist ? 'text-white' : 'text-slate-500'}>
-                {header.stockist || '-- Search & Select Stockist --'}
+                {getStockistName(header.stockist) || '-- Search & Select Stockist --'}
               </span>
               <Search size={16} className="text-slate-500" />
             </div>
@@ -348,13 +358,13 @@ export default function PrimarySalesForm() {
                     className="flex-1 flex justify-between items-center cursor-pointer py-1"
                   >
                     <span className={`text-sm font-bold truncate ${item.product ? 'text-white' : 'text-slate-500'}`}>
-                      {item.product || '-- Search & Select Product --'}
+                      {getProductName(item.product) || '-- Search & Select Product --'}
                     </span>
                     {!item.product && <Search size={14} className="text-slate-500 ml-2 shrink-0" />}
                   </div>
-                  <button onClick={() => handleRemoveItem(item.id)} className="text-red-400 hover:text-red-300 p-1.5 transition-colors bg-red-400/10 rounded ml-2 shrink-0">
+                  {loadedStatus !== 'Approved' && ( <button onClick={() => handleRemoveItem(item.id)} className="text-red-400 hover:text-red-300 p-1.5 transition-colors bg-red-400/10 rounded ml-2 shrink-0">
                     <Trash2 size={16} />
-                  </button>
+                  </button> )}
                 </div>
 
                 {/* Card Body */}
@@ -392,15 +402,15 @@ export default function PrimarySalesForm() {
                   <div className="flex gap-2">
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Qty</label>
-                      <input type="number" min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.qty || ''} onChange={e => updateItem(item.id, 'qty', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Free</label>
-                      <input type="number" min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.free || ''} onChange={e => updateItem(item.id, 'free', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                     <div className="flex-1">
                       <label className="text-[9px] text-slate-400 uppercase mb-1 block">Disc %</label>
-                      <input type="number" min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
+                      <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.discount || ''} onChange={e => updateItem(item.id, 'discount', e.target.value)} placeholder="0" className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-white text-center focus:outline-none focus:border-cyan-500" />
                     </div>
                   </div>
 
@@ -409,13 +419,13 @@ export default function PrimarySalesForm() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[10px] text-red-400 font-bold uppercase tracking-wider">Returns</span>
                       <label className="flex items-center gap-1 text-[10px] text-slate-300 cursor-pointer">
-                        <input type="checkbox" checked={item.exp} onChange={e => updateItem(item.id, 'exp', e.target.checked)} className="accent-red-500" /> EXP
+                        <input disabled={loadedStatus === \'Approved\'} type="checkbox" checked={item.exp} onChange={e => updateItem(item.id, 'exp', e.target.checked)} className="accent-red-500" /> EXP
                       </label>
                     </div>
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Purc. Rtn Qty</label>
-                        <input type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.purcRtn || ''} onChange={e => updateItem(item.id, 'purcRtn', e.target.value)} placeholder="0" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
                       </div>
                       <div className="w-[75px]">
                         <label className="text-[9px] text-slate-500 uppercase block">Type</label>
@@ -435,7 +445,7 @@ export default function PrimarySalesForm() {
                       </div>
                       <div className="flex-1">
                         <label className="text-[9px] text-slate-500 uppercase block">Rtn Price (뿯½‚뿯½)</label>
-                        <input type="number" min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
+                        <input disabled={loadedStatus === \'Approved\'} type="number" min="0" value={item.rtnPrice || ''} onChange={e => updateItem(item.id, 'rtnPrice', e.target.value)} placeholder="0.00" className="w-full bg-transparent border-b border-[#3b3b5a] text-xs text-white p-1 focus:outline-none focus:border-red-500" />
                       </div>
                     </div>
                   </div>
@@ -446,7 +456,7 @@ export default function PrimarySalesForm() {
                       {calcs.rtnValue > 0 && <span className="text-[10px] text-red-400 leading-none">-{calcs.rtnValue.toFixed(2)}</span>}
                       <div>
                         <span className="text-[9px] text-slate-400 block leading-none mb-0.5">Final Value</span>
-                        <span className="text-sm font-bold text-emerald-400 leading-none">뿯½‚뿯½ {calcs.finalValue.toFixed(2)}</span>
+                        <span className="text-sm font-bold text-emerald-400 leading-none">₹ {calcs.finalValue.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>
@@ -455,9 +465,9 @@ export default function PrimarySalesForm() {
             );
           })}
 
-          <button onClick={handleAddItem} className="w-full py-3 rounded-lg border-2 border-dashed border-[#3b3b5a] text-cyan-400 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#27273f] transition-colors">
+          {loadedStatus !== 'Approved' && ( <button onClick={handleAddItem} className="w-full py-3 rounded-lg border-2 border-dashed border-[#3b3b5a] text-cyan-400 text-sm font-bold flex items-center justify-center gap-2 hover:bg-[#27273f] transition-colors">
             <Plus size={16} /> Add Product
-          </button>
+          </button> )}
         </div>
       </div>
 
@@ -465,13 +475,13 @@ export default function PrimarySalesForm() {
       <div className="fixed bottom-16 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-[#1a1b2d] border-t border-slate-700 p-4 shadow-[0_-10px_20px_rgba(0,0,0,0.3)] z-20">
         <div className="max-w-md mx-auto">
           <div className="flex justify-between mb-2 text-[11px]">
-            <div className="text-slate-400">Gross: <span className="text-white">뿯½‚뿯½ {totals.gross.toFixed(2)}</span></div>
-            <div className="text-slate-400">Salable Rtn: <span className="text-red-400">뿯½‚뿯½ {totals.salableRtn.toFixed(2)}</span></div>
-            <div className="text-slate-400">Exp Rtn: <span className="text-red-400">뿯½‚뿯½ {totals.expiryRtn.toFixed(2)}</span></div>
+            <div className="text-slate-400">Gross: <span className="text-white">₹ {totals.gross.toFixed(2)}</span></div>
+            <div className="text-slate-400">Salable Rtn: <span className="text-red-400">₹ {totals.salableRtn.toFixed(2)}</span></div>
+            <div className="text-slate-400">Exp Rtn: <span className="text-red-400">₹ {totals.expiryRtn.toFixed(2)}</span></div>
           </div>
           <div className="flex justify-between items-center mb-3">
             <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Net Inv Value</span>
-            <span className="text-xl font-bold text-emerald-400">뿯½‚뿯½ {totals.net.toFixed(2)}</span>
+            <span className="text-xl font-bold text-emerald-400">₹ {totals.net.toFixed(2)}</span>
           </div>
           {loadedStatus !== 'Approved' && (
           <button onClick={handleSave} disabled={loading} className="w-full bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold py-3 rounded-lg text-sm transition-colors shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
@@ -563,7 +573,7 @@ export default function PrimarySalesForm() {
                   >
                     <div className="font-bold text-cyan-400 flex justify-between">
                       {p.productName}
-                      <span className="text-[10px] text-slate-500 ml-2">PTS: 뿯½‚뿯½{p.pts || 0}</span>
+                      <span className="text-[10px] text-slate-500 ml-2">PTS: ₹{p.pts || 0}</span>
                     </div>
                     {p.category && <div className="text-[10px] text-slate-500 mt-1 uppercase">{p.category}</div>}
                   </div>
