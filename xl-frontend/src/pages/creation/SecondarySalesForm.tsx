@@ -82,7 +82,7 @@ export default function SecondarySalesForm() {
   // Handle Autopopulate when month/year/stockist change (only if NEW)
   useEffect(() => {
     if (!editId && header.stockist && header.month && header.year) {
-      axios.get(\`/api/xl/secondary-sales-data/auto-populate?stockist=\${header.stockist}&month=\${header.month}&year=\${header.year}\`)
+      axios.get(`/api/xl/secondary-sales-data/auto-populate?stockist=${header.stockist}&month=${header.month}&year=${header.year}`)
         .then(res => {
           if (res.data.success && res.data.data.length > 0) {
             const mapped = res.data.data.map((item: any) => ({
@@ -115,8 +115,8 @@ export default function SecondarySalesForm() {
     
     try {
       const [obRes, prRes] = await Promise.all([
-        axios.get(\`/api/xl/secondary-sales-data/opening-balance?stockist=\${header.stockist}&prevMonth=\${prevMonth}&prevYear=\${prevYear}&productId=\${productName}\`),
-        axios.get(\`/api/xl/secondary-sales-data/primary-received?stockist=\${header.stockist}&month=\${header.month}&year=\${header.year}&productId=\${productName}\`)
+        axios.get(`/api/xl/secondary-sales-data/opening-balance?stockist=${header.stockist}&prevMonth=${prevMonth}&prevYear=${prevYear}&productId=${productName}`),
+        axios.get(`/api/xl/secondary-sales-data/primary-received?stockist=${header.stockist}&month=${header.month}&year=${header.year}&productId=${productName}`)
       ]);
       
       const opQty = obRes.data.openingQty || 0;
