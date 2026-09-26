@@ -36,7 +36,7 @@ export default function SecondarySalesForm() {
     axios.get('/api/xl/reports/products').then(res => setProductsMaster(res.data.data || []));
     
     // For stockists, if editing we fetch all, otherwise fetch mapped
-    axios.get(editId ? '/api/xl/reports/stockists' : \`/api/xl/stockists?hq=\${hq}&designation=\${desig}\`).then(res => {
+    axios.get(editId ? '/api/xl/reports/stockists' : `/api/xl/stockists?hq=${hq}&designation=${desig}`).then(res => {
       setStockists(res.data.data || []);
     });
   }, [hq, desig, editId]);
@@ -261,11 +261,6 @@ export default function SecondarySalesForm() {
           <ArrowLeft className="w-6 h-6 text-slate-300" onClick={() => navigate(-1)} />
           <h1 className="text-lg font-bold bg-gradient-to-r from-sky-400 to-indigo-400 bg-clip-text text-transparent">Secondary Sales</h1>
         </div>
-        {!isLocked && (
-          <button onClick={() => handleSave(false)} className="bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-1.5 rounded-lg text-sm font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform">
-            SUBMIT
-          </button>
-        )}
       </div>
 
       <div className="p-4 space-y-4">
@@ -438,10 +433,15 @@ export default function SecondarySalesForm() {
         })}
 
         {!isLocked && (
-          <button onClick={addRow} className="w-full py-4 border border-dashed border-[#3b3b5a] hover:border-sky-500/50 hover:bg-sky-500/5 rounded-2xl flex items-center justify-center gap-2 text-sky-400 font-bold transition-all">
-            <Plus className="w-5 h-5" />
-            <span>ADD PRODUCT</span>
-          </button>
+          <div className="flex gap-3">
+            <button onClick={addRow} className="flex-1 py-4 border border-dashed border-[#3b3b5a] hover:border-sky-500/50 hover:bg-sky-500/5 rounded-2xl flex items-center justify-center gap-2 text-sky-400 font-bold transition-all">
+              <Plus className="w-5 h-5" />
+              <span>ADD PRODUCT</span>
+            </button>
+            <button onClick={() => handleSave(false)} className="w-[120px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/20 active:scale-95 transition-transform">
+              SUBMIT
+            </button>
+          </div>
         )}
       </div>
 
