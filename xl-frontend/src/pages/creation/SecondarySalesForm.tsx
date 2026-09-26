@@ -351,11 +351,11 @@ export default function SecondarySalesForm() {
               {/* Product Selector */}
               <div 
                 onClick={() => { if(!isLocked) { setActiveRowIndex(index); setShowProductModal(true); } }}
-                className={\`flex items-center justify-between bg-[#0f1015] border \${row.product ? 'border-sky-900/50' : 'border-[#3b3b5a]'} rounded-xl px-4 py-3 mb-3 w-[85%] \${!isLocked ? 'cursor-pointer' : ''}\`}
+                className={`flex items-center justify-between bg-[#0f1015] border ${row.product ? 'border-sky-900/50' : 'border-[#3b3b5a]'} rounded-xl px-4 py-3 mb-3 w-[85%] ${!isLocked ? 'cursor-pointer' : ''}`}
               >
                 <div className="flex items-center gap-3 overflow-hidden">
-                  <PackageSearch className={\`w-4 h-4 shrink-0 \${row.product ? 'text-sky-400' : 'text-slate-500'}\`} />
-                  <span className={\`text-sm font-semibold truncate \${row.product ? 'text-sky-300' : 'text-slate-500'}\`}>
+                  <PackageSearch className={`w-4 h-4 shrink-0 ${row.product ? 'text-sky-400' : 'text-slate-500'}`} />
+                  <span className={`text-sm font-semibold truncate ${row.product ? 'text-sky-300' : 'text-slate-500'}`}>
                     {row.product || '-- Search Product --'}
                   </span>
                 </div>
@@ -369,7 +369,7 @@ export default function SecondarySalesForm() {
                       key={type}
                       disabled={isLocked}
                       onClick={() => handlePriceTypeChange(index, type)}
-                      className={\`flex-1 text-[10px] font-bold rounded-lg transition-all \${row.priceType === type ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-300'}\`}
+                      className={`flex-1 text-[10px] font-bold rounded-lg transition-all ${row.priceType === type ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:text-slate-300'}`}
                     >
                       {type}
                     </button>
