@@ -230,6 +230,14 @@ export default function PrimarySalesForm() {
     setError('');
 
     try {
+      const normalizedItems = items.map((item) => {
+        const prodMaster = productsMaster.find((p) =>
+          (p.productName || p.name) === item.product ||
+          p.uid === item.product || p._id === item.product
+        );
+        return { ...item, productId: prodMaster ? (prodMaster.uid || prodMaster._id || item.product) : item.product };
+      });
+
       const payload = {
         employeeId: user.employeeId || user.email,
         date: header.date,
@@ -242,7 +250,7 @@ export default function PrimarySalesForm() {
         netInvValue: totals.net,
         salableRtnValue: totals.salableRtn,
         expiryRtnValue: totals.expiryRtn,
-        productsData: items,
+        productsData: normalizedItems,
         ...(editId ? { status: 'Re-Submitted' } : {})
       };
 
