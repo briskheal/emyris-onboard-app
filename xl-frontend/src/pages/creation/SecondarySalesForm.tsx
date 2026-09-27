@@ -240,7 +240,7 @@ export default function SecondarySalesForm() {
       employeeId: user.employeeId || user.email,
       ...header,
       amount: grandTotal,
-      status: isDraft ? 'Draft' : 'Pending',
+      status: isDraft ? 'Draft' : (editId ? 'Re-Submitted' : 'Pending'),
       productsData: mappedRows
     };
 

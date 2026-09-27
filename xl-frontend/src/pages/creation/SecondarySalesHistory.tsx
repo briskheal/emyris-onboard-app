@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, CheckCheck, X, Clock, Edit2, Eye, FileText, Search } from 'lucide-react';
+import { ChevronLeft, Plus, CheckCheck, X, Clock, Edit2, Eye, FileText, Search, RotateCcw } from 'lucide-react';
 import axios from 'axios';
 
 export default function SecondarySalesHistory() {
@@ -114,6 +114,7 @@ export default function SecondarySalesHistory() {
             {filteredInvoices.map((inv) => {
               const isApproved = inv.status === 'Approved';
               const isRejected = inv.status === 'Rejected';
+              const isReSubmitted = inv.status === 'Re-Submitted' || inv.status === 're-submitted';
               
               return (
                 <div 
@@ -134,8 +135,8 @@ export default function SecondarySalesHistory() {
                     {inv.createdAt ? new Date(inv.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
                   </div>
                   
-                  <div className={`w-[15%] flex justify-center ${isApproved ? 'text-emerald-400' : isRejected ? 'text-rose-400' : 'text-amber-400'}`}>
-                    {isApproved ? <CheckCheck size={16} strokeWidth={2.5} /> : isRejected ? <X size={16} strokeWidth={2.5} /> : <Clock size={16} strokeWidth={2.5} />}
+                  <div className={`w-[15%] flex justify-center ${isApproved ? 'text-emerald-400' : isRejected ? 'text-rose-400' : isReSubmitted ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {isApproved ? <CheckCheck size={16} strokeWidth={2.5} /> : isRejected ? <X size={16} strokeWidth={2.5} /> : isReSubmitted ? <RotateCcw size={15} strokeWidth={2.5} /> : <Clock size={16} strokeWidth={2.5} />}
                   </div>
                   
                   <div className="w-[20%] flex justify-end pr-1">
