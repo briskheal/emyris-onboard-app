@@ -107,7 +107,7 @@ export default function SecondarySalesHistory() {
         ) : filteredInvoices.length === 0 ? (
           <div className="text-center p-8 mt-6 mx-4 bg-slate-700/30 rounded-2xl border border-slate-600/30">
             <FileText size={48} className="mx-auto text-slate-500 mb-3 opacity-50" />
-            <p className="text-slate-400 text-sm">No primary sales history found.</p>
+            <p className="text-slate-400 text-sm">No secondary sales history found.</p>
           </div>
         ) : (
           <div className="flex flex-col">

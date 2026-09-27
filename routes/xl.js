@@ -3649,7 +3649,11 @@ router.get('/secondary-sales/:id', async (req, res) => {
         });
         if (!sale) return res.status(404).json({ success: false, message: 'Not found' });
         const saleData = sale.toJSON();
-        if (saleData.items && saleData.items.length > 0) {
+        // Always prefer productsData JSON (most up-to-date after edits); fall back to items if missing
+        if (saleData.productsData) {
+            try { JSON.parse(saleData.productsData); } catch(e) { saleData.productsData = null; }
+        }
+        if (!saleData.productsData && saleData.items && saleData.items.length > 0) {
             saleData.productsData = JSON.stringify(saleData.items);
         }
         res.json({ success: true, data: saleData });
@@ -3686,22 +3690,40 @@ router.post('/secondary-sales/save', async (req, res) => {
 
 router.put('/secondary-sales/update/:id', async (req, res) => {
     try {
-        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
+        const { XlSecondarySalesItem } = require('../db');
+        const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData, status } = req.body;
         const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
         const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
 
-        await XlSecondarySales.update({
-            date,
-            month,
-            year,
-            invoiceDate,
-            invoiceNumber,
-            division,
-            headquarter,
-            stockist,
-            amount,
-            productsData: typeof productsData === 'string' ? productsData : JSON.stringify(productsData)
-        }, { where: { _id: req.params.id } });
+        const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
+
+        const updateFields = { date, month, year, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData: JSON.stringify(products) };
+        if (status) updateFields.status = status;
+
+        await XlSecondarySales.update(updateFields, { where: { _id: req.params.id } });
+
+        // Sync child items: delete old, insert new
+        await XlSecondarySalesItem.destroy({ where: { saleId: req.params.id } });
+        if (products.length > 0) {
+            const itemRows = products.map(p => ({
+                saleId: req.params.id,
+                productId: p.productId || p.product || '',
+                product: p.product || p.productId || '',
+                qty: p.salesQty || p.qty || 0,
+                salesQty: p.salesQty || p.qty || 0,
+                basePrice: p.basePrice || p.customPrice || 0,
+                customPrice: p.basePrice || p.customPrice || 0,
+                priceType: p.priceType || p.selectedPriceType || 'PTR',
+                selectedPriceType: p.priceType || p.selectedPriceType || 'PTR',
+                openingQty: p.openingQty || 0,
+                receivedQty: p.receivedQty || 0,
+                free: p.free || p.freeStocks || 0,
+                freeStocks: p.free || p.freeStocks || 0,
+                closingQty: p.closingQty || 0
+            }));
+            await XlSecondarySalesItem.bulkCreate(itemRows);
+        }
+
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
