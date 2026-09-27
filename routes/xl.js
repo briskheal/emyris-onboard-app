@@ -3667,11 +3667,10 @@ router.get('/secondary-sales/all', async (req, res) => {
 router.delete('/secondary-sales/:id', async (req, res) => {
     try {
         const { XlSecondarySalesItem } = require('../db');
-        let sale = await XlSecondarySales.findByPk(req.params.id, { include: [{ model: XlSecondarySalesItem, as: 'items' }] });
-        if (sale && sale.items && sale.items.length > 0) {
-            sale.setDataValue('productsData', JSON.stringify(sale.items));
-        }
+        const sale = await XlSecondarySales.findByPk(req.params.id);
         if (!sale) return res.status(404).json({ success: false, message: 'Not found' });
+        // Delete child items first to avoid FK constraint issues
+        try { await XlSecondarySalesItem.destroy({ where: { saleId: req.params.id } }); } catch(e) { console.warn('child delete warn:', e.message); }
         await sale.destroy();
         res.json({ success: true });
     } catch (error) {
@@ -3780,6 +3779,9 @@ router.put('/secondary-sales/update/:id', async (req, res) => {
 
 router.delete('/secondary-sales/delete/:id', async (req, res) => {
     try {
+        const { XlSecondarySalesItem } = require('../db');
+        // Delete child items first to avoid FK constraint issues
+        try { await XlSecondarySalesItem.destroy({ where: { saleId: req.params.id } }); } catch(e) { console.warn('child delete warn:', e.message); }
         await XlSecondarySales.destroy({ where: { _id: req.params.id } });
         res.json({ success: true });
     } catch (error) {

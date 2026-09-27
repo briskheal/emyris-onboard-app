@@ -617,6 +617,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         saleId: { type: DataTypes.STRING, references: { model: 'xl_primary_sales', key: '_id' }, onDelete: 'CASCADE' },
         product: { type: DataTypes.STRING },
+        productId: { type: DataTypes.STRING },
         qty: { type: DataTypes.INTEGER },
         basePrice: { type: DataTypes.FLOAT },
         priceType: { type: DataTypes.STRING },
@@ -636,12 +637,17 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
         saleId: { type: DataTypes.STRING, references: { model: 'xl_secondary_sales', key: '_id' }, onDelete: 'CASCADE' },
         product: { type: DataTypes.STRING },
+        productId: { type: DataTypes.STRING },
         qty: { type: DataTypes.INTEGER },
+        salesQty: { type: DataTypes.INTEGER },
         basePrice: { type: DataTypes.FLOAT },
+        customPrice: { type: DataTypes.FLOAT },
         priceType: { type: DataTypes.STRING },
+        selectedPriceType: { type: DataTypes.STRING },
         openingQty: { type: DataTypes.INTEGER },
         receivedQty: { type: DataTypes.INTEGER },
         free: { type: DataTypes.INTEGER },
+        freeStocks: { type: DataTypes.INTEGER },
         closingQty: { type: DataTypes.INTEGER }
     });
 
