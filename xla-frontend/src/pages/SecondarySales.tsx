@@ -84,8 +84,35 @@ export default function SecondarySales() {
           });
           if (d.productsData) {
             try {
-               const pData = JSON.parse(d.productsData);
-               if (pData.length > 0) setRows(pData);
+               const pData = typeof d.productsData === 'string' ? JSON.parse(d.productsData) : d.productsData;
+               if (Array.isArray(pData) && pData.length > 0) {
+                 const adaptedRows = pData.map((row: any, i: number) => {
+                   // Normalize: mobile saves product as name, XLA needs uid for its dropdown
+                   let productId = row.productId || row.product || '';
+                   if (productId) {
+                     // Try to find by uid/id first, else by name
+                     const match = products.find((p: any) =>
+                       p.uid === productId || p._id === productId ||
+                       p.productName === productId || p.name === productId ||
+                       p.productName === row.product || p.uid === row.product || p._id === row.product
+                     );
+                     if (match) productId = match.uid || match._id || productId;
+                   }
+                   return {
+                     id: row.id || Date.now() + i,
+                     productId,
+                     price: '',
+                     selectedPriceType: (row.priceType || row.selectedPriceType || 'PTR').toUpperCase(),
+                     customPrice: row.customPrice || row.basePrice || '',
+                     salesQty: row.salesQty || row.qty || '',
+                     freeStocks: row.freeStocks || row.free || '',
+                     openingQty: row.openingQty || 0,
+                     receivedQty: row.receivedQty || 0,
+                     closingQty: row.closingQty || 0
+                   };
+                 });
+                 setRows(adaptedRows);
+               }
             } catch(e){}
           }
         }
