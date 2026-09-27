@@ -521,7 +521,7 @@ export default function PrimarySalesForm() {
                   <div 
                     key={s._id}
                     onClick={() => {
-                      setHeader({...header, stockist: s.businessName});
+                      setHeader({...header, stockist: s.uid || s._id || s.businessName});
                       setSelectingStockist(false);
                       setStockistSearch('');
                     }}

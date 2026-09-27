@@ -302,7 +302,7 @@ export default function SecondarySalesForm() {
         >
           <option value="" className="bg-[#1e2032]">-- Select Stockist --</option>
           {stockists.map((s:any) => (
-              <option key={s.businessName || s.name} value={s.businessName || s.name} className="bg-[#1e2032]">{s.businessName || s.name}</option>
+              <option key={s.uid || s._id} value={s.uid || s._id} className="bg-[#1e2032]">{s.businessName || s.name}</option>
             ))}
         </select>
 
