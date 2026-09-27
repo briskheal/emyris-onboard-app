@@ -83,24 +83,27 @@ export default function SecondarySalesForm() {
       axios.get(`/api/xl/secondary-sales-data/auto-populate?stockist=${header.stockist}&month=${header.month}&year=${header.year}`)
         .then(res => {
           if (res.data.success && res.data.data.length > 0) {
-            const mapped = res.data.data.map((item: any) => ({
-              id: Date.now() + Math.random(),
-              product: item.productId,
-              basePrice: '',
-              priceType: 'PTR',
-              openingQty: item.openingQty || 0,
-              receivedQty: item.receivedQty || 0,
-              salesQty: '',
-              free: '',
-              closingQty: (item.openingQty || 0) + (item.receivedQty || 0)
-            }));
+            const mapped = res.data.data.map((item: any) => {
+              const pData = productsMaster.find((p:any) => (p.productName || p.name) === item.productId || p.uid === item.productId || p._id === item.productId);
+              return {
+                id: Date.now() + Math.random(),
+                product: item.productId,
+                basePrice: pData ? (pData.ptr || '') : '',
+                priceType: 'PTR',
+                openingQty: item.openingQty || 0,
+                receivedQty: item.receivedQty || 0,
+                salesQty: '',
+                free: '',
+                closingQty: (item.openingQty || 0) + (item.receivedQty || 0)
+              };
+            });
             setProductsData(mapped);
           } else {
             setProductsData([]);
           }
         });
     }
-  }, [header.stockist, header.month, header.year, editId]);
+  }, [header.stockist, header.month, header.year, editId, productsMaster]);
 
   const fetchRowStock = async (productName: string, index: number) => {
     if (!productName || !header.stockist || !header.month || !header.year) return;
@@ -120,55 +123,68 @@ export default function SecondarySalesForm() {
       const opQty = obRes.data.openingQty || 0;
       const recQty = prRes.data.receivedQty || 0;
       
-      const newRows = [...productsData];
-      if (newRows[index]) {
-        newRows[index].openingQty = opQty;
-        newRows[index].receivedQty = recQty;
-        const total = opQty + recQty;
-        newRows[index].closingQty = total - (Number(newRows[index].salesQty) || 0) - (Number(newRows[index].free) || 0);
-        setProductsData(newRows);
-      }
+      setProductsData(prev => {
+        const newRows = [...prev];
+        if (newRows[index]) {
+          newRows[index] = { ...newRows[index], openingQty: opQty, receivedQty: recQty };
+          const total = opQty + recQty;
+          newRows[index].closingQty = total - (Number(newRows[index].salesQty) || 0) - (Number(newRows[index].free) || 0);
+        }
+        return newRows;
+      });
     } catch(e) {}
   };
 
   const handleRowChange = (index: number, field: string, value: any) => {
-    const newRows = [...productsData];
-    newRows[index][field] = value;
-    
-    if (['openingQty', 'receivedQty', 'salesQty', 'free'].includes(field)) {
-      const op = Number(newRows[index].openingQty) || 0;
-      const rec = Number(newRows[index].receivedQty) || 0;
-      const sales = Number(newRows[index].salesQty) || 0;
-      const free = Number(newRows[index].free) || 0;
-      newRows[index].closingQty = (op + rec) - (sales + free);
-    }
-    setProductsData(newRows);
+    setProductsData(prev => {
+      const newRows = [...prev];
+      newRows[index] = { ...newRows[index], [field]: value };
+      
+      if (['openingQty', 'receivedQty', 'salesQty', 'free'].includes(field)) {
+        const op = Number(newRows[index].openingQty) || 0;
+        const rec = Number(newRows[index].receivedQty) || 0;
+        const sales = Number(newRows[index].salesQty) || 0;
+        const free = Number(newRows[index].free) || 0;
+        newRows[index].closingQty = (op + rec) - (sales + free);
+      }
+      return newRows;
+    });
   };
 
   const selectProductForRow = (index: number, prodName: string) => {
-    handleRowChange(index, 'product', prodName);
-    
     const pData = productsMaster.find((p:any) => (p.productName || p.name) === prodName);
-    if (pData) {
-      const type = productsData[index].priceType;
-      if (type === 'PTR') handleRowChange(index, 'basePrice', pData.ptr || 0);
-      else if (type === 'PTS') handleRowChange(index, 'basePrice', pData.pts || 0);
-      else if (type === 'MRP') handleRowChange(index, 'basePrice', pData.mrp || 0);
-    }
+    
+    setProductsData(prev => {
+      const newRows = [...prev];
+      newRows[index] = { ...newRows[index], product: prodName };
+      
+      if (pData) {
+        const type = newRows[index].priceType;
+        if (type === 'PTR') newRows[index].basePrice = pData.ptr || 0;
+        else if (type === 'PTS') newRows[index].basePrice = pData.pts || 0;
+        else if (type === 'MRP') newRows[index].basePrice = pData.mrp || 0;
+      }
+      return newRows;
+    });
     
     fetchRowStock(prodName, index);
   };
 
   const handlePriceTypeChange = (index: number, type: string) => {
-    handleRowChange(index, 'priceType', type);
-    const prodName = productsData[index].product;
-    const pData = productsMaster.find((p:any) => (p.productName || p.name) === prodName);
-    if (pData) {
-      if (type === 'PTR') handleRowChange(index, 'basePrice', pData.ptr || 0);
-      else if (type === 'PTS') handleRowChange(index, 'basePrice', pData.pts || 0);
-      else if (type === 'MRP') handleRowChange(index, 'basePrice', pData.mrp || 0);
-      else if (type === 'CUS') handleRowChange(index, 'basePrice', '');
-    }
+    setProductsData(prev => {
+      const newRows = [...prev];
+      newRows[index] = { ...newRows[index], priceType: type };
+      
+      const prodName = newRows[index].product;
+      const pData = productsMaster.find((p:any) => (p.productName || p.name) === prodName);
+      if (pData) {
+        if (type === 'PTR') newRows[index].basePrice = pData.ptr || 0;
+        else if (type === 'PTS') newRows[index].basePrice = pData.pts || 0;
+        else if (type === 'MRP') newRows[index].basePrice = pData.mrp || 0;
+        else if (type === 'CUS') newRows[index].basePrice = '';
+      }
+      return newRows;
+    });
   };
 
   const addRow = () => {
