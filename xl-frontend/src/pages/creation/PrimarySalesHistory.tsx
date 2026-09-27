@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, CheckCheck, X, Clock, Edit2, Eye, FileText, Search } from 'lucide-react';
+import { ChevronLeft, Plus, CheckCheck, X, Clock, Edit2, Eye, FileText, Search, RotateCcw } from 'lucide-react';
 import axios from 'axios';
 
 export default function PrimarySalesHistory() {
@@ -114,11 +114,12 @@ export default function PrimarySalesHistory() {
             {filteredInvoices.map((inv) => {
               const isApproved = inv.status === 'Approved';
               const isRejected = inv.status === 'Rejected';
+              const isReSubmitted = inv.status === 'Re-Submitted' || inv.status === 're-submitted';
               
               return (
                 <div 
                   key={inv._id}
-                  className={`flex items-center gap-1 px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${inv.status === 'Re-Submitted' ? 'bg-amber-500/5' : ''}`}
+                  className={`flex items-center gap-1 px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${isReSubmitted ? 'bg-amber-500/5' : ''}`}
                 >
                   <div className="w-[45%] flex flex-col overflow-hidden pl-1">
                     <span className="text-[13px] leading-tight font-bold text-slate-100 truncate pr-2">
@@ -134,8 +135,8 @@ export default function PrimarySalesHistory() {
                     {inv.date ? new Date(inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
                   </div>
                   
-                  <div className={`w-[15%] flex justify-center ${isApproved ? 'text-emerald-400' : isRejected ? 'text-rose-400' : 'text-amber-400'}`}>
-                    {isApproved ? <CheckCheck size={16} strokeWidth={2.5} /> : isRejected ? <X size={16} strokeWidth={2.5} /> : <Clock size={16} strokeWidth={2.5} />}
+                  <div className={`w-[15%] flex justify-center ${isApproved ? 'text-emerald-400' : isRejected ? 'text-rose-400' : isReSubmitted ? 'text-amber-400' : 'text-slate-400'}`}>
+                    {isApproved ? <CheckCheck size={16} strokeWidth={2.5} /> : isRejected ? <X size={16} strokeWidth={2.5} /> : isReSubmitted ? <RotateCcw size={15} strokeWidth={2.5} /> : <Clock size={16} strokeWidth={2.5} />}
                   </div>
                   
                   <div className="w-[20%] flex justify-end pr-1">
