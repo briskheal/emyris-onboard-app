@@ -3704,9 +3704,29 @@ router.delete('/secondary-sales/delete/:id', async (req, res) => {
 router.get('/secondary-sales-data/opening-balance', async (req, res) => {
     try {
         const { stockist, prevMonth, prevYear, productId } = req.query;
-        // Search previous month's secondary sales for this stockist
+        const { XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+
+        const targetStockist = await XlStockist.findOne({
+            where: {
+                [Op.or]: [
+                    { uid: stockist },
+                    { _id: stockist },
+                    { businessName: stockist },
+                    { name: stockist }
+                ]
+            }
+        });
+        const searchIds = [stockist];
+        if (targetStockist) {
+            if (targetStockist.uid) searchIds.push(targetStockist.uid);
+            if (targetStockist._id) searchIds.push(targetStockist._id);
+            if (targetStockist.businessName) searchIds.push(targetStockist.businessName);
+            if (targetStockist.name) searchIds.push(targetStockist.name);
+        }
+
         const sales = await XlSecondarySales.findAll({
-            where: { stockist, month: prevMonth, year: prevYear }
+            where: { stockist: { [Op.in]: searchIds }, month: prevMonth, year: prevYear }
         });
         
         let openingQty = 0;
@@ -3716,7 +3736,8 @@ router.get('/secondary-sales-data/opening-balance', async (req, res) => {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        if (r.productId === productId) {
+                        const pid = r.productId || r.product;
+                        if (pid === productId) {
                             openingQty += (Number(r.closingQty) || 0);
                         }
                     });
@@ -3735,8 +3756,32 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
     try {
         const { stockist, month, year } = req.query;
         if (!stockist || !month || !year) return res.json({ success: true, data: [] });
+        
+        const { XlStockist } = require('../db');
+        const { Op } = require('sequelize');
 
-        const sales = await XlPrimarySales.findAll({ where: { stockist, month, year } });
+        // Look up the stockist to get all its possible identifiers (uid, _id, businessName, name)
+        const targetStockist = await XlStockist.findOne({
+            where: {
+                [Op.or]: [
+                    { uid: stockist },
+                    { _id: stockist },
+                    { businessName: stockist },
+                    { name: stockist }
+                ]
+            }
+        });
+
+        // Search using all available aliases to support older records and newer records simultaneously
+        const searchIds = [stockist];
+        if (targetStockist) {
+            if (targetStockist.uid) searchIds.push(targetStockist.uid);
+            if (targetStockist._id) searchIds.push(targetStockist._id);
+            if (targetStockist.businessName) searchIds.push(targetStockist.businessName);
+            if (targetStockist.name) searchIds.push(targetStockist.name);
+        }
+
+        const sales = await XlPrimarySales.findAll({ where: { stockist: { [Op.in]: searchIds }, month, year } });
 
         const productMap = {}; // productId -> receivedQty
 
@@ -3745,9 +3790,10 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        if (!r.productId) return;
-                        if (!productMap[r.productId]) productMap[r.productId] = 0;
-                        productMap[r.productId] += (Number(r.quantity) || 0) + (Number(r.freeStocks) || 0);
+                        const pid = r.productId || r.product; // Fallback to handle both desktop and mobile schema
+                        if (!pid) return;
+                        if (!productMap[pid]) productMap[pid] = 0;
+                        productMap[pid] += (Number(r.quantity) || Number(r.qty) || 0) + (Number(r.freeStocks) || Number(r.free) || 0);
                     });
                 } catch(e) {}
             }
@@ -3759,7 +3805,7 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
         const prevYear = prevMonthIndex >= 0 ? year : String(Number(year) - 1);
 
         const prevSecSales = await XlSecondarySales.findAll({
-            where: { stockist, month: prevMonth, year: prevYear }
+            where: { stockist: { [Op.in]: searchIds }, month: prevMonth, year: prevYear }
         });
 
         const closingMap = {}; // productId -> closingQty
@@ -3768,18 +3814,20 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        if (r.productId && r.closingQty !== undefined) {
-                            closingMap[r.productId] = Number(r.closingQty) || 0;
+                        const pid = r.productId || r.product;
+                        if (pid) {
+                            closingMap[pid] = Number(r.closingQty) || 0;
                         }
                     });
                 } catch(e) {}
             }
         });
 
-        const result = Object.keys(productMap).map(productId => {
+        const allProductIds = [...new Set([...Object.keys(productMap), ...Object.keys(closingMap)])];
+        const result = allProductIds.map(productId => {
             return {
                 productId,
-                receivedQty: productMap[productId],
+                receivedQty: productMap[productId] || 0,
                 openingQty: closingMap[productId] || 0
             };
         });
@@ -3794,9 +3842,29 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
 router.get('/secondary-sales-data/primary-received', async (req, res) => {
     try {
         const { stockist, month, year, productId } = req.query;
-        // Search this month's primary sales for this stockist
+        const { XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+
+        const targetStockist = await XlStockist.findOne({
+            where: {
+                [Op.or]: [
+                    { uid: stockist },
+                    { _id: stockist },
+                    { businessName: stockist },
+                    { name: stockist }
+                ]
+            }
+        });
+        const searchIds = [stockist];
+        if (targetStockist) {
+            if (targetStockist.uid) searchIds.push(targetStockist.uid);
+            if (targetStockist._id) searchIds.push(targetStockist._id);
+            if (targetStockist.businessName) searchIds.push(targetStockist.businessName);
+            if (targetStockist.name) searchIds.push(targetStockist.name);
+        }
+
         const sales = await XlPrimarySales.findAll({
-            where: { stockist, month, year }
+            where: { stockist: { [Op.in]: searchIds }, month, year }
         });
         
         let receivedQty = 0;
@@ -3806,10 +3874,9 @@ router.get('/secondary-sales-data/primary-received', async (req, res) => {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        if (r.productId === productId) {
-                            // Sum up normal quantity (and free stocks if applicable, we will just sum quantity)
-                            receivedQty += (Number(r.quantity) || 0) + (Number(r.freeStocks) || 0);
-                            
+                        const pid = r.productId || r.product;
+                        if (pid === productId) {
+                            receivedQty += (Number(r.quantity) || Number(r.qty) || 0) + (Number(r.freeStocks) || Number(r.free) || 0);
                         }
                     });
                 } catch(e) {}
