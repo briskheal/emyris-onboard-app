@@ -30,29 +30,54 @@ const verifyToken = (req, res, next) => {
 
 router.use(verifyToken);
 
-// [NEW] Admin Login Route
+// XLA Admin Login — dedicated route, completely separate from emyrishr.in/admin portal
+// Only accepts credentials created specifically for the XLA module (XlAdmin table with role='XLA' or 'ADMIN')
+// Main admin portal credentials (routes/admin.js /login) do NOT work here
 router.post('/admin-login', async (req, res) => {
     try {
-        const { email, password } = req.body;
-        if (!email || !password) return res.json({ success: false, message: 'Email and password required' });
-        
-        // Master Admin Check
-        if (email === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
-            const token = jwt.sign({ id: 'MASTER_ADMIN', email, role: 'ADMIN' }, JWT_SECRET, { expiresIn: '30d' });
-            return res.json({ success: true, user: { firstName: 'Super', lastName: 'Admin', designation: 'ADMIN', email }, token });
-        }
-        
+        const { email, username, password } = req.body;
+        const loginEmail = (email || username || '').trim();
+        if (!loginEmail || !password) return res.json({ success: false, message: 'Email and password required' });
+
         const { XlAdmin } = require('../db');
-        const admin = await XlAdmin.findOne({ where: { email, password } });
-        
-        if (!admin) return res.json({ success: false, message: 'Invalid admin credentials' });
-        
+        const bcrypt = require('bcryptjs');
+
+        // Look up by email in XlAdmin table
+        const admin = await XlAdmin.findOne({ where: { email: loginEmail } });
+
+        if (!admin) {
+            return res.json({ success: false, message: 'Invalid XLA credentials. Use your XLA admin login.' });
+        }
+
+        // Verify password (supports both bcrypt-hashed and legacy plain text)
+        const storedPass = admin.password || '';
+        let passwordMatch = false;
+        if (storedPass.startsWith('$2')) {
+            passwordMatch = bcrypt.compareSync(password, storedPass);
+        } else {
+            passwordMatch = (password === storedPass);
+            if (passwordMatch) {
+                // Auto-upgrade to bcrypt for next login
+                const hashed = bcrypt.hashSync(password, 10);
+                await XlAdmin.update({ password: hashed }, { where: { _id: admin._id } });
+            }
+        }
+
+        if (!passwordMatch) {
+            return res.json({ success: false, message: 'Invalid XLA credentials. Use your XLA admin login.' });
+        }
+
         const adminData = admin.toJSON();
         delete adminData.password;
-        
-        const token = jwt.sign({ id: admin._id, email: admin.email, role: 'ADMIN' }, JWT_SECRET, { expiresIn: '30d' });
-        res.json({ success: true, user: adminData, token });
+
+        const token = jwt.sign(
+            { id: admin._id, email: admin.email, role: admin.role || 'ADMIN', isAdmin: true },
+            JWT_SECRET,
+            { expiresIn: '30d' }
+        );
+        res.json({ success: true, user: adminData, role: admin.role || 'admin', token });
     } catch (e) {
+        console.error('[XLA Admin Login Error]', e.message);
         res.status(500).json({ success: false, message: e.message });
     }
 });

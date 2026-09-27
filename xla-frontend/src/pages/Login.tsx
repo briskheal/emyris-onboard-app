@@ -34,7 +34,7 @@ export default function Login() {
     setError('');
     if (email && password) {
       try {
-        const res = await axios.post('/api/admin-login', { username: email, password });
+        const res = await axios.post('/api/xl/admin-login', { username: email, email, password });
         if (res.data.success) {
           if (!res.data.token) {
             setError('Server error: no token received');
