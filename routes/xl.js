@@ -3379,6 +3379,13 @@ router.delete('/primary-sales/delete/:id', async (req, res) => {
             }
         }
         
+        // Delete child items first to avoid FK constraint errors (no cascade defined in db.js)
+        try {
+            await XlPrimarySalesItem.destroy({ where: { saleId: req.params.id } });
+        } catch(e) {
+            console.warn('Could not delete primary sale child items:', e.message);
+        }
+
         await sale.destroy();
         res.json({ success: true, message: 'Invoice deleted successfully' });
     } catch (error) {
