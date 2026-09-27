@@ -27,9 +27,9 @@ export default function SecondarySalesForm() {
   const [loadedStatus, setLoadedStatus] = useState('');
   
   // Modals - MATCHING PRIMARY FLOW EXACTLY
-  const [selectingStockist, setSelectingStockist] = useState(false);
+  const [stockistSearchOpen, setStockistSearchOpen] = useState(false);
   const [stockistSearch, setStockistSearch] = useState('');
-  const [selectingProductFor, setSelectingProductFor] = useState<number | null>(null);
+  const [activeProductDropdown, setActiveProductDropdown] = useState<number | null>(null);
   const [productSearch, setProductSearch] = useState('');
 
   // Fetch Masters
@@ -333,14 +333,52 @@ export default function SecondarySalesForm() {
             </div>
           </div>
 
-          <div>
+          <div className="relative">
             <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Select Stockist *</label>
-            <div onClick={() => !isLocked && setSelectingStockist(true)} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-sm text-white flex justify-between items-center cursor-pointer">
-              <span className={header.stockist ? 'text-white' : 'text-slate-500'}>
-                {getStockistName(header.stockist) || '-- Search & Select Stockist --'}
-              </span>
-              <Search size={16} className="text-slate-500" />
+            <div className="relative">
+              <input 
+                type="text" 
+                disabled={isLocked}
+                placeholder="-- Search & Select Stockist --" 
+                value={stockistSearchOpen ? stockistSearch : (getStockistName(header.stockist) || '')} 
+                onChange={e => {
+                  setStockistSearch(e.target.value);
+                  setStockistSearchOpen(true);
+                }}
+                onFocus={() => {
+                   setStockistSearch(''); 
+                   setStockistSearchOpen(true);
+                }}
+                onBlur={() => setTimeout(() => setStockistSearchOpen(false), 200)}
+                className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 pl-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 outline-none" 
+              />
+              <Search size={16} className="text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
+
+            {stockistSearchOpen && !isLocked && (
+              <div className="absolute z-[60] w-full mt-1 bg-[#1e2032] border border-[#3b3b5a] rounded-lg shadow-2xl max-h-48 overflow-y-auto top-full left-0">
+                {stockists
+                  .filter(s => (s.businessName || s.name || '').toLowerCase().includes(stockistSearch.toLowerCase()))
+                  .map(s => (
+                    <div 
+                      key={s._id || Math.random()} 
+                      className="p-3 text-sm border-b border-[#3b3b5a]/50 text-white hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
+                      onMouseDown={(e) => { 
+                        e.preventDefault();
+                        setHeader({...header, stockist: s.uid || s._id});
+                        setStockistSearch(s.businessName || s.name);
+                        setStockistSearchOpen(false);
+                      }}
+                    >
+                      <div className="font-bold">{s.businessName || s.name}</div>
+                      <div className="text-[10px] text-slate-400">{s.headquarter || ''}</div>
+                    </div>
+                ))}
+                {stockists.filter(s => (s.businessName || s.name || '').toLowerCase().includes(stockistSearch.toLowerCase())).length === 0 && (
+                   <div className="p-3 text-xs text-slate-500">No stockists found</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -355,16 +393,53 @@ export default function SecondarySalesForm() {
           {productsData.map((row, index) => {
             const rowValue = (Number(row.basePrice) || 0) * (Number(row.salesQty) || 0);
             return (
-              <div key={row.id} className="bg-[#27273f] rounded-xl border border-[#3b3b5a] overflow-hidden shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div key={row.id} className="bg-[#27273f] rounded-xl border border-[#3b3b5a] relative shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {/* Card Header (Product Select) */}
-                <div className="bg-[#1e2032] p-3 border-b border-[#3b3b5a] flex justify-between items-center gap-2">
-                  <div onClick={() => !isLocked && setSelectingProductFor(index)} className="flex-1 flex justify-between items-center cursor-pointer py-1">
-                    <span className={`text-sm font-bold truncate ${row.product ? 'text-white' : 'text-slate-500'}`}>
-                      {getProductName(row.product) || '-- Search & Select Product --'}
-                    </span>
-                    {!row.product && <Search size={14} className="text-slate-500 ml-2 shrink-0" />}
+                <div className="bg-[#1e2032] p-3 border-b border-[#3b3b5a] rounded-t-xl flex items-center gap-2 relative">
+                  <div className="flex-1 relative">
+                    <input 
+                      type="text" 
+                      disabled={isLocked}
+                      placeholder="-- Search & Select Product --" 
+                      value={activeProductDropdown === index ? productSearch : (getProductName(row.product) || '')} 
+                      onChange={e => {
+                        setProductSearch(e.target.value);
+                        setActiveProductDropdown(index);
+                      }}
+                      onFocus={() => {
+                         setProductSearch(''); 
+                         setActiveProductDropdown(index);
+                      }}
+                      onBlur={() => setTimeout(() => { if (activeProductDropdown === index) setActiveProductDropdown(null) }, 200)}
+                      className="w-full bg-transparent text-sm font-bold text-white placeholder-slate-500 focus:outline-none"
+                    />
                   </div>
-                  {!isLocked && ( <button onClick={() => removeRow(index)} className="text-red-400 hover:text-red-300 p-1.5 transition-colors bg-red-400/10 rounded ml-2 shrink-0"><Trash2 size={16} /></button> )}
+                  {!row.product && <Search size={14} className="text-slate-500 shrink-0 pointer-events-none" />}
+                  {!isLocked && ( <button onClick={() => removeRow(index)} className="text-red-400 hover:text-red-300 p-1.5 transition-colors bg-red-400/10 rounded shrink-0"><Trash2 size={16} /></button> )}
+
+                  {activeProductDropdown === index && !isLocked && (
+                    <div className="absolute z-[70] w-full mt-1 bg-[#1e2032] border border-[#3b3b5a] rounded-lg shadow-2xl max-h-48 overflow-y-auto top-full left-0">
+                      {productsMaster
+                        .filter(p => (p.productName || p.name || '').toLowerCase().includes(productSearch.toLowerCase()))
+                        .map(p => (
+                          <div 
+                            key={p.uid || p._id || p.productName || Math.random()} 
+                            className="p-3 text-sm border-b border-[#3b3b5a]/50 text-white hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              selectProductForRow(index, p.productName || p.name);
+                              setActiveProductDropdown(null);
+                            }}
+                          >
+                            <div className="font-bold">{p.productName || p.name}</div>
+                            <div className="text-[10px] text-slate-400 mt-0.5">PTR: ₹{p.ptr || '0.00'}</div>
+                          </div>
+                      ))}
+                      {productsMaster.filter(p => (p.productName || p.name || '').toLowerCase().includes(productSearch.toLowerCase())).length === 0 && (
+                         <div className="p-3 text-xs text-slate-500">No products found</div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Body */}
@@ -460,96 +535,6 @@ export default function SecondarySalesForm() {
         )}
       </div>
 
-      {/* Stockist Selection Modal */}
-      {selectingStockist && (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-[#1c1c2e] w-full sm:max-w-md h-[75vh] sm:h-[60vh] sm:rounded-xl rounded-t-2xl flex flex-col shadow-2xl border-t sm:border border-[#3b3b5a]">
-            <div className="p-4 border-b border-[#3b3b5a] flex items-center gap-3 shrink-0">
-              <div className="relative flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="Search stockist..." 
-                  value={stockistSearch}
-                  onChange={e => setStockistSearch(e.target.value)}
-                  className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-              <button onClick={() => { setSelectingStockist(false); setStockistSearch(''); }} className="p-2 text-slate-400 hover:text-white bg-[#27273f] rounded-lg">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto pb-6">
-              {filteredStockists.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-sm">No stockists found.</div>
-              ) : (
-                filteredStockists.map(s => (
-                  <div 
-                    key={s._id || s.uid}
-                    onClick={() => {
-                      setHeader({...header, stockist: s.uid || s._id});
-                      setSelectingStockist(false);
-                      setStockistSearch('');
-                    }}
-                    className="p-4 border-b border-[#3b3b5a]/40 text-sm text-slate-300 hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
-                  >
-                    <div className="font-bold text-white">{s.businessName || s.name}</div>
-                    {s.headquarter && <div className="text-[10px] text-slate-500 mt-1 uppercase">{s.headquarter}</div>}
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Product Selection Modal */}
-      {selectingProductFor !== null && (
-        <div className="fixed inset-0 z-[60] bg-black/80 flex flex-col justify-end sm:items-center sm:justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-[#1c1c2e] w-full sm:max-w-md h-[75vh] sm:h-[60vh] sm:rounded-xl rounded-t-2xl flex flex-col shadow-2xl border-t sm:border border-[#3b3b5a]">
-            <div className="p-4 border-b border-[#3b3b5a] flex items-center gap-3 shrink-0">
-              <div className="relative flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="Search product..." 
-                  value={productSearch}
-                  onChange={e => setProductSearch(e.target.value)}
-                  className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500"
-                />
-              </div>
-              <button onClick={() => { setSelectingProductFor(null); setProductSearch(''); }} className="p-2 text-slate-400 hover:text-white bg-[#27273f] rounded-lg">
-                <X size={18} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto pb-6">
-              {filteredProducts.length === 0 ? (
-                <div className="p-6 text-center text-slate-500 text-sm">No products found.</div>
-              ) : (
-                filteredProducts.map(p => (
-                  <div 
-                    key={p.productName || p.name}
-                    onClick={() => {
-                      selectProductForRow(selectingProductFor, p.productName || p.name);
-                      setSelectingProductFor(null);
-                      setProductSearch('');
-                    }}
-                    className="p-4 border-b border-[#3b3b5a]/40 flex justify-between items-center hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
-                  >
-                    <div>
-                      <div className="font-bold text-sm text-white">{p.productName || p.name}</div>
-                      <div className="text-[10px] text-slate-500 mt-1">₹ {p.ptr}</div>
-                    </div>
-                    <Plus size={16} className="text-cyan-500" />
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
   );
 }
