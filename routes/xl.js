@@ -2253,6 +2253,14 @@ router.get('/approvals/pending', async (req, res) => {
                 }
             }
 
+            if ((type === 'Primary Sales' || type === 'Secondary Sales') && pData.stockist) {
+                const st = await XlStockist.findOne({ where: { [Op.or]: [{ _id: pData.stockist }, { uid: pData.stockist }] } });
+                if (st) {
+                    pData.stockist = st.businessName || st.name || pData.stockist;
+                    pData.headquarter = pData.headquarter || st.headquarter || '-';
+                }
+            }
+
             if (type === 'Geo Fencing') {
                 let ent = null;
                 if (pData.entityType === 'Doctor') ent = await XlDoctor.findOne({ where: { _id: pData.entityId }});
