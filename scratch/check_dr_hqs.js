@@ -1,0 +1,1 @@
+const { XlDoctor } = require('../db'); async function check() { const drs = await XlDoctor.findAll({ attributes: ['headquarter'] }); const hqs = new Set(drs.map(d => d.headquarter)); console.log([...hqs]); } check();
