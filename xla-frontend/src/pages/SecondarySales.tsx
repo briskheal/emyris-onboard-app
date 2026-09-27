@@ -112,6 +112,15 @@ export default function SecondarySales() {
                    };
                  });
                  setRows(adaptedRows);
+                 // Fetch live opening/received balances for each product (from primary sales data)
+                 const stockist = d.stockist || '';
+                 const month = d.month || currentMonth.split(' ')[0];
+                 const year = d.year || currentMonth.split(' ')[1];
+                 adaptedRows.forEach((row, idx) => {
+                   if (row.productId) {
+                     fetchBalances(stockist, month, year, row.productId, idx);
+                   }
+                 });
                }
             } catch(e){}
           }

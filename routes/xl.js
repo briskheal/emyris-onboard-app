@@ -3345,19 +3345,34 @@ router.delete('/primary-sales/delete/:id', async (req, res) => {
         const sale = await XlPrimarySales.findByPk(req.params.id);
         if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
 
-        // Strict Server-Side Security Lock for Approved Invoices
+        // Security lock: only admin can delete Approved invoices
         if (sale.status === 'Approved') {
-            const requesterId = req.body.employeeId || req.query.employeeId || 'UNKNOWN';
+            const requesterId = req.body.employeeId || req.query.employeeId || '';
             let isAdmin = (requesterId === 'ADMIN');
-            
-            if (!isAdmin && requesterId !== 'UNKNOWN') {
+
+            // Check if called from XLA admin portal (JWT in Authorization header)
+            if (!isAdmin) {
+                const authHeader = req.headers.authorization || '';
+                if (authHeader.startsWith('Bearer ')) {
+                    try {
+                        const jwt = require('jsonwebtoken');
+                        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'xl_secret_key_2024');
+                        if (decoded && (decoded.role === 'admin' || decoded.role === 'superadmin' || decoded.isAdmin)) {
+                            isAdmin = true;
+                        }
+                    } catch(e) {}
+                }
+            }
+
+            // Check XlUser table if employeeId given
+            if (!isAdmin && requesterId) {
                 const { XlUser } = require('../db');
                 const user = await XlUser.findOne({ where: { employeeId: requesterId } });
                 if (user && (user.designation === 'ADMIN' || user.designation === 'HO')) {
                     isAdmin = true;
                 }
             }
-            
+
             if (!isAdmin) {
                 return res.status(403).json({ success: false, message: 'Forbidden: Cannot delete an approved invoice unless you are an Admin.' });
             }

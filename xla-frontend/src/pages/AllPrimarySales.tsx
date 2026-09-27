@@ -53,11 +53,14 @@ export default function AllPrimarySales() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this invoice?')) {
       try {
-        const res = await axios.delete(`/api/xl/primary-sales/delete/${id}`);
+        const token = localStorage.getItem('xla_token') || '';
+        const res = await axios.delete(`/api/xl/primary-sales/delete/${id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
         if (res.data.success) {
           fetchSales();
         } else {
-          alert('Failed to delete.');
+          alert(res.data.message || 'Failed to delete.');
         }
       } catch (error) {
         alert('Error deleting invoice.');
