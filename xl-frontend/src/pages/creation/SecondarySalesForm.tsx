@@ -107,22 +107,28 @@ export default function SecondarySalesForm() {
 
   const fetchRowStock = async (productName: string, index: number) => {
     if (!productName || !header.stockist || !header.month || !header.year) return;
-    
+
+    // Resolve to uid for reliable backend matching
+    const prodMaster = productsMaster.find((p: any) =>
+      (p.productName || p.name) === productName || p.uid === productName || p._id === productName
+    );
+    const productId = prodMaster ? (prodMaster.uid || prodMaster._id || productName) : productName;
+
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const mIdx = months.indexOf(header.month);
     let prevMonth = '', prevYear = header.year;
     if (mIdx === 0) { prevMonth = "Dec"; prevYear = (parseInt(header.year) - 1).toString(); }
     else if (mIdx > 0) { prevMonth = months[mIdx - 1]; }
-    
+
     try {
       const [obRes, prRes] = await Promise.all([
-        axios.get(`/api/xl/secondary-sales-data/opening-balance?stockist=${header.stockist}&prevMonth=${prevMonth}&prevYear=${prevYear}&productId=${productName}`),
-        axios.get(`/api/xl/secondary-sales-data/primary-received?stockist=${header.stockist}&month=${header.month}&year=${header.year}&productId=${productName}`)
+        axios.get(`/api/xl/secondary-sales-data/opening-balance?stockist=${header.stockist}&prevMonth=${prevMonth}&prevYear=${prevYear}&productId=${productId}`),
+        axios.get(`/api/xl/secondary-sales-data/primary-received?stockist=${header.stockist}&month=${header.month}&year=${header.year}&productId=${productId}`)
       ]);
-      
+
       const opQty = obRes.data.openingQty || 0;
       const recQty = prRes.data.receivedQty || 0;
-      
+
       setProductsData(prev => {
         const newRows = [...prev];
         if (newRows[index]) {
@@ -220,21 +226,29 @@ export default function SecondarySalesForm() {
     const validRows = productsData.filter(r => r.product && (Number(r.salesQty) > 0 || Number(r.free) > 0 || r.openingQty > 0 || r.receivedQty > 0));
     if (validRows.length === 0) return alert('No valid products to save.');
 
-    const mappedRows = validRows.map(r => ({
-      product: r.product,
-      productId: r.product,
-      qty: r.salesQty,
-      salesQty: r.salesQty,
-      basePrice: r.basePrice,
-      customPrice: r.basePrice,
-      priceType: r.priceType,
-      selectedPriceType: r.priceType,
-      openingQty: r.openingQty,
-      receivedQty: r.receivedQty,
-      free: r.free,
-      freeStocks: r.free,
-      closingQty: r.closingQty
-    }));
+    const mappedRows = validRows.map(r => {
+      // Resolve product name to uid so XLA and stock routes can match it correctly
+      const prodMaster = productsMaster.find((p: any) =>
+        (p.productName || p.name) === r.product ||
+        p.uid === r.product || p._id === r.product
+      );
+      const resolvedProductId = prodMaster ? (prodMaster.uid || prodMaster._id || r.product) : r.product;
+      return {
+        product: r.product,           // keep display name for mobile rendering
+        productId: resolvedProductId, // store uid for XLA and backend routes
+        qty: r.salesQty,
+        salesQty: r.salesQty,
+        basePrice: r.basePrice,
+        customPrice: r.basePrice,
+        priceType: r.priceType,
+        selectedPriceType: r.priceType,
+        openingQty: r.openingQty,
+        receivedQty: r.receivedQty,
+        free: r.free,
+        freeStocks: r.free,
+        closingQty: r.closingQty
+      };
+    });
 
     const payload = {
       employeeId: user.employeeId || user.email,
