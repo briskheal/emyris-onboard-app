@@ -61,7 +61,7 @@ export default function AllSecondarySales() {
   };
 
   const getStockistName = (uid: string) => {
-    const st = stockists.find(s => s.uid === uid || s.businessName === uid || s.name === uid);
+    const st = stockists.find(s => s._id === uid || s.uid === uid || s.businessName === uid || s.name === uid);
     return st ? (st.businessName || st.name || uid) : uid;
   };
 
@@ -132,11 +132,11 @@ export default function AllSecondarySales() {
                     return (
                       <tr key={sale._id} className="hover:bg-[#1a1a2e]/50 transition-colors">
                         <td className="p-3 text-center text-[#8b8baf] border-r border-[#3b3b5a]/50">{index + 1}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-slate-300">{sale.date || '-'}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-slate-300">{sale.date || (sale.createdAt ? new Date(sale.createdAt).toISOString().split('T')[0] : (sale.invoiceDate || '-'))}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-medium text-white">{sale.invoiceNumber || '-'}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-slate-300">{sale.invoiceDate || '-'}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[200px]">{getStockistName(sale.stockist) || '-'}</td>
-                        <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[150px] text-slate-300">{sale.headquarter || '-'}</td>
+                        <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[150px] text-slate-300">{sale.headquarter || (stockists.find(s => s._id === sale.stockist || s.uid === sale.stockist)?.headquarter || '-')}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-[#00e5ff]">
                           {sale.amount ? sale.amount.toFixed(2) : '-'}
                         </td>

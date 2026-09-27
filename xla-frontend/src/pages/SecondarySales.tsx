@@ -73,13 +73,13 @@ export default function SecondarySales() {
         if (res.data.success) {
           const d = res.data.data;
           setFormData({
-            date: d.date || '',
+            date: d.date || (d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : ''),
             month: d.month || currentMonth.split(' ')[0],
             year: d.year || currentMonth.split(' ')[1],
             invoiceDate: d.invoiceDate || '',
             invoiceNumber: d.invoiceNumber || '',
             division: d.division || '',
-            headquarter: d.headquarter || '',
+            headquarter: d.headquarter || (stockists.find(s => s._id === d.stockist || s.uid === d.stockist)?.headquarter || ''),
             stockist: d.stockist || ''
           });
           if (d.productsData) {
@@ -343,8 +343,8 @@ export default function SecondarySales() {
               <div className="space-y-2 lg:col-span-2">
                 <label className="text-[10px] font-bold text-[#8b8baf] uppercase tracking-wider">Select Stockist <span className="text-rose-500">*</span></label>
                 <div className="h-[42px] [&>div>div]:min-h-[42px]"><CustomSelect 
-                  options={filteredStockists.map(s => ({ value: s.uid || s._id, label: s.businessName || s.name || s.uid }))} 
-                  value={formData.stockist} 
+                  options={filteredStockists.map(s => ({ value: s._id || s.uid, label: s.businessName || s.name || s.uid }))} 
+                  value={stockists.find(s => s.uid === formData.stockist || s._id === formData.stockist)?._id || formData.stockist} 
                   onChange={(val) => setFormData({...formData, stockist: val})} 
                   placeholder="Select Stockist"
                 /></div>
