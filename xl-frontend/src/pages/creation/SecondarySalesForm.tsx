@@ -176,12 +176,21 @@ export default function SecondarySalesForm() {
       newRows[index] = { ...newRows[index], priceType: type };
       
       const prodName = newRows[index].product;
-      const pData = productsMaster.find((p:any) => (p.productName || p.name) === prodName);
+      // Search by productName, name, uid, OR _id! (Because auto-populated products use the ID)
+      const pData = productsMaster.find((p:any) => 
+        (p.productName || p.name) === prodName || 
+        p.uid === prodName || 
+        p._id === prodName
+      );
+      
       if (pData) {
         if (type === 'PTR') newRows[index].basePrice = pData.ptr || 0;
         else if (type === 'PTS') newRows[index].basePrice = pData.pts || 0;
         else if (type === 'MRP') newRows[index].basePrice = pData.mrp || 0;
         else if (type === 'CUS') newRows[index].basePrice = '';
+      } else {
+        // Fallback if product master is missing for some reason
+        if (type === 'CUS') newRows[index].basePrice = '';
       }
       return newRows;
     });
