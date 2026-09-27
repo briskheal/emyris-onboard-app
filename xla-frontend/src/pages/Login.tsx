@@ -36,10 +36,16 @@ export default function Login() {
       try {
         const res = await axios.post('/api/admin-login', { username: email, password });
         if (res.data.success) {
-          localStorage.setItem('xla_token', res.data.token || 'true');
+          if (!res.data.token) {
+            setError('Server error: no token received');
+            return;
+          }
+          localStorage.setItem('xla_token', res.data.token);
+          localStorage.setItem('xla_user', JSON.stringify(res.data.user || {}));
+          localStorage.setItem('xla_role', res.data.role || 'admin');
           navigate('/dashboard');
         } else {
-          setError('Invalid credentials');
+          setError(res.data.message || 'Invalid credentials');
         }
       } catch (err) {
         setError('Invalid credentials or server error');

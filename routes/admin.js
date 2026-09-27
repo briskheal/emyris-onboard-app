@@ -511,36 +511,72 @@ router.get('/force-birthday-cron', async (req, res) => {
 router.post('/login', loginLimiter, async (req, res) => {
     console.log(`[LOGIN ATTEMPT] username: ${req.body.username}`);
     const { username, password } = req.body;
+    if (!username || !password) return res.status(400).json({ success: false, message: 'Email and password required' });
+
+    const jwt = require('jsonwebtoken');
+    const bcrypt = require('bcryptjs');
+    const JWT_SECRET = process.env.JWT_SECRET || 'emyris_super_secret_key_2026';
+
+    // --- STEP 1: Check XlAdmin DB profiles FIRST (primary authentication) ---
+    try {
+        const adminRecord = await XlAdmin.findOne({ where: { email: username } });
+        if (adminRecord) {
+            const storedPass = adminRecord.password || '';
+            let passwordMatch = false;
+            // Support bcrypt hashed AND legacy plain text passwords
+            if (storedPass.startsWith('$2')) {
+                passwordMatch = bcrypt.compareSync(password, storedPass);
+            } else {
+                // Plain text legacy — compare directly, then auto-upgrade to bcrypt
+                passwordMatch = (password === storedPass);
+                if (passwordMatch) {
+                    // Silently rehash for future logins
+                    const hashed = bcrypt.hashSync(password, 10);
+                    await XlAdmin.update({ password: hashed }, { where: { _id: adminRecord._id } });
+                    console.log(`[AUTO-HASH] Upgraded password hash for ${username}`);
+                }
+            }
+            if (passwordMatch) {
+                console.log(`[LOGIN SUCCESS] ${username} (db admin profile)`);
+                const adminData = adminRecord.toJSON();
+                delete adminData.password;
+                const token = jwt.sign({ id: adminRecord._id, email: adminRecord.email, role: adminRecord.role || 'ADMIN' }, JWT_SECRET, { expiresIn: '30d' });
+                return res.status(200).json({ success: true, role: adminRecord.role || 'admin', user: adminData, token });
+            }
+        }
+    } catch(e) {
+        console.error('[DB Admin lookup error]', e.message);
+    }
+
+    // --- STEP 2: Emergency master creds (break-glass fallback) ---
     const adminUser = (process.env.ADMIN_USER || 'EMYRIS@BIOLIFE').toUpperCase();
     const adminPass = process.env.ADMIN_PASS || 'Omrutam@1306';
     const subAdminUser = (process.env.SUBADMIN_USER || 'ADMIN2').toUpperCase();
     const subAdminPass = process.env.SUBADMIN_PASS || '1234';
 
-    if (username && username.toUpperCase() === adminUser && password === adminPass) {
-        console.log(`[LOGIN SUCCESS] ${req.body.username} (superadmin)`);
-        return res.status(200).json({ success: true, role: 'superadmin' });
-    } else if (username && username.toUpperCase() === subAdminUser && password === subAdminPass) {
-        console.log(`[LOGIN SUCCESS] ${req.body.username} (subadmin)`);
-        return res.status(200).json({ success: true, role: 'subadmin' });
+    if (username.toUpperCase() === adminUser && password === adminPass) {
+        console.log(`[LOGIN SUCCESS] ${username} (master env admin)`);
+        const token = jwt.sign({ id: 'MASTER_ADMIN', email: username, role: 'SUPERADMIN' }, JWT_SECRET, { expiresIn: '30d' });
+        return res.status(200).json({
+            success: true,
+            role: 'superadmin',
+            token,
+            user: { firstName: 'Super', lastName: 'Admin', email: username, designation: 'SUPERADMIN', role: 'SUPERADMIN' }
+        });
     }
-    
-    if (username && password) {
-        try {
-            const adminRecord = await XlAdmin.findOne({ where: { email: username, password: password } });
-            if (adminRecord) {
-                 console.log(`[LOGIN SUCCESS] ${username} (db admin)`);
-                 const jwt = require('jsonwebtoken');
-                   const JWT_SECRET = process.env.JWT_SECRET || 'emyris_super_secret_key_2026';
-                   const token = jwt.sign({ id: adminRecord._id, email: adminRecord.email, role: 'ADMIN' }, JWT_SECRET, { expiresIn: '30d' });
-                   return res.status(200).json({ success: true, role: 'admin', user: adminRecord, token: token });
-            }
-        } catch(e) {
-            console.error("DB Admin lookup error", e);
-        }
+    if (username.toUpperCase() === subAdminUser && password === subAdminPass) {
+        console.log(`[LOGIN SUCCESS] ${username} (sub env admin)`);
+        const token = jwt.sign({ id: 'SUB_ADMIN', email: username, role: 'SUBADMIN' }, JWT_SECRET, { expiresIn: '30d' });
+        return res.status(200).json({
+            success: true,
+            role: 'subadmin',
+            token,
+            user: { firstName: 'Sub', lastName: 'Admin', email: username, designation: 'SUBADMIN', role: 'SUBADMIN' }
+        });
     }
-    
-    console.log(`[LOGIN FAILED] ${req.body.username}`);
-    res.status(401).json({ success: false });
+
+    console.log(`[LOGIN FAILED] ${username}`);
+    res.status(401).json({ success: false, message: 'Invalid credentials' });
 });
 
 router.get('/applicant-pin/:email', async (req, res) => {
@@ -4776,16 +4812,26 @@ router.get('/admins', async (req, res) => {
 
 router.post('/admins', async (req, res) => {
     try {
+        const bcrypt = require('bcryptjs');
         const count = await XlAdmin.count();
         const uid = 'ADM' + (count + 1);
-        const admin = await XlAdmin.create({ ...req.body, uid });
-        res.json({ success: true, admin });
+        const body = { ...req.body, uid };
+        if (body.password) body.password = bcrypt.hashSync(body.password, 10);
+        const admin = await XlAdmin.create(body);
+        const adminData = admin.toJSON();
+        delete adminData.password;
+        res.json({ success: true, admin: adminData });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
 router.put('/admins/:id', async (req, res) => {
     try {
-        await XlAdmin.update(req.body, { where: { _id: req.params.id } });
+        const bcrypt = require('bcryptjs');
+        const body = { ...req.body };
+        if (body.password && !body.password.startsWith('$2')) {
+            body.password = bcrypt.hashSync(body.password, 10);
+        }
+        await XlAdmin.update(body, { where: { _id: req.params.id } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
