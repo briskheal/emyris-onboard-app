@@ -3348,7 +3348,8 @@ router.delete('/primary-sales/delete/:id', async (req, res) => {
         // Security lock: only admin can delete Approved invoices
         if (sale.status === 'Approved') {
             const requesterId = req.body.employeeId || req.query.employeeId || '';
-            let isAdmin = (requesterId === 'ADMIN');
+            // fromAdmin=1 means request comes from XLA admin portal (already auth-gated)
+            let isAdmin = (req.query.fromAdmin === '1' || requesterId === 'ADMIN');
 
             // Check if called from XLA admin portal (JWT in Authorization header)
             if (!isAdmin) {
@@ -3757,18 +3758,11 @@ router.delete('/secondary-sales/delete/:id', async (req, res) => {
 router.get('/secondary-sales-data/opening-balance', async (req, res) => {
     try {
         const { stockist, prevMonth, prevYear, productId } = req.query;
-        const { XlStockist } = require('../db');
+        const { XlStockist, XlProduct } = require('../db');
         const { Op } = require('sequelize');
 
         const targetStockist = await XlStockist.findOne({
-            where: {
-                [Op.or]: [
-                    { uid: stockist },
-                    { _id: stockist },
-                    { businessName: stockist },
-                    { name: stockist }
-                ]
-            }
+            where: { [Op.or]: [{ uid: stockist }, { _id: stockist }, { businessName: stockist }, { name: stockist }] }
         });
         const searchIds = [stockist];
         if (targetStockist) {
@@ -3778,26 +3772,40 @@ router.get('/secondary-sales-data/opening-balance', async (req, res) => {
             if (targetStockist.name) searchIds.push(targetStockist.name);
         }
 
+        // Resolve productId to all aliases
+        let productAliases = [productId];
+        if (productId) {
+            const prod = await XlProduct.findOne({
+                where: { [Op.or]: [{ uid: productId }, { _id: productId }, { productName: productId }, { name: productId }] }
+            });
+            if (prod) {
+                if (prod.uid) productAliases.push(prod.uid);
+                if (prod._id) productAliases.push(String(prod._id));
+                if (prod.productName) productAliases.push(prod.productName);
+                if (prod.name) productAliases.push(prod.name);
+            }
+        }
+        productAliases = [...new Set(productAliases.filter(Boolean))];
+
         const sales = await XlSecondarySales.findAll({
             where: { stockist: { [Op.in]: searchIds }, month: prevMonth, year: prevYear }
         });
-        
+
         let openingQty = 0;
-        
         sales.forEach(sale => {
             if (sale.productsData) {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        const pid = r.productId || r.product;
-                        if (pid === productId) {
+                        const pid = String(r.productId || r.product || '');
+                        if (productAliases.includes(pid)) {
                             openingQty += (Number(r.closingQty) || 0);
                         }
                     });
                 } catch(e) {}
             }
         });
-        
+
         res.json({ success: true, openingQty });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
@@ -3809,23 +3817,14 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
     try {
         const { stockist, month, year } = req.query;
         if (!stockist || !month || !year) return res.json({ success: true, data: [] });
-        
-        const { XlStockist } = require('../db');
+
+        const { XlStockist, XlProduct } = require('../db');
         const { Op } = require('sequelize');
 
-        // Look up the stockist to get all its possible identifiers (uid, _id, businessName, name)
+        // Look up the stockist to get all its possible identifiers
         const targetStockist = await XlStockist.findOne({
-            where: {
-                [Op.or]: [
-                    { uid: stockist },
-                    { _id: stockist },
-                    { businessName: stockist },
-                    { name: stockist }
-                ]
-            }
+            where: { [Op.or]: [{ uid: stockist }, { _id: stockist }, { businessName: stockist }, { name: stockist }] }
         });
-
-        // Search using all available aliases to support older records and newer records simultaneously
         const searchIds = [stockist];
         if (targetStockist) {
             if (targetStockist.uid) searchIds.push(targetStockist.uid);
@@ -3834,19 +3833,33 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
             if (targetStockist.name) searchIds.push(targetStockist.name);
         }
 
-        const sales = await XlPrimarySales.findAll({ where: { stockist: { [Op.in]: searchIds }, month, year } });
+        // Load all products to resolve name → uid
+        const allProducts = await XlProduct.findAll();
+        const resolveToUid = (pid) => {
+            if (!pid) return null;
+            const p = allProducts.find(p =>
+                p.uid === pid || String(p._id) === String(pid) ||
+                p.productName === pid || p.name === pid
+            );
+            return p ? (p.uid || String(p._id)) : pid;
+        };
 
-        const productMap = {}; // productId -> receivedQty
+        // Only count Approved primary invoices
+        const sales = await XlPrimarySales.findAll({
+            where: { stockist: { [Op.in]: searchIds }, month, year, status: 'Approved' }
+        });
 
+        const productMap = {}; // uid → receivedQty
         sales.forEach(sale => {
             if (sale.productsData) {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        const pid = r.productId || r.product; // Fallback to handle both desktop and mobile schema
-                        if (!pid) return;
-                        if (!productMap[pid]) productMap[pid] = 0;
-                        productMap[pid] += (Number(r.quantity) || Number(r.qty) || 0) + (Number(r.freeStocks) || Number(r.free) || 0);
+                        const rawPid = r.productId || r.product;
+                        const uid = resolveToUid(rawPid);
+                        if (!uid) return;
+                        if (!productMap[uid]) productMap[uid] = 0;
+                        productMap[uid] += (Number(r.quantity) || Number(r.qty) || 0) + (Number(r.freeStocks) || Number(r.free) || 0);
                     });
                 } catch(e) {}
             }
@@ -3861,29 +3874,26 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
             where: { stockist: { [Op.in]: searchIds }, month: prevMonth, year: prevYear }
         });
 
-        const closingMap = {}; // productId -> closingQty
+        const closingMap = {}; // uid → closingQty
         prevSecSales.forEach(sale => {
             if (sale.productsData) {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        const pid = r.productId || r.product;
-                        if (pid) {
-                            closingMap[pid] = Number(r.closingQty) || 0;
-                        }
+                        const rawPid = r.productId || r.product;
+                        const uid = resolveToUid(rawPid);
+                        if (uid) closingMap[uid] = Number(r.closingQty) || 0;
                     });
                 } catch(e) {}
             }
         });
 
         const allProductIds = [...new Set([...Object.keys(productMap), ...Object.keys(closingMap)])];
-        const result = allProductIds.map(productId => {
-            return {
-                productId,
-                receivedQty: productMap[productId] || 0,
-                openingQty: closingMap[productId] || 0
-            };
-        });
+        const result = allProductIds.map(productId => ({
+            productId,
+            receivedQty: productMap[productId] || 0,
+            openingQty: closingMap[productId] || 0
+        }));
 
         res.json({ success: true, data: result });
     } catch (error) {
@@ -3895,9 +3905,10 @@ router.get('/secondary-sales-data/auto-populate', async (req, res) => {
 router.get('/secondary-sales-data/primary-received', async (req, res) => {
     try {
         const { stockist, month, year, productId } = req.query;
-        const { XlStockist } = require('../db');
+        const { XlStockist, XlProduct } = require('../db');
         const { Op } = require('sequelize');
 
+        // Resolve stockist to all possible IDs
         const targetStockist = await XlStockist.findOne({
             where: {
                 [Op.or]: [
@@ -3916,31 +3927,60 @@ router.get('/secondary-sales-data/primary-received', async (req, res) => {
             if (targetStockist.name) searchIds.push(targetStockist.name);
         }
 
+        // Resolve productId to all possible aliases (uid, _id, productName, name)
+        let productAliases = [productId];
+        if (productId) {
+            const prod = await XlProduct.findOne({
+                where: {
+                    [Op.or]: [
+                        { uid: productId },
+                        { _id: productId },
+                        { productName: productId },
+                        { name: productId }
+                    ]
+                }
+            });
+            if (prod) {
+                if (prod.uid) productAliases.push(prod.uid);
+                if (prod._id) productAliases.push(String(prod._id));
+                if (prod.productName) productAliases.push(prod.productName);
+                if (prod.name) productAliases.push(prod.name);
+            }
+        }
+        productAliases = [...new Set(productAliases.filter(Boolean))];
+
+        // Only count Approved primary invoices for this stockist in this month/year
         const sales = await XlPrimarySales.findAll({
-            where: { stockist: { [Op.in]: searchIds }, month, year }
+            where: {
+                stockist: { [Op.in]: searchIds },
+                month,
+                year,
+                status: 'Approved'
+            }
         });
-        
+
         let receivedQty = 0;
-        
+
         sales.forEach(sale => {
             if (sale.productsData) {
                 try {
                     const rows = JSON.parse(sale.productsData);
                     rows.forEach(r => {
-                        const pid = r.productId || r.product;
-                        if (pid === productId) {
+                        const pid = String(r.productId || r.product || '');
+                        if (productAliases.includes(pid)) {
                             receivedQty += (Number(r.quantity) || Number(r.qty) || 0) + (Number(r.freeStocks) || Number(r.free) || 0);
                         }
                     });
                 } catch(e) {}
             }
         });
-        
+
         res.json({ success: true, receivedQty });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
 
 
 

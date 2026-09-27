@@ -54,7 +54,7 @@ export default function AllPrimarySales() {
     if (window.confirm('Are you sure you want to delete this invoice?')) {
       try {
         const token = localStorage.getItem('xla_token') || '';
-        const res = await axios.delete(`/api/xl/primary-sales/delete/${id}`, {
+        const res = await axios.delete(`/api/xl/primary-sales/delete/${id}?fromAdmin=1`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
         if (res.data.success) {
