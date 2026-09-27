@@ -3643,8 +3643,16 @@ router.get('/secondary-sales', async (req, res) => {
 
 router.get('/secondary-sales/:id', async (req, res) => {
     try {
-        const sale = await XlSecondarySales.findByPk(req.params.id);
-        res.json({ success: true, data: sale });
+        const { XlSecondarySalesItem } = require('../db');
+        const sale = await XlSecondarySales.findByPk(req.params.id, {
+            include: [{ model: XlSecondarySalesItem, as: 'items' }]
+        });
+        if (!sale) return res.status(404).json({ success: false, message: 'Not found' });
+        const saleData = sale.toJSON();
+        if (saleData.items && saleData.items.length > 0) {
+            saleData.productsData = JSON.stringify(saleData.items);
+        }
+        res.json({ success: true, data: saleData });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }

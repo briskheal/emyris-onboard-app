@@ -140,11 +140,11 @@ export default function SecondarySalesHistory() {
                   
                   <div className="w-[20%] flex justify-end pr-1">
                     {isApproved ? (
-                      <button onClick={() => navigate(`/creation/secondary-sales?id=${inv._id}`)} className="bg-sky-500/10 border border-sky-500/20 text-sky-400 p-1.5 rounded-md hover:bg-sky-500/20 active:scale-95 transition-transform cursor-pointer">
+                      <button onClick={() => navigate(`/creation/secondary-sales?editId=${inv._id}`)} className="bg-sky-500/10 border border-sky-500/20 text-sky-400 p-1.5 rounded-md hover:bg-sky-500/20 active:scale-95 transition-transform cursor-pointer">
                         <Eye size={14} strokeWidth={2} />
                       </button>
                     ) : (
-                      <button onClick={() => navigate(`/creation/secondary-sales?id=${inv._id}`)} className="bg-cyan-500 text-white p-1.5 rounded-md shadow-md hover:bg-cyan-400 active:scale-95 transition-transform cursor-pointer">
+                      <button onClick={() => navigate(`/creation/secondary-sales?editId=${inv._id}`)} className="bg-cyan-500 text-white p-1.5 rounded-md shadow-md hover:bg-cyan-400 active:scale-95 transition-transform cursor-pointer">
                         <Edit2 size={14} strokeWidth={2.5} />
                       </button>
                     )}
