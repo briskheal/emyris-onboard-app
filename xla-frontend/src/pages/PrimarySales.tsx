@@ -218,7 +218,7 @@ export default function PrimarySales() {
     }
 
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem('xla_user');
       const user = userStr ? JSON.parse(userStr) : {};
       
       const payload = {
@@ -228,19 +228,36 @@ export default function PrimarySales() {
           netInvValue: totals.netInvValue,
           salableRtnValue: totals.salableRtnValue,
           expiryRtnValue: totals.expiryRtnValue,
-        productsData: validRows.map((r: any) => ({
-          id: r.id,
-          product: r.productId,
-          priceType: r.selectedPriceType || 'PTS',
-          basePrice: r.customPrice || 0,
-          qty: r.quantity || 0,
-          free: r.freeStocks || 0,
-          discount: r.discount || 0,
-          exp: !!r.isExpiry,
-          purcRtn: r.purcRtn || 0,
-          rtnPriceType: r.selectedRtnPriceType || 'PTS',
-          rtnPrice: r.customRtnPrice || 0
-        }))
+        productsData: validRows.map((r: any) => {
+          // Compute the actual price used for this row (same logic as totals)
+          const prod = products.find((p: any) => p.uid === r.productId || p._id === r.productId);
+          const pts = prod ? (prod.pts || 0) : 0;
+          const ptr = prod ? (prod.ptr || 0) : 0;
+          const mrp = prod ? (prod.mrp || 0) : 0;
+          let computedPrice = ptr; // PTR default
+          if (r.selectedPriceType === 'PTS') computedPrice = pts;
+          else if (r.selectedPriceType === 'MRP') computedPrice = mrp;
+          else if (r.selectedPriceType === 'CUS') computedPrice = Number(r.customPrice) || 0;
+          // Return price
+          let computedRtnPrice = ptr;
+          if (r.selectedRtnPriceType === 'PTS') computedRtnPrice = pts;
+          else if (r.selectedRtnPriceType === 'MRP') computedRtnPrice = mrp;
+          else if (r.selectedRtnPriceType === 'CUS') computedRtnPrice = Number(r.customRtnPrice) || 0;
+          return {
+            id: r.id,
+            product: r.productId,
+            productId: r.productId,
+            priceType: r.selectedPriceType || 'PTS',
+            basePrice: computedPrice,
+            qty: r.quantity || 0,
+            free: r.freeStocks || 0,
+            discount: r.discount || 0,
+            exp: !!r.isExpiry,
+            purcRtn: r.purcRtn || 0,
+            rtnPriceType: r.selectedRtnPriceType || 'PTS',
+            rtnPrice: computedRtnPrice
+          };
+        })
       };
 
       let res;
