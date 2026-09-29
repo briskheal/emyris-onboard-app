@@ -23,7 +23,7 @@ export default function PrimarySales() {
   });
 
   const [rows, setRows] = useState([
-    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }
+    { id: 1, productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false, lockedPrice: '', lockedRtnPrice: '' }
   ]);
 
   useEffect(() => {
@@ -59,25 +59,12 @@ export default function PrimarySales() {
   const handleRowChange = (index: number, field: string, value: any) => {
     const newRows = [...rows];
     const updatedRow = { ...newRows[index], [field]: value };
-    // When user selects a NEW product: auto-fill price from master for current price type
-    if (field === 'productId' && value) {
-      const prod = products.find((p: any) => p.uid === value || p._id === value);
-      if (prod && !newRows[index].customPrice) {
-        // Only auto-fill if customPrice is empty (new row, not an edit load)
-        const pt = updatedRow.selectedPriceType || 'PTS';
-        const masterPrice = pt === 'PTS' ? (prod.pts || 0)
-          : pt === 'MRP' ? (prod.mrp || 0)
-          : (prod.ptr || 0); // PTR is default; CUS stays blank for manual entry
-        updatedRow.customPrice = pt === 'CUS' ? '' : String(masterPrice);
-        updatedRow.customRtnPrice = pt === 'CUS' ? '' : String(masterPrice);
-      }
-    }
     newRows[index] = updatedRow;
     setRows(newRows);
   };
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }]);
+    setRows([...rows, { id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false, lockedPrice: '', lockedRtnPrice: '' }]);
   };
 
   const removeRow = (index: number) => {
@@ -148,26 +135,31 @@ export default function PrimarySales() {
                     resolvedProductId = byName ? (byName.uid || byName._id) : '';
                   }
 
-                  // Restore actual saved priceType. Store savedBasePrice in customPrice as
-                  // a display-override: the price box shows customPrice when set, falls back
-                  // to master only when user manually clicks a different type button.
-                  const savedPrice = row.basePrice || row.customPrice || '';
+                  // Load adapter: restore exact saved type and price.
+                  // lockedPrice = saved price for PTR/PTS/MRP (shown instead of master).
+                  // customPrice = saved price for CUS (editable input).
+                  // Admin can click a type button to clear lockedPrice and get fresh master price.
+                  const savedPrice = String(row.basePrice || row.customPrice || '');
                   const savedPriceType = (row.priceType || row.selectedPriceType || 'PTS').toUpperCase();
-                  const savedRtnPrice = row.rtnPrice || row.customRtnPrice || '';
+                  const savedRtnPrice = String(row.rtnPrice || row.customRtnPrice || '');
                   const savedRtnPriceType = (row.rtnPriceType || row.selectedRtnPriceType || savedPriceType).toUpperCase();
+                  const isCus = savedPriceType === 'CUS';
+                  const isRtnCus = savedRtnPriceType === 'CUS';
 
                   return {
                     id: row.id || Date.now() + i,
                     productId: resolvedProductId,
-                    selectedPriceType: savedPriceType,   // Actual type: PTS / PTR / MRP / CUS
-                    customPrice: savedPrice,              // Saved price stored as override
+                    selectedPriceType: savedPriceType,
+                    customPrice: isCus ? savedPrice : '',      // CUS: saved price in input
+                    lockedPrice: isCus ? '' : savedPrice,      // PTR/PTS/MRP: locked saved price
                     quantity: row.quantity || row.qty || '',
                     freeStocks: row.freeStocks || row.free || '',
                     discount: row.discount || '',
                     isExpiry: !!(row.isExpiry || row.exp),
                     purcRtn: row.purcRtn || '',
                     selectedRtnPriceType: savedRtnPriceType,
-                    customRtnPrice: savedRtnPrice        // Saved rtn price as override
+                    customRtnPrice: isRtnCus ? savedRtnPrice : '',
+                    lockedRtnPrice: isRtnCus ? '' : savedRtnPrice
                   };
                 });
                 setRows(adaptedRows);
@@ -184,9 +176,23 @@ export default function PrimarySales() {
     const rtn = Number(row.purcRtn) || 0;
     const discount = Number(row.discount) || 0;
     
-    // Price is ALWAYS from customPrice — the editable field. No master lookup.
-    const activePrice = Number(row.customPrice) || 0;
-    const rtnPrice = Number(row.customRtnPrice) || 0;
+    const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
+    const masterPtr = prod ? (prod.ptr || 0) : 0;
+    const masterMrp = prod ? (prod.mrp || 0) : 0;
+    const masterPts = prod ? (prod.pts || 0) : 0;
+    // lockedPrice = saved price from DB (edit load). Falls back to master if empty.
+    let activePrice = 0;
+    if (row.selectedPriceType === 'CUS') activePrice = Number(row.customPrice) || 0;
+    else if (row.lockedPrice) activePrice = Number(row.lockedPrice);
+    else if (row.selectedPriceType === 'MRP') activePrice = masterMrp;
+    else if (row.selectedPriceType === 'PTS') activePrice = masterPts;
+    else activePrice = masterPtr; // PTR default
+    let rtnPrice = 0;
+    if (row.selectedRtnPriceType === 'CUS') rtnPrice = Number(row.customRtnPrice) || 0;
+    else if (row.lockedRtnPrice) rtnPrice = Number(row.lockedRtnPrice);
+    else if (row.selectedRtnPriceType === 'MRP') rtnPrice = masterMrp;
+    else if (row.selectedRtnPriceType === 'PTS') rtnPrice = masterPts;
+    else rtnPrice = masterPtr;
     
     const grossSale = qty * activePrice;
     const finalPrice = grossSale - (grossSale * (discount / 100));
@@ -232,21 +238,41 @@ export default function PrimarySales() {
           netInvValue: totals.netInvValue,
           salableRtnValue: totals.salableRtnValue,
           expiryRtnValue: totals.expiryRtnValue,
-        productsData: validRows.map((r: any) => ({
-          // Save exactly what user typed — zero master price override
-          id: r.id,
-          product: r.productId,
-          productId: r.productId,
-          priceType: r.selectedPriceType || 'PTS',
-          basePrice: Number(r.customPrice) || 0,   // EXACT price from input
-          qty: r.quantity || 0,
-          free: r.freeStocks || 0,
-          discount: r.discount || 0,
-          exp: !!r.isExpiry,
-          purcRtn: r.purcRtn || 0,
-          rtnPriceType: r.selectedRtnPriceType || 'PTS',
-          rtnPrice: Number(r.customRtnPrice) || 0  // EXACT return price from input
-        }))
+        productsData: validRows.map((r: any) => {
+          // For CUS: save the manually entered customPrice
+          // For PTR/PTS/MRP: save lockedPrice (original saved price) if present,
+          //   otherwise save master price for the selected type
+          const prod = products.find((p: any) => p.uid === r.productId || p._id === r.productId);
+          const masterPtr = prod ? (prod.ptr || 0) : 0;
+          const masterMrp = prod ? (prod.mrp || 0) : 0;
+          const masterPts = prod ? (prod.pts || 0) : 0;
+          let finalPrice = 0;
+          if (r.selectedPriceType === 'CUS') finalPrice = Number(r.customPrice) || 0;
+          else if (r.lockedPrice) finalPrice = Number(r.lockedPrice);
+          else if (r.selectedPriceType === 'MRP') finalPrice = masterMrp;
+          else if (r.selectedPriceType === 'PTS') finalPrice = masterPts;
+          else finalPrice = masterPtr;
+          let finalRtnPrice = 0;
+          if (r.selectedRtnPriceType === 'CUS') finalRtnPrice = Number(r.customRtnPrice) || 0;
+          else if (r.lockedRtnPrice) finalRtnPrice = Number(r.lockedRtnPrice);
+          else if (r.selectedRtnPriceType === 'MRP') finalRtnPrice = masterMrp;
+          else if (r.selectedRtnPriceType === 'PTS') finalRtnPrice = masterPts;
+          else finalRtnPrice = masterPtr;
+          return {
+            id: r.id,
+            product: r.productId,
+            productId: r.productId,
+            priceType: r.selectedPriceType || 'PTS',
+            basePrice: finalPrice,
+            qty: r.quantity || 0,
+            free: r.freeStocks || 0,
+            discount: r.discount || 0,
+            exp: !!r.isExpiry,
+            purcRtn: r.purcRtn || 0,
+            rtnPriceType: r.selectedRtnPriceType || 'PTS',
+            rtnPrice: finalRtnPrice
+          };
+        })
       };
 
       let res;
@@ -268,7 +294,7 @@ export default function PrimarySales() {
                 headquarter: '',
                 stockist: ''
             });
-            setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false }]);
+            setRows([{ id: Date.now(), productId: '', purcRtn: '', quantity: '', freeStocks: '', discount: '', customPrice: '', selectedPriceType: 'PTS', customRtnPrice: '', selectedRtnPriceType: 'PTS', isExpiry: false, lockedPrice: '', lockedRtnPrice: '' }]);
         }
       } else {
         alert('Failed to save invoice.');
@@ -429,9 +455,23 @@ export default function PrimarySales() {
                   const rtn = Number(row.purcRtn) || 0;
                   const discount = Number(row.discount) || 0;
                   
-                  // Price is ALWAYS from customPrice — the editable input. No master lookup.
-                  const activePrice = Number(row.customPrice) || 0;
-                  const rtnPrice = Number(row.customRtnPrice) || 0;
+                  const prod = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
+                  const masterPtr = prod ? (prod.ptr || 0) : 0;
+                  const masterMrp = prod ? (prod.mrp || 0) : 0;
+                  const masterPts = prod ? (prod.pts || 0) : 0;
+                  // lockedPrice = saved price from DB (edit). Falls back to master if empty.
+                  let activePrice = 0;
+                  if (row.selectedPriceType === 'CUS') activePrice = Number(row.customPrice) || 0;
+                  else if (row.lockedPrice) activePrice = Number(row.lockedPrice);
+                  else if (row.selectedPriceType === 'MRP') activePrice = masterMrp;
+                  else if (row.selectedPriceType === 'PTS') activePrice = masterPts;
+                  else activePrice = masterPtr;
+                  let rtnPrice = 0;
+                  if (row.selectedRtnPriceType === 'CUS') rtnPrice = Number(row.customRtnPrice) || 0;
+                  else if (row.lockedRtnPrice) rtnPrice = Number(row.lockedRtnPrice);
+                  else if (row.selectedRtnPriceType === 'MRP') rtnPrice = masterMrp;
+                  else if (row.selectedRtnPriceType === 'PTS') rtnPrice = masterPts;
+                  else rtnPrice = masterPtr;
                   
                   const totalQty = qty + free;
                   const grossSale = qty * activePrice;
@@ -454,18 +494,22 @@ export default function PrimarySales() {
                           placeholder="Select"
                         /></div></td>
 
-                      {/* Price Block — price type = label only; price input always editable */}
+                      {/* Price Block: PTR/PTS/MRP = auto from master (or locked saved price); CUS = editable input */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 w-[140px]">
                         <div className="flex items-center gap-1 justify-center">
                           <div className="flex flex-col gap-[2px] w-10">
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'PTS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
-                            <button onClick={() => handleRowChange(index, 'selectedPriceType', 'CUS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>CUS</button>
+                            {/* Clicking a type button clears lockedPrice → uses fresh master price */}
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedPriceType:'PTR',lockedPrice:'',customPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTR' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTR</button>
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedPriceType:'PTS',lockedPrice:'',customPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'PTS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>PTS</button>
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedPriceType:'MRP',lockedPrice:'',customPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'MRP' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>MRP</button>
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedPriceType:'CUS',lockedPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedPriceType === 'CUS' ? 'bg-sky-500 text-white' : 'bg-[#1a1a2e] text-[#8b8baf] hover:bg-[#3b3b5a]'}`}>CUS</button>
                           </div>
                           <div className="w-16 shrink-0">
-                            {/* Always editable — price type is just a label */}
-                            <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
+                            {row.selectedPriceType === 'CUS' ? (
+                              <input type="number" min="0" value={row.customPrice} onChange={e => handleRowChange(index, 'customPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" placeholder="0.00" />
+                            ) : (
+                              <div className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 flex items-center justify-center text-xs text-sky-300 font-bold">{activePrice.toFixed(2)}</div>
+                            )}
                           </div>
                         </div>
                       </td>
@@ -502,18 +546,21 @@ export default function PrimarySales() {
                         </div>
                       </td>
 
-                      {/* Rtn Price Block — always editable */}
+                      {/* Rtn Price Block: CUS=editable input; PTR/PTS/MRP=static (saved or master) */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-rose-950/10 w-[140px]">
                         <div className="flex items-center gap-1 justify-center">
                           <div className="flex flex-col gap-[2px] w-10">
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTR')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTR' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTR</button>
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'PTS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTS</button>
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'MRP')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'MRP' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>MRP</button>
-                            <button onClick={() => handleRowChange(index, 'selectedRtnPriceType', 'CUS')} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'CUS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>CUS</button>
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedRtnPriceType:'PTR',lockedRtnPrice:'',customRtnPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTR' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTR</button>
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedRtnPriceType:'PTS',lockedRtnPrice:'',customRtnPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'PTS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>PTS</button>
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedRtnPriceType:'MRP',lockedRtnPrice:'',customRtnPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'MRP' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>MRP</button>
+                            <button onClick={() => { const nr=[...rows]; nr[index]={...nr[index],selectedRtnPriceType:'CUS',lockedRtnPrice:''}; setRows(nr); }} className={`text-[10px] font-bold py-[3px] px-1 rounded tracking-wide ${row.selectedRtnPriceType === 'CUS' ? 'bg-rose-500 text-white' : 'bg-[#1a1a2e] text-rose-400/50 hover:bg-rose-900/30'}`}>CUS</button>
                           </div>
                           <div className="w-16 shrink-0">
-                            {/* Always editable */}
-                            <input type="number" min="0" value={row.customRtnPrice} onChange={e => handleRowChange(index, 'customRtnPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center font-bold" placeholder="0.00" />
+                            {row.selectedRtnPriceType === 'CUS' ? (
+                              <input type="number" min="0" value={row.customRtnPrice} onChange={e => handleRowChange(index, 'customRtnPrice', e.target.value)} className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 text-xs text-rose-400 outline-none focus:border-rose-500 text-center font-bold" placeholder="0.00" />
+                            ) : (
+                              <div className="w-full h-[34px] bg-[#1a1a2e] border border-rose-900/50 rounded px-1 flex items-center justify-center text-xs text-rose-400/70 font-bold">{rtnPrice.toFixed(2)}</div>
+                            )}
                           </div>
                         </div>
                       </td>
