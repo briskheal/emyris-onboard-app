@@ -3237,8 +3237,9 @@ router.get('/primary-sales/all', async (req, res) => {
         
         // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
         // XL mobile users see only their own records (filtered by employeeId)
-        const isXlaAdmin = !designation || designation === 'ADMIN' || designation === 'HO' || designation === 'admin';
-        if (!isXlaAdmin && employeeId) {
+        // Handle "null" / "undefined" string values from URLSearchParams serialization
+        const isXlaAdmin = !designation || designation === 'null' || designation === 'undefined' || designation === 'ADMIN' || designation === 'HO' || designation === 'admin';
+        if (!isXlaAdmin && employeeId && employeeId !== 'null' && employeeId !== 'undefined') {
             whereClause.employeeId = employeeId;
         }
 
@@ -3701,8 +3702,8 @@ router.get('/secondary-sales/all', async (req, res) => {
         if (year) whereClause.year = year;
         
         // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
-        const isXlaAdminSec = !designation || designation === 'ADMIN' || designation === 'HO' || designation === 'admin';
-        if (!isXlaAdminSec && employeeId) {
+        const isXlaAdminSec = !designation || designation === 'ADMIN' || designation === 'HO' || designation === 'admin' || designation === 'null' || designation === 'undefined';
+        if (!isXlaAdminSec && employeeId && employeeId !== 'null' && employeeId !== 'undefined') {
             whereClause.employeeId = employeeId;
         }
 

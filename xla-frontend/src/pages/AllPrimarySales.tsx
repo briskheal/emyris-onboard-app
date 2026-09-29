@@ -21,18 +21,12 @@ export default function AllPrimarySales() {
 
     try {
       setLoading(true);
-      const userStr = localStorage.getItem('xla_user');
-      const user = userStr ? JSON.parse(userStr) : {};
-      
       const [month, year] = selectedMonth.split(' ');
 
+      // XLA admin always sees all records — do NOT send designation/employeeId
+      // (null values serialize as "null" string in URLSearchParams, breaking the admin check)
       const res = await axios.get('/api/xl/primary-sales/all', {
-        params: {
-          employeeId: user.employeeId || user._id,
-          designation: user.designation,
-          month,
-          year
-        }
+        params: { month, year }
       });
       if (res.data.success) {
         setSales(res.data.data);
