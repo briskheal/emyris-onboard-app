@@ -84,17 +84,22 @@ export default function PrimarySales() {
       axios.get(`/api/xl/primary-sales/${id}`).then(res => {
         if (res.data.success) {
           const d = res.data.data;
-          
+
+          // FIX 1: Stockist — search full stockists list by name OR uid
           let st = d.stockist || '';
-          const matchingStockist = stockists.find(s => s.businessName === st || s.name === st);
+          const matchingStockist = stockists.find(
+            (s: any) => s.uid === st || s._id === st || s.businessName === st || s.name === st
+          );
           if (matchingStockist) st = matchingStockist.uid || matchingStockist._id;
-          
+
           let hq = d.headquarter || '';
           if (hq) {
-             const matchingHq = hqs.find((h: any) => h.value.toLowerCase() === hq.toLowerCase() || h.label.toLowerCase() === hq.toLowerCase());
-             if (matchingHq) hq = matchingHq.value;
+            const matchingHq = hqs.find(
+              (h: any) => h.value.toLowerCase() === hq.toLowerCase() || h.label.toLowerCase() === hq.toLowerCase()
+            );
+            if (matchingHq) hq = matchingHq.value;
           }
-          
+
           setFormData({
             date: d.date || '',
             invoiceDate: d.invoiceDate || '',
@@ -103,31 +108,55 @@ export default function PrimarySales() {
             headquarter: hq,
             stockist: st
           });
-          
+
           if (d.productsData) {
             try {
-               const pData = typeof d.productsData === 'string' ? JSON.parse(d.productsData) : d.productsData;
-               if (Array.isArray(pData) && pData.length > 0) {
-                 const adaptedRows = pData.map((row: any, i: number) => {
-                   if (row.productId) return row; // Already desktop format
-                   
-                   const prod = products.find((p: any) => p.productName === row.product);
-                   return {
-                     id: row.id || Date.now() + i,
-                     productId: prod ? (prod.uid || prod._id) : '',
-                     selectedPriceType: row.priceType ? row.priceType.toUpperCase() : 'PTS',
-                     customPrice: row.basePrice || '',
-                     quantity: row.qty || '',
-                     freeStocks: row.free || '',
-                     discount: row.discount || '',
-                     isExpiry: !!row.exp,
-                     purcRtn: row.purcRtn || '',
-                     selectedRtnPriceType: row.rtnPriceType ? row.rtnPriceType.toUpperCase() : (row.priceType ? row.priceType.toUpperCase() : 'PTS'),
-                     customRtnPrice: row.rtnPrice || ''
-                   };
-                 });
-                 setRows(adaptedRows);
-               }
+              const pData = typeof d.productsData === 'string' ? JSON.parse(d.productsData) : d.productsData;
+              if (Array.isArray(pData) && pData.length > 0) {
+                const adaptedRows = pData.map((row: any, i: number) => {
+                  // FIX 2 + 3: Always normalize. NEVER short-circuit with "return row".
+                  // Mobile saves: product(name), productId(uid), qty, basePrice, priceType
+                  // XLA form reads: productId(uid), quantity, customPrice, selectedPriceType
+                  // Resolve productId: prefer existing uid, else look up by name
+                  let resolvedProductId = '';
+                  if (row.productId) {
+                    // Check if it's already a valid uid
+                    const byUid = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
+                    if (byUid) {
+                      resolvedProductId = byUid.uid || byUid._id;
+                    } else {
+                      // productId might be a name (old data) — look up by name
+                      const byName = products.find((p: any) => p.productName === row.productId);
+                      resolvedProductId = byName ? (byName.uid || byName._id) : row.productId;
+                    }
+                  } else if (row.product) {
+                    const byName = products.find((p: any) => p.productName === row.product);
+                    resolvedProductId = byName ? (byName.uid || byName._id) : '';
+                  }
+
+                  // FIX 3: Preserve saved price exactly — set type to CUS so customPrice is used
+                  // This prevents XLA from overwriting with product master price
+                  const savedPrice = row.basePrice || row.customPrice || '';
+                  // const savedPriceType = row.priceType || row.selectedPriceType || 'PTS';
+                  const savedRtnPrice = row.rtnPrice || row.customRtnPrice || '';
+                  // const savedRtnPriceType = row.rtnPriceType || row.selectedRtnPriceType || savedPriceType;
+
+                  return {
+                    id: row.id || Date.now() + i,
+                    productId: resolvedProductId,
+                    selectedPriceType: 'CUS',           // Force CUS so customPrice is displayed
+                    customPrice: savedPrice,             // Exact saved price shown
+                    quantity: row.quantity || row.qty || '',
+                    freeStocks: row.freeStocks || row.free || '',
+                    discount: row.discount || '',
+                    isExpiry: !!(row.isExpiry || row.exp),
+                    purcRtn: row.purcRtn || '',
+                    selectedRtnPriceType: 'CUS',         // Force CUS for rtn price too
+                    customRtnPrice: savedRtnPrice || savedPrice   // use rtn price or fallback to sale price
+                  };
+                });
+                setRows(adaptedRows);
+              }
             } catch(e) { console.error('Error parsing products data:', e); }
           }
         }
