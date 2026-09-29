@@ -54,8 +54,7 @@ axios.interceptors.request.use((config: any) => {
 axios.interceptors.response.use((response) => response, (error) => {
     if (error.response && (error.response.status === 401)) {
         localStorage.removeItem('xla_token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('xl_user');
+        localStorage.removeItem('xla_user'); // XLA-specific key only — do NOT touch xl_user (mobile)
         window.location.href = '/xla/login';
     }
     return Promise.reject(error);
