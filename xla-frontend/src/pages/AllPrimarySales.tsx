@@ -21,7 +21,7 @@ export default function AllPrimarySales() {
 
     try {
       setLoading(true);
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem('xla_user');
       const user = userStr ? JSON.parse(userStr) : {};
       
       const [month, year] = selectedMonth.split(' ');
