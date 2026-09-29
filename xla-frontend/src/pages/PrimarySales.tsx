@@ -305,6 +305,26 @@ export default function PrimarySales() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!id) return;
+    if (!window.confirm('Are you sure you want to DELETE this entire primary sales record? This cannot be undone.')) return;
+    try {
+      const token = localStorage.getItem('xla_token') || '';
+      const res = await axios.delete(`/api/xl/primary-sales/delete/${id}?fromAdmin=1`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      if (res.data.success) {
+        alert('Record deleted successfully.');
+        navigate('/extras/primary-sales/all');
+      } else {
+        alert(res.data.message || 'Failed to delete record.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting record.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#161625] flex flex-col text-[#d1d5db] font-sans">
       {/* STICKY TOP BLOCK */}
@@ -322,7 +342,12 @@ export default function PrimarySales() {
           <h1 className="text-lg font-bold text-white tracking-wide uppercase">PRIMARY SALES</h1>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3">
+          {id && (
+            <button onClick={handleDelete} className="bg-transparent border border-rose-500/50 text-rose-400 hover:bg-rose-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
+              <Trash2 size={14} /> Delete Record
+            </button>
+          )}
           <button className="bg-transparent border border-sky-500/50 text-sky-400 hover:bg-sky-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
               <Upload size={14} /> Upload Primary Sales
             </button>
