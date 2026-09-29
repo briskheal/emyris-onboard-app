@@ -3424,6 +3424,70 @@ router.get('/debug-primary-sales', async (req, res) => {
 
 
 
+// ============================================================
+// ONE-TIME ORPHAN CLEANUP ROUTE
+// Call: GET /api/xl/admin/cleanup-orphans?secret=emyris_cleanup_2026
+// Deletes XlPrimarySalesItem + XlSecondarySalesItem rows
+// whose parent saleId no longer exists in the parent table.
+// Safe to call multiple times — idempotent.
+// ============================================================
+router.get('/admin/cleanup-orphans', async (req, res) => {
+    try {
+        const secret = req.query.secret;
+        if (secret !== 'emyris_cleanup_2026') {
+            return res.status(403).json({ success: false, message: 'Forbidden' });
+        }
+
+        const { XlPrimarySalesItem, XlSecondarySalesItem, sequelize } = require('../db');
+        const { Op } = require('sequelize');
+
+        // -- PRIMARY ORPHANS --
+        const allPrimaryItems = await XlPrimarySalesItem.findAll({ attributes: ['id', 'saleId'] });
+        const uniquePrimaryParentIds = [...new Set(allPrimaryItems.map(r => r.saleId).filter(Boolean))];
+        let primaryOrphanCount = 0;
+        if (uniquePrimaryParentIds.length > 0) {
+            const existingPrimaryParents = await XlPrimarySales.findAll({
+                where: { _id: { [Op.in]: uniquePrimaryParentIds } },
+                attributes: ['_id']
+            });
+            const existingPrimaryIds = new Set(existingPrimaryParents.map(r => r._id));
+            const orphanPrimaryIds = uniquePrimaryParentIds.filter(id => !existingPrimaryIds.has(id));
+            if (orphanPrimaryIds.length > 0) {
+                primaryOrphanCount = await XlPrimarySalesItem.destroy({ where: { saleId: { [Op.in]: orphanPrimaryIds } } });
+            }
+        }
+
+        // -- SECONDARY ORPHANS --
+        const allSecondaryItems = await XlSecondarySalesItem.findAll({ attributes: ['id', 'saleId'] });
+        const uniqueSecondaryParentIds = [...new Set(allSecondaryItems.map(r => r.saleId).filter(Boolean))];
+        let secondaryOrphanCount = 0;
+        if (uniqueSecondaryParentIds.length > 0) {
+            const existingSecondaryParents = await XlSecondarySales.findAll({
+                where: { _id: { [Op.in]: uniqueSecondaryParentIds } },
+                attributes: ['_id']
+            });
+            const existingSecondaryIds = new Set(existingSecondaryParents.map(r => r._id));
+            const orphanSecondaryIds = uniqueSecondaryParentIds.filter(id => !existingSecondaryIds.has(id));
+            if (orphanSecondaryIds.length > 0) {
+                secondaryOrphanCount = await XlSecondarySalesItem.destroy({ where: { saleId: { [Op.in]: orphanSecondaryIds } } });
+            }
+        }
+
+        res.json({
+            success: true,
+            message: 'Orphan cleanup complete',
+            deleted: {
+                primarySalesItems: primaryOrphanCount,
+                secondarySalesItems: secondaryOrphanCount,
+                total: primaryOrphanCount + secondaryOrphanCount
+            }
+        });
+    } catch (error) {
+        console.error('Cleanup error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 router.get('/expense/limits', async (req, res) => {
     try {
         const { email, date } = req.query;
