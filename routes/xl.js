@@ -3235,9 +3235,10 @@ router.get('/primary-sales/all', async (req, res) => {
         if (month) whereClause.month = month;
         if (year) whereClause.year = year;
         
-        // If not admin, they can only see their own HQ / division sales (or based on employeeId)
-        // Since there is no explicit auth checking logic mapped out perfectly here, we can filter by employeeId if provided and not ADMIN
-        if (designation !== 'ADMIN' && designation !== 'HO' && employeeId) {
+        // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
+        // XL mobile users see only their own records (filtered by employeeId)
+        const isXlaAdmin = !designation || designation === 'ADMIN' || designation === 'HO' || designation === 'admin';
+        if (!isXlaAdmin && employeeId) {
             whereClause.employeeId = employeeId;
         }
 
@@ -3699,7 +3700,9 @@ router.get('/secondary-sales/all', async (req, res) => {
         if (month) whereClause.month = month;
         if (year) whereClause.year = year;
         
-        if (designation !== 'ADMIN' && designation !== 'HO' && employeeId) {
+        // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
+        const isXlaAdminSec = !designation || designation === 'ADMIN' || designation === 'HO' || designation === 'admin';
+        if (!isXlaAdminSec && employeeId) {
             whereClause.employeeId = employeeId;
         }
 
