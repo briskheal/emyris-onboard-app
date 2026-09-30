@@ -24,7 +24,7 @@ export default function Dashboard() {
       {/* Global Scrolling Announcement */}
       {announcement && (
         <div className="bg-sky-600/20 border-b border-sky-500/30 overflow-hidden py-2 px-4 flex items-center shadow-md">
-           <div className="text-sky-400 font-bold whitespace-nowrap mr-4 shrink-0 text-sm">ANNOUNCEMENT</div>
+           
            <marquee className="text-white text-sm font-medium" scrollamount="5">{announcement}</marquee>
         </div>
       )}
