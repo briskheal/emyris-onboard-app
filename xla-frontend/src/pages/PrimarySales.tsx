@@ -119,20 +119,31 @@ export default function PrimarySales() {
                   // Mobile saves: product(name), productId(uid), qty, basePrice, priceType
                   // XLA form reads: productId(uid), quantity, customPrice, selectedPriceType
                   // Resolve productId: prefer existing uid, else look up by name
+                  // Resolve productId: try every matching strategy in priority order.
+                  // Mobile stores product=productName OR uid, productId=uid or _id.
+                  // XLA option value = p.uid || p._id. We need resolvedProductId to match an option.
                   let resolvedProductId = '';
-                  if (row.productId) {
-                    // Check if it's already a valid uid
-                    const byUid = products.find((p: any) => p.uid === row.productId || p._id === row.productId);
-                    if (byUid) {
-                      resolvedProductId = byUid.uid || byUid._id;
-                    } else {
-                      // productId might be a name (old data) — look up by name
-                      const byName = products.find((p: any) => p.productName === row.productId);
-                      resolvedProductId = byName ? (byName.uid || byName._id) : row.productId;
-                    }
-                  } else if (row.product) {
-                    const byName = products.find((p: any) => p.productName === row.product);
-                    resolvedProductId = byName ? (byName.uid || byName._id) : '';
+                  const tryFind = (val: string) => val ? products.find((p: any) =>
+                    p.uid === val || p._id === val
+                  ) : null;
+                  const tryFindByName = (val: string) => val ? products.find((p: any) =>
+                    p.productName === val || p.productName?.toLowerCase() === val?.toLowerCase()
+                  ) : null;
+
+                  // Strategy 1: row.productId as uid/id
+                  let hit = tryFind(row.productId);
+                  // Strategy 2: row.product as uid/id (mobile sometimes stores uid in 'product' field)
+                  if (!hit) hit = tryFind(row.product);
+                  // Strategy 3: row.productId as productName
+                  if (!hit) hit = tryFindByName(row.productId);
+                  // Strategy 4: row.product as productName
+                  if (!hit) hit = tryFindByName(row.product);
+
+                  if (hit) {
+                    resolvedProductId = hit.uid || hit._id;
+                  } else {
+                    // Fallback: use as-is (dropdown will add a "not in master" hint option)
+                    resolvedProductId = row.productId || row.product || '';
                   }
 
                   // Load adapter: restore exact saved type and price.
@@ -510,10 +521,14 @@ export default function PrimarySales() {
                       
                       {/* Product - Reduced Width */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[250px] w-auto"><div className="h-[34px] [&>div>div]:min-h-[34px] [&>div>div]:py-1"><CustomSelect 
-                          options={products.map((p: any) => ({
-                            value: p.uid || p._id,
-                            label: p.productName
-                          }))}
+                          options={(() => {
+                            const opts = products.map((p: any) => ({ value: p.uid || p._id, label: p.productName }));
+                            // If this row's productId doesn't match any option, add a fallback so it's visible
+                            if (row.productId && !opts.find(o => o.value === row.productId)) {
+                              opts.unshift({ value: row.productId, label: `${row.productId} ⚠ (re-select)` });
+                            }
+                            return opts;
+                          })()}
                           value={row.productId}
                           onChange={(val) => handleRowChange(index, 'productId', val)}
                           placeholder="Select"
