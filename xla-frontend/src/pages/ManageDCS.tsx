@@ -562,6 +562,31 @@ export default function ManageDCS() {
       }
     };
 
+    const handleDownloadFormat = async () => {
+      const { utils, writeFile } = await import('xlsx');
+      let headers: string[] = [];
+      let filename = '';
+
+      if (uploadType === 'Doctor') {
+        headers = ['Name', 'Degree', 'Specialization', 'Hospital', 'Mobile', 'Clinic Contact', 'Doctor Code', 'Category', 'Address', 'Working Area', 'Birthday', 'Anniversary', 'Email', 'Extra Information'];
+        filename = 'doctor_upload_format.xlsx';
+      } else if (uploadType === 'Chemist') {
+        headers = ['Business Name', 'Proprietor Name', 'Mobile', 'Email', 'Address', 'Working Area', 'Birthday', 'Certifications', 'Extra Information'];
+        filename = 'chemist_upload_format.xlsx';
+      } else if (uploadType === 'Stockist') {
+        headers = ['Business Name', 'Proprietor Name', 'Mobile', 'Email', 'GST', 'Drug License', 'Address', 'Working Area', 'Certifications', 'Extra Information'];
+        filename = 'stockist_upload_format.xlsx';
+      } else if (uploadType === 'CityOrArea') {
+        alert('CityOrArea bulk upload is currently under development on the backend.');
+        return;
+      }
+
+      const ws = utils.aoa_to_sheet([headers]);
+      const wb = utils.book_new();
+      utils.book_append_sheet(wb, ws, 'Template');
+      writeFile(wb, filename);
+    };
+
     return (
       <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
         <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">UPLOAD DOCTOR / CHEMIST / STOCKIST / CITY OR AREA</h2>
@@ -596,7 +621,7 @@ export default function ManageDCS() {
           
           <div className="mt-8 flex justify-between items-center">
             <button onClick={handleUpload} disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors flex items-center gap-2"><Upload size={20}/> Upload List</button>
-            <button className="text-emerald-400 font-semibold text-sm hover:underline border border-emerald-500/30 px-6 py-3 rounded-lg hover:bg-emerald-500/10 transition-colors">Download Format</button>
+            <button onClick={handleDownloadFormat} className="text-emerald-400 font-semibold text-sm hover:underline border border-emerald-500/30 px-6 py-3 rounded-lg hover:bg-emerald-500/10 transition-colors">Download Format</button>
           </div>
         </div>
       </div>
