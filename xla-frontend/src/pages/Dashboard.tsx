@@ -5,6 +5,9 @@ import { Menu, MessageSquare, Bell, Trophy, TrendingUp, User, ChevronDown, Searc
 export default function Dashboard() {
   const [selectedMonth] = useState('Sep');
   const [selectedYear] = useState('2026');
+  const userStr = localStorage.getItem('xla_user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const userName = user?.name || user?.firstName || user?.businessName || 'User';
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
 
   return (
@@ -47,9 +50,9 @@ export default function Dashboard() {
           
           <div className="flex items-center gap-3 sm:pl-4 sm:border-l border-[#3b3b5a]">
              <div className="w-8 h-8 rounded-full bg-slate-400 flex items-center justify-center overflow-hidden border border-slate-500">
-               <img src="https://ui-avatars.com/api/?name=Jnana&background=0D8ABC&color=fff" alt="User" className="w-full h-full object-cover" />
+               <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0D8ABC&color=fff`} alt="User" className="w-full h-full object-cover" />
              </div>
-             <span className="text-sm font-medium text-slate-200 hidden sm:block">Jnana</span>
+             <span className="text-sm font-medium text-slate-200 hidden sm:block">{userName}</span>
           </div>
         </div>
       </div>
@@ -62,7 +65,7 @@ export default function Dashboard() {
               <div className="w-10 h-10 rounded-full bg-sky-500/10 flex items-center justify-center">
                  <span className="text-xl">✨</span>
               </div>
-              <h2 className="text-lg md:text-xl font-bold text-white">Hi Jnana, glad to see you again 👋</h2>
+              <h2 className="text-lg md:text-xl font-bold text-white">Hi {userName}, glad to see you again 👋</h2>
            </div>
            
            <div className="flex flex-wrap items-center gap-3">
@@ -89,10 +92,10 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between bg-[#1a1a2e] border border-emerald-500/30 rounded-lg px-4 py-2 min-w-[200px] cursor-pointer">
                     <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center overflow-hidden">
-                           <img src="https://ui-avatars.com/api/?name=Jnana+Dash&background=0D8ABC&color=fff" alt="User" className="w-full h-full object-cover" />
+                           <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0D8ABC&color=fff`} alt="User" className="w-full h-full object-cover" />
                         </div>
                         <div className="flex flex-col">
-                            <span className="font-semibold text-xs leading-none text-slate-200">Jnana Dash</span>
+                            <span className="font-semibold text-xs leading-none text-slate-200">{userName}</span>
                             <span className="text-[9px] text-slate-500 font-bold tracking-wider mt-0.5">ADMIN</span>
                         </div>
                     </div>
