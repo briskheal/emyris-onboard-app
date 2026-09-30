@@ -41,7 +41,7 @@ export default function Dashboard() {
       
       let url = `/api/xl/admin/dashboard-stats?month=${month}&year=${year}`;
       if (selectedDashboardUser) {
-          url += `&employeeId=${selectedDashboardUser._id || selectedDashboardUser.employeeId || selectedDashboardUser.uid}`;
+          url += `&employeeId=${selectedDashboardUser.uid || selectedDashboardUser.employeeId || selectedDashboardUser._id}`;
       }
       
       axios.get(url).then(res => {
