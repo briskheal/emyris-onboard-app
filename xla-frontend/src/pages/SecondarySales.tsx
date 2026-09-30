@@ -264,7 +264,7 @@ export default function SecondarySales() {
     }
 
     try {
-      const userStr = localStorage.getItem('user');
+      const userStr = localStorage.getItem('xla_user');
       const user = userStr ? JSON.parse(userStr) : {};
       
       const payload = {
