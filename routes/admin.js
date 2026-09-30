@@ -4855,8 +4855,17 @@ router.get('/products/categories', async (req, res) => {
 });
 router.post('/products/categories', async (req, res) => {
     try {
-        const count = await XlProductCategory.count();
-        const uid = `CAT${count + 1}`;
+        const all = await XlProductCategory.findAll({ attributes: ['uid'], raw: true });
+        let maxNum = 0;
+        for (const r of all) {
+            const num = parseInt((r.uid || '').replace(/^CAT/i, ''));
+            if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+        let uid = 'CAT' + (maxNum + 1);
+        while (await XlProductCategory.count({ where: { uid } }) > 0) {
+            maxNum++;
+            uid = 'CAT' + (maxNum + 1);
+        }
         const category = await XlProductCategory.create({ ...req.body, uid });
         res.json({ success: true, category });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
@@ -4883,8 +4892,17 @@ router.get('/products/types', async (req, res) => {
 });
 router.post('/products/types', async (req, res) => {
     try {
-        const count = await XlProductType.count();
-        const uid = `TYP${count + 1}`;
+        const all = await XlProductType.findAll({ attributes: ['uid'], raw: true });
+        let maxNum = 0;
+        for (const r of all) {
+            const num = parseInt((r.uid || '').replace(/^TYP/i, ''));
+            if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+        let uid = 'TYP' + (maxNum + 1);
+        while (await XlProductType.count({ where: { uid } }) > 0) {
+            maxNum++;
+            uid = 'TYP' + (maxNum + 1);
+        }
         const type = await XlProductType.create({ ...req.body, uid });
         res.json({ success: true, type });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
@@ -4911,8 +4929,17 @@ router.get('/products/suppliers', async (req, res) => {
 });
 router.post('/products/suppliers', async (req, res) => {
     try {
-        const count = await XlProductSupplier.count();
-        const uid = `SUP${count + 1}`;
+        const all = await XlProductSupplier.findAll({ attributes: ['uid'], raw: true });
+        let maxNum = 0;
+        for (const r of all) {
+            const num = parseInt((r.uid || '').replace(/^SUP/i, ''));
+            if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+        let uid = 'SUP' + (maxNum + 1);
+        while (await XlProductSupplier.count({ where: { uid } }) > 0) {
+            maxNum++;
+            uid = 'SUP' + (maxNum + 1);
+        }
         const supplier = await XlProductSupplier.create({ ...req.body, uid });
         res.json({ success: true, supplier });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
