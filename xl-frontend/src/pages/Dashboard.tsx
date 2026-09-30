@@ -1,15 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { TrendingUp, User, ChevronDown, CheckCircle2 } from 'lucide-react';
 
 export default function Dashboard() {
-  const [selectedMonth, setSelectedMonth] = useState('August');
+    const [selectedMonth, setSelectedMonth] = useState('August');
   const [selectedYear, setSelectedYear] = useState('2026');
+  const [announcement, setAnnouncement] = useState('');
+
+  useEffect(() => {
+    axios.get('/api/xl/admin/announcement')
+      .then(res => {
+        if (res.data.success && res.data.data) {
+          setAnnouncement(res.data.data.message);
+        }
+      })
+      .catch(e => console.error('Failed to fetch announcement:', e));
+  }, []);
 
   return (
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-slate-100">
       
-            {/* Placeholder for future Backlog Reporting & Messages */}
-      <div id="dashboard-message-placeholder" className="hidden"></div>
+            
+      {/* Global Scrolling Announcement */}
+      {announcement && (
+        <div className="bg-sky-600/20 border-b border-sky-500/30 overflow-hidden py-2 px-4 flex items-center shadow-md">
+           <div className="text-sky-400 font-bold whitespace-nowrap mr-4 shrink-0 text-sm">ANNOUNCEMENT</div>
+           <marquee className="text-white text-sm font-medium" scrollamount="5">{announcement}</marquee>
+        </div>
+      )}
+  
       
       <div className="px-5 mt-4 space-y-8">
         
