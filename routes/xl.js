@@ -3195,8 +3195,8 @@ router.post('/primary-sales/save', async (req, res) => {
         // Strict Validation
         if (productsData) validateProductsData(productsData);
         
-        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
-        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+        const month = reqMonth || (date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' }));
+        const year = reqYear || (date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString());
 
         const newSale = await XlPrimarySales.create({
             employeeId: employeeId || 'ADMIN',
@@ -3217,6 +3217,24 @@ router.post('/primary-sales/save', async (req, res) => {
             ...(status ? { status } : {}),
             status: 'Pending'
         });
+
+        if (productsData && Array.isArray(productsData) && productsData.length > 0) {
+            const { XlPrimarySalesItem } = require('../db');
+            const items = productsData.map(p => ({
+                saleId: newSale._id,
+                product: p.product || p.productId,
+                qty: parseInt(p.qty || p.quantity || 0),
+                basePrice: parseFloat(p.basePrice || p.customPrice || 0),
+                priceType: p.priceType || 'BASE PRICE',
+                free: parseInt(p.free || 0),
+                discount: parseFloat(p.discount || 0),
+                exp: parseInt(p.exp || 0),
+                purcRtn: parseInt(p.purcRtn || 0),
+                rtnPriceType: p.rtnPriceType || 'BASE PRICE',
+                rtnPrice: parseFloat(p.rtnPrice || 0)
+            }));
+            await XlPrimarySalesItem.bulkCreate(items);
+        }
 
         res.json({ success: true, message: 'Primary Sales invoice saved successfully!', data: newSale });
     } catch (error) {
@@ -3774,11 +3792,13 @@ router.get('/secondary-sales/:id', async (req, res) => {
 
 router.post('/secondary-sales/save', async (req, res) => {
     try {
-        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
+        const { employeeId, date, month: reqMonth, year: reqYear, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
         
         const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
         const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
 
+        const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
+        
         const sale = await XlSecondarySales.create({
             employeeId,
             date,
@@ -3790,8 +3810,29 @@ router.post('/secondary-sales/save', async (req, res) => {
             headquarter,
             stockist,
             amount,
-            productsData: typeof productsData === 'string' ? productsData : JSON.stringify(productsData)
+            productsData: JSON.stringify(products)
         });
+
+        if (products.length > 0) {
+            const { XlSecondarySalesItem } = require('../db');
+            const itemRows = products.map(p => ({
+                saleId: sale._id,
+                productId: p.productId || p.product || '',
+                product: p.product || p.productId || '',
+                qty: p.salesQty || p.qty || 0,
+                salesQty: p.salesQty || p.qty || 0,
+                basePrice: p.basePrice || p.customPrice || 0,
+                customPrice: p.basePrice || p.customPrice || 0,
+                priceType: p.priceType || p.selectedPriceType || 'PTR',
+                selectedPriceType: p.priceType || p.selectedPriceType || 'PTR',
+                openingQty: p.openingQty || 0,
+                receivedQty: p.receivedQty || 0,
+                free: p.free || p.freeStocks || 0,
+                freeStocks: p.free || p.freeStocks || 0,
+                closingQty: p.closingQty || 0
+            }));
+            await XlSecondarySalesItem.bulkCreate(itemRows);
+        }
         res.json({ success: true, data: sale });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
