@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
-import { Menu, MessageSquare, Bell, Trophy, TrendingUp, User, ChevronDown, Search, Download, Activity, Sun, Check } from 'lucide-react';
+import { Menu, MessageSquare, Bell, User, ChevronDown, Search, Download, Activity, Sun, Check } from 'lucide-react';
 
 export default function Dashboard() {
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -32,6 +32,24 @@ export default function Dashboard() {
   
   // For the native month input
   const [monthInput, setMonthInput] = useState('2026-09');
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+
+  useEffect(() => {
+      const [year, monthNum] = monthInput.split('-');
+      const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const month = monthNames[parseInt(monthNum) - 1];
+      
+      let url = `/api/xl/admin/dashboard-stats?month=${month}&year=${year}`;
+      if (selectedDashboardUser) {
+          url += `&employeeId=${selectedDashboardUser._id || selectedDashboardUser.employeeId || selectedDashboardUser.uid}`;
+      }
+      
+      axios.get(url).then(res => {
+          if (res.data.success) {
+              setDashboardStats(res.data.data);
+          }
+      }).catch(e => console.error(e));
+  }, [monthInput, selectedDashboardUser]);
 
 
     
@@ -252,169 +270,75 @@ export default function Dashboard() {
            {/* The Two Graphs */}
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-16">
               {/* Graph 1: Target vs Primary vs Secondary */}
-              <div className="flex flex-col relative w-full pr-4 pb-8 pl-12">
-                 <div className="absolute inset-0 pl-12 pb-8 pr-4 flex flex-col justify-between pointer-events-none">
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">1000000</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">800000</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">600000</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">400000</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">200000</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a] w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">0</span></div>
+              {(() => {
+                 const targetSales = dashboardStats ? dashboardStats.target : 0;
+                 const primarySales = dashboardStats ? dashboardStats.primary : 0;
+                 const secondarySales = dashboardStats ? dashboardStats.secondary : 0;
+                 const maxS = Math.max(targetSales, primarySales, secondarySales, 1000);
+                 const maxSales = Math.ceil(maxS / 1000) * 1000;
+                 return (
+                 <div className="flex flex-col relative w-full pr-4 pb-8 pl-12">
+                    <div className="absolute inset-0 pl-12 pb-8 pr-4 flex flex-col justify-between pointer-events-none">
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{maxSales}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.8)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.6)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.4)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxSales*0.2)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a] w-full h-0 relative"><span className="absolute -left-12 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">0</span></div>
+                    </div>
+                    
+                    <div className="relative h-64 flex items-end justify-around w-full z-10 pt-2 border-l border-slate-200 dark:border-[#3b3b5a]">
+                       <div className="w-14 md:w-20 bg-sky-500 transition-all hover:opacity-90 relative group" title={'₹' + targetSales.toLocaleString()} style={{height: `${(targetSales/maxSales)*100}%`}}></div>
+                       <div className="w-14 md:w-20 bg-emerald-500 transition-all hover:opacity-90 relative group" title={'₹' + primarySales.toLocaleString()} style={{height: `${(primarySales/maxSales)*100}%`}}></div>
+                       <div className="w-14 md:w-20 bg-orange-500 transition-all hover:opacity-90 relative group" title={'₹' + secondarySales.toLocaleString()} style={{height: `${(secondarySales/maxSales)*100}%`}}></div>
+                    </div>
+                    
+                    <div className="flex justify-around mt-4 text-xs font-semibold text-slate-500 dark:text-[#8b8baf] ml-[-12px]">
+                       <span className="w-14 md:w-20 text-center">Target</span>
+                       <span className="w-14 md:w-20 text-center">Primary</span>
+                       <span className="w-14 md:w-20 text-center">Secondary</span>
+                    </div>
+                    
+                    <div className="text-center mt-6 text-sm font-bold text-slate-700 dark:text-white">Target vs Primary vs Secondary</div>
                  </div>
-                 
-                 <div className="relative h-64 flex items-end justify-around w-full z-10 pt-2 border-l border-slate-200 dark:border-[#3b3b5a]">
-                    <div className="w-14 md:w-20 bg-sky-500 h-[100%] transition-all hover:opacity-90 relative group"></div>
-                    <div className="w-14 md:w-20 bg-emerald-500 h-[55%] transition-all hover:opacity-90 relative group"></div>
-                    <div className="w-14 md:w-20 bg-orange-500 h-[30%] transition-all hover:opacity-90 relative group"></div>
-                 </div>
-                 
-                 <div className="flex justify-around mt-4 text-xs font-semibold text-slate-500 dark:text-[#8b8baf] ml-[-12px]">
-                    <span className="w-14 md:w-20 text-center">Target</span>
-                    <span className="w-14 md:w-20 text-center">Primary</span>
-                    <span className="w-14 md:w-20 text-center">Secondary</span>
-                 </div>
-                 <h4 className="text-center mt-8 text-sm font-bold text-slate-600 dark:text-slate-300">Target vs Primary vs Secondary</h4>
-              </div>
+                 );
+              })()}
 
               {/* Graph 2: Reports Submitted */}
-              <div className="flex flex-col relative w-full pr-4 pb-8 pl-8">
-                 <div className="absolute inset-0 pl-8 pb-8 pr-4 flex flex-col justify-between pointer-events-none">
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-8 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">60</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-8 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">40</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-8 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">20</span></div>
-                    <div className="border-t border-slate-200 dark:border-[#3b3b5a] w-full h-0 relative"><span className="absolute -left-8 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">0</span></div>
+              {(() => {
+                 const docCalls = dashboardStats?.calls?.doctor?.actual || 0;
+                 const chemCalls = dashboardStats?.calls?.chemist?.actual || 0;
+                 const stockCalls = dashboardStats?.calls?.stockist?.actual || 0;
+                 const maxR = Math.max(docCalls, chemCalls, stockCalls, 10);
+                 const maxRep = Math.ceil(maxR / 10) * 10;
+                 return (
+                 <div className="flex flex-col relative w-full pr-4 pb-8 pl-12">
+                    <div className="absolute inset-0 pl-12 pb-8 pr-4 flex flex-col justify-between pointer-events-none">
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{maxRep}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxRep*0.8)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxRep*0.6)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxRep*0.4)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a]/30 w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">{Math.round(maxRep*0.2)}</span></div>
+                       <div className="border-t border-slate-200 dark:border-[#3b3b5a] w-full h-0 relative"><span className="absolute -left-10 -top-2.5 text-[10px] text-slate-500 dark:text-[#8b8baf]">0</span></div>
+                    </div>
+                    
+                    <div className="relative h-64 flex items-end justify-around w-full z-10 pt-2 border-l border-slate-200 dark:border-[#3b3b5a]">
+                       <div className="w-14 md:w-20 bg-sky-500 transition-all hover:opacity-90 relative group" title={String(docCalls)} style={{height: `${(docCalls/maxRep)*100}%`}}></div>
+                       <div className="w-14 md:w-20 bg-emerald-500 transition-all hover:opacity-90 relative group" title={String(chemCalls)} style={{height: `${(chemCalls/maxRep)*100}%`}}></div>
+                       <div className="w-14 md:w-20 bg-orange-500 transition-all hover:opacity-90 relative group" title={String(stockCalls)} style={{height: `${(stockCalls/maxRep)*100}%`}}></div>
+                    </div>
+
+                    <div className="flex justify-around mt-4 text-xs font-semibold text-slate-500 dark:text-[#8b8baf] ml-[-12px]">
+                       <span className="w-14 md:w-20 text-center">Doctor</span>
+                       <span className="w-14 md:w-20 text-center">Chemist</span>
+                       <span className="w-14 md:w-20 text-center">Stockist</span>
+                    </div>
+                    
+                    <div className="text-center mt-6 text-sm font-bold text-slate-700 dark:text-white">Reports Submitted</div>
                  </div>
-                 
-                 <div className="relative h-64 flex items-end justify-around w-full z-10 pt-2 border-l border-slate-200 dark:border-[#3b3b5a]">
-                    <div className="w-14 md:w-20 bg-sky-500 h-[95%] transition-all hover:opacity-90 relative group"></div>
-                    <div className="w-14 md:w-20 bg-emerald-500 h-[15%] transition-all hover:opacity-90 relative group"></div>
-                    <div className="w-14 md:w-20 bg-orange-500 h-[10%] transition-all hover:opacity-90 relative group"></div>
-                 </div>
-                 
-                 <div className="flex justify-around mt-4 text-xs font-semibold text-slate-500 dark:text-[#8b8baf] ml-[-8px]">
-                    <span className="w-14 md:w-20 text-center">Doctor</span>
-                    <span className="w-14 md:w-20 text-center">Chemist</span>
-                    <span className="w-14 md:w-20 text-center">Stockist</span>
-                 </div>
-                 <h4 className="text-center mt-8 text-sm font-bold text-slate-600 dark:text-slate-300">Reports Submitted</h4>
-              </div>
+                 );
+              })()}
            </div>
-        </div>
-
-        {/* Existing Content moved below */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Top Performers */}
-          <div className="flex flex-col h-full">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy size={20} className="text-amber-400" />
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Top Performers</h3>
-            </div>
-            <div className="space-y-3 flex-1">
-              <div className="flex items-center justify-between bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-2xl p-4 shadow-lg shadow-black/20">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full border-2 border-amber-400 flex items-center justify-center bg-amber-400/10 shrink-0">
-                    <Trophy size={18} className="text-amber-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">Kuldeep Si...</h4>
-                    <p className="text-xs font-medium text-slate-400 uppercase">Durg</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Points</span>
-                  <div className="bg-emerald-500 text-slate-900 dark:text-white font-black text-sm px-3 py-1 rounded-lg mt-0.5">10.1</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-2xl p-4 shadow-lg shadow-black/20">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full border-2 border-slate-300 flex items-center justify-center bg-slate-300/10 shrink-0">
-                    <Trophy size={18} className="text-slate-600 dark:text-slate-300" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">Dhananjay ...</h4>
-                    <p className="text-xs font-medium text-slate-400 uppercase">Rajkot</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Points</span>
-                  <div className="bg-emerald-500 text-slate-900 dark:text-white font-black text-sm px-3 py-1 rounded-lg mt-0.5">5.8</div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-2xl p-4 shadow-lg shadow-black/20">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full border-2 border-orange-400 flex items-center justify-center bg-orange-400/10 shrink-0">
-                    <Trophy size={18} className="text-orange-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-slate-900 dark:text-white line-clamp-1">Jnana Dash</h4>
-                    <p className="text-xs font-medium text-slate-400 uppercase">Hyderabad</p>
-                  </div>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold">Points</span>
-                  <div className="bg-emerald-500 text-slate-900 dark:text-white font-black text-sm px-3 py-1 rounded-lg mt-0.5">4.5</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Sales Performance */}
-          <div className="lg:col-span-2 flex flex-col h-full">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp size={20} className="text-emerald-400" />
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Sales Performance</h3>
-            </div>
-            
-            <div className="bg-white dark:bg-[#212136] rounded-3xl p-6 border border-slate-200 dark:border-[#3b3b5a]/50 shadow-lg shadow-black/20 flex-1 flex flex-col justify-center">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
-                {/* Monthly Target Box */}
-                <div className="bg-slate-900/50 rounded-2xl p-5 border border-slate-200 dark:border-[#3b3b5a] flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 rounded-full bg-[#8b8baf]"></div>
-                    <span className="text-xs font-bold text-slate-500 dark:text-[#8b8baf] tracking-wider uppercase">Monthly Target</span>
-                  </div>
-                  <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">₹700k</div>
-                </div>
-
-                {/* Progress Bars */}
-                <div className="md:col-span-2 flex flex-col justify-center space-y-6">
-                  {/* Primary Sales */}
-                  <div>
-                    <div className="flex justify-between items-end mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400"></div>
-                        <span className="text-sm font-semibold text-emerald-400">Primary Sales</span>
-                      </div>
-                      <span className="text-xs font-bold text-sky-400">58.07%</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-50 dark:bg-[#1a1a2e] rounded-full overflow-hidden border border-slate-200 dark:border-[#3b3b5a]/30">
-                      <div className="h-full bg-emerald-400 rounded-full" style={{ width: '58.07%' }}></div>
-                    </div>
-                    <div className="mt-2 text-xl font-bold text-sky-400 tracking-wide">
-                      ₹406,484.92
-                    </div>
-                  </div>
-                  
-                  {/* Secondary Sales */}
-                  <div>
-                    <div className="flex justify-between items-end mb-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-sky-400"></div>
-                        <span className="text-sm font-semibold text-sky-400">Secondary Sales</span>
-                      </div>
-                      <span className="text-xs font-bold text-sky-400">20.40%</span>
-                    </div>
-                    <div className="h-2 w-full bg-slate-50 dark:bg-[#1a1a2e] rounded-full overflow-hidden border border-slate-200 dark:border-[#3b3b5a]/30">
-                      <div className="h-full bg-sky-400 rounded-full" style={{ width: '20.4%' }}></div>
-                    </div>
-                    <div className="mt-2 text-xl font-bold text-sky-400 tracking-wide">
-                      ₹142,766.00
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Calls Section and Call Averages */}
@@ -428,7 +352,7 @@ export default function Dashboard() {
                   <User size={32} className="text-emerald-400" />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-2xl font-black text-emerald-400 block mb-1">11 <span className="text-sm font-semibold text-slate-500">/ 4127</span></span>
+                  <span className="text-2xl font-black text-emerald-400 block mb-1">{dashboardStats?.calls?.doctor?.actual || 0} <span className="text-sm font-semibold text-slate-500">/ {dashboardStats?.calls?.doctor?.target || 0}</span></span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Doctor Calls</span>
                 </div>
               </div>
@@ -438,7 +362,7 @@ export default function Dashboard() {
                   <User size={32} className="text-amber-400" />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-2xl font-black text-amber-400 block mb-1">1 <span className="text-sm font-semibold text-slate-500">/ 0</span></span>
+                  <span className="text-2xl font-black text-amber-400 block mb-1">{dashboardStats?.calls?.chemist?.actual || 0} <span className="text-sm font-semibold text-slate-500">/ {dashboardStats?.calls?.chemist?.target || 0}</span></span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Chemist Calls</span>
                 </div>
               </div>
@@ -448,7 +372,7 @@ export default function Dashboard() {
                   <User size={32} className="text-rose-400" />
                 </div>
                 <div className="text-center mt-2">
-                  <span className="text-2xl font-black text-rose-400 block mb-1">3 <span className="text-sm font-semibold text-slate-500">/ 0</span></span>
+                  <span className="text-2xl font-black text-rose-400 block mb-1">{dashboardStats?.calls?.stockist?.actual || 0} <span className="text-sm font-semibold text-slate-500">/ {dashboardStats?.calls?.stockist?.target || 0}</span></span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stockist Calls</span>
                 </div>
               </div>
@@ -463,7 +387,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
-                    <span className="text-3xl font-black text-emerald-400">0.9</span>
+                    <span className="text-3xl font-black text-emerald-400">{dashboardStats?.calls?.doctor?.target ? (dashboardStats.calls.doctor.actual / dashboardStats.calls.doctor.target).toFixed(1) : 0}</span>
                   </div>
                   <p className="text-xs font-bold text-slate-400 ml-6 uppercase tracking-wider">Doctor Call Average</p>
                 </div>
@@ -471,7 +395,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-                    <span className="text-3xl font-black text-amber-400">0.1</span>
+                    <span className="text-3xl font-black text-amber-400">{dashboardStats?.calls?.chemist?.target ? (dashboardStats.calls.chemist.actual / dashboardStats.calls.chemist.target).toFixed(1) : 0}</span>
                   </div>
                   <p className="text-xs font-bold text-slate-400 ml-6 uppercase tracking-wider">Chemist Call Average</p>
                 </div>
@@ -479,7 +403,7 @@ export default function Dashboard() {
                 <div>
                   <div className="flex items-center gap-3 mb-1">
                     <div className="w-3 h-3 rounded-full bg-rose-400"></div>
-                    <span className="text-3xl font-black text-rose-400">0.3</span>
+                    <span className="text-3xl font-black text-rose-400">{dashboardStats?.calls?.stockist?.target ? (dashboardStats.calls.stockist.actual / dashboardStats.calls.stockist.target).toFixed(1) : 0}</span>
                   </div>
                   <p className="text-xs font-bold text-slate-400 ml-6 uppercase tracking-wider">Stockist Call Average</p>
                 </div>
