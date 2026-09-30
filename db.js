@@ -40,7 +40,7 @@ const {
     XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate,
     XlExpense,
     XlBacklogRequest, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlPrimarySalesItem, XlSecondarySales, XlSecondarySalesItem, XlGeoFencing, XlGlobalSettings, XlHoliday, XlTarget,
-    XlCallPlan
+    XlCallPlan, XlAnnouncement
 } = initXlModels(sequelize);
 
 const {
@@ -609,6 +609,7 @@ module.exports = {
     XlExpense,
     XlBacklogRequest,
     XlCallPlan, XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory, XlTravelAllowance, XlOutStationAllowance, XlNotification, XlPerformanceAnalysis, XlSample, XlGift, XlPrimarySales, XlPrimarySalesItem, XlSecondarySales, XlSecondarySalesItem, XlGeoFencing, XlGlobalSettings, XlHoliday, XlTarget,
-    generateId 
+    generateId, 
+    XlAnnouncement 
 };
 
