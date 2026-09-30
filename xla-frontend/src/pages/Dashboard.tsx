@@ -420,9 +420,9 @@ export default function Dashboard() {
         {/* Calls Section and Call Averages */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 pb-12">
           {/* Calls vs Targets */}
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 flex flex-col">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Calls vs Targets</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 flex-1">
               <div className="bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-lg">
                 <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center">
                   <User size={32} className="text-emerald-400" />
@@ -456,9 +456,9 @@ export default function Dashboard() {
           </div>
 
           {/* Call Averages */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 flex flex-col">
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-4">Call Averages</h3>
-            <div className="bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-3xl p-6 shadow-lg h-[calc(100%-2rem)] flex flex-col justify-between">
+            <div className="bg-white dark:bg-[#212136] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-2xl p-6 shadow-lg flex-1 flex flex-col justify-center gap-6">
               <div className="space-y-6">
                 <div>
                   <div className="flex items-center gap-3 mb-1">
