@@ -80,7 +80,7 @@ export default function Layout() {
               </div>
             )
           )}
-          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className={`p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800 transition-colors ${isSidebarCollapsed ? '' : '-mr-2'}`}>
+          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className={`p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors ${isSidebarCollapsed ? '' : '-mr-2'}`}>
             <Menu size={20} />
           </button>
         </div>
@@ -94,7 +94,7 @@ export default function Layout() {
                 onClick={() => navigate(item.path)}
                 title={isSidebarCollapsed ? item.label : undefined}
                 className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-xl transition-colors ${
-                  active ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 font-semibold'
+                  active ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 font-semibold'
                 }`}
               >
                 <item.icon size={20} className={`${active ? 'text-sky-400' : 'text-slate-500'} shrink-0`} />
