@@ -10,6 +10,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     localStorage.setItem('xla_theme', isLightMode ? 'light' : 'dark');
+    if (isLightMode) {
+      document.documentElement.classList.remove('dark');
+    } else {
+      document.documentElement.classList.add('dark');
+    }
   }, [isLightMode]);
     
   
@@ -79,7 +84,7 @@ export default function Dashboard() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
 
   return (
-    <div className={"min-h-full flex flex-col pb-24 font-sans transition-colors " + (isLightMode ? "bg-slate-50 text-slate-900" : "bg-slate-50 dark:bg-[#1a1a2e] text-slate-800 dark:text-slate-100 dark")}>
+    <div className="min-h-full flex flex-col pb-24 font-sans transition-colors bg-slate-50 dark:bg-[#1a1a2e] text-slate-900 dark:text-slate-100">
       
       {/* Sticky Header - Modernized with Search Bar */}
       <div className="flex items-center justify-between px-6 py-4 sticky top-0 bg-white dark:bg-[#1e1e30] z-20 border-b border-slate-200 dark:border-[#3b3b5a] shadow-lg">
@@ -193,7 +198,7 @@ export default function Dashboard() {
                   </div>
                   
                   <div className="relative w-[220px]">
-                      <div className="flex items-center bg-white dark:bg-slate-50 dark:bg-[#1a1a2e] border border-slate-300 dark:border-emerald-500/30 rounded-lg h-[42px] px-3 focus-within:border-emerald-500/50 transition-colors shadow-sm dark:shadow-none">
+                      <div className="flex items-center bg-white dark:bg-[#0f172a] border border-slate-300 dark:border-slate-800 rounded-xl h-[42px] px-3 focus-within:border-emerald-500/50 transition-colors shadow-sm dark:shadow-none">
                           <div className="w-6 h-6 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold overflow-hidden border border-emerald-500/20 dark:border-emerald-500/30 shrink-0">
                               {selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName || '')?.charAt(0) : 'U'}
                           </div>

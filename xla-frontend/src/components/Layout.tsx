@@ -27,6 +27,14 @@ export default function Layout() {
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem('xla_theme') !== 'light') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
   const [logoUrl, setLogoUrl] = useState('');
 
   useEffect(() => {
@@ -57,22 +65,22 @@ export default function Layout() {
     location.pathname === path || location.pathname.startsWith(path + '/');
 
   return (
-    <div className="flex h-dvh bg-slate-900 overflow-hidden font-sans">
+    <div className="flex h-dvh bg-white dark:bg-slate-900 overflow-hidden font-sans">
       
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-slate-900 border-r border-slate-800 flex-shrink-0 transition-all duration-300 relative`}>
-        <div className={`h-20 flex items-center border-b border-slate-800 ${isSidebarCollapsed ? 'justify-center' : 'px-6 justify-between'}`}>
+      <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-shrink-0 transition-all duration-300 relative`}>
+        <div className={`h-20 flex items-center border-b border-slate-200 dark:border-slate-800 ${isSidebarCollapsed ? 'justify-center' : 'px-6 justify-between'}`}>
           {!isSidebarCollapsed && (
             logoUrl ? (
               <img src={logoUrl} alt="Logo" className="h-10 object-contain" />
             ) : (
               <div>
-                <h1 className="text-2xl font-black text-white tracking-tight leading-none">EMYRIS</h1>
+                <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-none">EMYRIS</h1>
                 <p className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase mt-0.5">Biolifesciences</p>
               </div>
             )
           )}
-          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className={`p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors ${isSidebarCollapsed ? '' : '-mr-2'}`}>
+          <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className={`p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800 transition-colors ${isSidebarCollapsed ? '' : '-mr-2'}`}>
             <Menu size={20} />
           </button>
         </div>
@@ -86,7 +94,7 @@ export default function Layout() {
                 onClick={() => navigate(item.path)}
                 title={isSidebarCollapsed ? item.label : undefined}
                 className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-xl transition-colors ${
-                  active ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold'
+                  active ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 font-semibold'
                 }`}
               >
                 <item.icon size={20} className={`${active ? 'text-sky-400' : 'text-slate-500'} shrink-0`} />
@@ -96,8 +104,8 @@ export default function Layout() {
           })}
         </div>
         
-        <div className="p-4 border-t border-slate-800">
-          <button title={isSidebarCollapsed ? 'Log Out' : undefined} onClick={() => { localStorage.removeItem('xla_token'); navigate('/login'); }} className={`w-full flex items-center justify-center ${isSidebarCollapsed ? 'px-0' : 'gap-2'} bg-slate-800 text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-700 transition-colors`}>
+        <div className="p-4 border-t border-slate-200 dark:border-slate-800">
+          <button title={isSidebarCollapsed ? 'Log Out' : undefined} onClick={() => { localStorage.removeItem('xla_token'); navigate('/login'); }} className={`w-full flex items-center justify-center ${isSidebarCollapsed ? 'px-0' : 'gap-2'} bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors`}>
             {isSidebarCollapsed ? <LogOut size={20} /> : 'Log Out'}
           </button>
         </div>
@@ -116,14 +124,14 @@ export default function Layout() {
 
         {/* Bottom Navigation Bar (Mobile Only) */}
         <nav
-          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-slate-900 border-t border-slate-700/60"
+          className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700/60"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <div className="flex items-stretch h-16 relative">
             {/* Left two items */}
             <button
               onClick={() => navigate('/dashboard')}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/dashboard') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/dashboard') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-600 dark:text-slate-300'}`}
             >
               <LayoutDashboard size={22} strokeWidth={isActive('/dashboard') ? 2.2 : 1.7} />
               <span className={`text-[10px] font-medium ${isActive('/dashboard') ? 'text-sky-400' : 'text-slate-500'}`}>Dashboard</span>
@@ -131,7 +139,7 @@ export default function Layout() {
             </button>
             <button
               onClick={() => navigate('/extras')}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/extras') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/extras') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-600 dark:text-slate-300'}`}
             >
               <Menu size={22} strokeWidth={isActive('/extras') ? 2.2 : 1.7} />
               <span className={`text-[10px] font-medium ${isActive('/extras') ? 'text-sky-400' : 'text-slate-500'}`}>Extras</span>
@@ -144,7 +152,7 @@ export default function Layout() {
                 onClick={() => navigate('/report')}
                 className="absolute -top-5 w-14 h-14 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/30 flex flex-col items-center justify-center active:bg-emerald-600 transition-all"
               >
-                <PlusCircle size={26} strokeWidth={1.8} className="text-white" />
+                <PlusCircle size={26} strokeWidth={1.8} className="text-slate-900 dark:text-white" />
               </button>
               <span className="mt-7 text-[10px] font-medium text-slate-500">Report</span>
             </div>
@@ -152,7 +160,7 @@ export default function Layout() {
             {/* Right two items */}
             <button
               onClick={() => navigate('/admin')}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/admin') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/admin') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-600 dark:text-slate-300'}`}
             >
               <SettingsIcon size={22} strokeWidth={isActive('/admin') ? 2.2 : 1.7} />
               <span className={`text-[10px] font-medium ${isActive('/admin') ? 'text-sky-400' : 'text-slate-500'}`}>Admin</span>
@@ -160,7 +168,7 @@ export default function Layout() {
             </button>
             <button
               onClick={() => navigate('/utilities')}
-              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/utilities') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-300'}`}
+              className={`flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors duration-150 ${isActive('/utilities') ? 'text-sky-400' : 'text-slate-500 hover:text-slate-600 dark:text-slate-300'}`}
             >
               <Wrench size={22} strokeWidth={isActive('/utilities') ? 2.2 : 1.7} />
               <span className={`text-[10px] font-medium ${isActive('/utilities') ? 'text-sky-400' : 'text-slate-500'}`}>Utilities</span>
