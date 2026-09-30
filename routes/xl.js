@@ -3706,7 +3706,7 @@ router.get('/emergency-fix', async (req, res) => {
 router.get('/admin/announcement', async (req, res) => {
     try {
         const { XlAnnouncement, Sequelize } = require('../db');
-        const { Op } = Sequelize;
+        
         const now = new Date();
         const announcement = await XlAnnouncement.findOne({ 
             where: { 
@@ -3796,7 +3796,8 @@ router.get('/admin/notifications', async (req, res) => {
 // --- DASHBOARD STATS ROUTE ---
 router.get('/admin/dashboard-stats', async (req, res) => {
     try {
-        const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan, Sequelize } = require('../db');
+        const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan } = require('../db');
+        const { Op } = require('sequelize');
         const { Op } = Sequelize;
         
         let { month, year, employeeId } = req.query;
@@ -3813,19 +3814,22 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         }
 
         let targetSum = 0;
-        const targets = await XlTarget.findAll({ where: { month, year, ...whereUser } });
+        const shortMonth = month.substring(0, 3);
+        const mStr = String(monthNum);
+        const monthVariants = [month, shortMonth, monthNum, mStr];
+        const targets = await XlTarget.findAll({ where: { month: { [Op.in]: monthVariants }, year, ...whereUser } });
         targets.forEach(t => {
             targetSum += (parseFloat(t.totalProductAmount) || 0) + (parseFloat(t.lumpSumAmount) || 0);
         });
 
         let primarySum = 0;
-        const primary = await XlPrimarySales.findAll({ where: { month, year, ...whereUser } });
+        const primary = await XlPrimarySales.findAll({ where: { month: { [Op.in]: monthVariants }, year, ...whereUser } });
         primary.forEach(p => {
             primarySum += (parseFloat(p.netInvValue) || parseFloat(p.amount) || 0);
         });
 
         let secondarySum = 0;
-        const secondary = await XlSecondarySales.findAll({ where: { month, year, ...whereUser } });
+        const secondary = await XlSecondarySales.findAll({ where: { month: { [Op.in]: monthVariants }, year, ...whereUser } });
         secondary.forEach(s => {
             secondarySum += (parseFloat(s.amount) || 0);
         });

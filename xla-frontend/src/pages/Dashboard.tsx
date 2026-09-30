@@ -244,7 +244,7 @@ export default function Dashboard() {
                               {filteredUsers.map(u => (
                                   <div 
                                       key={u._id}
-                                      onClick={() => { setSelectedDashboardUser(u); setUserSearchOpen(false); setUserSearchTerm(''); }}
+                                      onMouseDown={(e) => { e.preventDefault(); setSelectedDashboardUser(u); setUserSearchOpen(false); setUserSearchTerm(''); }}
                                       className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between border-b border-slate-100 dark:border-slate-800/50 last:border-0 group"
                                   >
                                       <div className="flex flex-col">
