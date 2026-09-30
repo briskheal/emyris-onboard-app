@@ -12,13 +12,21 @@ export default function Dashboard() {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
 
-  useEffect(() => {
+    useEffect(() => {
     axios.get('/api/xl/admin/notifications').then(res => {
       if (res.data.success) {
-        setNotifications(res.data.data);
+        const clearedAtStr = localStorage.getItem('xla_notifs_cleared');
+        const clearedAt = clearedAtStr ? parseInt(clearedAtStr) : 0;
+        const validNotifs = res.data.data.filter((n: any) => new Date(n.date).getTime() > clearedAt);
+        setNotifications(validNotifs);
       }
     }).catch(e => console.error(e));
   }, []);
+
+  const handleClearNotifications = () => {
+    localStorage.setItem('xla_notifs_cleared', Date.now().toString());
+    setNotifications([]);
+  };
 
   const handleBroadcast = async () => {
     if (!broadcastMessage.trim()) return alert('Message cannot be empty');
@@ -61,12 +69,8 @@ export default function Dashboard() {
         </div>
         
         <div className="flex items-center gap-4 md:gap-6 mr-auto pl-4">
-          <button className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-full text-xs font-bold hover:shadow-lg hover:shadow-orange-500/20 transition-all">
-            <span>Upgrade to Advance Plan</span>
-          </button>
-          <button className="hidden lg:flex items-center gap-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-full text-xs font-bold hover:bg-emerald-500/20 transition-all">
-            <span>Refer & Earn</span>
-          </button>
+          
+          
         </div>
 
         <div className="flex items-center gap-4">
@@ -89,7 +93,12 @@ export default function Dashboard() {
           )}
           {isNotifOpen && (
             <div className="absolute top-12 right-0 w-80 bg-[#212136] border border-[#3b3b5a] rounded-xl shadow-2xl p-2 z-50">
-              <h4 className="text-white font-bold px-3 py-2 border-b border-[#3b3b5a]">Recent Activity</h4>
+              <div className="flex items-center justify-between px-3 py-2 border-b border-[#3b3b5a]">
+              <h4 className="text-white font-bold">Recent Activity</h4>
+              {notifications.length > 0 && (
+                 <button onClick={handleClearNotifications} className="text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-200 px-2 py-1 rounded transition-colors">Clear</button>
+              )}
+              </div>
               <div className="max-h-80 overflow-y-auto">
                 {notifications.length === 0 ? (
                    <div className="p-4 text-center text-slate-400 text-sm">No recent activity</div>
