@@ -5472,7 +5472,7 @@ router.get('/targets/rollup', async (req, res) => {
         // Fetch all users to build hierarchy
         const allUsers = await XlUser.findAll({ attributes: ['_id', 'uid', 'firstName', 'lastName', 'reportingManager'] });
         const userMap = {};
-        allUsers.forEach(u => userMap[u.uid] = { ...u.toJSON(), directTarget: 0, teamTarget: 0, children: [] });
+        allUsers.forEach(u => userMap[u.employeeId] = { ...u.toJSON(), directTarget: 0, teamTarget: 0, children: [] });
         
         // Attach direct targets
         allTargets.forEach(t => {
@@ -5487,29 +5487,29 @@ router.get('/targets/rollup', async (req, res) => {
         // Build hierarchy
         allUsers.forEach(u => {
             if (u.reportingManager && userMap[u.reportingManager]) {
-                userMap[u.reportingManager].children.push(u.uid);
+                userMap[u.reportingManager].children.push(u.employeeId);
             }
         });
         
         // Recursive rollup function
-        function calculateTeamTarget(uid) {
-            const user = userMap[uid];
+        function calculateTeamTarget(employeeId) {
+            const user = userMap[employeeId];
             if (!user) return 0;
             let teamSum = 0;
-            user.children.forEach(childUid => {
-                const child = userMap[childUid];
-                teamSum += child.directTarget + calculateTeamTarget(childUid);
+            user.children.forEach(childId => {
+                const child = userMap[childId];
+                teamSum += child.directTarget + calculateTeamTarget(childId);
             });
             user.teamTarget = teamSum;
             return teamSum;
         }
         
         // Calculate for all users
-        Object.keys(userMap).forEach(uid => calculateTeamTarget(uid));
+        Object.keys(userMap).forEach(k => calculateTeamTarget(k));
         
         // Format the final response
         const rollupData = Object.values(userMap).map(u => ({
-            employeeId: u.uid,
+            employeeId: u.employeeId,
             userName: `${u.firstName} ${u.lastName}`,
             directTarget: u.directTarget,
             teamTarget: u.teamTarget,
@@ -5536,8 +5536,8 @@ router.get('/targets/yearly', async (req, res) => {
         
         const userMap = {};
         allUsers.forEach(u => {
-            userMap[u.uid] = {
-                uid: u.uid,
+            userMap[u.employeeId] = {
+                employeeId: u.employeeId,
                 userName: u.firstName + ' ' + (u.lastName || ''),
                 hq: u.hq,
                 division: u.division,
@@ -5566,20 +5566,20 @@ router.get('/targets/yearly', async (req, res) => {
 
         allUsers.forEach(u => {
             if (u.reportingManager && userMap[u.reportingManager]) {
-                userMap[u.reportingManager].children.push(u.uid);
+                userMap[u.reportingManager].children.push(u.employeeId);
             }
         });
 
-        function calculateTeamYearlyTarget(uid) {
-            const user = userMap[uid];
+        function calculateTeamYearlyTarget(employeeId) {
+            const user = userMap[employeeId];
             if (!user) return { months: {}, total: 0 };
             if (user.calculated) return { months: user.teamMonths, total: user.teamTotal };
             
             let teamSum = { April: 0, May: 0, June: 0, July: 0, August: 0, September: 0, October: 0, November: 0, December: 0, January: 0, February: 0, March: 0, total: 0 };
             
-            user.children.forEach(childUid => {
-                const child = userMap[childUid];
-                const childTeam = calculateTeamYearlyTarget(childUid);
+            user.children.forEach(childId => {
+                const child = userMap[childId];
+                const childTeam = calculateTeamYearlyTarget(childId);
                 
                 Object.keys(teamSum).forEach(m => {
                     if (m !== 'total') {
@@ -5602,7 +5602,7 @@ router.get('/targets/yearly', async (req, res) => {
             return { months: user.teamMonths, total: user.teamTotal };
         }
         
-        Object.keys(userMap).forEach(uid => calculateTeamYearlyTarget(uid));
+        Object.keys(userMap).forEach(k => calculateTeamYearlyTarget(k));
 
         const result = Object.values(userMap).filter(u => u.total > 0);
         

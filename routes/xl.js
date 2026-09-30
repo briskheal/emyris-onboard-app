@@ -3250,7 +3250,16 @@ router.get('/primary-sales/all', async (req, res) => {
         const { employeeId, designation, month, year } = req.query;
         let whereClause = {};
         
-        if (month) whereClause.month = month;
+        if (month) {
+            const allMonthsFull = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const allMonthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            let fullM = month, shortM = month, mm = 1;
+            let sIdx = allMonthsShort.indexOf(month);
+            if (sIdx !== -1) { fullM = allMonthsFull[sIdx]; mm = sIdx + 1; }
+            else { let fIdx = allMonthsFull.indexOf(month); if (fIdx !== -1) { shortM = allMonthsShort[fIdx]; mm = fIdx + 1; } }
+            const monthVariants = [month, fullM, shortM, String(mm).padStart(2, '0'), String(mm)];
+            whereClause.month = { [require('sequelize').Op.in]: monthVariants };
+        }
         if (year) whereClause.year = year;
         
         // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
@@ -3953,7 +3962,16 @@ router.get('/secondary-sales/all', async (req, res) => {
         const { employeeId, designation, month, year } = req.query;
         let whereClause = {};
         
-        if (month) whereClause.month = month;
+        if (month) {
+            const allMonthsFull = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+            const allMonthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            let fullM = month, shortM = month, mm = 1;
+            let sIdx = allMonthsShort.indexOf(month);
+            if (sIdx !== -1) { fullM = allMonthsFull[sIdx]; mm = sIdx + 1; }
+            else { let fIdx = allMonthsFull.indexOf(month); if (fIdx !== -1) { shortM = allMonthsShort[fIdx]; mm = fIdx + 1; } }
+            const monthVariants = [month, fullM, shortM, String(mm).padStart(2, '0'), String(mm)];
+            whereClause.month = { [require('sequelize').Op.in]: monthVariants };
+        }
         if (year) whereClause.year = year;
         
         // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
