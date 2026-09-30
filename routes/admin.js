@@ -4660,7 +4660,8 @@ router.delete('/locations/routes/:id', async (req, res) => {
 
 // ---- Divisions ----
 
-router.post('/locations/upload', upload.single('file'), async (req, res) => {
+const locationUpload = require('multer')({ dest: 'uploads/' });
+router.post('/locations/upload', locationUpload.single('file'), async (req, res) => {
   try {
     if (!req.file) throw new Error('No file uploaded');
     const type = req.body.type;
