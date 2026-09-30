@@ -22,7 +22,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
 
   useEffect(() => {
     // Generate calendar weeks
-    const monthIndex = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'].indexOf(month.toLowerCase());
+    const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month.toLowerCase());
     const y = parseInt(year);
     if (monthIndex === -1 || isNaN(y)) return;
 

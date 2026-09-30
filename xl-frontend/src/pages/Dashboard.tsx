@@ -45,7 +45,7 @@ export default function Dashboard() {
                 onChange={(e) => setSelectedMonth(e.target.value)}
                 className="w-full appearance-none bg-slate-700 border border-slate-700 rounded-xl py-3 pl-10 pr-10 font-semibold text-white focus:outline-none focus:border-sky-500"
               >
-                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>

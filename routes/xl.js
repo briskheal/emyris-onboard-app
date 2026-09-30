@@ -3520,7 +3520,7 @@ router.get('/expense/limits', async (req, res) => {
         if (!user) return res.status(404).json({ error: 'User not found' });
         
         const [year, monthNum, day] = date.split('-');
-        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
         const monthStr = monthNames[parseInt(monthNum, 10) - 1].toLowerCase();
         
         
@@ -3802,7 +3802,7 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         let { month, year, employeeId } = req.query;
         if (!month || !year) {
             const date = new Date();
-            const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
             month = month || months[date.getMonth()];
             year = year || String(date.getFullYear());
         }
@@ -3833,7 +3833,7 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             secondarySum += (parseFloat(s.amount) || 0);
         });
 
-        const monthNum = String(["January","February","March","April","May","June","July","August","September","October","November","December"].indexOf(month) + 1).padStart(2, '0');
+        const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
         const datePrefix = `${year}-${monthNum}-`;
         
         const dcrs = await XlDCR.findAll({ 

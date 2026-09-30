@@ -1938,7 +1938,7 @@ function SetTargetTab() {
             <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select Month</label>
             <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
               <option value="">Select Month</option>
-              {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => <option key={m} value={m}>{m}</option>)}
+              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => <option key={m} value={m}>{m}</option>)}
             </select>
           </div>
           <div>
@@ -2108,7 +2108,7 @@ function SetTargetTab() {
               <label className="text-xs text-slate-400 font-bold mb-2 block uppercase">Select Month</label>
               <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white">
                 <option value="">Select Month</option>
-                {['January','February','March','April','May','June','July','August','September','October','November','December'].map(m => <option key={m} value={m}>{m}</option>)}
+                {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => <option key={m} value={m}>{m}</option>)}
               </select>
             </div>
             <div>
@@ -2259,7 +2259,7 @@ function SetTargetTab() {
 function AddTargetView({ user, products, onBack }: any) {
   const currentYear = new Date().getFullYear();
   const years = [currentYear+2, currentYear+1, currentYear, currentYear-1, currentYear-2, currentYear-3, currentYear-4];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const [month, setMonth] = useState('');
   const [year, setYear] = useState(currentYear.toString());
@@ -2405,7 +2405,7 @@ function AddTargetView({ user, products, onBack }: any) {
 
 function TargetsListView({ period, onBack }: any) {
   const currentYear = new Date().getFullYear();
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
   const [month, setMonth] = useState('August');
   const [year] = useState(currentYear.toString());

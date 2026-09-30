@@ -36,7 +36,7 @@ export default function Dashboard() {
 
   useEffect(() => {
       const [year, monthNum] = monthInput.split('-');
-      const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       const month = monthNames[parseInt(monthNum) - 1];
       
       let url = `/api/xl/admin/dashboard-stats?month=${month}&year=${year}`;

@@ -194,7 +194,7 @@ export default function EmyrisDateRangePicker({ startDate, endDate, onChange }: 
               value={currentMonth.getMonth()}
               onChange={(e) => setCurrentMonth(new Date(currentMonth.getFullYear(), parseInt(e.target.value), 1))}
             >
-              {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map((m, i) => (
+              {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m, i) => (
                 <option key={m} value={i}>{m}</option>
               ))}
             </select>
