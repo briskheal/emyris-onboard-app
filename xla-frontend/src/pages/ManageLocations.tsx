@@ -71,6 +71,7 @@ function StateTab() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [editId, setEditId] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
@@ -123,7 +124,8 @@ function StateTab() {
     } catch (e) { console.error(e); }
   };
 
-  const paginatedStates = states.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const searchedStates = states.filter(s => (s.stateName||'').toLowerCase().includes(searchTerm.toLowerCase()));
+  const paginatedStates = searchedStates.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-6xl">
@@ -139,7 +141,16 @@ function StateTab() {
         </button>
       </form>
       
-      <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({states.length}) ENTRIES</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedStates.length}) ENTRIES</h3>
+        <input 
+          type="text" 
+          placeholder="Search State..." 
+          value={searchTerm}
+          onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+        />
+      </div>
       
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
@@ -188,7 +199,7 @@ function StateTab() {
             </tbody>
           </table>
         </div>
-        <TableFooter data={states} fileName="States" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={searchedStates} fileName="States" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
@@ -202,6 +213,7 @@ function HQTab() {
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchTerm, setSearchTerm] = useState('');
   
   const [editId, setEditId] = useState<string | null>(null);
   const [editData, setEditData] = useState<any>({});
@@ -253,7 +265,8 @@ function HQTab() {
     } catch (e) { console.error(e); }
   };
 
-  const paginatedHqs = hqs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const searchedHqs = hqs.filter(h => (h.hqName||'').toLowerCase().includes(searchTerm.toLowerCase()) || (h.state||'').toLowerCase().includes(searchTerm.toLowerCase()));
+  const paginatedHqs = searchedHqs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-6xl">
@@ -276,7 +289,16 @@ function HQTab() {
         </button>
       </form>
       
-      <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({hqs.length}) HEADQUARTERS</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedHqs.length}) HEADQUARTERS</h3>
+        <input 
+          type="text" 
+          placeholder="Search HQ or State..." 
+          value={searchTerm}
+          onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+        />
+      </div>
       
       <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
@@ -337,7 +359,7 @@ function HQTab() {
             </tbody>
           </table>
         </div>
-        <TableFooter data={hqs} fileName="HQs" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={searchedHqs} fileName="HQs" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
