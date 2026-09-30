@@ -1816,7 +1816,7 @@ function SetTargetTab() {
     if (targetType === 'Select...') return alert('Select Target Type');
     
     const payload = {
-      employeeId: targetUser.uid,
+      employeeId: targetUser.employeeId || targetUser.uid,
       userName: `${targetUser.firstName || ""} ${targetUser.lastName || ""}`.trim(),
       month: selectedMonth,
       year: selectedYear,

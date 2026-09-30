@@ -5633,8 +5633,14 @@ router.post('/targets/upload', async (req, res) => {
         const months = ['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'];
         
         for (const row of data) {
-            const employeeId = row['Employee UID'];
-            if (!employeeId) continue;
+            const empAlias = row['Employee UID'] || row['Employee ID'];
+            if (!empAlias) continue;
+            
+            // Map the alias to the canonical employeeId
+            const { Op } = require('sequelize');
+            const user = await XlUser.findOne({ where: { [Op.or]: [{ uid: empAlias }, { employeeId: empAlias }] } });
+            const employeeId = user ? user.employeeId : empAlias;
+            
             
             for (const month of months) {
                 if (row[month] !== undefined && row[month] !== '') {

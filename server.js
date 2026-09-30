@@ -268,6 +268,8 @@ app.get('/api/heal-db', async (req, res) => {
 
 app.use('/api/admin', adminRouter);
 app.use('/api/auth', authRouter);
+const migrateRouter = require('./routes/migrate');
+app.use('/api/xl', migrateRouter);
 app.use('/api/xl', xlRouter);
 app.all('/api/company-profile', (req, res, next) => { req.url = '/company-profile'; adminRouter(req, res, next); });
 
