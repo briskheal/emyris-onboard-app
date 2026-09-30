@@ -68,7 +68,7 @@ export default function Dashboard() {
   const dateObj = new Date(monthInput + '-01');
   const monthName = dateObj.toLocaleString('default', { month: 'long' });
   const yearStr = dateObj.getFullYear().toString();
-  const filteredUsers = users.filter(u => ((u.name || u.firstName || u.businessName) || '').toLowerCase().includes(userSearchTerm.toLowerCase()) || (u.employeeId || '').toLowerCase().includes(userSearchTerm.toLowerCase()));
+  const filteredUsers = users.filter(u => ((u.name || (u.firstName ? u.firstName + ' ' + (u.lastName || '') : '') || u.businessName) || '').toLowerCase().includes(userSearchTerm.toLowerCase()) || (u.employeeId || '').toLowerCase().includes(userSearchTerm.toLowerCase()));
 
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
 
@@ -189,12 +189,12 @@ export default function Dashboard() {
                   <div className="relative w-[220px]">
                       <div className="flex items-center bg-white dark:bg-slate-50 dark:bg-[#1a1a2e] border border-slate-300 dark:border-emerald-500/30 rounded-lg h-[42px] px-3 focus-within:border-emerald-500/50 transition-colors shadow-sm dark:shadow-none">
                           <div className="w-6 h-6 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold overflow-hidden border border-emerald-500/20 dark:border-emerald-500/30 shrink-0">
-                              {selectedDashboardUser ? (selectedDashboardUser.name || selectedDashboardUser.firstName || selectedDashboardUser.businessName || '')?.charAt(0) : 'U'}
+                              {selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName || '')?.charAt(0) : 'U'}
                           </div>
                           <input 
                               type="text"
-                              placeholder={selectedDashboardUser ? (selectedDashboardUser.name || selectedDashboardUser.firstName || selectedDashboardUser.businessName || '') : "Search users..."}
-                              value={userSearchOpen ? userSearchTerm : (selectedDashboardUser ? (selectedDashboardUser.name || selectedDashboardUser.firstName || selectedDashboardUser.businessName || '') : '')}
+                              placeholder={selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName || '') : "Search users..."}
+                              value={userSearchOpen ? userSearchTerm : (selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName || '') : '')}
                               onChange={(e) => {
                                   setUserSearchTerm(e.target.value);
                                   if (!userSearchOpen) setUserSearchOpen(true);
@@ -216,7 +216,7 @@ export default function Dashboard() {
                                       onClick={() => { setSelectedDashboardUser(u); setUserSearchOpen(false); setUserSearchTerm(''); }}
                                       className="px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-50 dark:bg-[#1a1a2e] cursor-pointer flex flex-col border-b border-slate-100 dark:border-slate-200 dark:border-[#3b3b5a]/30 last:border-0"
                                   >
-                                      <span className="text-sm font-medium text-slate-800 dark:text-slate-700 dark:text-slate-200">{u.name || u.firstName || u.businessName || 'Unnamed User'}</span>
+                                      <span className="text-sm font-medium text-slate-800 dark:text-slate-700 dark:text-slate-200">{u.name || (u.firstName ? u.firstName + ' ' + (u.lastName || '') : '') || u.businessName || 'Unnamed User'}</span>
                                       <span className="text-[11px] text-slate-500">{u.designation || 'Staff'}</span>
                                   </div>
                               ))}
