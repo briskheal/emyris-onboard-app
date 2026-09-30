@@ -3809,13 +3809,47 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         
         let whereUser = {};
         if (employeeId) {
-            whereUser.employeeId = employeeId;
+            const user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { _id: employeeId },
+                        { uid: employeeId },
+                        { employeeId: employeeId }
+                    ]
+                }
+            });
+            if (user) {
+                const userKeys = [user._id, user.uid, user.employeeId].filter(Boolean);
+                whereUser.employeeId = { [Op.in]: userKeys };
+            } else {
+                whereUser.employeeId = employeeId;
+            }
         }
 
         let targetSum = 0;
-        const shortMonth = month.substring(0, 3);
-        const mStr = String(monthNum);
-        const monthVariants = [month, shortMonth, monthNum, mStr];
+        const allMonthsFull = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const allMonthsShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        
+        let fullM = month;
+        let shortM = month;
+        let mm = 0;
+        
+        let sIdx = allMonthsShort.indexOf(month);
+        if (sIdx !== -1) {
+            fullM = allMonthsFull[sIdx];
+            mm = sIdx + 1;
+        } else {
+            let fIdx = allMonthsFull.indexOf(month);
+            if (fIdx !== -1) {
+                shortM = allMonthsShort[fIdx];
+                mm = fIdx + 1;
+            }
+        }
+        
+        let mmStr1 = String(mm).padStart(2, '0');
+        let mmStr2 = String(mm);
+        
+        const monthVariants = [month, fullM, shortM, mmStr1, mmStr2];
         const targets = await XlTarget.findAll({ where: { month: { [Op.in]: monthVariants }, year, ...whereUser } });
         targets.forEach(t => {
             targetSum += (parseFloat(t.totalProductAmount) || 0) + (parseFloat(t.lumpSumAmount) || 0);
