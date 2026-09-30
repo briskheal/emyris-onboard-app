@@ -4984,7 +4984,8 @@ async function getNextProductUid() {
 router.post('/products', async (req, res) => {
     try {
         const uid = await getNextProductUid();
-        const product = await XlProduct.create({ ...req.body, uid, stock: 0 });
+        const product = await XlProduct.create({ ...req.body, uid,
+                        stock: parseInt(row.stock) || 0 });
         res.json({ success: true, product });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -5015,6 +5016,8 @@ router.post('/products/upload', async (req, res) => {
                     if (row.pts !== undefined && row.pts !== '') updates.pts = parseFloat(row.pts) || 0;
                     if (row.ptr !== undefined && row.ptr !== '') updates.ptr = parseFloat(row.ptr) || 0;
                     if (row.division) updates.division = String(row.division).trim();
+                    if (row.packaging) updates.packaging = String(row.packaging).trim();
+                    if (row.stock !== undefined && row.stock !== '') updates.stock = parseInt(row.stock) || 0;
                     if (row.description) updates.description = String(row.description);
                     await XlProduct.update(updates, { where: { _id: existing._id } });
                     results.updated++;
@@ -5027,6 +5030,7 @@ router.post('/products/upload', async (req, res) => {
                         pts: parseFloat(row.pts) || 0,
                         ptr: parseFloat(row.ptr) || 0,
                         division: String(row.division || '').trim(),
+                        packaging: String(row.packaging || '').trim(),
                         description: String(row.description || ''),
                         uid,
                         stock: 0

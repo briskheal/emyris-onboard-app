@@ -480,9 +480,11 @@ function UploadTab() {
         pts: resolveCol(r, 'pts', 'PTS', 'Price To Stockist', 'pricetostockist'),
         ptr: resolveCol(r, 'ptr', 'PTR', 'Price To Retailer', 'pricetoretailer'),
         division: String(resolveCol(r, 'division', 'Division', 'DIVISION') || '').trim(),
+        packaging: String(resolveCol(r, 'packaging', 'Packaging', 'pack') || '').trim(),
+        stock: resolveCol(r, 'stock', 'Stock', 'qty', 'quantity'),
         description: String(resolveCol(r, 'description', 'Description', 'desc') || '').trim(),
       })).filter(r => r.productName);
-      if (!mapped.length) { setError('No valid rows found. Make sure "Product Name" column exists.'); return; }
+      if (!mapped.length) { setError('No valid rows found. Make sure "Product Name" or "Name" column exists.'); return; }
       setPreview(mapped);
     } catch (e: any) {
       setError('Failed to parse file: ' + e.message);
@@ -511,12 +513,13 @@ function UploadTab() {
 
   const handleDownloadFormat = async () => {
     const { utils, writeFile } = await import('xlsx');
+    // Using old Medorn format exactly as requested
     const ws = utils.aoa_to_sheet([
-      ['Product Name', 'MRP', 'PTS', 'PTR', 'Division', 'Description'],
-      ['Aavizza 2.5gm', 120, 100, 110, 'CRITIZA', 'Sample product'],
-      ['Sample Tab 500mg', 80, 65, 72, 'CRITIZA', ''],
+      ['Sr no.', 'Name', 'Stock', 'Division', 'Packaging', 'MRP', 'PTS', 'PTR'],
+      [1, 'Aavizza 2.5gm', 500, 'CRITIZA', '1x10', 120, 100, 110],
+      [2, 'Sample Tab 500mg', 1000, 'CRITIZA', '10x10', 80, 65, 72],
     ]);
-    ws['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 30 }];
+    ws['!cols'] = [{ wch: 8 }, { wch: 30 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 10 }];
     const wb = utils.book_new();
     utils.book_append_sheet(wb, ws, 'Products');
     writeFile(wb, 'product_upload_format.xlsx');
@@ -561,11 +564,13 @@ function UploadTab() {
                 <thead className="sticky top-0 bg-slate-800">
                   <tr className="text-slate-400 border-b border-slate-700">
                     <th className="p-3">Sr</th>
-                    <th className="p-3">Product Name</th>
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Stock</th>
+                    <th className="p-3">Division</th>
+                    <th className="p-3">Packaging</th>
                     <th className="p-3">MRP</th>
                     <th className="p-3">PTS</th>
                     <th className="p-3">PTR</th>
-                    <th className="p-3">Division</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
@@ -573,14 +578,16 @@ function UploadTab() {
                     <tr key={i} className="hover:bg-slate-700/30">
                       <td className="p-3 text-slate-400">{i + 1}</td>
                       <td className="p-3 text-white font-bold">{r.productName}</td>
+                      <td className="p-3 text-emerald-400 font-bold">{r.stock || '0'}</td>
+                      <td className="p-3 text-slate-300">{r.division || '-'}</td>
+                      <td className="p-3 text-slate-300">{r.packaging || '-'}</td>
                       <td className="p-3 text-slate-300">{r.mrp || '-'}</td>
                       <td className="p-3 text-slate-300">{r.pts || '-'}</td>
                       <td className="p-3 text-slate-300">{r.ptr || '-'}</td>
-                      <td className="p-3 text-slate-300">{r.division || '-'}</td>
                     </tr>
                   ))}
                   {preview.length > 20 && (
-                    <tr><td colSpan={6} className="p-3 text-center text-slate-500 italic">...and {preview.length - 20} more rows</td></tr>
+                    <tr><td colSpan={8} className="p-3 text-center text-slate-500 italic">...and {preview.length - 20} more rows</td></tr>
                   )}
                 </tbody>
               </table>
