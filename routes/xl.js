@@ -3798,7 +3798,6 @@ router.get('/admin/dashboard-stats', async (req, res) => {
     try {
         const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan } = require('../db');
         const { Op } = require('sequelize');
-        const { Op } = Sequelize;
         
         let { month, year, employeeId } = req.query;
         if (!month || !year) {
