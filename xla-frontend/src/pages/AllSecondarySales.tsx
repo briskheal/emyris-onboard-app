@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Edit2, Trash2 , Home } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, X , Home } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -21,26 +21,44 @@ export default function AllSecondarySales() {
 
     try {
       setLoading(true);
-      const userStr = localStorage.getItem('xla_user');
-      const user = userStr ? JSON.parse(userStr) : {};
-      
       const [month, year] = selectedMonth.split(' ');
 
+      // XLA admin always sees all records — do NOT send designation/employeeId
+      // (null values serialize as "null" string in URLSearchParams, breaking the admin check)
       const res = await axios.get('/api/xl/secondary-sales/all', {
-        params: {
-          employeeId: user.employeeId || user._id,
-          designation: user.designation,
-          month,
-          year
-        }
+        params: { month, year }
       });
       if (res.data.success) {
         setSales(res.data.data);
       }
     } catch (error) {
-      console.error(error);
+      console.error('Failed to fetch sales', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  
+  const getStockistName = (id: string) => {
+    const s = stockists.find(x => x.uid === id || x._id === id);
+    return s ? (s.businessName || s.name || id) : id;
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this invoice?')) {
+      try {
+        const token = localStorage.getItem('xla_token') || '';
+        const res = await axios.delete(`/api/xl/secondary-sales/delete/${id}?fromAdmin=1`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        });
+        if (res.data.success) {
+          fetchSales();
+        } else {
+          alert(res.data.message || 'Failed to delete.');
+        }
+      } catch (error) {
+        alert('Error deleting invoice.');
+      }
     }
   };
 
@@ -48,66 +66,55 @@ export default function AllSecondarySales() {
     fetchSales();
   }, [selectedMonth]);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this record?')) return;
-    try {
-      const res = await axios.delete(`/api/xl/secondary-sales/${id}`);
-      if (res.data.success) {
-        setSales(prev => prev.filter(s => s._id !== id));
-      }
-    } catch(e) {
-      alert('Error deleting record');
-    }
-  };
-
-  const getStockistName = (uid: string) => {
-    const st = stockists.find(s => s._id === uid || s.uid === uid || s.businessName === uid || s.name === uid);
-    return st ? (st.businessName || st.name || uid) : uid;
-  };
-
-  const generateMonths = () => {
-    const months = [];
-    const d = new Date();
-    d.setDate(1);
-    for (let i = 0; i < 12; i++) {
-      months.push(d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getFullYear());
-      d.setMonth(d.getMonth() - 1);
-    }
-    return months;
-  };
+  // Generate month options (last 12 months)
+  const monthOptions = [];
+  const d = new Date();
+  for (let i = 0; i < 12; i++) {
+    const nd = new Date(d.getFullYear(), d.getMonth() - i, 1);
+    monthOptions.push(nd.toLocaleString('en-US', { month: 'short' }) + ' ' + nd.getFullYear());
+  }
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex flex-col font-sans relative">
-      <div className="bg-[#1e1e30] border-b border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0 relative z-20">
+    <div className="min-h-screen bg-[#1a1a2e] flex flex-col text-[#d1d5db] font-sans">
+      {/* HEADER */}
+      <div className="flex items-center justify-between px-5 py-3 bg-[#1e1e30] border-b border-[#3b3b5a] shrink-0">
         <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/')} className="text-slate-300 hover:text-emerald-400 transition-colors bg-[#27273f] p-2 rounded-lg" title="Go to Dashboard">
+            <button onClick={() => navigate('/admin')} className="text-slate-300 hover:text-emerald-400 transition-colors bg-[#27273f] p-2 rounded-lg" title="Go to Dashboard">
               <Home size={18} />
             </button>
           <button onClick={() => navigate('/extras/secondary')} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
           </button>
           <h1 className="text-lg font-bold text-white tracking-wide uppercase">ALL SECONDARY SALES</h1>
         </div>
-
-        <div className="flex items-center gap-3 bg-[#27273f] p-1.5 rounded-lg border border-[#3b3b5a]/50">
-          <select 
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-            className="bg-transparent text-white font-semibold text-sm outline-none cursor-pointer px-2 py-1"
-          >
-            {generateMonths().map(m => (
-              <option key={m} value={m} className="bg-slate-800">{m}</option>
-            ))}
-          </select>
-        </div>
       </div>
 
-      <div className="flex-1 p-4 md:p-6 overflow-hidden flex flex-col relative z-10">
-        <div className="w-full px-2 mx-auto flex-1 flex flex-col">
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-auto custom-scrollbar flex-1 relative z-10">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead className="bg-[#27273f] sticky top-0 z-20 shadow-md">
-                <tr className="text-[10px] uppercase tracking-widest text-[#8b8baf]">
+      <div className="flex-1 p-3 md:p-6 bg-[#161625]">
+        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 p-4 mb-4 flex justify-between items-center">
+           <div className="bg-sky-500/10 text-sky-400 p-2 rounded text-xs font-semibold">
+              <span className="font-bold uppercase tracking-wider block mb-1">NOTE</span>
+              Secondary Sales Report are shown which are submitted by the logged-in user! In order to view the complete list, visit - Reports - Secondary Sales.
+           </div>
+           
+           <div className="flex flex-col gap-1 w-48">
+              <label className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Select Month *</label>
+              <select 
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(e.target.value)}
+                className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-3 text-xs text-white outline-none focus:border-sky-500 transition-colors cursor-pointer appearance-none"
+              >
+                {monthOptions.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+           </div>
+        </div>
+
+        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
+              <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
+                <tr>
                   <th className="p-3 font-semibold text-center w-12 border-r border-[#3b3b5a]/50">Sr<br/>no.</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Date</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Invoice<br/>Number</th>
@@ -121,42 +128,34 @@ export default function AllSecondarySales() {
               <tbody className="text-sm divide-y divide-[#3b3b5a]/30">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-[#8b8baf]">Loading records...</td>
+                    <td colSpan={7} className="p-8 text-center text-[#8b8baf]">Loading records...</td>
                   </tr>
                 ) : sales.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-[#8b8baf]">No sales records found for {selectedMonth}</td>
+                    <td colSpan={7} className="p-8 text-center text-[#8b8baf]">No sales records found for {selectedMonth}</td>
                   </tr>
                 ) : (
                   sales.map((sale, index) => {
                     return (
                       <tr key={sale._id} className="hover:bg-[#1a1a2e]/50 transition-colors">
                         <td className="p-3 text-center text-[#8b8baf] border-r border-[#3b3b5a]/50">{index + 1}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-slate-300">{sale.date || (sale.createdAt ? new Date(sale.createdAt).toISOString().split('T')[0] : (sale.invoiceDate || '-'))}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{sale.date || '-'}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-medium text-white">{sale.invoiceNumber || '-'}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 text-slate-300">{sale.invoiceDate || '-'}</td>
-                        <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[200px]">{getStockistName(sale.stockist) || '-'}</td>
-                        <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[150px] text-slate-300">{sale.headquarter || (stockists.find(s => s._id === sale.stockist || s.uid === sale.stockist)?.headquarter || '-')}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-[#00e5ff]">
-                          {sale.amount ? sale.amount.toFixed(2) : '-'}
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{sale.invoiceDate || '-'}</td>
+                        <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[150px]">{getStockistName(sale.stockist) || '-'}</td>
+                        <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[120px]">{sale.headquarter || '-'}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">
+                            {sale.amount ? sale.amount.toFixed(2) : '-'}
                         </td>
-                        <td className="p-3">
+                        <td className="p-3 text-center">
                           <div className="flex items-center justify-center gap-3">
-                            <button 
-                              onClick={() => navigate(`/extras/secondary/edit/${sale._id}`)}
-                              className="text-sky-400 hover:text-sky-300 transition-colors p-1"
-                              title="Edit"
-                            >
-                              <Edit2 size={16} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(sale._id)}
-                              className="text-rose-400 hover:text-rose-300 transition-colors p-1"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
+                              <button onClick={() => navigate(`/extras/secondary/edit/${sale._id}`)} className="text-emerald-400 hover:text-emerald-300 transition-colors p-1.5 rounded-full hover:bg-emerald-500/10" title="Edit">
+                                <Edit2 size={16} />
+                              </button>
+                              <button onClick={() => handleDelete(sale._id)} className="text-rose-400 hover:text-rose-300 transition-colors p-1.5 rounded-full hover:bg-rose-500/10" title="Delete">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
                         </td>
                       </tr>
                     );
