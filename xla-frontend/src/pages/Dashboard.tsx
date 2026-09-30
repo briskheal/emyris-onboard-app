@@ -31,8 +31,8 @@ export default function Dashboard() {
       } else {
         alert('Failed to broadcast');
       }
-    } catch(e) {
-      alert('Error broadcasting message');
+    } catch(e: any) {
+      alert('Error: ' + (e.response ? JSON.stringify(e.response.data) : e.message));
     }
   };
   const userStr = localStorage.getItem('xla_user');
