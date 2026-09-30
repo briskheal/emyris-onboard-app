@@ -3705,9 +3705,25 @@ router.get('/emergency-fix', async (req, res) => {
 // --- ADMIN BROADCAST ANNOUNCEMENT ROUTES ---
 router.get('/admin/announcement', async (req, res) => {
     try {
-        const { XlAnnouncement } = require('../db');
+        const { XlAnnouncement, Sequelize } = require('../db');
+        const { Op } = Sequelize;
+        const now = new Date();
         const announcement = await XlAnnouncement.findOne({ 
-            where: { active: true }, 
+            where: { 
+                active: true,
+                [Op.or]: [
+                    { validFrom: null },
+                    { validFrom: { [Op.lte]: now } }
+                ],
+                [Op.and]: [
+                    {
+                        [Op.or]: [
+                            { validUntil: null },
+                            { validUntil: { [Op.gte]: now } }
+                        ]
+                    }
+                ]
+            }, 
             order: [['createdAt', 'DESC']] 
         });
         res.json({ success: true, data: announcement });
@@ -3719,14 +3735,19 @@ router.get('/admin/announcement', async (req, res) => {
 router.post('/admin/announcement', async (req, res) => {
     try {
         const { XlAnnouncement } = require('../db');
-        const { message } = req.body;
+        const { message, validFrom, validUntil } = req.body;
         if (!message) return res.status(400).json({ success: false, message: 'Message required' });
         
         // Deactivate previous
         await XlAnnouncement.update({ active: false }, { where: { active: true } });
         
         // Create new
-        const newAnnounce = await XlAnnouncement.create({ message, active: true });
+        const newAnnounce = await XlAnnouncement.create({ 
+            message, 
+            active: true,
+            validFrom: validFrom ? new Date(validFrom) : null,
+            validUntil: validUntil ? new Date(validUntil) : null
+        });
         res.json({ success: true, data: newAnnounce });
     } catch(e) {
         res.status(500).json({ success: false, message: e.message });
@@ -3758,7 +3779,7 @@ router.get('/admin/notifications', async (req, res) => {
         }));
         expenses.forEach(e => allActivity.push({ 
             id: e._id, type: 'Expense', title: 'New Expense Request', 
-            message: `${e.type} - ${e.status}`, 
+            message: `${e.category || 'Expense'} - ${e.status}`, 
             date: e.createdAt 
         }));
         

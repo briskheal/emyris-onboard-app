@@ -259,7 +259,9 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
     const XlAnnouncement = sequelize.define('xl_announcement', { 
             _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId }, 
             message: { type: DataTypes.TEXT, allowNull: false }, 
-            active: { type: DataTypes.BOOLEAN, defaultValue: true } 
+            active: { type: DataTypes.BOOLEAN, defaultValue: true },
+            validFrom: { type: DataTypes.DATE },
+            validUntil: { type: DataTypes.DATE }
         });
     const XlVacancyLog = sequelize.define('xl_vacancy_log', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
