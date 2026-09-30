@@ -318,7 +318,7 @@ export default function SecondarySales() {
             <button onClick={() => navigate('/admin')} className="text-slate-300 hover:text-emerald-400 transition-colors bg-[#27273f] p-2 rounded-lg" title="Go to Admin Menu">
               <Home size={18} />
             </button>
-          <button onClick={() => id ? navigate(-1) : navigate('/')} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
+          <button onClick={() => navigate(-1)} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
             <ArrowLeft size={18} />
           </button>
           <h1 className="text-lg font-bold text-white tracking-wide uppercase">SECONDARY SALES</h1>
