@@ -448,27 +448,189 @@ function ProductTab() {
 }
 
 function UploadTab() {
+  const [fileName, setFileName] = useState('No file chosen');
+  const [loading, setLoading] = useState(false);
+  const [preview, setPreview] = useState<any[]>([]);
+  const [results, setResults] = useState<any>(null);
+  const [error, setError] = useState('');
+
+  // Flexible column name resolver (case-insensitive, multiple aliases)
+  const resolveCol = (row: any, ...aliases: string[]) => {
+    for (const alias of aliases) {
+      const found = Object.keys(row).find(k => k.toLowerCase().replace(/\s+/g, '') === alias.toLowerCase().replace(/\s+/g, ''));
+      if (found !== undefined && row[found] !== undefined && row[found] !== '') return row[found];
+    }
+    return '';
+  };
+
+  const parseFile = async (f: File) => {
+    setError('');
+    setPreview([]);
+    setResults(null);
+    try {
+      const { read, utils } = await import('xlsx');
+      const data = await f.arrayBuffer();
+      const wb = read(data);
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = utils.sheet_to_json(sheet, { defval: '' });
+      if (!rows.length) { setError('File is empty or has no data rows'); return; }
+      const mapped = rows.map(r => ({
+        productName: String(resolveCol(r, 'productName', 'Product Name', 'PRODUCT NAME', 'name', 'product') || '').trim(),
+        mrp: resolveCol(r, 'mrp', 'MRP', 'Max Retail Price', 'maxretailprice'),
+        pts: resolveCol(r, 'pts', 'PTS', 'Price To Stockist', 'pricetostockist'),
+        ptr: resolveCol(r, 'ptr', 'PTR', 'Price To Retailer', 'pricetoretailer'),
+        division: String(resolveCol(r, 'division', 'Division', 'DIVISION') || '').trim(),
+        description: String(resolveCol(r, 'description', 'Description', 'desc') || '').trim(),
+      })).filter(r => r.productName);
+      if (!mapped.length) { setError('No valid rows found. Make sure "Product Name" column exists.'); return; }
+      setPreview(mapped);
+    } catch (e: any) {
+      setError('Failed to parse file: ' + e.message);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFileName(f.name);
+    parseFile(f);
+  };
+
+  const handleUpload = async () => {
+    if (!preview.length) return alert('No valid data to upload. Select a valid Excel file first.');
+    setLoading(true);
+    setResults(null);
+    try {
+      const res = await axios.post('/api/admin/products/upload', { products: preview });
+      if (res.data.success) setResults(res.data.results);
+      else setError(res.data.message || 'Upload failed');
+    } catch (e: any) {
+      setError(e.response?.data?.message || 'Upload failed');
+    } finally { setLoading(false); }
+  };
+
+  const handleDownloadFormat = async () => {
+    const { utils, writeFile } = await import('xlsx');
+    const ws = utils.aoa_to_sheet([
+      ['Product Name', 'MRP', 'PTS', 'PTR', 'Division', 'Description'],
+      ['Aavizza 2.5gm', 120, 100, 110, 'CRITIZA', 'Sample product'],
+      ['Sample Tab 500mg', 80, 65, 72, 'CRITIZA', ''],
+    ]);
+    ws['!cols'] = [{ wch: 30 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 15 }, { wch: 30 }];
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, 'Products');
+    writeFile(wb, 'product_upload_format.xlsx');
+  };
+
   return (
-    <div className="max-w-3xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">UPLOAD PRODUCT</h2>
+    <div className="max-w-4xl">
+      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">UPLOAD PRODUCT (Bulk Excel)</h2>
+
+      {/* Info box */}
+      <div className="bg-sky-900/30 border border-sky-700 rounded-xl p-4 mb-8 text-sm text-sky-300">
+        <p className="font-bold mb-1">How it works:</p>
+        <ul className="list-disc pl-4 space-y-1 text-sky-200/80">
+          <li><span className="text-white font-bold">New product</span> (name not in master) → <span className="text-emerald-400 font-bold">CREATED</span> with auto-generated UID</li>
+          <li><span className="text-white font-bold">Existing product</span> (same name) → <span className="text-amber-400 font-bold">UPDATED</span> (prices/division refreshed, UID preserved)</li>
+          <li>Required columns: <code className="bg-slate-800 px-1 rounded">Product Name</code>, <code className="bg-slate-800 px-1 rounded">MRP</code>, <code className="bg-slate-800 px-1 rounded">PTS</code>, <code className="bg-slate-800 px-1 rounded">PTR</code></li>
+          <li>Optional: <code className="bg-slate-800 px-1 rounded">Division</code>, <code className="bg-slate-800 px-1 rounded">Description</code></li>
+        </ul>
+      </div>
+
       <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 shadow-lg">
-        <label className="text-sm text-slate-400 font-bold mb-4 block uppercase tracking-wider">UPLOAD EXCEL *</label>
-        <div className="flex gap-4 items-center">
+        {/* File picker */}
+        <label className="text-sm text-slate-400 font-bold mb-4 block uppercase tracking-wider">SELECT EXCEL FILE *</label>
+        <div className="flex gap-4 items-center mb-6">
           <label className="flex items-center gap-2 bg-slate-900 border border-slate-600 hover:border-sky-500 transition-colors text-slate-300 px-4 py-3 rounded-lg cursor-pointer">
             <Upload size={18} />
             <span className="font-bold text-sm">Choose file</span>
-            <input type="file" className="hidden" accept=".xlsx, .xls, .csv" />
+            <input type="file" className="hidden" accept=".xlsx,.xls,.csv" onChange={handleFileChange} />
           </label>
-          <span className="text-slate-500 text-sm italic">No file chosen</span>
+          <span className="text-slate-400 text-sm italic">{fileName}</span>
         </div>
-        <div className="flex gap-4 mt-8 pt-6 border-t border-slate-700">
-          <button className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">Upload List</button>
-          <button className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-xl transition-colors">Download Format</button>
+
+        {/* Error */}
+        {error && <div className="bg-rose-900/30 border border-rose-700 rounded-xl p-4 text-rose-300 text-sm font-bold mb-6">{error}</div>}
+
+        {/* Preview table */}
+        {preview.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3">Preview — {preview.length} row(s) detected</h3>
+            <div className="overflow-x-auto rounded-xl border border-slate-700 max-h-64 overflow-y-auto">
+              <table className="w-full text-xs text-left border-collapse whitespace-nowrap">
+                <thead className="sticky top-0 bg-slate-800">
+                  <tr className="text-slate-400 border-b border-slate-700">
+                    <th className="p-3">Sr</th>
+                    <th className="p-3">Product Name</th>
+                    <th className="p-3">MRP</th>
+                    <th className="p-3">PTS</th>
+                    <th className="p-3">PTR</th>
+                    <th className="p-3">Division</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50">
+                  {preview.slice(0, 20).map((r, i) => (
+                    <tr key={i} className="hover:bg-slate-700/30">
+                      <td className="p-3 text-slate-400">{i + 1}</td>
+                      <td className="p-3 text-white font-bold">{r.productName}</td>
+                      <td className="p-3 text-slate-300">{r.mrp || '-'}</td>
+                      <td className="p-3 text-slate-300">{r.pts || '-'}</td>
+                      <td className="p-3 text-slate-300">{r.ptr || '-'}</td>
+                      <td className="p-3 text-slate-300">{r.division || '-'}</td>
+                    </tr>
+                  ))}
+                  {preview.length > 20 && (
+                    <tr><td colSpan={6} className="p-3 text-center text-slate-500 italic">...and {preview.length - 20} more rows</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Results */}
+        {results && (
+          <div className="mb-6 grid grid-cols-3 gap-4">
+            <div className="bg-emerald-900/30 border border-emerald-700 rounded-xl p-4 text-center">
+              <div className="text-2xl font-black text-emerald-400">{results.created}</div>
+              <div className="text-xs font-bold text-emerald-300 uppercase mt-1">Created</div>
+            </div>
+            <div className="bg-amber-900/30 border border-amber-700 rounded-xl p-4 text-center">
+              <div className="text-2xl font-black text-amber-400">{results.updated}</div>
+              <div className="text-xs font-bold text-amber-300 uppercase mt-1">Updated</div>
+            </div>
+            <div className="bg-rose-900/30 border border-rose-700 rounded-xl p-4 text-center">
+              <div className="text-2xl font-black text-rose-400">{results.failed}</div>
+              <div className="text-xs font-bold text-rose-300 uppercase mt-1">Failed</div>
+            </div>
+            {results.errors?.length > 0 && (
+              <div className="col-span-3 bg-slate-900 rounded-xl p-3 text-xs text-rose-300 space-y-1 max-h-32 overflow-y-auto">
+                {results.errors.map((e: string, i: number) => <div key={i}>⚠ {e}</div>)}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex gap-4 pt-6 border-t border-slate-700">
+          <button
+            onClick={handleUpload}
+            disabled={loading || preview.length === 0}
+            className="bg-sky-500 hover:bg-sky-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 px-8 rounded-xl transition-colors"
+          >
+            {loading ? 'Uploading...' : `Upload ${preview.length > 0 ? `(${preview.length} rows)` : 'List'}`}
+          </button>
+          <button
+            onClick={handleDownloadFormat}
+            className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-xl transition-colors"
+          >
+            Download Format
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
 
 function SupplierTab() {
   const [data, setData] = useState<any[]>([]);
