@@ -2797,21 +2797,24 @@ router.get('/user-performance/userwise', async (req, res) => {
 
         if (reportType === 'Effort Analysis') {
             
-            const dcrs = await XlDCR.findAll({ where: { employeeId: user.employeeId || null, month, year } });
+            const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
+            const datePrefix = `${year}-${monthNum}-`;
+            const { Op } = require('sequelize');
+            const dcrs = await XlDCR.findAll({ 
+                where: { 
+                    employeeId: user.employeeId || null, 
+                    date: { [Op.like]: `${datePrefix}%` } 
+                } 
+            });
 
             let totalDoctorsMet = 0;
             let totalUniqueDoctors = new Set();
             dcrs.forEach(dcr => {
-                if (dcr.doctorsData) {
-                    try {
-                        const docs = JSON.parse(dcr.doctorsData);
-                        docs.forEach(doc => {
-                            if (doc.uid) {
-                                totalDoctorsMet++;
-                                totalUniqueDoctors.add(doc.uid);
-                            }
-                        });
-                    } catch(e) {}
+                if (dcr.entityType === 'Doctor' && dcr.status === 'Approved') {
+                    totalDoctorsMet++;
+                    if (dcr.entityId) {
+                        totalUniqueDoctors.add(dcr.entityId);
+                    }
                 }
             });
             const uniqueDocsCount = totalUniqueDoctors.size;
