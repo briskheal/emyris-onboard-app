@@ -172,7 +172,7 @@ function deleteExpenseFiles(receiptImageStr) {
 const buildEffortMatrix = async (user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist) => {
     const monthNumMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
     const monthNum = monthNumMap[month] || '01';
-    const datePrefix = `${year}-${monthNum}-`;\nconsole.log('DASHBOARD DEBUG:', req.query, {month, monthNum, datePrefix});
+    const datePrefix = `${year}-${monthNum}-`;
 
     // 1. Fetch baselines
     const { Op } = require('sequelize');
@@ -439,7 +439,7 @@ router.get('/user-performance/rankings', async (req, res) => {
 
             const monthNumMap = { 'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06', 'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12' };
             const monthNum = monthNumMap[month] || '01';
-            const datePrefix = `${year}-${monthNum}-`;\nconsole.log('DASHBOARD DEBUG:', req.query, {month, monthNum, datePrefix}); // e.g. "2026-09-"
+            const datePrefix = `${year}-${monthNum}-`; // e.g. "2026-09-"
 
             const dcrs = await XlDCR.findAll({ 
                 where: { 
@@ -2798,7 +2798,7 @@ router.get('/user-performance/userwise', async (req, res) => {
         if (reportType === 'Effort Analysis') {
             
             const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
-            const datePrefix = `${year}-${monthNum}-`;\nconsole.log('DASHBOARD DEBUG:', req.query, {month, monthNum, datePrefix});
+            const datePrefix = `${year}-${monthNum}-`;
             const { Op } = require('sequelize');
             const dcrs = await XlDCR.findAll({ 
                 where: { 
@@ -3880,7 +3880,7 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         });
 
         const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
-        const datePrefix = `${year}-${monthNum}-`;\nconsole.log('DASHBOARD DEBUG:', req.query, {month, monthNum, datePrefix});
+        const datePrefix = `${year}-${monthNum}-`;
         
         const dcrs = await XlDCR.findAll({ 
             where: { 
