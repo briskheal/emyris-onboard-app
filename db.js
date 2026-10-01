@@ -84,6 +84,9 @@ async function syncDatabase() {
         // Run standard sync first so any new tables (like onboard_exam_results) are guaranteed to be created
         await sequelize.sync();
         await XlTarget.sync({ alter: true });
+        try { await sequelize.query("ALTER TABLE xl_designations ADD COLUMN \"targetDoctorCalls\" INTEGER DEFAULT 0;"); } catch(e) {}
+        try { await sequelize.query("ALTER TABLE xl_designations ADD COLUMN \"targetChemistCalls\" INTEGER DEFAULT 0;"); } catch(e) {}
+        try { await sequelize.query("ALTER TABLE xl_designations ADD COLUMN \"targetStockistCalls\" INTEGER DEFAULT 0;"); } catch(e) {}
         await XlStockist.sync({ alter: true }).catch(() => {});
         await XlProduct.sync({ alter: true }).catch(() => {});
         try {
