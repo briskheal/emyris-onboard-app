@@ -3962,7 +3962,7 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         } else {
             // ADMIN VIEW: Aggregate targets across all employees
             const allUsers = await XlUser.findAll({ 
-                where: { isActive: true },
+                where: { status: 'Active' },
                 attributes: ['designation']
             });
             const allDesigs = await require('../db').XlDesignation.findAll();
