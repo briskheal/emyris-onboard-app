@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useOutletContext } from 'react-router-dom';
-import { Menu, MessageSquare, Bell, User, ChevronDown, Search, Download, Activity, Sun, Check , Calendar } from 'lucide-react';
+import { Menu, MessageSquare, Bell, User, ChevronDown, Search, Download, Activity, Sun, Check } from 'lucide-react';
 
 export default function Dashboard() {
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -32,7 +32,6 @@ export default function Dashboard() {
   
   // For the native month input
   const [monthInput, setMonthInput] = useState('2026-09');
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
 
   useEffect(() => {
