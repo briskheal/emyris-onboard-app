@@ -3990,7 +3990,32 @@ router.get('/admin/debug-data', async (req, res) => {
         const {Op} = require('sequelize');
 const stats = await XlDCR.findAll({ where: { date: { [Op.startsWith]: '2026-09-' } } });
 const statsLike = await XlDCR.findAll({ where: { date: { [Op.like]: '2026-09-%' } } });
-res.json({ dcrs: dcrs.slice(0,2), countStarts: stats.length, countLike: statsLike.length });
+
+        let whereUser = {}; // simulate no employeeId
+        const targets = await XlTarget.findAll({ where: { month: { [Op.in]: ['Sep', 'September', '09', '9'] }, year: '2026', ...whereUser } });
+        const dcrsSep = await XlDCR.findAll({ 
+            where: { 
+                date: { [Op.like]: '2026-09-%' }, 
+                ...whereUser 
+            } 
+        });
+        
+        let targetSum = 0;
+        targets.forEach(t => targetSum += (parseFloat(t.totalProductAmount) || 0) + (parseFloat(t.lumpSumAmount) || 0));
+        
+        let doctorCalls = 0;
+        dcrsSep.forEach(d => {
+            if (d.entityType === 'Doctor') doctorCalls++;
+        });
+        
+        res.json({ 
+            countStarts: stats.length, 
+            dcrsSepCount: dcrsSep.length,
+            doctorCalls,
+            targetCount: targets.length,
+            targetSum
+        });
+
     } catch(e) {
         res.json({ error: e.message });
     }
