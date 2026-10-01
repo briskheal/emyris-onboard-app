@@ -3959,6 +3959,14 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             targetDoctorCalls = workingDays * dTargetPerDay;
             targetChemistCalls = workingDays * cTargetPerDay;
             targetStockistCalls = workingDays * sTargetPerDay;
+require("fs").writeFileSync("xla-frontend/dist/dash_success.txt", JSON.stringify({
+            success: true,
+            reqQuery: req.query,
+            datePrefix,
+            workingDays,
+            actualDocs: doctorCalls,
+            targetDocs: targetDoctorCalls
+        }));
         } else {
             // ADMIN VIEW: Aggregate targets across all employees
             const allUsers = await XlUser.findAll({ 
