@@ -11,7 +11,7 @@ const verifyToken = (req, res, next) => {
         '/api/xl/register', '/register',
         '/company-profile'
     ];
-    if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-')) {
+    if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('/dashboard-stats')) {
         return next();
     }
     
@@ -4015,6 +4015,7 @@ router.get('/admin/dashboard-stats', async (req, res) => {
 
 
 
+
 router.get('/admin/debug-data', async (req, res) => {
     try {
         const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan } = require('../db');
@@ -4022,10 +4023,9 @@ router.get('/admin/debug-data', async (req, res) => {
         
         let month = 'Sep';
         let year = '2026';
-        let employeeId = undefined;
+        let employeeId = undefined; // Admin view
         let whereUser = {};
 
-        let targetSum = 0;
         const allMonthsFull = ["January","February","March","April","May","June","July","August","September","October","November","December"];
         const allMonthsShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
         
@@ -4043,11 +4043,12 @@ router.get('/admin/debug-data', async (req, res) => {
         
         const monthVariants = [month, fullM, shortM, mmStr1, mmStr2];
         const targets = await XlTarget.findAll({ where: { month: { [Op.in]: monthVariants }, year, ...whereUser } });
+        let targetSum = 0;
         targets.forEach(t => {
             targetSum += (parseFloat(t.totalProductAmount) || 0) + (parseFloat(t.lumpSumAmount) || 0);
         });
 
-        const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
+        const monthNum = String(mm).padStart(2, '0');
         const datePrefix = `${year}-${monthNum}-`;
         
         const dcrs = await XlDCR.findAll({ 
@@ -4067,24 +4068,74 @@ router.get('/admin/debug-data', async (req, res) => {
             else if (d.entityType === 'Stockist') stockistCalls++;
         });
 
+        let targetDoctorCalls = 0;
+        let targetChemistCalls = 0;
+        let targetStockistCalls = 0;
+        
+        let workingDays = 0;
+        const mInt = parseInt(monthNum, 10);
+        const yInt = parseInt(year, 10);
+        if (!isNaN(mInt) && !isNaN(yInt)) {
+            const daysInMonth = new Date(yInt, mInt, 0).getDate();
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dt = new Date(yInt, mInt - 1, d);
+                if (dt.getDay() !== 0) workingDays++; // Not a Sunday
+            }
+            const holidays = await require('../db').XlHoliday.count({
+                where: { date: { [Op.like]: `${year}-${monthNum}-%` } }
+            });
+            workingDays -= holidays;
+            if (workingDays < 0) workingDays = 0;
+        }
+
+        const allUsers = await XlUser.findAll({ 
+            where: { status: 'Active' },
+            attributes: ['designation']
+        });
+        const allDesigs = await require('../db').XlDesignation.findAll();
+        const desigMap = {};
+        allDesigs.forEach(d => {
+            desigMap[d._id] = d;
+            if (d.designationName) desigMap[d.designationName] = d;
+        });
+
+        allUsers.forEach(u => {
+            if (u.designation && desigMap[u.designation]) {
+                const desig = desigMap[u.designation];
+                let dT = 0, cT = 0, sT = 0;
+                if (desig.targetDoctorCalls) dT = desig.targetDoctorCalls;
+                else {
+                    if (desig.level === 1 || desig.level === 2) dT = 8;
+                    else if (desig.level === 3 || desig.level === 4) dT = 6;
+                    else if (desig.level >= 5) dT = 5;
+                }
+                if (desig.targetChemistCalls) cT = desig.targetChemistCalls;
+                if (desig.targetStockistCalls) sT = desig.targetStockistCalls;
+
+                targetDoctorCalls += workingDays * dT;
+                targetChemistCalls += workingDays * cT;
+                targetStockistCalls += workingDays * sT;
+            }
+        });
+
         res.json({
             success: true,
-            dcrsLength: dcrs.length,
-            targetsLength: targets.length,
-            monthVariants,
-            datePrefix,
             data: {
                 target: targetSum,
                 calls: {
-                    doctor: { actual: doctorCalls },
-                    chemist: { actual: chemistCalls },
-                    stockist: { actual: stockistCalls }
+                    doctor: { actual: doctorCalls, target: targetDoctorCalls },
+                    chemist: { actual: chemistCalls, target: targetChemistCalls },
+                    stockist: { actual: stockistCalls, target: targetStockistCalls }
+                },
+                debug: {
+                    workingDays,
+                    usersCount: allUsers.length
                 }
             }
         });
 
     } catch(e) {
-        res.status(500).json({ error: e.message, stack: e.stack });
+        res.status(500).json({ success: false, error: e.message, stack: e.stack });
     }
 });
 
