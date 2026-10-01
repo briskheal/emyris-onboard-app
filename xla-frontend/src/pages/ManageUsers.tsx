@@ -1293,6 +1293,7 @@ function DesignationsTab() {
   const [pageSize, setPageSize] = useState(10);
   
   const [editId, setEditId] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchDsgs = async () => {
     try {
@@ -1334,7 +1335,8 @@ function DesignationsTab() {
     } catch (e) { console.error(e); }
   };
 
-  const paginated = dsgs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const filteredDsgs = dsgs.filter(d => d.designationName.toLowerCase().includes(searchTerm.toLowerCase()));
+  const paginated = filteredDsgs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
     <div className="max-w-5xl">
@@ -1349,45 +1351,59 @@ function DesignationsTab() {
         </p>
       </div>
 
-      <form onSubmit={handleAdd} className="grid grid-cols-6 gap-6 items-end mb-12">
-        <div className="col-span-1">
-          <label className="text-xs text-slate-400 font-bold mb-2 block">LEVEL</label>
+      <form onSubmit={handleAdd} className="grid grid-cols-12 gap-4 items-end mb-12">
+        <div className="col-span-2">
+          <label className="text-[10px] text-slate-400 font-bold mb-2 block">LEVEL</label>
           <select required value={level} onChange={e => setLevel(Number(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-sky-500">
             {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
-        <div className="col-span-2">
-          <label className="text-xs text-slate-400 font-bold mb-2 block">DESIGNATION *</label>
+        <div className="col-span-3">
+          <label className="text-[10px] text-slate-400 font-bold mb-2 block">DESIGNATION *</label>
           <input required value={designationName} onChange={e => setDesignationName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-sky-500" placeholder="e.g. Sales Manager" />
         </div>
         <div className="col-span-1">
-          <label className="text-xs text-sky-400 font-bold mb-2 block">DR/DAY</label>
+          <label className="text-[10px] text-sky-400 font-bold mb-2 block">DR</label>
           <input type="number" min="0" value={targetDoctorCalls} onChange={e => setTargetDoctorCalls(Number(e.target.value))} className="w-full bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 text-sky-200 focus:outline-none" />
         </div>
         <div className="col-span-1">
-          <label className="text-xs text-amber-400 font-bold mb-2 block">CHM/DAY</label>
+          <label className="text-[10px] text-amber-400 font-bold mb-2 block">CHM</label>
           <input type="number" min="0" value={targetChemistCalls} onChange={e => setTargetChemistCalls(Number(e.target.value))} className="w-full bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 text-amber-200 focus:outline-none" />
         </div>
         <div className="col-span-1">
-          <label className="text-xs text-rose-400 font-bold mb-2 block">STK/DAY</label>
+          <label className="text-[10px] text-rose-400 font-bold mb-2 block">STK</label>
           <input type="number" min="0" value={targetStockistCalls} onChange={e => setTargetStockistCalls(Number(e.target.value))} className="w-full bg-rose-900/20 border border-rose-500/30 rounded-xl p-3 text-rose-200 focus:outline-none" />
         </div>
-        <div className="col-span-6">
-          <button disabled={loading} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors">Add Designation</button>
+        <div className="col-span-4">
+          <button disabled={loading} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors text-sm h-[50px]">Add Designation</button>
         </div>
       </form>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
-        <div className="overflow-y-auto max-h-[60vh]">
-          <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
+      <div className="flex justify-between items-end mb-4">
+        <h3 className="text-white font-bold">ALL DESIGNATIONS</h3>
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <input 
+            type="text" 
+            placeholder="Search designations..." 
+            value={searchTerm} 
+            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
+            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-sky-500"
+          />
+        </div>
+      </div>
+
+      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 shadow-xl flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-800">
               <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] bg-slate-800">Designation</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] bg-slate-800 text-center">Lvl</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] bg-slate-800 text-center text-sky-400">Dr</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] bg-slate-800 text-center text-amber-400">Chm</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] bg-slate-800 text-center text-rose-400">Stk</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-[10px] text-center bg-slate-800">Actions</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px]">Designation</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center">Lvl</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-sky-400">Dr</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-amber-400">Chm</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-rose-400">Stk</th>
+                <th className="p-4 font-bold uppercase tracking-wider text-[10px] text-center">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
@@ -1433,11 +1449,11 @@ function DesignationsTab() {
                   </tr>
                 );
               })}
-              {dsgs.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
+              {filteredDsgs.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
             </tbody>
           </table>
         </div>
-        <TableFooter data={dsgs} fileName="Designations" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter data={filteredDsgs} fileName="Designations" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
     </div>
   );
