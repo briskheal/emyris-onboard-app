@@ -315,7 +315,7 @@ export default function Attendance() {
 
           <div className="hidden md:flex flex-col items-end gap-1 text-slate-400 text-xs font-semibold">
             <span>Last Synced</span>
-            <span className="text-slate-300">{now.toLocaleDateString('en-GB', {day: '2-digit', month: 'short', year: 'numeric'})} | {now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            <span className="text-slate-300">{now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')} | {now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
           </div>
         </div>
 

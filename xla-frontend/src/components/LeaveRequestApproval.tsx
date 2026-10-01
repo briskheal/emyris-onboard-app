@@ -163,8 +163,8 @@ export default function LeaveRequestApproval({ items, fetchPending, fetchCounts,
                     return (
                       <tr key={d._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
                         <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                        <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(sd).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                        <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(ed).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                        <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(sd).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
+                        <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(ed).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
                         <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName || d.employeeId}</td>
                         <td className="px-4 py-4 text-sm text-slate-300">{d.reason || d.remarks || '-'}</td>
                         <td className="px-4 py-4 text-sm font-bold" style={{ color: d.status === 'Approved' ? '#34d399' : d.status === 'Revoked' ? '#fbbf24' : d.status === 'Rejected' ? '#f87171' : '#fcd34d' }}>{d.status || 'Pending'}</td>

@@ -53,7 +53,7 @@ export default function GiftsListReport() {
       'Details': g.details,
       'Status': g.status,
       'Admin Remarks': g.adminRemarks,
-      'Created At': new Date(g.createdAt).toLocaleDateString()
+      'Created At': new Date(g.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -111,7 +111,7 @@ export default function GiftsListReport() {
                           {g.status}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-sm text-slate-400">{new Date(g.createdAt).toLocaleDateString()}</td>
+                      <td className="px-4 py-4 text-sm text-slate-400">{new Date(g.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
                     </tr>
                   ))
                 )}

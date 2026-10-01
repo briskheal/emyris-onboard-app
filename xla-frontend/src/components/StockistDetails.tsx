@@ -24,7 +24,7 @@ export default function StockistDetails({ stockist, onBack }: { stockist: any, o
           <div className="p-4 grid grid-cols-3 gap-4 border-b border-[#3b3b5a]">
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Created At</p>
-              <p className="text-xs font-bold text-white">{stockist.createdAt ? new Date(stockist.createdAt).toLocaleDateString() : 'N/A'}</p>
+              <p className="text-xs font-bold text-white">{stockist.createdAt ? new Date(stockist.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-') : 'N/A'}</p>
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Created By</p>

@@ -428,7 +428,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                       return (
                         <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
                           <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(d.date).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
                           <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName}</td>
                           <td className="px-4 py-4 text-sm text-slate-300">{d.designation}</td>
                           <td className="px-4 py-4 text-sm text-slate-300">{d.areaType}</td>

@@ -111,7 +111,7 @@ export default function SettingsHolidays() {
     });
   };
 
-  const renderDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const renderDate = (d: string) => new Date(d).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
 
   const downloadHolidays = () => {
     if (holidays.length === 0) return;
@@ -140,7 +140,7 @@ export default function SettingsHolidays() {
     const rows = Object.values(grouped)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .map((g, index) => {
-        const dateStr = new Date(g.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const dateStr = new Date(g.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
         
         // Check 'Y' for each state column
         const stateChecks = uniqueStates.map(stateName => {

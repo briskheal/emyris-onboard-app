@@ -175,7 +175,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
     let val = item[col.key] || '-';
     if (col.isDate && val !== '-') {
       try {
-        val = new Date(val).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        val = new Date(val).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
       } catch(e){}
     }
     return val;

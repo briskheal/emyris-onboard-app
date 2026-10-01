@@ -56,7 +56,7 @@ export default function RoutesListReport() {
       'Distance': r.distance,
       'Status': r.status,
       'Admin Remarks': r.adminRemarks,
-      'Created At': new Date(r.createdAt).toLocaleDateString()
+      'Created At': new Date(r.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);

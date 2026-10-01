@@ -799,7 +799,7 @@ function InventoryTab() {
                 {paginated.map((d, i) => (
                   <tr key={d._id} className="hover:bg-slate-700/30 transition-colors">
                     <td className="p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                    <td className="p-4 text-white">{new Date(d.date).toLocaleDateString()}</td>
+                    <td className="p-4 text-white">{new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
                     <td className="p-4 text-slate-300 font-bold">{d.supplier}</td>
                     <td className="p-4 text-slate-300">₹{d.totalPrice}</td>
                     <td className="p-4 text-center">
