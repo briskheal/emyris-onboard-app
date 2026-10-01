@@ -4023,6 +4023,7 @@ require("fs").writeFileSync("xla-frontend/dist/dash_success.txt", JSON.stringify
 
 
 
+router.get('/version', (req, res) => res.json({ version: 'fixed_targets_1.0' }));
 router.get('/admin/debug-data', async (req, res) => {
     try {
         const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan } = require('../db');
