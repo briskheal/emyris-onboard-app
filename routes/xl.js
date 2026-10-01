@@ -3936,32 +3936,9 @@ router.get('/admin/dashboard-stats', async (req, res) => {
 
 router.get('/admin/debug-data', async (req, res) => {
     try {
-        const { XlDCR } = require('../db');
-        const { Op } = require('sequelize');
-        
-        let doctorCalls = 0;
-        let chemistCalls = 0;
-        
-        const datePrefix = '2026-09-';
-        const whereUser = { employeeId: { [Op.in]: ['USR1', 'EMYFE118'] } };
-        
-        const dcrs = await XlDCR.findAll({ 
-            where: { 
-                date: { [Op.like]: `${datePrefix}%` }, 
-                ...whereUser 
-            } 
-        });
-        
-        dcrs.forEach(d => {
-            if (d.entityType === 'Doctor') doctorCalls++;
-            else if (d.entityType === 'Chemist') chemistCalls++;
-        });
-
-        res.json({ dcrsCount: dcrs.length, doctorCalls, chemistCalls });
-    } catch(e) {
-        res.json({ error: e.message });
-    }
-});
+        const { XlTarget, XlPrimarySales, XlUser, XlDCR } = require('../db');
+        const dcrs = await XlDCR.findAll({ limit: 50, order: [['createdAt', 'DESC']] });
+        res.json({ dcrs });
     } catch(e) {
         res.json({ error: e.message });
     }
