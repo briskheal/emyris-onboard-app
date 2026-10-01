@@ -3983,43 +3983,80 @@ router.get('/admin/dashboard-stats', async (req, res) => {
 });
 
 
+
 router.get('/admin/debug-data', async (req, res) => {
     try {
-        const { XlTarget, XlPrimarySales, XlUser, XlDCR } = require('../db');
-        const dcrs = await XlDCR.findAll({ limit: 50, order: [['createdAt', 'DESC']] });
-        const {Op} = require('sequelize');
-const stats = await XlDCR.findAll({ where: { date: { [Op.startsWith]: '2026-09-' } } });
-const statsLike = await XlDCR.findAll({ where: { date: { [Op.like]: '2026-09-%' } } });
+        const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan } = require('../db');
+        const { Op } = require('sequelize');
+        
+        let month = 'Sep';
+        let year = '2026';
+        let employeeId = undefined;
+        let whereUser = {};
 
-        let whereUser = {}; // simulate no employeeId
-        const targets = await XlTarget.findAll({ where: { month: { [Op.in]: ['Sep', 'September', '09', '9'] }, year: '2026', ...whereUser } });
-        const dcrsSep = await XlDCR.findAll({ 
+        let targetSum = 0;
+        const allMonthsFull = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+        const allMonthsShort = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+        
+        let fullM = month;
+        let shortM = month;
+        let mm = 0;
+        let sIdx = allMonthsShort.indexOf(month);
+        if (sIdx !== -1) {
+            fullM = allMonthsFull[sIdx];
+            mm = sIdx + 1;
+        }
+        
+        let mmStr1 = String(mm).padStart(2, '0');
+        let mmStr2 = String(mm);
+        
+        const monthVariants = [month, fullM, shortM, mmStr1, mmStr2];
+        const targets = await XlTarget.findAll({ where: { month: { [Op.in]: monthVariants }, year, ...whereUser } });
+        targets.forEach(t => {
+            targetSum += (parseFloat(t.totalProductAmount) || 0) + (parseFloat(t.lumpSumAmount) || 0);
+        });
+
+        const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
+        const datePrefix = `${year}-${monthNum}-`;
+        
+        const dcrs = await XlDCR.findAll({ 
             where: { 
-                date: { [Op.like]: '2026-09-%' }, 
+                date: { [Op.like]: `${datePrefix}%` }, 
                 ...whereUser 
             } 
         });
-        
-        let targetSum = 0;
-        targets.forEach(t => targetSum += (parseFloat(t.totalProductAmount) || 0) + (parseFloat(t.lumpSumAmount) || 0));
-        
+
         let doctorCalls = 0;
-        dcrsSep.forEach(d => {
+        let chemistCalls = 0;
+        let stockistCalls = 0;
+
+        dcrs.forEach(d => {
             if (d.entityType === 'Doctor') doctorCalls++;
+            else if (d.entityType === 'Chemist') chemistCalls++;
+            else if (d.entityType === 'Stockist') stockistCalls++;
         });
-        
-        res.json({ 
-            countStarts: stats.length, 
-            dcrsSepCount: dcrsSep.length,
-            doctorCalls,
-            targetCount: targets.length,
-            targetSum
+
+        res.json({
+            success: true,
+            dcrsLength: dcrs.length,
+            targetsLength: targets.length,
+            monthVariants,
+            datePrefix,
+            data: {
+                target: targetSum,
+                calls: {
+                    doctor: { actual: doctorCalls },
+                    chemist: { actual: chemistCalls },
+                    stockist: { actual: stockistCalls }
+                }
+            }
         });
 
     } catch(e) {
-        res.json({ error: e.message });
+        res.status(500).json({ error: e.message, stack: e.stack });
     }
 });
+
 module.exports = router;
 
 
