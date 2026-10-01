@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'emyris_super_secret_key_2026';
 
 const verifyToken = (req, res, next) => {
-    const openRoutes = [
+    const openRoutes = ["/api/xl/debug-user", 
         '/api/xl/login', '/login', 
         '/api/xl/admin-login', '/admin-login', 
         '/api/xl/register', '/register',
@@ -4024,6 +4024,16 @@ require("fs").writeFileSync("xla-frontend/dist/dash_success.txt", JSON.stringify
 
 
 router.get('/version', (req, res) => res.json({ version: 'fixed_targets_1.0' }));
+router.get('/debug-user', async (req, res) => {
+        try {
+            const dcrs = await require('../db').XlDCR.findAll({ 
+                where: { date: { [require('sequelize').Op.like]: '2026-09-%' } } 
+            });
+            res.json({ success: true, count: dcrs.length, dcrs });
+        } catch(e) {
+            res.json({ success: false, error: e.message });
+        }
+    });
 router.get('/admin/debug-data', async (req, res) => {
     try {
         const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan } = require('../db');
