@@ -3922,7 +3922,7 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             if (workingDays < 0) workingDays = 0;
         }
 
-        let dTargetPerDay = 0;
+                let dTargetPerDay = 0;
         let cTargetPerDay = 0;
         let sTargetPerDay = 0;
 
@@ -3956,11 +3956,42 @@ router.get('/admin/dashboard-stats', async (req, res) => {
                     if (desig.targetStockistCalls) sTargetPerDay = desig.targetStockistCalls;
                 }
             }
-        }
+            targetDoctorCalls = workingDays * dTargetPerDay;
+            targetChemistCalls = workingDays * cTargetPerDay;
+            targetStockistCalls = workingDays * sTargetPerDay;
+        } else {
+            // ADMIN VIEW: Aggregate targets across all employees
+            const allUsers = await XlUser.findAll({ 
+                where: { isActive: true },
+                attributes: ['designation']
+            });
+            const allDesigs = await require('../db').XlDesignation.findAll();
+            const desigMap = {};
+            allDesigs.forEach(d => {
+                desigMap[d._id] = d;
+                if (d.designationName) desigMap[d.designationName] = d;
+            });
 
-        targetDoctorCalls = workingDays * dTargetPerDay;
-        targetChemistCalls = workingDays * cTargetPerDay;
-        targetStockistCalls = workingDays * sTargetPerDay;
+            allUsers.forEach(u => {
+                if (u.designation && desigMap[u.designation]) {
+                    const desig = desigMap[u.designation];
+                    let dT = 0, cT = 0, sT = 0;
+                    
+                    if (desig.targetDoctorCalls) dT = desig.targetDoctorCalls;
+                    else {
+                        if (desig.level === 1 || desig.level === 2) dT = 8;
+                        else if (desig.level === 3 || desig.level === 4) dT = 6;
+                        else if (desig.level >= 5) dT = 5;
+                    }
+                    if (desig.targetChemistCalls) cT = desig.targetChemistCalls;
+                    if (desig.targetStockistCalls) sT = desig.targetStockistCalls;
+
+                    targetDoctorCalls += workingDays * dT;
+                    targetChemistCalls += workingDays * cT;
+                    targetStockistCalls += workingDays * sT;
+                }
+            });
+        }
 
         res.json({
             success: true,
