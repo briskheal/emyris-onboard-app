@@ -11,7 +11,7 @@ const verifyToken = (req, res, next) => {
         '/api/xl/register', '/register',
         '/company-profile'
     ];
-    if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('/dashboard-stats')) {
+    if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-')) {
         return next();
     }
     
