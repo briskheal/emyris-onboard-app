@@ -4008,7 +4008,7 @@ router.get('/admin/dashboard-stats', async (req, res) => {
         });
 
     } catch(e) {
-        console.error("Dashboard Stats Error:", e);
+        console.error("Dashboard Stats Error:", e); require("fs").writeFileSync("xla-frontend/dist/dash_error.txt", String(e.stack)); require("fs").writeFileSync("dash_error.txt", String(e.stack));
         res.status(500).json({ success: false, message: e.message });
     }
 });
