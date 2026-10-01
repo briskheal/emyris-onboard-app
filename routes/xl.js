@@ -3962,7 +3962,6 @@ router.get('/admin/debug-data', async (req, res) => {
         res.json({ error: e.message });
     }
 });
-        res.json({ dcrs });
     } catch(e) {
         res.json({ error: e.message });
     }
