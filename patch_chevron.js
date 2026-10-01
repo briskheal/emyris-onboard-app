@@ -1,39 +1,16 @@
 const fs = require('fs');
-let f = fs.readFileSync('D:/MY WORK FLOW/Emyris Onboard App/xl-frontend/src/pages/creation/PrimarySalesForm.tsx', 'utf8');
+let c = fs.readFileSync('xla-frontend/src/pages/Dashboard.tsx', 'utf8');
 
-f = f.replace(
-  "import { ArrowLeft, Save, Plus, Trash2, PackageSearch, Search, X } from 'lucide-react';",
-  "import { ArrowLeft, Save, Plus, Trash2, PackageSearch, Search, X, ChevronDown } from 'lucide-react';"
-);
+c = c.replace(/className="flex items-center bg-white dark:bg-\[\#0f172a\] border border-slate-300 dark:border-slate-800 rounded-xl h-\[42px\] px-3 focus-within:border-emerald-500\/50 transition-colors shadow-sm dark:shadow-none"/,
+`className="flex items-center bg-white dark:bg-[#0f172a] border border-slate-300 dark:border-slate-800 rounded-xl h-[42px] px-3 focus-within:border-emerald-500/50 transition-colors shadow-sm dark:shadow-none cursor-text" onClick={() => { const el = document.getElementById('user-search-input'); if (el) { el.focus(); el.click(); } }}`);
 
-const targetBlock = `<label className="text-[9px] text-slate-400 uppercase mb-1 block">Price Type</label>
-                      <select 
-                        value={item.priceType} 
-                        onChange={e => handlePriceTypeChange(item.id, e.target.value)} 
-                        className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 text-xs text-cyan-400 font-bold focus:outline-none appearance-none"
-                      >
-                        <option value="PTS">PTS</option>
-                        <option value="PTR">PTR</option>
-                        <option value="MRP">MRP</option>
-                        <option value="Cus">Cus</option>
-                      </select>`;
+c = c.replace(/type="text"\s+placeholder=\{selectedDashboardUser/m, 
+`id="user-search-input"
+                              type="text"
+                              placeholder={selectedDashboardUser`);
 
-const replacementBlock = `<label className="text-[9px] text-slate-400 uppercase mb-1 block">Price Type</label>
-                      <div className="relative">
-                        <select 
-                          value={item.priceType} 
-                          onChange={e => handlePriceTypeChange(item.id, e.target.value)} 
-                          className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded p-1.5 pr-6 text-xs text-cyan-400 font-bold focus:outline-none appearance-none cursor-pointer"
-                        >
-                          <option value="PTS">PTS</option>
-                          <option value="PTR">PTR</option>
-                          <option value="MRP">MRP</option>
-                          <option value="Cus">Cus</option>
-                        </select>
-                        <ChevronDown size={14} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-cyan-400 pointer-events-none" />
-                      </div>`;
+c = c.replace(/<ChevronDown size=\{16\} className="text-slate-400 dark:text-slate-500 shrink-0 ml-1" \/>/,
+`<ChevronDown size={16} className="text-slate-400 dark:text-slate-500 shrink-0 ml-1 cursor-pointer pointer-events-none" />`);
 
-f = f.replace(targetBlock, replacementBlock);
-
-fs.writeFileSync('D:/MY WORK FLOW/Emyris Onboard App/xl-frontend/src/pages/creation/PrimarySalesForm.tsx', f);
-console.log('Patched');
+fs.writeFileSync('xla-frontend/src/pages/Dashboard.tsx', c);
+console.log('Patched Chevron click in user search');

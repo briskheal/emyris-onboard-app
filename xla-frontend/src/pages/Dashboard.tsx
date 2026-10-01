@@ -218,11 +218,12 @@ export default function Dashboard() {
                   </div>
                   
                   <div className="relative w-[220px]">
-                      <div className="flex items-center bg-white dark:bg-[#0f172a] border border-slate-300 dark:border-slate-800 rounded-xl h-[42px] px-3 focus-within:border-emerald-500/50 transition-colors shadow-sm dark:shadow-none">
+                      <div className="flex items-center bg-white dark:bg-[#0f172a] border border-slate-300 dark:border-slate-800 rounded-xl h-[42px] px-3 focus-within:border-emerald-500/50 transition-colors shadow-sm dark:shadow-none cursor-text" onClick={() => { const el = document.getElementById('user-search-input'); if (el) { el.focus(); el.click(); } }}>
                           <div className="w-6 h-6 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xs font-bold overflow-hidden border border-emerald-500/20 dark:border-emerald-500/30 shrink-0">
                               {selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName || '')?.charAt(0) : 'U'}
                           </div>
                           <input 
+                              id="user-search-input"
                               type="text"
                               placeholder={selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName || '') : "Search users..."}
                               value={userSearchOpen ? userSearchTerm : (selectedDashboardUser ? (selectedDashboardUser.name || (selectedDashboardUser.firstName ? selectedDashboardUser.firstName + ' ' + (selectedDashboardUser.lastName || '') : '') || selectedDashboardUser.businessName || '') : '')}
@@ -237,7 +238,7 @@ export default function Dashboard() {
                               onBlur={() => setTimeout(() => setUserSearchOpen(false), 200)}
                               className="bg-transparent border-none outline-none text-sm text-slate-700 dark:text-slate-500 dark:text-[#8b8baf] font-semibold w-full ml-2 truncate placeholder:text-slate-400 dark:placeholder:text-slate-500 dark:text-[#8b8baf]"
                           />
-                          <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 shrink-0 ml-1" />
+                          <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 shrink-0 ml-1 cursor-pointer pointer-events-none" />
                       </div>
                       {userSearchOpen && (
                           <div className="absolute top-full mt-2 right-0 w-[260px] bg-white dark:bg-[#0f172a] border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl dark:shadow-2xl z-50 flex flex-col overflow-hidden max-h-[240px] overflow-y-auto">
