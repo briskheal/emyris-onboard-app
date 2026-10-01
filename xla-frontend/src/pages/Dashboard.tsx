@@ -31,7 +31,10 @@ export default function Dashboard() {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   
   // For the native month input
-  const [monthInput, setMonthInput] = useState('2026-09');
+  const [monthInput, setMonthInput] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
 
