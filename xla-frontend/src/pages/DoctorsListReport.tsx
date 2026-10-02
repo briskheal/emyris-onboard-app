@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Eye, Download } from 'lucide-react';
 import DoctorDetails from '../components/DoctorDetails';
 import * as XLSX from 'xlsx';
+import CustomLocationSelect from '../components/CustomLocationSelect';
 
 export default function DoctorsListReport() {
   const [loading, setLoading] = useState(true);
@@ -91,13 +92,21 @@ export default function DoctorsListReport() {
           <div className="flex flex-col md:flex-row gap-4 w-full md:w-2/3">
             <div className="w-full md:w-1/2">
               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select State</h2>
-              <input list="state-list" placeholder="Search State..." value={selectedState} onChange={(e) => { setSelectedState(e.target.value); setSelectedHq(''); }} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg" />
-              <datalist id="state-list">{(states || []).map((s: any) => <option key={s._id} value={s.state} />)}</datalist>
+              <CustomLocationSelect 
+                options={[...new Set((states || []).map((s: any) => s.state))]} 
+                selectedValue={selectedState} 
+                onChange={(val) => { setSelectedState(val); setSelectedHq(''); }} 
+                placeholder="Search State..." 
+              />
             </div>
             <div className="w-full md:w-1/2">
               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select HQ</h2>
-              <input list="hq-list" placeholder="Search Headquarter..." value={selectedHq} onChange={(e) => { setSelectedHq(e.target.value); fetchDoctors(e.target.value); }} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg" />
-              <datalist id="hq-list">{(hqs || []).filter((h: any) => !selectedState || h.state === selectedState).map((h: any) => <option key={h._id} value={h.hqName} />)}</datalist>
+              <CustomLocationSelect 
+                options={(hqs || []).filter((h: any) => !selectedState || h.state === selectedState).map((h: any) => h.hqName)} 
+                selectedValue={selectedHq} 
+                onChange={(val) => { setSelectedHq(val); fetchDoctors(val); }} 
+                placeholder="Search Headquarter..." 
+              />
             </div>
           </div>
           <div className="w-full md:w-1/3 pt-6 md:pt-0">
