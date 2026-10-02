@@ -115,7 +115,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
           Deleting a DCS from here will also remove it from the list.
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT TYPE</label>
             <select value={filterType} onChange={e=>{setFilterType(e.target.value); setSelectedIds([]);}} className="w-full bg-slate-900 border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer">
