@@ -899,9 +899,11 @@ router.post('/route', async (req, res) => {
 // Reports Route for Doctors List
 router.get('/reports/doctors', async (req, res) => {
     try {
-        const { employeeId } = req.query;
+        const { employeeId, hq } = req.query;
         let where = {};
-        if (employeeId) {
+        if (hq) {
+            where.headquarter = hq;
+        } else if (employeeId) {
             const user = await XlUser.findOne({ where: { employeeId } });
             if (user && user.hq) {
                 where.headquarter = user.hq;
@@ -921,9 +923,11 @@ router.get('/reports/doctors', async (req, res) => {
 // Reports Route for Chemists List
 router.get('/reports/chemists', async (req, res) => {
     try {
-        const { employeeId } = req.query;
+        const { employeeId, hq } = req.query;
         let where = {};
-        if (employeeId) {
+        if (hq) {
+            where.headquarter = hq;
+        } else if (employeeId) {
             const user = await XlUser.findOne({ where: { employeeId } });
             if (user && user.hq) {
                 where.headquarter = user.hq;
@@ -941,9 +945,11 @@ router.get('/reports/chemists', async (req, res) => {
 // Reports Route for Stockists List
 router.get('/reports/stockists', async (req, res) => {
     try {
-        const { employeeId } = req.query;
+        const { employeeId, hq } = req.query;
         let where = {};
-        if (employeeId) {
+        if (hq) {
+            where.headquarter = hq;
+        } else if (employeeId) {
             const user = await XlUser.findOne({ where: { employeeId } });
             if (user && user.hq) {
                 where.headquarter = user.hq;
@@ -986,9 +992,11 @@ router.get('/reports/gifts', async (req, res) => {
 // Reports Route for Routes List
 router.get('/reports/routes', async (req, res) => {
     try {
-        const { employeeId } = req.query;
+        const { employeeId, hq } = req.query;
         let where = {};
-        if (employeeId) {
+        if (hq) {
+            where.headquarter = hq;
+        } else if (employeeId) {
             const user = await XlUser.findOne({ where: { employeeId } });
             if (user && user.hq) {
                 where.hq = user.hq;
