@@ -3,33 +3,39 @@ import axios from 'axios';
 import { Eye, Download } from 'lucide-react';
 import DoctorDetails from '../components/DoctorDetails';
 import * as XLSX from 'xlsx';
-import CustomUserSelect from '../components/CustomUserSelect';
 
 export default function DoctorsListReport() {
   const [loading, setLoading] = useState(true);
   const [doctors, setDoctors] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [selectedUser, setSelectedUser] = useState('');
+  const [states, setStates] = useState<any[]>([]);
+  const [hqs, setHqs] = useState<any[]>([]);
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedHq, setSelectedHq] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [viewingDoctor, setViewingDoctor] = useState<any>(null);
 
   useEffect(() => {
-    fetchUsers();
+    fetchLocations();
     fetchDoctors('');
   }, []);
 
-  const fetchUsers = async () => {
+  const fetchLocations = async () => {
     try {
-      const res = await axios.get('/api/admin/users');
-      if (res.data.success) setUsers(res.data.users || res.data.data || []);
+      const [stateRes, hqRes] = await Promise.all([
+        axios.get('/api/admin/locations/states'),
+        axios.get('/api/admin/locations/hqs')
+      ]);
+      if (stateRes.data.success) setStates(stateRes.data.data);
+      if (hqRes.data.success) setHqs(hqRes.data.data);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const fetchDoctors = async (employeeId: string) => {
+  const fetchDoctors = async (hq: string) => {
     setLoading(true);
     try {
-      const url = employeeId ? `/api/xl/reports/doctors?employeeId=${employeeId}` : '/api/xl/reports/doctors';
+      const url = hq ? `/api/xl/reports/doctors?hq=${encodeURIComponent(hq)}` : '/api/xl/reports/doctors';
       const res = await axios.get(url);
       if (res.data.success) {
         setDoctors(res.data.data);
@@ -41,13 +47,9 @@ export default function DoctorsListReport() {
     }
   };
 
-  const handleUserChange = (val: string) => {
-    setSelectedUser(val);
-    fetchDoctors(val);
-  };
-
+  
   const exportToExcel = () => {
-    const dataToExport = doctors.map((d, i) => ({
+    const dataToExport = filteredList.map((d, i) => ({
       'Sr no.': i + 1,
       Name: d.name,
       Degree: d.degree,
@@ -78,14 +80,33 @@ export default function DoctorsListReport() {
     return <DoctorDetails doctor={viewingDoctor} onBack={() => setViewingDoctor(null)} />;
   }
 
+  const filteredList = doctors.filter(d => !searchQuery || (d.name && d.name.toLowerCase().includes(searchQuery.toLowerCase())) || (d.businessName && d.businessName.toLowerCase().includes(searchQuery.toLowerCase())) || (d.proprietorName && d.proprietorName.toLowerCase().includes(searchQuery.toLowerCase())) || (d.mobile && d.mobile.includes(searchQuery)));
+
   return (
     <div className="flex-1 flex flex-col h-full bg-[#1e1e2d] relative font-sans overflow-hidden">
       
       {/* Header / Controls */}
       <div className="p-4 md:p-6 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-        <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-4">Select User</h2>
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-          <CustomUserSelect users={users} selectedUser={selectedUser} onChange={handleUserChange} />
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full justify-between">
+          <div className="flex flex-col md:flex-row gap-4 w-full md:w-2/3">
+            <div className="w-full md:w-1/2">
+              <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select State</h2>
+              <input list="state-list" placeholder="Search State..." value={selectedState} onChange={(e) => { setSelectedState(e.target.value); setSelectedHq(''); }} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg" />
+              <datalist id="state-list">{states.map((s: any) => <option key={s._id} value={s.state} />)}</datalist>
+            </div>
+            <div className="w-full md:w-1/2">
+              <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select HQ</h2>
+              <input list="hq-list" placeholder="Search Headquarter..." value={selectedHq} onChange={(e) => { setSelectedHq(e.target.value); fetchDoctors(e.target.value); }} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg" />
+              <datalist id="hq-list">{hqs.filter((h: any) => !selectedState || h.state === selectedState).map((h: any) => <option key={h._id} value={h.hqName} />)}</datalist>
+            </div>
+          </div>
+          <div className="w-full md:w-1/3 pt-6 md:pt-0">
+             <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2 md:opacity-0 md:block">Search</h2>
+             <div className="relative w-full">
+               <input type="text" placeholder="Search Doctor..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg pl-10" />
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+             </div>
+          </div>
         </div>
       </div>
 
@@ -93,7 +114,7 @@ export default function DoctorsListReport() {
       <div className="flex-1 overflow-hidden flex flex-col p-4 md:p-6">
         <div className="flex justify-between items-center mb-4">
           <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
-            SHOWING ({doctors.length}) ENTRIES
+            SHOWING ({filteredList.length}) ENTRIES
           </span>
         </div>
 
@@ -118,12 +139,12 @@ export default function DoctorsListReport() {
                   <tr>
                     <td colSpan={9} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">Loading...</td>
                   </tr>
-                ) : doctors.length === 0 ? (
+                ) : filteredList.length === 0 ? (
                   <tr>
                     <td colSpan={9} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Doctors Found</td>
                   </tr>
                 ) : (
-                  doctors.map((d, idx) => (
+                  filteredList.map((d, idx) => (
                     <tr key={d._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
                       <td className="px-4 py-4 text-sm font-bold text-white">{d.name}</td>
@@ -152,7 +173,7 @@ export default function DoctorsListReport() {
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
             <button 
               onClick={exportToExcel}
-              disabled={doctors.length === 0}
+              disabled={filteredList.length === 0}
               className="flex items-center gap-2 px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50"
             >
               <Download size={16} /> Export
