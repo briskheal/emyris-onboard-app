@@ -87,10 +87,9 @@ export default function ChemistsListReport() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#1e1e2d] relative font-sans overflow-hidden">
-      <div className="p-4 md:p-6 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center w-full justify-between">
-          <div className="flex flex-col md:flex-row gap-4 w-full md:w-2/3">
-            <div className="w-full md:w-1/2">
+      <div className="p-4 md:p-6 shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+            <div>
               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select State</h2>
               <CustomLocationSelect 
                 options={[...new Set((states || []).map((s: any) => s.stateName))]} 
@@ -99,7 +98,7 @@ export default function ChemistsListReport() {
                 placeholder="Search State..." 
               />
             </div>
-            <div className="w-full md:w-1/2">
+            <div>
               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select HQ</h2>
               <CustomLocationSelect 
                 options={(hqs || []).filter((h: any) => !selectedState || h.state === selectedState).map((h: any) => h.hqName)} 
@@ -108,12 +107,11 @@ export default function ChemistsListReport() {
                 placeholder="Search Headquarter..." 
               />
             </div>
-          </div>
-          <div className="w-full md:w-1/3 pt-6 md:pt-0">
-             <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2 md:opacity-0 md:block">Search</h2>
+            <div>
+             <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2 ">Search</h2>
              <div className="relative w-full">
-               <input type="text" placeholder="Search Chemist..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg pl-10" />
-               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+               <input type="text" placeholder="Search Chemist..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-[13px] text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg pl-10" />
+               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
              </div>
           </div>
         </div>
