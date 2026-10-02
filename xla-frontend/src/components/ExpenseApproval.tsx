@@ -2,6 +2,22 @@ import { useState, useMemo } from 'react';
 import axios from 'axios';
 import { CheckCircle, Eye, ChevronLeft, XCircle } from 'lucide-react';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 export default function ExpenseApproval({ items, fetchPending, fetchCounts, selectedModule }: any) {
   const [selectedUser, setSelectedUser] = useState('');
   const [isMonthlyView, setIsMonthlyView] = useState(false);
@@ -22,7 +38,7 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
     const grouped: Record<string, any> = {};
     items.forEach((i: any) => {
       if (selectedUser && i.employeeId !== selectedUser) return;
-      const key = `${i.employeeId}_${i.date}`;
+      const key = `${i.employeeId}_${formatDDMMYYYY(i.date)}`;
       if (!grouped[key]) {
         grouped[key] = {
           employeeId: i.employeeId,
@@ -152,7 +168,7 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
                        const dt = new Date(d.date);
                        const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()];
                        return (
-                         <tr key={d.date} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
+                         <tr key={formatDDMMYYYY(d.date)} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
                            <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
                            <td className="px-4 py-4 text-sm font-bold text-white">{dt.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
                            <td className="px-4 py-4 text-sm font-medium text-slate-300">{dayName}</td>
@@ -284,7 +300,7 @@ export default function ExpenseApproval({ items, fetchPending, fetchCounts, sele
                     dayWiseData.length === 0 ? (
                       <tr><td colSpan={13} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily Expenses</td></tr>
                     ) : dayWiseData.map((d: any, idx: number) => (
-                      <tr key={`${d.employeeId}_${d.date}`} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
+                      <tr key={`${d.employeeId}_${formatDDMMYYYY(d.date)}`} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
                         <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
                         <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName}</td>
                         <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{new Date(d.date).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>

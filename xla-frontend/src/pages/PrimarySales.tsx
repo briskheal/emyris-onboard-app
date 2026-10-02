@@ -4,6 +4,22 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 export default function PrimarySales() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -378,7 +394,7 @@ export default function PrimarySales() {
               <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-3 py-1 flex items-center h-[36px]">
                 <input 
                   type="date" 
-                  value={formData.date}
+                  value={formatDDMMYYYY(formData.date)}
                   onChange={e => setFormData({...formData, date: e.target.value})}
                   className="w-full bg-transparent outline-none text-sm text-white"
                 />

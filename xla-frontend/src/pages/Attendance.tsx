@@ -4,6 +4,22 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 export default function Attendance() {
   const navigate = useNavigate();
   
@@ -387,7 +403,7 @@ export default function Attendance() {
                       {days.map((d, i) => (
                         <th key={i} className="p-4 border-r border-[#3b3b5a] w-[70px]">
                           <div className="flex flex-col gap-1 items-center justify-center">
-                            <span className="text-[12px] font-bold text-slate-300">{d.date} {mName}</span>
+                            <span className="text-[12px] font-bold text-slate-300">{formatDDMMYYYY(d.date)} {mName}</span>
                             <span className="text-[10px] font-semibold text-slate-400">({d.day})</span>
                           </div>
                         </th>

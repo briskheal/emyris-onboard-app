@@ -2,6 +2,22 @@ import { useState } from 'react';
 import { ArrowLeft, ChevronDown, UserPlus, Plus, Eye, Trash2, CheckCircle2, XCircle, Clock, CalendarDays, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 export default function CallPlan() {
   const navigate = useNavigate();
   const [selectedMonth] = useState('Aug, 2026');
@@ -118,7 +134,7 @@ export default function CallPlan() {
               <tbody className="divide-y divide-slate-700/30">
                 {days.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="p-4 text-sm font-semibold text-slate-300 text-center bg-slate-900/20">{item.date}</td>
+                    <td className="p-4 text-sm font-semibold text-slate-300 text-center bg-slate-900/20">{formatDDMMYYYY(item.date)}</td>
                     <td className="p-4 text-sm font-bold text-sky-400">{item.fullDate}</td>
                     <td className="p-4 text-sm font-medium text-slate-300">{item.day === 'SAT' ? 'Saturday' : item.day === 'SUN' ? 'Sunday' : 'Monday'}</td>
                     <td className="p-4 text-sm font-medium text-slate-500 italic">No Data</td>
@@ -146,7 +162,7 @@ export default function CallPlan() {
               <div key={idx} className="bg-slate-800 border border-slate-700 rounded-2xl flex overflow-hidden shadow-lg">
                 {/* Left Date Block */}
                 <div className="w-14 flex flex-col items-center justify-center bg-slate-700/50 py-3 border-r border-slate-700">
-                  <span className="text-xl font-black text-white leading-none">{item.date}</span>
+                  <span className="text-xl font-black text-white leading-none">{formatDDMMYYYY(item.date)}</span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase mt-1">{item.day}</span>
                 </div>
                 

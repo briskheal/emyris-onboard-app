@@ -2,6 +2,22 @@ import { useState, useMemo } from 'react';
 import axios from 'axios';
 import { CheckCircle, Eye, ChevronLeft, XCircle } from 'lucide-react';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 export default function CallReportApproval({ items, fetchPending, fetchCounts, selectedModule }: any) {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
@@ -13,7 +29,7 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
     const grouped: Record<string, { employeeId: string, employeeName: string, date: string, calls: any[], isBacklog: boolean, areaType: string, workAreas: string }> = {};
     items.forEach((i: any) => {
       if (selectedUser && i.employeeId !== selectedUser) return;
-      const key = `${i.employeeId}_${i.date}`;
+      const key = `${i.employeeId}_${formatDDMMYYYY(i.date)}`;
       if (!grouped[key]) {
         grouped[key] = {
           employeeId: i.employeeId,
@@ -52,7 +68,7 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
     if (selectedRows.length === groupedData.length) {
       setSelectedRows([]);
     } else {
-      setSelectedRows(groupedData.map(d => `${d.employeeId}_${d.date}`));
+      setSelectedRows(groupedData.map(d => `${d.employeeId}_${formatDDMMYYYY(d.date)}`));
     }
   };
 
@@ -270,7 +286,7 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
                     {groupedData.length === 0 ? (
                       <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Reports</td></tr>
                     ) : groupedData.map((d: any, idx: number) => {
-                      const rowId = `${d.employeeId}_${d.date}`;
+                      const rowId = `${d.employeeId}_${formatDDMMYYYY(d.date)}`;
                       const dt = new Date(d.date);
                       return (
                         <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">

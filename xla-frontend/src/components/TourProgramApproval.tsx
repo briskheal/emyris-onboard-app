@@ -2,6 +2,22 @@ import { useState, useMemo } from 'react';
 import axios from 'axios';
 import { CheckCircle, Eye, ChevronLeft, Trash2, Plus, X } from 'lucide-react';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 export default function TourProgramApproval({ items, fetchPending, fetchCounts, selectedModule }: any) {
   const [selectedUser, setSelectedUser] = useState('');
   const [isMonthlyView, setIsMonthlyView] = useState(false);
@@ -394,7 +410,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                         <th className="p-4 w-12 text-center">
                           <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === dayWiseData.length} onChange={() => {
                             if (selectedRows.length === dayWiseData.length) setSelectedRows([]);
-                            else setSelectedRows(dayWiseData.map(d => `${d.tpId}_${d.date}`));
+                            else setSelectedRows(dayWiseData.map(d => `${d.tpId}_${formatDDMMYYYY(d.date)}`));
                           }} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
                         </th>
                       </>
@@ -424,7 +440,7 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
                     dayWiseData.length === 0 ? (
                       <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily TPs</td></tr>
                     ) : dayWiseData.map((d: any, idx: number) => {
-                      const rowId = `${d.tpId}_${d.date}`;
+                      const rowId = `${d.tpId}_${formatDDMMYYYY(d.date)}`;
                       return (
                         <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
                           <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>

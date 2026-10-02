@@ -5,6 +5,22 @@ import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
 import CustomUserSelect from '../components/CustomUserSelect';
 import axios from 'axios';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 export default function TourProgramReport() {
   const navigate = useNavigate();
   const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
@@ -220,7 +236,7 @@ export default function TourProgramReport() {
               <tbody>
                 {reportData.map((row) => (
                   <tr key={row.id} className="border-b border-[#2d2f45] hover:bg-[#27273f]/50 transition-colors">
-                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.date}</td>
+                    <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{formatDDMMYYYY(row.date)}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.day}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.name}</td>
                     <td className="px-4 py-3 text-xs text-slate-300 border-r border-[#2d2f45] whitespace-nowrap">{row.areaType}</td>
@@ -274,7 +290,7 @@ export default function TourProgramReport() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-emerald-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Date</p>
-                  <p className="text-xs font-medium text-slate-400">{selectedView.date}</p>
+                  <p className="text-xs font-medium text-slate-400">{formatDDMMYYYY(selectedView.date)}</p>
                 </div>
                 <div className="bg-[#242538] p-4 rounded-md border border-[#32334b] border-b-2 border-b-emerald-500">
                   <p className="text-xs font-bold text-slate-300 mb-1">Area Type</p>

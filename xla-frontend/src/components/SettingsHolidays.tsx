@@ -2,6 +2,22 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Trash2, CheckSquare, ChevronDown, X } from 'lucide-react';
 
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
 const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana',
   'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
@@ -124,7 +140,7 @@ export default function SettingsHolidays() {
     // Group by date + title to create one row per holiday
     const grouped: Record<string, { date: string; title: string; type: string; states: Set<string> }> = {};
     holidays.forEach(h => {
-      const key = `${h.date}__${h.title}`;
+      const key = `${formatDDMMYYYY(h.date)}__${h.title}`;
       if (!grouped[key]) {
         grouped[key] = { date: h.date, title: h.title, type: h.type, states: new Set() };
       }
