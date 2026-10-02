@@ -124,7 +124,7 @@ export default function ChemistsListReport() {
           </span>
         </div>
 
-        <div className="flex-1 bg-[#151521] overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col">
           <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">

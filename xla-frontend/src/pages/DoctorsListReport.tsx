@@ -135,7 +135,7 @@ export default function DoctorsListReport() {
           </span>
         </div>
 
-        <div className="flex-1 bg-[#151521] overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-hidden flex flex-col">
           <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
@@ -212,16 +212,7 @@ export default function DoctorsListReport() {
               </div>
             </div>
 
-          {/* Export Footer */}
-          <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
-            <button 
-              onClick={exportToExcel}
-              disabled={filteredList.length === 0}
-              className="flex items-center gap-2 px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Download size={16} /> Export
-            </button>
-          </div>
+          
         </div>
       </div>
     </div>
