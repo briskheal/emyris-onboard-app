@@ -86,6 +86,127 @@ export default function ChemistsListReport() {
   
 
   return (
+      <div className="flex-1 flex flex-col min-h-screen bg-[#1e1e2d] relative font-sans">
+        
+        {/* Header / Controls */}
+        <div className="p-4 md:p-6 shrink-0">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
+              <div>
+                <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select State</h2>
+                <CustomLocationSelect 
+                  options={[...new Set((states || []).map((s: any) => s.stateName))]} 
+                  selectedValue={selectedState} 
+                  onChange={(val) => { setSelectedState(val); setSelectedHq(''); }} 
+                  placeholder="Search State..." 
+                />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select HQ</h2>
+                <CustomLocationSelect 
+                  options={(hqs || []).filter((h: any) => !selectedState || h.state === selectedState).map((h: any) => h.hqName)} 
+                  selectedValue={selectedHq} 
+                  onChange={(val) => { setSelectedHq(val); fetchChemists(val); }} 
+                  placeholder="Search Headquarter..." 
+                />
+              </div>
+              <div>
+               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2 ">Search</h2>
+               <div className="relative w-full">
+                 <input type="text" placeholder="Search Chemist..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-[13px] text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg pl-10" />
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+               </div>
+              </div>
+            </div>
+        </div>
+
+        import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Eye, Download } from 'lucide-react';
+import ChemistDetails from '../components/ChemistDetails';
+import * as XLSX from 'xlsx';
+import CustomLocationSelect from '../components/CustomLocationSelect';
+
+export default function ChemistsListReport() {
+  const [loading, setLoading] = useState(true);
+  const [chemists, setChemists] = useState<any[]>([]);
+  const [states, setStates] = useState<any[]>([]);
+  const [hqs, setHqs] = useState<any[]>([]);
+  const [selectedState, setSelectedState] = useState('');
+  const [selectedHq, setSelectedHq] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [viewingChemist, setViewingChemist] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedState, selectedHq]);
+
+  useEffect(() => {
+    fetchLocations();
+    fetchChemists('');
+  }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const [stateRes, hqRes] = await Promise.all([
+        axios.get('/api/admin/locations/states'),
+        axios.get('/api/admin/locations/hqs')
+      ]);
+      if (stateRes.data.success) setStates(stateRes.data.states || []);
+      if (hqRes.data.success) setHqs(hqRes.data.hqs || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchChemists = async (hq: string) => {
+    setLoading(true);
+    try {
+      const url = hq ? `/api/xl/reports/chemists?hq=${encodeURIComponent(hq)}` : '/api/xl/reports/chemists';
+      const res = await axios.get(url);
+      if (res.data.success) {
+        setChemists(res.data.data);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
+  const filteredList = chemists.filter(d => !searchQuery || (d.name && d.name.toLowerCase().includes(searchQuery.toLowerCase())) || (d.businessName && d.businessName.toLowerCase().includes(searchQuery.toLowerCase())) || (d.proprietorName && d.proprietorName.toLowerCase().includes(searchQuery.toLowerCase())) || (d.mobile && d.mobile.includes(searchQuery)));
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
+  const paginatedList = filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const exportToExcel = () => {
+    const dataToExport = paginatedList.map((c, i) => ({
+      'Sr no.': i + 1,
+      'Business Name': c.businessName,
+      'Proprietor Name': c.proprietorName,
+      Address: c.address,
+      Contact: c.mobile || c.contact,
+      HQ: c.headquarter,
+      'Working Area': c.workingArea,
+      Email: c.email,
+      Birthday: c.birthday,
+      Certifications: c.certifications
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Chemist List");
+    XLSX.writeFile(wb, "Chemist List.xlsx");
+  };
+
+  if (viewingChemist) {
+    return <ChemistDetails chemist={viewingChemist} onBack={() => setViewingChemist(null)} />;
+  }
+
+  
+
+  return (
     <div className="flex-1 flex flex-col min-h-screen bg-[#1e1e2d] relative font-sans">
       <div className="p-4 md:p-6 shrink-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
@@ -190,14 +311,10 @@ export default function ChemistsListReport() {
                             <option key={n} value={n}>{n}</option>
                         ))}
                     </select>
+                  </div>
                 </div>
               </div>
-            </div>
-          <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
-            <button onClick={exportToExcel} disabled={filteredList.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
-              <Download size={16} /> Export
-            </button>
-          </div>
+        </div>
       </div>
     );
-  }
+}
