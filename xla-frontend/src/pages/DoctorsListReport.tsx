@@ -120,7 +120,7 @@ export default function DoctorsListReport() {
             <div>
              <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2 ">Search</h2>
              <div className="relative w-full">
-               <input type="text" placeholder="Search Doctor..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-[13px] text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg pl-10" />
+               <input type="text" placeholder="Search Doctor..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-[13px] text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg pl-10" />
                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 absolute left-3 top-3 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
              </div>
           </div>
@@ -135,20 +135,20 @@ export default function DoctorsListReport() {
           </span>
         </div>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="w-full">
           <div className="overflow-x-auto w-full pb-10">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">Name ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Degree ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Specialization</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hospital ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">HQ</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Working Area</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">Name ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Degree ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Specialization</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Hospital ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">HQ</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Working Area</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
                 </tr>
               </thead>
               <tbody>
@@ -163,15 +163,15 @@ export default function DoctorsListReport() {
                 ) : (
                   filteredList.map((d, idx) => (
                     <tr key={d._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="px-4 py-2.5 text-sm font-medium text-slate-400">{idx + 1}</td>
-                      <td className="px-4 py-2.5 text-sm font-bold text-white">{d.name}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{d.degree || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{d.specialization || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{d.hospital || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{d.mobile || d.contact || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{d.headquarter || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm text-sky-400">{d.workingArea || '-'}</td>
-                      <td className="px-4 py-2.5 text-center">
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{idx + 1}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-bold text-white">{d.name}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.degree || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.specialization || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.hospital || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.mobile || d.contact || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.headquarter || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-sky-400">{d.workingArea || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-center">
                         <button 
                           onClick={() => setViewingDoctor(d)} 
                           className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm mx-auto block"

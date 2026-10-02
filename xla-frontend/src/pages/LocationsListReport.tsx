@@ -131,11 +131,11 @@ export default function LocationsListReport() {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">{areaType} ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total Doctors ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total Stockists ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total Chemists</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">{areaType} ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total Doctors ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total Stockists ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Total Chemists</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,11 +146,11 @@ export default function LocationsListReport() {
                 ) : (
                   groupedData.map((g, idx) => (
                     <tr key={idx} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="px-4 py-2.5 text-sm font-medium text-slate-400">{idx + 1}</td>
-                      <td className="px-4 py-2.5 text-sm font-bold text-white">{g.name}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300 text-center">{g.doctors}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300 text-center">{g.stockists}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300 text-center">{g.chemists}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{idx + 1}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-bold text-white">{g.name}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300 text-center">{g.doctors}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300 text-center">{g.stockists}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300 text-center">{g.chemists}</td>
                     </tr>
                   ))
                 )}
@@ -158,7 +158,7 @@ export default function LocationsListReport() {
             </table>
           </div>
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
-            <button onClick={exportToExcel} disabled={groupedData.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
+            <button onClick={exportToExcel} disabled={groupedData.length === 0} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
               <Download size={16} /> Export
             </button>
           </div>

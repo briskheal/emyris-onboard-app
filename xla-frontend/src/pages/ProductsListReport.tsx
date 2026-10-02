@@ -94,15 +94,15 @@ export default function ProductsListReport() {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">Name ↑</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Division</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Packaging</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">MRP</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">PTS</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">PTR</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Images</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">Name ↑</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Division</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Packaging</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">MRP</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">PTS</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">PTR</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Images</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
                 </tr>
               </thead>
               <tbody>
@@ -113,17 +113,17 @@ export default function ProductsListReport() {
                 ) : (
                   filteredProducts.map((p, idx) => (
                     <tr key={p._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="px-4 py-2.5 text-sm font-medium text-slate-400">{idx + 1}</td>
-                      <td className="px-4 py-2.5 text-sm font-bold text-white">{p.productName}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{p.division || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{p.packaging || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{p.mrp || '0'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{p.pts || '0'}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{p.ptr || '0'}</td>
-                      <td className="px-4 py-2.5 text-center">
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{idx + 1}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-bold text-white">{p.productName}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{p.division || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{p.packaging || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{p.mrp || '0'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{p.pts || '0'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{p.ptr || '0'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-center">
                         <div className="w-8 h-8 rounded bg-slate-800 mx-auto flex items-center justify-center text-[10px] text-slate-500">Img</div>
                       </td>
-                      <td className="px-4 py-2.5 text-center">
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-center">
                         <button 
                           onClick={() => setViewingProduct(p)} 
                           className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm mx-auto block"
@@ -138,7 +138,7 @@ export default function ProductsListReport() {
             </table>
           </div>
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
-            <button onClick={exportToExcel} disabled={filteredProducts.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
+            <button onClick={exportToExcel} disabled={filteredProducts.length === 0} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
               <Download size={16} /> Export
             </button>
           </div>

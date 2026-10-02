@@ -83,12 +83,12 @@ export default function GiftsListReport() {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">User ID</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Period</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Details</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Created At</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">User ID</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Period</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Details</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Created At</th>
                 </tr>
               </thead>
               <tbody>
@@ -99,11 +99,11 @@ export default function GiftsListReport() {
                 ) : (
                   gifts.map((g, idx) => (
                     <tr key={g._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="px-4 py-2.5 text-sm font-medium text-slate-400">{idx + 1}</td>
-                      <td className="px-4 py-2.5 text-sm font-bold text-white">{g.employeeId}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300">{g.month} {g.year}</td>
-                      <td className="px-4 py-2.5 text-sm text-slate-300 truncate max-w-xs" title={g.details}>{g.details || '-'}</td>
-                      <td className="px-4 py-2.5 text-sm">
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{idx + 1}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-bold text-white">{g.employeeId}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{g.month} {g.year}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300 truncate max-w-xs" title={g.details}>{g.details || '-'}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm">
                         <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
                           g.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-400' : 
                           g.status === 'Rejected' ? 'bg-rose-500/10 text-rose-400' : 'bg-amber-500/10 text-amber-400'
@@ -111,7 +111,7 @@ export default function GiftsListReport() {
                           {g.status}
                         </span>
                       </td>
-                      <td className="px-4 py-2.5 text-sm text-slate-400">{new Date(g.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-400">{new Date(g.createdAt).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
                     </tr>
                   ))
                 )}
@@ -119,7 +119,7 @@ export default function GiftsListReport() {
             </table>
           </div>
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
-            <button onClick={exportToExcel} disabled={gifts.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
+            <button onClick={exportToExcel} disabled={gifts.length === 0} className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
               <Download size={16} /> Export
             </button>
           </div>
