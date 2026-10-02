@@ -4124,7 +4124,8 @@ router.get('/admin/debug-data', async (req, res) => {
 
 router.get('/admin/debug-date-migration', async (req, res) => {
     try {
-        const { sequelize, Op } = require('../db');
+        const { sequelize } = require('../db');
+        const { Op } = require('sequelize');
         let totalUpdated = 0;
         const models = Object.values(sequelize.models);
         for (let model of models) {
