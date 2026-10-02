@@ -93,7 +93,7 @@ export default function DoctorsListReport() {
             <div className="w-full md:w-1/2">
               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select State</h2>
               <CustomLocationSelect 
-                options={[...new Set((states || []).map((s: any) => s.state))]} 
+                options={[...new Set((states || []).map((s: any) => s.stateName))]} 
                 selectedValue={selectedState} 
                 onChange={(val) => { setSelectedState(val); setSelectedHq(''); }} 
                 placeholder="Search State..." 
