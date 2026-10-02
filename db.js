@@ -120,6 +120,7 @@ async function syncDatabase() {
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lat2" DOUBLE PRECISION;',
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lng2" DOUBLE PRECISION;',
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "geoAddress2" VARCHAR(255);',
+            'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "city" VARCHAR(255);',
             'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lat1" DOUBLE PRECISION;',
             'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lng1" DOUBLE PRECISION;',
             'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "geoAddress1" VARCHAR(255);',

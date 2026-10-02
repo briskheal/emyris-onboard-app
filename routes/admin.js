@@ -5362,10 +5362,11 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.proprietorName = d['Proprietor Name'] || d.proprietorName || d.Name || d.name || '';
         row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
         row.email = d.Email || d.email || '';
+          row.city = d.City || d.city || '';
         row.address = d.Address || d.address || '';
         row.workingArea = d['Working Area'] || d.workingArea || '';
         row.birthday = d.Birthday || d.birthday || '';
-        row.certifications = d.Certifications || d.certifications || '';
+          row.certifications = d.Certifications || d.certifications || d.Certification || d.certification || '';
         row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
       if (type === 'Stockist') {
