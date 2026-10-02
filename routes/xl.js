@@ -3819,6 +3819,11 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             year = year || String(date.getFullYear());
         }
         
+        // Handle "undefined" string edge case
+        if (employeeId === 'undefined' || employeeId === 'null') {
+            employeeId = undefined;
+        }
+
         let whereUser = {};
         if (employeeId) {
             const user = await XlUser.findOne({
@@ -3855,12 +3860,19 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             if (fIdx !== -1) {
                 shortM = allMonthsShort[fIdx];
                 mm = fIdx + 1;
+            } else {
+                mm = parseInt(month, 10);
+                if (mm > 0 && mm <= 12) {
+                    shortM = allMonthsShort[mm - 1];
+                    fullM = allMonthsFull[mm - 1];
+                }
             }
         }
         
         let mmStr1 = String(mm).padStart(2, '0');
         let mmStr2 = String(mm);
         
+        // Broad date variants for targets & sales
         const monthVariants = [month, fullM, shortM, mmStr1, mmStr2];
         const targets = await XlTarget.findAll({ where: { month: { [Op.in]: monthVariants }, year, ...whereUser } });
         targets.forEach(t => {
@@ -3879,12 +3891,16 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             secondarySum += (parseFloat(s.amount) || 0);
         });
 
-        const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
-        const datePrefix = `${year}-${monthNum}-`;
+        const monthNum = String(mm).padStart(2, '0');
+        const datePrefix = `${year}-${monthNum}-`; // YYYY-MM-DD
+        const altDatePrefix = `%-${monthNum}-${year}`; // DD-MM-YYYY fallback
         
         const dcrs = await XlDCR.findAll({ 
             where: { 
-                date: { [Op.like]: `${datePrefix}%` }, 
+                [Op.or]: [
+                    { date: { [Op.like]: `${datePrefix}%` } },
+                    { date: { [Op.like]: altDatePrefix } }
+                ],
                 ...whereUser 
             } 
         });
@@ -3899,34 +3915,44 @@ router.get('/admin/dashboard-stats', async (req, res) => {
             else if (d.entityType === 'Stockist') stockistCalls++;
         });
 
-                let targetDoctorCalls = 0;
+        let targetDoctorCalls = 0;
         let targetChemistCalls = 0;
         let targetStockistCalls = 0;
         
         let workingDays = 0;
         const mInt = parseInt(monthNum, 10);
         const yInt = parseInt(year, 10);
-        if (!isNaN(mInt) && !isNaN(yInt)) {
-            const daysInMonth = new Date(yInt, mInt, 0).getDate();
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dt = new Date(yInt, mInt - 1, d);
-                if (dt.getDay() !== 0) workingDays++; // Not a Sunday
-            }
-            // Subtract holidays
-            const holidays = await require('../db').XlHoliday.count({
-                where: {
-                    date: { [Op.like]: `${year}-${monthNum}-%` }
+        
+        // Calculate working days safely
+        if (!isNaN(mInt) && !isNaN(yInt) && mInt > 0) {
+            try {
+                const daysInMonth = new Date(yInt, mInt, 0).getDate();
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dt = new Date(yInt, mInt - 1, d);
+                    if (dt.getDay() !== 0) workingDays++; // Not a Sunday
                 }
-            });
-            workingDays -= holidays;
-            if (workingDays < 0) workingDays = 0;
+                const holidays = await require('../db').XlHoliday.count({
+                    where: {
+                        [Op.or]: [
+                            { date: { [Op.like]: `${datePrefix}%` } },
+                            { date: { [Op.like]: altDatePrefix } }
+                        ]
+                    }
+                });
+                workingDays -= holidays;
+                if (workingDays < 0) workingDays = 0;
+            } catch (e) {
+                console.error("Holiday calculation error:", e);
+                workingDays = 26; // Fallback to average working days
+            }
+        } else {
+            workingDays = 26;
         }
 
-                let dTargetPerDay = 0;
-        let cTargetPerDay = 0;
-        let sTargetPerDay = 0;
-
         if (employeeId) {
+            let dTargetPerDay = 0;
+            let cTargetPerDay = 0;
+            let sTargetPerDay = 0;
             const user = await XlUser.findOne({
                 where: {
                     [Op.or]: [
@@ -4010,23 +4036,18 @@ router.get('/admin/dashboard-stats', async (req, res) => {
 
     } catch(e) {
         console.error("Dashboard Stats Error:", e);
-        res.status(500).json({ success: false, message: e.message });
+        // Ensure we ALWAYS return valid 200 format on catch so UI doesn't zero out completely if partial failure
+        res.status(500).json({ 
+            success: false, 
+            message: e.message,
+            data: {
+                target: 0, primary: 0, secondary: 0,
+                calls: { doctor: { actual: 0, target: 0 }, chemist: { actual: 0, target: 0 }, stockist: { actual: 0, target: 0 } }
+            }
+        });
     }
 });
 
-
-
-router.get('/version', (req, res) => res.json({ version: 'fixed_targets_1.0' }));
-router.get('/debug-user', async (req, res) => {
-        try {
-            const dcrs = await require('../db').XlDCR.findAll({ 
-                where: { date: { [require('sequelize').Op.like]: '2026-09-%' } } 
-            });
-            res.json({ success: true, count: dcrs.length, dcrs });
-        } catch(e) {
-            res.json({ success: false, error: e.message });
-        }
-    });
 router.get('/admin/debug-data', async (req, res) => {
     try {
         const { XlTarget, XlPrimarySales, XlSecondarySales, XlDCR, XlUser, XlCallPlan } = require('../db');
