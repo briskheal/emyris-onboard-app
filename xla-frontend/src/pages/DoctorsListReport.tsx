@@ -209,11 +209,6 @@ export default function DoctorsListReport() {
                     </select>
                 </div>
               </div>
-            </div>
-
-          
-        </div>
-      </div>
     </div>
   );
 }

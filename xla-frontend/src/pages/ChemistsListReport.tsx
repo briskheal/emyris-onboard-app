@@ -198,8 +198,6 @@ export default function ChemistsListReport() {
               <Download size={16} /> Export
             </button>
           </div>
-        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }

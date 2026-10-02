@@ -200,8 +200,6 @@ export default function StockistsListReport() {
               <Download size={16} /> Export
             </button>
           </div>
-        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
