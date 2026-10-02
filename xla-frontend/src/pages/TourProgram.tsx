@@ -134,8 +134,8 @@ export default function TourProgramReport() {
 
           formatted.push({
              id: idx++,
-             date: new Date(dStr).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-'),
-             day: new Date(dStr).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-'),
+             date: dStr,
+             day: new Date(dStr).toLocaleDateString('en-US', { weekday: 'long' }),
              name: e.employeeName || selectedUserObj.firstName ? `${selectedUserObj.firstName} ${selectedUserObj.lastName}` : selectedUser,
              areaType: e.type || e.workAreaType || e.areaType || '-',
              areas: e.toMarket || e.workingArea || e.workArea || '-',

@@ -177,8 +177,8 @@ export default function CallReport() {
              daySubmitted: att ? att.daySubmitted : false,
              status: dcrsForDay.length > 0 ? dcrsForDay[0].status : (tp.tpStatus || tp.status || 'Pending'),
              approvedBy: (dcrsForDay.length > 0 && dcrsForDay[0].approvedBy) ? dcrsForDay[0].approvedBy : tp.approvedBy,
-             date: new Date(dStr).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-'),
-             day: new Date(dStr).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-'),
+             date: dStr,
+             day: new Date(dStr).toLocaleDateString('en-US', { weekday: 'long' }),
              name: name,
              activity: finalActivity,
              isHoliday: !!holiday,
@@ -372,7 +372,7 @@ export default function CallReport() {
                 <>
                   <thead>
                     <tr className="bg-[#171f3a] border-b border-[#2d2f45]">
-                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Sr</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Date</th>
                       <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Submitter</th>
                       <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">ActivityType</th>
                       <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">AreaType</th>
@@ -461,7 +461,7 @@ export default function CallReport() {
                 <>
                   <thead>
                     <tr className="bg-[#171f3a] border-b border-[#2d2f45]">
-                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Sr</th>
+                      <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">Date</th>
                       <th className="px-4 py-3 text-[11px] font-bold text-white border-r border-[#2d2f45] whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <span className="text-slate-400">📅</span> Day
