@@ -131,14 +131,14 @@ export default function StockistsListReport() {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
-                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
                   <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">Business Name ↑</th>
-                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Proprietor Name ↑</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Proprietor Name ↑</th>
                   <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Address ↑</th>
-                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact ↑</th>
-                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">HQ ↑</th>
-                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Working Area</th>
-                  <th className="border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact ↑</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">HQ ↑</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Working Area</th>
+                  <th className="w-[1%] whitespace-nowrap border border-[#3b3b5a] px-3 py-1.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
                 </tr>
               </thead>
               <tbody>
