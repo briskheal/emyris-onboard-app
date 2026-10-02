@@ -22,7 +22,7 @@ export default function GeoFencingListReport() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#1e1e2d] relative font-sans overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-screen bg-[#1e1e2d] relative font-sans">
       <div className="p-4 md:p-6 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
         <div className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider text-sm mb-4">
           <ChevronLeft size={18} /> GEO FENCING

@@ -17,9 +17,9 @@ export default function ListsLayout() {
   ];
 
   return (
-    <div className="min-h-full bg-slate-900 flex text-slate-100 font-sans h-screen">
+    <div className="min-h-screen bg-slate-900 flex text-slate-100 font-sans">
       {/* Sidebar */}
-      <div className="w-64 bg-slate-800/80 border-r border-slate-700/50 hidden md:flex flex-col h-full shrink-0">
+      <div className="w-64 bg-slate-800/80 border-r border-slate-700/50 hidden md:flex flex-col shrink-0 sticky top-0 h-screen overflow-y-auto">
         <div className="p-4 border-b border-slate-700/50">
           <button 
             onClick={() => navigate('/utilities')}
@@ -51,7 +51,7 @@ export default function ListsLayout() {
       {/* Mobile Sidebar Trigger (Optional, for now just show content) */}
       
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden relative bg-[#1e1e2d]">
+      <div className="flex-1 flex flex-col min-w-0 relative bg-[#1e1e2d]">
         <Outlet />
       </div>
     </div>
