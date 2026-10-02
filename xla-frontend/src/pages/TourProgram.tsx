@@ -248,6 +248,9 @@ export default function TourProgramReport() {
                     <td className="px-4 py-3 text-xs text-slate-300 text-center"><span onClick={() => setSelectedView(row)} className="cursor-pointer hover:text-white text-slate-400 text-lg">👁</span></td>
                   </tr>
                 ))}
+                <tr className="bg-[#171f3a] border-b-2 border-sky-500">
+                  <td colSpan={10} className="py-0"></td>
+                </tr>
               </tbody>
             </table>
           </div>
