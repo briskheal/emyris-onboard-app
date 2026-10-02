@@ -88,7 +88,7 @@ export default function StockistsListReport() {
   
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#1e1e2d] relative font-sans overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-screen bg-[#1e1e2d] relative font-sans">
       <div className="p-4 md:p-6 shrink-0">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-4xl">
             <div>
@@ -119,15 +119,14 @@ export default function StockistsListReport() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden flex flex-col p-4 md:p-6">
+      <div className="p-4 md:p-6">
         <div className="flex justify-between items-center mb-4">
           <span className="text-xs font-black text-slate-400 uppercase tracking-widest">
             SHOWING ({filteredList.length}) ENTRIES
           </span>
         </div>
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          <div className="overflow-x-auto overflow-y-auto flex-1">
+        <div className="overflow-x-auto w-full pb-10">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
