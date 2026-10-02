@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "echo 'Using pre-compiled frontend/dist bundle'",
+    "build": "cd xla-frontend && npm install && npm run build",
     "build:local": "cd frontend && npm install && npm run build"
   },
   "engines": {
