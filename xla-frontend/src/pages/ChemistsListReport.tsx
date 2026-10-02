@@ -129,14 +129,14 @@ export default function ChemistsListReport() {
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
-                  <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                  <th className="px-4 py-4 text-[10px] font-black text-sky-400 uppercase tracking-widest">Business Name ↑</th>
-                  <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Proprietor Name ↑</th>
-                  <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Address ↑</th>
-                  <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact ↑</th>
-                  <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">HQ ↑</th>
-                  <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Working Area</th>
-                  <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-sky-400 uppercase tracking-widest">Business Name ↑</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Proprietor Name ↑</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Address ↑</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contact ↑</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">HQ ↑</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Working Area</th>
+                  <th className="px-4 py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">View</th>
                 </tr>
               </thead>
               <tbody>
@@ -147,14 +147,14 @@ export default function ChemistsListReport() {
                 ) : (
                   filteredList.map((c, idx) => (
                     <tr key={c._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                      <td className="px-4 py-4 text-sm font-bold text-white">{c.businessName}</td>
-                      <td className="px-4 py-4 text-sm text-slate-300">{c.proprietorName || '-'}</td>
-                      <td className="px-4 py-4 text-sm text-slate-300">{c.address || '-'}</td>
-                      <td className="px-4 py-4 text-sm text-slate-300">{c.mobile || c.contact || '-'}</td>
-                      <td className="px-4 py-4 text-sm text-slate-300">{c.headquarter || '-'}</td>
-                      <td className="px-4 py-4 text-sm text-sky-400">{c.workingArea || '-'}</td>
-                      <td className="px-4 py-4 text-center">
+                      <td className="px-4 py-2.5 text-sm font-medium text-slate-400">{idx + 1}</td>
+                      <td className="px-4 py-2.5 text-sm font-bold text-white">{c.businessName}</td>
+                      <td className="px-4 py-2.5 text-sm text-slate-300">{c.proprietorName || '-'}</td>
+                      <td className="px-4 py-2.5 text-sm text-slate-300">{c.address || '-'}</td>
+                      <td className="px-4 py-2.5 text-sm text-slate-300">{c.mobile || c.contact || '-'}</td>
+                      <td className="px-4 py-2.5 text-sm text-slate-300">{c.headquarter || '-'}</td>
+                      <td className="px-4 py-2.5 text-sm text-sky-400">{c.workingArea || '-'}</td>
+                      <td className="px-4 py-2.5 text-center">
                         <button 
                           onClick={() => setViewingChemist(c)} 
                           className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm mx-auto block"
@@ -169,7 +169,7 @@ export default function ChemistsListReport() {
             </table>
             </div>
 
-            <div className="flex-shrink-0 flex flex-wrap items-center justify-between py-4 z-20">
+            <div className="flex-shrink-0 flex flex-wrap items-center justify-between py-2.5 z-20">
               <div className="flex items-center gap-4 mb-2 sm:mb-0">
                 <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm">
                     &lt; Prev
@@ -195,7 +195,7 @@ export default function ChemistsListReport() {
               </div>
             </div>
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
-            <button onClick={exportToExcel} disabled={filteredList.length === 0} className="flex items-center gap-2 px-6 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
+            <button onClick={exportToExcel} disabled={filteredList.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-bold text-xs uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50">
               <Download size={16} /> Export
             </button>
           </div>
