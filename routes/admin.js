@@ -5381,11 +5381,16 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.name = d['Proprietor Name'] || d.name || d.Name || '';
         row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
         row.email = d.Email || d.email || '';
-        row.gst = String(d.GST || d.gst || '');
-        row.drugLicense = String(d['Drug License'] || d.drugLicense || '');
+          row.certifications = d.Certifications || d.certifications || d.Certification || d.certification || '';
+          row.gst = String(d['GST Number'] || d.GST || d.gst || '');
+          row.drugLicense = String(d['Drug License Number'] || d['Drug License'] || d.drugLicense || '');
+          row.drugExpiryDate = String(d['Drug Expiry Number'] || d['Drug Expiry Date'] || d.drugExpiryDate || '');
+          row.establishmentDate = String(d['Establishment Date'] || d.establishmentDate || '');
+          row.city = d.City || d.city || '';
+
         row.address = d.Address || d.address || '';
         row.workingArea = d['Working Area'] || d.workingArea || '';
-        row.certifications = d.Certifications || d.certifications || '';
+
         row.extraInformation = d['Extra Information'] || d.extraInformation || '';
       }
       

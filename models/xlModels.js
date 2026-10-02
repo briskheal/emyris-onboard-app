@@ -167,6 +167,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         establishmentDate: { type: DataTypes.STRING },
         mobile: { type: DataTypes.STRING },
         address: { type: DataTypes.TEXT },
+        city: { type: DataTypes.STRING },
         headquarter: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('headquarter', val.toUpperCase().trim()); } },
         workingArea: { type: DataTypes.STRING },
         extraInformation: { type: DataTypes.TEXT },
