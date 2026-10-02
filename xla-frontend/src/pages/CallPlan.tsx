@@ -134,7 +134,7 @@ export default function CallPlan() {
               <tbody className="divide-y divide-slate-700/30">
                 {days.map((item, idx) => (
                   <tr key={idx} className="hover:bg-slate-800/50 transition-colors">
-                    <td className="p-4 text-sm font-semibold text-slate-300 text-center bg-slate-900/20">{formatDDMMYYYY(item.date)}</td>
+                    <td className="p-4 text-sm font-semibold text-slate-300 text-center bg-slate-900/20">{item.date}</td>
                     <td className="p-4 text-sm font-bold text-sky-400">{item.fullDate}</td>
                     <td className="p-4 text-sm font-medium text-slate-300">{item.day === 'SAT' ? 'Saturday' : item.day === 'SUN' ? 'Sunday' : 'Monday'}</td>
                     <td className="p-4 text-sm font-medium text-slate-500 italic">No Data</td>
@@ -162,7 +162,7 @@ export default function CallPlan() {
               <div key={idx} className="bg-slate-800 border border-slate-700 rounded-2xl flex overflow-hidden shadow-lg">
                 {/* Left Date Block */}
                 <div className="w-14 flex flex-col items-center justify-center bg-slate-700/50 py-3 border-r border-slate-700">
-                  <span className="text-xl font-black text-white leading-none">{formatDDMMYYYY(item.date)}</span>
+                  <span className="text-xl font-black text-white leading-none">{item.date}</span>
                   <span className="text-[10px] font-bold text-slate-400 uppercase mt-1">{item.day}</span>
                 </div>
                 
