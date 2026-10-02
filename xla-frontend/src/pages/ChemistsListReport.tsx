@@ -145,9 +145,9 @@ export default function ChemistsListReport() {
                 ) : filteredList.length === 0 ? (
                   <tr><td colSpan={8} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Chemists Found</td></tr>
                 ) : (
-                  filteredList.map((c, idx) => (
+                  paginatedList.map((c, idx) => (
                     <tr key={c._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{idx + 1}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-bold text-white">{c.businessName}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{c.proprietorName || '-'}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{c.address || '-'}</td>

@@ -161,9 +161,9 @@ export default function DoctorsListReport() {
                     <td colSpan={9} className="p-8 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Doctors Found</td>
                   </tr>
                 ) : (
-                  filteredList.map((d, idx) => (
+                  paginatedList.map((d, idx) => (
                     <tr key={d._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{idx + 1}</td>
+                      <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-medium text-slate-400">{(currentPage - 1) * itemsPerPage + idx + 1}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm font-bold text-white">{d.name}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.degree || '-'}</td>
                       <td className="border border-[#3b3b5a] px-3 py-1.5 text-sm text-slate-300">{d.specialization || '-'}</td>
