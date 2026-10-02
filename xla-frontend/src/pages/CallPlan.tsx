@@ -2,21 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, ChevronDown, UserPlus, Plus, Eye, Trash2, CheckCircle2, XCircle, Clock, CalendarDays, Settings as SettingsIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-function formatDDMMYYYY(dateStr: string) {
-  if (!dateStr) return '-';
-  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
-  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
-      const parts = dateStr.split('T')[0].split('-');
-      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
-  }
-  try {
-      const d = new Date(dateStr);
-      if (!isNaN(d.getTime())) {
-          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
-      }
-  } catch (e) {}
-  return dateStr;
-}
+
 
 export default function CallPlan() {
   const navigate = useNavigate();
