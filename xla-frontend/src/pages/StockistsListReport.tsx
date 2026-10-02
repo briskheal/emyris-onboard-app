@@ -25,8 +25,8 @@ export default function StockistsListReport() {
         axios.get('/api/admin/locations/states'),
         axios.get('/api/admin/locations/hqs')
       ]);
-      if (stateRes.data.success) setStates(stateRes.data.data);
-      if (hqRes.data.success) setHqs(hqRes.data.data);
+      if (stateRes.data.success) setStates(stateRes.data.states || []);
+      if (hqRes.data.success) setHqs(hqRes.data.hqs || []);
     } catch (e) {
       console.error(e);
     }
@@ -84,12 +84,12 @@ export default function StockistsListReport() {
             <div className="w-full md:w-1/2">
               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select State</h2>
               <input list="state-list" placeholder="Search State..." value={selectedState} onChange={(e) => { setSelectedState(e.target.value); setSelectedHq(''); }} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg" />
-              <datalist id="state-list">{states.map((s: any) => <option key={s._id} value={s.state} />)}</datalist>
+              <datalist id="state-list">{(states || []).map((s: any) => <option key={s._id} value={s.state} />)}</datalist>
             </div>
             <div className="w-full md:w-1/2">
               <h2 className="text-sm font-bold text-slate-300 uppercase tracking-widest mb-2">Select HQ</h2>
               <input list="hq-list" placeholder="Search Headquarter..." value={selectedHq} onChange={(e) => { setSelectedHq(e.target.value); fetchStockists(e.target.value); }} className="w-full bg-[#27273f] border border-[#3b3b5a] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors shadow-lg" />
-              <datalist id="hq-list">{hqs.filter((h: any) => !selectedState || h.state === selectedState).map((h: any) => <option key={h._id} value={h.hqName} />)}</datalist>
+              <datalist id="hq-list">{(hqs || []).filter((h: any) => !selectedState || h.state === selectedState).map((h: any) => <option key={h._id} value={h.hqName} />)}</datalist>
             </div>
           </div>
           <div className="w-full md:w-1/3 pt-6 md:pt-0">
