@@ -14,6 +14,12 @@ export default function DoctorsListReport() {
   const [selectedHq, setSelectedHq] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewingDoctor, setViewingDoctor] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedState, selectedHq]);
 
   useEffect(() => {
     fetchLocations();
@@ -49,8 +55,11 @@ export default function DoctorsListReport() {
   };
 
   
+  const totalPages = Math.max(1, Math.ceil(filteredList.length / itemsPerPage));
+  const paginatedList = filteredList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const exportToExcel = () => {
-    const dataToExport = filteredList.map((d, i) => ({
+    const dataToExport = paginatedList.map((d, i) => ({
       'Sr no.': i + 1,
       Name: d.name,
       Degree: d.degree,
@@ -127,8 +136,8 @@ export default function DoctorsListReport() {
           </span>
         </div>
 
-        <div className="flex-1 bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden flex flex-col">
-          <div className="overflow-x-auto flex-1">
+        <div className="flex-1 bg-[#151521] overflow-hidden flex flex-col">
+          <div className="overflow-x-auto overflow-y-auto flex-1">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#1c1c2e] border-b border-[#3b3b5a]">
@@ -176,7 +185,33 @@ export default function DoctorsListReport() {
                 )}
               </tbody>
             </table>
-          </div>
+            </div>
+
+            <div className="flex-shrink-0 flex flex-wrap items-center justify-between py-4 z-20">
+              <div className="flex items-center gap-4 mb-2 sm:mb-0">
+                <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1.5 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                    &lt; Prev
+                </button>
+                <span className="text-sm text-slate-400 font-medium">Page {currentPage} of {totalPages}</span>
+                <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1.5 bg-[#1e1e2d] border border-[#3b3b5a] rounded text-slate-300 hover:text-white disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                    Next &gt;
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-6">
+                <button onClick={exportToExcel} className="flex items-center gap-2 bg-[#2d2d44] hover:bg-[#3b3b5a] text-slate-300 hover:text-white px-4 py-2 rounded transition-colors text-sm font-medium">
+                    <Download size={16} /> Export
+                </button>
+                <div className="flex items-center gap-2 text-sm">
+                    <span className="text-slate-400">Show</span>
+                    <select value={itemsPerPage} onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }} className="bg-[#1e1e2d] border border-[#3b3b5a] rounded px-2 py-1 text-slate-300 focus:outline-none">
+                        {[10, 20, 50, 100, 200, 500, 1000].map(n => (
+                            <option key={n} value={n}>{n}</option>
+                        ))}
+                    </select>
+                </div>
+              </div>
+            </div>
 
           {/* Export Footer */}
           <div className="p-4 border-t border-[#3b3b5a] bg-[#1c1c2e] flex justify-end">
