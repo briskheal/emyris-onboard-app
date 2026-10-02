@@ -4122,7 +4122,7 @@ router.get('/admin/debug-data', async (req, res) => {
 });
 
 
-router.get('/admin/trigger-date-migration', async (req, res) => {
+router.get('/admin/debug-date-migration', async (req, res) => {
     try {
         const { sequelize, Op } = require('../db');
         let totalUpdated = 0;
