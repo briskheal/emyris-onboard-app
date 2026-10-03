@@ -53,16 +53,23 @@ function App() {
   return (
     <BrowserRouter basename="/xla">
       <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/admin/locations" element={<ManageLocations />} />
-          <Route path="/admin/users" element={<ManageUsers />} />
-          <Route path="/admin/user-performance-analysis" element={<UserPerformanceAnalysis />} />
-          <Route path="/admin/products" element={<ManageProducts />} />`n          <Route path="/admin/leave" element={<ManageLeave />} />
-          <Route path="/admin/expenses" element={<ManageAllowances />} />
-          <Route path="/admin/dcs" element={<ManageDCS />} />
-          <Route path="/admin/approvals" element={<Approvals />} />\n          <Route path="/extras/settings" element={<Settings />} />
-                    <Route path="utilities/lists" element={<ListsLayout />}>
+        <Route path="/login" element={<Login />} />
+        
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="admin" element={<AdminMenu />} />
+          <Route path="admin/locations" element={<ManageLocations />} />
+          <Route path="admin/users" element={<ManageUsers />} />
+          <Route path="admin/user-performance-analysis" element={<UserPerformanceAnalysis />} />
+          <Route path="admin/products" element={<ManageProducts />} />
+          <Route path="admin/leave" element={<ManageLeave />} />
+          <Route path="admin/expenses" element={<ManageAllowances />} />
+          <Route path="admin/dcs" element={<ManageDCS />} />
+          <Route path="admin/approvals" element={<Approvals />} />
+
+          <Route path="utilities" element={<Utilities />} />
+          <Route path="utilities/lists" element={<ListsLayout />}>
             <Route index element={<Navigate to="doctors" replace />} />
             <Route path="doctors" element={<DoctorsListReport />} />
             <Route path="chemists" element={<ChemistsListReport />} />
@@ -73,15 +80,10 @@ function App() {
             <Route path="gifts" element={<GiftsListReport />} />
             <Route path="routes" element={<RoutesListReport />} />
           </Route>
-          <Route path="/reports/missed-reports" element={<MissedReports />} />
-            <Route path="/extras/primary-sales" element={<PrimarySales />} />
-          <Route path="/extras/primary-sales/edit/:id" element={<PrimarySales />} />
-          <Route path="/extras/primary-sales/all" element={<AllPrimarySales />} />
-          <Route path="/extras/secondary" element={<SecondarySales />} />
-            <Route path="/extras/secondary/all" element={<AllSecondarySales />} />
-          <Route path="/extras/secondary/edit/:id" element={<SecondarySales />} />
-          <Route path="/" element={<Layout />}>
-            <Route path="dashboard" element={<Dashboard />} />
+          
+          <Route path="reports/missed-reports" element={<MissedReports />} />
+          <Route path="report" element={<CallReport />} />
+          
           <Route path="extras" element={<Extras />} />
           <Route path="extras/tour-program" element={<TourProgram />} />
           <Route path="extras/call-plan" element={<CallPlan />} />
@@ -92,19 +94,22 @@ function App() {
           <Route path="extras/settings" element={<Settings />} />
           <Route path="extras/performance" element={<PerformanceMenu />} />
           <Route path="extras/e-detailing" element={<EDetailing />} />
-          <Route path="report" element={<CallReport />} />
-          <Route path="admin" element={<AdminMenu />} />
-          
-          <Route path="utilities" element={<Utilities />} />
-
-          <Route path="hierarchy" element={<Hierarchy />} />
-          <Route path="todays-activity" element={<TodaysActivity />} />
-          <Route path="consolidated-activity" element={<ConsolidatedActivity />} />
           <Route path="extras/attendance" element={<Attendance />} />
           <Route path="extras/reminders" element={<Reminders />} />
           <Route path="extras/crm" element={<CRM />} />
           <Route path="extras/profit" element={<ProfitAnalysis />} />
           <Route path="extras/samples" element={<SampleManagement />} />
+          
+          <Route path="extras/primary-sales" element={<PrimarySales />} />
+          <Route path="extras/primary-sales/edit/:id" element={<PrimarySales />} />
+          <Route path="extras/primary-sales/all" element={<AllPrimarySales />} />
+          <Route path="extras/secondary" element={<SecondarySales />} />
+          <Route path="extras/secondary/all" element={<AllSecondarySales />} />
+          <Route path="extras/secondary/edit/:id" element={<SecondarySales />} />
+
+          <Route path="hierarchy" element={<Hierarchy />} />
+          <Route path="todays-activity" element={<TodaysActivity />} />
+          <Route path="consolidated-activity" element={<ConsolidatedActivity />} />
         </Route>
       </Routes>
     </BrowserRouter>
@@ -112,6 +117,3 @@ function App() {
 }
 
 export default App;
-
-
-
