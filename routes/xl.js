@@ -4208,15 +4208,27 @@ router.get('/missed-reports', async (req, res) => {
         if (entityType === 'Chemist') EntityModel = XlChemist;
         if (entityType === 'Stockist') EntityModel = XlStockist;
 
-        let entityWhere = { isActive: true };
-        if (userAllotted && userAllotted !== 'all') {
-            entityWhere.userAllotted = userAllotted;
-        }
-
-        const entities = await EntityModel.findAll({ where: entityWhere, raw: true });
         const allUsers = await XlUser.findAll({ raw: true });
         const userMap = {};
         allUsers.forEach(u => userMap[u._id] = `${u.firstName} ${u.lastName}`.trim());
+
+        let entityWhere = { isActive: true };
+        let actualEmployeeId = userAllotted;
+
+        if (userAllotted && userAllotted !== 'all') {
+            const userObj = allUsers.find(u => u._id === userAllotted);
+            if (userObj) actualEmployeeId = userObj.employeeId;
+
+            entityWhere = {
+                ...entityWhere,
+                [Op.or]: [
+                    { userAllotted: userAllotted },
+                    { employeeId: actualEmployeeId }
+                ]
+            };
+        }
+
+        const entities = await EntityModel.findAll({ where: entityWhere, raw: true });
 
         let dcrWhere = {
             date: {
@@ -4227,8 +4239,7 @@ router.get('/missed-reports', async (req, res) => {
         };
         
         if (userAllotted && userAllotted !== 'all' && reportType !== 'Userwise') {
-            const userObj = allUsers.find(u => u._id === userAllotted);
-            dcrWhere.employeeId = userObj ? userObj.employeeId : userAllotted;
+            dcrWhere.employeeId = actualEmployeeId;
         }
 
         const dcrs = await XlDCR.findAll({ where: dcrWhere, raw: true });
