@@ -3,6 +3,7 @@ import { Download, ChevronLeft, Target, ShieldAlert, XCircle, Calendar, ChevronR
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import CustomUserSelect from '../components/CustomUserSelect';
 
 interface MissedReportData {
   _id: string;
@@ -51,7 +52,7 @@ export default function MissedReports() {
 
   const [selectedUser, setSelectedUser] = useState('all');
   
-  const [users, setUsers] = useState<{_id: string, name: string}[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
   const [data, setData] = useState<MissedReportData[]>([]);
@@ -76,11 +77,22 @@ export default function MissedReports() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('/api/xl/users', {
+      const res = await axios.get('/api/admin/users', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.data.success) {
-        setUsers(res.data.data.map((u: any) => ({ _id: u._id, name: `${u.firstName} ${u.lastName}` })));
+        const mapped = res.data.users.map((u: any) => ({
+          ...u,
+          _realEmployeeId: u.employeeId,
+          employeeId: u._id // override to make CustomUserSelect use _id for selection
+        }));
+        mapped.unshift({
+          employeeId: 'all',
+          firstName: 'All',
+          lastName: 'Users',
+          designation: 'View all users'
+        });
+        setUsers(mapped);
       }
     } catch (e) {
       console.error(e);
@@ -310,12 +322,9 @@ export default function MissedReports() {
           )}
 
           {reportType !== 'Userwise Report' && (
-            <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+            <div className="flex flex-col gap-2 flex-1 min-w-[200px] z-50">
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select User</label>
-              <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full">
-                <option value="all">All Users</option>
-                {users.map(u => <option key={u._id} value={u._id}>{u.name}</option>)}
-              </select>
+              <CustomUserSelect users={users} selectedUser={selectedUser} onChange={setSelectedUser} />
             </div>
           )}
         </div>
