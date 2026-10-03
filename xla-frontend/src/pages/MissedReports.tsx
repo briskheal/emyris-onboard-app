@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, ChevronLeft, Target, ShieldAlert, XCircle } from 'lucide-react';
+import { Download, ChevronLeft, Target, ShieldAlert, XCircle, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
@@ -37,6 +37,7 @@ export default function MissedReports() {
   const [selectedMonth, setSelectedMonth] = useState((currentDate.getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
   const [selectedUser, setSelectedUser] = useState('all');
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   
   const [users, setUsers] = useState<{_id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(false);
@@ -184,16 +185,36 @@ export default function MissedReports() {
             </select>
           </div>
 
-          <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+          <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Month & Year</label>
-            <div className="flex gap-2">
-              <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full">
-                {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
-              </select>
-              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full">
-                {years.map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+            <div 
+              onClick={() => setShowMonthPicker(!showMonthPicker)}
+              className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-indigo-500 transition-colors"
+            >
+              <span>{months.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
+              <Calendar size={16} className="text-slate-400" />
             </div>
+            {showMonthPicker && (
+              <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-4">
+                 <div className="flex justify-between items-center mb-4">
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedYear((parseInt(selectedYear)-1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronLeft size={16} /></button>
+                    <span className="font-bold text-white">{selectedYear}</span>
+                    <button onClick={(e) => { e.stopPropagation(); setSelectedYear((parseInt(selectedYear)+1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronRight size={16} /></button>
+                 </div>
+                 <div className="grid grid-cols-3 gap-2">
+                    {months.map((m) => {
+                       const isSel = selectedMonth === m.value;
+                       return (
+                         <div 
+                            key={m.value} 
+                            onClick={() => { setSelectedMonth(m.value); setShowMonthPicker(false); }}
+                            className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}`}
+                         >{m.label}</div>
+                       )
+                    })}
+                 </div>
+              </div>
+            )}
           </div>
 
           {reportType !== 'Userwise Report' && (
