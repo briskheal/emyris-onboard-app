@@ -99,7 +99,6 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         mobile: { type: DataTypes.STRING },
         clinicContact: { type: DataTypes.STRING },
         contact: { type: DataTypes.STRING },
-        doctorCode: { type: DataTypes.STRING },
         email: { type: DataTypes.STRING },
         category: { type: DataTypes.STRING },
         uid: { type: DataTypes.STRING },

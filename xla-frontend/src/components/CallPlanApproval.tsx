@@ -38,9 +38,9 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     axios.get('/api/admin/users').then(res => { if(res.data.success) setAllUsers(res.data.users) });
   }, []);
 
-  const doctorMap = useMemo(() => new Map(allDoctors.map(d => [d.doctorCode || d._id, d.doctorName])), [allDoctors]);
-  const chemistMap = useMemo(() => new Map(allChemists.map(c => [c.chemistCode || c._id, c.chemistName])), [allChemists]);
-  const stockistMap = useMemo(() => new Map(allStockists.map(s => [s.stockistCode || s._id, s.stockistName])), [allStockists]);
+  const doctorMap = useMemo(() => new Map(allDoctors.map(d => [d.uid || d._id, d.doctorName])), [allDoctors]);
+  const chemistMap = useMemo(() => new Map(allChemists.map(c => [c.uid || c._id, c.chemistName])), [allChemists]);
+  const stockistMap = useMemo(() => new Map(allStockists.map(s => [s.uid || s._id, s.stockistName])), [allStockists]);
 
   // Filter by user
   const filteredItems = useMemo(() => {

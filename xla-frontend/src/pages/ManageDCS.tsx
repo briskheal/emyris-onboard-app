@@ -315,7 +315,7 @@ export default function ManageDCS() {
   const CreateDoctorTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
     const [formData, setFormData] = useState(editData || {
       name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '',
-      mobile: '', clinicContact: '', doctorCode: '', email: '', category: '', userAllotted: '',
+      mobile: '', clinicContact: '', email: '', category: '', userAllotted: '',
       headquarter: '', workingArea: '', address: '', extraInformation: ''
     });
 
@@ -328,7 +328,7 @@ export default function ManageDCS() {
           if(res.data.success) { alert('Doctor updated successfully'); fetchData(); if(onCancel) onCancel(); }
         } else {
           const res = await axios.post('/api/admin/dcs/doctors', formData);
-          if(res.data.success) { alert('Doctor added successfully'); fetchData(); setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', doctorCode: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: ''}); }
+          if(res.data.success) { alert('Doctor added successfully'); fetchData(); setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: ''}); }
         }
       } catch (e: any) { alert(editData ? 'Error updating doctor: ' + (e.response?.data?.message || e.message) : 'Error adding doctor'); } finally { setLoading(false); }
     };
@@ -388,7 +388,7 @@ export default function ManageDCS() {
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">MOBILE NUMBER *</label><input required value={formData.mobile} onChange={e=>setFormData({...formData, mobile: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Mobile Number" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CLINICS CONTACT NUMBER</label><input value={formData.clinicContact} onChange={e=>setFormData({...formData, clinicContact: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Alternate Number" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DOCTORS CODE</label><input disabled value={formData.doctorCode || ''} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-3 text-sm text-slate-500 cursor-not-allowed" placeholder="Auto-generated" /></div>
+            
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
             <div>

@@ -93,8 +93,8 @@ export default function DoctorDetails({ doctor, onBack }: { doctor: any, onBack:
               <p className="text-sm font-bold text-white">{doctor.clinicContact || 'N/A'}</p>
             </div>
             <div>
-              <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5">DOCTOR'S CODE</p>
-              <p className="text-sm font-bold text-white">{doctor.doctorCode || doctor.uid || 'N/A'}</p>
+              <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5">UID</p>
+              <p className="text-sm font-bold text-white">{doctor.uid || 'N/A'}</p>
             </div>
             <div>
               <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-1.5">EMAIL</p>

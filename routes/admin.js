@@ -5299,12 +5299,10 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
     if (!data || data.length === 0) throw new Error('Empty or invalid excel file');
 
     let currentUidMax = 0;
-    let currentDocCodeMax = 0;
     const { XlDoctor, XlChemist, XlStockist } = require('../db');
 
     if (type === 'Doctor') {
       currentUidMax = await getMaxUID(XlDoctor, 'DOC');
-      currentDocCodeMax = await getMaxDoctorCode(XlDoctor);
     } else if (type === 'Chemist') {
       currentUidMax = await getMaxUID(XlChemist, 'CHM');
     } else if (type === 'Stockist') {
@@ -5333,13 +5331,6 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.hospital = d.Hospital || d.hospital || '';
         row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
         row.clinicContact = String(d['Clinic Contact'] || d.clinicContact || '');
-        
-        if (!d['Doctor Code'] && !d.doctorCode) {
-            currentDocCodeMax++;
-            row.doctorCode = 'DOC' + currentDocCodeMax.toString().padStart(3, '0');
-        } else {
-            row.doctorCode = String(d['Doctor Code'] || d.doctorCode || '');
-        }
 
         row.category = d.Category || d.category || '';
         row.address = d.Address || d.address || '';
