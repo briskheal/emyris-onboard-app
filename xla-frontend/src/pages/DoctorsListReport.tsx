@@ -70,8 +70,7 @@ export default function DoctorsListReport() {
       'Anniversary Email': d.anniversary, // As seen in the video excel
       Mobile: d.mobile,
       'Clinic Contact': d.clinicContact,
-      'UID': d.uid || String(d._id),
-      Address: d.address,
+            Address: d.address,
       Category: d.category,
       UID: d.uid,
       Contact: d.contact,
