@@ -72,9 +72,9 @@ function App() {
             <Route path="geo-fencing" element={<GeoFencingListReport />} />
             <Route path="gifts" element={<GiftsListReport />} />
             <Route path="routes" element={<RoutesListReport />} />
-            <Route path="/reports/missed-reports" element={<MissedReports />} />
           </Route>
-          <Route path="/extras/primary-sales" element={<PrimarySales />} />
+          <Route path="/reports/missed-reports" element={<MissedReports />} />
+            <Route path="/extras/primary-sales" element={<PrimarySales />} />
           <Route path="/extras/primary-sales/edit/:id" element={<PrimarySales />} />
           <Route path="/extras/primary-sales/all" element={<AllPrimarySales />} />
           <Route path="/extras/secondary" element={<SecondarySales />} />
