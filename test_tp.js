@@ -1,1 +1,0 @@
-const { XlTourProgram } = require('./db'); async function run() { try { const tp = await XlTourProgram.findOne({ where: { status: 'Approved' } }); console.log(tp.entries); } catch(e) { console.error('ERROR:', e.message); } process.exit(); } run();
