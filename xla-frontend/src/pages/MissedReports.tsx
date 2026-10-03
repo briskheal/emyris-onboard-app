@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Download, ChevronLeft, Target, ShieldAlert, XCircle, Calendar, ChevronDown, ChevronRight } from 'lucide-react';
+import { Download, ChevronLeft, Target, ShieldAlert, XCircle, Calendar, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
-
 
 interface MissedReportData {
   _id: string;
@@ -13,9 +12,10 @@ interface MissedReportData {
   category?: string;
   expected?: number;
   actual?: number;
-  status: 'Met' | 'Partially Missed' | 'Missed';
+  status: 'Met' | 'Partially Missed' | 'Missed' | 'Fully Missed';
   meetingDate: string;
   employeeName: string;
+  monthlyBreakdown?: Record<string, number>;
 }
 
 interface UserwiseData {
@@ -34,10 +34,22 @@ export default function MissedReports() {
   const [entityType, setEntityType] = useState('Doctor');
   
   const currentDate = new Date();
+  
+  // Single Month State
   const [selectedMonth, setSelectedMonth] = useState((currentDate.getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear().toString());
-  const [selectedUser, setSelectedUser] = useState('all');
   const [showMonthPicker, setShowMonthPicker] = useState(false);
+
+  // Range Month State (For Monthly Report)
+  const [startMonth, setStartMonth] = useState((currentDate.getMonth() + 1).toString());
+  const [startYear, setStartYear] = useState(currentDate.getFullYear().toString());
+  const [showStartMonthPicker, setShowStartMonthPicker] = useState(false);
+
+  const [endMonth, setEndMonth] = useState((currentDate.getMonth() + 1).toString());
+  const [endYear, setEndYear] = useState(currentDate.getFullYear().toString());
+  const [showEndMonthPicker, setShowEndMonthPicker] = useState(false);
+
+  const [selectedUser, setSelectedUser] = useState('all');
   
   const [users, setUsers] = useState<{_id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(false);
@@ -45,6 +57,7 @@ export default function MissedReports() {
   const [data, setData] = useState<MissedReportData[]>([]);
   const [userwiseData, setUserwiseData] = useState<UserwiseData[]>([]);
   const [summary, setSummary] = useState({ met: 0, partiallyMissed: 0, missed: 0 });
+  const [monthsInRange, setMonthsInRange] = useState<string[]>([]);
 
   const months = [
     { value: '1', label: 'Jan' }, { value: '2', label: 'Feb' }, { value: '3', label: 'Mar' },
@@ -53,19 +66,17 @@ export default function MissedReports() {
     { value: '10', label: 'Oct' }, { value: '11', label: 'Nov' }, { value: '12', label: 'Dec' }
   ];
 
-  const years = Array.from({length: 5}, (_, i) => (currentDate.getFullYear() - i).toString());
-
   useEffect(() => {
     fetchUsers();
   }, []);
 
   useEffect(() => {
     fetchReport();
-  }, [reportType, entityType, selectedMonth, selectedYear, selectedUser]);
+  }, [reportType, entityType, selectedMonth, selectedYear, startMonth, startYear, endMonth, endYear, selectedUser]);
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get(`/api/xl/users`, {
+      const res = await axios.get('/api/xl/users', {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.data.success) {
@@ -79,26 +90,38 @@ export default function MissedReports() {
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        reportType: reportType === 'Download Report' ? 'Monthly' : reportType.split(' ')[0], // 'Met/Missed', 'Monthly', 'Userwise'
+      const typeStr = reportType === 'Download Report' ? 'Monthly' : reportType.split(' ')[0];
+      const params: any = {
+        reportType: typeStr, // 'Met/Missed', 'Monthly', 'Userwise'
         entityType,
-        month: selectedMonth,
-        year: selectedYear,
         userAllotted: selectedUser
-      });
+      };
 
-      const res = await axios.get(`/api/xl/missed-reports?${params}`, {
+      if (typeStr === 'Monthly') {
+         params.startMonth = startMonth;
+         params.startYear = startYear;
+         params.endMonth = endMonth;
+         params.endYear = endYear;
+      } else {
+         params.month = selectedMonth;
+         params.year = selectedYear;
+      }
+
+      const res = await axios.get('/api/xl/missed-reports', {
+        params,
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       
       if (res.data.success) {
         setSummary(res.data.summary);
-        if (reportType === 'Userwise Report') {
+        if (typeStr === 'Userwise') {
           setUserwiseData(res.data.data);
           setData([]);
+          setMonthsInRange([]);
         } else {
           setData(res.data.data);
           setUserwiseData([]);
+          setMonthsInRange(res.data.monthsInRange || []);
         }
       }
     } catch (e) {
@@ -121,13 +144,15 @@ export default function MissedReports() {
       XLSX.utils.book_append_sheet(wb, ws, "Userwise Report");
       XLSX.writeFile(wb, `Userwise_${entityType}_Report.xlsx`);
     } else {
+      const isMonthly = reportType === 'Monthly Report' || reportType === 'Download Report';
       const ws = XLSX.utils.json_to_sheet(data.map((d, i) => {
         let row: any = {
-          'Sr no.': i + 1,
-          'Employee Name': d.employeeName,
-          'Name': d.name,
-          'Status': d.status
+          'Sr no.': i + 1
         };
+        if (isMonthly) row['Employee'] = d.employeeName;
+        row['Status'] = d.status;
+        row['Name'] = d.name;
+        
         if (entityType === 'Doctor') {
           row['UID'] = d.uid;
           row['Degree'] = d.degree;
@@ -135,7 +160,15 @@ export default function MissedReports() {
           row['Expected Visit'] = d.expected;
         }
         row['Actual Visits'] = d.actual;
-        row['Meeting Date/Time'] = d.meetingDate;
+        
+        if (isMonthly && d.monthlyBreakdown) {
+           monthsInRange.forEach(m => {
+              row[m] = d.monthlyBreakdown![m] || 0;
+           });
+        } else {
+           row['Meeting Date/Time'] = d.meetingDate;
+        }
+
         return row;
       }));
       const wb = XLSX.utils.book_new();
@@ -146,7 +179,7 @@ export default function MissedReports() {
 
   return (
     <div className="min-h-screen bg-[#151521] text-slate-300 p-6 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-[1400px] mx-auto space-y-6">
         
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -154,7 +187,7 @@ export default function MissedReports() {
             <button onClick={() => navigate(-1)} className="p-2 hover:bg-[#1e1e2d] rounded-lg transition-colors">
               <ChevronLeft size={24} />
             </button>
-            <h1 className="text-2xl font-bold text-white tracking-wide">MISSED REPORTS</h1>
+            <h1 className="text-2xl font-bold text-white tracking-wide uppercase">MISSED REPORTS</h1>
           </div>
           {reportType === 'Download Report' && (
             <button onClick={downloadExcel} className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors shadow-lg shadow-indigo-500/20">
@@ -185,37 +218,96 @@ export default function MissedReports() {
             </select>
           </div>
 
-          <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Month & Year</label>
-            <div 
-              onClick={() => setShowMonthPicker(!showMonthPicker)}
-              className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-indigo-500 transition-colors"
-            >
-              <span>{months.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
-              <Calendar size={16} className="text-slate-400" />
-            </div>
-            {showMonthPicker && (
-              <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-4">
-                 <div className="flex justify-between items-center mb-4">
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedYear((parseInt(selectedYear)-1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronLeft size={16} /></button>
-                    <span className="font-bold text-white">{selectedYear}</span>
-                    <button onClick={(e) => { e.stopPropagation(); setSelectedYear((parseInt(selectedYear)+1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronRight size={16} /></button>
-                 </div>
-                 <div className="grid grid-cols-3 gap-2">
-                    {months.map((m) => {
-                       const isSel = selectedMonth === m.value;
-                       return (
+          {(reportType === 'Monthly Report' || reportType === 'Download Report') ? (
+            <>
+              <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Start Month</label>
+                <div 
+                  onClick={() => { setShowStartMonthPicker(!showStartMonthPicker); setShowEndMonthPicker(false); }}
+                  className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-indigo-500 transition-colors"
+                >
+                  <span>{months.find(m => m.value === startMonth)?.label} {startYear}</span>
+                  <Calendar size={16} className="text-slate-400" />
+                </div>
+                {showStartMonthPicker && (
+                  <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-4">
+                     <div className="flex justify-between items-center mb-4">
+                        <button onClick={(e) => { e.stopPropagation(); setStartYear((parseInt(startYear)-1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronLeft size={16} /></button>
+                        <span className="font-bold text-white">{startYear}</span>
+                        <button onClick={(e) => { e.stopPropagation(); setStartYear((parseInt(startYear)+1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronRight size={16} /></button>
+                     </div>
+                     <div className="grid grid-cols-3 gap-2">
+                        {months.map((m) => (
+                           <div 
+                              key={m.value} 
+                              onClick={() => { setStartMonth(m.value); setShowStartMonthPicker(false); }}
+                              className={\`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors \${startMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}\`}
+                           >{m.label}</div>
+                        ))}
+                     </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select End Month</label>
+                <div 
+                  onClick={() => { setShowEndMonthPicker(!showEndMonthPicker); setShowStartMonthPicker(false); }}
+                  className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-indigo-500 transition-colors"
+                >
+                  <span>{months.find(m => m.value === endMonth)?.label} {endYear}</span>
+                  <Calendar size={16} className="text-slate-400" />
+                </div>
+                {showEndMonthPicker && (
+                  <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-4">
+                     <div className="flex justify-between items-center mb-4">
+                        <button onClick={(e) => { e.stopPropagation(); setEndYear((parseInt(endYear)-1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronLeft size={16} /></button>
+                        <span className="font-bold text-white">{endYear}</span>
+                        <button onClick={(e) => { e.stopPropagation(); setEndYear((parseInt(endYear)+1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronRight size={16} /></button>
+                     </div>
+                     <div className="grid grid-cols-3 gap-2">
+                        {months.map((m) => (
+                           <div 
+                              key={m.value} 
+                              onClick={() => { setEndMonth(m.value); setShowEndMonthPicker(false); }}
+                              className={\`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors \${endMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}\`}
+                           >{m.label}</div>
+                        ))}
+                     </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Month & Year</label>
+              <div 
+                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-indigo-500 transition-colors"
+              >
+                <span>{months.find(m => m.value === selectedMonth)?.label} {selectedYear}</span>
+                <Calendar size={16} className="text-slate-400" />
+              </div>
+              {showMonthPicker && (
+                <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-4">
+                   <div className="flex justify-between items-center mb-4">
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedYear((parseInt(selectedYear)-1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronLeft size={16} /></button>
+                      <span className="font-bold text-white">{selectedYear}</span>
+                      <button onClick={(e) => { e.stopPropagation(); setSelectedYear((parseInt(selectedYear)+1).toString()); }} className="p-1 hover:bg-[#2a2a40] rounded text-slate-400"><ChevronRight size={16} /></button>
+                   </div>
+                   <div className="grid grid-cols-3 gap-2">
+                      {months.map((m) => (
                          <div 
                             key={m.value} 
                             onClick={() => { setSelectedMonth(m.value); setShowMonthPicker(false); }}
-                            className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}`}
+                            className={\`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors \${selectedMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}\`}
                          >{m.label}</div>
-                       )
-                    })}
-                 </div>
-              </div>
-            )}
-          </div>
+                      ))}
+                   </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {reportType !== 'Userwise Report' && (
             <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
@@ -266,13 +358,13 @@ export default function MissedReports() {
         )}
 
         {/* Data Table */}
-        <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden">
+        <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden rounded-xl">
           <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
               SHOWING ({reportType === 'Userwise Report' ? userwiseData.length : data.length}) ENTRIES
             </h2>
             {reportType !== 'Download Report' && (
-              <button onClick={downloadExcel} className="text-xs flex items-center gap-1.5 bg-[#2d2d44] hover:bg-[#3b3b5a] text-slate-300 px-3 py-1.5 rounded transition-colors">
+              <button onClick={downloadExcel} className="text-xs flex items-center gap-1.5 bg-[#2d2d44] hover:bg-[#3b3b5a] text-slate-300 px-3 py-1.5 rounded transition-colors border border-[#3b3b5a]">
                 <Download size={14} /> Export
               </button>
             )}
@@ -282,33 +374,47 @@ export default function MissedReports() {
             {loading ? (
               <div className="p-8 text-center text-slate-400">Loading records...</div>
             ) : (
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs uppercase bg-[#151521] text-slate-400 border-b border-[#3b3b5a]">
+              <table className="w-full text-sm text-left whitespace-nowrap">
+                <thead className="text-[11px] font-bold uppercase bg-[#151521] text-slate-400 border-b border-[#3b3b5a]">
                   {reportType === 'Userwise Report' ? (
                     <tr>
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium w-[1%] whitespace-nowrap">Sr no.</th>
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium">Employee Name</th>
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium text-center">Total {entityType}</th>
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium text-center text-emerald-400">Met</th>
-                      {entityType === 'Doctor' && <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium text-center text-blue-400">Partially Missed</th>}
-                      <th className="px-4 py-3 font-medium text-center text-orange-400">Missed</th>
+                      <th className="px-4 py-3 border-r border-[#3b3b5a] w-[1%]">Sr no.</th>
+                      <th className="px-4 py-3 border-r border-[#3b3b5a]">Employee Name</th>
+                      <th className="px-4 py-3 border-r border-[#3b3b5a] text-center">Total {entityType}</th>
+                      <th className="px-4 py-3 border-r border-[#3b3b5a] text-center text-emerald-400">Met</th>
+                      {entityType === 'Doctor' && <th className="px-4 py-3 border-r border-[#3b3b5a] text-center text-blue-400">Partially Missed</th>}
+                      <th className="px-4 py-3 text-center text-orange-400">Missed</th>
                     </tr>
                   ) : (
                     <tr>
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium w-[1%] whitespace-nowrap">Sr no.</th>
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium w-[1%] whitespace-nowrap">Met/Missed</th>
-                      {reportType === 'Monthly Report' && <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium">Employee</th>}
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium">Name</th>
+                      <th className="px-4 py-3 border-r border-[#3b3b5a] w-[1%]">Sr no.</th>
+                      
+                      {(reportType === 'Monthly Report' || reportType === 'Download Report') && (
+                        <th className="px-4 py-3 border-r border-[#3b3b5a]">Employee</th>
+                      )}
+                      
+                      <th className="px-4 py-3 border-r border-[#3b3b5a] text-center w-[1%]">Met/Missed</th>
+                      
+                      <th className="px-4 py-3 border-r border-[#3b3b5a]">Name</th>
+                      
                       {entityType === 'Doctor' && (
                         <>
-                          <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium">UID</th>
-                          <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium">Degree</th>
-                          <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium">Category</th>
-                          <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium text-center">Expected Visit</th>
+                          <th className="px-4 py-3 border-r border-[#3b3b5a]">UID</th>
+                          <th className="px-4 py-3 border-r border-[#3b3b5a]">Degree</th>
+                          <th className="px-4 py-3 border-r border-[#3b3b5a]">Category</th>
+                          <th className="px-4 py-3 border-r border-[#3b3b5a] text-center text-indigo-300">Expected Visit</th>
                         </>
                       )}
-                      <th className="px-4 py-3 border-r border-[#3b3b5a] font-medium text-center">Actual Visits</th>
-                      <th className="px-4 py-3 font-medium text-center">Meeting Date</th>
+                      
+                      <th className="px-4 py-3 border-r border-[#3b3b5a] text-center text-indigo-300">Actual Visits</th>
+                      
+                      {(reportType === 'Monthly Report' || reportType === 'Download Report') ? (
+                         monthsInRange.map(m => (
+                            <th key={m} className="px-4 py-3 border-r border-[#3b3b5a] text-center text-sky-400">{m}</th>
+                         ))
+                      ) : (
+                         <th className="px-4 py-3 text-center">Meeting Date</th>
+                      )}
                     </tr>
                   )}
                 </thead>
@@ -328,32 +434,48 @@ export default function MissedReports() {
                     data.map((d, i) => (
                       <tr key={d._id} className="border-b border-[#2d2d44] hover:bg-[#252538] transition-colors">
                         <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{i + 1}</td>
-                        <td className="px-4 py-2 border-r border-[#3b3b5a]">
-                          <span className={`px-2 py-1 rounded text-[11px] font-bold uppercase tracking-wide
-                            ${d.status === 'Met' ? 'bg-emerald-500/10 text-emerald-400' : 
+                        
+                        {(reportType === 'Monthly Report' || reportType === 'Download Report') && (
+                          <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300 font-medium">{d.employeeName}</td>
+                        )}
+
+                        <td className="px-4 py-2 border-r border-[#3b3b5a] text-center">
+                          <span className={\`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide
+                            \${d.status === 'Met' ? 'bg-emerald-500/10 text-emerald-400' : 
                               d.status === 'Partially Missed' ? 'bg-blue-500/10 text-blue-400' : 
-                              'bg-orange-500/10 text-orange-400'}`}>
+                              'bg-rose-500/10 text-rose-400'}\`}>
                             {d.status}
                           </span>
                         </td>
-                        {reportType === 'Monthly Report' && <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.employeeName}</td>}
-                        <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-indigo-300">{d.name}</td>
+                        
+                        <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.name}</td>
+                        
                         {entityType === 'Doctor' && (
                           <>
                             <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.uid}</td>
                             <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.degree}</td>
                             <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.category}</td>
-                            <td className="px-4 py-2 border-r border-[#3b3b5a] text-center text-slate-400 font-semibold">{d.expected}</td>
+                            <td className="px-4 py-2 border-r border-[#3b3b5a] text-center text-slate-300 font-semibold">{d.expected}</td>
                           </>
                         )}
+                        
                         <td className="px-4 py-2 border-r border-[#3b3b5a] text-center font-bold text-slate-200">{d.actual}</td>
-                        <td className="px-4 py-2 text-center text-slate-400">{d.meetingDate}</td>
+                        
+                        {(reportType === 'Monthly Report' || reportType === 'Download Report') ? (
+                           monthsInRange.map(m => (
+                              <td key={m} className="px-4 py-2 border-r border-[#3b3b5a] text-center font-semibold text-slate-300">
+                                 {d.monthlyBreakdown?.[m] || 0}
+                              </td>
+                           ))
+                        ) : (
+                           <td className="px-4 py-2 text-center text-slate-400">{d.meetingDate}</td>
+                        )}
                       </tr>
                     ))
                   )}
                   {(reportType === 'Userwise Report' ? userwiseData.length : data.length) === 0 && !loading && (
                     <tr>
-                      <td colSpan={10} className="px-4 py-8 text-center text-slate-500">No data found for the selected criteria.</td>
+                      <td colSpan={15} className="px-4 py-8 text-center text-slate-500 font-medium">No data found for the selected criteria.</td>
                     </tr>
                   )}
                 </tbody>

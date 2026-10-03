@@ -4166,26 +4166,48 @@ router.get('/admin/debug-date-migration', async (req, res) => {
 // ==========================================
 router.get('/missed-reports', async (req, res) => {
     try {
-        const { entityType, month, year, userAllotted, reportType } = req.query;
+        const { entityType, month, year, startMonth, startYear, endMonth, endYear, userAllotted, reportType } = req.query;
         // reportType: 'Met/Missed', 'Monthly', 'Userwise', 'Download'
         
-        if (!entityType || !month || !year) {
-            return res.status(400).json({ success: false, message: 'Missing required parameters' });
-        }
+        let startDateStr, endDateStr;
+        let monthsInRange = []; // e.g. ['Oct 2026', 'Nov 2026']
 
-        const m = parseInt(month, 10);
-        const y = parseInt(year, 10);
-        
-        // Start and end dates for the month
-        const startDate = `${y}-${String(m).padStart(2, '0')}-01`;
-        const lastDay = new Date(y, m, 0).getDate();
-        const endDate = `${y}-${String(m).padStart(2, '0')}-${lastDay}`;
+        if (reportType === 'Monthly') {
+            if (!startMonth || !startYear || !endMonth || !endYear) {
+                return res.status(400).json({ success: false, message: 'Missing date range parameters' });
+            }
+            let sM = parseInt(startMonth, 10);
+            let sY = parseInt(startYear, 10);
+            let eM = parseInt(endMonth, 10);
+            let eY = parseInt(endYear, 10);
+            
+            startDateStr = `${sY}-${String(sM).padStart(2, '0')}-01`;
+            const lastDay = new Date(eY, eM, 0).getDate();
+            endDateStr = `${eY}-${String(eM).padStart(2, '0')}-${lastDay}`;
+
+            // Calculate months in range
+            let curD = new Date(sY, sM - 1, 1);
+            const endD = new Date(eY, eM - 1, 1);
+            while (curD <= endD) {
+                monthsInRange.push(curD.toLocaleString('en-US', { month: 'short' }) + ' ' + curD.getFullYear());
+                curD.setMonth(curD.getMonth() + 1);
+            }
+        } else {
+            if (!month || !year) {
+                return res.status(400).json({ success: false, message: 'Missing month/year parameters' });
+            }
+            const m = parseInt(month, 10);
+            const y = parseInt(year, 10);
+            startDateStr = `${y}-${String(m).padStart(2, '0')}-01`;
+            const lastDay = new Date(y, m, 0).getDate();
+            endDateStr = `${y}-${String(m).padStart(2, '0')}-${lastDay}`;
+            monthsInRange.push(new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'short' }) + ' ' + y);
+        }
 
         let EntityModel = XlDoctor;
         if (entityType === 'Chemist') EntityModel = XlChemist;
         if (entityType === 'Stockist') EntityModel = XlStockist;
 
-        // Base where clause for entities
         let entityWhere = { isActive: true };
         if (userAllotted && userAllotted !== 'all') {
             entityWhere.userAllotted = userAllotted;
@@ -4196,27 +4218,25 @@ router.get('/missed-reports', async (req, res) => {
         const userMap = {};
         allUsers.forEach(u => userMap[u._id] = `${u.firstName} ${u.lastName}`.trim());
 
-        // Fetch DCRs for this month
         let dcrWhere = {
             date: {
-                [Op.between]: [startDate, endDate]
+                [Op.between]: [startDateStr, endDateStr]
             },
             entityType: entityType,
-            status: 'Approved' // Only approved visits count
+            status: 'Approved'
         };
         
-        // If it's a specific user, filter DCRs by that user too
         if (userAllotted && userAllotted !== 'all' && reportType !== 'Userwise') {
             dcrWhere.employeeId = userAllotted;
         }
 
         const dcrs = await XlDCR.findAll({ where: dcrWhere, raw: true });
 
-        // Map DCR counts by entityId and employeeId (for userwise)
-        // entityDcrCount[entityId] = count
         const entityDcrCount = {};
         const entityLatestDate = {};
-        const userwiseStats = {}; // { employeeId: { total:0, met:0, partially:0, missed:0 } }
+        const userwiseStats = {};
+        // For monthly report: breakdown of visits by month
+        const entityMonthlyBreakdown = {}; 
         
         dcrs.forEach(dcr => {
             const eid = dcr.entityId;
@@ -4225,9 +4245,15 @@ router.get('/missed-reports', async (req, res) => {
             if (!entityLatestDate[eid] || dcr.date > entityLatestDate[eid]) {
                 entityLatestDate[eid] = `${dcr.date} ${dcr.createdAt ? new Date(dcr.createdAt).toLocaleTimeString() : ''}`.trim();
             }
+
+            if (reportType === 'Monthly') {
+                if (!entityMonthlyBreakdown[eid]) entityMonthlyBreakdown[eid] = {};
+                const dcrDate = new Date(dcr.date);
+                const monthKey = dcrDate.toLocaleString('en-US', { month: 'short' }) + ' ' + dcrDate.getFullYear();
+                entityMonthlyBreakdown[eid][monthKey] = (entityMonthlyBreakdown[eid][monthKey] || 0) + 1;
+            }
         });
 
-        // Initialize Userwise stats
         if (reportType === 'Userwise') {
             const userSet = new Set(entities.map(e => e.userAllotted).filter(Boolean));
             userSet.forEach(uid => {
@@ -4248,20 +4274,24 @@ router.get('/missed-reports', async (req, res) => {
             missed: 0
         };
 
+        const rangeMultiplier = monthsInRange.length;
+
         for (const ent of entities) {
             const uid = ent.uid || ent._id;
             const actual = entityDcrCount[ent._id] || 0;
-            let expected = entityType === 'Doctor' ? getExpectedVisits(ent.category) : null;
+            let expectedPerMonth = entityType === 'Doctor' ? getExpectedVisits(ent.category) : null;
+            let expectedTotal = expectedPerMonth !== null ? expectedPerMonth * rangeMultiplier : null;
+            
             let status = 'Missed';
-
             if (entityType === 'Doctor') {
-                if (actual >= expected) status = 'Met';
+                if (actual >= expectedTotal) status = 'Met';
                 else if (actual > 0) status = 'Partially Missed';
+                else status = 'Fully Missed';
             } else {
                 if (actual > 0) status = 'Met';
+                else status = 'Fully Missed';
             }
 
-            // Update userwise counts
             if (reportType === 'Userwise' && ent.userAllotted && userwiseStats[ent.userAllotted]) {
                 userwiseStats[ent.userAllotted].total++;
                 if (status === 'Met') userwiseStats[ent.userAllotted].met++;
@@ -4269,23 +4299,31 @@ router.get('/missed-reports', async (req, res) => {
                 else userwiseStats[ent.userAllotted].missed++;
             }
 
-            // Update main summary
             if (status === 'Met') summary.met++;
             else if (status === 'Partially Missed') summary.partiallyMissed++;
             else summary.missed++;
 
-            results.push({
+            let row = {
                 _id: ent._id,
                 uid: uid,
                 name: ent.name || ent.businessName,
                 degree: ent.degree,
                 category: ent.category,
-                expected: expected,
+                expected: expectedTotal,
                 actual: actual,
                 status: status,
                 meetingDate: entityLatestDate[ent._id] || 'N/A',
                 employeeName: userMap[ent.userAllotted] || 'Unassigned'
-            });
+            };
+
+            if (reportType === 'Monthly') {
+                row.monthlyBreakdown = {};
+                monthsInRange.forEach(m => {
+                    row.monthlyBreakdown[m] = entityMonthlyBreakdown[ent._id]?.[m] || 0;
+                });
+            }
+
+            results.push(row);
         }
 
         if (reportType === 'Userwise') {
@@ -4300,7 +4338,7 @@ router.get('/missed-reports', async (req, res) => {
             return res.json({ success: true, summary, data: userwiseList });
         }
 
-        res.json({ success: true, summary, data: results });
+        res.json({ success: true, summary, data: results, monthsInRange });
 
     } catch (e) {
         console.error("Missed Reports Error:", e);
