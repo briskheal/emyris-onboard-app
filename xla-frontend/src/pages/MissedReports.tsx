@@ -241,7 +241,7 @@ export default function MissedReports() {
                            <div 
                               key={m.value} 
                               onClick={() => { setStartMonth(m.value); setShowStartMonthPicker(false); }}
-                              className={\`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors \${startMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}\`}
+                              className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${startMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}`}
                            >{m.label}</div>
                         ))}
                      </div>
@@ -270,7 +270,7 @@ export default function MissedReports() {
                            <div 
                               key={m.value} 
                               onClick={() => { setEndMonth(m.value); setShowEndMonthPicker(false); }}
-                              className={\`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors \${endMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}\`}
+                              className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${endMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}`}
                            >{m.label}</div>
                         ))}
                      </div>
@@ -300,7 +300,7 @@ export default function MissedReports() {
                          <div 
                             key={m.value} 
                             onClick={() => { setSelectedMonth(m.value); setShowMonthPicker(false); }}
-                            className={\`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors \${selectedMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}\`}
+                            className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${selectedMonth === m.value ? 'bg-indigo-500 text-white' : 'text-slate-400 hover:bg-[#2a2a40]'}`}
                          >{m.label}</div>
                       ))}
                    </div>
@@ -440,10 +440,10 @@ export default function MissedReports() {
                         )}
 
                         <td className="px-4 py-2 border-r border-[#3b3b5a] text-center">
-                          <span className={\`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide
-                            \${d.status === 'Met' ? 'bg-emerald-500/10 text-emerald-400' : 
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide
+                            ${d.status === 'Met' ? 'bg-emerald-500/10 text-emerald-400' : 
                               d.status === 'Partially Missed' ? 'bg-blue-500/10 text-blue-400' : 
-                              'bg-rose-500/10 text-rose-400'}\`}>
+                              'bg-rose-500/10 text-rose-400'}`}>
                             {d.status}
                           </span>
                         </td>

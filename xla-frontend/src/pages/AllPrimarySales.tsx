@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Edit2, Trash2, X , Home, Calendar, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Edit2, Trash2, X , Home, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -97,17 +97,47 @@ export default function AllPrimarySales() {
               Primary Sales Report are shown which are submitted by the logged-in user! In order to view the complete list, visit - Reports - Primary Sales.
            </div>
            
-           <div className="flex flex-col gap-1 w-48">
+           <div className="flex flex-col gap-1 w-48 relative">
               <label className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Select Month *</label>
-              <select 
-                value={selectedMonth}
-                onChange={e => setSelectedMonth(e.target.value)}
-                className="w-full h-[34px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-3 text-xs text-white outline-none focus:border-sky-500 transition-colors cursor-pointer appearance-none"
+              <div 
+                onClick={() => setShowMonthPicker(!showMonthPicker)}
+                className="flex items-center justify-between bg-[#1a1a2e] border border-[#3b3b5a] rounded px-3 h-[34px] text-xs text-white cursor-pointer hover:border-sky-500 transition-colors"
               >
-                {monthOptions.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
+                <span>{selectedMonth}</span>
+                <Calendar size={14} className="text-[#8b8baf]" />
+              </div>
+              {showMonthPicker && (
+                <div className="absolute top-[52px] right-0 w-[240px] bg-[#212136] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-3">
+                   <div className="flex justify-between items-center mb-3">
+                      <button onClick={(e) => { 
+                          e.stopPropagation(); 
+                          const [m, y] = selectedMonth.split(' ');
+                          setSelectedMonth(m + ' ' + (parseInt(y)-1)); 
+                      }} className="p-1 hover:bg-[#2a2a40] rounded text-[#8b8baf]"><ChevronLeft size={16} /></button>
+                      <span className="font-bold text-white text-sm">{selectedMonth.split(' ')[1]}</span>
+                      <button onClick={(e) => { 
+                          e.stopPropagation(); 
+                          const [m, y] = selectedMonth.split(' ');
+                          setSelectedMonth(m + ' ' + (parseInt(y)+1)); 
+                      }} className="p-1 hover:bg-[#2a2a40] rounded text-[#8b8baf]"><ChevronRight size={16} /></button>
+                   </div>
+                   <div className="grid grid-cols-3 gap-2">
+                      {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m) => {
+                         const isSel = selectedMonth.split(' ')[0] === m;
+                         return (
+                           <div 
+                              key={m} 
+                              onClick={() => { 
+                                  setSelectedMonth(m + ' ' + selectedMonth.split(' ')[1]); 
+                                  setShowMonthPicker(false); 
+                              }}
+                              className={`text-center py-2 text-xs font-semibold rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-sky-500 text-white' : 'text-[#8b8baf] hover:bg-[#2a2a40]'}`}
+                           >{m}</div>
+                         )
+                      })}
+                   </div>
+                </div>
+              )}
            </div>
         </div>
 
