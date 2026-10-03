@@ -4217,15 +4217,23 @@ router.get('/missed-reports', async (req, res) => {
 
         if (userAllotted && userAllotted !== 'all') {
             const userObj = allUsers.find(u => u._id === userAllotted);
-            if (userObj) actualEmployeeId = userObj.employeeId;
-
-            entityWhere = {
-                ...entityWhere,
-                [Op.or]: [
+            if (userObj) {
+                actualEmployeeId = userObj.employeeId;
+                
+                const orConditions = [
                     { userAllotted: userAllotted },
                     { employeeId: actualEmployeeId }
-                ]
-            };
+                ];
+                
+                if (userObj.hq) {
+                    orConditions.push({ headquarter: userObj.hq.toUpperCase().trim() });
+                }
+
+                entityWhere = {
+                    ...entityWhere,
+                    [Op.or]: orConditions
+                };
+            }
         }
 
         const entities = await EntityModel.findAll({ where: entityWhere, raw: true });
