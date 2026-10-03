@@ -45,7 +45,7 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
     <div ref={containerRef} className="relative w-full">
       <div
         onClick={() => setIsOpen(prev => !prev)}
-        className={`w-full bg-[#27273f] border ${isOpen ? 'border-[#00e5ff]' : 'border-[#3b3b5a]'} text-white rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-lg min-h-[56px]`}
+        className={`w-full bg-[#151521] border ${isOpen ? 'border-indigo-500' : 'border-[#3b3b5a]'} text-slate-300 rounded-lg px-3 py-1 flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-colors h-[42px]`}
       >
         <div className="flex items-center gap-3 w-full pr-4 overflow-hidden">
           {isOpen ? (
@@ -63,16 +63,16 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
             </div>
           ) : selectedData ? (
             <>
-              <div className="w-8 h-8 rounded-full bg-[#32324f] flex items-center justify-center shrink-0 border border-[#3b3b5a] overflow-hidden">
+              <div className="w-6 h-6 rounded-full bg-[#32324f] flex items-center justify-center shrink-0 border border-[#3b3b5a] overflow-hidden">
                 {selectedData.profilePic ? (
                   <img src={selectedData.profilePic} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <User size={16} className="text-slate-300" />
+                  <User size={14} className="text-slate-400" />
                 )}
               </div>
               <div className="flex flex-col overflow-hidden w-full">
-                <span className="text-sm font-bold truncate">{selectedData.firstName} {selectedData.lastName}</span>
-                <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">
+                <span className="text-sm font-semibold text-slate-300 truncate">{selectedData.firstName} {selectedData.lastName}</span>
+                <span className="text-[9px] text-slate-400 font-medium truncate uppercase tracking-widest leading-none">
                   {selectedData.designation || selectedData.employeeId}
                 </span>
               </div>

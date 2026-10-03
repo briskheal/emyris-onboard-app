@@ -4227,7 +4227,8 @@ router.get('/missed-reports', async (req, res) => {
         };
         
         if (userAllotted && userAllotted !== 'all' && reportType !== 'Userwise') {
-            dcrWhere.employeeId = userAllotted;
+            const userObj = allUsers.find(u => u._id === userAllotted);
+            dcrWhere.employeeId = userObj ? userObj.employeeId : userAllotted;
         }
 
         const dcrs = await XlDCR.findAll({ where: dcrWhere, raw: true });
