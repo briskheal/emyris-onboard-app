@@ -1,1 +1,0 @@
-const fs = require('fs'); const lines = fs.readFileSync('models/xlModels.js', 'utf8').split('\n'); const idx = lines.findIndex(l => l.includes(\define('xl_user'\)); const chunk = lines.slice(idx, idx+20).join('\n'); console.log(chunk.match(/employeeId:.*$/m)?.[0]);

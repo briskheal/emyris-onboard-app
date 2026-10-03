@@ -1,1 +1,0 @@
-const { XlUser } = require('../db'); const { Op } = require('sequelize'); async function check() { const u = await XlUser.findAll({ where: { firstName: { [Op.like]: '%Alfez%' } } }); console.log(u.map(x => ({ id: x.employeeId, first: x.firstName, last: x.lastName, uid: x.uid, email: x.email }))); } check();
