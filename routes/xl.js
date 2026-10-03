@@ -4160,7 +4160,156 @@ router.get('/admin/debug-date-migration', async (req, res) => {
         res.status(500).json({ success: false, error: e.message });
     }
 });
+
+// ==========================================
+// MISSED REPORTS API
+// ==========================================
+router.get('/missed-reports', async (req, res) => {
+    try {
+        const { entityType, month, year, userAllotted, reportType } = req.query;
+        // reportType: 'Met/Missed', 'Monthly', 'Userwise', 'Download'
+        
+        if (!entityType || !month || !year) {
+            return res.status(400).json({ success: false, message: 'Missing required parameters' });
+        }
+
+        const m = parseInt(month, 10);
+        const y = parseInt(year, 10);
+        
+        // Start and end dates for the month
+        const startDate = `${y}-${String(m).padStart(2, '0')}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        const endDate = `${y}-${String(m).padStart(2, '0')}-${lastDay}`;
+
+        let EntityModel = XlDoctor;
+        if (entityType === 'Chemist') EntityModel = XlChemist;
+        if (entityType === 'Stockist') EntityModel = XlStockist;
+
+        // Base where clause for entities
+        let entityWhere = { isActive: true };
+        if (userAllotted && userAllotted !== 'all') {
+            entityWhere.userAllotted = userAllotted;
+        }
+
+        const entities = await EntityModel.findAll({ where: entityWhere, raw: true });
+        const allUsers = await XlUser.findAll({ raw: true });
+        const userMap = {};
+        allUsers.forEach(u => userMap[u._id] = `${u.firstName} ${u.lastName}`.trim());
+
+        // Fetch DCRs for this month
+        let dcrWhere = {
+            date: {
+                [Op.between]: [startDate, endDate]
+            },
+            entityType: entityType,
+            status: 'Approved' // Only approved visits count
+        };
+        
+        // If it's a specific user, filter DCRs by that user too
+        if (userAllotted && userAllotted !== 'all' && reportType !== 'Userwise') {
+            dcrWhere.employeeId = userAllotted;
+        }
+
+        const dcrs = await XlDCR.findAll({ where: dcrWhere, raw: true });
+
+        // Map DCR counts by entityId and employeeId (for userwise)
+        // entityDcrCount[entityId] = count
+        const entityDcrCount = {};
+        const entityLatestDate = {};
+        const userwiseStats = {}; // { employeeId: { total:0, met:0, partially:0, missed:0 } }
+        
+        dcrs.forEach(dcr => {
+            const eid = dcr.entityId;
+            entityDcrCount[eid] = (entityDcrCount[eid] || 0) + 1;
+            
+            if (!entityLatestDate[eid] || dcr.date > entityLatestDate[eid]) {
+                entityLatestDate[eid] = `${dcr.date} ${dcr.createdAt ? new Date(dcr.createdAt).toLocaleTimeString() : ''}`.trim();
+            }
+        });
+
+        // Initialize Userwise stats
+        if (reportType === 'Userwise') {
+            const userSet = new Set(entities.map(e => e.userAllotted).filter(Boolean));
+            userSet.forEach(uid => {
+                userwiseStats[uid] = { total: 0, met: 0, partiallyMissed: 0, missed: 0 };
+            });
+        }
+
+        const getExpectedVisits = (categoryStr) => {
+            if (!categoryStr) return 1;
+            const match = categoryStr.match(/(\d+)\s+Visits?\/month/i);
+            return match ? parseInt(match[1], 10) : 1;
+        };
+
+        const results = [];
+        let summary = {
+            met: 0,
+            partiallyMissed: 0,
+            missed: 0
+        };
+
+        for (const ent of entities) {
+            const uid = ent.uid || ent._id;
+            const actual = entityDcrCount[ent._id] || 0;
+            let expected = entityType === 'Doctor' ? getExpectedVisits(ent.category) : null;
+            let status = 'Missed';
+
+            if (entityType === 'Doctor') {
+                if (actual >= expected) status = 'Met';
+                else if (actual > 0) status = 'Partially Missed';
+            } else {
+                if (actual > 0) status = 'Met';
+            }
+
+            // Update userwise counts
+            if (reportType === 'Userwise' && ent.userAllotted && userwiseStats[ent.userAllotted]) {
+                userwiseStats[ent.userAllotted].total++;
+                if (status === 'Met') userwiseStats[ent.userAllotted].met++;
+                else if (status === 'Partially Missed') userwiseStats[ent.userAllotted].partiallyMissed++;
+                else userwiseStats[ent.userAllotted].missed++;
+            }
+
+            // Update main summary
+            if (status === 'Met') summary.met++;
+            else if (status === 'Partially Missed') summary.partiallyMissed++;
+            else summary.missed++;
+
+            results.push({
+                _id: ent._id,
+                uid: uid,
+                name: ent.name || ent.businessName,
+                degree: ent.degree,
+                category: ent.category,
+                expected: expected,
+                actual: actual,
+                status: status,
+                meetingDate: entityLatestDate[ent._id] || 'N/A',
+                employeeName: userMap[ent.userAllotted] || 'Unassigned'
+            });
+        }
+
+        if (reportType === 'Userwise') {
+            const userwiseList = Object.keys(userwiseStats).map(uid => ({
+                employeeId: uid,
+                employeeName: userMap[uid] || 'Unknown',
+                total: userwiseStats[uid].total,
+                met: userwiseStats[uid].met,
+                partiallyMissed: userwiseStats[uid].partiallyMissed,
+                missed: userwiseStats[uid].missed
+            }));
+            return res.json({ success: true, summary, data: userwiseList });
+        }
+
+        res.json({ success: true, summary, data: results });
+
+    } catch (e) {
+        console.error("Missed Reports Error:", e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 module.exports = router;
+
 
 
 

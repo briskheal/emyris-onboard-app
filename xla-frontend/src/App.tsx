@@ -45,6 +45,7 @@ import ProductsListReport from './pages/ProductsListReport';
 import GeoFencingListReport from './pages/GeoFencingListReport';
 import GiftsListReport from './pages/GiftsListReport';
 import RoutesListReport from './pages/RoutesListReport';
+import MissedReports from './pages/MissedReports';
 
 
 
@@ -71,6 +72,7 @@ function App() {
             <Route path="geo-fencing" element={<GeoFencingListReport />} />
             <Route path="gifts" element={<GiftsListReport />} />
             <Route path="routes" element={<RoutesListReport />} />
+            <Route path="/reports/missed-reports" element={<MissedReports />} />
           </Route>
           <Route path="/extras/primary-sales" element={<PrimarySales />} />
           <Route path="/extras/primary-sales/edit/:id" element={<PrimarySales />} />
