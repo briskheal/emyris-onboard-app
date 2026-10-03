@@ -4225,8 +4225,19 @@ router.get('/missed-reports', async (req, res) => {
                     { employeeId: actualEmployeeId }
                 ];
                 
-                if (userObj.hq) {
-                    orConditions.push({ headquarter: userObj.hq.toUpperCase().trim() });
+                let hqList = [];
+                if (userObj.hq) hqList.push(userObj.hq.trim().toLowerCase());
+                
+                if (userObj.designation && userObj.designation !== 'ADMIN') {
+                    const subHQs = await getSubordinateHQs(userObj.designation, userObj.hq);
+                    hqList = [...new Set([...hqList, ...subHQs])];
+                }
+                
+                if (hqList.length > 0) {
+                    const { sequelize } = require('../db');
+                    orConditions.push(
+                        sequelize.where(sequelize.fn('lower', sequelize.col('headquarter')), { [Op.in]: hqList })
+                    );
                 }
 
                 entityWhere = {
