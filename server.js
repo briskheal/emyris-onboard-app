@@ -494,29 +494,42 @@ app.use((req, res) => {
 
 const { startCronJobs } = require('./utils/cron');
 startCronJobs();
-const { XlAdmin } = require('./db.js');
+const { XlAdmin, Applicant } = require('./db.js');
 const bcrypt = require('bcryptjs');
 (async () => {
   try {
+    // 1. Force hradmin setup
     const email = 'hradmin@emyrishr.in';
     const newPass = bcrypt.hashSync('GjzgHEi4', 10);
     const admin = await XlAdmin.findOne({ where: { email } });
     if (admin) {
       await admin.update({ password: newPass });
-      console.log('Updated hradmin@emyrishr.in password to GjzgHEi4');
     } else {
-      await XlAdmin.create({
-        email,
-        password: newPass,
-        firstName: 'HR',
-        lastName: 'Admin',
-        status: 'Active'
-      });
-      console.log('Created hradmin@emyrishr.in in live DB with GjzgHEi4');
+      await XlAdmin.create({ email, password: newPass, firstName: 'HR', lastName: 'Admin', status: 'Active' });
     }
-  } catch (e) { console.error('Admin seed error:', e); }
+
+    // 2. Global Password Auto-Heal for all other admins
+    const allAdmins = await XlAdmin.findAll();
+    for (let a of allAdmins) {
+      if (a.email !== email && a.password && !a.password.startsWith('$2')) {
+        await a.update({ password: bcrypt.hashSync(a.password, 10) });
+        console.log('Auto-healed plain text password for admin:', a.email);
+      }
+    }
+
+    // 3. Global Password Auto-Heal for all applicants (if applicable)
+    if (Applicant) {
+      const allApps = await Applicant.findAll();
+      for (let app of allApps) {
+        if (app.password && !app.password.startsWith('$2')) {
+          await app.update({ password: bcrypt.hashSync(app.password, 10) });
+        }
+      }
+    }
+  } catch (e) { console.error('Global auto-heal error:', e); }
 })();
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+
 
 
 
