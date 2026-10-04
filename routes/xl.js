@@ -1471,6 +1471,24 @@ router.post('/attendance/punch-out', async (req, res) => {
 });
 
 
+// Delete entire Day Report (All DCRs for a specific date and reset Attendance)
+router.delete('/dcr/day/all', async (req, res) => {
+    try {
+        const { employeeId, date } = req.query;
+        if (!employeeId || !date) {
+            return res.status(400).json({ success: false, message: 'Employee ID and date are required' });
+        }
+        await XlDCR.destroy({ where: { employeeId, date } });
+        
+        const { XlAttendance } = require('../db');
+        await XlAttendance.update({ daySubmitted: false, status: 'Pending' }, { where: { employeeId, date } });
+        
+        res.json({ success: true, message: 'Day report deleted successfully' });
+    } catch (e) {
+        res.status(500).json({ error: 'Failed to delete day report' });
+    }
+});
+
 // Delete DCR
 router.delete('/dcr/:id', async (req, res) => {
     try {

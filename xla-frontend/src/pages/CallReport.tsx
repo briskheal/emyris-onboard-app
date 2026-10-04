@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, RefreshCw, ChevronDown, X } from 'lucide-react';
+import { ChevronLeft, RefreshCw, ChevronDown, X, Trash2 } from 'lucide-react';
 import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
 import CustomUserSelect from '../components/CustomUserSelect';
 import axios from 'axios';
@@ -60,6 +60,23 @@ export default function CallReport() {
   const [reportData, setReportData] = useState<any[]>([]);
   const [rawDCRs, setRawDCRs] = useState<any[]>([]);
   const [selectedView, setSelectedView] = useState<any | null>(null);
+
+  const handleDeleteDayReport = async (row: any) => {
+    if (!window.confirm('Are you sure you want to delete this entire day report? This action cannot be undone.')) return;
+    try {
+      const res = await axios.delete('/api/xl/dcr/day/all', {
+        params: { employeeId: selectedUser, date: row.date },
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (res.data.success) {
+        alert('Day report deleted successfully');
+        setSelectedView(null);
+        window.location.reload();
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.error || 'Failed to delete day report');
+    }
+  };
 
   useEffect(() => {
     if (!selectedUser || !startDate || !endDate) {
@@ -546,9 +563,14 @@ export default function CallReport() {
                 </button>
                 <h1 className="text-[12px] font-black text-white tracking-widest uppercase">CALL REPORT DETAILS</h1>
               </div>
-              <button onClick={() => setSelectedView(null)} className="text-slate-400 hover:text-white">
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-4">
+                <button onClick={() => handleDeleteDayReport(selectedView)} className="text-red-500 hover:text-red-400 transition-colors" title="Delete Day Report">
+                  <Trash2 size={18} />
+                </button>
+                <button onClick={() => setSelectedView(null)} className="text-slate-400 hover:text-white transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
             
             <div className="p-6 overflow-y-auto flex-1">
