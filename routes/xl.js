@@ -4210,7 +4210,21 @@ router.get('/missed-reports', async (req, res) => {
 
         const allUsers = await XlUser.findAll({ raw: true });
         const userMap = {};
-        allUsers.forEach(u => userMap[u._id] = `${u.firstName} ${u.lastName}`.trim());
+        const empIdMap = {};
+        const uidMap = {};
+        const hqMap = {};
+        allUsers.forEach(u => {
+            const fullName = `${u.firstName} ${u.lastName}`.trim();
+            userMap[u._id] = fullName;
+            if (u.employeeId) empIdMap[u.employeeId] = fullName;
+            if (u.uid) uidMap[u.uid] = fullName;
+            if (u.hq) hqMap[u.hq.trim().toLowerCase()] = fullName;
+        });
+
+        let selectedUserName = null;
+        if (userAllotted && userAllotted !== 'all') {
+            selectedUserName = userMap[userAllotted];
+        }
 
         let entityWhere = {};
         let actualEmployeeId = userAllotted;
@@ -4360,6 +4374,14 @@ router.get('/missed-reports', async (req, res) => {
                 meetingDateStr = [...new Set(entityAllVisits[ent._id])].join(',');
             }
 
+            let eName = userMap[ent.userAllotted] || empIdMap[ent.employeeId] || uidMap[ent.employeeId];
+            if (!eName && ent.headquarter) {
+                eName = hqMap[ent.headquarter.trim().toLowerCase()];
+            }
+            if (!eName && selectedUserName) {
+                eName = selectedUserName;
+            }
+
             let row = {
                 _id: ent._id,
                 uid: uid,
@@ -4370,7 +4392,7 @@ router.get('/missed-reports', async (req, res) => {
                 actual: actual,
                 status: status,
                 meetingDate: meetingDateStr,
-                employeeName: userMap[ent.userAllotted] || 'Unassigned'
+                employeeName: eName || 'Unassigned'
             };
 
             if (reportType === 'Monthly') {
