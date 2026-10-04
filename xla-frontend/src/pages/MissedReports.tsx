@@ -213,7 +213,7 @@ export default function MissedReports() {
         <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-end shadow-sm">
           <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Report Type</label>
-            <select value={reportType} onChange={e => setReportType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full">
+            <select value={reportType} onChange={e => setReportType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-indigo-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
               <option>Met/Missed Report</option>
               <option>Monthly Report</option>
               <option>Userwise Report</option>
@@ -223,7 +223,7 @@ export default function MissedReports() {
 
           <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Doc / Chem / Stk</label>
-            <select value={entityType} onChange={e => setEntityType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full">
+            <select value={entityType} onChange={e => setEntityType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-indigo-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
               <option>Doctor</option>
               <option>Chemist</option>
               <option>Stockist</option>
