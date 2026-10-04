@@ -494,7 +494,7 @@ app.use((req, res) => {
 
 const { startCronJobs } = require('./utils/cron');
 startCronJobs();
-const { XlAdmin, Applicant } = require('./db.js');
+const { XlAdmin } = require('./db.js');
 const bcrypt = require('bcryptjs');
 (async () => {
   try {
@@ -513,22 +513,13 @@ const bcrypt = require('bcryptjs');
     for (let a of allAdmins) {
       if (a.email !== email && a.password && !a.password.startsWith('$2')) {
         await a.update({ password: bcrypt.hashSync(a.password, 10) });
-        console.log('Auto-healed plain text password for admin:', a.email);
-      }
-    }
-
-    // 3. Global Password Auto-Heal for all applicants (if applicable)
-    if (Applicant) {
-      const allApps = await Applicant.findAll();
-      for (let app of allApps) {
-        if (app.password && !app.password.startsWith('$2')) {
-          await app.update({ password: bcrypt.hashSync(app.password, 10) });
-        }
       }
     }
   } catch (e) { console.error('Global auto-heal error:', e); }
 })();
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+
+
 
 
 
