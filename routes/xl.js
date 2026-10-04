@@ -4338,12 +4338,7 @@ router.get('/missed-reports', async (req, res) => {
             }
         });
 
-        if (reportType === 'Userwise') {
-            const userSet = new Set(entities.map(e => e.userAllotted).filter(Boolean));
-            userSet.forEach(uid => {
-                userwiseStats[uid] = { total: 0, met: 0, partiallyMissed: 0, missed: 0 };
-            });
-        }
+// Dynamically grouped by resolved employee names later
 
         const getExpectedVisits = (categoryStr) => {
             if (!categoryStr) return 1;
@@ -4376,12 +4371,6 @@ router.get('/missed-reports', async (req, res) => {
                 else status = 'Fully Missed';
             }
 
-            if (reportType === 'Userwise' && ent.userAllotted && userwiseStats[ent.userAllotted]) {
-                userwiseStats[ent.userAllotted].total++;
-                if (status === 'Met') userwiseStats[ent.userAllotted].met++;
-                else if (status === 'Partially Missed') userwiseStats[ent.userAllotted].partiallyMissed++;
-                else userwiseStats[ent.userAllotted].missed++;
-            }
 
             if (status === 'Met') summary.met++;
             else if (status === 'Partially Missed') summary.partiallyMissed++;
@@ -4427,7 +4416,7 @@ router.get('/missed-reports', async (req, res) => {
         if (reportType === 'Userwise') {
             const userwiseList = Object.keys(userwiseStats).map(uid => ({
                 employeeId: uid,
-                employeeName: userMap[uid] || 'Unknown',
+                employeeName: uid,
                 total: userwiseStats[uid].total,
                 met: userwiseStats[uid].met,
                 partiallyMissed: userwiseStats[uid].partiallyMissed,
@@ -5088,6 +5077,11 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
+
+
+
+
 
 
 

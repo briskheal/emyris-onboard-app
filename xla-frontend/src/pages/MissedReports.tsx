@@ -106,7 +106,7 @@ export default function MissedReports() {
       const params: any = {
         reportType: typeStr, // 'Met/Missed', 'Monthly', 'Userwise'
         entityType,
-        userAllotted: selectedUser
+        userAllotted: typeStr === 'Userwise' ? 'all' : selectedUser
       };
 
       if (typeStr === 'Monthly') {
@@ -497,3 +497,4 @@ export default function MissedReports() {
     </div>
   );
 }
+
