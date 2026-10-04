@@ -4214,16 +4214,20 @@ router.get('/missed-reports', async (req, res) => {
 
         let entityWhere = { isActive: true };
         let actualEmployeeId = userAllotted;
+        let empCode = null;
 
         if (userAllotted && userAllotted !== 'all') {
             const userObj = allUsers.find(u => u._id === userAllotted);
             if (userObj) {
                 actualEmployeeId = userObj.employeeId;
+                empCode = userObj.uid;
                 
                 const orConditions = [
-                    { userAllotted: userAllotted },
-                    { employeeId: actualEmployeeId }
+                    { userAllotted: userAllotted }
                 ];
+                
+                if (actualEmployeeId) orConditions.push({ employeeId: actualEmployeeId });
+                if (empCode) orConditions.push({ employeeId: empCode });
                 
                 let hqList = [];
                 if (userObj.hq) hqList.push(userObj.hq.trim().toLowerCase());
@@ -4258,7 +4262,14 @@ router.get('/missed-reports', async (req, res) => {
         };
         
         if (userAllotted && userAllotted !== 'all' && reportType !== 'Userwise') {
-            dcrWhere.employeeId = actualEmployeeId;
+            const arr = [];
+            if (actualEmployeeId) arr.push(actualEmployeeId);
+            if (empCode) arr.push(empCode);
+            if (arr.length > 0) {
+                dcrWhere.employeeId = { [Op.in]: arr };
+            } else {
+                dcrWhere.employeeId = userAllotted;
+            }
         }
 
         const dcrs = await XlDCR.findAll({ where: dcrWhere, raw: true });
