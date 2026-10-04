@@ -4212,7 +4212,7 @@ router.get('/missed-reports', async (req, res) => {
         const userMap = {};
         allUsers.forEach(u => userMap[u._id] = `${u.firstName} ${u.lastName}`.trim());
 
-        let entityWhere = { isActive: true };
+        let entityWhere = {};
         let actualEmployeeId = userAllotted;
         let empCode = null;
 
