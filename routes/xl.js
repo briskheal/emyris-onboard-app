@@ -4275,7 +4275,7 @@ router.get('/missed-reports', async (req, res) => {
         const dcrs = await XlDCR.findAll({ where: dcrWhere, raw: true });
 
         const entityDcrCount = {};
-        const entityLatestDate = {};
+        const entityAllVisits = {};
         const userwiseStats = {};
         // For monthly report: breakdown of visits by month
         const entityMonthlyBreakdown = {}; 
@@ -4284,15 +4284,25 @@ router.get('/missed-reports', async (req, res) => {
             const eid = dcr.entityId;
             entityDcrCount[eid] = (entityDcrCount[eid] || 0) + 1;
             
-            if (!entityLatestDate[eid] || dcr.date > entityLatestDate[eid]) {
-                entityLatestDate[eid] = `${dcr.date} ${dcr.createdAt ? new Date(dcr.createdAt).toLocaleTimeString() : ''}`.trim();
+            const dDate = new Date(dcr.date);
+            const day = dDate.getDate();
+            let timeStr = '';
+            if (dcr.createdAt) {
+                 const cDate = new Date(dcr.createdAt);
+                 const hh = String(cDate.getHours()).padStart(2, '0');
+                 const mm = String(cDate.getMinutes()).padStart(2, '0');
+                 timeStr = `_${hh}.${mm}`;
             }
+            const formattedVisit = `${day}${timeStr}`;
+            
+            if (!entityAllVisits[eid]) entityAllVisits[eid] = [];
+            entityAllVisits[eid].push(formattedVisit);
 
             if (reportType === 'Monthly') {
                 if (!entityMonthlyBreakdown[eid]) entityMonthlyBreakdown[eid] = {};
-                const dcrDate = new Date(dcr.date);
-                const monthKey = dcrDate.toLocaleString('en-US', { month: 'short' }) + ' ' + dcrDate.getFullYear();
-                entityMonthlyBreakdown[eid][monthKey] = (entityMonthlyBreakdown[eid][monthKey] || 0) + 1;
+                const monthKey = dDate.toLocaleString('en-US', { month: 'short' }) + ' ' + dDate.getFullYear();
+                if (!entityMonthlyBreakdown[eid][monthKey]) entityMonthlyBreakdown[eid][monthKey] = [];
+                entityMonthlyBreakdown[eid][monthKey].push(formattedVisit);
             }
         });
 
@@ -4345,6 +4355,11 @@ router.get('/missed-reports', async (req, res) => {
             else if (status === 'Partially Missed') summary.partiallyMissed++;
             else summary.missed++;
 
+            let meetingDateStr = '-';
+            if (entityAllVisits[ent._id] && entityAllVisits[ent._id].length > 0) {
+                meetingDateStr = [...new Set(entityAllVisits[ent._id])].join(',');
+            }
+
             let row = {
                 _id: ent._id,
                 uid: uid,
@@ -4354,14 +4369,15 @@ router.get('/missed-reports', async (req, res) => {
                 expected: expectedTotal,
                 actual: actual,
                 status: status,
-                meetingDate: entityLatestDate[ent._id] || 'N/A',
+                meetingDate: meetingDateStr,
                 employeeName: userMap[ent.userAllotted] || 'Unassigned'
             };
 
             if (reportType === 'Monthly') {
                 row.monthlyBreakdown = {};
                 monthsInRange.forEach(m => {
-                    row.monthlyBreakdown[m] = entityMonthlyBreakdown[ent._id]?.[m] || 0;
+                    const mVisits = entityMonthlyBreakdown[ent._id]?.[m] || [];
+                    row.monthlyBreakdown[m] = mVisits.length > 0 ? [...new Set(mVisits)].join(',') : '';
                 });
             }
 

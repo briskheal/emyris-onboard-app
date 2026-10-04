@@ -16,7 +16,7 @@ interface MissedReportData {
   status: 'Met' | 'Partially Missed' | 'Missed' | 'Fully Missed';
   meetingDate: string;
   employeeName: string;
-  monthlyBreakdown?: Record<string, number>;
+  monthlyBreakdown?: Record<string, string>;
 }
 
 interface UserwiseData {
@@ -175,7 +175,7 @@ export default function MissedReports() {
         
         if (isMonthly && d.monthlyBreakdown) {
            monthsInRange.forEach(m => {
-              row[m] = d.monthlyBreakdown![m] || 0;
+              row[m] = d.monthlyBreakdown![m] || '-';
            });
         } else {
            row['Meeting Date/Time'] = d.meetingDate;
@@ -473,7 +473,7 @@ export default function MissedReports() {
                         {(reportType === 'Monthly Report' || reportType === 'Download Report') ? (
                            monthsInRange.map(m => (
                               <td key={m} className="px-4 py-2 border-r border-[#3b3b5a] text-center font-semibold text-slate-300">
-                                 {d.monthlyBreakdown?.[m] || 0}
+                                 {d.monthlyBreakdown?.[m] || '-'}
                               </td>
                            ))
                         ) : (
