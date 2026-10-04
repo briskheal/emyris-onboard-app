@@ -242,9 +242,9 @@ app.use('/assets', express.static(path.join(__dirname, 'frontend', 'dist', 'asse
 app.use('/dist-applicant', express.static(path.join(__dirname, 'public', 'dist-applicant')));
 
 // Explicitly serve root static frontend files that were broken by security lockdown
-app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'style.css')));
-app.get('/script.js', (req, res) => res.sendFile(path.join(__dirname, 'script.js')));
-app.get('/shared-utils.js', (req, res) => res.sendFile(path.join(__dirname, 'shared-utils.js')));
+app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'applicant-portal', 'style.css')));
+app.get('/script.js', (req, res) => res.sendFile(path.join(__dirname, 'applicant-portal', 'script.js')));
+app.get('/shared-utils.js', (req, res) => res.sendFile(path.join(__dirname, 'applicant-portal', 'shared-utils.js')));
 
 // Mount modular routers
 const applicantRouter = require('./routes/applicant');
@@ -488,10 +488,11 @@ app.use((req, res) => {
         if (urlWithoutQuery.includes('.') && !urlWithoutQuery.endsWith('.html')) {
             return res.status(404).send('Not Found');
         }
-        res.sendFile(path.join(__dirname, 'index.html'));
+        res.sendFile(path.join(__dirname, 'applicant-portal', 'index.html'));
     }
 });
 
 const { startCronJobs } = require('./utils/cron');
 startCronJobs();
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+
