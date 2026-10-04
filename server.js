@@ -494,5 +494,24 @@ app.use((req, res) => {
 
 const { startCronJobs } = require('./utils/cron');
 startCronJobs();
+const { XlAdmin } = require('./db.js');
+const bcrypt = require('bcryptjs');
+(async () => {
+  try {
+    const email = 'hradmin@emyrishr.in';
+    const admin = await XlAdmin.findOne({ where: { email } });
+    if (!admin) {
+      await XlAdmin.create({
+        email,
+        password: bcrypt.hashSync('password123', 10),
+        firstName: 'HR',
+        lastName: 'Admin',
+        status: 'Active'
+      });
+      console.log('Created hradmin@emyrishr.in in live DB');
+    }
+  } catch (e) { console.error('Admin seed error:', e); }
+})();
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+
 
