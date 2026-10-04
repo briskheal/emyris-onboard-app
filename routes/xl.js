@@ -4406,6 +4406,7 @@ router.get('/missed-reports', async (req, res) => {
                 uid: uid,
                 name: ent.name || ent.businessName,
                 degree: ent.degree,
+                specialization: ent.specialization,
                 category: ent.category,
                 expected: expectedTotal,
                 actual: actual,
@@ -5089,6 +5090,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 

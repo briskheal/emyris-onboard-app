@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Download, ChevronLeft, Target, ShieldAlert, XCircle, Calendar, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import CustomUserSelect from '../components/CustomUserSelect';
 
 interface MissedReportData {
@@ -143,18 +143,31 @@ export default function MissedReports() {
   };
 
   const downloadExcel = () => {
+    const applyHeaderStyle = (ws: any) => {
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1:A1');
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_cell({ r: 0, c: C });
+        if (!ws[address]) continue;
+        ws[address].s = {
+          fill: { fgColor: { rgb: "4F81BD" } },
+          font: { color: { rgb: "FFFFFF" }, bold: true }
+        };
+      }
+    };
+
     if (reportType === 'Userwise Report') {
       const ws = XLSX.utils.json_to_sheet(userwiseData.map((d, i) => ({
         'Sr no.': i + 1,
         'Employee Name': d.employeeName,
-        [`Total ${entityType}`]: d.total,
+        ['Total ' + entityType]: d.total,
         'Met': d.met,
         'Partially Missed': d.partiallyMissed,
         'Missed': d.missed
       })));
+      applyHeaderStyle(ws);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Userwise Report");
-      XLSX.writeFile(wb, `Userwise_${entityType}_Report.xlsx`);
+      XLSX.writeFile(wb, 'Userwise_' + entityType + '_Report.xlsx');
     } else {
       const isMonthly = reportType === 'Monthly Report' || reportType === 'Download Report';
       const ws = XLSX.utils.json_to_sheet(data.map((d, i) => {
@@ -168,6 +181,7 @@ export default function MissedReports() {
         if (entityType === 'Doctor') {
           row['UID'] = d.uid;
           row['Degree'] = d.degree;
+          row['Speciality'] = (d as any).specialization;
           row['Category'] = d.category;
           row['Expected Visit'] = d.expected;
         }
@@ -183,13 +197,15 @@ export default function MissedReports() {
 
         return row;
       }));
+      applyHeaderStyle(ws);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, `${entityType} Report`);
-      XLSX.writeFile(wb, `${entityType}_Missed_Report.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, entityType + ' Report');
+      XLSX.writeFile(wb, entityType + '_Missed_Report.xlsx');
     }
   };
 
   return (
+
     <div className="min-h-screen bg-[#151521] text-slate-300 p-6 font-sans">
       <div className="max-w-[1400px] mx-auto space-y-6">
         
@@ -211,7 +227,7 @@ export default function MissedReports() {
 
         {/* Filters Box */}
         <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-end shadow-sm">
-          <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+          <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Report Type</label>
             <select value={reportType} onChange={e => setReportType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-indigo-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
               <option>Met/Missed Report</option>
@@ -221,7 +237,7 @@ export default function MissedReports() {
             </select>
           </div>
 
-          <div className="flex flex-col gap-2 flex-1 min-w-[200px]">
+          <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Doc / Chem / Stk</label>
             <select value={entityType} onChange={e => setEntityType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-indigo-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
               <option>Doctor</option>
@@ -232,7 +248,7 @@ export default function MissedReports() {
 
           {(reportType === 'Monthly Report' || reportType === 'Download Report') ? (
             <>
-              <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
+              <div className="flex flex-col gap-2 flex-1 min-w-[140px] relative">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Start Month</label>
                 <div 
                   onClick={() => { setShowStartMonthPicker(!showStartMonthPicker); setShowEndMonthPicker(false); }}
@@ -261,7 +277,7 @@ export default function MissedReports() {
                 )}
               </div>
 
-              <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
+              <div className="flex flex-col gap-2 flex-1 min-w-[140px] relative">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select End Month</label>
                 <div 
                   onClick={() => { setShowEndMonthPicker(!showEndMonthPicker); setShowStartMonthPicker(false); }}
@@ -291,7 +307,7 @@ export default function MissedReports() {
               </div>
             </>
           ) : (
-            <div className="flex flex-col gap-2 flex-1 min-w-[200px] relative">
+            <div className="flex flex-col gap-2 flex-1 min-w-[140px] relative">
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Month & Year</label>
               <div 
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
@@ -322,7 +338,7 @@ export default function MissedReports() {
           )}
 
           {reportType !== 'Userwise Report' && (
-            <div className="flex flex-col gap-2 flex-1 min-w-[200px] z-50">
+            <div className="flex flex-col gap-2 flex-1 min-w-[140px] z-50">
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select User</label>
               <CustomUserSelect users={users} selectedUser={selectedUser} onChange={setSelectedUser} />
             </div>
@@ -497,4 +513,10 @@ export default function MissedReports() {
     </div>
   );
 }
+
+
+
+
+
+
 
