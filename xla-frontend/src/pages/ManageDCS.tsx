@@ -682,7 +682,7 @@ export default function ManageDCS() {
           <h2 className="text-white font-black text-sm tracking-widest uppercase">MANAGE DOCTORS, STOCKISTS & CHEMISTS</h2>
         </div>
         <div className="flex-1 min-w-0 overflow-y-auto py-6">
-          <ul className="space-y-2 px-4 text-xs font-bold tracking-wider">
+          <ul className="space-y-1 px-4">
             {[
               { id: 'create_doctor', label: 'CREATE DOCTORS' },
               { id: 'create_chemist', label: 'CREATE CHEMISTS' },
@@ -692,7 +692,7 @@ export default function ManageDCS() {
               { id: 'dcs_list_management', label: 'DCS LIST MANAGEMENT' }
             ].map(tab => (
               <li key={tab.id}>
-                <button onClick={() => setActiveTab(tab.id as any)} className={`w-full text-left px-5 py-4 rounded-xl transition-all ${activeTab === tab.id ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                <button onClick={() => setActiveTab(tab.id as any)} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
                   {tab.label}
                 </button>
               </li>

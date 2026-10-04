@@ -444,24 +444,24 @@ export default function ManageAllowances() {
           <h2 className="text-white font-black text-sm tracking-widest uppercase">MANAGE EXPENSES</h2>
         </div>
         <div className="flex-1 min-w-0 overflow-y-auto py-6">
-          <ul className="space-y-2 px-4 text-sm font-bold tracking-wider">
+          <ul className="space-y-1 px-4">
             <li>
-              <button onClick={() => setActiveTab('travel')} className={`w-full text-left px-6 py-4 rounded-xl transition-all ${activeTab === 'travel' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('travel')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'travel' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
                 TRAVEL ALLOWANCE
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('outstation')} className={`w-full text-left px-6 py-4 rounded-xl transition-all ${activeTab === 'outstation' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('outstation')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'outstation' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
                 OUT STATION ALLOWANCE
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('rates')} className={`w-full text-left px-6 py-4 rounded-xl transition-all ${activeTab === 'rates' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('rates')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'rates' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
                 RATES
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('da_eligibility')} className={`w-full text-left px-6 py-4 rounded-xl transition-all ${activeTab === 'da_eligibility' ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+              <button onClick={() => setActiveTab('da_eligibility')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'da_eligibility' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
                 ACTIVITY DA ELIGIBILITY
               </button>
             </li>

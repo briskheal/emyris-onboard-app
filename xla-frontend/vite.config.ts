@@ -7,8 +7,9 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      
       registerType: 'autoUpdate',
-      workbox: {
+      workbox: { maximumFileSizeToCacheInBytes: 5000000,
         globPatterns: ['**/*.{js,css,html,ico,png,svg}']
       },
       manifest: {
@@ -35,3 +36,4 @@ export default defineConfig({
     emptyOutDir: true,
   }
 })
+
