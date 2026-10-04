@@ -499,19 +499,24 @@ const bcrypt = require('bcryptjs');
 (async () => {
   try {
     const email = 'hradmin@emyrishr.in';
+    const newPass = bcrypt.hashSync('GjzgHEi4', 10);
     const admin = await XlAdmin.findOne({ where: { email } });
-    if (!admin) {
+    if (admin) {
+      await admin.update({ password: newPass });
+      console.log('Updated hradmin@emyrishr.in password to GjzgHEi4');
+    } else {
       await XlAdmin.create({
         email,
-        password: bcrypt.hashSync('password123', 10),
+        password: newPass,
         firstName: 'HR',
         lastName: 'Admin',
         status: 'Active'
       });
-      console.log('Created hradmin@emyrishr.in in live DB');
+      console.log('Created hradmin@emyrishr.in in live DB with GjzgHEi4');
     }
   } catch (e) { console.error('Admin seed error:', e); }
 })();
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+
 
 
