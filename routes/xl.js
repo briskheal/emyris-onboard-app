@@ -4388,6 +4388,18 @@ router.get('/missed-reports', async (req, res) => {
             if (!eName && selectedUserName) {
                 eName = selectedUserName;
             }
+            
+            const finalEName = eName || 'Unassigned';
+            
+            if (reportType === 'Userwise') {
+                if (!userwiseStats[finalEName]) {
+                    userwiseStats[finalEName] = { total: 0, met: 0, partiallyMissed: 0, missed: 0 };
+                }
+                userwiseStats[finalEName].total++;
+                if (status === 'Met') userwiseStats[finalEName].met++;
+                else if (status === 'Partially Missed') userwiseStats[finalEName].partiallyMissed++;
+                else userwiseStats[finalEName].missed++;
+            }
 
             let row = {
                 _id: ent._id,
@@ -4399,7 +4411,7 @@ router.get('/missed-reports', async (req, res) => {
                 actual: actual,
                 status: status,
                 meetingDate: meetingDateStr,
-                employeeName: eName || 'Unassigned'
+                employeeName: finalEName
             };
 
             if (reportType === 'Monthly') {
@@ -5077,6 +5089,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 
