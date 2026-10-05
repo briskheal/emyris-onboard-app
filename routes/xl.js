@@ -3289,6 +3289,22 @@ router.get('/reports/primary-sales', async (req, res) => {
             whereClause.date = { [Op.lte]: endDate };
         }
 
+        if (req.query.employeeId && req.query.employeeId !== 'all') {
+            whereClause.employeeId = req.query.employeeId;
+        }
+
+        if (type === 'User') {
+            const rawData = await XlPrimarySales.findAll({ where: whereClause, raw: true, order: [['createdAt', 'DESC']] });
+            const users = await XlUser.findAll({ attributes: ['employeeId', 'firstName', 'lastName'], raw: true });
+            const userMap = {};
+            users.forEach(u => userMap[u.employeeId] = `${u.firstName || ''} ${u.lastName || ''}`.trim());
+            rawData.forEach(d => {
+                d.userName = userMap[d.employeeId] || d.employeeId;
+                d.totalSales = d.netInvValue;
+            });
+            return res.json({ success: true, data: rawData });
+        }
+
         const isDateWise = dateWise === 'true';
         let groupFields = [];
         let attributes = [];
@@ -3299,9 +3315,6 @@ router.get('/reports/primary-sales', async (req, res) => {
         } else if (type === 'Headquarter') {
             groupFields = ['headquarter'];
             attributes = ['headquarter'];
-        } else if (type === 'User') {
-            groupFields = ['employeeId'];
-            attributes = ['employeeId'];
         } else if (type === 'Date') {
             groupFields = ['date'];
             attributes = ['date'];

@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, Eye, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, Eye, ArrowLeft, Search } from 'lucide-react';
 import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
+import CustomUserSelect from '../components/CustomUserSelect';
+import { RefreshCw } from 'lucide-react';
+import { useEffect } from 'react';
 
 export default function PrimarySalesReports() {
   const navigate = useNavigate();
@@ -12,6 +15,25 @@ export default function PrimarySalesReports() {
   
   const [selectType, setSelectType] = useState('Stockist'); // Stockist, Headquarter, Date, User
   const [viewDateWise, setViewDateWise] = useState(false);
+  
+  const [users, setUsers] = useState<any[]>([]);
+  const [selectedUser, setSelectedUser] = useState<string>('');
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const [adminsRes, usersRes] = await Promise.all([
+          axios.get('/api/admin/admins'),
+          axios.get('/api/admin/users')
+        ]);
+        let allUsers: any[] = [];
+        if (adminsRes.data?.success) allUsers = [...allUsers, ...adminsRes.data.admins.map((x: any) => ({ ...x, isAdmin: true }))];
+        if (usersRes.data?.success) allUsers = [...allUsers, ...usersRes.data.users.map((x: any) => ({ ...x, isAdmin: false }))];
+        setUsers(allUsers);
+      } catch (err) {}
+    };
+    fetchUsers();
+  }, []);
   
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +59,8 @@ export default function PrimarySalesReports() {
           startDate: formatYYYYMMDD(startDate),
           endDate: formatYYYYMMDD(endDate),
           type: selectType,
-          dateWise: viewDateWise
+          dateWise: viewDateWise,
+          employeeId: selectType === 'User' ? selectedUser : undefined
         },
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
@@ -121,9 +144,9 @@ export default function PrimarySalesReports() {
             />
 
             <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-end shadow-sm rounded-xl">
-              <div className="flex flex-col gap-2 flex-1 min-w-[200px] max-w-[300px]">
+              <div className="flex flex-col gap-2 min-w-[200px] max-w-[300px]">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Type <span className="text-rose-500">*</span></label>
-                <select value={selectType} onChange={e => setSelectType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
+                <select value={selectType} onChange={e => { setSelectType(e.target.value); setSelectedUser(''); }} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
                   <option>Stockist</option>
                   <option>Headquarter</option>
                   <option>Date</option>
@@ -131,20 +154,30 @@ export default function PrimarySalesReports() {
                 </select>
               </div>
 
-              <div className="flex items-center gap-2 h-[42px]">
-                <span className="text-sm font-semibold text-slate-300">VIEW DATE WISE</span>
-                <button 
-                  onClick={() => setViewDateWise(!viewDateWise)}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors ${viewDateWise ? 'bg-sky-500' : 'bg-[#3b3b5a]'}`}
-                >
-                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${viewDateWise ? 'translate-x-6' : 'translate-x-0'}`} />
-                </button>
-              </div>
+              {selectType === 'User' && (
+                <div className="flex flex-col gap-2 min-w-[250px] max-w-[350px]">
+                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select User</label>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-grow">
+                      <CustomUserSelect 
+                        users={users}
+                        selectedUser={selectedUser}
+                        onChange={(id) => setSelectedUser(id)}
+                      />
+                    </div>
+                    <button onClick={fetchReports} className="p-2 text-emerald-400 hover:bg-emerald-500/10 rounded-full transition-colors">
+                      <RefreshCw size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
 
-              <button onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg">
+              <button onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg ml-auto">
                 See Reports
               </button>
             </div>
+
+            <p className="text-slate-500 text-sm mb-4 mt-6">We use caching on this page click see reports in case you don't see updated data.</p>
 
             {/* Main Data Table */}
             <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden rounded-xl">
@@ -152,6 +185,15 @@ export default function PrimarySalesReports() {
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
                   SHOWING ({data.length}) ENTRIES
                 </h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold text-slate-300">VIEW DATE WISE</span>
+                  <button 
+                    onClick={() => setViewDateWise(!viewDateWise)}
+                    className={`w-12 h-6 rounded-full p-1 transition-colors ${viewDateWise ? 'bg-sky-500' : 'bg-[#3b3b5a]'}`}
+                  >
+                    <div className={`w-4 h-4 rounded-full bg-white transition-transform ${viewDateWise ? 'translate-x-6' : 'translate-x-0'}`} />
+                  </button>
+                </div>
               </div>
               
               <div className="overflow-x-auto">
@@ -162,42 +204,72 @@ export default function PrimarySalesReports() {
                     <thead className="text-[11px] font-bold uppercase bg-[#151521] text-slate-400 border-b border-[#3b3b5a]">
                       <tr>
                         <th className="px-4 py-3 border-r border-[#3b3b5a] w-[1%]">Sr no.</th>
-                        {viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
-                        {selectType === 'Stockist' && (
+                        
+                        {selectType === 'User' ? (
                           <>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a]">Stockist</th>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>
+                            <th className="px-4 py-3 border-r border-[#3b3b5a]">Invoice Date ↑</th>
+                            <th className="px-4 py-3 border-r border-[#3b3b5a]">Invoice Number ↑</th>
+                            <th className="px-4 py-3 border-r border-[#3b3b5a]"><Search size={12} className="inline mr-1" />Submitted By</th>
+                            <th className="px-4 py-3 border-r border-[#3b3b5a]"><Search size={12} className="inline mr-1" />Stockist</th>
+                            <th className="px-4 py-3 border-r border-[#3b3b5a]"><Search size={12} className="inline mr-1" />Headquarter</th>
+                            <th className="px-4 py-3 border-r border-[#3b3b5a] text-center">Total Primary<br/>Sales (₹) ↑</th>
+                          </>
+                        ) : (
+                          <>
+                            {viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
+                            {selectType === 'Stockist' && (
+                              <>
+                                <th className="px-4 py-3 border-r border-[#3b3b5a]">Stockist</th>
+                                <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>
+                              </>
+                            )}
+                            {selectType === 'Headquarter' && <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>}
+                            {selectType === 'Date' && !viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
+                            <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Total Primary Sales (₹)</th>
+                            <th className="px-4 py-3 text-center w-[1%]">View</th>
                           </>
                         )}
-                        {selectType === 'Headquarter' && <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>}
-                        {selectType === 'User' && <th className="px-4 py-3 border-r border-[#3b3b5a]">User</th>}
-                        {selectType === 'Date' && !viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
-                        <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Total Primary Sales (₹)</th>
-                        <th className="px-4 py-3 text-center w-[1%]">View</th>
                       </tr>
                     </thead>
                     <tbody>
                       {data.map((d, i) => (
                         <tr key={i} className="border-b border-[#2d2d44] hover:bg-[#252538] transition-colors">
                           <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{i + 1}</td>
-                          {viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>}
                           
-                          {selectType === 'Stockist' && (
+                          {selectType === 'User' ? (
                             <>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockist}</td>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.invoiceNumber || d.invNumber || '-'}</td>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
+                                <div className="flex flex-col">
+                                  <span className="font-medium text-slate-200">{d.userName || d.employeeId}</span>
+                                </div>
+                              </td>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockist}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-center font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
+                            </>
+                          ) : (
+                            <>
+                              {viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>}
+                              
+                              {selectType === 'Stockist' && (
+                                <>
+                                  <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockist}</td>
+                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                                </>
+                              )}
+                              {selectType === 'Headquarter' && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.headquarter}</td>}
+                              {selectType === 'Date' && !viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>}
+                              
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
+                              <td className="px-4 py-2 text-center">
+                                <button onClick={() => openDetail(d)} className="text-sky-400 hover:text-sky-300 p-1 bg-sky-500/10 rounded">
+                                  <Eye size={18} />
+                                </button>
+                              </td>
                             </>
                           )}
-                          {selectType === 'Headquarter' && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.headquarter}</td>}
-                          {selectType === 'User' && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.userName || d.employeeId}</td>}
-                          {selectType === 'Date' && !viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>}
-                          
-                          <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
-                          <td className="px-4 py-2 text-center">
-                            <button onClick={() => openDetail(d)} className="text-sky-400 hover:text-sky-300 p-1 bg-sky-500/10 rounded">
-                              <Eye size={18} />
-                            </button>
-                          </td>
                         </tr>
                       ))}
                       {data.length === 0 && !loading && (
