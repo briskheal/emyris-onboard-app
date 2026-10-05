@@ -1,11 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, Eye, ArrowLeft, Search } from 'lucide-react';
+import { ChevronLeft, Eye, ArrowLeft, Search, X, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react';
 import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
 import CustomUserSelect from '../components/CustomUserSelect';
-import { RefreshCw } from 'lucide-react';
-import { useEffect } from 'react';
 
 export default function PrimarySalesReports() {
   const navigate = useNavigate();
@@ -18,6 +16,10 @@ export default function PrimarySalesReports() {
   
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
+
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+  const [activeSearch, setActiveSearch] = useState<string | null>(null);
+  const [searchFilters, setSearchFilters] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -120,6 +122,105 @@ export default function PrimarySalesReports() {
     return '';
   };
 
+  const processedData = useMemo(() => {
+    let result = [...data];
+    if (Object.keys(searchFilters).length > 0) {
+      result = result.filter(item => {
+        let matches = true;
+        Object.entries(searchFilters).forEach(([key, val]) => {
+          if (val) {
+            let itemVal = (item[key] || '').toString().toLowerCase();
+            if (key === 'userName') {
+              itemVal = (item.userName || item.employeeId || '').toString().toLowerCase();
+            } else if (key === 'invoiceNumber') {
+              itemVal = (item.invoiceNumber || item.invNumber || '').toString().toLowerCase();
+            }
+            if (!itemVal.includes(val.toLowerCase())) matches = false;
+          }
+        });
+        return matches;
+      });
+    }
+    if (sortConfig) {
+      result.sort((a, b) => {
+        let valA = a[sortConfig.key];
+        let valB = b[sortConfig.key];
+        if (sortConfig.key === 'totalSales') {
+          valA = Number(valA) || 0;
+          valB = Number(valB) || 0;
+        } else if (sortConfig.key === 'userName') {
+          valA = (a.userName || a.employeeId || '').toString().toLowerCase();
+          valB = (b.userName || b.employeeId || '').toString().toLowerCase();
+        } else if (sortConfig.key === 'invoiceNumber') {
+          valA = (a.invoiceNumber || a.invNumber || '').toString().toLowerCase();
+          valB = (b.invoiceNumber || b.invNumber || '').toString().toLowerCase();
+        } else {
+          valA = (valA || '').toString().toLowerCase();
+          valB = (valB || '').toString().toLowerCase();
+        }
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+    return result;
+  }, [data, searchFilters, sortConfig]);
+
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const renderSortableHeader = (label: React.ReactNode, sortKey: string, align: 'left' | 'center' | 'right' = 'left') => {
+    return (
+      <th className={`px-4 py-3 border-r border-[#3b3b5a] cursor-pointer hover:bg-[#252538] transition-colors text-${align}`} onClick={() => handleSort(sortKey)}>
+        <div className={`flex items-center gap-1 ${align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : ''}`}>
+          {label}
+          {sortConfig?.key === sortKey ? (
+            sortConfig.direction === 'asc' ? <ArrowUp size={12} className="text-emerald-400" /> : <ArrowDown size={12} className="text-emerald-400" />
+          ) : (
+            <ArrowUp size={12} className="opacity-30" />
+          )}
+        </div>
+      </th>
+    );
+  };
+
+  const renderSearchableHeader = (label: string, searchKey: string) => {
+    const isActive = activeSearch === searchKey;
+    return (
+      <th className="px-4 py-3 border-r border-[#3b3b5a] transition-all">
+        {isActive ? (
+          <div className="flex items-center gap-2 border border-sky-500 rounded-full px-3 py-1 bg-[#252538]">
+            <span className="text-sky-400 text-[10px]">Search</span>
+            <input 
+              autoFocus
+              type="text" 
+              value={searchFilters[searchKey] || ''}
+              onChange={e => setSearchFilters(prev => ({...prev, [searchKey]: e.target.value}))}
+              className="bg-transparent text-white text-xs w-20 outline-none placeholder-slate-500" 
+              placeholder={label}
+            />
+            <button onClick={() => {
+              setActiveSearch(null);
+              setSearchFilters(prev => ({...prev, [searchKey]: ''}));
+            }} className="text-rose-400 hover:text-rose-300">
+              <X size={12} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 cursor-pointer hover:text-sky-400 transition-colors group" onClick={() => setActiveSearch(searchKey)}>
+            <Search size={12} className="text-slate-500 group-hover:text-sky-400" />
+            {label}
+          </div>
+        )}
+      </th>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#151521] text-slate-300 p-6 font-sans">
       <div className="max-w-[1400px] mx-auto space-y-6">
@@ -183,7 +284,7 @@ export default function PrimarySalesReports() {
             <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden rounded-xl">
               <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-                  SHOWING ({data.length}) ENTRIES
+                  SHOWING ({processedData.length}) ENTRIES
                 </h2>
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold text-slate-300">VIEW DATE WISE</span>
@@ -207,12 +308,12 @@ export default function PrimarySalesReports() {
                         
                         {selectType === 'User' ? (
                           <>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a]">Invoice Date ↑</th>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a]">Invoice Number ↑</th>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a]"><Search size={12} className="inline mr-1" />Submitted By</th>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a]"><Search size={12} className="inline mr-1" />Stockist</th>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a]"><Search size={12} className="inline mr-1" />Headquarter</th>
-                            <th className="px-4 py-3 border-r border-[#3b3b5a] text-center">Total Primary<br/>Sales (₹) ↑</th>
+                            {renderSortableHeader('Invoice Date', 'date')}
+                            {renderSortableHeader('Invoice Number', 'invoiceNumber')}
+                            {renderSearchableHeader('Submitted By', 'userName')}
+                            {renderSearchableHeader('Stockist', 'stockist')}
+                            {renderSearchableHeader('Headquarter', 'headquarter')}
+                            {renderSortableHeader(<>Total Primary<br/>Sales (₹)</>, 'totalSales', 'center')}
                           </>
                         ) : (
                           <>
@@ -232,7 +333,7 @@ export default function PrimarySalesReports() {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.map((d, i) => (
+                      {processedData.map((d, i) => (
                         <tr key={i} className="border-b border-[#2d2d44] hover:bg-[#252538] transition-colors">
                           <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{i + 1}</td>
                           
@@ -272,7 +373,7 @@ export default function PrimarySalesReports() {
                           )}
                         </tr>
                       ))}
-                      {data.length === 0 && !loading && (
+                      {processedData.length === 0 && !loading && (
                         <tr>
                           <td colSpan={10} className="px-4 py-8 text-center text-slate-500 font-medium">No records found.</td>
                         </tr>
