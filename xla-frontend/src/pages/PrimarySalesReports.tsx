@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronLeft, Eye, ArrowLeft } from 'lucide-react';
+import EmyrisDateRangePicker from '../components/EmyrisDateRangePicker';
 
 export default function PrimarySalesReports() {
   const navigate = useNavigate();
 
-  const [dateRangeType, setDateRangeType] = useState('This Month');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
+  const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 30));
   
   const [selectType, setSelectType] = useState('Stockist'); // Stockist, Headquarter, Date, User
   const [viewDateWise, setViewDateWise] = useState(false);
@@ -22,43 +22,11 @@ export default function PrimarySalesReports() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailViewDateWise, setDetailViewDateWise] = useState(false);
 
-  const calculateDateRange = (type: string) => {
-    const today = new Date();
-    let start = new Date();
-    let end = new Date();
-
-    if (type === 'Today') {
-      // already today
-    } else if (type === 'Yesterday') {
-      start.setDate(today.getDate() - 1);
-      end.setDate(today.getDate() - 1);
-    } else if (type === 'This Week') {
-      const first = today.getDate() - today.getDay();
-      start.setDate(first);
-    } else if (type === 'Last Week') {
-      const first = today.getDate() - today.getDay() - 7;
-      start.setDate(first);
-      end.setDate(first + 6);
-    } else if (type === 'This Month') {
-      start = new Date(today.getFullYear(), today.getMonth(), 1);
-    } else if (type === 'Last Month') {
-      start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      end = new Date(today.getFullYear(), today.getMonth(), 0);
-    }
-
-    return {
-      start: start.toISOString().split('T')[0],
-      end: end.toISOString().split('T')[0]
-    };
+  const formatYYYYMMDD = (d: Date | null) => {
+    if (!d) return '';
+    const tzOffset = d.getTimezoneOffset() * 60000;
+    return new Date(d.getTime() - tzOffset).toISOString().split('T')[0];
   };
-
-  useEffect(() => {
-    if (dateRangeType !== 'Custom') {
-      const { start, end } = calculateDateRange(dateRangeType);
-      setStartDate(start);
-      setEndDate(end);
-    }
-  }, [dateRangeType]);
 
   const fetchReports = async () => {
     setLoading(true);
@@ -66,8 +34,8 @@ export default function PrimarySalesReports() {
     try {
       const res = await axios.get('/api/xl/reports/primary-sales', {
         params: {
-          startDate,
-          endDate,
+          startDate: formatYYYYMMDD(startDate),
+          endDate: formatYYYYMMDD(endDate),
           type: selectType,
           dateWise: viewDateWise
         },
@@ -86,8 +54,8 @@ export default function PrimarySalesReports() {
     setDetailLoading(true);
     try {
       const params: any = {
-        startDate,
-        endDate,
+        startDate: formatYYYYMMDD(startDate),
+        endDate: formatYYYYMMDD(endDate),
         type: selectType,
         dateWise: isDateWise
       };
@@ -146,37 +114,16 @@ export default function PrimarySalesReports() {
         {!detailRow ? (
           <>
             {/* Filters */}
+            <EmyrisDateRangePicker 
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(start, end) => { setStartDate(start); setEndDate(end); }}
+            />
+
             <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-end shadow-sm rounded-xl">
-              
-              <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date Range</label>
-                <select value={dateRangeType} onChange={e => setDateRangeType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
-                  <option>Today</option>
-                  <option>Yesterday</option>
-                  <option>This Week</option>
-                  <option>Last Week</option>
-                  <option>This Month</option>
-                  <option>Last Month</option>
-                  <option>Custom</option>
-                </select>
-              </div>
-
-              {dateRangeType === 'Custom' && (
-                <>
-                  <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Start Date</label>
-                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full h-[42px]" />
-                  </div>
-                  <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">End Date</label>
-                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full h-[42px]" />
-                  </div>
-                </>
-              )}
-
-              <div className="flex flex-col gap-2 flex-1 min-w-[140px]">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Type</label>
-                <select value={selectType} onChange={e => setSelectType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2.5 text-sm text-slate-300 focus:border-indigo-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
+              <div className="flex flex-col gap-2 flex-1 min-w-[200px] max-w-[300px]">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Type <span className="text-rose-500">*</span></label>
+                <select value={selectType} onChange={e => setSelectType(e.target.value)} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
                   <option>Stockist</option>
                   <option>Headquarter</option>
                   <option>Date</option>
@@ -188,16 +135,15 @@ export default function PrimarySalesReports() {
                 <span className="text-sm font-semibold text-slate-300">VIEW DATE WISE</span>
                 <button 
                   onClick={() => setViewDateWise(!viewDateWise)}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors ${viewDateWise ? 'bg-indigo-500' : 'bg-[#3b3b5a]'}`}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors ${viewDateWise ? 'bg-sky-500' : 'bg-[#3b3b5a]'}`}
                 >
                   <div className={`w-4 h-4 rounded-full bg-white transition-transform ${viewDateWise ? 'translate-x-6' : 'translate-x-0'}`} />
                 </button>
               </div>
 
-              <button onClick={fetchReports} className="bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-6 h-[42px] rounded-lg transition-colors shadow-lg shadow-indigo-500/20 uppercase text-sm tracking-wider">
+              <button onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg">
                 See Reports
               </button>
-
             </div>
 
             {/* Main Data Table */}
