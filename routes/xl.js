@@ -3273,6 +3273,122 @@ router.post('/primary-sales/save', async (req, res) => {
 });
 
 
+// NEW API: Primary Sales Reports
+router.get('/reports/primary-sales', async (req, res) => {
+    try {
+        const { startDate, endDate, type, dateWise } = req.query;
+        const { XlPrimarySales, XlUser } = require('../db');
+        const { Op, fn, col } = require('sequelize');
+        
+        let whereClause = {};
+        if (startDate && endDate) {
+            whereClause.date = { [Op.between]: [startDate, endDate] };
+        } else if (startDate) {
+            whereClause.date = { [Op.gte]: startDate };
+        } else if (endDate) {
+            whereClause.date = { [Op.lte]: endDate };
+        }
+
+        const isDateWise = dateWise === 'true';
+        let groupFields = [];
+        let attributes = [];
+
+        if (type === 'Stockist') {
+            groupFields = ['stockist', 'headquarter'];
+            attributes = ['stockist', 'headquarter'];
+        } else if (type === 'Headquarter') {
+            groupFields = ['headquarter'];
+            attributes = ['headquarter'];
+        } else if (type === 'User') {
+            groupFields = ['employeeId'];
+            attributes = ['employeeId'];
+        } else if (type === 'Date') {
+            groupFields = ['date'];
+            attributes = ['date'];
+        }
+
+        if (isDateWise && type !== 'Date') {
+            groupFields.unshift('date');
+            attributes.unshift('date');
+        }
+        
+        attributes.push([fn('SUM', col('netInvValue')), 'totalSales']);
+
+        const data = await XlPrimarySales.findAll({
+            where: whereClause,
+            attributes: attributes,
+            group: groupFields,
+            raw: true
+        });
+
+        if (type === 'User') {
+            const users = await XlUser.findAll({ attributes: ['employeeId', 'firstName', 'lastName'], raw: true });
+            const userMap = {};
+            users.forEach(u => userMap[u.employeeId] = `${u.firstName || ''} ${u.lastName || ''}`.trim());
+            data.forEach(d => {
+                d.userName = userMap[d.employeeId] || d.employeeId;
+            });
+        }
+
+        res.json({ success: true, data });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Failed to fetch primary sales report' });
+    }
+});
+
+router.get('/reports/primary-sales/detail', async (req, res) => {
+    try {
+        const { startDate, endDate, type, dateWise, stockist, headquarter, employeeId, date } = req.query;
+        const { XlPrimarySales, XlPrimarySalesItem, sequelize } = require('../db');
+        const { Op, fn, col } = require('sequelize');
+
+        let whereClause = {};
+        if (startDate && endDate) {
+            whereClause.date = { [Op.between]: [startDate, endDate] };
+        } else if (startDate) {
+            whereClause.date = { [Op.gte]: startDate };
+        } else if (endDate) {
+            whereClause.date = { [Op.lte]: endDate };
+        }
+
+        if (type === 'Stockist' && stockist) whereClause.stockist = stockist;
+        if (type === 'Headquarter' && headquarter) whereClause.headquarter = headquarter;
+        if (type === 'User' && employeeId) whereClause.employeeId = employeeId;
+        if (date) whereClause.date = date;
+
+        const isDateWise = dateWise === 'true';
+        let groupFields = ['items.product'];
+        let attributes = [ [col('items.product'), 'product'] ];
+
+        if (isDateWise) {
+            groupFields.unshift('xl_primary_sales.date');
+            attributes.unshift('date');
+        }
+
+        attributes.push([fn('SUM', col('items.qty')), 'quantity']);
+        attributes.push([fn('AVG', col('items.basePrice')), 'averagePrice']);
+        attributes.push([fn('SUM', sequelize.literal('items.qty * items.basePrice')), 'totalSales']);
+
+        const data = await XlPrimarySales.findAll({
+            where: whereClause,
+            include: [{
+                model: XlPrimarySalesItem,
+                as: 'items',
+                attributes: []
+            }],
+            attributes: attributes,
+            group: groupFields,
+            raw: true
+        });
+
+        res.json({ success: true, data });
+    } catch(err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: 'Failed to fetch detail report' });
+    }
+});
+
 // Get all Primary Sales
 router.get('/primary-sales/all', async (req, res) => {
     try {
