@@ -18,8 +18,7 @@ export default function PrimarySalesReports() {
   const [selectedUser, setSelectedUser] = useState<string>('');
 
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
-  const [activeSearch, setActiveSearch] = useState<string | null>(null);
-  const [searchFilters, setSearchFilters] = useState<Record<string, string>>({});
+  const [globalSearch, setGlobalSearch] = useState('');
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -124,21 +123,15 @@ export default function PrimarySalesReports() {
 
   const processedData = useMemo(() => {
     let result = [...data];
-    if (Object.keys(searchFilters).length > 0) {
+    if (globalSearch.trim() !== '') {
+      const search = globalSearch.toLowerCase();
       result = result.filter(item => {
-        let matches = true;
-        Object.entries(searchFilters).forEach(([key, val]) => {
-          if (val) {
-            let itemVal = (item[key] || '').toString().toLowerCase();
-            if (key === 'userName') {
-              itemVal = (item.userName || item.employeeId || '').toString().toLowerCase();
-            } else if (key === 'invoiceNumber') {
-              itemVal = (item.invoiceNumber || item.invNumber || '').toString().toLowerCase();
-            }
-            if (!itemVal.includes(val.toLowerCase())) matches = false;
-          }
-        });
-        return matches;
+        const userName = (item.userName || item.employeeId || '').toString().toLowerCase();
+        const invoiceNumber = (item.invoiceNumber || item.invNumber || '').toString().toLowerCase();
+        const stockist = (item.stockist || '').toString().toLowerCase();
+        const headquarter = (item.headquarter || '').toString().toLowerCase();
+        const date = (item.date || '').toString().toLowerCase();
+        return userName.includes(search) || invoiceNumber.includes(search) || stockist.includes(search) || headquarter.includes(search) || date.includes(search);
       });
     }
     if (sortConfig) {
@@ -164,7 +157,7 @@ export default function PrimarySalesReports() {
       });
     }
     return result;
-  }, [data, searchFilters, sortConfig]);
+  }, [data, globalSearch, sortConfig]);
 
   const handleSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -185,38 +178,6 @@ export default function PrimarySalesReports() {
             <ArrowUp size={12} className="opacity-30" />
           )}
         </div>
-      </th>
-    );
-  };
-
-  const renderSearchableHeader = (label: string, searchKey: string) => {
-    const isActive = activeSearch === searchKey;
-    return (
-      <th className="px-4 py-3 border-r border-[#3b3b5a] transition-all">
-        {isActive ? (
-          <div className="flex items-center gap-2 border border-sky-500 rounded-full px-3 py-1 bg-[#252538]">
-            <span className="text-sky-400 text-[10px]">Search</span>
-            <input 
-              autoFocus
-              type="text" 
-              value={searchFilters[searchKey] || ''}
-              onChange={e => setSearchFilters(prev => ({...prev, [searchKey]: e.target.value}))}
-              className="bg-transparent text-white text-xs w-20 outline-none placeholder-slate-500" 
-              placeholder={label}
-            />
-            <button onClick={() => {
-              setActiveSearch(null);
-              setSearchFilters(prev => ({...prev, [searchKey]: ''}));
-            }} className="text-rose-400 hover:text-rose-300">
-              <X size={12} />
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1 cursor-pointer hover:text-sky-400 transition-colors group" onClick={() => setActiveSearch(searchKey)}>
-            <Search size={12} className="text-slate-500 group-hover:text-sky-400" />
-            {label}
-          </div>
-        )}
       </th>
     );
   };
@@ -282,18 +243,37 @@ export default function PrimarySalesReports() {
 
             {/* Main Data Table */}
             <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden rounded-xl">
-              <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
+              <div className="p-4 border-b border-[#2d2d44] flex flex-wrap gap-4 items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
                   SHOWING ({processedData.length}) ENTRIES
                 </h2>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold text-slate-300">VIEW DATE WISE</span>
-                  <button 
-                    onClick={() => setViewDateWise(!viewDateWise)}
-                    className={`w-12 h-6 rounded-full p-1 transition-colors ${viewDateWise ? 'bg-sky-500' : 'bg-[#3b3b5a]'}`}
-                  >
+                
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2 bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-1.5 focus-within:border-sky-500 transition-colors">
+                    <Search size={16} className="text-slate-500" />
+                    <input 
+                      type="text" 
+                      value={globalSearch}
+                      onChange={e => setGlobalSearch(e.target.value)}
+                      placeholder="Search reports..." 
+                      className="bg-transparent text-sm text-slate-300 w-48 outline-none placeholder-slate-500"
+                    />
+                    {globalSearch && (
+                      <button onClick={() => setGlobalSearch('')} className="text-slate-500 hover:text-slate-300">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-slate-300">VIEW DATE WISE</span>
+                    <button 
+                      onClick={() => setViewDateWise(!viewDateWise)}
+                      className={`w-12 h-6 rounded-full p-1 transition-colors ${viewDateWise ? 'bg-sky-500' : 'bg-[#3b3b5a]'}`}
+                    >
                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${viewDateWise ? 'translate-x-6' : 'translate-x-0'}`} />
                   </button>
+                </div>
                 </div>
               </div>
               
@@ -310,9 +290,9 @@ export default function PrimarySalesReports() {
                           <>
                             {renderSortableHeader('Invoice Date', 'date')}
                             {renderSortableHeader('Invoice Number', 'invoiceNumber')}
-                            {renderSearchableHeader('Submitted By', 'userName')}
-                            {renderSearchableHeader('Stockist', 'stockist')}
-                            {renderSearchableHeader('Headquarter', 'headquarter')}
+                            {renderSortableHeader('Submitted By', 'userName')}
+                            {renderSortableHeader('Stockist', 'stockist')}
+                            {renderSortableHeader('Headquarter', 'headquarter')}
                             {renderSortableHeader(<>Total Primary<br/>Sales (₹)</>, 'totalSales', 'center')}
                           </>
                         ) : (
