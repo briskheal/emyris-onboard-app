@@ -23,8 +23,9 @@ function formatDDMMYYYY(dateStr: string) {
 
 export default function TourProgramReport() {
   const navigate = useNavigate();
-  const [startDate, setStartDate] = useState<Date | null>(new Date(2026, 8, 1));
-  const [endDate, setEndDate] = useState<Date | null>(new Date(2026, 8, 30));
+  const today = new Date();
+  const [startDate, setStartDate] = useState<Date | null>(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [endDate, setEndDate] = useState<Date | null>(new Date(today.getFullYear(), today.getMonth() + 1, 0));
   const [frequencyReport, setFrequencyReport] = useState(false);
   const [users, setUsers] = useState<any[]>([]);
   const [selectedUser, setSelectedUser] = useState<string>('');
