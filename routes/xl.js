@@ -3324,8 +3324,8 @@ router.get('/reports/primary-sales', async (req, res) => {
             selectParts.push('p.headquarter as headquarter');
             groupParts.push('p.headquarter');
         } else if (type === 'User') {
-            selectParts.push('p.employeeId as employeeId', 'p.headquarter as headquarter');
-            groupParts.push('p.employeeId', 'p.headquarter');
+            selectParts.push('p.\"employeeId\" as \"employeeId\"', 'p.headquarter as headquarter');
+            groupParts.push('p.\"employeeId\"', 'p.headquarter');
         } else if (type === 'Date') {
             selectParts.push('p.date as date');
             groupParts.push('p.date');
@@ -3337,7 +3337,7 @@ router.get('/reports/primary-sales', async (req, res) => {
         }
 
         // Add aggregation
-        selectParts.push('SUM(p.netInvValue) as totalSales');
+        selectParts.push('SUM(p.\"netInvValue\") as \"totalSales\"');
 
         let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
@@ -3419,7 +3419,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             whereClauses.push('p.headquarter = :headquarter');
             replacements.headquarter = headquarter;
         } else if (type === 'User' && user) {
-            whereClauses.push('p.employeeId = :user');
+            whereClauses.push('p.\"employeeId\" = :user');
             replacements.user = user;
         } else if (type === 'Date' && date) {
             whereClauses.push('p.date = :date');
@@ -3431,10 +3431,10 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         let groupQuery = '';
 
         if (isDateWise) {
-            selectQuery = 'p.date, i.product, SUM(i.qty) as quantity, AVG(i.basePrice) as averagePrice, SUM(i.basePrice * i.qty) as totalSales';
+            selectQuery = 'p.date, i.product, SUM(i.qty) as quantity, AVG(i.\"basePrice\") as \"averagePrice\", SUM(i.\"basePrice\" * i.qty) as \"totalSales\"';
             groupQuery = 'p.date, i.product';
         } else {
-            selectQuery = 'i.product, SUM(i.basePrice * i.qty) as totalSales';
+            selectQuery = 'i.product, SUM(i.\"basePrice\" * i.qty) as \"totalSales\"';
             groupQuery = 'i.product';
         }
 
@@ -3443,7 +3443,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         const sql = `
             SELECT ${selectQuery}
             FROM xl_primary_sales p
-            JOIN xl_primary_sales_items i ON p._id = i.saleId
+            JOIN xl_primary_sales_items i ON p.\"_id\" = i.\"saleId\"
             ${whereSql}
             GROUP BY ${groupQuery}
         `;
