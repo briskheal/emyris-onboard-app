@@ -3295,101 +3295,100 @@ router.get('/test-query', async (req, res) => {
 
 router.get('/reports/primary-sales', async (req, res) => {
     try {
+        const { XlPrimarySales, sequelize } = require('../db');
         const { startDate, endDate, type, dateWise } = req.query;
-        const { XlPrimarySales, XlUser, XlStockist } = require('../db');
-        const { Op, fn, col } = require('sequelize');
-        
-        let whereClause = {};
+
+        let whereClauses = [];
+        let replacements = {};
+
         if (startDate && endDate) {
-            whereClause.date = { [Op.between]: [startDate, endDate] };
+            whereClauses.push('date BETWEEN :startDate AND :endDate');
+            replacements.startDate = startDate;
+            replacements.endDate = endDate;
         } else if (startDate) {
-            whereClause.date = { [Op.gte]: startDate };
+            whereClauses.push('date >= :startDate');
+            replacements.startDate = startDate;
         } else if (endDate) {
-            whereClause.date = { [Op.lte]: endDate };
-        }
-
-        if (req.query.employeeId && req.query.employeeId !== 'all') {
-            whereClause.employeeId = req.query.employeeId;
-        }
-
-        if (type === 'User') {
-            const rawData = await XlPrimarySales.findAll({ where: whereClause, raw: true, order: [['createdAt', 'DESC']] });
-            const users = await XlUser.findAll({ attributes: ['employeeId', 'firstName', 'lastName'], raw: true });
-            const userMap = {};
-            users.forEach(u => userMap[u.employeeId] = `${u.firstName || ''} ${u.lastName || ''}`.trim());
-            rawData.forEach(d => {
-                d.userName = userMap[d.employeeId] || d.employeeId;
-                d.totalSales = d.netInvValue;
-            });
-            return res.json({ success: true, data: rawData });
+            whereClauses.push('date <= :endDate');
+            replacements.endDate = endDate;
         }
 
         const isDateWise = dateWise === 'true';
-        let groupFields = [];
-        let attributes = [];
+        let selectParts = [];
+        let groupParts = [];
 
         if (type === 'Stockist') {
-            groupFields = ['stockist', 'headquarter'];
-            attributes = ['stockist', 'headquarter'];
+            selectParts.push('stockist', 'headquarter');
+            groupParts.push('stockist', 'headquarter');
         } else if (type === 'Headquarter') {
-            groupFields = ['headquarter'];
-            attributes = ['headquarter'];
+            selectParts.push('headquarter');
+            groupParts.push('headquarter');
+        } else if (type === 'User') {
+            selectParts.push('employeeId', 'headquarter');
+            groupParts.push('employeeId', 'headquarter');
         } else if (type === 'Date') {
-            groupFields = ['date'];
-            attributes = ['date'];
+            selectParts.push('date');
+            groupParts.push('date');
         }
 
         if (isDateWise && type !== 'Date') {
-            groupFields.unshift('date');
-            attributes.unshift('date');
+            selectParts.unshift('date');
+            groupParts.unshift('date');
         }
-        
-        attributes.push([fn('SUM', col('netInvValue')), 'totalSales']);
 
-        const data = await XlPrimarySales.findAll({
-            where: whereClause,
-            attributes: attributes,
-            group: groupFields,
-            raw: true
+        // Add aggregation
+        selectParts.push('SUM(netInvValue) as totalSales');
+
+        let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+
+        const sql = `
+            SELECT ${selectParts.join(', ')}
+            FROM xl_primary_sales
+            ${whereSql}
+            GROUP BY ${groupParts.join(', ')}
+        `;
+
+        const data = await sequelize.query(sql, {
+            replacements: replacements,
+            type: sequelize.QueryTypes.SELECT
         });
 
-        // const { XlStockist } = require('../db');
-        const allStockists = await XlStockist.findAll({ attributes: ['uid', 'businessName', 'name', '_id'], raw: true });
+        // Mapping logic
+        const { XlStockist, AdminUser } = require('../db');
+        const stockists = await XlStockist.findAll({ raw: true });
         const stockMap = {};
-        allStockists.forEach(s => {
-            if (s.uid) stockMap[s.uid] = s.businessName || s.name || s.uid;
-            stockMap[s._id] = s.businessName || s.name || s._id;
+        stockists.forEach(s => {
+            stockMap[s.uid || s._id] = s.businessName || s.name;
+        });
+
+        const users = await AdminUser.findAll({ raw: true });
+        const userMap = {};
+        users.forEach(u => {
+            userMap[u.employeeId || u._id] = u.name;
         });
 
         data.forEach(d => {
             if (d.stockist && stockMap[d.stockist]) {
                 d.stockistName = stockMap[d.stockist];
             }
+            if (d.employeeId && userMap[d.employeeId]) {
+                d.userName = userMap[d.employeeId];
+            }
             if (d.date) {
                 const dateParts = d.date.split('-');
-                if (dateParts.length === 3) {
-                    if (dateParts[0].length === 4) {
-                        d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-                    } else {
-                        d.displayDate = d.date;
-                    }
+                if (dateParts.length === 3 && dateParts[0].length === 4) {
+                    d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                } else {
+                    d.displayDate = d.date;
                 }
             }
+            d.totalSales = Number(d.totalSales || 0);
         });
 
-        if (type === 'User') {
-            const users = await XlUser.findAll({ attributes: ['employeeId', 'firstName', 'lastName'], raw: true });
-            const userMap = {};
-            users.forEach(u => userMap[u.employeeId] = `${u.firstName || ''} ${u.lastName || ''}`.trim());
-            data.forEach(d => {
-                d.userName = userMap[d.employeeId] || d.employeeId;
-            });
-        }
-
         res.json({ success: true, data });
-    } catch(err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Failed to fetch primary sales report' });
+    } catch (error) {
+        console.error('Report Error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch report' });
     }
 });
 
