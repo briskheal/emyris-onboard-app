@@ -3381,7 +3381,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
 
         attributes.push([fn('SUM', col('items.qty')), 'quantity']);
         attributes.push([fn('AVG', col('items.basePrice')), 'averagePrice']);
-        attributes.push([fn('SUM', sequelize.literal('items.qty * items.basePrice')), 'totalSales']);
+        attributes.push([fn('SUM', sequelize.literal('"items"."qty" * "items"."basePrice"')), 'totalSales']);
 
         const data = await XlPrimarySales.findAll({
             where: whereClause,
@@ -5230,6 +5230,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 
