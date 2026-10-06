@@ -3348,7 +3348,13 @@ router.get('/reports/primary-sales', async (req, res) => {
             }
             if (d.date) {
                 const dateParts = d.date.split('-');
-                if (dateParts.length === 3) d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                if (dateParts.length === 3) {
+                    if (dateParts[0].length === 4) {
+                        d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                    } else {
+                        d.displayDate = d.date;
+                    }
+                }
             }
         });
 
@@ -3427,7 +3433,13 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             }
             if (d.date) {
                 const dateParts = d.date.split('-');
-                if (dateParts.length === 3) d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                if (dateParts.length === 3) {
+                    if (dateParts[0].length === 4) {
+                        d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                    } else {
+                        d.displayDate = d.date;
+                    }
+                }
             }
         });
 
