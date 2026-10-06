@@ -115,7 +115,7 @@ export default function PrimarySalesReports() {
   };
 
   const getEntityName = (row: any) => {
-    if (selectType === 'Stockist') return row.stockist;
+    if (selectType === 'Stockist') return row.stockistName || row.stockist;
     if (selectType === 'Headquarter') return row.headquarter;
     if (selectType === 'User') return row.userName || row.employeeId;
     if (selectType === 'Date') return row.date;
@@ -446,6 +446,7 @@ export default function PrimarySalesReports() {
     </div>
   );
 }
+
 
 
 
