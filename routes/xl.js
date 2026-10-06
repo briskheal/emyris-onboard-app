@@ -3274,6 +3274,25 @@ router.post('/primary-sales/save', async (req, res) => {
 
 
 // NEW API: Primary Sales Reports
+
+router.get('/test-query', async (req, res) => {
+    try {
+        const { XlPrimarySales } = require('../db');
+        const { Op, fn, col } = require('sequelize');
+        let attributes = ['date', 'stockist', 'headquarter'];
+        attributes.push([fn('SUM', col('netInvValue')), 'totalSales']);
+        
+        const data = await XlPrimarySales.findAll({
+            attributes: attributes,
+            group: ['date', 'stockist', 'headquarter'],
+            raw: true
+        });
+        res.json({ success: true, data });
+    } catch(e) {
+        res.json({ success: false, error: e.message });
+    }
+});
+
 router.get('/reports/primary-sales', async (req, res) => {
     try {
         const { startDate, endDate, type, dateWise } = req.query;
