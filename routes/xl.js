@@ -3458,7 +3458,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         const products = await XlProduct.findAll({ raw: true });
         const prodMap = {};
         products.forEach(pr => {
-            prodMap[pr.uid || pr._id] = pr.name;
+            prodMap[pr.uid || pr._id] = pr.productName || pr.name || pr.uid || pr._id;
         });
 
         data.forEach(d => {
