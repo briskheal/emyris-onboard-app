@@ -236,7 +236,7 @@ export default function PrimarySalesReports() {
                 </div>
               )}
 
-              <button onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg">
+              <button id="fetch-btn" onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg">
                 See Reports
               </button>
               </div>
@@ -273,7 +273,7 @@ export default function PrimarySalesReports() {
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-semibold text-slate-300">VIEW DATE WISE</span>
                     <button 
-                      onClick={() => setViewDateWise(!viewDateWise)}
+                      onClick={() => { setViewDateWise(!viewDateWise); setTimeout(() => document.getElementById('fetch-btn')?.click(), 0); }}
                       className={`w-12 h-6 rounded-full p-1 transition-colors ${viewDateWise ? 'bg-sky-500' : 'bg-[#3b3b5a]'}`}
                     >
                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${viewDateWise ? 'translate-x-6' : 'translate-x-0'}`} />
