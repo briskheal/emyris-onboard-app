@@ -3395,55 +3395,71 @@ router.get('/reports/primary-sales', async (req, res) => {
 
 router.get('/reports/primary-sales/detail', async (req, res) => {
     try {
-        const { startDate, endDate, type, dateWise, stockist, headquarter, employeeId, date } = req.query;
-        const { XlPrimarySales, XlPrimarySalesItem, sequelize } = require('../db');
-        const { Op, fn, col } = require('sequelize');
+        const { XlPrimarySales, sequelize } = require('../db');
+        const { startDate, endDate, type, dateWise, stockist, headquarter, user, date } = req.query;
 
-        let whereClause = {};
+        let whereClauses = [];
+        let replacements = {};
+
         if (startDate && endDate) {
-            whereClause.date = { [Op.between]: [startDate, endDate] };
+            whereClauses.push('p.date BETWEEN :startDate AND :endDate');
+            replacements.startDate = startDate;
+            replacements.endDate = endDate;
         } else if (startDate) {
-            whereClause.date = { [Op.gte]: startDate };
+            whereClauses.push('p.date >= :startDate');
+            replacements.startDate = startDate;
         } else if (endDate) {
-            whereClause.date = { [Op.lte]: endDate };
+            whereClauses.push('p.date <= :endDate');
+            replacements.endDate = endDate;
         }
 
-        if (type === 'Stockist' && stockist) whereClause.stockist = stockist;
-        if (type === 'Headquarter' && headquarter) whereClause.headquarter = headquarter;
-        if (type === 'User' && employeeId) whereClause.employeeId = employeeId;
-        if (date) whereClause.date = date;
+        if (type === 'Stockist' && stockist) {
+            whereClauses.push('p.stockist = :stockist');
+            replacements.stockist = stockist;
+        } else if (type === 'Headquarter' && headquarter) {
+            whereClauses.push('p.headquarter = :headquarter');
+            replacements.headquarter = headquarter;
+        } else if (type === 'User' && user) {
+            whereClauses.push('p.employeeId = :user');
+            replacements.user = user;
+        } else if (type === 'Date' && date) {
+            whereClauses.push('p.date = :date');
+            replacements.date = date;
+        }
 
         const isDateWise = dateWise === 'true';
-        let groupFields = [col('items.product')];
-        let attributes = [ [col('items.product'), 'product'] ];
+        let selectQuery = '';
+        let groupQuery = '';
 
         if (isDateWise) {
-            groupFields.unshift(col('date'));
-            attributes.unshift('date');
+            selectQuery = 'p.date, i.product, SUM(i.qty) as quantity, AVG(i.basePrice) as averagePrice, SUM(i.basePrice * i.qty) as totalSales';
+            groupQuery = 'p.date, i.product';
+        } else {
+            selectQuery = 'i.product, SUM(i.basePrice * i.qty) as totalSales';
+            groupQuery = 'i.product';
         }
 
-        attributes.push([fn('SUM', col('items.qty')), 'quantity']);
-        attributes.push([fn('AVG', col('items.basePrice')), 'averagePrice']);
-        attributes.push([fn('SUM', sequelize.literal('"items"."qty" * "items"."basePrice"')), 'totalSales']);
+        let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
-        const data = await XlPrimarySales.findAll({
-            where: whereClause,
-            include: [{
-                model: XlPrimarySalesItem,
-                as: 'items',
-                attributes: []
-            }],
-            attributes: attributes,
-            group: groupFields,
-            raw: true
+        const sql = `
+            SELECT ${selectQuery}
+            FROM xl_primary_sales p
+            JOIN xl_primary_sales_items i ON p._id = i.saleId
+            ${whereSql}
+            GROUP BY ${groupQuery}
+        `;
+
+        const data = await sequelize.query(sql, {
+            replacements: replacements,
+            type: sequelize.QueryTypes.SELECT
         });
 
-        // const { XlProduct } = require('../db');
-        const allProducts = await XlProduct.findAll({ attributes: ['uid', '_id', 'name'], raw: true });
+        // Map product names
+        const { XlProduct } = require('../db');
+        const products = await XlProduct.findAll({ raw: true });
         const prodMap = {};
-        allProducts.forEach(p => {
-            if (p.uid) prodMap[p.uid] = p.name || p.uid;
-            prodMap[p._id] = p.name || p._id;
+        products.forEach(pr => {
+            prodMap[pr.uid || pr._id] = pr.name;
         });
 
         data.forEach(d => {
@@ -3452,24 +3468,25 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             }
             if (d.date) {
                 const dateParts = d.date.split('-');
-                if (dateParts.length === 3) {
-                    if (dateParts[0].length === 4) {
-                        d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
-                    } else {
-                        d.displayDate = d.date;
-                    }
+                if (dateParts.length === 3 && dateParts[0].length === 4) {
+                    d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                } else {
+                    d.displayDate = d.date;
                 }
             }
+            // Add quantity/averagePrice safely for fallback mapping
+            d.quantity = Number(d.quantity || 0);
+            d.averagePrice = Number(d.averagePrice || 0);
+            d.totalSales = Number(d.totalSales || 0);
         });
 
         res.json({ success: true, data });
-    } catch(err) {
-        console.error(err);
-        res.status(500).json({ success: false, message: 'Failed to fetch detail report' });
+    } catch (error) {
+        console.error('Detail Error:', error);
+        res.status(500).json({ success: false, error: 'Failed to fetch details' });
     }
 });
 
-// Get all Primary Sales
 router.get('/primary-sales/all', async (req, res) => {
     try {
         const { employeeId, designation, month, year } = req.query;
