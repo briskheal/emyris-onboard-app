@@ -3395,11 +3395,11 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         if (date) whereClause.date = date;
 
         const isDateWise = dateWise === 'true';
-        let groupFields = ['items.product'];
+        let groupFields = [col('items.product')];
         let attributes = [ [col('items.product'), 'product'] ];
 
         if (isDateWise) {
-            groupFields.unshift('xl_primary_sales.date');
+            groupFields.unshift(col('date'));
             attributes.unshift('date');
         }
 
