@@ -1,9 +1,72 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Menu, MessageSquare, Bell, User, ChevronDown, Search, Download, Activity, Sun, Check , Calendar } from 'lucide-react';
 
+
+const GLOBAL_ROUTES = [
+  { title: 'Dashboard', path: '/dashboard', breadcrumb: 'Dashboard' },
+  
+  // Admin Panel
+  { title: 'Manage Locations', path: '/admin/locations', breadcrumb: 'Admin > Locations' },
+  { title: 'Manage Users', path: '/admin/users', breadcrumb: 'Admin > Users' },
+  { title: 'User Performance Analysis', path: '/admin/user-performance-analysis', breadcrumb: 'Admin > Performance' },
+  { title: 'Manage Products', path: '/admin/products', breadcrumb: 'Admin > Products' },
+  { title: 'Manage Leave', path: '/admin/leave', breadcrumb: 'Admin > Leave' },
+  { title: 'Manage Expenses', path: '/admin/expenses', breadcrumb: 'Admin > Expenses' },
+  { title: 'Manage DCS', path: '/admin/dcs', breadcrumb: 'Admin > DCS' },
+  { title: 'Approvals', path: '/admin/approvals', breadcrumb: 'Admin > Approvals' },
+  
+  // Utilities & Reports
+  { title: 'Doctors List', path: '/utilities/lists/doctors', breadcrumb: 'Utilities > Doctors' },
+  { title: 'Chemists List', path: '/utilities/lists/chemists', breadcrumb: 'Utilities > Chemists' },
+  { title: 'Stockists List', path: '/utilities/lists/stockists', breadcrumb: 'Utilities > Stockists' },
+  { title: 'Locations List', path: '/utilities/lists/locations', breadcrumb: 'Utilities > Locations' },
+  { title: 'Products List', path: '/utilities/lists/products', breadcrumb: 'Utilities > Products' },
+  { title: 'Geo-Fencing List', path: '/utilities/lists/geo-fencing', breadcrumb: 'Utilities > Geo-Fencing' },
+  { title: 'Gifts List', path: '/utilities/lists/gifts', breadcrumb: 'Utilities > Gifts' },
+  { title: 'Routes List', path: '/utilities/lists/routes', breadcrumb: 'Utilities > Routes' },
+  { title: 'Missed Reports', path: '/reports/missed-reports', breadcrumb: 'Utilities > Missed Reports' },
+  { title: 'Primary Sales Reports', path: '/reports/primary-sales', breadcrumb: 'Utilities > Primary Sales' },
+  
+  // Extras
+  { title: 'Tour Program', path: '/extras/tour-program', breadcrumb: 'Extras > Tour Program' },
+  { title: 'Call Plan', path: '/extras/call-plan', breadcrumb: 'Extras > Call Plan' },
+  { title: 'Leave Request', path: '/extras/leave', breadcrumb: 'Extras > Leave Request' },
+  { title: 'Geo-Fencing', path: '/extras/geo-fencing', breadcrumb: 'Extras > Geo-Fencing' },
+  { title: 'Expense Entry', path: '/extras/expense', breadcrumb: 'Extras > Expense' },
+  { title: 'Backlog Report', path: '/extras/backlog', breadcrumb: 'Extras > Backlog' },
+  { title: 'Settings', path: '/extras/settings', breadcrumb: 'Extras > Settings' },
+  { title: 'Performance Menu', path: '/extras/performance', breadcrumb: 'Extras > Performance' },
+  { title: 'E-Detailing', path: '/extras/e-detailing', breadcrumb: 'Extras > E-Detailing' },
+  { title: 'Attendance', path: '/extras/attendance', breadcrumb: 'Extras > Attendance' },
+  { title: 'Reminders', path: '/extras/reminders', breadcrumb: 'Extras > Reminders' },
+  { title: 'CRM', path: '/extras/crm', breadcrumb: 'Extras > CRM' },
+  { title: 'Profit Analysis', path: '/extras/profit', breadcrumb: 'Extras > Profit' },
+  { title: 'Sample Management', path: '/extras/samples', breadcrumb: 'Extras > Samples' },
+  
+  // Sales
+  { title: 'Primary Sales Entry', path: '/extras/primary-sales', breadcrumb: 'Sales > Primary Entry' },
+  { title: 'All Primary Sales', path: '/extras/primary-sales/all', breadcrumb: 'Sales > All Primary' },
+  { title: 'Secondary Sales Entry', path: '/extras/secondary', breadcrumb: 'Sales > Secondary Entry' },
+  { title: 'All Secondary Sales', path: '/extras/secondary/all', breadcrumb: 'Sales > All Secondary' },
+  
+  // Main
+  { title: 'Hierarchy', path: '/hierarchy', breadcrumb: 'Hierarchy' },
+  { title: 'Todays Activity', path: '/todays-activity', breadcrumb: 'Activity > Today' },
+  { title: 'Consolidated Activity', path: '/consolidated-activity', breadcrumb: 'Activity > Consolidated' },
+  { title: 'Call Report', path: '/report', breadcrumb: 'Report' }
+];
+
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const filteredGlobalRoutes = GLOBAL_ROUTES.filter(r => 
+    r.title.toLowerCase().includes(globalSearchTerm.toLowerCase()) || 
+    r.breadcrumb.toLowerCase().includes(globalSearchTerm.toLowerCase())
+  );
+
   const [isLightMode, setIsLightMode] = useState(() => {
     return localStorage.getItem('xla_theme') === 'light';
   });
@@ -118,13 +181,52 @@ export default function Dashboard() {
           </button>
           
           <div className="relative w-full max-w-md hidden sm:block">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-[#8b8baf]" size={18} />
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              className="w-full bg-slate-100 dark:bg-[#27273f] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-full py-2 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors placeholder:text-slate-500 dark:text-[#8b8baf]"
-            />
-          </div>
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 dark:text-[#8b8baf]" size={18} />
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                value={globalSearchTerm}
+                onChange={(e) => {
+                  setGlobalSearchTerm(e.target.value);
+                  setGlobalSearchOpen(true);
+                }}
+                onFocus={() => {
+                  if (globalSearchTerm) setGlobalSearchOpen(true);
+                }}
+                onBlur={() => setTimeout(() => setGlobalSearchOpen(false), 200)}
+                className="w-full bg-slate-100 dark:bg-[#27273f] border border-slate-200 dark:border-[#3b3b5a]/50 rounded-full py-2 pl-10 pr-4 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 transition-colors placeholder:text-slate-500 dark:text-[#8b8baf]"
+              />
+              
+              {globalSearchOpen && globalSearchTerm && (
+                <div className="absolute top-full mt-2 left-0 w-full bg-white dark:bg-[#151521] border border-slate-200 dark:border-[#2d2d44] rounded-xl shadow-xl z-50 flex flex-col overflow-hidden max-h-[300px] overflow-y-auto">
+                  {filteredGlobalRoutes.length > 0 ? (
+                    filteredGlobalRoutes.map((route, idx) => (
+                      <div 
+                        key={idx}
+                        onMouseDown={(e) => { 
+                          e.preventDefault(); 
+                          setGlobalSearchOpen(false); 
+                          setGlobalSearchTerm(''); 
+                          navigate(route.path); 
+                        }}
+                        className="px-4 py-3 hover:bg-slate-50 dark:hover:bg-[#1e1e2d] cursor-pointer flex flex-col border-b border-slate-100 dark:border-[#2d2d44] last:border-0 group"
+                      >
+                        <span className="text-sm font-semibold text-slate-800 dark:text-slate-200 group-hover:text-sky-500 transition-colors">
+                          {route.title}
+                        </span>
+                        <span className="text-[10px] font-bold tracking-wider text-slate-500 uppercase mt-1">
+                          {route.breadcrumb}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-4 text-sm text-slate-500 text-center">
+                      No results found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
         </div>
         
         <div className="flex items-center gap-4 md:gap-6 mr-auto pl-4">
