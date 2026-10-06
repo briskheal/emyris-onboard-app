@@ -3313,40 +3313,53 @@ router.get('/reports/primary-sales', async (req, res) => {
             replacements.endDate = endDate;
         }
 
+        if (req.query.employeeId && req.query.employeeId !== 'all') {
+            whereClauses.push('p.\"employeeId\" = :employeeId');
+            replacements.employeeId = req.query.employeeId;
+        }
+
         const isDateWise = dateWise === 'true';
         let selectParts = [];
         let groupParts = [];
+        let sql = '';
 
-        if (type === 'Stockist') {
-            selectParts.push('p.stockist as stockist', 'p.headquarter as headquarter');
-            groupParts.push('p.stockist', 'p.headquarter');
-        } else if (type === 'Headquarter') {
-            selectParts.push('p.headquarter as headquarter');
-            groupParts.push('p.headquarter');
-        } else if (type === 'User') {
-            selectParts.push('p.\"employeeId\" as \"employeeId\"', 'p.headquarter as headquarter');
-            groupParts.push('p.\"employeeId\"', 'p.headquarter');
-        } else if (type === 'Date') {
-            selectParts.push('p.date as date');
-            groupParts.push('p.date');
+        if (type === 'User') {
+            let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+            sql = `
+                SELECT p.*, p."netInvValue" as "totalSales"
+                FROM xl_primary_sales p
+                ${whereSql}
+                ORDER BY p."createdAt" DESC
+            `;
+        } else {
+            if (type === 'Stockist') {
+                selectParts.push('p.stockist as stockist', 'p.headquarter as headquarter');
+                groupParts.push('p.stockist', 'p.headquarter');
+            } else if (type === 'Headquarter') {
+                selectParts.push('p.headquarter as headquarter');
+                groupParts.push('p.headquarter');
+            } else if (type === 'Date') {
+                selectParts.push('p.date as date');
+                groupParts.push('p.date');
+            }
+
+            if (isDateWise && type !== 'Date') {
+                selectParts.unshift('p.date as date');
+                groupParts.unshift('p.date');
+            }
+
+            // Add aggregation
+            selectParts.push('SUM(p.\"netInvValue\") as \"totalSales\"');
+
+            let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+
+            sql = `
+                SELECT ${selectParts.join(', ')}
+                FROM xl_primary_sales p
+                ${whereSql}
+                GROUP BY ${groupParts.join(', ')}
+            `;
         }
-
-        if (isDateWise && type !== 'Date') {
-            selectParts.unshift('p.date as date');
-            groupParts.unshift('p.date');
-        }
-
-        // Add aggregation
-        selectParts.push('SUM(p.\"netInvValue\") as \"totalSales\"');
-
-        let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
-
-        const sql = `
-            SELECT ${selectParts.join(', ')}
-            FROM xl_primary_sales p
-            ${whereSql}
-            GROUP BY ${groupParts.join(', ')}
-        `;
 
         const data = await sequelize.query(sql, {
             replacements: replacements,
@@ -3364,7 +3377,7 @@ router.get('/reports/primary-sales', async (req, res) => {
         const users = await XlUser.findAll({ raw: true });
         const userMap = {};
         users.forEach(u => {
-            userMap[u.employeeId || u._id] = u.name;
+            userMap[u.employeeId || u._id] = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name;
         });
 
         data.forEach(d => {
