@@ -3388,7 +3388,7 @@ router.get('/reports/primary-sales', async (req, res) => {
         res.json({ success: true, data });
     } catch (error) {
         console.error('Report Error:', error);
-        res.status(500).json({ success: false, error: 'Failed to fetch report' });
+        res.status(500).json({ success: false, error: 'Failed to fetch report: ' + error.message });
     }
 });
 
@@ -3482,7 +3482,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         res.json({ success: true, data });
     } catch (error) {
         console.error('Detail Error:', error);
-        res.status(500).json({ success: false, error: 'Failed to fetch details' });
+        res.status(500).json({ success: false, error: 'Failed to fetch details: ' + error.message });
     }
 });
 
