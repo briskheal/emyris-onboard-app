@@ -3323,10 +3323,33 @@ router.get('/reports/primary-sales', async (req, res) => {
         let groupParts = [];
         let sql = '';
 
-        if (type === 'User') {
+        if (type === 'Purchase Returns' || type === 'Expiry Returns') {
+            const expCondition = type === 'Purchase Returns' ? '0' : '1';
+            let whereSql = whereClauses.length > 0 ? ' AND ' + whereClauses.join(' AND ') : '';
+            sql = `
+                SELECT 
+                    p.date as date, 
+                    p."invoiceNumber" as "invoiceNumber", 
+                    p.stockist as stockist, 
+                    p.headquarter as headquarter, 
+                    i.product as product, 
+                    i."purcRtn" as "returnQty", 
+                    i."rtnPrice" as "returnRate", 
+                    (i."purcRtn" * i."rtnPrice") as "totalValue"
+                FROM xl_primary_sales p
+                JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                WHERE i."purcRtn" > 0 AND i.exp = ${expCondition} ${whereSql}
+                ORDER BY p."createdAt" DESC
+            `;
+        } else if (type === 'User') {
             let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
             sql = `
-                SELECT p.*, p."netInvValue" as "totalSales"
+                SELECT 
+                    p.*, 
+                    p."grossInvValue" as "grossSales", 
+                    p."salableRtnValue" as "salableReturns", 
+                    p."expiryRtnValue" as "expiryReturns", 
+                    p."netInvValue" as "totalSales"
                 FROM xl_primary_sales p
                 ${whereSql}
                 ORDER BY p."createdAt" DESC
@@ -3348,8 +3371,11 @@ router.get('/reports/primary-sales', async (req, res) => {
                 groupParts.unshift('p.date');
             }
 
-            // Add aggregation
-            selectParts.push('SUM(p.\"netInvValue\") as \"totalSales\"');
+            // Add aggregations
+            selectParts.push('SUM(p."grossInvValue") as "grossSales"');
+            selectParts.push('SUM(p."salableRtnValue") as "salableReturns"');
+            selectParts.push('SUM(p."expiryRtnValue") as "expiryReturns"');
+            selectParts.push('SUM(p."netInvValue") as "totalSales"');
 
             let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
@@ -3385,12 +3411,24 @@ router.get('/reports/primary-sales', async (req, res) => {
             if (u.uid) userMap[u.uid] = name;
         });
 
+        const { XlProduct } = require('../db');
+        const products = await XlProduct.findAll({ raw: true });
+        const prodMap = {};
+        products.forEach(pr => {
+            const name = pr.productName || pr.name || pr.uid || pr._id;
+            if (pr.uid) prodMap[pr.uid] = name;
+            if (pr._id) prodMap[pr._id] = name;
+        });
+
         data.forEach(d => {
             if (d.stockist && stockMap[d.stockist]) {
                 d.stockistName = stockMap[d.stockist];
             }
             if (d.employeeId && userMap[d.employeeId]) {
                 d.userName = userMap[d.employeeId];
+            }
+            if (d.product && prodMap[d.product]) {
+                d.productName = prodMap[d.product];
             }
             if (d.date) {
                 const dateParts = d.date.split('-');

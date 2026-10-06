@@ -215,6 +215,8 @@ export default function PrimarySalesReports() {
                   <option>Headquarter</option>
                   <option>Date</option>
                   <option>User</option>
+                    <option>Purchase Returns</option>
+                    <option>Expiry Returns</option>
                 </select>
               </div>
 
@@ -288,77 +290,111 @@ export default function PrimarySalesReports() {
                 ) : (
                   <table className="w-full text-sm text-left whitespace-nowrap">
                     <thead className="text-[11px] font-bold uppercase bg-[#151521] text-slate-400 border-b border-[#3b3b5a]">
-                      <tr>
-                        <th className="px-4 py-3 border-r border-[#3b3b5a] w-[1%]">Sr no.</th>
-                        
-                        {selectType === 'User' ? (
-                          <>
-                            {renderSortableHeader('Invoice Date', 'date')}
-                            {renderSortableHeader('Invoice Number', 'invoiceNumber')}
-                            {renderSortableHeader('Submitted By', 'userName')}
-                            {renderSortableHeader('Stockist', 'stockist')}
-                            {renderSortableHeader('Headquarter', 'headquarter')}
-                            {renderSortableHeader(<>Total Primary<br/>Sales (₹)</>, 'totalSales', 'center')}
-                          </>
-                        ) : (
-                          <>
-                            {viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
-                            {selectType === 'Stockist' && (
-                              <>
-                                <th className="px-4 py-3 border-r border-[#3b3b5a]">Stockist</th>
-                                <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>
-                              </>
-                            )}
-                            {selectType === 'Headquarter' && <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>}
-                            {selectType === 'Date' && !viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
-                            <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Total Primary Sales (₹)</th>
-                            <th className="px-4 py-3 text-center w-[1%]">View</th>
-                          </>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {processedData.map((d, i) => (
-                        <tr key={i} className="border-b border-[#2d2d44] hover:bg-[#252538] transition-colors">
-                          <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{i + 1}</td>
+                        <tr>
+                          <th className="px-4 py-3 border-r border-[#3b3b5a] w-[1%]">Sr no.</th>
                           
-                          {selectType === 'User' ? (
+                          {selectType === 'Purchase Returns' || selectType === 'Expiry Returns' ? (
                             <>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.invoiceNumber || d.invNumber || '-'}</td>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
-                                <div className="flex flex-col">
-                                  <span className="font-medium text-slate-200">{d.userName || d.employeeId}</span>
-                                </div>
-                              </td>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockistName || d.stockist}</td>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-center font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a]">Invoice Date</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a]">Invoice No.</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a]">Stockist</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a]">Product</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Rtn Qty</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Rtn Rate (₹)</th>
+                              <th className="px-4 py-3 text-right">Total Value (₹)</th>
+                            </>
+                          ) : selectType === 'User' ? (
+                            <>
+                              {renderSortableHeader('Invoice Date', 'date')}
+                              {renderSortableHeader('Invoice Number', 'invoiceNumber')}
+                              {renderSortableHeader('Submitted By', 'userName')}
+                              {renderSortableHeader('Stockist', 'stockist')}
+                              {renderSortableHeader('Headquarter', 'headquarter')}
+                              {renderSortableHeader(<>Gross Sales<br/>(₹)</>, 'grossSales', 'right')}
+                              {renderSortableHeader(<>Salable Rtn<br/>(₹)</>, 'salableReturns', 'right')}
+                              {renderSortableHeader(<>Expiry Rtn<br/>(₹)</>, 'expiryReturns', 'right')}
+                              {renderSortableHeader(<>Net Sales<br/>(₹)</>, 'totalSales', 'right')}
                             </>
                           ) : (
                             <>
-                              {viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>}
-                              
+                              {viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
                               {selectType === 'Stockist' && (
                                 <>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockistName || d.stockist}</td>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                                  <th className="px-4 py-3 border-r border-[#3b3b5a]">Stockist</th>
+                                  <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>
                                 </>
                               )}
-                              {selectType === 'Headquarter' && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.headquarter}</td>}
-                              {selectType === 'Date' && !viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>}
-                              
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
-                              <td className="px-4 py-2 text-center">
-                                <button onClick={() => openDetail(d)} className="text-sky-400 hover:text-sky-300 p-1 bg-sky-500/10 rounded">
-                                  <Eye size={18} />
-                                </button>
-                              </td>
+                              {selectType === 'Headquarter' && <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>}
+                              {selectType === 'Date' && !viewDateWise && <th className="px-4 py-3 border-r border-[#3b3b5a]">Date</th>}
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Gross Sales (₹)</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right text-orange-400">Salable Rtn (₹)</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right text-rose-400">Expiry Rtn (₹)</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right text-emerald-400">Net Sales (₹)</th>
+                              <th className="px-4 py-3 text-center w-[1%]">View</th>
                             </>
                           )}
                         </tr>
-                      ))}
-                      {processedData.length === 0 && !loading && (
+                      </thead>
+                    <tbody>
+                        {processedData.map((d, i) => (
+                          <tr key={i} className="border-b border-[#2d2d44] hover:bg-[#252538] transition-colors">
+                            <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{i + 1}</td>
+                            
+                            {selectType === 'Purchase Returns' || selectType === 'Expiry Returns' ? (
+                              <>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.invoiceNumber || '-'}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockistName || d.stockist}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] font-bold text-sky-400">{d.productName || d.product}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right text-slate-300">{d.returnQty}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right text-slate-400">{Number(d.returnRate || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 text-right font-bold text-rose-400">{Number(d.totalValue || 0).toFixed(2)}</td>
+                              </>
+                            ) : selectType === 'User' ? (
+                              <>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.invoiceNumber || d.invNumber || '-'}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-slate-200">{d.userName || d.employeeId}</span>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockistName || d.stockist}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-slate-300">{Number(d.grossSales || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-orange-400">{Number(d.salableReturns || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-rose-400">{Number(d.expiryReturns || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
+                              </>
+                            ) : (
+                              <>
+                                {viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>}
+                                
+                                {selectType === 'Stockist' && (
+                                  <>
+                                    <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockistName || d.stockist}</td>
+                                    <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                                  </>
+                                )}
+                                {selectType === 'Headquarter' && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.headquarter}</td>}
+                                {selectType === 'Date' && !viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>}
+                                
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-slate-300">{Number(d.grossSales || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-orange-400">{Number(d.salableReturns || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-rose-400">{Number(d.expiryReturns || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
+                                <td className="px-4 py-2 text-center">
+                                  <button onClick={() => openDetail(d)} className="text-sky-400 hover:text-sky-300 p-1 bg-sky-500/10 rounded">
+                                    <Eye size={18} />
+                                  </button>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                        {processedData.length === 0 && !loading && (
                         <tr>
                           <td colSpan={10} className="px-4 py-8 text-center text-slate-500 font-medium">No records found.</td>
                         </tr>
@@ -446,6 +482,7 @@ export default function PrimarySalesReports() {
     </div>
   );
 }
+
 
 
 
