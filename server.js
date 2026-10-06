@@ -289,6 +289,15 @@ app.use('/api/admin', adminRouter);
 app.use('/api/auth', authRouter);
 const migrateRouter = require('./routes/migrate');
 app.use('/api/xl', migrateRouter);
+app.get('/api/debug-data', async (req, res) => {
+    try {
+        const { XlPrimarySales, XlStockist, XlPrimarySalesItem } = require('./db');
+        const sales = await XlPrimarySales.findAll({ raw: true });
+        const stockists = await XlStockist.findAll({ raw: true });
+        const items = await XlPrimarySalesItem.findAll({ raw: true });
+        res.json({ sales, stockists, items });
+    } catch (e) { res.json({ error: e.message }); }
+});
 app.use('/api/xl', xlRouter);
 app.all('/api/company-profile', (req, res, next) => { req.url = '/company-profile'; adminRouter(req, res, next); });
 
@@ -518,6 +527,7 @@ const bcrypt = require('bcryptjs');
   } catch (e) { console.error('Global auto-heal error:', e); }
 })();
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
+
 
 
 
