@@ -324,29 +324,29 @@ export default function PrimarySalesReports() {
                           
                           {selectType === 'User' ? (
                             <>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.invoiceNumber || d.invNumber || '-'}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
                                 <div className="flex flex-col">
                                   <span className="font-medium text-slate-200">{d.userName || d.employeeId}</span>
                                 </div>
                               </td>
-                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockist}</td>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockistName || d.stockist}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-center font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
                             </>
                           ) : (
                             <>
-                              {viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>}
+                              {viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>}
                               
                               {selectType === 'Stockist' && (
                                 <>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockist}</td>
+                                  <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockistName || d.stockist}</td>
                                   <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
                                 </>
                               )}
                               {selectType === 'Headquarter' && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.headquarter}</td>}
-                              {selectType === 'Date' && !viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>}
+                              {selectType === 'Date' && !viewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>}
                               
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
                               <td className="px-4 py-2 text-center">
@@ -419,8 +419,8 @@ export default function PrimarySalesReports() {
                       {detailData.map((d, i) => (
                         <tr key={i} className="border-b border-[#2d2d44] hover:bg-[#252538] transition-colors">
                           <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{i + 1}</td>
-                          {detailViewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.date}</td>}
-                          <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.product}</td>
+                          {detailViewDateWise && <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-300">{d.displayDate || d.date}</td>}
+                          <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.productName || d.product}</td>
                           {detailViewDateWise && (
                             <>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-right text-slate-300 font-semibold">{d.quantity}</td>
@@ -446,5 +446,6 @@ export default function PrimarySalesReports() {
     </div>
   );
 }
+
 
 
