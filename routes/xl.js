@@ -3354,14 +3354,14 @@ router.get('/reports/primary-sales', async (req, res) => {
         });
 
         // Mapping logic
-        const { XlStockist, AdminUser } = require('../db');
+        const { XlStockist, XlUser } = require('../db');
         const stockists = await XlStockist.findAll({ raw: true });
         const stockMap = {};
         stockists.forEach(s => {
             stockMap[s.uid || s._id] = s.businessName || s.name;
         });
 
-        const users = await AdminUser.findAll({ raw: true });
+        const users = await XlUser.findAll({ raw: true });
         const userMap = {};
         users.forEach(u => {
             userMap[u.employeeId || u._id] = u.name;
