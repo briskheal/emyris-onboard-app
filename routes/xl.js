@@ -3343,7 +3343,7 @@ router.get('/reports/primary-sales', async (req, res) => {
 
         const sql = `
             SELECT ${selectParts.join(', ')}
-            FROM xl_primary_sales
+            FROM xl_primary_sales p
             ${whereSql}
             GROUP BY ${groupParts.join(', ')}
         `;
