@@ -280,10 +280,10 @@ function AccessControlTab() {
             </p>
             <div className="flex items-center justify-center gap-4">
                <button onClick={handleBulkLock} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                 <Check size={16} /> YES
+                 <Check size={16} /> Yes
                </button>
                <button onClick={() => setShowConfirm(false)} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                 <Trash2 size={16} /> NO
+                 <Trash2 size={16} /> No
                </button>
             </div>
           </div>
@@ -562,18 +562,18 @@ export default function ManageUsers() {
         <div className="w-72 bg-slate-800/50 border-r border-slate-800 flex flex-col py-6 overflow-y-auto">
           <h2 className="px-6 text-emerald-400 font-black text-xl tracking-wider mb-6 uppercase">Manage Users</h2>
           <div className="flex flex-col space-y-2 px-4">
-            <button onClick={() => setActiveTab('create_user')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'create_user' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>CREATE USER</button>
-            <button onClick={() => setActiveTab('create_admin')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'create_admin' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>CREATE ADMIN</button>
-            <button onClick={() => setActiveTab('user_info')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'user_info' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>USER INFO</button>
-            <button onClick={() => setActiveTab('edit_delete')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'edit_delete' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>EDIT / DELETE</button>
-            <button onClick={() => setActiveTab('admin_info')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'admin_info' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>ADMIN INFO</button>
-            <button onClick={() => setActiveTab('divisions')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'divisions' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>MANAGE DIVISIONS</button>
-            <button onClick={() => setActiveTab('designations')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'designations' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>MANAGE DESIGNATIONS</button>
-            <button onClick={() => setActiveTab('set_target')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'set_target' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>SET USER TARGET</button>
-            <button onClick={() => setActiveTab('upload_target')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'upload_target' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>UPLOAD TARGET</button>
-            <button onClick={() => setActiveTab('access_control')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'access_control' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>ACCESS CONTROL</button>
-            <button onClick={() => setActiveTab('user_devices')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'user_devices' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>USER DEVICES</button>
-            <button onClick={() => setActiveTab('ta_da')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'ta_da' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>TA, DA MANAGE</button>
+            <button onClick={() => setActiveTab('create_user')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'create_user' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Create User</button>
+            <button onClick={() => setActiveTab('create_admin')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'create_admin' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Create Admin</button>
+            <button onClick={() => setActiveTab('user_info')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'user_info' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>User Info</button>
+            <button onClick={() => setActiveTab('edit_delete')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'edit_delete' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Edit / Delete</button>
+            <button onClick={() => setActiveTab('admin_info')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'admin_info' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Admin Info</button>
+            <button onClick={() => setActiveTab('divisions')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'divisions' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Manage Divisions</button>
+            <button onClick={() => setActiveTab('designations')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'designations' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Manage Designations</button>
+            <button onClick={() => setActiveTab('set_target')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'set_target' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Set User Target</button>
+            <button onClick={() => setActiveTab('upload_target')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'upload_target' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Upload Target</button>
+            <button onClick={() => setActiveTab('access_control')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'access_control' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Access Control</button>
+            <button onClick={() => setActiveTab('user_devices')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'user_devices' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>User Devices</button>
+            <button onClick={() => setActiveTab('ta_da')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'ta_da' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Ta, Da Manage</button>
           </div>
         </div>
         <div className={`flex-1 bg-slate-900 overflow-y-auto ${activeTab === 'set_target' ? 'p-0' : 'p-8'}`}>
@@ -969,7 +969,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
     return (
       <div className="max-w-4xl">
         <button onClick={() => setViewUser(null)} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
-          <ArrowLeft size={16} /> USER DETAILS
+          <ArrowLeft size={16} /> User Details
         </button>
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700 shadow-xl overflow-hidden p-8">
           <div className="grid grid-cols-4 gap-8 mb-8 pb-8 border-b border-slate-700/50">
@@ -1079,7 +1079,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
       <div className="max-w-full">
         <div className="flex items-center justify-between mb-8">
           <button onClick={() => setActivationMode(false)} className="text-sky-400 hover:text-white font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
-            <ArrowLeft size={16} /> ACTIVATION CONTROL
+            <ArrowLeft size={16} /> Activation Control
           </button>
         </div>
         <div className="bg-sky-900/30 border border-sky-500/30 p-4 rounded-xl mb-6">
@@ -2107,7 +2107,7 @@ function SetTargetTab() {
       {activeSubTab === 'main' && (
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700 p-8 shadow-xl max-w-5xl mx-auto">
       <button onClick={() => window.location.href='/xla/admin'} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm">
-        <ArrowLeft size={16} /> SET USER TARGET
+        <ArrowLeft size={16} /> Set User Target
       </button>
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
@@ -2173,7 +2173,7 @@ function SetTargetTab() {
       {activeSubTab === 'monthly' && (
         <div className="w-full px-4 pb-12">
            <button onClick={() => setActiveSubTab('main')} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm">
-            <ArrowLeft size={16} /> MONTHLY TARGETS
+            <ArrowLeft size={16} /> Monthly Targets
           </button>
           
           <div className="grid grid-cols-2 gap-6 mb-6">
@@ -2230,7 +2230,7 @@ function SetTargetTab() {
       {activeSubTab === 'yearly' && (
         <div className="w-full px-4 pb-12">
           <button onClick={() => setActiveSubTab('main')} className="text-sky-400 hover:text-white mb-6 font-bold flex items-center gap-2 uppercase tracking-wider text-sm">
-            <ArrowLeft size={16} /> YEARLY TARGETS
+            <ArrowLeft size={16} /> Yearly Targets
           </button>
           
           <div className="flex flex-col md:flex-row gap-6 mb-8 items-end justify-between">
@@ -2261,7 +2261,7 @@ function SetTargetTab() {
                     <input type="text" placeholder="Search by name or HQ..." value={yearlySearch} onChange={e => setYearlySearch(e.target.value)} className="bg-slate-900 border border-slate-700 rounded-lg py-3 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-sky-500 w-64" />
                 </div>
                 <button onClick={handleDownloadYearly} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-3 rounded-lg font-bold transition-colors flex items-center gap-2 text-sm uppercase tracking-wider shadow-lg shadow-emerald-500/20">
-                    <Download size={18} /> DOWNLOAD EXCEL
+                    <Download size={18} /> Download Excel
                 </button>
             </div>
           </div>
@@ -2564,3 +2564,4 @@ function TargetsListView({ period, onBack }: any) {
     </div>
   );
 }
+

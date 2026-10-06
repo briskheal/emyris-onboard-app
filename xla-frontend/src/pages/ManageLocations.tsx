@@ -934,33 +934,33 @@ export default function ManageLocations() {
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
             <button 
               onClick={() => setActiveTab('state')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'state' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'state' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
             >
-              CREATE STATE
+              Create State
             </button>
             <button 
               onClick={() => setActiveTab('hq')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'hq' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'hq' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
             >
-              CREATE HEADQUARTERS
+              Create Headquarters
             </button>
             <button 
               onClick={() => setActiveTab('city')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'city' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'city' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
             >
-              CREATE CITY / AREA
+              Create City / Area
             </button>
             <button 
               onClick={() => setActiveTab('route')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'route' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'route' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
             >
-              CREATE ROUTE
+              Create Route
             </button>
             <button 
               onClick={() => setActiveTab('upload')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'upload' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
+              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'upload' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
             >
-              UPLOAD LOCATIONS
+              Upload Locations
             </button>
           </div>
         </div>
@@ -977,3 +977,4 @@ export default function ManageLocations() {
     </div>
   );
 }
+

@@ -734,7 +734,7 @@ export default function ManageLeave() {
               <button 
                 key={tab.id}
                 onClick={() => { setActiveTab(tab.id as any); setMobileMenuOpen(false); }} 
-                className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
+                className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
               >
                 {tab.label}
               </button>
@@ -754,6 +754,7 @@ export default function ManageLeave() {
     </div>
   );
 }
+
 
 
 

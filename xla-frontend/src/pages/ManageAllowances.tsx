@@ -446,23 +446,23 @@ export default function ManageAllowances() {
         <div className="flex-1 min-w-0 overflow-y-auto py-6">
           <ul className="space-y-1 px-4">
             <li>
-              <button onClick={() => setActiveTab('travel')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'travel' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
-                TRAVEL ALLOWANCE
+              <button onClick={() => setActiveTab('travel')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'travel' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
+                Travel Allowance
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('outstation')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'outstation' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
-                OUT STATION ALLOWANCE
+              <button onClick={() => setActiveTab('outstation')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'outstation' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
+                Out Station Allowance
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('rates')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'rates' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
-                RATES
+              <button onClick={() => setActiveTab('rates')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'rates' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
+                Rates
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('da_eligibility')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'da_eligibility' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
-                ACTIVITY DA ELIGIBILITY
+              <button onClick={() => setActiveTab('da_eligibility')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'da_eligibility' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
+                Activity Da Eligibility
               </button>
             </li>
           </ul>
@@ -477,4 +477,5 @@ export default function ManageAllowances() {
     </div>
   );
 }
+
 

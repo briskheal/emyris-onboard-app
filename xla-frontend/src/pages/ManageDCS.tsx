@@ -109,7 +109,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
       {/* TOP TOOLBAR (Fixed) */}
       <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-[60]">
         <button onClick={() => {}} className="text-sky-400 font-bold mb-6 hover:underline flex items-center gap-2 w-fit text-sm">
-          <ArrowLeft size={16} /> EDIT / DELETE
+          <ArrowLeft size={16} /> Edit / Delete
         </button>
 
         <div className="bg-[#1d9c52] text-white text-xs font-semibold px-4 py-2 rounded mb-6 shadow-sm w-fit">
@@ -655,7 +655,7 @@ export default function ManageDCS() {
 
     return (
       <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
-        <button onClick={()=>setSubTab('')} className="text-sky-400 font-bold mb-8 hover:underline">BACK TO MANAGEMENT</button>
+        <button onClick={()=>setSubTab('')} className="text-sky-400 font-bold mb-8 hover:underline">Back To Management</button>
         <div className="bg-slate-800/50 p-8 rounded-2xl border border-slate-700 text-center">
           <p className="text-slate-400 mb-6">List assignment workflows (Allot, De-allot, Transfer) interface placeholder.</p>
           <div className="flex justify-center gap-6 opacity-50 pointer-events-none">
@@ -692,7 +692,7 @@ export default function ManageDCS() {
               { id: 'dcs_list_management', label: 'DCS LIST MANAGEMENT' }
             ].map(tab => (
               <li key={tab.id}>
-                <button onClick={() => setActiveTab(tab.id as any)} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
+                <button onClick={() => setActiveTab(tab.id as any)} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
                   {tab.label}
                 </button>
               </li>
@@ -717,3 +717,4 @@ export default function ManageDCS() {
     </div>
   );
 }
+

@@ -3277,7 +3277,7 @@ router.post('/primary-sales/save', async (req, res) => {
 router.get('/reports/primary-sales', async (req, res) => {
     try {
         const { startDate, endDate, type, dateWise } = req.query;
-        const { XlPrimarySales, XlUser } = require('../db');
+        const { XlPrimarySales, XlUser, XlStockist } = require('../db');
         const { Op, fn, col } = require('sequelize');
         
         let whereClause = {};
@@ -5219,6 +5219,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 

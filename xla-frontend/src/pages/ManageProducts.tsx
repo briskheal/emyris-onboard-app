@@ -55,12 +55,12 @@ export default function ManageProducts() {
         <div className="w-72 bg-slate-800/50 border-r border-slate-800 flex flex-col py-6 overflow-y-auto">
           <h2 className="px-6 text-emerald-400 font-black text-xl tracking-wider mb-6 uppercase">Manage Products</h2>
           <div className="flex flex-col space-y-2 px-4">
-            <button onClick={() => setActiveTab('category')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'category' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>PRODUCT CATEGORY</button>
-            <button onClick={() => setActiveTab('type')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'type' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>PRODUCT TYPE</button>
-            <button onClick={() => setActiveTab('product')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'product' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>PRODUCT</button>
-            <button onClick={() => setActiveTab('upload')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'upload' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>UPLOAD PRODUCT</button>
-            <button onClick={() => setActiveTab('supplier')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'supplier' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>PRODUCT SUPPLIER</button>
-            <button onClick={() => setActiveTab('inventory')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm lowercase capitalize ${activeTab === 'inventory' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>INVENTORY</button>
+            <button onClick={() => setActiveTab('category')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'category' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product Category</button>
+            <button onClick={() => setActiveTab('type')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'type' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product Type</button>
+            <button onClick={() => setActiveTab('product')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'product' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product</button>
+            <button onClick={() => setActiveTab('upload')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'upload' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Upload Product</button>
+            <button onClick={() => setActiveTab('supplier')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'supplier' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product Supplier</button>
+            <button onClick={() => setActiveTab('inventory')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'inventory' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Inventory</button>
           </div>
         </div>
         <div className="flex-1 min-w-0 bg-slate-900 p-8 overflow-y-auto">
@@ -907,3 +907,4 @@ function InventoryTab() {
     </div>
   );
 }
+
