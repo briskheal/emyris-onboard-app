@@ -3220,7 +3220,7 @@ const validateProductsData = (pData) => {
 };
 router.post('/primary-sales/save', async (req, res) => {
     try {
-        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData, status } = req.body;
+        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData, status, month: reqMonth, year: reqYear } = req.body;
         // Strict Validation
         if (productsData) validateProductsData(productsData);
         
