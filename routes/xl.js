@@ -3371,13 +3371,18 @@ router.get('/reports/primary-sales', async (req, res) => {
         const stockists = await XlStockist.findAll({ raw: true });
         const stockMap = {};
         stockists.forEach(s => {
-            stockMap[s.uid || s._id] = s.businessName || s.name;
+            const name = s.businessName || s.name || s.uid || s._id;
+            if (s.uid) stockMap[s.uid] = name;
+            if (s._id) stockMap[s._id] = name;
         });
 
         const users = await XlUser.findAll({ raw: true });
         const userMap = {};
         users.forEach(u => {
-            userMap[u.employeeId || u._id] = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name;
+            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name;
+            if (u.employeeId) userMap[u.employeeId] = name;
+            if (u._id) userMap[u._id] = name;
+            if (u.uid) userMap[u.uid] = name;
         });
 
         data.forEach(d => {
@@ -3471,7 +3476,9 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         const products = await XlProduct.findAll({ raw: true });
         const prodMap = {};
         products.forEach(pr => {
-            prodMap[pr.uid || pr._id] = pr.productName || pr.name || pr.uid || pr._id;
+            const name = pr.productName || pr.name || pr.uid || pr._id;
+            if (pr.uid) prodMap[pr.uid] = name;
+            if (pr._id) prodMap[pr._id] = name;
         });
 
         data.forEach(d => {
