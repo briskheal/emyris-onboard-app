@@ -3302,14 +3302,14 @@ router.get('/reports/primary-sales', async (req, res) => {
         let replacements = {};
 
         if (startDate && endDate) {
-            whereClauses.push('date BETWEEN :startDate AND :endDate');
+            whereClauses.push('p.date BETWEEN :startDate AND :endDate');
             replacements.startDate = startDate;
             replacements.endDate = endDate;
         } else if (startDate) {
-            whereClauses.push('date >= :startDate');
+            whereClauses.push('p.date >= :startDate');
             replacements.startDate = startDate;
         } else if (endDate) {
-            whereClauses.push('date <= :endDate');
+            whereClauses.push('p.date <= :endDate');
             replacements.endDate = endDate;
         }
 
@@ -3318,26 +3318,26 @@ router.get('/reports/primary-sales', async (req, res) => {
         let groupParts = [];
 
         if (type === 'Stockist') {
-            selectParts.push('stockist', 'headquarter');
-            groupParts.push('stockist', 'headquarter');
+            selectParts.push('p.stockist as stockist', 'p.headquarter as headquarter');
+            groupParts.push('p.stockist', 'p.headquarter');
         } else if (type === 'Headquarter') {
-            selectParts.push('headquarter');
-            groupParts.push('headquarter');
+            selectParts.push('p.headquarter as headquarter');
+            groupParts.push('p.headquarter');
         } else if (type === 'User') {
-            selectParts.push('employeeId', 'headquarter');
-            groupParts.push('employeeId', 'headquarter');
+            selectParts.push('p.employeeId as employeeId', 'p.headquarter as headquarter');
+            groupParts.push('p.employeeId', 'p.headquarter');
         } else if (type === 'Date') {
-            selectParts.push('date');
-            groupParts.push('date');
+            selectParts.push('p.date as date');
+            groupParts.push('p.date');
         }
 
         if (isDateWise && type !== 'Date') {
-            selectParts.unshift('date');
-            groupParts.unshift('date');
+            selectParts.unshift('p.date as date');
+            groupParts.unshift('p.date');
         }
 
         // Add aggregation
-        selectParts.push('SUM(netInvValue) as totalSales');
+        selectParts.push('SUM(p.netInvValue) as totalSales');
 
         let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
