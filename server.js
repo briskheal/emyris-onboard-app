@@ -526,6 +526,30 @@ const bcrypt = require('bcryptjs');
     }
   } catch (e) { console.error('Global auto-heal error:', e); }
 })();
+
+  // AUTO-HEAL: Fix legacy date formats (DD-MM-YYYY to YYYY-MM-DD)
+  (async () => {
+    try {
+      const { XlPrimarySales } = require('./db');
+      const { Op } = require('sequelize');
+      const sales = await XlPrimarySales.findAll({ raw: true });
+      let fixed = 0;
+      for (const sale of sales) {
+        if (sale.date && sale.date.includes('-')) {
+          const parts = sale.date.split('-');
+          if (parts.length === 3 && parts[0].length === 2) {
+             const newDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+             await XlPrimarySales.update({ date: newDate }, { where: { _id: sale._id } });
+             fixed++;
+          }
+        }
+      }
+      if (fixed > 0) console.log('Auto-healed ' + fixed + ' primary sales dates.');
+    } catch (e) {
+      console.error('Date auto-heal failed:', e);
+    }
+  })();
+
 app.listen(PORT, () => console.log('Server running on port ' + PORT));
 
 
