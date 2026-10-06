@@ -206,8 +206,9 @@ export default function PrimarySalesReports() {
               onChange={(start, end) => { setStartDate(start); setEndDate(end); }}
             />
 
-            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-end shadow-sm rounded-xl">
-              <div className="flex flex-col gap-2 min-w-[200px] max-w-[300px]">
+            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-center justify-between shadow-sm rounded-xl mb-4">
+              <div className="flex flex-wrap gap-4 items-end">
+                <div className="flex flex-col gap-2 min-w-[200px] max-w-[300px]">
                 <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Type <span className="text-rose-500">*</span></label>
                 <select value={selectType} onChange={e => { setSelectType(e.target.value); setSelectedUser(''); }} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
                   <option>Stockist</option>
@@ -235,12 +236,15 @@ export default function PrimarySalesReports() {
                 </div>
               )}
 
-              <button onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg ml-auto">
+              <button onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg">
                 See Reports
               </button>
-            </div>
+              </div>
 
-            <p className="text-slate-500 text-sm mb-4 mt-6">We use caching on this page click see reports in case you don't see updated data.</p>
+              <div className="text-slate-500 text-xs text-right leading-relaxed hidden sm:block">
+                We use caching on this page, Click see reports<br />incase you don't see updated data.
+              </div>
+            </div>
 
             {/* Main Data Table */}
             <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden rounded-xl">
@@ -442,3 +446,4 @@ export default function PrimarySalesReports() {
     </div>
   );
 }
+
