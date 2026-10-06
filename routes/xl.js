@@ -3334,7 +3334,7 @@ router.get('/reports/primary-sales', async (req, res) => {
             raw: true
         });
 
-        const { XlStockist } = require('../db');
+        // const { XlStockist } = require('../db');
         const allStockists = await XlStockist.findAll({ attributes: ['uid', 'businessName', 'name', '_id'], raw: true });
         const stockMap = {};
         allStockists.forEach(s => {
@@ -3419,7 +3419,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             raw: true
         });
 
-        const { XlProduct } = require('../db');
+        // const { XlProduct } = require('../db');
         const allProducts = await XlProduct.findAll({ attributes: ['uid', '_id', 'name'], raw: true });
         const prodMap = {};
         allProducts.forEach(p => {
