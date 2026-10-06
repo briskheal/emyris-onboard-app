@@ -4575,6 +4575,17 @@ router.get('/missed-reports', async (req, res) => {
     }
 });
 
+// [DEBUG] endpoint for primary sales
+router.get('/debug/primary-sales', async (req, res) => {
+    try {
+        const { XlPrimarySales, XlPrimarySalesItem } = require('../db');
+        const sales = await XlPrimarySales.findAll({ raw: true });
+        const items = await XlPrimarySalesItem.findAll({ raw: true });
+        res.json({ sales, items });
+    } catch (e) {
+        res.json({ error: e.message });
+    }
+});
 module.exports = router;
 
 
@@ -5219,6 +5230,7 @@ router.get('/user-performance/export', async (req, res) => {
         res.status(500).send(e.stack || e.message || 'Unknown error');
     }
 });
+
 
 
 
