@@ -3257,7 +3257,7 @@ router.post('/primary-sales/save', async (req, res) => {
                 priceType: p.priceType || 'BASE PRICE',
                 free: parseInt(p.free || 0),
                 discount: parseFloat(p.discount || 0),
-                exp: parseInt(p.exp || 0),
+                exp: p.exp ? 1 : 0,
                 purcRtn: parseInt(p.purcRtn || 0),
                 rtnPriceType: p.rtnPriceType || 'BASE PRICE',
                 rtnPrice: parseFloat(p.rtnPrice || 0)
@@ -3633,7 +3633,7 @@ router.put('/primary-sales/update/:id', async (req, res) => {
                     priceType: p.priceType || 'BASE PRICE',
                     free: parseInt(p.free || 0),
                     discount: parseFloat(p.discount || 0),
-                    exp: parseInt(p.exp || 0),
+                    exp: p.exp ? 1 : 0,
                     purcRtn: parseInt(p.purcRtn || 0),
                     rtnPriceType: p.rtnPriceType || 'BASE PRICE',
                     rtnPrice: parseFloat(p.rtnPrice || 0)
