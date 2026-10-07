@@ -4786,7 +4786,7 @@ router.get('/reports/secondary-sales', async (req, res) => {
             selectParts.push('s.headquarter', 'SUM(s.amount) as "totalSales"');
             groupParts.push('s.headquarter');
         } else if (type === 'User') {
-            selectParts.push('s._id as "_id"', 's.date as "date"', 's."invoiceDate" as "invoiceDate"', 's."invoiceNumber" as "invoiceNumber"', 's."employeeId" as "employeeId"', 's.stockist as "stockist"', 's.headquarter as "headquarter"', 's.amount as "totalSales"');
+            selectParts.push('s._id as "_id"', 's.month as "month"', 's.date as "date"', 's."invoiceDate" as "invoiceDate"', 's."invoiceNumber" as "invoiceNumber"', 's."employeeId" as "employeeId"', 's.stockist as "stockist"', 's.headquarter as "headquarter"', 's.amount as "totalSales"');
         } else {
             selectParts.push('s.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
             groupParts.push('s.stockist', 's.headquarter');
@@ -4893,7 +4893,7 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
         // For drill down from Stockist -> Product Wise, we want products and their total secondary sales
         // For drill down from Headquarter -> Stockist Wise, we want stockists and their total secondary sales
         let sql = '';
-        if (type === 'Headquarter') {
+        if (type === 'Stockist') {
             sql = `
                 SELECT s.stockist, s.headquarter, SUM(s.amount) as "totalSales"
                 FROM xl_secondary_sales s

@@ -329,7 +329,8 @@ export default function SecondarySalesReports() {
                           
                           {selectType === 'User' ? (
                             <>
-                              {renderSortableHeader('Invoice Date', 'invoiceDate')}
+                              {renderSortableHeader('Month', 'month')}
+                                {renderSortableHeader('Invoice Date', 'invoiceDate')}
                                 {renderSortableHeader('Invoice Number', 'invoiceNumber')}
                                 {renderSortableHeader('Submitted By', 'userName')}
                               {renderSortableHeader('Stockist', 'stockist')}
@@ -404,7 +405,7 @@ export default function SecondarySalesReports() {
                         ))}
                         {processedData.length > 0 && !loading && (
                           <tr className="bg-[#151521] font-bold text-sky-400">
-                            <td colSpan={selectType === 'User' ? 6 : selectType === 'Inventory' ? 3 : selectType === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                            <td colSpan={selectType === 'User' ? 7 : selectType === 'Inventory' ? 3 : selectType === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
                             <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
                               {selectType === 'Inventory' 
                                 ? processedData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)
