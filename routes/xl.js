@@ -4821,10 +4821,19 @@ router.get('/reports/secondary-sales', async (req, res) => {
 router.get('/reports/secondary-sales/detail', async (req, res) => {
     try {
         const { sequelize } = require('../db');
-        const { type, stockist, headquarter } = req.query;
+        const { type, stockist, headquarter, startMonth, startYear } = req.query;
 
         let whereClauses = [];
         let replacements = {};
+
+        if (startMonth) {
+            whereClauses.push('s.month = :startMonth');
+            replacements.startMonth = startMonth;
+        }
+        if (startYear) {
+            whereClauses.push('s.year = :startYear');
+            replacements.startYear = startYear;
+        }
 
         if (type === 'Stockist' && stockist) {
             whereClauses.push('s.stockist = :stockist');
