@@ -53,8 +53,8 @@ export default function SecondarySalesReports() {
     try {
       const res = await axios.get('/api/xl/reports/secondary-sales', {
         params: {
-          month: selectedMonth,
-          year: selectedYear,
+          startMonth: selectedMonth,
+          startYear: selectedYear,
           type: selectType,
           employeeId: selectType === 'User' ? selectedUser : undefined
         },
@@ -73,8 +73,8 @@ export default function SecondarySalesReports() {
     setDetailLoading(true);
     try {
       const params: any = {
-        month: selectedMonth,
-        year: selectedYear,
+        startMonth: selectedMonth,
+        startYear: selectedYear,
         type: type,
       };
 
