@@ -28,6 +28,7 @@ const GLOBAL_ROUTES = [
   { title: 'Routes List', path: '/utilities/lists/routes', breadcrumb: 'Utilities > Routes' },
   { title: 'Missed Reports', path: '/reports/missed-reports', breadcrumb: 'Utilities > Missed Reports' },
   { title: 'Primary Sales Reports', path: '/reports/primary-sales', breadcrumb: 'Utilities > Primary Sales' },
+  { title: 'Secondary Sales Reports', path: '/reports/secondary-sales', breadcrumb: 'Utilities > Secondary Sales' },
   
   // Extras
   { title: 'Tour Program', path: '/extras/tour-program', breadcrumb: 'Extras > Tour Program' },
