@@ -299,33 +299,6 @@ app.get('/api/debug-data', async (req, res) => {
     } catch (e) { res.json({ error: e.message }); }
 });
 app.use('/api/xl', xlRouter);
-
-app.get('/api/fix-hqs-now', async (req, res) => {
-    try {
-        const { XlSecondarySales, XlStockist } = require('./db');
-        const { Op } = require('sequelize');
-        const allSales = await XlSecondarySales.findAll({ order: [['createdAt', 'DESC']], limit: 5 });
-        res.json({ success: true, data: allSales });
-    } catch(e) {
-        res.json({ success: false, error: e.message });
-    }
-});
-        let updated = 0;
-        for (let s of sales) {
-            if (s.stockist) {
-                const st = await XlStockist.findOne({ where: { [Op.or]: [{_id: s.stockist}, {uid: s.stockist}] } });
-                if (st && st.headquarter) {
-                    s.headquarter = st.headquarter;
-                    await s.save();
-                    updated++;
-                }
-            }
-        }
-        res.json({ success: true, count: updated });
-    } catch(e) {
-        res.json({ success: false, error: e.message });
-    }
-});
 app.all('/api/company-profile', (req, res, next) => { req.url = '/company-profile'; adminRouter(req, res, next); });
 
 // Legacy Route Aliases for original HTML portal (script.js)
