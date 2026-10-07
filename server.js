@@ -304,7 +304,12 @@ app.get('/api/fix-hqs-now', async (req, res) => {
     try {
         const { XlSecondarySales, XlStockist } = require('./db');
         const { Op } = require('sequelize');
-        const sales = await XlSecondarySales.findAll({ where: { [Op.or]: [{ headquarter: null }, { headquarter: '' }] } });
+        const allSales = await XlSecondarySales.findAll({ order: [['createdAt', 'DESC']], limit: 5 });
+        res.json({ success: true, data: allSales });
+    } catch(e) {
+        res.json({ success: false, error: e.message });
+    }
+});
         let updated = 0;
         for (let s of sales) {
             if (s.stockist) {
