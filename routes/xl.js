@@ -3383,7 +3383,7 @@ router.get('/reports/primary-sales', async (req, res) => {
                 SELECT ${selectParts.join(', ')}
                 FROM xl_primary_sales p
                 ${whereSql}
-                GROUP BY ${groupParts.join(', ')}
+                ${groupParts.length > 0 ? 'GROUP BY ' + groupParts.join(', ') : ''}
             `;
         }
 
@@ -4786,8 +4786,7 @@ router.get('/reports/secondary-sales', async (req, res) => {
             selectParts.push('s.headquarter', 'SUM(s.amount) as "totalSales"');
             groupParts.push('s.headquarter');
         } else if (type === 'User') {
-            selectParts.push('s."employeeId"', 'SUM(s.amount) as "totalSales"');
-            groupParts.push('s."employeeId"');
+            selectParts.push('s._id', 's.date', 's."invoiceDate"', 's."invoiceNumber"', 's."employeeId"', 's.stockist', 's.headquarter', 's.amount as "totalSales"');
         } else {
             selectParts.push('s.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
             groupParts.push('s.stockist', 's.headquarter');

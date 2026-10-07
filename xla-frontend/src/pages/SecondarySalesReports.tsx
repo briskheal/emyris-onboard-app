@@ -67,7 +67,15 @@ export default function SecondarySalesReports() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.data.success) {
-        setData(res.data.data || []);
+        
+          const d = res.data.data || [];
+          const mapped = d.map((item: any) => ({
+            ...item,
+            stockistName: stockists.find(s => s.uid === item.stockist || s._id === item.stockist)?.businessName || item.stockist,
+            userName: users.find(u => u.employeeId === item.employeeId || u.email === item.employeeId)?.name || item.employeeId
+          }));
+          setData(mapped);
+
       }
     } catch(err) {
       console.error(err);
@@ -99,7 +107,15 @@ export default function SecondarySalesReports() {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       if (res.data.success) {
-        setDetailData(res.data.data || []);
+        
+        const d = res.data.data || [];
+        const mapped = d.map((item: any) => ({
+          ...item,
+          stockistName: stockists.find(s => s.uid === item.stockist || s._id === item.stockist)?.businessName || item.stockist,
+          productName: productsMaster.find((p: any) => p.uid === item.product || p._id === item.product || p.productName === item.product)?.productName || item.product
+        }));
+        setDetailData(mapped);
+
       }
     } catch(err) {
       console.error(err);
@@ -325,7 +341,9 @@ export default function SecondarySalesReports() {
                           
                           {selectType === 'User' ? (
                             <>
-                              {renderSortableHeader('Submitted By', 'userName')}
+                              {renderSortableHeader('Invoice Date', 'invoiceDate')}
+                                {renderSortableHeader('Invoice Number', 'invoiceNumber')}
+                                {renderSortableHeader('Submitted By', 'userName')}
                               {renderSortableHeader('Stockist', 'stockist')}
                               {renderSortableHeader('Headquarter', 'headquarter')}
                               {renderSortableHeader(<>Total Secondary Sales<br/>(₹)</>, 'totalSales', 'right')}
@@ -359,9 +377,11 @@ export default function SecondarySalesReports() {
                             
                             {selectType === 'User' ? (
                               <>
-                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
-                                  <div className="flex flex-col">
-                                    <span className="font-medium text-slate-200">{d.userName || d.employeeId}</span>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.invoiceDate ? new Date(d.invoiceDate).toLocaleDateString('en-GB') : 'NA'}</td>
+                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.invoiceNumber || 'NA'}</td>
+                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-slate-200">{d.userName || d.employeeId}</span>
                                   </div>
                                 </td>
                                 <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockistName || d.stockist}</td>
@@ -396,7 +416,7 @@ export default function SecondarySalesReports() {
                         ))}
                         {processedData.length > 0 && !loading && (
                           <tr className="bg-[#151521] font-bold text-sky-400">
-                            <td colSpan={selectType === 'User' ? 4 : selectType === 'Inventory' ? 3 : selectType === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                            <td colSpan={selectType === 'User' ? 6 : selectType === 'Inventory' ? 3 : selectType === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
                             <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
                               {selectType === 'Inventory' 
                                 ? processedData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)
@@ -451,6 +471,7 @@ export default function SecondarySalesReports() {
                         ) : (
                           <>
                             <th className="px-4 py-3 border-r border-[#3b3b5a]">Product</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Quantity</th>
                             <th className="px-4 py-3 text-right">Total Secondary Sales (₹)</th>
                           </>
                         )}
@@ -475,6 +496,7 @@ export default function SecondarySalesReports() {
                           ) : (
                             <>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.productName || d.product}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right">{d.quantity || 0}</td>
                               <td className="px-4 py-2 text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
                             </>
                           )}
@@ -482,7 +504,7 @@ export default function SecondarySalesReports() {
                       ))}
                       {detailData.length > 0 && !detailLoading && (
                         <tr className="bg-[#151521] font-bold text-sky-400">
-                          <td colSpan={detailLevel === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                          <td colSpan={detailLevel === 'Stockist' ? 3 : 3} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
                           {detailLevel === 'Product' && (
                             <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
                               {detailData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)}
