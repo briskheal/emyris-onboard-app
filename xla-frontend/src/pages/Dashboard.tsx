@@ -4,60 +4,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Menu, MessageSquare, Bell, User, ChevronDown, Search, Download, Activity, Sun, Check , Calendar } from 'lucide-react';
 
 
-const GLOBAL_ROUTES = [
-  { title: 'Dashboard', path: '/dashboard', breadcrumb: 'Dashboard' },
-  
-  // Admin Panel
-  { title: 'Manage Locations', path: '/admin/locations', breadcrumb: 'Admin > Locations' },
-  { title: 'Manage Users', path: '/admin/users', breadcrumb: 'Admin > Users' },
-  { title: 'User Performance Analysis', path: '/admin/user-performance-analysis', breadcrumb: 'Admin > Performance' },
-  { title: 'Manage Products', path: '/admin/products', breadcrumb: 'Admin > Products' },
-  { title: 'Manage Leave', path: '/admin/leave', breadcrumb: 'Admin > Leave' },
-  { title: 'Manage Expenses', path: '/admin/expenses', breadcrumb: 'Admin > Expenses' },
-  { title: 'Manage DCS', path: '/admin/dcs', breadcrumb: 'Admin > DCS' },
-  { title: 'Approvals', path: '/admin/approvals', breadcrumb: 'Admin > Approvals' },
-  
-  // Utilities & Reports
-  { title: 'Doctors List', path: '/utilities/lists/doctors', breadcrumb: 'Utilities > Doctors' },
-  { title: 'Chemists List', path: '/utilities/lists/chemists', breadcrumb: 'Utilities > Chemists' },
-  { title: 'Stockists List', path: '/utilities/lists/stockists', breadcrumb: 'Utilities > Stockists' },
-  { title: 'Locations List', path: '/utilities/lists/locations', breadcrumb: 'Utilities > Locations' },
-  { title: 'Products List', path: '/utilities/lists/products', breadcrumb: 'Utilities > Products' },
-  { title: 'Geo-Fencing List', path: '/utilities/lists/geo-fencing', breadcrumb: 'Utilities > Geo-Fencing' },
-  { title: 'Gifts List', path: '/utilities/lists/gifts', breadcrumb: 'Utilities > Gifts' },
-  { title: 'Routes List', path: '/utilities/lists/routes', breadcrumb: 'Utilities > Routes' },
-  { title: 'Missed Reports', path: '/reports/missed-reports', breadcrumb: 'Utilities > Missed Reports' },
-  { title: 'Primary Sales Reports', path: '/reports/primary-sales', breadcrumb: 'Utilities > Primary Sales' },
-  { title: 'Secondary Sales Reports', path: '/reports/secondary-sales', breadcrumb: 'Utilities > Secondary Sales' },
-  
-  // Extras
-  { title: 'Tour Program', path: '/extras/tour-program', breadcrumb: 'Extras > Tour Program' },
-  { title: 'Call Plan', path: '/extras/call-plan', breadcrumb: 'Extras > Call Plan' },
-  { title: 'Leave Request', path: '/extras/leave', breadcrumb: 'Extras > Leave Request' },
-  { title: 'Geo-Fencing', path: '/extras/geo-fencing', breadcrumb: 'Extras > Geo-Fencing' },
-  { title: 'Expense Entry', path: '/extras/expense', breadcrumb: 'Extras > Expense' },
-  { title: 'Backlog Report', path: '/extras/backlog', breadcrumb: 'Extras > Backlog' },
-  { title: 'Settings', path: '/extras/settings', breadcrumb: 'Extras > Settings' },
-  { title: 'Performance Menu', path: '/extras/performance', breadcrumb: 'Extras > Performance' },
-  { title: 'E-Detailing', path: '/extras/e-detailing', breadcrumb: 'Extras > E-Detailing' },
-  { title: 'Attendance', path: '/extras/attendance', breadcrumb: 'Extras > Attendance' },
-  { title: 'Reminders', path: '/extras/reminders', breadcrumb: 'Extras > Reminders' },
-  { title: 'CRM', path: '/extras/crm', breadcrumb: 'Extras > CRM' },
-  { title: 'Profit Analysis', path: '/extras/profit', breadcrumb: 'Extras > Profit' },
-  { title: 'Sample Management', path: '/extras/samples', breadcrumb: 'Extras > Samples' },
-  
-  // Sales
-  { title: 'Primary Sales Entry', path: '/extras/primary-sales', breadcrumb: 'Sales > Primary Entry' },
-  { title: 'All Primary Sales', path: '/extras/primary-sales/all', breadcrumb: 'Sales > All Primary' },
-  { title: 'Secondary Sales Entry', path: '/extras/secondary', breadcrumb: 'Sales > Secondary Entry' },
-  { title: 'All Secondary Sales', path: '/extras/secondary/all', breadcrumb: 'Sales > All Secondary' },
-  
-  // Main
-  { title: 'Hierarchy', path: '/hierarchy', breadcrumb: 'Hierarchy' },
-  { title: 'Todays Activity', path: '/todays-activity', breadcrumb: 'Activity > Today' },
-  { title: 'Consolidated Activity', path: '/consolidated-activity', breadcrumb: 'Activity > Consolidated' },
-  { title: 'Call Report', path: '/report', breadcrumb: 'Report' }
-];
+import { GLOBAL_ROUTES } from '../config/navigation';
 
 export default function Dashboard() {
   const navigate = useNavigate();

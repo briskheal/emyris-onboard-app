@@ -1,32 +1,14 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { 
-  Menu, MessageSquare, Bell, FileText, CalendarDays, 
-  BarChart3, Receipt, MapPin, BellRing, List, Clock, PackageSearch, 
-  TrendingUp, ShoppingCart, ClipboardList, CalendarRange, Box, Target, CheckCircle2 
+  Menu, MessageSquare, Bell, CheckCircle2 
 } from 'lucide-react';
+import { utilitiesOptions } from '../config/navigation';
 
 export default function Utilities() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   const navigate = useNavigate();
 
-  const utilitiesOptions = [
-    { id: 'tour-program', path: '/extras/tour-program', label: 'TOUR PROGRAM', description: 'Access detailed reports of field Tour Programs submitted by users, outlining their planned doctor visits, working areas, and daily schedule.', icon: CalendarDays, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { id: 'call-reports', path: '/report', label: 'CALL REPORTS', description: 'Access official records of doctor, chemist, and stockist visits made by Medical Representatives, including visit dates, covered areas, and key visit details.', icon: FileText, color: 'text-sky-400', bg: 'bg-sky-400/10' },
-    { label: 'REMINDER CALLS REPORTS', description: 'Reminder Calls Reports record all reminder calls, including dates and outcomes, ensuring timely follow-ups and effective communication tracking.', icon: BellRing, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { id: 'missed-reports', path: '/reports/missed-reports', label: 'MISSED REPORTS', description: 'Missed Call Reports track visits made to doctors, stockists, and chemists, highlighting those missed. They help identify coverage gaps and improve follow-up efficiency.', icon: Clock, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
-    { label: 'DCS DUPLICATE ENTRIES', description: 'DCS Duplicate Entries help find and fix repeated records of doctors, chemists, and stockists to keep the information accurate and organized.', icon: List, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-    { label: 'SALES INSIGHTS', description: 'Graphical insights of primary, secondary, and combined sales for complete visibility along with their report types User-Wise, Stockist-Wise and Headquarter-Wise.', icon: TrendingUp, color: 'text-cyan-400', bg: 'bg-cyan-400/10' },
-    { path: '/reports/primary-sales', label: 'PRIMARY SALES REPORTS', description: 'Provide detailed data on pharmaceutical sales to doctors, chemists, and stockists, including quantities and dates, helping in accurate tracking and planning.', icon: PackageSearch, color: 'text-teal-400', bg: 'bg-teal-400/10' },
-    { path: '/reports/secondary-sales', label: 'SECONDARY SALES REPORTS', description: 'Secondary Sales Reports track pharmaceutical product movement from stockists to retailers, including sales volumes and dates. They support monitoring distribution performance.', icon: ShoppingCart, color: 'text-lime-400', bg: 'bg-lime-400/10' },
-    { label: 'PRODUCT-WISE REPORTS', description: 'Product-Wise Reports summarize key metrics for each product, including primary and secondary quantities, free stock, and closing stock, enabling effective inventory and sales management.', icon: Box, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-    { id: 'lists', label: 'LISTS', description: 'This list consolidates essential data such as doctors, chemists, stockists, products, gifts, routes, holidays, and geofencing details, streamlining field management and operational planning.', icon: ClipboardList, color: 'text-fuchsia-400', bg: 'bg-fuchsia-400/10' },
-    { label: 'TARGET', description: 'Target Reports summarize product-wise sales targets, including amount and quantity, helping track progress and ensure goal achievement.', icon: Target, color: 'text-pink-400', bg: 'bg-pink-400/10' },
-    { label: 'POB REPORTS', description: 'POB Reports track the details of Products on Booking, including quantities and value, providing insights into order status and sales performance.', icon: Receipt, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-    { label: 'MONTHLY REPORTS', description: 'Monthly Call Reports summarize all calls made by field staff to doctors, chemists, and stockists, highlighting call frequency and outcomes to assess engagement and performance.', icon: CalendarRange, color: 'text-sky-500', bg: 'bg-sky-500/10' },
-    { label: 'ANNUAL REPORTS', description: 'Annual Call Reports summarize yearly calls made by field staff to doctors, chemists, and stockists, highlighting call frequency and outcomes to assess engagement and performance.', icon: BarChart3, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { label: 'GEO-LOCATION ANALYSIS REPORT', description: 'Geo-Location Analysis Report tracks and analyzes the geographic locations of field activities, helping optimize routes, monitor coverage, and improve overall field efficiency.', icon: MapPin, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-    { label: 'EXPENSE REPORTS', description: 'Expense Reports record field-related expenses such as food, travel tickets, hotel stays, and other costs, enabling effective budget management and cost control.', icon: Receipt, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-  ];
+  const options = utilitiesOptions;
 
   return (
     <div className="min-h-full md:h-dvh bg-slate-900 flex flex-col pb-24 md:pb-0 text-slate-100 font-sans overflow-hidden">
@@ -64,7 +46,7 @@ export default function Utilities() {
         
         {/* Desktop Grid / Mobile List */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 pb-8">
-          {utilitiesOptions.map((report, idx) => (
+          {options.map((report, idx) => (
             <div key={idx} onClick={() => report.path ? navigate(report.path) : (report.id === 'lists' && navigate('/utilities/lists/doctors'))} className="bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-sky-500/50 rounded-2xl p-5 md:p-6 transition-all group shadow-lg flex gap-4 md:gap-5 items-start relative overflow-hidden cursor-pointer">
               {/* Desktop Decorative Glow */}
               <div className="hidden md:block absolute -inset-1 bg-gradient-to-br from-cyan-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 blur-xl transition-opacity z-0 pointer-events-none"></div>

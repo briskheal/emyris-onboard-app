@@ -1,23 +1,13 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { Menu, MessageSquare, Bell, Building2, Users, ClipboardList, FileBarChart, DollarSign, Stethoscope, Gift, CheckSquare, CalendarDays, Settings as SettingsIcon } from 'lucide-react';
+import { Menu, MessageSquare, Bell } from 'lucide-react';
+import { adminItems } from '../config/navigation';
 
 export default function AdminMenu() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
   
   const navigate = useNavigate();
 
-  const adminItems = [
-    { label: 'MANAGE LOCATIONS', icon: Building2, path: '/admin/locations' },
-    { label: 'MANAGE USERS', icon: Users, path: '/admin/users' },
-    { label: 'MANAGE PRODUCTS', icon: ClipboardList, path: '/admin/products' },
-    { label: 'USER PERFORMANCE ANALYSIS', icon: FileBarChart, path: '/admin/user-performance-analysis' },
-    { label: 'ALLOWANCES', icon: DollarSign, path: '/admin/expenses' },
-    { label: 'DOCTORS, STOCKISTS & CHEMISTS', icon: Stethoscope, path: '/admin/dcs' },
-    { label: 'SAMPLES & GIFTS', icon: Gift },
-    { label: 'APPROVALS', icon: CheckSquare, path: '/admin/approvals' },
-    { label: 'MANAGE LEAVE', icon: CalendarDays, path: '/admin/leave' },
-    { label: 'SETTINGS', icon: SettingsIcon, path: '/extras/settings' }
-  ];
+  const items = adminItems;
 
   return (
     <div className="min-h-full bg-slate-900 flex flex-col font-sans pb-24 text-slate-100">
@@ -58,7 +48,7 @@ export default function AdminMenu() {
         
         {/* Grid Layout */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 md:gap-6">
-          {adminItems.map((item, idx) => (
+          {items.map((item, idx) => (
             <button 
               key={idx} 
               onClick={() => item.path && navigate(item.path)}

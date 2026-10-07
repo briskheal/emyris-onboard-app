@@ -1,23 +1,12 @@
-import { Menu, MessageSquare, Bell, CalendarDays, MapPin, Receipt, History, UserCheck, MonitorPlay, Shield, Target } from 'lucide-react';
+import { Menu, MessageSquare, Bell } from 'lucide-react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
+import { extrasOptions } from '../config/navigation';
 
 export default function Extras() {
   const navigate = useNavigate();
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
 
-  const extrasOptions = [
-    // { label: 'Tour Program', path: '/extras/tour-program', description: 'Plan your monthly visits & get approval', icon: MapPin, color: 'text-rose-400', bg: 'bg-rose-400/10' },
-    // { label: 'Call Planning', path: '/extras/call-plan', description: 'Pre-call planning & objectives', icon: CalendarDays, color: 'text-sky-400', bg: 'bg-sky-400/10' },
-    { label: 'Leave Request', path: '/extras/leave', description: 'Apply for leaves & track status', icon: CalendarDays, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
-    { label: 'Geo Fencing', path: '/extras/geo-fencing', description: 'Geo-tag doctors & clinic locations', icon: MapPin, color: 'text-rose-500', bg: 'bg-rose-500/10' },
-    { label: 'Expense', path: '/extras/expense', description: 'Submit and track travel expenses', icon: Receipt, color: 'text-amber-400', bg: 'bg-amber-400/10' },
-    { label: 'Backlog Reporting', path: '/extras/backlog', description: 'Submit missed call reports', icon: History, color: 'text-sky-500', bg: 'bg-sky-500/10' },
-    { label: 'Attendance', path: '/extras', description: 'Daily attendance & punch-in', icon: UserCheck, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-    { label: 'eDetailing', path: '/extras', description: 'Interactive product detailing', icon: MonitorPlay, color: 'text-slate-300', bg: 'bg-slate-300/10', isNew: true },
-    { label: 'Settings', path: '/extras/settings', description: 'App preferences & account', icon: Shield, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-    { label: 'User Performance Analysis', path: '/extras/performance', description: 'View sales & call metrics', icon: Target, color: 'text-purple-400', bg: 'bg-purple-400/10', isNew: true },
-    { label: 'Reminders', path: '/extras', description: 'Follow-up and notification alerts', icon: Bell, color: 'text-sky-200', bg: 'bg-sky-200/10' }
-  ];
+  const options = extrasOptions;
 
   return (
     <div className="min-h-full bg-slate-900 flex flex-col pb-24 text-slate-100 font-sans">
@@ -47,7 +36,7 @@ export default function Extras() {
         <h2 className="text-xl font-black text-white mb-6">Extras</h2>
         
         <div className="grid grid-cols-2 gap-4">
-          {extrasOptions.map((item, idx) => (
+          {options.map((item, idx) => (
             <button 
               key={idx}
               onClick={() => navigate(item.path)}
