@@ -5,7 +5,6 @@ import { ChevronLeft, Eye, ArrowLeft, Search, X, ArrowUp, ArrowDown, Calendar, C
 import CustomUserSelect from '../components/CustomUserSelect';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const years = Array.from({ length: 8 }, (_, i) => 2023 + i);
 
 export default function SecondarySalesReports() {
   const navigate = useNavigate();
