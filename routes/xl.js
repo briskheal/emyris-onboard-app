@@ -4776,7 +4776,7 @@ router.get('/reports/secondary-sales', async (req, res) => {
         let sql = '';
 
         if (type === 'Inventory') {
-            selectParts.push('s.stockist', 's.headquarter', 'SUM(i.qty) as "totalQuantity"');
+            selectParts.push('s.stockist', 's.headquarter', 'SUM(i.qty) as "quantity"');
             groupParts.push('s.stockist', 's.headquarter');
             joinSql = 'JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"';
         } else if (type === 'Stockist') {
@@ -4786,7 +4786,7 @@ router.get('/reports/secondary-sales', async (req, res) => {
             selectParts.push('s.headquarter', 'SUM(s.amount) as "totalSales"');
             groupParts.push('s.headquarter');
         } else if (type === 'User') {
-            selectParts.push('s._id', 's.date', 's."invoiceDate"', 's."invoiceNumber"', 's."employeeId"', 's.stockist', 's.headquarter', 's.amount as "totalSales"');
+            selectParts.push('s._id as "_id"', 's.date as "date"', 's."invoiceDate" as "invoiceDate"', 's."invoiceNumber" as "invoiceNumber"', 's."employeeId" as "employeeId"', 's.stockist as "stockist"', 's.headquarter as "headquarter"', 's.amount as "totalSales"');
         } else {
             selectParts.push('s.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
             groupParts.push('s.stockist', 's.headquarter');
