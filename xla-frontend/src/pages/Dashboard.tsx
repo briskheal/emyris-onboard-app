@@ -159,7 +159,7 @@ export default function Dashboard() {
       alert('Error: ' + (e.response ? JSON.stringify(e.response.data) : e.message));
     }
   };
-  const userStr = localStorage.getItem('xla_user');
+  const userStr = sessionStorage.getItem('xla_user');
   const user = userStr ? JSON.parse(userStr) : null;
   const userName = user?.name || user?.firstName || user?.businessName || 'User';
 

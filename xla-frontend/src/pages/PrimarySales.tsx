@@ -255,7 +255,7 @@ export default function PrimarySales() {
     }
 
     try {
-      const userStr = localStorage.getItem('xla_user');
+      const userStr = sessionStorage.getItem('xla_user');
       const user = userStr ? JSON.parse(userStr) : {};
       
       const payload = {
@@ -336,7 +336,7 @@ export default function PrimarySales() {
     if (!id) return;
     if (!window.confirm('Are you sure you want to DELETE this entire primary sales record? This cannot be undone.')) return;
     try {
-      const token = localStorage.getItem('xla_token') || '';
+      const token = sessionStorage.getItem('xla_token') || '';
       const res = await axios.delete(`/api/xl/primary-sales/delete/${id}?fromAdmin=1`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {}
       });

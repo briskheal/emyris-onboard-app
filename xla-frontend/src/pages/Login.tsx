@@ -40,9 +40,9 @@ export default function Login() {
             setError('Server error: no token received');
             return;
           }
-          localStorage.setItem('xla_token', res.data.token);
-          localStorage.setItem('xla_user', JSON.stringify(res.data.user || {}));
-          localStorage.setItem('xla_role', res.data.role || 'admin');
+          sessionStorage.setItem('xla_token', res.data.token);
+          sessionStorage.setItem('xla_user', JSON.stringify(res.data.user || {}));
+          sessionStorage.setItem('xla_role', res.data.role || 'admin');
           navigate('/dashboard');
         } else {
           setError(res.data.message || 'Invalid credentials');
