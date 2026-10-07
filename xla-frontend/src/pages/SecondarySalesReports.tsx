@@ -394,6 +394,17 @@ export default function SecondarySalesReports() {
                             )}
                           </tr>
                         ))}
+                        {processedData.length > 0 && !loading && (
+                          <tr className="bg-[#151521] font-bold text-sky-400">
+                            <td colSpan={selectType === 'User' ? 4 : selectType === 'Inventory' ? 3 : selectType === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                            <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
+                              {selectType === 'Inventory' 
+                                ? processedData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)
+                                : processedData.reduce((sum, d) => sum + Number(d.totalSales || 0), 0).toFixed(2)}
+                            </td>
+                            {selectType !== 'Inventory' && selectType !== 'User' && <td className="px-4 py-3 border-t border-[#3b3b5a]"></td>}
+                          </tr>
+                        )}
                         {processedData.length === 0 && !loading && (
                         <tr>
                           <td colSpan={10} className="px-4 py-8 text-center text-slate-500 font-medium">No records found.</td>
@@ -469,6 +480,20 @@ export default function SecondarySalesReports() {
                           )}
                         </tr>
                       ))}
+                      {detailData.length > 0 && !detailLoading && (
+                        <tr className="bg-[#151521] font-bold text-sky-400">
+                          <td colSpan={detailLevel === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                          {detailLevel === 'Product' && (
+                            <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
+                              {detailData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)}
+                            </td>
+                          )}
+                          <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
+                            {detailData.reduce((sum, d) => sum + Number(d.totalSales || 0), 0).toFixed(2)}
+                          </td>
+                          {detailLevel === 'Stockist' && <td className="px-4 py-3 border-t border-[#3b3b5a]"></td>}
+                        </tr>
+                      )}
                       {detailData.length === 0 && !detailLoading && (
                         <tr>
                           <td colSpan={10} className="px-4 py-8 text-center text-slate-500 font-medium">No details found.</td>
