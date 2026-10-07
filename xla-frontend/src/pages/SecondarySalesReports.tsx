@@ -428,8 +428,8 @@ export default function SecondarySalesReports() {
           <>
             <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-center justify-between shadow-sm rounded-xl">
               <div>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">SHOWING RESULTS FOR {detailLevel?.toUpperCase()}</p>
-                <h3 className="text-xl font-black text-white">{detailLevel === 'Stockist' ? detailRow?.headquarter : detailRow?.stockist || detailRow?.stockistName}</h3>
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">SHOWING RESULTS FOR {detailLevel === 'Stockist' ? 'HEADQUARTER' : 'STOCKIST'}</p>
+                <h3 className="text-xl font-black text-white">{detailLevel === 'Stockist' ? detailRow?.headquarter : detailRow?.stockistName || detailRow?.stockist}</h3>
               </div>
             </div>
 
