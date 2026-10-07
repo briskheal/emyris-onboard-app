@@ -5055,6 +5055,14 @@ router.post('/secondary-sales/save', async (req, res) => {
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
         
+        const { XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+        let finalHq = headquarter;
+        if (!finalHq && stockist) {
+            const stData = await XlStockist.findOne({ where: { [Op.or]: [{_id: stockist}, {uid: stockist}] } });
+            if (stData) finalHq = stData.headquarter;
+        }
+
         const sale = await XlSecondarySales.create({
             employeeId,
             date,
@@ -5063,7 +5071,7 @@ router.post('/secondary-sales/save', async (req, res) => {
             invoiceDate,
             invoiceNumber,
             division,
-            headquarter,
+            headquarter: finalHq,
             stockist,
             amount,
             productsData: JSON.stringify(products)
@@ -5104,7 +5112,15 @@ router.put('/secondary-sales/update/:id', async (req, res) => {
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
 
-        const updateFields = { date, month, year, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData: JSON.stringify(products) };
+        const { XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+        let finalHq = headquarter;
+        if (!finalHq && stockist) {
+            const stData = await XlStockist.findOne({ where: { [Op.or]: [{_id: stockist}, {uid: stockist}] } });
+            if (stData) finalHq = stData.headquarter;
+        }
+
+        const updateFields = { date, month, year, invoiceDate, invoiceNumber, division, headquarter: finalHq, stockist, amount, productsData: JSON.stringify(products) };
         if (status) updateFields.status = status;
 
         await XlSecondarySales.update(updateFields, { where: { _id: req.params.id } });
