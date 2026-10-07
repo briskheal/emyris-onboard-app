@@ -4904,7 +4904,7 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
         } else {
             // Default to Product Wise for Stockist
             sql = `
-                SELECT i.product, SUM(i.qty * i."basePrice") as "totalSales"
+                SELECT i.product, SUM(i.qty * i."basePrice") as "totalSales", SUM(i.qty) as quantity
                 FROM xl_secondary_sales s
                 JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
                 ${whereSql}
