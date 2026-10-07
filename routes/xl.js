@@ -4727,7 +4727,170 @@ router.get('/debug/primary-sales', async (req, res) => {
         res.json({ error: e.message });
     }
 });
-module.exports = router;
+
+// --- SECONDARY SALES REPORTS ---
+router.get('/reports/secondary-sales', async (req, res) => {
+    try {
+        const { sequelize } = require('../db');
+        const { startMonth, startYear, endMonth, endYear, type } = req.query;
+
+        let whereClauses = [];
+        let replacements = {};
+
+        // Simplistic date filtering (if passed as month/year)
+        // You can refine this if actual dates are passed
+        if (startMonth) {
+            whereClauses.push('s.month = :startMonth');
+            replacements.startMonth = startMonth;
+        }
+        if (startYear) {
+            whereClauses.push('s.year = :startYear');
+            replacements.startYear = startYear;
+        }
+
+        let selectParts = [];
+        let groupParts = [];
+        let joinSql = '';
+        let sql = '';
+
+        if (type === 'Inventory') {
+            selectParts.push('s.stockist', 's.headquarter', 'SUM(i.qty) as "totalQuantity"');
+            groupParts.push('s.stockist', 's.headquarter');
+            joinSql = 'JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"';
+        } else if (type === 'Stockist') {
+            selectParts.push('s.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
+            groupParts.push('s.stockist', 's.headquarter');
+        } else if (type === 'Headquarter') {
+            selectParts.push('s.headquarter', 'SUM(s.amount) as "totalSales"');
+            groupParts.push('s.headquarter');
+        } else if (type === 'User') {
+            selectParts.push('s."employeeId"', 'SUM(s.amount) as "totalSales"');
+            groupParts.push('s."employeeId"');
+        } else {
+            selectParts.push('s.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
+            groupParts.push('s.stockist', 's.headquarter');
+        }
+
+        let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+
+        sql = `
+            SELECT ${selectParts.join(', ')}
+            FROM xl_secondary_sales s
+            ${joinSql}
+            ${whereSql}
+            GROUP BY ${groupParts.join(', ')}
+        `;
+
+        const data = await sequelize.query(sql, {
+            replacements,
+            type: sequelize.QueryTypes.SELECT
+        });
+
+        // Mapping logic
+        const { XlStockist, XlUser } = require('../db');
+        const stockists = await XlStockist.findAll({ raw: true });
+        const stockMap = {};
+        stockists.forEach(st => {
+            if (st.uid) stockMap[st.uid] = st.businessName || st.name;
+            if (st._id) stockMap[st._id] = st.businessName || st.name;
+        });
+
+        const users = await XlUser.findAll({ raw: true });
+        const userMap = {};
+        users.forEach(u => {
+            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+            if (u.employeeId) userMap[u.employeeId] = name;
+            if (u._id) userMap[u._id] = name;
+            if (u.uid) userMap[u.uid] = name;
+        });
+
+        data.forEach(d => {
+            if (d.stockist && stockMap[d.stockist]) d.stockistName = stockMap[d.stockist];
+            if (d.employeeId && userMap[d.employeeId]) d.userName = userMap[d.employeeId];
+            d.totalSales = Number(d.totalSales || 0);
+            if(d.totalQuantity) d.totalQuantity = Number(d.totalQuantity || 0);
+        });
+
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Secondary Sales Report Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+router.get('/reports/secondary-sales/detail', async (req, res) => {
+    try {
+        const { sequelize } = require('../db');
+        const { type, stockist, headquarter } = req.query;
+
+        let whereClauses = [];
+        let replacements = {};
+
+        if (type === 'Stockist' && stockist) {
+            whereClauses.push('s.stockist = :stockist');
+            replacements.stockist = stockist;
+        } else if (type === 'Headquarter' && headquarter) {
+            whereClauses.push('s.headquarter = :headquarter');
+            replacements.headquarter = headquarter;
+        }
+
+        let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+
+        // For drill down from Stockist -> Product Wise, we want products and their total secondary sales
+        // For drill down from Headquarter -> Stockist Wise, we want stockists and their total secondary sales
+        let sql = '';
+        if (type === 'Headquarter') {
+            sql = `
+                SELECT s.stockist, s.headquarter, SUM(s.amount) as "totalSales"
+                FROM xl_secondary_sales s
+                ${whereSql}
+                GROUP BY s.stockist, s.headquarter
+            `;
+        } else {
+            // Default to Product Wise for Stockist
+            sql = `
+                SELECT i.product, SUM(i.qty * i."basePrice") as "totalSales"
+                FROM xl_secondary_sales s
+                JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                ${whereSql}
+                GROUP BY i.product
+            `;
+        }
+
+        const data = await sequelize.query(sql, {
+            replacements,
+            type: sequelize.QueryTypes.SELECT
+        });
+
+        const { XlProduct, XlStockist } = require('../db');
+        
+        const stockists = await XlStockist.findAll({ raw: true });
+        const stockMap = {};
+        stockists.forEach(st => {
+            if (st.uid) stockMap[st.uid] = st.businessName || st.name;
+            if (st._id) stockMap[st._id] = st.businessName || st.name;
+        });
+
+        const products = await XlProduct.findAll({ raw: true });
+        const prodMap = {};
+        products.forEach(pr => {
+            if (pr.uid) prodMap[pr.uid] = pr.productName || pr.name;
+            if (pr._id) prodMap[pr._id] = pr.productName || pr.name;
+        });
+
+        data.forEach(d => {
+            if (d.product && prodMap[d.product]) d.productName = prodMap[d.product];
+            if (d.stockist && stockMap[d.stockist]) d.stockistName = stockMap[d.stockist];
+            d.totalSales = Number(d.totalSales || 0);
+        });
+
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Secondary Sales Detail Error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 
 
 
@@ -5392,3 +5555,5 @@ router.get('/user-performance/export', async (req, res) => {
 
 
 
+
+module.exports = router;
