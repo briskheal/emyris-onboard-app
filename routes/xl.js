@@ -4737,15 +4737,37 @@ router.get('/reports/secondary-sales', async (req, res) => {
         let whereClauses = [];
         let replacements = {};
 
-        // Simplistic date filtering (if passed as month/year)
-        // You can refine this if actual dates are passed
-        if (startMonth) {
-            whereClauses.push('s.month = :startMonth');
-            replacements.startMonth = startMonth;
-        }
-        if (startYear) {
-            whereClauses.push('s.year = :startYear');
-            replacements.startYear = startYear;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        if (startMonth && startYear) {
+            if (endMonth && endYear) {
+                let sM = monthNames.indexOf(startMonth);
+                let sY = parseInt(startYear);
+                let eM = monthNames.indexOf(endMonth);
+                let eY = parseInt(endYear);
+                
+                let rangeClauses = [];
+                let currM = sM;
+                let currY = sY;
+                let counter = 0;
+                while((currY < eY || (currY === eY && currM <= eM)) && counter < 100) {
+                    const mName = monthNames[currM];
+                    rangeClauses.push(`(s.month = '${mName}' AND s.year = '${currY}')`);
+                    currM++;
+                    if (currM > 11) {
+                        currM = 0;
+                        currY++;
+                    }
+                    counter++;
+                }
+                if (rangeClauses.length > 0) {
+                    whereClauses.push(`(${rangeClauses.join(' OR ')})`);
+                }
+            } else {
+                whereClauses.push('s.month = :startMonth');
+                whereClauses.push('s.year = :startYear');
+                replacements.startMonth = startMonth;
+                replacements.startYear = startYear;
+            }
         }
 
         let selectParts = [];
@@ -4821,18 +4843,42 @@ router.get('/reports/secondary-sales', async (req, res) => {
 router.get('/reports/secondary-sales/detail', async (req, res) => {
     try {
         const { sequelize } = require('../db');
-        const { type, stockist, headquarter, startMonth, startYear } = req.query;
+        const { type, stockist, headquarter, startMonth, startYear, endMonth, endYear } = req.query;
 
         let whereClauses = [];
         let replacements = {};
 
-        if (startMonth) {
-            whereClauses.push('s.month = :startMonth');
-            replacements.startMonth = startMonth;
-        }
-        if (startYear) {
-            whereClauses.push('s.year = :startYear');
-            replacements.startYear = startYear;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        if (startMonth && startYear) {
+            if (endMonth && endYear) {
+                let sM = monthNames.indexOf(startMonth);
+                let sY = parseInt(startYear);
+                let eM = monthNames.indexOf(endMonth);
+                let eY = parseInt(endYear);
+                
+                let rangeClauses = [];
+                let currM = sM;
+                let currY = sY;
+                let counter = 0;
+                while((currY < eY || (currY === eY && currM <= eM)) && counter < 100) {
+                    const mName = monthNames[currM];
+                    rangeClauses.push(`(s.month = '${mName}' AND s.year = '${currY}')`);
+                    currM++;
+                    if (currM > 11) {
+                        currM = 0;
+                        currY++;
+                    }
+                    counter++;
+                }
+                if (rangeClauses.length > 0) {
+                    whereClauses.push(`(${rangeClauses.join(' OR ')})`);
+                }
+            } else {
+                whereClauses.push('s.month = :startMonth');
+                whereClauses.push('s.year = :startYear');
+                replacements.startMonth = startMonth;
+                replacements.startYear = startYear;
+            }
         }
 
         if (type === 'Stockist' && stockist) {

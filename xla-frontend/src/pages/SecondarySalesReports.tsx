@@ -10,9 +10,13 @@ export default function SecondarySalesReports() {
   const navigate = useNavigate();
   
   const today = new Date();
-  const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  const [startMonth, setStartMonth] = useState(today.getMonth() + 1);
+  const [startYear, setStartYear] = useState(today.getFullYear());
+  const [showStartMonthPicker, setShowStartMonthPicker] = useState(false);
+  
+  const [endMonth, setEndMonth] = useState(today.getMonth() + 1);
+  const [endYear, setEndYear] = useState(today.getFullYear());
+  const [showEndMonthPicker, setShowEndMonthPicker] = useState(false);
   
   const [selectType, setSelectType] = useState('Stockist'); // Stockist, Headquarter, User, Inventory
   const [users, setUsers] = useState<any[]>([]);
@@ -53,8 +57,10 @@ export default function SecondarySalesReports() {
     try {
       const res = await axios.get('/api/xl/reports/secondary-sales', {
         params: {
-          startMonth: months[selectedMonth - 1],
-          startYear: selectedYear,
+          startMonth: months[startMonth - 1],
+          startYear: startYear,
+          endMonth: months[endMonth - 1],
+          endYear: endYear,
           type: selectType,
           employeeId: selectType === 'User' ? selectedUser : undefined
         },
@@ -73,8 +79,10 @@ export default function SecondarySalesReports() {
     setDetailLoading(true);
     try {
       const params: any = {
-        startMonth: months[selectedMonth - 1],
-        startYear: selectedYear,
+        startMonth: months[startMonth - 1],
+        startYear: startYear,
+        endMonth: months[endMonth - 1],
+        endYear: endYear,
         type: type,
       };
 
@@ -181,31 +189,65 @@ export default function SecondarySalesReports() {
           <>
             <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-center justify-between shadow-sm rounded-xl mb-4">
               <div className="flex flex-wrap gap-4 items-end">
-                <div className="flex flex-col gap-2 relative">
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Month</label>
+                <div className="flex flex-col gap-2 relative z-50">
+                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Start Month <span className="text-rose-500">*</span></label>
                     <div 
-                      onClick={() => setShowMonthPicker(!showMonthPicker)}
-                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] w-[200px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-sky-500 transition-colors"
+                      onClick={() => { setShowStartMonthPicker(!showStartMonthPicker); setShowEndMonthPicker(false); }}
+                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] w-[180px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-sky-500 transition-colors"
                     >
-                      <span>{months[selectedMonth - 1]} {selectedYear}</span>
+                      <span>{months[startMonth - 1]}, {startYear}</span>
                       <Calendar size={16} className="text-slate-500" />
                     </div>
-                    {showMonthPicker && (
-                      <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-4">
+                    {showStartMonthPicker && (
+                      <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-[60] p-4">
                          <div className="flex justify-between items-center mb-4">
-                            <span className="font-bold text-white">{selectedYear}</span>
+                            <span className="font-bold text-white">{startYear}</span>
                             <div className="flex gap-2">
-                               <button onClick={(e) => { e.stopPropagation(); setSelectedYear(selectedYear - 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="rotate-90" size={16} /></button>
-                               <button onClick={(e) => { e.stopPropagation(); setSelectedYear(selectedYear + 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="-rotate-90" size={16} /></button>
+                               <button onClick={(e) => { e.stopPropagation(); setStartYear(startYear - 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="rotate-90" size={16} /></button>
+                               <button onClick={(e) => { e.stopPropagation(); setStartYear(startYear + 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="-rotate-90" size={16} /></button>
                             </div>
                          </div>
                          <div className="grid grid-cols-3 gap-2">
                             {months.map((m, i) => {
-                               const isSel = (i + 1) === selectedMonth;
+                               const isSel = (i + 1) === startMonth;
                                return (
                                  <div 
                                     key={m} 
-                                    onClick={() => { setSelectedMonth(i + 1); setShowMonthPicker(false); }}
+                                    onClick={() => { setStartMonth(i + 1); setShowStartMonthPicker(false); }}
+                                    className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:bg-[#252538]'}`}
+                                 >{m}</div>
+                               )
+                            })}
+                         </div>
+                      </div>
+                    )}
+                </div>
+
+                <div className="flex flex-col gap-2 relative z-40">
+                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select End Month <span className="text-rose-500">*</span></label>
+                    <div 
+                      onClick={() => { setShowEndMonthPicker(!showEndMonthPicker); setShowStartMonthPicker(false); }}
+                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] w-[180px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-sky-500 transition-colors"
+                    >
+                      <span>{months[endMonth - 1]}, {endYear}</span>
+                      <Calendar size={16} className="text-slate-500" />
+                    </div>
+                    {showEndMonthPicker && (
+                      <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-[60] p-4">
+                         <div className="flex justify-between items-center mb-4">
+                            <span className="font-bold text-white">{endYear}</span>
+                            <div className="flex gap-2">
+                               <button onClick={(e) => { e.stopPropagation(); setEndYear(endYear - 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="rotate-90" size={16} /></button>
+                               <button onClick={(e) => { e.stopPropagation(); setEndYear(endYear + 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="-rotate-90" size={16} /></button>
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-3 gap-2">
+                            {months.map((m, i) => {
+                               const isSel = (i + 1) === endMonth;
+                               return (
+                                 <div 
+                                    key={m} 
+                                    onClick={() => { setEndMonth(i + 1); setShowEndMonthPicker(false); }}
                                     className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:bg-[#252538]'}`}
                                  >{m}</div>
                                )
