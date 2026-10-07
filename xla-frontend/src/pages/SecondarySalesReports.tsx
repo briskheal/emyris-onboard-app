@@ -68,13 +68,7 @@ export default function SecondarySalesReports() {
       });
       if (res.data.success) {
         
-          const d = res.data.data || [];
-          const mapped = d.map((item: any) => ({
-            ...item,
-            stockistName: stockists.find(s => s.uid === item.stockist || s._id === item.stockist)?.businessName || item.stockist,
-            userName: users.find(u => u.employeeId === item.employeeId || u.email === item.employeeId)?.name || item.employeeId
-          }));
-          setData(mapped);
+          setData(res.data.data || []);
 
       }
     } catch(err) {
@@ -108,13 +102,7 @@ export default function SecondarySalesReports() {
       });
       if (res.data.success) {
         
-        const d = res.data.data || [];
-        const mapped = d.map((item: any) => ({
-          ...item,
-          stockistName: stockists.find(s => s.uid === item.stockist || s._id === item.stockist)?.businessName || item.stockist,
-          productName: productsMaster.find((p: any) => p.uid === item.product || p._id === item.product || p.productName === item.product)?.productName || item.product
-        }));
-        setDetailData(mapped);
+        setDetailData(res.data.data || []);
 
       }
     } catch(err) {
