@@ -5627,4 +5627,26 @@ router.get('/user-performance/export', async (req, res) => {
 
 
 
+router.get('/fix-hqs', async (req, res) => {
+    try {
+        const { XlSecondarySales, XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+        const sales = await XlSecondarySales.findAll({ where: { [Op.or]: [{ headquarter: null }, { headquarter: '' }] } });
+        let updated = 0;
+        for (let s of sales) {
+            if (s.stockist) {
+                const st = await XlStockist.findOne({ where: { [Op.or]: [{_id: s.stockist}, {uid: s.stockist}] } });
+                if (st && st.headquarter) {
+                    s.headquarter = st.headquarter;
+                    await s.save();
+                    updated++;
+                }
+            }
+        }
+        res.json({ success: true, count: updated });
+    } catch(e) {
+        res.json({ success: false, error: e.message });
+    }
+});
+
 module.exports = router;
