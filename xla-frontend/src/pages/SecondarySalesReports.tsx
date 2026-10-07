@@ -460,7 +460,8 @@ export default function SecondarySalesReports() {
                           <>
                             <th className="px-4 py-3 border-r border-[#3b3b5a]">Product</th>
                               <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Quantity</th>
-                            <th className="px-4 py-3 text-right">Total Secondary Sales (₹)</th>
+                              <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Price (₹)</th>
+                              <th className="px-4 py-3 text-right">Total Secondary Sales (₹)</th>
                           </>
                         )}
                       </tr>
@@ -485,6 +486,7 @@ export default function SecondarySalesReports() {
                             <>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.productName || d.product}</td>
                                 <td className="px-4 py-2 border-r border-[#3b3b5a] text-right">{d.quantity || 0}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right">{Number(d.price || 0).toFixed(2)}</td>
                               <td className="px-4 py-2 text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
                             </>
                           )}
@@ -492,7 +494,7 @@ export default function SecondarySalesReports() {
                       ))}
                       {detailData.length > 0 && !detailLoading && (
                         <tr className="bg-[#151521] font-bold text-sky-400">
-                          <td colSpan={detailLevel === 'Stockist' ? 3 : 3} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                          <td colSpan={detailLevel === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
                           {detailLevel === 'Product' && (
                             <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
                               {detailData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)}
