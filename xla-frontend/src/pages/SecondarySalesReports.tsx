@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, Eye, ArrowLeft, Search, X, ArrowUp, ArrowDown } from 'lucide-react';
+import { ChevronLeft, Eye, ArrowLeft, Search, X, ArrowUp, ArrowDown, Calendar, ChevronDown } from 'lucide-react';
 import CustomUserSelect from '../components/CustomUserSelect';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -13,6 +13,7 @@ export default function SecondarySalesReports() {
   const today = new Date();
   const [selectedMonth, setSelectedMonth] = useState(today.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
   
   const [selectType, setSelectType] = useState('Stockist'); // Stockist, Headquarter, User, Inventory
   const [users, setUsers] = useState<any[]>([]);
@@ -181,18 +182,38 @@ export default function SecondarySalesReports() {
           <>
             <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-center justify-between shadow-sm rounded-xl mb-4">
               <div className="flex flex-wrap gap-4 items-end">
-                <div className="flex flex-col gap-2 min-w-[120px]">
+                <div className="flex flex-col gap-2 relative">
                     <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Month</label>
-                    <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
-                        {months.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
-                    </select>
-                </div>
-                
-                <div className="flex flex-col gap-2 min-w-[120px]">
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Year</label>
-                    <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
+                    <div 
+                      onClick={() => setShowMonthPicker(!showMonthPicker)}
+                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] w-[200px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-sky-500 transition-colors"
+                    >
+                      <span>{months[selectedMonth - 1]} {selectedYear}</span>
+                      <Calendar size={16} className="text-slate-500" />
+                    </div>
+                    {showMonthPicker && (
+                      <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-4">
+                         <div className="flex justify-between items-center mb-4">
+                            <span className="font-bold text-white">{selectedYear}</span>
+                            <div className="flex gap-2">
+                               <button onClick={(e) => { e.stopPropagation(); setSelectedYear(selectedYear - 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="rotate-90" size={16} /></button>
+                               <button onClick={(e) => { e.stopPropagation(); setSelectedYear(selectedYear + 1) }} className="p-1 hover:bg-[#252538] rounded text-slate-400 transition-colors"><ChevronDown className="-rotate-90" size={16} /></button>
+                            </div>
+                         </div>
+                         <div className="grid grid-cols-3 gap-2">
+                            {months.map((m, i) => {
+                               const isSel = (i + 1) === selectedMonth;
+                               return (
+                                 <div 
+                                    key={m} 
+                                    onClick={() => { setSelectedMonth(i + 1); setShowMonthPicker(false); }}
+                                    className={`text-center py-2 text-sm font-semibold rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-sky-500 text-white shadow-md' : 'text-slate-400 hover:bg-[#252538]'}`}
+                                 >{m}</div>
+                               )
+                            })}
+                         </div>
+                      </div>
+                    )}
                 </div>
 
                 <div className="flex flex-col gap-2 min-w-[200px] max-w-[300px]">
