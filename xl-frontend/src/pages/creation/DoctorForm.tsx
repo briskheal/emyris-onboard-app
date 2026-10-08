@@ -143,7 +143,7 @@ function CustomSelect({
       {/* Select Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-[60] flex flex-col bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="mt-auto h-[70vh] bg-[#1a1c2e] rounded-t-3xl shadow-2xl flex flex-col border-t border-[#3b4168]">
+          <div className="mt-auto w-full max-w-lg mx-auto h-[70vh] bg-[#1a1c2e] rounded-t-3xl shadow-2xl flex flex-col border-t border-[#3b4168]">
             <div className="p-4 border-b border-[#2a2f4c] flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-white font-semibold">Select {label}</h3>
