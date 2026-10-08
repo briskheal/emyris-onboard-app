@@ -5658,4 +5658,14 @@ router.get('/controls', async (req, res) => {
     }
 });
 
+
+router.post('/controls', async (req, res) => {
+    try {
+        const c = await XlDoctorControl.create(req.body);
+        res.json({ success: true, control: c });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 module.exports = router;

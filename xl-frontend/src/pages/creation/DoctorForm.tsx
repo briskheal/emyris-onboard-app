@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Navigation, MapPin, CheckCircle2, X } from 'lucide-react';
+import { ChevronLeft, Navigation, MapPin, CheckCircle2, X, MoreVertical } from 'lucide-react';
 import axios from 'axios';
 
 const CATEGORIES = ['A+', 'A', 'B', 'C', 'D'];
@@ -24,6 +24,36 @@ function GeoTagButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [addControl, setAddControl] = useState<{type: string, hq: string} | null>(null);
+  const [newControlName, setNewControlName] = useState('');
+
+  const handleAddControl = async () => {
+    if(!newControlName.trim()) return;
+    try {
+      const res = await axios.post('/api/xl/controls', {
+        type: addControl?.type,
+        name: newControlName.trim(),
+        hq: addControl?.hq,
+        isActive: true
+      });
+      if(res.data.success) {
+        setControls(prev => [...prev, res.data.control]);
+        setForm(prev => ({ ...prev, [addControl?.type === 'Hospital' ? 'hospital' : 'workingArea']: res.data.control.name }));
+        setAddControl(null);
+        setNewControlName('');
+      }
+    } catch(e) {
+      alert('Error adding new ' + addControl?.type);
+    }
+  };
+
+  useEffect(() => {
+    if (user.hq && !form.hq) {
+      setForm(prev => ({ ...prev, hq: user.hq }));
+    }
+  }, [user.hq]);
+
 
 
 
@@ -195,13 +225,13 @@ export default function DoctorForm() {
         {field('name', 'Doctor Name', { required: true, placeholder: 'Dr. Full Name' })}
         {field('degree', 'Degree', { options: getControlNames('Degree'), required: true })}
         {field('specialization', 'Specialization', { options: getControlNames('Specialization'), required: true })}
-        {field('hospital', 'Hospital / Clinic', { datalist: getControlNames('Hospital', form['hq']), placeholder: 'Search or enter hospital...' })}
+        {field('hospital', 'Hospital / Clinic', { datalist: getControlNames('Hospital', form['hq']), placeholder: 'Search or enter hospital...', addType: 'Hospital' })}
         {field('category', 'Category', { options: getControlNames('Category').length > 0 ? getControlNames('Category') : CATEGORIES })}
         {field('mobileNumber', 'Mobile Number', { type: 'tel', placeholder: '10-digit mobile' })}
         {field('contactNumber', 'Clinic Contact No.', { type: 'tel', placeholder: 'Alternate number' })}
         {field('emailAddress', 'Email Address', { type: 'email', placeholder: 'doctor@email.com' })}
-        {field('hq', 'HQ', { required: true, placeholder: 'Headquarter city' })}
-        {field('workingArea', 'Working Area', { placeholder: 'Area / locality' })}
+        {field('hq', 'HQ', { required: true, placeholder: 'Headquarter city', options: Array.from(new Set([user.hq, ...(controls.filter(c => c.hq).map(c=>c.hq))])).filter(Boolean) })}
+        {field('workingArea', 'Working Area', { datalist: getControlNames('Working Area', form['hq']), placeholder: 'Search or enter working area...', addType: 'Working Area' })}
         {field('birthday', 'Birthday', { type: 'date' })}
         {field('anniversary', 'Anniversary', { type: 'date' })}
         {field('address', 'Address', { placeholder: 'Full address' })}
@@ -266,6 +296,28 @@ export default function DoctorForm() {
             ${loading ? 'bg-slate-600 text-slate-200' : 'bg-sky-500 active:bg-sky-600'}`}>
           {loading ? 'Saving...' : 'Save Doctor'}
         </button>
+      
+      {addControl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="bg-slate-800 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl border border-slate-700 p-5">
+            <h3 className="text-white font-bold text-lg mb-2">Add New {addControl.type}</h3>
+            <p className="text-slate-400 text-xs mb-4">Adding for HQ: {addControl.hq || 'Global'}</p>
+            <input 
+              autoFocus
+              type="text" 
+              value={newControlName} 
+              onChange={e => setNewControlName(e.target.value)} 
+              placeholder={`Enter ${addControl.type} Name`} 
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 transition-colors mb-5"
+            />
+            <div className="flex gap-3">
+              <button type="button" onClick={() => setAddControl(null)} className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 font-semibold text-sm">Cancel</button>
+              <button type="button" onClick={handleAddControl} className="flex-1 py-3 rounded-xl bg-sky-500 text-white font-semibold text-sm">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       </form>
     </div>
   );
