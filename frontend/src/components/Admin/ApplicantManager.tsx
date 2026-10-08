@@ -11,8 +11,8 @@ const ApplicantManager: React.FC = () => {
   const [pdfTask, setPdfTask] = useState<{app: any, type: 'offer' | 'appointment'} | null>(null);
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [verificationApp, setVerificationApp] = useState<any | null>(null);
-  const [filterMonth, setFilterMonth] = useState<string>('all');
-  const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>(new Date().getMonth().toString());
+  const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   const fetchApplicants = async () => {
