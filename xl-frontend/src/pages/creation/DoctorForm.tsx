@@ -29,7 +29,7 @@ function GeoTagButton({
   useEffect(() => {
     const fetchControls = async () => {
       try {
-        const res = await axios.get('/api/admin/dcs/controls');
+        const res = await axios.get('/api/xl/controls');
         if (res.data.success) {
           setControls(res.data.controls);
         }

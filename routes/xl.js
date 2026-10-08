@@ -594,7 +594,7 @@ router.get('/user-performance/rankings', async (req, res) => {
     }
 });
 
-const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, XlHQ, XlDivision, generateId } = require('../db');
+const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlDoctorControl, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, XlHQ, XlDivision, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // Middleware to block locked users from any mobile API route instantly
@@ -5645,6 +5645,16 @@ router.get('/fix-hqs', async (req, res) => {
         res.json({ success: true, count: updated });
     } catch(e) {
         res.json({ success: false, error: e.message });
+    }
+});
+
+
+router.get('/controls', async (req, res) => {
+    try {
+        const controls = await XlDoctorControl.findAll();
+        res.json({ success: true, controls });
+    } catch (e) {
+        res.status(500).json({ success: false, message: e.message });
     }
 });
 
