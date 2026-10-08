@@ -467,33 +467,33 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Dossier (Editable)</h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '0.85rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <strong>Name:</strong>
-                  <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editName} onChange={e => setEditName(e.target.value)} />
+                  <input type="text" className="form-input" style={{ padding: '4px 8px', width: '100%', boxSizing: 'border-box' }} value={editName} onChange={e => setEditName(e.target.value)} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <strong>Email:</strong>
-                  <input type="email" className="form-input" style={{ padding: '4px 8px' }} value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+                  <input type="email" className="form-input" style={{ padding: '4px 8px', width: '100%', boxSizing: 'border-box' }} value={editEmail} onChange={e => setEditEmail(e.target.value)} />
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <strong>Phone:</strong>
-                  <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editPhone} onChange={e => setEditPhone(e.target.value)} />
+                  <input type="text" className="form-input" style={{ padding: '4px 8px', width: '100%', boxSizing: 'border-box' }} value={editPhone} onChange={e => setEditPhone(e.target.value)} />
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                   <strong>Status:</strong> <span className={`badge ${applicant.status}`} style={{ width: 'fit-content', marginTop: '4px' }}>{applicant.status}</span>
                 </div>
-                <div style={{ gridColumn: 'span 2', display: 'flex', gap: '8px' }}>
-                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>
+                <div style={{ gridColumn: 'span 2', display: 'flex', gap: '8px', width: '100%' }}>
+                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <strong>Address:</strong>
-                    <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editAddress} onChange={e => setEditAddress(e.target.value)} />
+                    <input type="text" className="form-input" style={{ padding: '4px 8px', width: '100%', boxSizing: 'border-box' }} value={editAddress} onChange={e => setEditAddress(e.target.value)} />
                   </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <strong>State:</strong>
-                    <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editState} onChange={e => setEditState(e.target.value)} />
+                    <input type="text" className="form-input" style={{ padding: '4px 8px', width: '100%', boxSizing: 'border-box' }} value={editState} onChange={e => setEditState(e.target.value)} />
                   </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                     <strong>PIN:</strong>
-                    <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editPin} onChange={e => setEditPin(e.target.value)} />
+                    <input type="text" className="form-input" style={{ padding: '4px 8px', width: '100%', boxSizing: 'border-box' }} value={editPin} onChange={e => setEditPin(e.target.value)} />
                   </div>
                 </div>
               </div>
