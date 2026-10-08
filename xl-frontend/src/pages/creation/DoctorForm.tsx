@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Navigation, MapPin, CheckCircle2, X } from 'lucide-react';
 import axios from 'axios';
@@ -24,6 +24,27 @@ function GeoTagButton({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [controls, setControls] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchControls = async () => {
+      try {
+        const res = await axios.get('/api/admin/dcs/controls');
+        if (res.data.success) {
+          setControls(res.data.controls);
+        }
+      } catch (e) {
+        console.error('Failed to fetch controls', e);
+      }
+    };
+    fetchControls();
+  }, []);
+
+  const getControlNames = (type: string, hq?: string) => {
+    return controls
+      .filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.hq || c.hq.toLowerCase() === hq.toLowerCase()))
+      .map(c => c.name);
+  };
 
   const capture = () => {
     if (!navigator.geolocation) { setError('GPS not supported on this device.'); return; }
@@ -134,7 +155,7 @@ export default function DoctorForm() {
   const inputClass = 'w-full bg-slate-700 border border-slate-700 rounded-xl px-4 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/30 transition-colors';
   const inputStyle = { height: '45px' };
 
-  const field = (name: string, label: string, opts?: { type?: string; placeholder?: string; required?: boolean; options?: string[] }) => (
+  const field = (name: string, label: string, opts?: { type?: string; placeholder?: string; required?: boolean; options?: string[]; datalist?: string[] }) => (
     <div key={name}>
       <label className="block text-xs font-semibold text-slate-200 uppercase tracking-wider mb-1.5">
         {label} {opts?.required && <span className="text-rose-400">*</span>}
@@ -169,10 +190,10 @@ export default function DoctorForm() {
       <form onSubmit={handleSubmit} className="flex-1 px-4 py-5 space-y-4">
         {/* Basic Info */}
         {field('name', 'Doctor Name', { required: true, placeholder: 'Dr. Full Name' })}
-        {field('degree', 'Degree', { placeholder: 'e.g. MBBS, MD, DM' })}
-        {field('specialization', 'Specialization', { placeholder: 'e.g. Cardiologist, GP' })}
-        {field('hospital', 'Hospital / Clinic', { placeholder: 'Hospital name' })}
-        {field('category', 'Category', { options: CATEGORIES })}
+        {field('degree', 'Degree', { options: getControlNames('Degree'), required: true })}
+        {field('specialization', 'Specialization', { options: getControlNames('Specialization'), required: true })}
+        {field('hospital', 'Hospital / Clinic', { datalist: getControlNames('Hospital', form['hq']), placeholder: 'Search or enter hospital...' })}
+        {field('category', 'Category', { options: getControlNames('Category').length > 0 ? getControlNames('Category') : CATEGORIES })}
         {field('mobileNumber', 'Mobile Number', { type: 'tel', placeholder: '10-digit mobile' })}
         {field('contactNumber', 'Clinic Contact No.', { type: 'tel', placeholder: 'Alternate number' })}
         {field('emailAddress', 'Email Address', { type: 'email', placeholder: 'doctor@email.com' })}
