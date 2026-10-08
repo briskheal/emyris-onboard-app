@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Key } from 'lucide-react';
+import { Key, Eye, EyeOff } from 'lucide-react';
 import api from '../../api/client';
 
 interface ApplicantLoginProps {
@@ -12,6 +12,7 @@ const ApplicantLogin: React.FC<ApplicantLoginProps> = ({ onBack, onSuccess }) =>
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showPin, setShowPin] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +37,7 @@ const ApplicantLogin: React.FC<ApplicantLoginProps> = ({ onBack, onSuccess }) =>
       <div className="login-header">
         <div className="login-icon"><Key /></div>
         <h2 className="premium-title">Resume Application</h2>
-        <p>Enter your Email and 6-digit PIN to continue.</p>
+        <p>Enter your Email and PIN to continue.</p>
       </div>
 
       {error && <div style={{color: '#ef4444', textAlign: 'center', marginBottom: '1rem'}}>{error}</div>}
@@ -54,14 +55,23 @@ const ApplicantLogin: React.FC<ApplicantLoginProps> = ({ onBack, onSuccess }) =>
         </div>
         <div className="form-group">
           <label>Secure PIN</label>
-          <input 
-            type="password" 
-            required 
-            placeholder="6-digit PIN" 
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            maxLength={6}
-          />
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+            <input 
+              type={showPin ? "text" : "password"}
+              required 
+              placeholder="Enter PIN" 
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              style={{ width: '100%', paddingRight: '40px' }}
+            />
+            <button 
+              type="button" 
+              onClick={() => setShowPin(!showPin)} 
+              style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+            >
+              {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
 
         <div className="btn-group" style={{marginTop: '2rem'}}>
