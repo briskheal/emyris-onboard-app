@@ -5652,7 +5652,8 @@ router.get('/fix-hqs', async (req, res) => {
 router.get('/controls', async (req, res) => {
     try {
         const controls = await XlDoctorControl.findAll();
-        res.json({ success: true, controls });
+        const cities = await XlCity.findAll();
+        res.json({ success: true, controls, cities });
     } catch (e) {
         res.status(500).json({ success: false, message: e.message });
     }
