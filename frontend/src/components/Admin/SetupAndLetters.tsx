@@ -589,8 +589,9 @@ export default function SetupAndLetters() {
                     <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <input 
                         type="text"
+                        autoComplete="off"
                         className="form-input" 
-                        style={{ width: '300px', padding: '6px 32px 6px 12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', outline: 'none' }} 
+                        style={{ width: '300px', padding: '9px 32px 9px 12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', outline: 'none' }} 
                         value={applicantSearch} 
                         onClick={() => setIsDropdownOpen(true)}
                         onChange={e => {
