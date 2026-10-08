@@ -1895,7 +1895,20 @@ router.post('/update-workflow-data', async (req, res) => {
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
         if (salary !== undefined) update.salary = salary;
-        if (newEmail) update.email = newEmail;
+        if (newEmail && newEmail !== email) {
+            update.email = newEmail;
+            try {
+                const { ExamResult, Payslip, LeaveBalance, LeaveRequest, AssignedLoan, AssignedAdvance } = require('../db');
+                if(ExamResult) await ExamResult.updateMany({ email }, { $set: { email: newEmail } });
+                if(Payslip) await Payslip.updateMany({ email }, { $set: { email: newEmail } });
+                if(LeaveBalance) await LeaveBalance.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+                if(LeaveRequest) await LeaveRequest.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+                if(AssignedLoan) await AssignedLoan.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+                if(AssignedAdvance) await AssignedAdvance.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+            } catch(e) {
+                console.error("Cascade update error:", e);
+            }
+        }
 
         // Editable profile fields
         if (fullName !== undefined) update.fullName = fullName;
@@ -2574,7 +2587,20 @@ router.post('/update-workflow-data', async (req, res) => {
         if (incrementData !== undefined) update.incrementData = incrementData;
         if (salaryBreakup !== undefined) update.salaryBreakup = salaryBreakup;
         if (salary !== undefined) update.salary = salary;
-        if (newEmail) update.email = newEmail;
+        if (newEmail && newEmail !== email) {
+            update.email = newEmail;
+            try {
+                const { ExamResult, Payslip, LeaveBalance, LeaveRequest, AssignedLoan, AssignedAdvance } = require('../db');
+                if(ExamResult) await ExamResult.updateMany({ email }, { $set: { email: newEmail } });
+                if(Payslip) await Payslip.updateMany({ email }, { $set: { email: newEmail } });
+                if(LeaveBalance) await LeaveBalance.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+                if(LeaveRequest) await LeaveRequest.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+                if(AssignedLoan) await AssignedLoan.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+                if(AssignedAdvance) await AssignedAdvance.updateMany({ employeeEmail: email }, { $set: { employeeEmail: newEmail } });
+            } catch(e) {
+                console.error("Cascade update error:", e);
+            }
+        }
 
         // Editable profile fields
         if (fullName !== undefined) update.fullName = fullName;

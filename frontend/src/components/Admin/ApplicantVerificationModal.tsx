@@ -326,6 +326,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       });
       if (updateRes.data.success) {
         alert('Workouts saved successfully!');
+          if (editEmail && editEmail !== applicant.email) setApplicant({ ...applicant, email: editEmail });
         if (onRefresh) onRefresh();
       } else {
         alert('Failed to save data');
