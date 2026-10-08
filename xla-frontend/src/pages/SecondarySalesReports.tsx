@@ -497,10 +497,13 @@ export default function SecondarySalesReports() {
                         <tr className="bg-[#151521] font-bold text-sky-400">
                           <td colSpan={detailLevel === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
                           {detailLevel === 'Product' && (
-                            <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
-                              {detailData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)}
-                            </td>
-                          )}
+                              <>
+                                <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
+                                  {detailData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)}
+                                </td>
+                                <td className="px-4 py-3 border-r border-[#3b3b5a] border-t border-[#3b3b5a]"></td>
+                              </>
+                            )}
                           <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
                             {detailData.reduce((sum, d) => sum + Number(d.totalSales || 0), 0).toFixed(2)}
                           </td>
