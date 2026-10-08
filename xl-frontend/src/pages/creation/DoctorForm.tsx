@@ -73,7 +73,7 @@ function GeoTagButton({
         type="button"
         onClick={capture}
         disabled={loading}
-        className="w-full h-[50px] rounded-xl border border-[#485382] bg-transparent flex items-center justify-center gap-2 text-sm font-semibold text-slate-300 active:border-sky-500 active:text-sky-400 transition-colors disabled:opacity-50"
+        className="w-full h-[46px] rounded-xl border border-[#485382] bg-transparent flex items-center justify-center gap-2 text-sm font-semibold text-slate-300 active:border-sky-500 active:text-sky-400 transition-colors disabled:opacity-50"
       >
         <Navigation size={16} className={loading ? 'animate-spin' : ''} />
         {loading ? 'Getting location...' : `Tap to Tag ${label}`}
@@ -116,7 +116,7 @@ function CustomSelect({
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="flex-1 h-[50px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl px-4 flex items-center justify-between text-sm text-left focus:border-sky-500 transition-all"
+          className="flex-1 h-[46px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl px-4 flex items-center justify-between text-sm text-left focus:border-sky-500 transition-all"
         >
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="flex-shrink-0 min-w-[32px] h-[26px] bg-[#2c3258] rounded text-[#4ade80] text-xs font-bold flex items-center justify-center px-1.5">
@@ -133,7 +133,7 @@ function CustomSelect({
           <button
             type="button"
             onClick={() => onAddClick(addType)}
-            className="w-[50px] h-[50px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl flex items-center justify-center text-slate-300 hover:bg-[#25283f] active:bg-[#2c304a]"
+            className="w-[46px] h-[46px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl flex items-center justify-center text-slate-300 hover:bg-[#25283f] active:bg-[#2c304a]"
           >
             <MoreVertical size={20} />
           </button>
@@ -326,7 +326,7 @@ export default function DoctorForm() {
     }
   };
 
-  const inputClass = "w-full h-[50px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl px-4 text-white placeholder-[#626a99] text-sm focus:outline-none focus:border-sky-500 transition-colors";
+  const inputClass = "w-full h-[46px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl px-4 text-white placeholder-[#626a99] text-sm focus:outline-none focus:border-sky-500 transition-colors [color-scheme:dark]";
 
   const renderInput = (name: string, label: string, opts?: { type?: string; placeholder?: string; required?: boolean; readOnly?: boolean }) => (
     <div key={name} className="mb-4">
@@ -452,7 +452,7 @@ export default function DoctorForm() {
         )}
 
         <div className="flex gap-3">
-          <button type="submit" disabled={loading} className="flex-1 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold rounded-xl h-[50px] transition-colors flex items-center justify-center">
+          <button type="submit" disabled={loading} className="flex-1 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold rounded-xl h-[46px] transition-colors flex items-center justify-center">
             {loading ? 'Saving...' : 'Add Doctor'}
           </button>
         </div>
