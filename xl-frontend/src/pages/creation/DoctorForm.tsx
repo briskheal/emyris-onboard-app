@@ -25,38 +25,6 @@ function GeoTagButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [addControl, setAddControl] = useState<{type: string, hq: string} | null>(null);
-  const [newControlName, setNewControlName] = useState('');
-
-  const handleAddControl = async () => {
-    if(!newControlName.trim()) return;
-    try {
-      const res = await axios.post('/api/xl/controls', {
-        type: addControl?.type,
-        name: newControlName.trim(),
-        hq: addControl?.hq,
-        isActive: true
-      });
-      if(res.data.success) {
-        setControls(prev => [...prev, res.data.control]);
-        setForm(prev => ({ ...prev, [addControl?.type === 'Hospital' ? 'hospital' : 'workingArea']: res.data.control.name }));
-        setAddControl(null);
-        setNewControlName('');
-      }
-    } catch(e) {
-      alert('Error adding new ' + addControl?.type);
-    }
-  };
-
-  useEffect(() => {
-    if (user.hq && !form.hq) {
-      setForm(prev => ({ ...prev, hq: user.hq }));
-    }
-  }, [user.hq]);
-
-
-
-
   const capture = () => {
     if (!navigator.geolocation) { setError('GPS not supported on this device.'); return; }
     setLoading(true);
@@ -121,6 +89,36 @@ export default function DoctorForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+
+  const [addControl, setAddControl] = useState<{type: string, hq: string} | null>(null);
+  const [newControlName, setNewControlName] = useState('');
+
+  const handleAddControl = async () => {
+    if(!newControlName.trim()) return;
+    try {
+      const res = await axios.post('/api/xl/controls', {
+        type: addControl?.type,
+        name: newControlName.trim(),
+        hq: addControl?.hq,
+        isActive: true
+      });
+      if(res.data.success) {
+        setControls(prev => [...prev, res.data.control]);
+        setForm(prev => ({ ...prev, [addControl?.type === 'Hospital' ? 'hospital' : 'workingArea']: res.data.control.name }));
+        setAddControl(null);
+        setNewControlName('');
+      }
+    } catch(e) {
+      alert('Error adding new ' + addControl?.type);
+    }
+  };
+
+  useEffect(() => {
+    if (user.hq && !form.hq) {
+      setForm(prev => ({ ...prev, hq: user.hq }));
+    }
+  }, [user.hq]);
+
 
   const [controls, setControls] = useState<any[]>([]);
   useEffect(() => {
