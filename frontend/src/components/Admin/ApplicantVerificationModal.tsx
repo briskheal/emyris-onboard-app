@@ -15,6 +15,12 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [applicant, setApplicant] = useState<any>(initialApplicant);
   const [loadingDetails, setLoadingDetails] = useState(true);
   const [loading, setLoading] = useState(false);
+  const [editName, setEditName] = useState(initialApplicant.fullName || '');
+  const [editEmail, setEditEmail] = useState(initialApplicant.email || '');
+  const [editPhone, setEditPhone] = useState(initialApplicant.phone || '');
+  const [editAddress, setEditAddress] = useState(initialApplicant.address || '');
+  const [editState, setEditState] = useState(initialApplicant.state || '');
+  const [editPin, setEditPin] = useState(initialApplicant.pin || '');
   
   // Local state for internal assignment
   const [dob, setDob] = useState(() => {
@@ -459,13 +465,37 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
             <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
-              <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Dossier</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '0.9rem' }}>
-                <div><strong>Name:</strong> {applicant.fullName}</div>
-                <div><strong>Email:</strong> {applicant.email}</div>
-                <div><strong>Phone:</strong> {applicant.phone}</div>
-                <div><strong>Status:</strong> <span className={`badge ${applicant.status}`}>{applicant.status}</span></div>
-                <div style={{ gridColumn: 'span 2' }}><strong>Address:</strong> {applicant.address}, {applicant.state} - {applicant.pin}</div>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary)' }}>Dossier (Editable)</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', fontSize: '0.85rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <strong>Name:</strong>
+                  <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editName} onChange={e => setEditName(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <strong>Email:</strong>
+                  <input type="email" className="form-input" style={{ padding: '4px 8px' }} value={editEmail} onChange={e => setEditEmail(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <strong>Phone:</strong>
+                  <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editPhone} onChange={e => setEditPhone(e.target.value)} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                  <strong>Status:</strong> <span className={`badge ${applicant.status}`} style={{ width: 'fit-content', marginTop: '4px' }}>{applicant.status}</span>
+                </div>
+                <div style={{ gridColumn: 'span 2', display: 'flex', gap: '8px' }}>
+                  <div style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>
+                    <strong>Address:</strong>
+                    <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editAddress} onChange={e => setEditAddress(e.target.value)} />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <strong>State:</strong>
+                    <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editState} onChange={e => setEditState(e.target.value)} />
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                    <strong>PIN:</strong>
+                    <input type="text" className="form-input" style={{ padding: '4px 8px' }} value={editPin} onChange={e => setEditPin(e.target.value)} />
+                  </div>
+                </div>
               </div>
             </div>
 

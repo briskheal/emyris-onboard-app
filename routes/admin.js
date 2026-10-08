@@ -1874,7 +1874,7 @@ function calculateMonthlyGross(sal) {
 // --- UPDATE APPLICANT WORKFLOW DATA ---
 router.post('/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
+        const { email, newEmail, state, pin, division, reportingTo, hq, empCode, refNo, salaryBreakup, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
                 epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc, salary } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
@@ -1889,10 +1889,13 @@ router.post('/update-workflow-data', async (req, res) => {
         }
         if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
         if (address !== undefined) update.address = address;
+          if (state !== undefined) update.state = state;
+          if (pin !== undefined) update.pin = pin;
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
         if (salary !== undefined) update.salary = salary;
+        if (newEmail) update.email = newEmail;
 
         // Editable profile fields
         if (fullName !== undefined) update.fullName = fullName;
@@ -2549,7 +2552,7 @@ router.post('/render-template', async (req, res) => {
 
 router.post('/update-workflow-data', async (req, res) => {
     try {
-        const { email, division, reportingTo, hq, empCode, refNo, salaryBreakup, salary, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
+        const { email, newEmail, state, pin, division, reportingTo, hq, empCode, refNo, salaryBreakup, salary, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
                 epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
         const update = {};
         if (division !== undefined) update.division = division;
@@ -2564,11 +2567,14 @@ router.post('/update-workflow-data', async (req, res) => {
         }
         if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
         if (address !== undefined) update.address = address;
+          if (state !== undefined) update.state = state;
+          if (pin !== undefined) update.pin = pin;
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
         if (salaryBreakup !== undefined) update.salaryBreakup = salaryBreakup;
         if (salary !== undefined) update.salary = salary;
+        if (newEmail) update.email = newEmail;
 
         // Editable profile fields
         if (fullName !== undefined) update.fullName = fullName;
