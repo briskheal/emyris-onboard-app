@@ -100,12 +100,53 @@ const ApplicantManager: React.FC = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h2>Applicant Management</h2>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <select className="form-input-sm" value={filterMonth} onChange={e => setFilterMonth(e.target.value)} style={{ width: 'auto' }}>
-            <option value="all">All Months</option>
-            {Array.from({length: 12}).map((_, i) => (
-              <option key={i} value={i}>{new Date(2000, i, 1).toLocaleString('default', { month: 'short' })}</option>
-            ))}
-          </select>
+          <div style={{ position: 'relative' }}>
+            <div 
+              className="form-input-sm" 
+              style={{ width: '120px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}
+              onClick={() => setShowMonthPicker(!showMonthPicker)}
+            >
+              <span>{filterMonth === 'all' ? 'All Months' : new Date(2000, parseInt(filterMonth), 1).toLocaleString('default', { month: 'short' })}</span>
+              <span style={{ fontSize: '0.7rem' }}>▼</span>
+            </div>
+            {showMonthPicker && (
+              <div style={{
+                position: 'absolute', top: '100%', left: 0, marginTop: '4px', padding: '10px',
+                background: '#1e293b', border: '1px solid var(--glass-border)', borderRadius: '8px',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 100, width: '220px'
+              }}>
+                <div style={{ marginBottom: '8px', textAlign: 'center' }}>
+                   <button 
+                     onClick={() => { setFilterMonth('all'); setShowMonthPicker(false); }}
+                     style={{ 
+                       width: '100%', padding: '6px', background: filterMonth === 'all' ? 'var(--primary)' : 'transparent', 
+                       border: filterMonth === 'all' ? 'none' : '1px solid rgba(255,255,255,0.1)', color: '#fff', borderRadius: '4px', cursor: 'pointer',
+                       fontSize: '0.85rem'
+                     }}
+                   >All Months</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                  {Array.from({length: 12}).map((_, i) => {
+                    const isSel = filterMonth === i.toString();
+                    return (
+                      <div 
+                        key={i}
+                        onClick={() => { setFilterMonth(i.toString()); setShowMonthPicker(false); }}
+                        style={{
+                          textAlign: 'center', padding: '6px', borderRadius: '4px', cursor: 'pointer',
+                          background: isSel ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                          color: isSel ? '#fff' : '#cbd5e1',
+                          fontSize: '0.85rem', transition: 'all 0.2s'
+                        }}
+                      >
+                        {new Date(2000, i, 1).toLocaleString('default', { month: 'short' })}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
           <select className="form-input-sm" value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{ width: 'auto' }}>
             <option value="all">All Years</option>
             {[2023, 2024, 2025, 2026, 2027].map(y => (
