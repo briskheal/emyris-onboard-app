@@ -129,26 +129,26 @@ const ApplicantManager: React.FC = () => {
         <div style={{ textAlign: 'center', padding: '2rem' }}>Loading applicants...</div>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', border: '1px solid rgba(255, 255, 255, 0.15)', fontSize: '0.9rem' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)' }}>
-                <th style={{ padding: '12px 15px' }}>Name</th>
-                <th style={{ padding: '12px 15px' }}>Status</th>
-                <th style={{ padding: '12px 15px' }}>Access</th>
-                <th style={{ padding: '12px 15px' }}>Actions</th>
+              <tr style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)', backgroundColor: 'rgba(255, 255, 255, 0.05)', color: '#cbd5e1' }}>
+                <th style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)' }}>Name</th>
+                <th style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)' }}>Status</th>
+                <th style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)' }}>Access</th>
+                <th style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredApplicants.map((app, idx) => (
-                <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                  <td style={{ padding: '15px' }}>
+                <tr key={idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.15)', backgroundColor: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.02)' }}>
+                  <td style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)', verticalAlign: 'middle' }}>
                     <div>{app.fullName}</div>
                     <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{app.email}</div>
                   </td>
-                  <td style={{ padding: '15px' }}>
+                  <td style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)', verticalAlign: 'middle' }}>
                     <span className={`badge ${app.status || 'pending'}`}>{app.status || 'Draft'}</span>
                   </td>
-                  <td style={{ padding: '15px' }}>
+                  <td style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)', verticalAlign: 'middle' }}>
                     <label style={{ position: 'relative', display: 'inline-block', width: '40px', height: '22px' }}>
                       <input type="checkbox" disabled={adminRole === 'subadmin'} checked={app.canLogin !== false} onChange={() => handleToggleLogin(app.email, app.canLogin !== false)} style={{ opacity: 0, width: 0, height: 0 }} />
                       <span style={{
@@ -164,7 +164,7 @@ const ApplicantManager: React.FC = () => {
                       </span>
                     </label>
                   </td>
-                  <td style={{ padding: '15px' }}>
+                  <td style={{ padding: '8px 12px', borderRight: '1px solid rgba(255, 255, 255, 0.15)', verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', gap: '5px', width: '100%', alignItems: 'center' }}>
                       <button className="btn btn-sm btn-outline" onClick={() => setVerificationApp(app)}>Review / View</button>
                       {app.status === 'approved' && !app.offerLetterData && adminRole !== 'subadmin' && (
