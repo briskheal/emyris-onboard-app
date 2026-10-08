@@ -1314,7 +1314,7 @@ router.post('/next-ref', async (req, res) => {
         if (type === 'appt') {
             counterKey = 'apptCounter';
             prefix = "EMY/APT";
-        } else if (type === 'misc' || (type && type.startsWith('misc_'))) {
+        } else if (type === 'misc' || (type && (type.startsWith('misc_') || ['confirm', 'confirm_delayed', 'experience', 'relieving', 'warning', 'show_cause', 'incentive'].includes(type)))) {
             counterKey = 'miscCounter';
             prefix = "EMY/MISC";
         } else if (type === 'empcode') {
@@ -1687,7 +1687,7 @@ router.post('/next-ref', async (req, res) => {
         if (type === 'appt') {
             counterKey = 'apptCounter';
             prefix = "EMY/APT";
-        } else if (type === 'misc' || (type && type.startsWith('misc_'))) {
+        } else if (type === 'misc' || (type && (type.startsWith('misc_') || ['confirm', 'confirm_delayed', 'experience', 'relieving', 'warning', 'show_cause', 'incentive'].includes(type)))) {
             counterKey = 'miscCounter';
             prefix = "EMY/MISC";
         } else if (type === 'empcode') {
@@ -2039,7 +2039,7 @@ router.post('/save-letter-snapshot', async (req, res) => {
         else if (letterType === 'appt') counterKey = 'apptCounter';
         else if (letterType === 'revised_salary') counterKey = 'revisedSalaryCounter';
         else if (['emyfe', 'emyho', 'emyhr'].includes(letterType)) counterKey = 'empCodeCounter';
-        else if (letterType && letterType.startsWith('misc_')) counterKey = 'miscCounter';
+        else if (letterType && (letterType.startsWith('misc_') || ['confirm', 'confirm_delayed', 'experience', 'relieving', 'warning', 'show_cause', 'incentive'].includes(letterType))) counterKey = 'miscCounter';
 
         if (counterKey) {
             await Company.findOneAndUpdate({}, {

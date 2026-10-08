@@ -569,10 +569,19 @@ export default function SetupAndLetters() {
             <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(99, 102, 241, 0.1)', padding: '5px 10px', borderRadius: '4px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
                 <label style={{ fontSize: '0.7rem', color: 'var(--primary-light)', textTransform: 'uppercase', marginRight: '5px' }}>Target:</label>
-                <select className="form-input" style={{ width: '150px', padding: '2px', fontSize: '0.8rem', background: 'transparent', border: 'none' }} value={targetApplicant} onChange={e => setTargetApplicant(e.target.value)}>
-                  <option value="">-- Select Applicant --</option>
-                  {applicants.map(a => <option key={a.email} value={a.email}>{a.fullName} ({a.email})</option>)}
-                </select>
+                <div style={{ position: 'relative' }}>
+                    <input 
+                      list="applicant-options"
+                      className="form-input" 
+                      style={{ width: '180px', padding: '2px 6px', fontSize: '0.8rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'white' }} 
+                      value={targetApplicant} 
+                      onChange={e => setTargetApplicant(e.target.value)}
+                      placeholder="Search applicant email..."
+                    />
+                    <datalist id="applicant-options">
+                      {applicants.map(a => <option key={a.email} value={a.email}>{a.fullName} ({a.email})</option>)}
+                    </datalist>
+                  </div>
               </div>
 
               <button className="btn btn-sm btn-primary" onClick={handleHubpush} disabled={isPushing} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none', opacity: isPushing ? 0.7 : 1 }}>
