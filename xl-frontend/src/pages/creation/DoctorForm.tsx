@@ -112,10 +112,10 @@ function CustomSelect({
         {label} {required && <span className="text-rose-400">*</span>}
       </label>
       
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center relative z-20">
         <button
           type="button"
-          onClick={() => setIsOpen(true)}
+          onClick={() => setIsOpen(!isOpen)}
           className="flex-1 h-[46px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl px-4 flex items-center justify-between text-sm text-left focus:border-sky-500 transition-all"
         >
           <div className="flex items-center gap-3 overflow-hidden">
@@ -126,7 +126,7 @@ function CustomSelect({
               {value || `Select ${label}`}
             </span>
           </div>
-          <ChevronDown size={18} className="text-[#626a99] flex-shrink-0" />
+          <ChevronDown size={18} className={`text-[#626a99] flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
 
         {addType && onAddClick && (
@@ -140,39 +140,36 @@ function CustomSelect({
         )}
       </div>
 
-      {/* Select Modal */}
+      {/* Select Floating Dropdown */}
       {isOpen && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="mt-auto w-full max-w-lg mx-auto h-[70vh] bg-[#1a1c2e] rounded-t-3xl shadow-2xl flex flex-col border-t border-[#3b4168]">
-            <div className="p-4 border-b border-[#2a2f4c] flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-white font-semibold">Select {label}</h3>
-                <button onClick={() => setIsOpen(false)} className="w-8 h-8 flex items-center justify-center bg-[#25283f] rounded-full text-slate-400">
-                  <X size={16} />
-                </button>
-              </div>
+        <>
+          {/* Invisible overlay to close dropdown when clicking outside */}
+          <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)}></div>
+          
+          <div className="absolute top-[75px] left-0 right-[54px] z-40 bg-[#1a1c2e] border border-[#3b4168] rounded-xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-2 border-b border-[#2a2f4c]">
               <div className="relative">
-                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   autoFocus
                   type="text"
                   placeholder="Search..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full bg-[#111322] border border-[#2a2f4c] rounded-xl pl-10 pr-4 py-3 text-white text-sm focus:outline-none focus:border-sky-500"
+                  className="w-full bg-[#111322] border border-[#2a2f4c] rounded-lg pl-9 pr-3 py-2 text-white text-sm focus:outline-none focus:border-sky-500"
                 />
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="max-h-[220px] overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-[#3b4168] scrollbar-track-transparent">
               {filtered.length === 0 ? (
-                <p className="text-center text-slate-500 py-10 text-sm">No options found.</p>
+                <p className="text-center text-slate-500 py-6 text-sm">No options found.</p>
               ) : (
                 filtered.map((opt, i) => (
                   <button
                     key={i}
                     onClick={() => { onChange(opt); setIsOpen(false); setSearch(''); }}
-                    className="w-full text-left px-4 py-3.5 text-sm text-slate-200 border-b border-[#2a2f4c]/50 hover:bg-[#25283f] flex items-center justify-between"
+                    className="w-full text-left px-3 py-2.5 text-sm text-slate-200 rounded-lg hover:bg-[#25283f] flex items-center justify-between transition-colors"
                   >
                     {opt}
                     {value === opt && <Check size={16} className="text-[#4ade80]" />}
@@ -181,7 +178,7 @@ function CustomSelect({
               )}
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -195,7 +192,6 @@ export default function DoctorForm() {
     hq: user.hq || ''
   });
   const [geo1, setGeo1] = useState<GeoPoint | null>(null);
-  const [geo2, setGeo2] = useState<GeoPoint | null>(null);
   
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -310,13 +306,11 @@ export default function DoctorForm() {
       await axios.post('/api/xl/doctor', {
         ...form,
         employeeId: user.employeeId,
-        lat1: geo1.lat, lng1: geo1.lng, geoAddress1: geo1.address,
-        lat2: geo2?.lat ?? null, lng2: geo2?.lng ?? null, geoAddress2: geo2?.address ?? null,
+        lat1: geo1.lat, lng1: geo1.lng, geoAddress1: geo1.address
       });
       setSuccess(true);
       setForm({ hq: user.hq || '' });
       setGeo1(null);
-      setGeo2(null);
       setTimeout(() => setSuccess(false), 3000);
       navigate(-1);
     } catch (err: any) {
@@ -392,12 +386,9 @@ export default function DoctorForm() {
 
         {renderInput('birthday', 'Birthday', { type: 'date' })}
         {renderInput('anniversary', 'Marriage Anniversary', { type: 'date' })}
-        {renderInput('mobileNumber', 'Mobile Number', { type: 'tel', placeholder: "Enter Doctor's Mobile Number" })}
         
-        {/* Skipping Select User as it's auto-allotted */}
-        
+        {renderInput('mobileNumber', 'Mobile Number', { type: 'tel', required: true, placeholder: "Enter Doctor's Mobile Number" })}
         {renderInput('contactNumber', "Clinic's Contact Number", { type: 'tel', placeholder: "Enter Clinic's Contact Number" })}
-        {renderInput('doctorCode', "Doctor's Code", { placeholder: "Enter Doctor's Code" })}
         {renderInput('emailAddress', 'Email Address', { type: 'email', placeholder: "Enter Email Address" })}
 
         <CustomSelect 
@@ -427,7 +418,7 @@ export default function DoctorForm() {
         {/* Geo-Tagging */}
         <div className="pt-2 mb-8">
           <p className="text-[13px] font-bold text-slate-200 mb-4 ml-1">
-            Geo-Tag Locations <span className="text-rose-400">*</span>
+            Geo-Tag Location <span className="text-rose-400">*</span>
           </p>
           <div className="space-y-3">
             <GeoTagButton
@@ -435,12 +426,6 @@ export default function DoctorForm() {
               point={geo1}
               onCapture={() => captureGeo().then(setGeo1).catch(() => {})}
               onClear={() => setGeo1(null)}
-            />
-            <GeoTagButton
-              label="Secondary Location"
-              point={geo2}
-              onCapture={() => captureGeo().then(setGeo2).catch(() => {})}
-              onClear={() => setGeo2(null)}
             />
           </div>
         </div>
