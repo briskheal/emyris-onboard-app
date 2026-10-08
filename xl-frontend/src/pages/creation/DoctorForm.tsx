@@ -137,7 +137,15 @@ export default function DoctorForm() {
 
   const getControlNames = (type: string, hq?: string) => {
     return controls
-      .filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.hq || c.hq.toLowerCase() === hq.toLowerCase()))
+      .filter(c => {
+         if (c.type !== type || c.isActive === false) return false;
+         if (type !== 'Hospital' && type !== 'Working Area') return true;
+         if (!hq || !c.hq) return true;
+         
+         const chq = c.hq.toLowerCase().replace(/[^a-z0-9]/g, '');
+         const uhq = hq.toLowerCase().replace(/[^a-z0-9]/g, '');
+         return chq.includes(uhq) || uhq.includes(chq);
+      })
       .map(c => c.name);
   };
 
@@ -228,7 +236,7 @@ export default function DoctorForm() {
         {field('mobileNumber', 'Mobile Number', { type: 'tel', placeholder: '10-digit mobile' })}
         {field('contactNumber', 'Clinic Contact No.', { type: 'tel', placeholder: 'Alternate number' })}
         {field('emailAddress', 'Email Address', { type: 'email', placeholder: 'doctor@email.com' })}
-        {field('hq', 'HQ', { required: true, placeholder: 'Headquarter city', options: Array.from(new Set([user.hq, ...(controls.filter(c => c.hq).map(c=>c.hq))])).filter(Boolean) })}
+        {field('hq', 'HQ', { required: true, placeholder: 'Headquarter city', readOnly: true })}
         {field('workingArea', 'Working Area', { datalist: getControlNames('Working Area', form['hq']), placeholder: 'Search or enter working area...', addType: 'Working Area' })}
         {field('birthday', 'Birthday', { type: 'date' })}
         {field('anniversary', 'Anniversary', { type: 'date' })}
