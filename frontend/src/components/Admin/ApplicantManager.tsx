@@ -14,6 +14,7 @@ const ApplicantManager: React.FC = () => {
   const [filterMonth, setFilterMonth] = useState<string>(new Date().getMonth().toString());
   const [filterYear, setFilterYear] = useState<string>(new Date().getFullYear().toString());
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
 
   const fetchApplicants = async () => {
     try {

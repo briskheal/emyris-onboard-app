@@ -25,6 +25,7 @@ const PayrunSystem: React.FC = () => {
     
     const [payrunMonth, setPayrunMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
     const [payrunYear, setPayrunYear] = useState(new Date().getFullYear().toString());
+    const [showMonthPicker, setShowMonthPicker] = useState(false);
 
     const [generatingPdf, setGeneratingPdf] = useState<string | null>(null);
     const [previewData, setPreviewData] = useState<any | null>(null);
@@ -369,9 +370,43 @@ const PayrunSystem: React.FC = () => {
                 )}
 
                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', background: 'rgba(255,255,255,0.02)', padding: '20px', borderRadius: '8px', border: '1px solid #334155' }}>
-                    <select className="form-control" value={payrunMonth} onChange={e => setPayrunMonth(e.target.value)} style={{ width: 'auto', fontSize: '1rem', padding: '8px' }}>
-                        {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
-                    </select>
+                    <div style={{ position: 'relative' }}>
+                    <div 
+                      className="form-control" 
+                      style={{ width: '130px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1rem', padding: '8px', userSelect: 'none', background: '#0f172a', color: '#fff', border: '1px solid #334155', borderRadius: '6px' }}
+                      onClick={() => setShowMonthPicker(!showMonthPicker)}
+                    >
+                      <span>{payrunMonth}</span>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>▼</span>
+                    </div>
+                    {showMonthPicker && (
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, marginTop: '4px', padding: '12px',
+                        background: '#1e293b', border: '1px solid #334155', borderRadius: '8px',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.5)', zIndex: 100, width: '250px'
+                      }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                          {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => {
+                            const isSel = payrunMonth === m;
+                            return (
+                              <div 
+                                key={m}
+                                onClick={() => { setPayrunMonth(m); setShowMonthPicker(false); }}
+                                style={{
+                                  textAlign: 'center', padding: '8px 4px', borderRadius: '6px', cursor: 'pointer',
+                                  background: isSel ? 'var(--primary)' : 'rgba(255, 255, 255, 0.05)',
+                                  color: isSel ? '#fff' : '#cbd5e1',
+                                  fontSize: '0.85rem', transition: 'all 0.2s', fontWeight: isSel ? 'bold' : 'normal'
+                                }}
+                              >
+                                {m.substring(0, 3)}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                     <select className="form-control" value={payrunYear} onChange={e => setPayrunYear(e.target.value)} style={{ width: 'auto', fontSize: '1rem', padding: '8px' }}>
                         {[2023, 2024, 2025, 2026, 2027, 2028].map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
