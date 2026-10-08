@@ -25,26 +25,7 @@ function GeoTagButton({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const [controls, setControls] = useState<any[]>([]);
-  useEffect(() => {
-    const fetchControls = async () => {
-      try {
-        const res = await axios.get('/api/xl/controls');
-        if (res.data.success) {
-          setControls(res.data.controls);
-        }
-      } catch (e) {
-        console.error('Failed to fetch controls', e);
-      }
-    };
-    fetchControls();
-  }, []);
 
-  const getControlNames = (type: string, hq?: string) => {
-    return controls
-      .filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.hq || c.hq.toLowerCase() === hq.toLowerCase()))
-      .map(c => c.name);
-  };
 
   const capture = () => {
     if (!navigator.geolocation) { setError('GPS not supported on this device.'); return; }
@@ -110,6 +91,28 @@ export default function DoctorForm() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+
+  const [controls, setControls] = useState<any[]>([]);
+  useEffect(() => {
+    const fetchControls = async () => {
+      try {
+        const res = await axios.get('/api/xl/controls');
+        if (res.data.success) {
+          setControls(res.data.controls);
+        }
+      } catch (e) {
+        console.error('Failed to fetch controls', e);
+      }
+    };
+    fetchControls();
+  }, []);
+
+  const getControlNames = (type: string, hq?: string) => {
+    return controls
+      .filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.hq || c.hq.toLowerCase() === hq.toLowerCase()))
+      .map(c => c.name);
+  };
+
 
   const handleChange = (name: string, value: string) => {
     setForm(prev => ({ ...prev, [name]: value }));
