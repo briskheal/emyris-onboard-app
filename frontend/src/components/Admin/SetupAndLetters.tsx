@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, Database, FileText, Image as ImageIcon, Send, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, Trash2, Scissors } from 'lucide-react';
+import { Save, Upload, RefreshCw, Database, FileText, Image as ImageIcon, Send, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, Trash2, Scissors } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '../../api/client';
@@ -13,6 +13,7 @@ export default function SetupAndLetters() {
   const [allTemplatesMap, setAllTemplatesMap] = useState<Record<string, string>>({});
   const masterContentRef = useRef<string>('');
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const [isPushing, setIsPushing] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const printContainerRef = useRef<HTMLDivElement>(null);
   
@@ -72,7 +73,7 @@ export default function SetupAndLetters() {
     '{{DIVISION}}', '{{HQ}}', '{{REPORTING_TO}}', '{{SALARY_MONTHLY}}', '{{SALARY_ANNUAL}}', '{{SALARY_WORDS}}', '{{BANK_NAME}}', 
     '{{BANK_ACC}}', '{{IFSC}}', '{{JOINING_DATE}}', '{{COMPANY_NAME}}', '{{SIGNATORY_NAME}}', '{{SIGNATORY_DESG}}', '{{SAL_BASIC}}', 
     '{{SAL_HRA}}', '{{SAL_LTA}}', '{{SAL_CONV}}', '{{SAL_MED}}', '{{SAL_SPECIAL}}', '{{SAL_EDU}}', '{{SAL_FIXED}}', 
-    '{{SAL_GROSS_MONTHLY}}', '{{SAL_GROSS_ANNUAL}}', '{{SALARY_BREAKUP}}'
+    '{{SAL_GROSS_MONTHLY}}', '{{SAL_GROSS_ANNUAL}}', '{{SALARY_BREAKUP}}', '{{MISC_COUNTER}}', '{{OFFER_COUNTER}}', '{{APPT_COUNTER}}', '{{EMP_CODE_COUNTER}}'
   ];
 
   useEffect(() => {
@@ -275,22 +276,23 @@ export default function SetupAndLetters() {
       return;
     }
     
+    setIsPushing(true);
     const applicant = applicants.find(a => a.email === targetApplicant);
-    if (!applicant) return;
+    if (!applicant) {
+      setIsPushing(false);
+      return;
+    }
 
-    // Grab the WYSIWYG content directly from the editor
     let finalContent = editorRef.current?.innerHTML || '';
     finalContent = `<div style="font-family: ${fontFamily}; font-size: ${fontSize}pt;">${finalContent}</div>`;
 
     const activeLetterType = templateOptions.find(t => t.id === activeTemplate)?.type || 'offer';
     
     try {
-      // Generate the PDF blob for email attachment
       const pdfBlob = await generatePdfBlob();
       let pdfBase64 = null;
       if (pdfBlob) {
         const buffer = await pdfBlob.arrayBuffer();
-        // Convert array buffer to base64
         let binary = '';
         const bytes = new Uint8Array(buffer);
         const len = bytes.byteLength;
@@ -309,12 +311,15 @@ export default function SetupAndLetters() {
       });
       if (res.data.success) {
         alert(res.data.message || 'Letter Hubpushed Successfully!');
+        await fetchCompanyTemplates(); // Refresh counters!
       } else {
         alert('Failed to publish letter.');
       }
     } catch (e) {
       console.error(e);
       alert('Error publishing letter');
+    } finally {
+      setIsPushing(false);
     }
   };
 
@@ -570,9 +575,9 @@ export default function SetupAndLetters() {
                 </select>
               </div>
 
-              <button className="btn btn-sm btn-primary" onClick={handleHubpush} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none' }}>
-                <Send size={14} /> Generate & Send
-              </button>
+              <button className="btn btn-sm btn-primary" onClick={handleHubpush} disabled={isPushing} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none', opacity: isPushing ? 0.7 : 1 }}>
+                  {isPushing ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />} {isPushing ? 'Processing...' : 'Generate & Send'}
+                </button>
 
               <button className="btn btn-sm btn-outline" onClick={handleClearLetters} disabled={!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444', opacity: targetApplicant ? 1 : 0.5 }} title="Wipe all letters for this applicant">
                 <Trash2 size={14} /> Clear Hub Letters
