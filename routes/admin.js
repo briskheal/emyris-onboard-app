@@ -1095,6 +1095,7 @@ router.post('/update-task', async (req, res) => {
     try {
         const { email, taskKey, value } = req.body;
         const update = {};
+        console.log('Update payload:', req.body);
         update[`tasks.${taskKey}`] = value;
         await Applicant.findOneAndUpdate({ email }, { $set: update });
         res.status(200).json({ success: true });
@@ -2550,61 +2551,7 @@ router.post('/render-template', async (req, res) => {
     }
 });
 
-router.post('/update-workflow-data', async (req, res) => {
-    try {
-        const { email, newEmail, state, pin, division, reportingTo, hq, empCode, refNo, salaryBreakup, salary, verificationChecks, dob, actualJoiningDate, address, tasks, incrementData, fullName, phone, detailDesignation, detailHq, fatherName, gender, bloodGroup, maritalStatus,
-                epfNumber, uanNumber, esiNumber, anniversaryDate, bankName, accNo, ifsc } = req.body;
-        const update = {};
-        if (division !== undefined) update.division = division;
-        if (reportingTo !== undefined) update.reportingTo = reportingTo;
-        if (hq !== undefined) update.hq = hq;
-        if (detailHq !== undefined) update.hq = detailHq;
-        if (empCode !== undefined) update.empCode = empCode;
-        if (refNo !== undefined) update.refNo = refNo;
-        if (dob !== undefined) {
-            update.dob = dob;
-            update['formData.dob'] = dob;
-        }
-        if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
-        if (address !== undefined) update.address = address;
-          if (state !== undefined) update.state = state;
-          if (pin !== undefined) update.pin = pin;
-        if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
-        if (tasks !== undefined) update.tasks = tasks;
-        if (incrementData !== undefined) update.incrementData = incrementData;
-        if (salaryBreakup !== undefined) update.salaryBreakup = salaryBreakup;
-        if (salary !== undefined) update.salary = salary;
-        if (newEmail) update.email = newEmail;
 
-        // Editable profile fields
-        if (fullName !== undefined) update.fullName = fullName;
-        if (phone !== undefined) update.phone = phone;
-        if (detailDesignation !== undefined) update.designation = detailDesignation;
-        if (maritalStatus !== undefined) update.maritalStatus = maritalStatus;
-        if (fatherName !== undefined) update['formData.fatherName'] = fatherName;
-        if (gender !== undefined) update['formData.gender'] = gender;
-        if (bloodGroup !== undefined) update['formData.bloodGroup'] = bloodGroup;
-
-        // Statutory & bank fields (all optional — never error on blank)
-        if (epfNumber !== undefined) update.epfNumber = epfNumber;
-        if (uanNumber !== undefined) update.uanNumber = uanNumber;
-        if (esiNumber !== undefined) update.esiNumber = esiNumber;
-        if (anniversaryDate !== undefined) update.anniversaryDate = anniversaryDate;
-        if (bankName !== undefined) update['formData.bankName'] = bankName;
-        if (accNo !== undefined) update['formData.accNo'] = accNo;
-        if (ifsc !== undefined) update['formData.ifsc'] = ifsc;
-
-        if (salaryBreakup !== undefined) {
-            const s = salaryBreakup;
-            const basicVal = Number(s.basic || 0);
-
-            // SAFETY: If basic is 0 or empty, skip salary validation entirely.
-            // This happens for existing staff who have no salary set yet.
-            if (basicVal > 0) {
-                const components = ['basic', 'hra', 'lta', 'conveyance', 'medical', 'special', 'edu', 'fixed'];
-                for (const key of components) {
-                    if (s[key] !== undefined && (isNaN(Number(s[key])) || Number(s[key]) < 0)) {
-                        return res.status(400).json({ error: `Invalid value for salary component: ${key}. Must be a non-negative number.` });
                     }
                 }
                 const monthlyGross = calculateMonthlyGross(s);

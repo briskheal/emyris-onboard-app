@@ -91,8 +91,13 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
     api.get(`/admin/applicant/${initialApplicant.email}`).then(res => {
       const fullApp = (res.data && res.data.applicant) ? res.data.applicant : initialApplicant;
       setApplicant(fullApp);
-      
-      setSalBasic(fullApp.salaryBreakup?.basic?.toString() || '0');
+        setEditName(fullApp.fullName || '');
+        setEditEmail(fullApp.email || '');
+        setEditPhone(fullApp.phone || '');
+        setEditAddress(fullApp.address || '');
+        setEditState(fullApp.state || '');
+        setEditPin(fullApp.pin || '');
+        setSalBasic(fullApp.salaryBreakup?.basic?.toString() || '0');
       setSalHra(fullApp.salaryBreakup?.hra?.toString() || '0');
       setSalLta(fullApp.salaryBreakup?.lta?.toString() || '0');
       setSalConv(fullApp.salaryBreakup?.conveyance?.toString() || '0');
@@ -315,7 +320,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
+        email: applicant.email, newEmail: editEmail !== applicant.email ? editEmail : undefined, fullName: editName, phone: editPhone, address: editAddress, state: editState, pin: editPin, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
         epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary, verificationChecks,
         dob, bloodGroup, maritalStatus, anniversaryDate
       });
@@ -355,7 +360,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
+        email: applicant.email, newEmail: editEmail !== applicant.email ? editEmail : undefined, fullName: editName, phone: editPhone, address: editAddress, state: editState, pin: editPin, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
         epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary
       });
       if (!updateRes.data.success) throw new Error(updateRes.data.error || 'Failed to update assignment');
