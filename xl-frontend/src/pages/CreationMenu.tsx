@@ -3,6 +3,7 @@ import { PackageSearch, ShoppingCart, CheckCircle, BellRing, UserRound, Shopping
 
 const creationOptions = [
   { path: '/creation/doctor', icon: UserRound, label: 'Doctor', description: 'Add doctors, specialists & hospitals', color: 'text-sky-400', bg: 'bg-sky-500/10' },
+  { path: '/creation/doctor-profile', icon: UserRound, label: 'Dr Profile', description: 'View Doctor Profiles', color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
   { path: '/creation/chemist', icon: ShoppingBag, label: 'Chemist', description: 'Add retail chemist outlets', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   { path: '/creation/stockist', icon: Building2, label: 'Stockist', description: 'Add stockists & distributors', color: 'text-amber-400', bg: 'bg-amber-500/10' },
   { path: '#', icon: BellRing, label: 'Reminder Call', description: 'Create reminder call logs', color: 'text-yellow-400', bg: 'bg-yellow-500/10' },

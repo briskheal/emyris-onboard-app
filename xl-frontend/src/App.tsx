@@ -6,6 +6,7 @@ import CreationMenu from './pages/CreationMenu';
 import ApprovalsLanding from './pages/creation/ApprovalsLanding';
 import ApprovalDetail from './pages/creation/ApprovalDetail';
 import DoctorForm from './pages/creation/DoctorForm';
+import DoctorProfile from './pages/creation/DoctorProfile';
 import ChemistForm from './pages/creation/ChemistForm';
 import StockistForm from './pages/creation/StockistForm';
 import PrimarySalesForm from './pages/creation/PrimarySalesForm';
@@ -40,6 +41,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
           <Route path="creation" element={<CreationMenu />} />
           <Route path="creation/doctor" element={<DoctorForm />} />
+          <Route path="creation/doctor-profile" element={<DoctorProfile />} />
           <Route path="creation/chemist" element={<ChemistForm />} />
           <Route path="creation/stockist" element={<StockistForm />} />
           <Route path="creation/primary-sales" element={<PrimarySalesForm />} />
