@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, RefreshCw, Database, FileText, Image as ImageIcon, Send, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, Trash2, Scissors } from 'lucide-react';
+import { Save, Upload, RefreshCw, Database, FileText, Image as ImageIcon, Send, Type, AlignLeft, AlignCenter, AlignRight, AlignJustify, List, ZoomIn, AlertTriangle, Download, Trash2, Scissors, ChevronDown, X } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import api from '../../api/client';
@@ -23,6 +23,19 @@ export default function SetupAndLetters() {
   const [applicants, setApplicants] = useState<any[]>([]);
   const [targetApplicant, setTargetApplicant] = useState('');
   const [targetApplicantData, setTargetApplicantData] = useState<any>(null);
+  const [applicantSearch, setApplicantSearch] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (targetApplicant) {
@@ -566,50 +579,96 @@ export default function SetupAndLetters() {
             </div>
 
             {/* Right: Actions */}
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(99, 102, 241, 0.1)', padding: '5px 10px', borderRadius: '4px', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-                <label style={{ fontSize: '0.7rem', color: 'var(--primary-light)', textTransform: 'uppercase', marginRight: '5px' }}>Target:</label>
-                <div style={{ position: 'relative' }}>
-                    <input 
-                      list="applicant-options"
-                      className="form-input" 
-                      style={{ width: '180px', padding: '2px 6px', fontSize: '0.8rem', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '4px', color: 'white' }} 
-                      value={targetApplicant} 
-                      onChange={e => setTargetApplicant(e.target.value)}
-                      placeholder="Search applicant email..."
-                    />
-                    <datalist id="applicant-options">
-                      {applicants.map(a => <option key={a.email} value={a.email}>{a.fullName} ({a.email})</option>)}
-                    </datalist>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flex: 1, alignItems: 'flex-end' }}>
+              {/* Row 1: Generation & Target */}
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', width: '100%', justifyContent: 'flex-end' }}>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--primary-light)', fontWeight: 600 }}>TARGET:</label>
+                  <div style={{ position: 'relative' }} ref={dropdownRef}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input 
+                        type="text"
+                        className="form-input" 
+                        style={{ width: '300px', padding: '6px 32px 6px 12px', fontSize: '0.85rem', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '6px', color: 'white', outline: 'none' }} 
+                        value={applicantSearch} 
+                        onClick={() => setIsDropdownOpen(true)}
+                        onChange={e => {
+                            setApplicantSearch(e.target.value);
+                            setIsDropdownOpen(true);
+                            if (!e.target.value) setTargetApplicant('');
+                        }}
+                        placeholder="Search applicant email..."
+                      />
+                      {applicantSearch && (
+                        <button onClick={() => { setApplicantSearch(''); setTargetApplicant(''); setIsDropdownOpen(true); }} style={{ position: 'absolute', right: '28px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <X size={14} />
+                        </button>
+                      )}
+                      <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} style={{ position: 'absolute', right: '4px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <ChevronDown size={16} />
+                      </button>
+                    </div>
+                    {isDropdownOpen && (
+                      <ul style={{
+                        position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
+                        background: '#1e293b', border: '1px solid #334155', borderRadius: '6px',
+                        maxHeight: '250px', overflowY: 'auto', padding: 0, margin: '4px 0 0 0', listStyle: 'none',
+                        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7)'
+                      }}>
+                        {applicants.filter(a => (a.fullName + ' ' + a.email).toLowerCase().includes(applicantSearch.toLowerCase())).map(a => (
+                          <li key={a.email} 
+                              style={{ padding: '10px 12px', fontSize: '0.85rem', cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.05)', color: targetApplicant === a.email ? 'var(--primary-light)' : '#f8fafc', background: targetApplicant === a.email ? 'rgba(99,102,241,0.15)' : 'transparent' }}
+                              onClick={() => {
+                                setTargetApplicant(a.email);
+                                setApplicantSearch(a.fullName + ' (' + a.email + ')');
+                                setIsDropdownOpen(false);
+                              }}
+                              onMouseEnter={e => { if (targetApplicant !== a.email) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' }}
+                              onMouseLeave={e => { if (targetApplicant !== a.email) e.currentTarget.style.background = 'transparent' }}
+                          >
+                            <div style={{ fontWeight: 600 }}>{a.fullName}</div>
+                            <div style={{ opacity: 0.6, fontSize: '0.75rem' }}>{a.email}</div>
+                          </li>
+                        ))}
+                        {applicants.filter(a => (a.fullName + ' ' + a.email).toLowerCase().includes(applicantSearch.toLowerCase())).length === 0 && (
+                          <li style={{ padding: '10px 12px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>No matches found</li>
+                        )}
+                      </ul>
+                    )}
                   </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.75rem', flex: 1, justifyContent: 'flex-end' }}>
+                  <button className="btn btn-primary" onClick={handleHubpush} disabled={isPushing} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none', flex: 1, maxWidth: '180px', justifyContent: 'center' }}>
+                      {isPushing ? <RefreshCw className="animate-spin" size={16} /> : <Send size={16} />} {isPushing ? 'Processing...' : 'Generate & Send'}
+                  </button>
+
+                  <button className="btn btn-outline" onClick={handleClearLetters} disabled={!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderColor: '#ef4444', color: '#ef4444', flex: 1, maxWidth: '180px', justifyContent: 'center', opacity: targetApplicant ? 1 : 0.5 }}>
+                    <Trash2 size={16} /> Clear Hub
+                  </button>
+
+                  <button className="btn btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#0284c7', border: 'none', flex: 1, maxWidth: '180px', justifyContent: 'center' }}>
+                    <Download size={16} /> Download
+                  </button>
+                </div>
               </div>
 
-              <button className="btn btn-sm btn-primary" onClick={handleHubpush} disabled={isPushing} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'linear-gradient(135deg, var(--accent), #4f46e5)', border: 'none', opacity: isPushing ? 0.7 : 1 }}>
-                  {isPushing ? <RefreshCw className="animate-spin" size={14} /> : <Send size={14} />} {isPushing ? 'Processing...' : 'Generate & Send'}
+              {/* Row 2: Template Maintenance */}
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', width: '100%' }}>
+                <button className="btn btn-sm btn-outline" onClick={saveTemplate} disabled={savingTemplate || !!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#10b981', color: '#10b981', opacity: targetApplicant ? 0.5 : 1 }}>
+                  <Save size={14} /> Save Master
                 </button>
-
-              <button className="btn btn-sm btn-outline" onClick={handleClearLetters} disabled={!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444', opacity: targetApplicant ? 1 : 0.5 }} title="Wipe all letters for this applicant">
-                <Trash2 size={14} /> Clear Hub Letters
-              </button>
-
-              <button className="btn btn-sm btn-primary" onClick={handleDownloadPdf} style={{ display: 'flex', alignItems: 'center', gap: '5px', background: '#0284c7', border: 'none' }} title="Download PDF of the current view">
-                <Download size={14} /> Download PDF
-              </button>
-
-              <button className="btn btn-sm btn-outline" onClick={saveTemplate} disabled={savingTemplate || !!targetApplicant} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#10b981', color: '#10b981', opacity: targetApplicant ? 0.5 : 1 }} title={targetApplicant ? "Cannot save master while previewing applicant" : "Save Master Template"}>
-                <Save size={14} /> Save Master
-              </button>
-
-              <button className="btn btn-sm btn-outline" onClick={handleResetTemplate} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444' }} title="Reset to Saved Master">
-                <Trash2 size={14} />
-              </button>
-
-              <button className="btn btn-sm btn-outline" onClick={handleClearEditor} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444' }} title="Wipe Entire Editor Clean">
-                Wipe Template
-              </button>
-              <button className="btn btn-sm btn-outline" onClick={handleClearImages} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#f59e0b', color: '#f59e0b' }} title="Wipe Inline Images">
-                Wipe Images
-              </button>
+                <button className="btn btn-sm btn-outline" onClick={handleResetTemplate} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#ef4444', color: '#ef4444' }}>
+                  <Trash2 size={14} /> Reset Master
+                </button>
+                <button className="btn btn-sm btn-outline" onClick={handleClearEditor} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#f59e0b', color: '#f59e0b' }}>
+                  Wipe Editor
+                </button>
+                <button className="btn btn-sm btn-outline" onClick={handleClearImages} style={{ display: 'flex', alignItems: 'center', gap: '5px', borderColor: '#f59e0b', color: '#f59e0b' }}>
+                  Wipe Images
+                </button>
+              </div>
             </div>
           </div>
 
