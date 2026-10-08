@@ -12,7 +12,7 @@ router.post('/applicant-login', async (req, res, next) => {
     pin = (pin || '').trim();
 
     try {
-        let applicant = await Applicant.findOne({ email, pin });
+        let applicant = await Applicant.findOne({ email, password: pin });
         if (!applicant) {
             return res.json({ success: false, message: 'Invalid credentials. If you lost your PIN, register again with the same email to receive a new one.' });
         }
