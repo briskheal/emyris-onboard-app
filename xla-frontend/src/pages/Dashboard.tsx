@@ -95,7 +95,7 @@ export default function Dashboard() {
   const handleBroadcast = async () => {
     if (!broadcastMessage.trim()) return alert('Message cannot be empty');
     try {
-      const res = await axios.post('/api/xl/admin/announcement', { message: broadcastMessage });
+      const res = await axios.post('/api/xl/admin/announcement', { message: broadcastMessage, validFrom: validFrom || undefined, validUntil: validUntil || undefined });
       if (res.data.success) {
         alert('Broadcast message updated successfully!');
         setIsBroadcastModalOpen(false);
@@ -526,3 +526,5 @@ export default function Dashboard() {
   </div>
   );
 }
+
+
