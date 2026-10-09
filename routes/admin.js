@@ -5361,6 +5361,7 @@ router.post('/dcs/upload', upload.single('file'), async (req, res) => {
         row.degree = d.Degree || d.degree || '';
         row.specialization = d.Specialization || d.specialization || '';
         row.hospital = d.Hospital || d.hospital || '';
+        row.visitDays = d['Visit Days'] || d.visitDays || '';
         row.mobile = String(d.Mobile || d.mobile || d.Contact || d.contact || d['chemist contact'] || d['Chemist Contact'] || d['stockiest contact'] || d['Stockiest Contact'] || d['stockist contact'] || d['Stockist Contact'] || '');
         row.clinicContact = String(d['Clinic Contact'] || d.clinicContact || '');
 
@@ -5896,6 +5897,7 @@ router.get('/debug/dash', async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 

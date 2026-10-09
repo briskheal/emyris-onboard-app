@@ -608,7 +608,7 @@ export default function ManageDCS() {
       let filename = '';
 
       if (uploadType === 'Doctor') {
-        headers = ['Sr no.', 'Name', 'Degree', 'Specialization', 'Hospital', 'Birthday', 'Anniversary', 'Email', 'Mobile', 'Clinic Contact', 'Address', 'Category', 'Contact', 'Headquarter', 'Working Area'];
+        headers = ['Sr no.', 'Name', 'Degree', 'Specialization', 'Hospital', 'Visit Days', 'Birthday', 'Anniversary', 'Email', 'Mobile', 'Clinic Contact', 'Address', 'Category', 'Contact', 'Headquarter', 'Working Area'];
         filename = 'doctor_upload_format.xlsx';
       } else if (uploadType === 'Chemist') {
         headers = ['Sr no.', 'Name', 'Business Name', 'Certification', 'Birthday', 'Email', 'Chemist Contact', 'Address', 'City', 'Working Area'];
@@ -756,6 +756,7 @@ export default function ManageDCS() {
     </div>
   );
 }
+
 
 
 
