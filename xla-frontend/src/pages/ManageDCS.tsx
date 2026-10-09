@@ -386,9 +386,9 @@ export default function ManageDCS() {
               </datalist>
             </div>
             
-            <div className="md:col-span-3 lg:col-span-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
-              <label className="text-xs text-slate-400 font-bold mb-3 block uppercase tracking-widest text-center">Days of Visit</label>
-              <div className="flex gap-2 justify-center max-w-lg mx-auto">
+            <div className="md:col-span-2">
+              <label className="text-xs text-slate-400 font-bold mb-1 block">DAYS OF VISIT</label>
+              <div className="flex gap-2">
                 {[
                   { k: 'M', d: 'M' }, { k: 'Tu', d: 'T' }, { k: 'W', d: 'W' },
                   { k: 'Th', d: 'T' }, { k: 'F', d: 'F' }, { k: 'Sa', d: 'S' },
@@ -757,6 +757,7 @@ export default function ManageDCS() {
     </div>
   );
 }
+
 
 
 
