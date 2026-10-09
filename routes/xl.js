@@ -1,3 +1,15 @@
+async function getMaxUID(Model, prefix) {
+    const records = await Model.findAll({ attributes: ['uid'] });
+    let max = 0;
+    for (let r of records) {
+        if (r.uid && r.uid.startsWith(prefix)) {
+            const num = parseInt(r.uid.substring(prefix.length)) || 0;
+            if (num > max) max = num;
+        }
+    }
+    return max;
+}
+
 const express = require('express');
 const router = express.Router();
 
@@ -2571,6 +2583,19 @@ router.post('/approvals/action', async (req, res) => {
                         assignment.used = Math.max(0, (assignment.used || 0) - days);
                         await assignment.save();
                     }
+                }
+            }
+
+            if (action === 'Approved') {
+                if (type === 'Doctors' && !record.uid) {
+                    const max = await getMaxUID(XlDoctor, 'DOC');
+                    record.uid = 'DOC' + (max + 1);
+                } else if (type === 'Chemists' && !record.uid) {
+                    const max = await getMaxUID(XlChemist, 'CHM');
+                    record.uid = 'CHM' + (max + 1);
+                } else if (type === 'Stockists' && !record.uid) {
+                    const max = await getMaxUID(XlStockist, 'STK');
+                    record.uid = 'STK' + (max + 1);
                 }
             }
 
@@ -5670,3 +5695,5 @@ router.post('/controls', async (req, res) => {
 });
 
 module.exports = router;
+
+

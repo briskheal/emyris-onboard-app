@@ -5883,6 +5883,18 @@ router.post('/xl-backlog/:id/action', async (req, res) => {
 // ------------------------------
 
 router.get('/fix-approved', async (req, res) => { try { const { XlDCR } = require('../db'); await XlDCR.update({ approvedBy: 'Admin' }, { where: { status: 'Approved', approvedBy: null } }); res.json({ success: true, message: 'Fixed approvedBy' }); } catch(e) { res.status(500).json({ error: e.message }); } });
+router.get('/debug/dash', async (req, res) => {
+  try {
+    const { XlDoctor, XlChemist, XlStockist } = require('../db');
+    const { Op } = require('sequelize');
+    const docs = await XlDoctor.findAll({ where: { name: { [Op.iLike]: '%dash%' } } });
+    const chems = await XlChemist.findAll({ where: { businessName: { [Op.iLike]: '%dash%' } } });
+    res.json({ success: true, doctors: docs, chemists: chems });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
+
 module.exports = router;
 
 
