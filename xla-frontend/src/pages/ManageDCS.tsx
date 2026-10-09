@@ -108,7 +108,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
   );
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] min-h-screen relative z-10">
+    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-screen max-h-screen relative z-10 overflow-hidden">
       
       {/* TOP TOOLBAR (Fixed) */}
       <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-[60]">
@@ -160,8 +160,8 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
       </div>
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-none bg-[#1e1e2d] w-full">
-        <table className="w-full text-left border-collapse">
+      <div className="flex-1 overflow-x-auto bg-[#1e1e2d] w-full">
+        <table className="w-full min-w-max text-left border-collapse">
           <thead className="sticky top-0 z-50 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
               <th className="p-4 border-r border-[#3b3b5a] text-center w-12 bg-[#252538]"><input type="checkbox" onChange={handleSelectAll} checked={paginatedList.length > 0 && selectedIds.length === paginatedList.length} className="cursor-pointer accent-sky-500" /></th>
@@ -668,7 +668,7 @@ export default function ManageDCS() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-900 font-sans relative">
+    <div className="flex h-screen overflow-hidden bg-slate-900 font-sans relative">
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-sky-900/20 blur-[120px]"></div>
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-900/20 blur-[120px]"></div>
@@ -717,6 +717,9 @@ export default function ManageDCS() {
     </div>
   );
 }
+
+
+
 
 
 
