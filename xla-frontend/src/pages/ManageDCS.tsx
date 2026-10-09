@@ -16,7 +16,6 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
   const [filterType, setFilterType] = useState('Chemist');
   const [filterHq, setFilterHq] = useState('');
   const [filterState, setFilterState] = useState('');
-  const [filterUser, setFilterUser] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   
@@ -33,7 +32,6 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
     displayList = displayList.filter(d => hqsInState.some((hq: string) => checkHQMatch(hq, d.headquarter)));
   }
   if (filterHq) displayList = displayList.filter(d => checkHQMatch(d.headquarter, filterHq));
-  if (filterUser) displayList = displayList.filter(d => d.userAllotted === filterUser || d.employeeId === filterUser);
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     displayList = displayList.filter(d => 
@@ -48,7 +46,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterType, filterHq, filterState, filterUser, searchQuery]);
+  }, [filterType, filterHq, filterState, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(displayList.length / itemsPerPage));
   const paginatedList = displayList.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -145,10 +143,6 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
               <option value="">All Headquarters</option>
               {hqs.filter((h: any) => !filterState || h.state === filterState).map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
             </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT USER</label>
-            <CustomUserSelect users={users} selectedUser={filterUser} onChange={setFilterUser} />
           </div>
         </div>
         
