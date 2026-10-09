@@ -719,20 +719,20 @@ export default function ManageDCS() {
           <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
             <ArrowLeft size={18} /> <span className="font-black text-xs tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
           </button>
-          <h2 className="text-white font-black text-sm tracking-widest uppercase">MANAGE DOCTORS, STOCKISTS & CHEMISTS</h2>
+          <h2 className="text-white font-black text-sm tracking-widest">Manage Doctors, Stockists & Chemists</h2>
         </div>
         <div className="flex-1 min-w-0 overflow-y-auto py-6">
           <ul className="space-y-1 px-4">
             {[
-              { id: 'create_doctor', label: 'CREATE DOCTORS' },
-              { id: 'create_chemist', label: 'CREATE CHEMISTS' },
-              { id: 'create_stockist', label: 'CREATE STOCKISTS' },
-              { id: 'edit_delete', label: 'EDIT / DELETE' },
-              { id: 'upload_dcs', label: 'UPLOAD DCS CITY / AREA' },
-              { id: 'dcs_list_management', label: 'DCS LIST MANAGEMENT' }
+              { id: 'create_doctor', label: 'Create Doctors' },
+              { id: 'create_chemist', label: 'Create Chemists' },
+              { id: 'create_stockist', label: 'Create Stockists' },
+              { id: 'edit_delete', label: 'Edit / Delete' },
+              { id: 'upload_dcs', label: 'Upload DCS City / Area' },
+              { id: 'dcs_list_management', label: 'DCS List Management' }
             ].map(tab => (
               <li key={tab.id}>
-                <button onClick={() => setActiveTab(tab.id as any)} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
+                <button onClick={() => setActiveTab(tab.id as any)} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
                   {tab.label}
                 </button>
               </li>
@@ -757,6 +757,9 @@ export default function ManageDCS() {
     </div>
   );
 }
+
+
+
 
 
 
