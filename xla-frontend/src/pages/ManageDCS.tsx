@@ -2,10 +2,9 @@ import * as XLSX from 'xlsx';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, ArrowUp, Download, MapPinOff } from 'lucide-react';
-import CustomUserSelect from '../components/CustomUserSelect';
 import { useNavigate } from 'react-router-dom';
 
-const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, users, fetchData, onEdit }: any) => {
+const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fetchData, onEdit }: any) => {
   const checkHQMatch = (h1?: string, h2?: string) => {
     if (!h1 || !h2) return false;
     const c1 = h1.toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -279,7 +278,7 @@ export default function ManageDCS() {
   const [chemists, setChemists] = useState<any[]>([]);
   const [stockists, setStockists] = useState<any[]>([]);
   const [controls, setControls] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
+  
   const [hqs, setHqs] = useState<any[]>([]);
   const [states, setStates] = useState<any[]>([]);
   
@@ -291,12 +290,12 @@ export default function ManageDCS() {
 
   const fetchData = async () => {
     try {
-      const [docRes, chemRes, stkRes, ctrlRes, usrRes, hqRes, stateRes] = await Promise.all([
+      const [docRes, chemRes, stkRes, ctrlRes, hqRes, stateRes] = await Promise.all([
         axios.get('/api/admin/dcs/doctors'),
         axios.get('/api/admin/dcs/chemists'),
         axios.get('/api/admin/dcs/stockists'),
         axios.get('/api/admin/dcs/controls'),
-        axios.get('/api/admin/users'),
+        
         axios.get('/api/admin/locations/hqs'),
         axios.get('/api/admin/locations/states')
       ]);
@@ -304,7 +303,7 @@ export default function ManageDCS() {
       if(chemRes.data.success) setChemists(chemRes.data.chemists);
       if(stkRes.data.success) setStockists(stkRes.data.stockists);
       if(ctrlRes.data.success) setControls(ctrlRes.data.controls);
-      if(usrRes.data.success) setUsers(usrRes.data.users);
+      
       if(hqRes.data.success) setHqs(hqRes.data.hqs);
       if(stateRes.data.success) setStates(stateRes.data.states);
     } catch (e) { console.error(e); }
@@ -707,7 +706,7 @@ export default function ManageDCS() {
       {activeTab === 'create_stockist' && <CreateStockistTab />}
       {activeTab === 'edit_delete' && !editingRecord && (
         <div className="flex-1 min-w-0" style={{ display: 'flex' }}>
-          <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} users={users} fetchData={fetchData} />
+          <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} fetchData={fetchData} />
         </div>
       )}
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Doctor' && <CreateDoctorTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
@@ -718,4 +717,6 @@ export default function ManageDCS() {
     </div>
   );
 }
+
+
 
