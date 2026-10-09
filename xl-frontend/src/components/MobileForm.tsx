@@ -117,7 +117,18 @@ export default function MobileForm({ title, subtitle, endpoint, fields, accentCo
     setLoading(true);
     setError('');
     try {
-      const payload = { ...form };
+      const uStr = localStorage.getItem('user');
+      const user = uStr ? JSON.parse(uStr) : null;
+      const payload = { 
+        ...form,
+        mobile: form.mobileNumber,
+        email: form.emailAddress,
+        headquarter: form.hq,
+        extraInformation: form.extraInfo,
+        employeeId: user?.employeeId,
+        userAllotted: user?.employeeId,
+        employeeName: user ? `${user.firstName} ${user.lastName}`.trim() : ''
+      };
       if (enableGeoTagging) {
         Object.assign(payload, {
           lat1: geo1?.lat, lng1: geo1?.lng, geoAddress1: geo1?.address,

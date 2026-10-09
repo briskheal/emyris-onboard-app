@@ -303,11 +303,17 @@ export default function DoctorForm() {
     setLoading(true);
     setError('');
     try {
-      await axios.post('/api/xl/doctor', {
+      const payload = {
         ...form,
+        mobile: form.mobileNumber,
+        clinicContact: form.contactNumber,
+        email: form.emailAddress,
+        headquarter: form.hq,
+        extraInformation: form.extraInfo,
         employeeId: user.employeeId,
         lat1: geo1.lat, lng1: geo1.lng, geoAddress1: geo1.address
-      });
+      };
+      await axios.post('/api/xl/doctor', payload);
       setSuccess(true);
       setForm({ hq: user.hq || '' });
       setGeo1(null);
