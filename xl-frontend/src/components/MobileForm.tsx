@@ -125,6 +125,11 @@ export default function MobileForm({ title, subtitle, endpoint, fields, accentCo
         email: form.emailAddress,
         headquarter: form.hq,
         extraInformation: form.extraInfo,
+        certifications: form.certification,
+        name: form.proprietorName,
+        gst: form.gstNumber,
+        drugLicense: form.certification,
+        drugExpiryDate: form.drugLicenseExpiry,
         employeeId: user?.employeeId,
         userAllotted: user?.employeeId,
         employeeName: user ? `${user.firstName} ${user.lastName}`.trim() : ''
