@@ -6,6 +6,13 @@ import CustomUserSelect from '../components/CustomUserSelect';
 import { useNavigate } from 'react-router-dom';
 
 const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, users, fetchData, onEdit }: any) => {
+  const checkHQMatch = (h1?: string, h2?: string) => {
+    if (!h1 || !h2) return false;
+    const c1 = h1.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const c2 = h2.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return c1.includes(c2) || c2.includes(c1);
+  };
+
   const [filterType, setFilterType] = useState('Chemist');
   const [filterHq, setFilterHq] = useState('');
   const [filterState, setFilterState] = useState('');
@@ -23,9 +30,9 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, use
 
   if (filterState) {
     const hqsInState = hqs.filter((h: any) => h.state === filterState).map((h: any) => h.hqName);
-    displayList = displayList.filter(d => hqsInState.includes(d.headquarter));
+    displayList = displayList.filter(d => hqsInState.some((hq: string) => checkHQMatch(hq, d.headquarter)));
   }
-  if (filterHq) displayList = displayList.filter(d => d.headquarter === filterHq);
+  if (filterHq) displayList = displayList.filter(d => checkHQMatch(d.headquarter, filterHq));
   if (filterUser) displayList = displayList.filter(d => d.userAllotted === filterUser || d.employeeId === filterUser);
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
