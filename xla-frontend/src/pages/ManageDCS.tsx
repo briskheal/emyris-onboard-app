@@ -205,6 +205,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
                     <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.specialization || '-'}</td>
                       <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-emerald-400 font-semibold">{d.category || '-'}</td>
                       <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300 truncate max-w-[200px]">{d.hospital || '-'}</td>
+                      <td className="px-2 py-3 border-r border-[#3b3b5a]/50 text-slate-300">{d.visitDays || '-'}</td>
                   </>
                 ) : (
                   <>
@@ -756,6 +757,7 @@ export default function ManageDCS() {
     </div>
   );
 }
+
 
 
 
