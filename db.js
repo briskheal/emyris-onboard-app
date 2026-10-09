@@ -121,6 +121,7 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lat2" DOUBLE PRECISION;',
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lng2" DOUBLE PRECISION;',
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "geoAddress2" VARCHAR(255);',
+            'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "visitDays" VARCHAR(255);',
             'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "city" VARCHAR(255);',
             'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lat1" DOUBLE PRECISION;',
             'ALTER TABLE xl_chemists ADD COLUMN IF NOT EXISTS "lng1" DOUBLE PRECISION;',
@@ -149,6 +150,7 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE xl_doctors ADD COLUMN lat2 DOUBLE;',
             'ALTER TABLE xl_doctors ADD COLUMN lng2 DOUBLE;',
             'ALTER TABLE xl_doctors ADD COLUMN geoAddress2 VARCHAR(255);',
+            'ALTER TABLE xl_doctors ADD COLUMN visitDays VARCHAR(255);',
             'ALTER TABLE xl_chemists ADD COLUMN lat1 DOUBLE;',
             'ALTER TABLE xl_chemists ADD COLUMN lng1 DOUBLE;',
             'ALTER TABLE xl_chemists ADD COLUMN geoAddress1 VARCHAR(255);',
@@ -619,4 +621,5 @@ module.exports = {
     generateId, 
     XlAnnouncement 
 };
+
 

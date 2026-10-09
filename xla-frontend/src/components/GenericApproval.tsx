@@ -9,6 +9,7 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Edited By ↑', key: 'editedBy' },
     { label: 'Name ↑', key: 'name' },
     { label: 'Degree', key: 'degree' },
+    { label: 'Visit Days', key: 'visitDays' },
     { label: 'HQ ↑', key: 'headquarter' },
     { label: 'Status ↑', key: 'status' }
   ],
@@ -324,3 +325,4 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
     </div>
   );
 }
+

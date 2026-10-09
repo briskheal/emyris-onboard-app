@@ -83,7 +83,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
   const exportToExcel = () => {
     if(displayList.length === 0) return alert('No data to export');
     const ws = XLSX.utils.json_to_sheet(displayList.map((d, i) => {
-        if(filterType === 'Doctor') return { 'Sr no.': i+1, Name: d.name, Degree: d.degree, Specialization: d.specialization, Hospital: d.hospital, Birthday: d.birthday, Anniversary: d.anniversary, Email: d.email, Mobile: d.mobile, 'Clinic Contact': d.clinicContact, Address: d.address, Category: d.category, Contact: d.contact, Headquarter: d.headquarter, 'Working Area': d.workingArea };
+        if(filterType === 'Doctor') return { 'Sr no.': i+1, Name: d.name, Degree: d.degree, Specialization: d.specialization, Hospital: d.hospital, 'Visit Days': d.visitDays, Birthday: d.birthday, Anniversary: d.anniversary, Email: d.email, Mobile: d.mobile, 'Clinic Contact': d.clinicContact, Address: d.address, Category: d.category, Contact: d.contact, Headquarter: d.headquarter, 'Working Area': d.workingArea };
         if(filterType === 'Chemist') return { 'Sr no.': i+1, Name: d.proprietorName || d.name, 'Business Name': d.businessName, Certification: d.certifications, Birthday: d.birthday, Email: d.email, 'Chemist Contact': d.mobile, Address: d.address, City: d.city || '', 'Working Area': d.workingArea };
         if(filterType === 'Stockist') return { 'Sr no.': i+1, Name: d.name, 'Business Name': d.businessName, Certification: d.certifications, 'GST Number': d.gst, 'Drug License Number': d.drugLicense, 'Drug Expiry Number': d.drugExpiryDate || '', 'Establishment Date': d.establishmentDate || '', 'Stockist Contact': d.mobile, Address: d.address, City: d.city || '' };
       }));
@@ -175,6 +175,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
                   <ThWithIcons label="Specialization" sortable />
                   <ThWithIcons label="Category" sortable />
                   <ThWithIcons label="Hospital" />
+                    <ThWithIcons label="Visit Days" />
                 </>
               ) : (
                 <>
@@ -328,7 +329,7 @@ export default function ManageDCS() {
           if(res.data.success) { alert('Doctor updated successfully'); fetchData(); if(onCancel) onCancel(); }
         } else {
           const res = await axios.post('/api/admin/dcs/doctors', formData);
-          if(res.data.success) { alert('Doctor added successfully'); fetchData(); setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: ''}); }
+          if(res.data.success) { alert('Doctor added successfully'); fetchData(); setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: '', visitDays: ''}); }
         }
       } catch (e: any) { alert(editData ? 'Error updating doctor: ' + (e.response?.data?.message || e.message) : 'Error adding doctor'); } finally { setLoading(false); }
     };
@@ -383,6 +384,43 @@ export default function ManageDCS() {
                 {getControls('Hospital', formData.headquarter).map(c => <option key={c._id} value={c.name} />)}
               </datalist>
             </div>
+            
+            <div className="md:col-span-3 lg:col-span-4 bg-slate-900/50 p-4 rounded-xl border border-slate-700/50">
+              <label className="text-xs text-slate-400 font-bold mb-3 block uppercase tracking-widest text-center">Days of Visit</label>
+              <div className="flex gap-2 justify-center max-w-lg mx-auto">
+                {[
+                  { k: 'M', d: 'M' }, { k: 'Tu', d: 'T' }, { k: 'W', d: 'W' },
+                  { k: 'Th', d: 'T' }, { k: 'F', d: 'F' }, { k: 'Sa', d: 'S' },
+                  { k: 'ALL', d: 'ALL' }
+                ].map(item => {
+                  const currentDays = formData.visitDays ? formData.visitDays.split(',').filter(Boolean) : [];
+                  const isSelected = item.k === 'ALL' 
+                    ? currentDays.length === 6 
+                    : currentDays.includes(item.k);
+                    
+                  const toggle = () => {
+                    if (item.k === 'ALL') {
+                      setFormData({...formData, visitDays: currentDays.length === 6 ? '' : 'M,Tu,W,Th,F,Sa'});
+                    } else {
+                      let next = new Set(currentDays);
+                      if (next.has(item.k)) next.delete(item.k);
+                      else next.add(item.k);
+                      setFormData({...formData, visitDays: Array.from(next).join(',')});
+                    }
+                  };
+
+                  return (
+                    <button
+                      type="button"
+                      key={item.k}
+                      onClick={toggle}
+                      className={`flex-1 py-2 rounded-lg font-bold text-xs transition-colors ${isSelected ? 'bg-green-500 text-white' : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'}`}
+                    >
+                      {item.d}
+                    </button>
+                  );
+                })}
+              </div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BIRTHDAY</label><input type="date" value={formData.birthday} onChange={e=>setFormData({...formData, birthday: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">MARRIAGE ANNIVERSARY</label><input type="date" value={formData.anniversary} onChange={e=>setFormData({...formData, anniversary: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             
@@ -438,7 +476,7 @@ export default function ManageDCS() {
           if(res.data.success) { alert('Chemist updated successfully'); fetchData(); if(onCancel) onCancel(); }
         } else {
           const res = await axios.post('/api/admin/dcs/chemists', formData);
-          if(res.data.success) { alert('Chemist added successfully'); fetchData(); setFormData({businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''}); }
+          if(res.data.success) { alert('Chemist added successfully'); fetchData(); setFormData({businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: '', visitDays: ''}); }
         }
       } catch (e: any) { alert(editData ? 'Error updating chemist: ' + (e.response?.data?.message || e.message) : 'Error adding chemist'); } finally { setLoading(false); }
     };
@@ -489,7 +527,7 @@ export default function ManageDCS() {
           if(res.data.success) { alert('Stockist updated successfully'); fetchData(); if(onCancel) onCancel(); }
         } else {
           const res = await axios.post('/api/admin/dcs/stockists', formData);
-          if(res.data.success) { alert('Stockist added successfully'); fetchData(); setFormData({businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''}); }
+          if(res.data.success) { alert('Stockist added successfully'); fetchData(); setFormData({businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: '', visitDays: ''}); }
         }
       } catch (e: any) { alert(editData ? 'Error updating stockist: ' + (e.response?.data?.message || e.message) : 'Error adding stockist'); } finally { setLoading(false); }
     };
@@ -717,6 +755,11 @@ export default function ManageDCS() {
     </div>
   );
 }
+
+
+
+
+
 
 
 
