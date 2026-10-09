@@ -390,6 +390,45 @@ export default function DoctorForm() {
           onAddClick={(t) => setAddControl({type: t, hq: form.hq})}
         />
 
+        {/* Visit Days Selector */}
+        <div className="mb-4">
+          <label className="text-xs font-semibold text-slate-400 uppercase mb-2 block">Days of Visit</label>
+          <div className="flex gap-2 justify-between">
+            {[
+              { k: 'M', d: 'M' }, { k: 'Tu', d: 'T' }, { k: 'W', d: 'W' },
+              { k: 'Th', d: 'T' }, { k: 'F', d: 'F' }, { k: 'Sa', d: 'S' },
+              { k: 'ALL', d: 'ALL' }
+            ].map(item => {
+              const currentDays = form.visitDays ? form.visitDays.split(',').filter(Boolean) : [];
+              const isSelected = item.k === 'ALL' 
+                ? currentDays.length === 6 
+                : currentDays.includes(item.k);
+                
+              const toggle = () => {
+                if (item.k === 'ALL') {
+                  handleChange('visitDays', currentDays.length === 6 ? '' : 'M,Tu,W,Th,F,Sa');
+                } else {
+                  let next = new Set(currentDays);
+                  if (next.has(item.k)) next.delete(item.k);
+                  else next.add(item.k);
+                  handleChange('visitDays', Array.from(next).join(','));
+                }
+              };
+
+              return (
+                <button
+                  type="button"
+                  key={item.k}
+                  onClick={toggle}
+                  className={`flex-1 py-2 rounded-lg font-bold text-xs transition-colors ${isSelected ? 'bg-green-500 text-white' : 'bg-[#1e293b] text-sky-400 border border-slate-700/50 hover:bg-slate-800'}`}
+                >
+                  {item.d}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {renderInput('birthday', 'Birthday', { type: 'date' })}
         {renderInput('anniversary', 'Marriage Anniversary', { type: 'date' })}
         
