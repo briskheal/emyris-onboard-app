@@ -27,18 +27,28 @@ router.post('/applicant-login', async (req, res, next) => {
     }
 });
 
-// Helper to get all allowed access codes from .env (with fallback)
+// Helper to get allowed access codes strictly from environment variables (.env)
 function getAllowedAccessCodes() {
-    const raw = (process.env.REGISTRATION_ACCESS_CODE || '').replace(/['"]/g, '').trim();
+    const raw = (
+        process.env.REGISTRATION_ACCESS_CODE || 
+        process.env.HR_ACCESS_CODE || 
+        process.env.ACCESS_CODE || 
+        process.env.ONBOARDING_ACCESS_CODE || 
+        ''
+    ).replace(/['"]/g, '').trim();
+
     if (raw) {
-        const envCodes = raw.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
-        if (envCodes.length > 0) return envCodes;
+        return raw.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
     }
     return ['EMYRIS2026'];
 }
 
 function getAccessCodeErrorMessage() {
-    const email = (process.env.REGISTRATION_SUPPORT_EMAIL || 'hradmin@emyrishr.in').replace(/['"]/g, '').trim();
+    const email = (
+        process.env.REGISTRATION_SUPPORT_EMAIL || 
+        process.env.HR_EMAIL || 
+        'hradmin@emyrishr.in'
+    ).replace(/['"]/g, '').trim();
     return `Invalid code contact to ${email}.`;
 }
 
@@ -51,6 +61,8 @@ router.post('/verify-access-code', (req, res) => {
         return res.status(400).json({ success: false, message: errMsg });
     }
     const allowedCodes = getAllowedAccessCodes();
+    console.log(`[HR Access Code Check] Submitted: "${code}" | Configured in ENV:`, allowedCodes);
+
     if (allowedCodes.includes(code)) {
         return res.json({ success: true, message: 'Access code verified successfully.' });
     } else {
