@@ -17,21 +17,14 @@ router.post('/applicant-login', async (req, res, next) => {
             return res.json({ success: false, message: 'Invalid credentials. If you lost your Password PIN, please use Forgot PIN.' });
         }
 
-        const isMatch = (applicant.password && applicant.password.trim() === passwordPin) ||
-                        (applicant.pin && applicant.pin.trim() === passwordPin);
+        const isMatch = (applicant.password && applicant.password.trim() === passwordPin);
 
         if (!isMatch) {
-            return res.json({ success: false, message: 'Invalid credentials. If you lost your Password PIN, please use Forgot PIN.' });
+            return res.json({ success: false, message: 'Invalid credentials. If you lost your Password PIN, please use Forgot Password PIN.' });
         }
 
         if (!applicant.canLogin) {
             return res.json({ success: false, message: 'Your application is blocked or under review.' });
-        }
-
-        // Auto-heal: Ensure applicant.password is properly set to their 6-digit Password PIN
-        if (applicant.password !== passwordPin) {
-            await Applicant.findOneAndUpdate({ email }, { password: passwordPin });
-            applicant.password = passwordPin;
         }
 
         applicant = await syncActiveExamForApplicant(applicant);

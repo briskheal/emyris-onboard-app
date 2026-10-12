@@ -166,20 +166,13 @@ router.post('/login', async (req, res) => {
         // 2. Manual match to avoid regex/index quirks
         const applicant = applicants.find(a => {
             const dbPass = String(a.password || "").trim();
-            const dbLegacyPin = String(a.pin || "").trim();
             const isEmailMatch = a.email && a.email.toLowerCase().trim() === email;
-            return isEmailMatch && (dbPass === password || dbLegacyPin === password);
+            return isEmailMatch && dbPass === password;
         });
 
         if (!applicant) {
             console.log(`❌ [LOGIN FAIL] ${email} / ${password}`);
             return res.status(401).json({ success: false, message: 'Invalid Email or Password PIN.' });
-        }
-
-        // Auto-heal: ensure applicant.password is set to the valid 6-digit Password PIN
-        if (applicant.password !== password) {
-            await Applicant.findOneAndUpdate({ email: applicant.email }, { password });
-            applicant.password = password;
         }
 
         console.log(`✅ [LOGIN SUCCESS] Email: ${email}`);
