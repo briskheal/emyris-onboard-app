@@ -179,7 +179,12 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
     if (col.key === 'employeeName') {
       return item.employeeName || item.userAllotted || item.employeeId || '-';
     }
-    let val = item[col.key] || (col.key === 'businessName' ? item.name : (col.key === 'name' ? item.businessName : undefined)) || '-';
+    let val = item[col.key] || 
+      (col.key === 'businessName' ? item.name : undefined) ||
+      (col.key === 'name' ? (item.cityName || item.businessName) : undefined) ||
+      (col.key === 'headquarter' ? item.hq : undefined) || 
+      (col.key === 'hq' ? item.headquarter : undefined) ||
+      '-';
     if (col.isDate && val !== '-') {
       try {
         val = new Date(val).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');

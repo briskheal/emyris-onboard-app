@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, ChevronDown, Check, AlertCircle, Building2, MapPin, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Search, ChevronDown, Check, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
 // Searchable Scrollable Custom Dropdown Component
@@ -11,6 +11,7 @@ function CustomSelect({
   onChange,
   required,
   placeholder,
+  disabled,
 }: {
   label: string;
   value: string;
@@ -18,6 +19,7 @@ function CustomSelect({
   onChange: (val: string) => void;
   required?: boolean;
   placeholder?: string;
+  disabled?: boolean;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -37,11 +39,17 @@ function CustomSelect({
       <div className="flex gap-2 items-center relative z-20">
         <button
           type="button"
+          disabled={disabled}
           onClick={() => {
+            if (disabled) return;
             setSearch('');
             setIsOpen(!isOpen);
           }}
-          className="flex-1 h-[46px] bg-[#1a1c2e] border border-[#3b4168] rounded-xl px-4 flex items-center justify-between text-sm text-left focus:border-sky-500 transition-all hover:border-[#4d5588]"
+          className={`flex-1 h-[46px] bg-[#1a1c2e] border rounded-xl px-4 flex items-center justify-between text-sm text-left transition-all ${
+            disabled
+              ? 'opacity-60 cursor-not-allowed border-[#2a2f4c]'
+              : 'border-[#3b4168] hover:border-[#4d5588] focus:border-sky-500'
+          }`}
         >
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="flex-shrink-0 min-w-[32px] h-[26px] bg-[#2c3258] rounded text-sky-400 text-xs font-bold flex items-center justify-center px-1.5">
@@ -58,7 +66,7 @@ function CustomSelect({
         </button>
       </div>
 
-      {isOpen && (
+      {isOpen && !disabled && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setIsOpen(false)} />
 
@@ -109,19 +117,24 @@ function CustomSelect({
   );
 }
 
+interface HqItem {
+  hqName: string;
+  state: string;
+}
+
 export default function CityForm() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('xl_user') || '{}');
 
   const [form, setForm] = useState({
     state: '',
-    hq: user.hq || '',
+    hq: '',
     areaType: 'City',
     cityName: '',
   });
 
   const [states, setStates] = useState<string[]>([]);
-  const [hqs, setHqs] = useState<string[]>([]);
+  const [allHqs, setAllHqs] = useState<HqItem[]>([]);
   const [existingCities, setExistingCities] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -129,43 +142,62 @@ export default function CityForm() {
   const [serverError, setServerError] = useState('');
   const [duplicateMessage, setDuplicateMessage] = useState('');
 
-  // Fetch states, HQs, and existing cities from database
+  // Fetch initial states, all HQs (with state info), and existing cities
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch states from database
+        // 1. Fetch states from database
         const stateRes = await axios.get('/api/xl/states').catch(() => null);
         if (stateRes?.data?.success && Array.isArray(stateRes.data.states)) {
           setStates(stateRes.data.states);
         } else {
-          // Fallback to admin locations states
           const adminStateRes = await axios.get('/api/admin/locations/states').catch(() => null);
           if (adminStateRes?.data?.success && Array.isArray(adminStateRes.data.states)) {
             setStates(adminStateRes.data.states.map((s: any) => s.stateName).filter(Boolean));
           }
         }
 
-        // Fetch HQs
+        // 2. Fetch all HQs with their state mapping
         const hqRes = await axios.get('/api/xl/hq').catch(() => null);
+        let loadedHqs: HqItem[] = [];
         if (hqRes?.data?.success && Array.isArray(hqRes.data.data)) {
-          const names = hqRes.data.data.map((h: any) => h.hqName || h.name).filter(Boolean);
-          if (user.hq && !names.some((n: string) => n.toLowerCase() === user.hq.toLowerCase())) {
-            names.unshift(user.hq);
+          loadedHqs = hqRes.data.data
+            .map((h: any) => ({
+              hqName: h.hqName || h.name || '',
+              state: h.state || '',
+            }))
+            .filter((h: HqItem) => h.hqName);
+        } else {
+          const adminHqRes = await axios.get('/api/admin/locations/hqs').catch(() => null);
+          if (adminHqRes?.data?.success && Array.isArray(adminHqRes.data.hqs)) {
+            loadedHqs = adminHqRes.data.hqs
+              .map((h: any) => ({
+                hqName: h.hqName || h.name || '',
+                state: h.state || '',
+              }))
+              .filter((h: HqItem) => h.hqName);
           }
-          const unique = Array.from(new Set(names)) as string[];
-          unique.sort();
-          setHqs(unique);
-          if (!form.hq && unique.length > 0) {
-            setForm(prev => ({ ...prev, hq: user.hq || unique[0] }));
-          }
-        } else if (user.hq) {
-          setHqs([user.hq]);
         }
+        setAllHqs(loadedHqs);
 
-        // Fetch existing cities from database for real-time duplicate checking
+        // 3. Fetch existing cities from database for real-time duplicate checking
         const cityRes = await axios.get('/api/xl/cities').catch(() => null);
         if (cityRes?.data?.success && Array.isArray(cityRes.data.cities)) {
           setExistingCities(cityRes.data.cities);
+        }
+
+        // Set default state based on user's assigned HQ if available
+        if (user.hq && loadedHqs.length > 0) {
+          const matchedHq = loadedHqs.find(
+            h => h.hqName.toLowerCase() === user.hq.toLowerCase()
+          );
+          if (matchedHq?.state) {
+            setForm(prev => ({
+              ...prev,
+              state: matchedHq.state,
+              hq: matchedHq.hqName,
+            }));
+          }
         }
       } catch (err) {
         console.error('Failed to load initial data for CityForm', err);
@@ -174,6 +206,36 @@ export default function CityForm() {
 
     fetchData();
   }, []);
+
+  // Filter HQs strictly belonging to the selected state (NO All-India HQs)
+  const stateHqs = useMemo(() => {
+    if (!form.state) return [];
+    const stateClean = form.state.trim().toLowerCase();
+    const matched = allHqs
+      .filter(h => (h.state || '').trim().toLowerCase() === stateClean)
+      .map(h => h.hqName);
+    const unique = Array.from(new Set(matched)) as string[];
+    unique.sort();
+    return unique;
+  }, [allHqs, form.state]);
+
+  // Handle state change: update state and ensure HQ is filtered to that state only
+  const handleStateChange = (selectedState: string) => {
+    const stateClean = selectedState.trim().toLowerCase();
+    const hqsInNewState = allHqs
+      .filter(h => (h.state || '').trim().toLowerCase() === stateClean)
+      .map(h => h.hqName);
+
+    setForm(prev => {
+      // If current HQ belongs to this newly selected state, keep it; otherwise default to first HQ in state or empty
+      const stillValid = hqsInNewState.some(h => h.toLowerCase() === prev.hq.toLowerCase());
+      return {
+        ...prev,
+        state: selectedState,
+        hq: stillValid ? prev.hq : (hqsInNewState[0] || ''),
+      };
+    });
+  };
 
   // Real-time case-insensitive duplicate check on cityName input
   useEffect(() => {
@@ -223,13 +285,16 @@ export default function CityForm() {
 
     setLoading(true);
     try {
+      const empName = user.name || (user.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '') || user.employeeId || '';
       const res = await axios.post('/api/xl/city', {
         cityName: cleanName,
         state: form.state,
         hq: form.hq,
         areaType: form.areaType,
-        employeeId: user.employeeId || '',
+        employeeId: user.employeeId || user.email || '',
+        employeeName: empName,
         userAllotted: user.employeeId || '',
+        status: 'Pending',
       });
 
       if (res.data.success) {
@@ -290,7 +355,7 @@ export default function CityForm() {
         {success && (
           <div className="mb-4 bg-emerald-500/15 border border-emerald-500/30 rounded-xl p-3.5 flex items-center gap-3 text-emerald-400 text-sm animate-in fade-in duration-200">
             <CheckCircle2 size={18} className="flex-shrink-0" />
-            <span className="font-medium">City / Area registered successfully!</span>
+            <span className="font-medium">City / Area submitted successfully! Sent for approval.</span>
           </div>
         )}
 
@@ -333,16 +398,17 @@ export default function CityForm() {
             value={form.state}
             options={states}
             placeholder="Select State"
-            onChange={val => setForm(prev => ({ ...prev, state: val }))}
+            onChange={handleStateChange}
           />
 
-          {/* Searchable Scrollable HQ Dropdown */}
+          {/* Searchable Scrollable HQ Dropdown (Strictly filtered by selected state) */}
           <CustomSelect
             label="Headquarter (HQ)"
             required
+            disabled={!form.state}
             value={form.hq}
-            options={hqs}
-            placeholder="Select Headquarter"
+            options={stateHqs}
+            placeholder={form.state ? `Select HQ in ${form.state}` : 'Select State first'}
             onChange={val => setForm(prev => ({ ...prev, hq: val }))}
           />
 
@@ -402,9 +468,9 @@ export default function CityForm() {
           {/* Submit Button */}
           <button
             type="submit"
-            disabled={loading || !!duplicateMessage || !form.cityName.trim() || !form.state}
+            disabled={loading || !!duplicateMessage || !form.cityName.trim() || !form.state || !form.hq}
             className={`w-full h-12 rounded-xl font-bold text-sm tracking-wide transition-all shadow-lg flex items-center justify-center gap-2 ${
-              loading || !!duplicateMessage || !form.cityName.trim() || !form.state
+              loading || !!duplicateMessage || !form.cityName.trim() || !form.state || !form.hq
                 ? 'bg-[#282c44] text-slate-500 cursor-not-allowed shadow-none'
                 : 'bg-sky-500 hover:bg-sky-400 active:bg-sky-600 text-white shadow-sky-500/25'
             }`}

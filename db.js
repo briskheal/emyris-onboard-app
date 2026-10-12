@@ -243,6 +243,19 @@ await XlTarget.sync({ alter: true });
 
         try { await sequelize.query('ALTER TABLE "xl_call_plans" ADD COLUMN "chemists" TEXT DEFAULT \'[]\''); } catch(e){}
         try { await sequelize.query('ALTER TABLE "xl_call_plans" ADD COLUMN "stockists" TEXT DEFAULT \'[]\''); } catch(e){}
+        try { await sequelize.query('ALTER TABLE "xl_cities" ADD COLUMN "employeeId" VARCHAR(255)'); } catch(e){}
+        try { await sequelize.query('ALTER TABLE "xl_cities" ADD COLUMN "employeeName" VARCHAR(255)'); } catch(e){}
+        try { await sequelize.query('ALTER TABLE "xl_cities" ADD COLUMN "adminRemarks" VARCHAR(255)'); } catch(e){}
+        try { await sequelize.query('ALTER TABLE "xl_cities" ADD COLUMN "editedBy" VARCHAR(255)'); } catch(e){}
+        try { await sequelize.query('ALTER TABLE "xl_cities" ADD COLUMN "approvedBy" VARCHAR(255)'); } catch(e){}
+        try {
+            await sequelize.models.xl_city.update({ status: 'Pending' }, {
+                where: {
+                    employeeId: { [Op.ne]: null },
+                    status: 'Active'
+                }
+            });
+        } catch(e){}
 
 
         try {

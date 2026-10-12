@@ -1062,7 +1062,9 @@ router.post('/city', async (req, res) => {
             state: (state || '').trim(),
             hq: (hq || '').toUpperCase().trim(),
             areaType: areaType || 'City',
-            employeeId: employeeId || req.body.userAllotted || ''
+            employeeId: employeeId || req.body.userAllotted || '',
+            employeeName: req.body.employeeName || '',
+            status: 'Pending'
         });
 
         res.json({ success: true, message: 'City created successfully!', data: city });
@@ -2376,6 +2378,8 @@ router.get('/approvals/counts', async (req, res) => {
         counts['Doctors'] = await XlDoctor.count({ where: condition });
         counts['Chemists'] = await XlChemist.count({ where: condition });
         counts['Stockists'] = await XlStockist.count({ where: condition });
+        counts['City'] = await XlCity.count({ where: condition });
+        counts['Routes'] = await XlRoute.count({ where: condition });
         
         // Group Expenses by employeeId and date to match the UI behavior
         const expenseGroups = await XlExpense.findAll({
@@ -2505,6 +2509,13 @@ router.get('/approvals/pending', async (req, res) => {
             }
             if (!pData.name && pData.businessName) {
                 pData.name = pData.businessName;
+            }
+
+            if (type === 'City') {
+                pData.name = pData.cityName || pData.name;
+                pData.cityName = pData.cityName || pData.name;
+                pData.headquarter = pData.hq || pData.headquarter;
+                pData.hq = pData.hq || pData.headquarter;
             }
 
             if ((type === 'Primary Sales' || type === 'Secondary Sales') && pData.stockist) {
@@ -3011,7 +3022,15 @@ router.post('/call-plan/bulk', async (req, res) => {
 
 router.get('/hq', async (req, res) => {
     try {
-        const { designation, hq } = req.query;
+        const { designation, hq, state } = req.query;
+        if (state) {
+            const { sequelize } = require('../db');
+            const hqs = await XlHQ.findAll({
+                where: sequelize.where(sequelize.fn('lower', sequelize.col('state')), state.trim().toLowerCase()),
+                order: [['hqName', 'ASC']]
+            });
+            return res.json({ success: true, data: hqs });
+        }
         if (hq) {
             let allowedHqs = [hq.trim()];
             if (designation && designation !== 'ADMIN') {
