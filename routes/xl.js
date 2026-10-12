@@ -3023,46 +3023,70 @@ router.post('/call-plan/bulk', async (req, res) => {
 router.get('/hq', async (req, res) => {
     try {
         const { designation, hq, state } = req.query;
-        if (state) {
-            const { sequelize } = require('../db');
-            const hqs = await XlHQ.findAll({
-                where: sequelize.where(sequelize.fn('lower', sequelize.col('state')), state.trim().toLowerCase()),
-                order: [['hqName', 'ASC']]
-            });
-            return res.json({ success: true, data: hqs });
-        }
+        const { sequelize } = require('../db');
+        const { Op } = require('sequelize');
+
+        let allowedHqs = null;
+        let hasReportees = false;
+
         if (hq) {
-            let allowedHqs = [hq.trim()];
+            let userAllowed = [hq.trim()];
             if (designation && designation !== 'ADMIN') {
                 const subHQs = await getSubordinateHQs(designation, hq);
-                allowedHqs = [...new Set([...allowedHqs, ...subHQs])];
+                hasReportees = subHQs.length > 0;
+                userAllowed = [...new Set([...userAllowed, ...subHQs])];
             } else if (designation === 'ADMIN') {
-                const hqs = await XlHQ.findAll({ order: [['hqName', 'ASC']] });
-                return res.json({ success: true, data: hqs });
+                hasReportees = true;
             }
+            if (designation !== 'ADMIN') {
+                allowedHqs = userAllowed;
+            }
+        } else if (designation === 'ADMIN') {
+            hasReportees = true;
+        }
 
-            const { sequelize } = require('../db');
-            const { Op } = require('sequelize');
+        let whereConditions = [];
+        if (state) {
+            whereConditions.push(sequelize.where(sequelize.fn('lower', sequelize.col('state')), state.trim().toLowerCase()));
+        }
+        if (allowedHqs) {
             const lowerHqs = allowedHqs.map(h => h.toLowerCase());
-            const dbHqs = await XlHQ.findAll({
-                where: sequelize.where(sequelize.fn('lower', sequelize.col('hqName')), { [Op.in]: lowerHqs }),
-                order: [['hqName', 'ASC']]
-            });
+            whereConditions.push(sequelize.where(sequelize.fn('lower', sequelize.col('hqName')), { [Op.in]: lowerHqs }));
+        }
 
-            const resultList = [...dbHqs];
+        let where = {};
+        if (whereConditions.length === 1) {
+            where = whereConditions[0];
+        } else if (whereConditions.length > 1) {
+            where = { [Op.and]: whereConditions };
+        }
+
+        let dbHqs = await XlHQ.findAll({
+            where,
+            order: [['hqName', 'ASC']]
+        });
+
+        let resultList = dbHqs.map(h => h.toJSON ? h.toJSON() : h);
+
+        // If user has allowed HQs and no state filter was passed, ensure their own HQ exists in result
+        if (allowedHqs && !state) {
             for (const h of allowedHqs) {
                 if (!resultList.some(item => (item.hqName || '').toLowerCase() === h.toLowerCase())) {
-                    resultList.push({ hqName: h.toUpperCase() });
+                    resultList.push({ hqName: h.toUpperCase(), state: '' });
                 }
             }
-            resultList.sort((a, b) => (a.hqName || '').localeCompare(b.hqName || ''));
-            return res.json({ success: true, data: resultList });
         }
-        const hqs = await XlHQ.findAll({ order: [['hqName', 'ASC']] });
-        res.json({ success: true, data: hqs });
+
+        resultList.sort((a, b) => (a.hqName || '').localeCompare(b.hqName || ''));
+        return res.json({ 
+            success: true, 
+            data: resultList,
+            hasReportees: Boolean(hasReportees),
+            userHq: hq || ''
+        });
     } catch(e) {
         console.error('Error fetching hq:', e);
-        res.status(500).json({ success: false });
+        res.status(500).json({ success: false, error: e.message });
     }
 });
 

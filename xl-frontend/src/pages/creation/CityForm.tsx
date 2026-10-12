@@ -135,6 +135,7 @@ export default function CityForm() {
 
   const [states, setStates] = useState<string[]>([]);
   const [allHqs, setAllHqs] = useState<HqItem[]>([]);
+  const [hasReportees, setHasReportees] = useState<boolean>(false);
   const [existingCities, setExistingCities] = useState<string[]>([]);
 
   const [loading, setLoading] = useState(false);
@@ -142,10 +143,13 @@ export default function CityForm() {
   const [serverError, setServerError] = useState('');
   const [duplicateMessage, setDuplicateMessage] = useState('');
 
-  // Fetch initial states, all HQs (with state info), and existing cities
+  // Fetch initial states, HQs (with hierarchy & reportee check), and existing cities
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const userHq = (user.hq || '').trim();
+        const designation = (user.designation || '').trim();
+
         // 1. Fetch states from database
         const stateRes = await axios.get('/api/xl/states').catch(() => null);
         if (stateRes?.data?.success && Array.isArray(stateRes.data.states)) {
@@ -157,28 +161,40 @@ export default function CityForm() {
           }
         }
 
-        // 2. Fetch all HQs with their state mapping
-        const hqRes = await axios.get('/api/xl/hq').catch(() => null);
+        // 2. Fetch HQs for user (and reporting team if manager)
+        const hqUrl = userHq
+          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}`
+          : '/api/xl/hq';
+
+        const hqRes = await axios.get(hqUrl).catch(() => null);
         let loadedHqs: HqItem[] = [];
+        let userHasReportees = false;
+
         if (hqRes?.data?.success && Array.isArray(hqRes.data.data)) {
+          userHasReportees = Boolean(hqRes.data.hasReportees);
           loadedHqs = hqRes.data.data
             .map((h: any) => ({
               hqName: h.hqName || h.name || '',
               state: h.state || '',
             }))
             .filter((h: HqItem) => h.hqName);
-        } else {
-          const adminHqRes = await axios.get('/api/admin/locations/hqs').catch(() => null);
-          if (adminHqRes?.data?.success && Array.isArray(adminHqRes.data.hqs)) {
-            loadedHqs = adminHqRes.data.hqs
-              .map((h: any) => ({
-                hqName: h.hqName || h.name || '',
-                state: h.state || '',
-              }))
-              .filter((h: HqItem) => h.hqName);
-          }
         }
+
+        // Also cross-reference states from admin locations to ensure every HQ has its state mapped
+        const allHqsStateLookup = await axios.get('/api/admin/locations/hqs').catch(() => null);
+        if (allHqsStateLookup?.data?.success && Array.isArray(allHqsStateLookup.data.hqs)) {
+          const map = new Map<string, string>();
+          allHqsStateLookup.data.hqs.forEach((h: any) => {
+            if (h.hqName && h.state) map.set(h.hqName.toLowerCase(), h.state);
+          });
+          loadedHqs = loadedHqs.map(h => ({
+            ...h,
+            state: h.state || map.get(h.hqName.toLowerCase()) || '',
+          }));
+        }
+
         setAllHqs(loadedHqs);
+        setHasReportees(userHasReportees);
 
         // 3. Fetch existing cities from database for real-time duplicate checking
         const cityRes = await axios.get('/api/xl/cities').catch(() => null);
@@ -186,19 +202,19 @@ export default function CityForm() {
           setExistingCities(cityRes.data.cities);
         }
 
-        // Set default state based on user's assigned HQ if available
-        if (user.hq && loadedHqs.length > 0) {
-          const matchedHq = loadedHqs.find(
-            h => h.hqName.toLowerCase() === user.hq.toLowerCase()
-          );
-          if (matchedHq?.state) {
-            setForm(prev => ({
-              ...prev,
-              state: matchedHq.state,
-              hq: matchedHq.hqName,
-            }));
-          }
-        }
+        // 4. Default State & HQ behavior:
+        // "if the user doesnt have any reportee then show state and his hq by default"
+        const matchedHq = loadedHqs.find(
+          h => h.hqName.toLowerCase() === userHq.toLowerCase()
+        );
+        const defaultState = user.state || matchedHq?.state || (loadedHqs[0]?.state) || '';
+        const defaultHq = userHq || (loadedHqs[0]?.hqName) || '';
+
+        setForm(prev => ({
+          ...prev,
+          state: prev.state || defaultState,
+          hq: prev.hq || defaultHq,
+        }));
       } catch (err) {
         console.error('Failed to load initial data for CityForm', err);
       }
@@ -207,27 +223,49 @@ export default function CityForm() {
     fetchData();
   }, []);
 
-  // Filter HQs strictly belonging to the selected state (NO All-India HQs)
+  // Filter HQs as per state selected:
+  // - If user has NO reportees: only show their own HQ by default!
+  // - If user HAS team members reporting to him: show HQs of all those reporting to manager in the selected state!
   const stateHqs = useMemo(() => {
+    const userHq = (user.hq || '').trim();
+
+    // If user has no reportees, lock to his HQ
+    if (!hasReportees && userHq) {
+      return [userHq];
+    }
+
     if (!form.state) return [];
     const stateClean = form.state.trim().toLowerCase();
     const matched = allHqs
       .filter(h => (h.state || '').trim().toLowerCase() === stateClean)
       .map(h => h.hqName);
+
     const unique = Array.from(new Set(matched)) as string[];
     unique.sort();
     return unique;
-  }, [allHqs, form.state]);
+  }, [allHqs, form.state, hasReportees, user.hq]);
 
-  // Handle state change: update state and ensure HQ is filtered to that state only
+  // Handle state change
   const handleStateChange = (selectedState: string) => {
+    const userHq = (user.hq || '').trim();
+
+    // If no reportees, maintain user's own HQ
+    if (!hasReportees && userHq) {
+      setForm(prev => ({
+        ...prev,
+        state: selectedState,
+        hq: userHq,
+      }));
+      return;
+    }
+
+    // For managers with reporting team members: choose from HQs in that state
     const stateClean = selectedState.trim().toLowerCase();
     const hqsInNewState = allHqs
       .filter(h => (h.state || '').trim().toLowerCase() === stateClean)
       .map(h => h.hqName);
 
     setForm(prev => {
-      // If current HQ belongs to this newly selected state, keep it; otherwise default to first HQ in state or empty
       const stillValid = hqsInNewState.some(h => h.toLowerCase() === prev.hq.toLowerCase());
       return {
         ...prev,
@@ -339,7 +377,9 @@ export default function CityForm() {
           </button>
           <div>
             <h1 className="text-base font-bold text-white tracking-wide">ADD CITY / AREA</h1>
-            <p className="text-[11px] text-slate-400">Register new city or operational area</p>
+            <p className="text-[11px] text-slate-400">
+              {hasReportees ? 'Manager Mode • Choose HQ from reporting team' : 'Register new city or operational area'}
+            </p>
           </div>
         </div>
 
@@ -401,14 +441,22 @@ export default function CityForm() {
             onChange={handleStateChange}
           />
 
-          {/* Searchable Scrollable HQ Dropdown (Strictly filtered by selected state) */}
+          {/* Searchable Scrollable HQ Dropdown:
+              - No reportees: shows user's HQ by default
+              - Has reportees: shows HQs of all those reporting to manager in selected state */}
           <CustomSelect
-            label="Headquarter (HQ)"
+            label={hasReportees ? "Headquarter (HQ) - Reporting Team" : "Headquarter (HQ)"}
             required
-            disabled={!form.state}
+            disabled={hasReportees && !form.state}
             value={form.hq}
             options={stateHqs}
-            placeholder={form.state ? `Select HQ in ${form.state}` : 'Select State first'}
+            placeholder={
+              !hasReportees
+                ? (user.hq || 'Select Headquarter')
+                : form.state
+                ? `Choose HQ in ${form.state}`
+                : 'Select State first'
+            }
             onChange={val => setForm(prev => ({ ...prev, hq: val }))}
           />
 
