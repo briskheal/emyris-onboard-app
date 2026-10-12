@@ -332,6 +332,11 @@ app.post('/api/applicant/register', (req, res, next) => {
     authRouter(req, res, next);
 });
 
+app.post('/api/verify-access-code', (req, res, next) => {
+    req.url = '/verify-access-code';
+    authRouter(req, res, next);
+});
+
 app.post('/api/resend-pin', (req, res, next) => {
     req.url = '/resend-pin';
     authRouter(req, res, next);
