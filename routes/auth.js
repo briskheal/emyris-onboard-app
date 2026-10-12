@@ -27,24 +27,47 @@ router.post('/applicant-login', async (req, res, next) => {
     }
 });
 
+// Helper to get all allowed access codes from .env or DB
+function getAllowedAccessCodes(company) {
+    const envCodes = (process.env.REGISTRATION_ACCESS_CODE || '')
+        .split(',')
+        .map(c => c.trim().toUpperCase())
+        .filter(Boolean);
+    
+    if (envCodes.length > 0) {
+        return envCodes;
+    }
+    const dbCode = (company?.registrationAccessCode || '').trim().toUpperCase();
+    if (dbCode) {
+        return [dbCode];
+    }
+    return ['EMYRIS2026'];
+}
+
+function getAccessCodeErrorMessage() {
+    const email = (process.env.REGISTRATION_SUPPORT_EMAIL || 'hradmin@emyrishr.in').trim();
+    return `Invalid code contact to ${email}.`;
+}
+
 // Verify Registration Access Code
 router.post('/verify-access-code', async (req, res) => {
     let { code } = req.body;
     code = (code || '').trim().toUpperCase();
+    const errMsg = getAccessCodeErrorMessage();
     if (!code) {
-        return res.status(400).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+        return res.status(400).json({ success: false, message: errMsg });
     }
     try {
         const company = await Company.findOne().lean();
-        const validCode = (company?.registrationAccessCode || process.env.REGISTRATION_ACCESS_CODE || 'EMYRIS2026').trim().toUpperCase();
-        if (code === validCode) {
+        const allowedCodes = getAllowedAccessCodes(company);
+        if (allowedCodes.includes(code)) {
             return res.json({ success: true, message: 'Access code verified successfully.' });
         } else {
-            return res.status(400).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+            return res.status(400).json({ success: false, message: errMsg });
         }
     } catch (err) {
         console.error('Verify Access Code Error:', err);
-        return res.status(500).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+        return res.status(500).json({ success: false, message: errMsg });
     }
 });
 
@@ -56,13 +79,14 @@ router.post('/applicant/register', (req, res) => {
 async function handleRegister(req, res) {
     let { title, fullName, email, phone, division, designation, accessCode } = req.body;
     accessCode = (accessCode || '').trim().toUpperCase();
+    const errMsg = getAccessCodeErrorMessage();
     
     // Verify Access Code
     try {
         const company = await Company.findOne().lean();
-        const validCode = (company?.registrationAccessCode || process.env.REGISTRATION_ACCESS_CODE || 'EMYRIS2026').trim().toUpperCase();
-        if (!accessCode || accessCode !== validCode) {
-            return res.status(400).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+        const allowedCodes = getAllowedAccessCodes(company);
+        if (!accessCode || !allowedCodes.includes(accessCode)) {
+            return res.status(400).json({ success: false, message: errMsg });
         }
     } catch (err) {
         console.error('Access Code check error:', err);
