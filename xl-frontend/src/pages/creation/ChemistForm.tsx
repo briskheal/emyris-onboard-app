@@ -14,13 +14,11 @@ function GeoTagButton({
   point,
   onCapture,
   onClear,
-  isOptional = false,
 }: {
   label: string;
   point: GeoPoint | null;
   onCapture: () => void;
   onClear: () => void;
-  isOptional?: boolean;
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -82,7 +80,7 @@ function GeoTagButton({
         className="w-full h-[46px] rounded-xl border border-[#485382] bg-transparent flex items-center justify-center gap-2 text-sm font-semibold text-slate-300 hover:border-emerald-500 hover:text-emerald-400 active:border-emerald-500 active:text-emerald-400 transition-colors disabled:opacity-50"
       >
         <Navigation size={16} className={loading ? 'animate-spin text-emerald-400' : 'text-slate-400'} />
-        {loading ? 'Getting location...' : `Tap to Tag ${label} ${isOptional ? '(Optional)' : '*'}`}
+        {loading ? 'Getting location...' : `Tap to Tag ${label} *`}
       </button>
       {error && <p className="text-xs text-rose-400 mt-1.5 leading-relaxed">{error}</p>}
     </div>
@@ -218,7 +216,6 @@ export default function ChemistForm() {
   });
 
   const [geo1, setGeo1] = useState<GeoPoint | null>(null);
-  const [geo2, setGeo2] = useState<GeoPoint | null>(null);
 
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -375,7 +372,7 @@ export default function ChemistForm() {
       return;
     }
     if (!geo1) {
-      setError('Please tag the Primary Location before saving.');
+      setError('Please tag the Location before saving.');
       return;
     }
 
@@ -407,13 +404,6 @@ export default function ChemistForm() {
         geoAddress1: geo1.address,
       };
 
-      // 2nd Geo-tag is optional / can be added if captured
-      if (geo2) {
-        payload.lat2 = geo2.lat;
-        payload.lng2 = geo2.lng;
-        payload.geoAddress2 = geo2.address;
-      }
-
       const res = await axios.post('/api/xl/chemist', payload);
       if (res.data.success) {
         setSuccess(true);
@@ -430,7 +420,6 @@ export default function ChemistForm() {
           extraInfo: '',
         });
         setGeo1(null);
-        setGeo2(null);
         setTimeout(() => {
           navigate(-1);
         }, 1200);
@@ -553,31 +542,18 @@ export default function ChemistForm() {
           placeholder: 'Enter any additional details or notes',
         })}
 
-        {/* Geo-Tagging Section */}
+        {/* Single Geo-Tagging Section */}
         <div className="pt-2 mb-8">
           <p className="text-[13px] font-bold text-slate-200 mb-2 ml-1">
             Geo-Tag Location <span className="text-rose-400">*</span>
           </p>
-          <p className="text-xs text-slate-400 mb-4 ml-1">
-            Primary Location is mandatory. Secondary Location can be tagged now or later.
-          </p>
 
           <div className="space-y-3">
-            {/* 1st Geo-tag: Mandatory */}
             <GeoTagButton
-              label="Primary Location"
+              label="Location"
               point={geo1}
               onCapture={() => captureGeo().then(setGeo1).catch(() => {})}
               onClear={() => setGeo1(null)}
-            />
-
-            {/* 2nd Geo-tag: Optional / can be done later */}
-            <GeoTagButton
-              label="Secondary Location"
-              point={geo2}
-              onCapture={() => captureGeo().then(setGeo2).catch(() => {})}
-              onClear={() => setGeo2(null)}
-              isOptional={true}
             />
           </div>
         </div>
