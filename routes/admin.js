@@ -4615,7 +4615,17 @@ router.post('/locations/cities', async (req, res) => {
         const { state, hq, cityName, areaType } = req.body;
         const max = await getMaxUID(XlCity, 'CTY');
         const uid = 'CTY' + (max + 1);
-        const newCity = await XlCity.create({ state, hq, cityName, uid, areaType });
+        const cleanName = (cityName || '').trim();
+        if (!cleanName) {
+            return res.status(400).json({ success: false, message: 'City/Area Name is required' });
+        }
+        const existing = await XlCity.findOne({
+            where: sequelize.where(sequelize.fn('lower', sequelize.col('cityName')), cleanName.toLowerCase())
+        });
+        if (existing) {
+            return res.status(400).json({ success: false, message: 'City/Area Exists', error: 'City/Area Exists' });
+        }
+        const newCity = await XlCity.create({ state, hq, cityName: cleanName, uid, areaType });
         res.json({ success: true, city: newCity });
     } catch (e) {
         console.error(e);

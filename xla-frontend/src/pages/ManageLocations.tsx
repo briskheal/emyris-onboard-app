@@ -400,7 +400,10 @@ function CityTab() {
     try {
       const res = await axios.post('/api/admin/locations/cities', { state: stateName, hq: hqName, cityName, areaType: type });
       if (res.data.success) { setCityName(''); fetchData(); } else alert(res.data.message);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e: any) { 
+      console.error(e); 
+      alert(e.response?.data?.message || e.response?.data?.error || 'Failed to create city');
+    } finally { setLoading(false); }
   };
 
   const startEdit = (c: any) => {

@@ -606,7 +606,7 @@ router.get('/user-performance/rankings', async (req, res) => {
     }
 });
 
-const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlDoctorControl, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, XlHQ, XlDivision, generateId } = require('../db');
+const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlDoctorControl, XlState, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, XlHQ, XlDivision, generateId } = require('../db');
 const { Op } = require('sequelize');
 
 // Middleware to block locked users from any mobile API route instantly
@@ -964,12 +964,111 @@ router.post('/stockist', async (req, res) => {
     }
 });
 
+// Get all states from database (created in state page / XlState)
+router.get('/states', async (req, res) => {
+    try {
+        const states = await XlState.findAll({ order: [['stateName', 'ASC']] });
+        res.json({
+            success: true,
+            states: states.map(s => s.stateName),
+            data: states
+        });
+    } catch (e) {
+        console.error('Fetch states error:', e);
+        res.status(500).json({ success: false, error: 'Failed to fetch states' });
+    }
+});
+
+// Get all cities/areas
+router.get('/cities', async (req, res) => {
+    try {
+        const { state, hq } = req.query;
+        let where = {};
+        if (state) where.state = state;
+        if (hq) where.hq = hq;
+        const cities = await XlCity.findAll({
+            where,
+            order: [['cityName', 'ASC']]
+        });
+        res.json({
+            success: true,
+            cities: cities.map(c => c.cityName),
+            data: cities
+        });
+    } catch (e) {
+        console.error('Fetch cities error:', e);
+        res.status(500).json({ success: false, error: 'Failed to fetch cities' });
+    }
+});
+
+// Check if City/Area exists case-insensitively
+router.get('/city/check-duplicate', async (req, res) => {
+    try {
+        const { cityName } = req.query;
+        const name = (cityName || '').trim();
+        if (!name) {
+            return res.json({ success: true, exists: false });
+        }
+        const { sequelize } = require('../db');
+        const existing = await XlCity.findOne({
+            where: sequelize.where(sequelize.fn('lower', sequelize.col('cityName')), name.toLowerCase())
+        });
+        return res.json({
+            success: true,
+            exists: !!existing,
+            message: existing ? 'City/Area Exists' : ''
+        });
+    } catch (e) {
+        console.error('Check duplicate error:', e);
+        res.status(500).json({ success: false, error: 'Failed to check duplicate' });
+    }
+});
+
 router.post('/city', async (req, res) => {
     try {
-        const city = await XlCity.create(req.body);
+        const { cityName, state, hq, areaType, employeeId } = req.body;
+        const cleanName = (cityName || '').trim();
+        if (!cleanName) {
+            return res.status(400).json({ success: false, error: 'City/Area Name is required' });
+        }
+
+        const { sequelize } = require('../db');
+        // Check duplication whether entered in capital or small letter
+        const existing = await XlCity.findOne({
+            where: sequelize.where(sequelize.fn('lower', sequelize.col('cityName')), cleanName.toLowerCase())
+        });
+        if (existing) {
+            return res.status(400).json({
+                success: false,
+                error: 'City/Area Exists',
+                message: 'City/Area Exists'
+            });
+        }
+
+        let uid = req.body.uid;
+        if (!uid) {
+            try {
+                const max = await getMaxUID(XlCity, 'CTY');
+                uid = 'CTY' + (max + 1);
+            } catch (err) {
+                uid = 'CTY' + Date.now();
+            }
+        }
+
+        const city = await XlCity.create({
+            ...req.body,
+            cityName: cleanName,
+            uid,
+            state: (state || '').trim(),
+            hq: (hq || '').toUpperCase().trim(),
+            areaType: areaType || 'City',
+            employeeId: employeeId || req.body.userAllotted || ''
+        });
+
         res.json({ success: true, message: 'City created successfully!', data: city });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to create city' });
+        console.error('Create city error:', e);
+        res.status(500).json({ success: false, error: 'Failed to create city: ' + e.message });
     }
 });
 
