@@ -918,10 +918,49 @@ router.post('/chemist', async (req, res) => {
 
 router.post('/stockist', async (req, res) => {
     try {
-        const stockist = await XlStockist.create(req.body);
+        const data = { ...req.body };
+        if (!data.businessName && data.name) data.businessName = data.name;
+        if (!data.name && data.proprietorName) data.name = data.proprietorName;
+        if (!data.proprietorName && data.name) data.proprietorName = data.name;
+        if (!data.mobile && data.mobileNumber) data.mobile = data.mobileNumber;
+        if (!data.headquarter && data.hq) data.headquarter = data.hq;
+        if (!data.workingArea && data.route) data.workingArea = data.route;
+        if (!data.gst && data.gstNumber) data.gst = data.gstNumber;
+        if (!data.drugLicense && data.certification) data.drugLicense = data.certification;
+        if (!data.drugExpiryDate && data.drugLicenseExpiry) data.drugExpiryDate = data.drugLicenseExpiry;
+        if (!data.extraInformation && data.extraInfo) data.extraInformation = data.extraInfo;
+        if (!data.userAllotted && data.employeeId) data.userAllotted = data.employeeId;
+        if (!data.employeeId && data.userAllotted) data.employeeId = data.userAllotted;
+        if (!data.status) data.status = 'Pending';
+        if (!data.uid) {
+            try {
+                const max = await getMaxUID(XlStockist, 'STK');
+                data.uid = 'STK' + (max + 1);
+            } catch(e) {
+                data.uid = 'STK' + Date.now();
+            }
+        }
+
+        const stockist = await XlStockist.create(data);
+
+        if (stockist.lat1 && stockist.lng1) {
+            try {
+                await XlGeoFencing.create({
+                    employeeId: stockist.userAllotted || stockist.employeeId || 'SYSTEM',
+                    entityType: 'Stockist',
+                    entityId: stockist._id,
+                    latitude: stockist.lat1,
+                    longitude: stockist.lng1,
+                    geoAddress: stockist.geoAddress1 || '',
+                    status: 'Submitted'
+                });
+            } catch(e) {}
+        }
+
         res.json({ success: true, message: 'Stockist created successfully!', data: stockist });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to create stockist' });
+        console.error('Stockist create error:', e);
+        res.status(500).json({ error: 'Failed to create stockist: ' + e.message });
     }
 });
 

@@ -178,6 +178,11 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         extraInformation: { type: DataTypes.TEXT },
         userAllotted: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Pending' },
+        employeeId: { type: DataTypes.STRING },
+        employeeName: { type: DataTypes.STRING },
+        editedBy: { type: DataTypes.STRING },
+        adminRemarks: { type: DataTypes.STRING },
+        approvedBy: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         
         lat1: { type: DataTypes.DOUBLE },

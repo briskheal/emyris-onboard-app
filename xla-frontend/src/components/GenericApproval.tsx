@@ -28,6 +28,7 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Business Name', key: 'businessName' },
     { label: 'Proprietor Name', key: 'proprietorName' },
     { label: 'Address', key: 'address' },
+    { label: 'HQ', key: 'headquarter' },
     { label: 'Status', key: 'status' }
   ],
   'City': [
@@ -174,6 +175,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
 
   const renderCellValue = (item: any, col: any) => {
     if (col.key === 'details') return JSON.stringify(item).substring(0, 50) + '...';
+    if (col.key === 'proprietorName') return item.proprietorName || item.name || '-';
     if (col.key === 'employeeName') {
       return item.employeeName || item.userAllotted || item.employeeId || '-';
     }
