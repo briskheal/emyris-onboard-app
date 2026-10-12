@@ -124,9 +124,10 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
   const users = useMemo(() => {
     const map = new Map();
     items.forEach((i: any) => {
-      const name = i.employeeName || i.employeeEmail || i.employeeId;
-      if (name && i.employeeId) {
-        if (!map.has(i.employeeId)) map.set(i.employeeId, name);
+      const id = i.employeeId || i.userAllotted;
+      const name = i.employeeName || i.employeeEmail || id;
+      if (id && name) {
+        if (!map.has(id)) map.set(id, name);
       }
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
@@ -173,6 +174,9 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
 
   const renderCellValue = (item: any, col: any) => {
     if (col.key === 'details') return JSON.stringify(item).substring(0, 50) + '...';
+    if (col.key === 'employeeName') {
+      return item.employeeName || item.userAllotted || item.employeeId || '-';
+    }
     let val = item[col.key] || (col.key === 'businessName' ? item.name : (col.key === 'name' ? item.businessName : undefined)) || '-';
     if (col.isDate && val !== '-') {
       try {

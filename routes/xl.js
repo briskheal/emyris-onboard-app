@@ -884,10 +884,15 @@ router.post('/chemist', async (req, res) => {
         if (!data.workingArea && data.route) data.workingArea = data.route;
         if (!data.extraInformation && data.extraInfo) data.extraInformation = data.extraInfo;
         if (!data.userAllotted && data.employeeId) data.userAllotted = data.employeeId;
+        if (!data.employeeId && data.userAllotted) data.employeeId = data.userAllotted;
         if (!data.status) data.status = 'Pending';
         if (!data.uid) {
-            const max = await getMaxUID(XlChemist, 'CHM');
-            data.uid = 'CHM' + (max + 1);
+            try {
+                const max = await getMaxUID(XlChemist, 'CHM');
+                data.uid = 'CHM' + (max + 1);
+            } catch(e) {
+                data.uid = 'CHM' + Date.now();
+            }
         }
 
         const chemist = await XlChemist.create(data);
@@ -2310,9 +2315,15 @@ router.get('/approvals/pending', async (req, res) => {
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
+        const userFilter = reporteeEmails 
+            ? ((type === 'Chemists' || type === 'Stockists') 
+                ? { [Op.or]: [{ employeeId: reporteeEmails }, { userAllotted: reporteeEmails }] } 
+                : { employeeId: reporteeEmails })
+            : {};
+
         const pending = await Model.findAll({ 
             where: { 
-                ...(reporteeEmails ? { employeeId: reporteeEmails } : {}), 
+                ...userFilter, 
                 ...(status === 'History' ? {
                     status: { [Op.notIn]: ['Pending', 'Submitted', 'pending', 'submitted'] }
                 } : {
@@ -2338,14 +2349,24 @@ router.get('/approvals/pending', async (req, res) => {
                 }
                 pData.isBacklog = allBacklogs.some(b => b.employeeId === pData.employeeId && b.date === pData.date);
             }
-            if (pData.employeeId) {
-                const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: pData.employeeId }, { uid: pData.employeeId }, { email: pData.employeeId }] } });
+            const empId = pData.employeeId || pData.userAllotted;
+            if (empId) {
+                const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: empId }, { uid: empId }, { email: empId }] } });
                 if (u) {
                     pData.employeeName = pData.employeeName || ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || u.name;
                     pData.employeeEmail = pData.employeeEmail || u.email;
                     pData.designation = u.designation || '-';
                     pData.reportingManager = u.reportingManager || '-';
                 }
+            }
+            if (!pData.employeeName) {
+                pData.employeeName = pData.userAllotted || pData.employeeId || '-';
+            }
+            if (!pData.businessName && pData.name) {
+                pData.businessName = pData.name;
+            }
+            if (!pData.name && pData.businessName) {
+                pData.name = pData.businessName;
             }
 
             if ((type === 'Primary Sales' || type === 'Secondary Sales') && pData.stockist) {
@@ -2623,8 +2644,12 @@ router.post('/approvals/action', async (req, res) => {
                     const max = await getMaxUID(XlDoctor, 'DOC');
                     record.uid = 'DOC' + (max + 1);
                 } else if (type === 'Chemists' && !record.uid) {
-                    const max = await getMaxUID(XlChemist, 'CHM');
-                    record.uid = 'CHM' + (max + 1);
+                    try {
+                        const max = await getMaxUID(XlChemist, 'CHM');
+                        record.uid = 'CHM' + (max + 1);
+                    } catch(e) {
+                        record.uid = 'CHM' + Date.now();
+                    }
                 } else if (type === 'Stockists' && !record.uid) {
                     const max = await getMaxUID(XlStockist, 'STK');
                     record.uid = 'STK' + (max + 1);
