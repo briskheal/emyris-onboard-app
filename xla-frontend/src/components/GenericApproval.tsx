@@ -16,7 +16,7 @@ const MODULE_CONFIG: Record<string, any> = {
   'Chemists': [
     { label: 'Created By ↑', key: 'employeeName' },
     { label: 'Edited By ↑', key: 'editedBy' },
-    { label: 'Business Name', key: 'name' },
+    { label: 'Business Name', key: 'businessName' },
     { label: 'Proprietor Name', key: 'proprietorName' },
     { label: 'Address', key: 'address' },
     { label: 'HQ', key: 'headquarter' },
@@ -25,7 +25,7 @@ const MODULE_CONFIG: Record<string, any> = {
   'Stockists': [
     { label: 'Created By ↑', key: 'employeeName' },
     { label: 'Edited By ↑', key: 'editedBy' },
-    { label: 'Business Name', key: 'name' },
+    { label: 'Business Name', key: 'businessName' },
     { label: 'Proprietor Name', key: 'proprietorName' },
     { label: 'Address', key: 'address' },
     { label: 'Status', key: 'status' }
@@ -173,7 +173,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
 
   const renderCellValue = (item: any, col: any) => {
     if (col.key === 'details') return JSON.stringify(item).substring(0, 50) + '...';
-    let val = item[col.key] || '-';
+    let val = item[col.key] || (col.key === 'businessName' ? item.name : (col.key === 'name' ? item.businessName : undefined)) || '-';
     if (col.isDate && val !== '-') {
       try {
         val = new Date(val).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');

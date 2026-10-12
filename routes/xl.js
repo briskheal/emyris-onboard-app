@@ -818,8 +818,12 @@ router.put('/chemist/:id/geo', async (req, res) => {
             chemist.lat1 = lat1;
             chemist.lng1 = lng1;
             chemist.geoAddress1 = geoAddress1;
+        } else if (!chemist.lat2) {
+            chemist.lat2 = lat1;
+            chemist.lng2 = lng1;
+            chemist.geoAddress2 = geoAddress1;
         } else {
-            return res.status(400).json({ error: 'Chemist already has a location tagged.' });
+            return res.status(400).json({ error: 'Chemist already has 2 locations tagged.' });
         }
         await chemist.save();
         
@@ -872,10 +876,38 @@ router.put('/stockist/:id/geo', async (req, res) => {
 
 router.post('/chemist', async (req, res) => {
     try {
-        const chemist = await XlChemist.create(req.body);
+        const data = { ...req.body };
+        if (!data.businessName && data.name) data.businessName = data.name;
+        if (!data.name && data.businessName) data.name = data.businessName;
+        if (!data.mobile && data.mobileNumber) data.mobile = data.mobileNumber;
+        if (!data.headquarter && data.hq) data.headquarter = data.hq;
+        if (!data.workingArea && data.route) data.workingArea = data.route;
+        if (!data.extraInformation && data.extraInfo) data.extraInformation = data.extraInfo;
+        if (!data.userAllotted && data.employeeId) data.userAllotted = data.employeeId;
+        if (!data.status) data.status = 'Pending';
+        if (!data.uid) {
+            const max = await getMaxUID(XlChemist, 'CHM');
+            data.uid = 'CHM' + (max + 1);
+        }
+
+        const chemist = await XlChemist.create(data);
+
+        if (chemist.lat1 && chemist.lng1) {
+            await XlGeoFencing.create({
+                employeeId: chemist.userAllotted || chemist.employeeId || 'SYSTEM',
+                entityType: 'Chemist',
+                entityId: chemist._id,
+                latitude: chemist.lat1,
+                longitude: chemist.lng1,
+                geoAddress: chemist.geoAddress1 || '',
+                status: 'Submitted'
+            });
+        }
+
         res.json({ success: true, message: 'Chemist created successfully!', data: chemist });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to create chemist' });
+        console.error('Chemist create error:', e);
+        res.status(500).json({ error: 'Failed to create chemist: ' + e.message });
     }
 });
 
