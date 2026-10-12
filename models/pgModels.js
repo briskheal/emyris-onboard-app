@@ -57,6 +57,7 @@ const OnboardCompany = sequelize.define('onboard_company', {
     targetProductsList: { type: DataTypes.JSON, defaultValue: ["General", "Emystein"] },
     customAssetCategories: { type: DataTypes.JSON, defaultValue: [] },
     detailingScripts: { type: DataTypes.JSON, defaultValue: {} },
+    registrationAccessCode: { type: DataTypes.STRING, defaultValue: 'EMYRIS2026' },
     designations: { 
         type: DataTypes.JSON, 
         defaultValue: [

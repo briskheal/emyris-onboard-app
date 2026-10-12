@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 
 const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
   const [formData, setFormData] = useState({
@@ -11,6 +11,14 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Guard: Must have verified HR Access Code to view registration form
+  useEffect(() => {
+    const code = sessionStorage.getItem('emyris_reg_access_code');
+    if (!code) {
+      onNavigate('landing');
+    }
+  }, [onNavigate]);
 
   // Extract divisions and designations from companyData
   const divisions = companyData?.divisions || [];
@@ -46,6 +54,13 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
       setError("Please fill out all mandatory fields, including Division and Designation.");
       return;
     }
+
+    const accessCode = sessionStorage.getItem('emyris_reg_access_code') || '';
+    if (!accessCode) {
+      setError("Invalid code contact to hradmin@emyrishr.in.");
+      setTimeout(() => onNavigate('landing'), 2000);
+      return;
+    }
     
     setError('');
     setLoading(true);
@@ -60,19 +75,21 @@ const Registration = ({ onNavigate, onRegistrationSuccess, companyData }) => {
           division: formData.division,
           designation: formData.designation,
           email: formData.email.trim().toLowerCase(),
-          phone: formData.phone.trim()
+          phone: formData.phone.trim(),
+          accessCode: accessCode
         })
       });
       const data = await res.json();
       
       if (data.success || data.needsRecovery) {
+        sessionStorage.removeItem('emyris_reg_access_code');
         // Return PIN to App.jsx to show the PIN display
         onRegistrationSuccess(data.pin);
       } else if (data.isReturning) {
         alert(data.message);
         onNavigate('login');
       } else {
-        setError(data.error || 'Registration failed.');
+        setError(data.message || data.error || 'Registration failed.');
       }
     } catch (err) {
       setError('Network error occurred during registration.');

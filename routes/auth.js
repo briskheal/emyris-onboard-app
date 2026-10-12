@@ -27,13 +27,47 @@ router.post('/applicant-login', async (req, res, next) => {
     }
 });
 
+// Verify Registration Access Code
+router.post('/verify-access-code', async (req, res) => {
+    let { code } = req.body;
+    code = (code || '').trim().toUpperCase();
+    if (!code) {
+        return res.status(400).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+    }
+    try {
+        const company = await Company.findOne().lean();
+        const validCode = (company?.registrationAccessCode || process.env.REGISTRATION_ACCESS_CODE || 'EMYRIS2026').trim().toUpperCase();
+        if (code === validCode) {
+            return res.json({ success: true, message: 'Access code verified successfully.' });
+        } else {
+            return res.status(400).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+        }
+    } catch (err) {
+        console.error('Verify Access Code Error:', err);
+        return res.status(500).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+    }
+});
+
 // Alias for React frontend - directly calls same handler as /register-applicant
 router.post('/applicant/register', (req, res) => {
     return handleRegister(req, res);
 });
 
 async function handleRegister(req, res) {
-    let { title, fullName, email, phone, division, designation } = req.body;
+    let { title, fullName, email, phone, division, designation, accessCode } = req.body;
+    accessCode = (accessCode || '').trim().toUpperCase();
+    
+    // Verify Access Code
+    try {
+        const company = await Company.findOne().lean();
+        const validCode = (company?.registrationAccessCode || process.env.REGISTRATION_ACCESS_CODE || 'EMYRIS2026').trim().toUpperCase();
+        if (!accessCode || accessCode !== validCode) {
+            return res.status(400).json({ success: false, message: 'Invalid code contact to hradmin@emyrishr.in.' });
+        }
+    } catch (err) {
+        console.error('Access Code check error:', err);
+    }
+
     email = (email || '').trim().toLowerCase();
     let pin = Math.floor(100000 + Math.random() * 900000).toString();
     try {

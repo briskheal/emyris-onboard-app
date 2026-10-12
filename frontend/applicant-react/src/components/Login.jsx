@@ -7,6 +7,7 @@ const Login = ({ onNavigate, onLoginSuccess }) => {
   const [error, setError] = useState('');
   const [isForgotPin, setIsForgotPin] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [showPin, setShowPin] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -115,14 +116,23 @@ const Login = ({ onNavigate, onLoginSuccess }) => {
                 <label style={{ ...styles.label, marginBottom: 0 }}>Secure PIN</label>
                 <span style={{ fontSize: '0.8rem', color: 'var(--primary)', cursor: 'pointer' }} onClick={() => { setIsForgotPin(true); setError(''); setSuccessMsg(''); }}>Forgot PIN?</span>
               </div>
-              <input 
-                type="password" 
-                required 
-                style={styles.input}
-                placeholder="Enter your 4-6 digit PIN"
-                value={pin}
-                onChange={(e) => setPin(e.target.value)}
-              />
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <input 
+                  type={showPin ? "text" : "password"}
+                  required 
+                  style={{ ...styles.input, width: '100%', paddingRight: '50px' }}
+                  placeholder="Enter your PIN"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                />
+                <button 
+                  type="button" 
+                  onClick={() => setShowPin(!showPin)} 
+                  style={{ position: 'absolute', right: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontWeight: 'bold' }}
+                >
+                  {showPin ? 'Hide' : 'Show'}
+                </button>
+              </div>
             </div>
 
             <button type="submit" style={styles.submitBtn} disabled={loading}>
