@@ -91,7 +91,7 @@ const Login = ({ onNavigate, onLoginSuccess }) => {
               />
             </div>
             <button type="submit" style={styles.submitBtn} disabled={loading}>
-              {loading ? 'Sending...' : 'Send New PIN'}
+              {loading ? 'Sending...' : 'Send Password PIN'}
             </button>
             <p style={{ ...styles.footerText, marginTop: '1rem', cursor: 'pointer', color: 'var(--primary)' }} onClick={() => { setIsForgotPin(false); setError(''); }}>
               Back to Login
@@ -113,15 +113,15 @@ const Login = ({ onNavigate, onLoginSuccess }) => {
 
             <div style={styles.formGroup}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                <label style={{ ...styles.label, marginBottom: 0 }}>Secure PIN</label>
-                <span style={{ fontSize: '0.8rem', color: 'var(--primary)', cursor: 'pointer' }} onClick={() => { setIsForgotPin(true); setError(''); setSuccessMsg(''); }}>Forgot PIN?</span>
+                <label style={{ ...styles.label, marginBottom: 0 }}>Password PIN</label>
+                <span style={{ fontSize: '0.8rem', color: 'var(--primary)', cursor: 'pointer' }} onClick={() => { setIsForgotPin(true); setError(''); setSuccessMsg(''); }}>Forgot Password PIN?</span>
               </div>
               <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                 <input 
                   type={showPin ? "text" : "password"}
                   required 
                   style={{ ...styles.input, width: '100%', paddingRight: '50px' }}
-                  placeholder="Enter your PIN"
+                  placeholder="Enter 6-digit Password PIN"
                   value={pin}
                   onChange={(e) => setPin(e.target.value)}
                 />

@@ -52,7 +52,7 @@ const App = ({ initialApplicant, initialView = 'landing' }) => {
   };
 
   const handleRegistrationSuccess = (pin) => {
-    alert(`Registration Successful!\n\nYour Secure PIN is: ${pin}\n\nPlease save this PIN to login later.`);
+    alert(`Registration Successful!\n\nYour Login Password PIN is: ${pin}\n\nPlease save this Password PIN to login later.`);
     setCurrentView('login');
   };
 

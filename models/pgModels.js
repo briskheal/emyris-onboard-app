@@ -118,7 +118,8 @@ const OnboardApplicant = sequelize.define('onboard_applicant', {
     salary: DataTypes.STRING,
     dob: DataTypes.STRING,
     address: DataTypes.TEXT,
-    pin: DataTypes.STRING,
+    pin: DataTypes.STRING, // legacy field, kept for backward compatibility
+    pincode: DataTypes.STRING, // Address Postal Pincode
     state: DataTypes.STRING,
     empCode: DataTypes.STRING,
     refNo: DataTypes.STRING,

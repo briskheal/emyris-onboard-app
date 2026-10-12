@@ -583,7 +583,8 @@ router.get('/applicant-pin/:email', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email: req.params.email }).select('fullName email password status');
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
-        res.json({ name: applicant.fullName, email: applicant.email, pin: applicant.password, status: applicant.status });
+        const validPin = (applicant.password && applicant.password.length === 6 ? applicant.password : null) || applicant.pin;
+        res.json({ name: applicant.fullName, email: applicant.email, pin: validPin, passwordPin: validPin, status: applicant.status });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 

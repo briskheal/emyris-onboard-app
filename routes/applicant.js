@@ -165,13 +165,21 @@ router.post('/login', async (req, res) => {
         
         // 2. Manual match to avoid regex/index quirks
         const applicant = applicants.find(a => {
-            const dbPin = String(a.password || a.pin || "").trim();
-            return a.email && a.email.toLowerCase().trim() === email && dbPin === password;
+            const dbPass = String(a.password || "").trim();
+            const dbLegacyPin = String(a.pin || "").trim();
+            const isEmailMatch = a.email && a.email.toLowerCase().trim() === email;
+            return isEmailMatch && (dbPass === password || dbLegacyPin === password);
         });
 
         if (!applicant) {
             console.log(`❌ [LOGIN FAIL] ${email} / ${password}`);
-            return res.status(401).json({ success: false, message: 'Invalid Email or PIN.' });
+            return res.status(401).json({ success: false, message: 'Invalid Email or Password PIN.' });
+        }
+
+        // Auto-heal: ensure applicant.password is set to the valid 6-digit Password PIN
+        if (applicant.password !== password) {
+            await Applicant.findOneAndUpdate({ email: applicant.email }, { password });
+            applicant.password = password;
         }
 
         console.log(`✅ [LOGIN SUCCESS] Email: ${email}`);
@@ -1130,6 +1138,7 @@ router.post('/save-draft', async (req, res) => {
             actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
             dob: formData.dob, // Store as string DD-MM-YYYY
             address: formData.address || "",
+            pincode: formData.pincode || formData.pin || "",
             state: formData.state || "",
             salary: formData.salary || "",
             maritalStatus: formData.maritalStatus || "",
@@ -1251,7 +1260,8 @@ router.get('/applicant-pin/:email', async (req, res) => {
     try {
         const applicant = await Applicant.findOne({ email: req.params.email }).select('fullName email password status');
         if (!applicant) return res.status(404).json({ error: 'Applicant not found' });
-        res.json({ name: applicant.fullName, email: applicant.email, pin: applicant.password, status: applicant.status });
+        const validPin = (applicant.password && applicant.password.length === 6 ? applicant.password : null) || applicant.pin;
+        res.json({ name: applicant.fullName, email: applicant.email, pin: validPin, passwordPin: validPin, status: applicant.status });
     } catch (e) { res.status(500).json({ error: 'Failed' }); }
 });
 
@@ -1793,6 +1803,7 @@ router.post('/submit-onboarding', async (req, res) => {
                 actualJoiningDate: formData.joiningDate, 
                 dob: formData.dob, 
                 address: formData.address || "",
+                pincode: formData.pincode || formData.pin || "",
                 state: formData.state || "",
                 salary: formData.salary || "",
                 maritalStatus: formData.maritalStatus || "Unmarried",

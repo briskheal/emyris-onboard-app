@@ -7,18 +7,33 @@ const { syncActiveExamForApplicant } = require('../utils/examSync');
 
 // Login Endpoint
 router.post('/applicant-login', async (req, res, next) => {
-    let { email, pin } = req.body;
+    let { email, pin, password } = req.body;
     email = (email || '').trim().toLowerCase();
-    pin = (pin || '').trim();
+    const passwordPin = (password || pin || '').trim();
 
     try {
-        let applicant = await Applicant.findOne({ email, password: pin });
+        let applicant = await Applicant.findOne({ email });
         if (!applicant) {
-            return res.json({ success: false, message: 'Invalid credentials. If you lost your PIN, register again with the same email to receive a new one.' });
+            return res.json({ success: false, message: 'Invalid credentials. If you lost your Password PIN, please use Forgot PIN.' });
         }
+
+        const isMatch = (applicant.password && applicant.password.trim() === passwordPin) ||
+                        (applicant.pin && applicant.pin.trim() === passwordPin);
+
+        if (!isMatch) {
+            return res.json({ success: false, message: 'Invalid credentials. If you lost your Password PIN, please use Forgot PIN.' });
+        }
+
         if (!applicant.canLogin) {
             return res.json({ success: false, message: 'Your application is blocked or under review.' });
         }
+
+        // Auto-heal: Ensure applicant.password is properly set to their 6-digit Password PIN
+        if (applicant.password !== passwordPin) {
+            await Applicant.findOneAndUpdate({ email }, { password: passwordPin });
+            applicant.password = passwordPin;
+        }
+
         applicant = await syncActiveExamForApplicant(applicant);
         return res.json({ success: true, applicant });
     } catch (err) {
@@ -87,11 +102,11 @@ async function handleRegister(req, res) {
     }
 
     email = (email || '').trim().toLowerCase();
-    let pin = Math.floor(100000 + Math.random() * 900000).toString();
+    let passwordPin = Math.floor(100000 + Math.random() * 900000).toString();
     try {
         const existingEmail = await Applicant.findOne({ email });
         if (existingEmail) {
-            return res.json({ success: false, isReturning: true, message: 'Welcome back! This email is already registered. Please log in to continue your journey.' });
+            return res.json({ success: false, isReturning: true, message: 'Welcome back! This email is already registered. Please log in with your Password PIN to continue your journey.' });
         }
         const existingPhone = await Applicant.findOne({ phone });
         if (existingPhone) {
@@ -99,8 +114,9 @@ async function handleRegister(req, res) {
         }
 
         const newApplicant = await Applicant.create({
-            email, title, fullName, phone, division, designation, pin,
-            password: Math.random().toString(36).slice(-8),
+            email, title, fullName, phone, division, designation,
+            password: passwordPin, // Password PIN strictly stored in password column
+            pin: passwordPin,      // legacy backward compatibility
             status: 'draft',
             canLogin: true,
             formData: {
@@ -116,9 +132,9 @@ async function handleRegister(req, res) {
                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;"><strong>Login Portal:</strong> <a href="${process.env.BASE_URL || 'https://emyrishr.in'}">${process.env.BASE_URL || 'https://emyrishr.in'}</a></p>
                     <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>Your Email:</strong> ${email}</p>
-                    <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>Your PIN:</strong> <span style="font-size: 20px; font-weight: bold; color: #e74c3c;">${pin}</span></p>
+                    <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>Your Password PIN:</strong> <span style="font-size: 20px; font-weight: bold; color: #e74c3c;">${passwordPin}</span></p>
                 </div>
-                <p>Please keep this PIN secure. You will need it to log in and check your application status.</p>
+                <p>Please keep this Password PIN secure. You will need it to log in and check your application status.</p>
                 <br/>
                 <p>Best regards,<br/><strong>HR Department</strong><br/>Emyris Biolifesciences</p>
             </div>
@@ -131,7 +147,7 @@ async function handleRegister(req, res) {
         });
 
         const syncedApplicant = await syncActiveExamForApplicant(newApplicant);
-        res.json({ success: true, applicant: syncedApplicant, pin: pin });
+        res.json({ success: true, applicant: syncedApplicant, pin: passwordPin });
     } catch (err) {
         console.error('Registration error:', err);
         res.json({ success: false, message: 'Failed to register applicant. Ensure database is connected.' });
@@ -152,20 +168,20 @@ router.post('/resend-pin', async (req, res) => {
             return res.json({ success: false, message: "Account doesn't exist - Apply in New Applicant Link" });
         }
         
-        const pin = applicant.pin || Math.floor(100000 + Math.random() * 900000).toString();
+        const passwordPin = (applicant.password && applicant.password.length === 6 ? applicant.password : null) || 
+                            (applicant.pin && applicant.pin.length === 6 ? applicant.pin : null) || 
+                            Math.floor(100000 + Math.random() * 900000).toString();
         
-        if (!applicant.pin) {
-            await Applicant.findByIdAndUpdate(applicant._id, { pin });
-        }
+        await Applicant.findOneAndUpdate({ email }, { password: passwordPin });
 
         const emailHtml = `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
-                <h2 style="color: #2c3e50;">Your Login PIN</h2>
+                <h2 style="color: #2c3e50;">Your Login Password PIN</h2>
                 <p>Dear ${applicant.title} ${applicant.fullName},</p>
                 <p>As requested, here are your login details for the Applicant Portal:</p>
                 <div style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0;">
                     <p style="margin: 0; font-size: 16px;"><strong>Your Email:</strong> ${email}</p>
-                    <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>Your PIN:</strong> <span style="font-size: 20px; font-weight: bold; color: #e74c3c;">${pin}</span></p>
+                    <p style="margin: 10px 0 0 0; font-size: 16px;"><strong>Your Password PIN:</strong> <span style="font-size: 20px; font-weight: bold; color: #e74c3c;">${passwordPin}</span></p>
                 </div>
                 <p>Best regards,<br/><strong>HR Department</strong><br/>Emyris Biolifesciences</p>
             </div>
@@ -173,11 +189,11 @@ router.post('/resend-pin', async (req, res) => {
 
         await sendEmail({
             to: email,
-            subject: 'Your Login PIN - Emyris Biolifesciences',
+            subject: 'Your Login Password PIN - Emyris Biolifesciences',
             html: emailHtml
         });
 
-        res.json({ success: true, message: 'PIN has been sent to your email.' });
+        res.json({ success: true, message: 'Password PIN has been sent to your email.' });
     } catch (err) {
         console.error('Resend PIN error:', err);
         res.json({ success: false, message: 'System error. Please try again later.' });

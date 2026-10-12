@@ -114,6 +114,7 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricTestCompleted" BOOLEAN DEFAULT false;',
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "psychometricScores" TEXT;',
             'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "mindsetReport" TEXT;',
+            'ALTER TABLE onboard_applicants ADD COLUMN IF NOT EXISTS "pincode" VARCHAR(255);',
             'ALTER TABLE xl_geo_fencings ADD COLUMN IF NOT EXISTS "geoAddress" VARCHAR(255);',
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lat1" DOUBLE PRECISION;',
             'ALTER TABLE xl_doctors ADD COLUMN IF NOT EXISTS "lng1" DOUBLE PRECISION;',
@@ -143,6 +144,7 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricTestCompleted BOOLEAN DEFAULT 0;',
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricScores TEXT;',
             'ALTER TABLE onboard_applicants ADD COLUMN mindsetReport TEXT;',
+            'ALTER TABLE onboard_applicants ADD COLUMN pincode VARCHAR(255);',
             'ALTER TABLE xl_geo_fencings ADD COLUMN geoAddress VARCHAR(255);',
             'ALTER TABLE xl_doctors ADD COLUMN lat1 DOUBLE;',
             'ALTER TABLE xl_doctors ADD COLUMN lng1 DOUBLE;',
@@ -261,6 +263,31 @@ await XlTarget.sync({ alter: true });
             }
             if (healedCount > 0) console.log(`🔧 Auto-healed ${healedCount} legacy 20% psychometric records.`);
         } catch (healErr) { console.error('Failed to auto-heal records:', healErr.message); }
+        // ----------------------------------------------------
+
+        // ---- AUTO HEAL APPLICANT PASSWORD PIN VS ADDRESS PINCODE ----
+        try {
+            const apps = await Applicant.find();
+            let passHealedCount = 0;
+            for (const app of apps) {
+                const updates = {};
+                // If password is not a 6-digit number but pin IS a 6-digit number, heal password
+                if ((!app.password || app.password.length !== 6 || !/^\d{6}$/.test(app.password)) && 
+                    app.pin && /^\d{6}$/.test(app.pin)) {
+                    updates.password = app.pin;
+                }
+                // Separate address pincode: read from formData.pin or fallback to app.pin if it's an area pin
+                const areaPincode = (app.formData && (app.formData.pincode || app.formData.pin)) || null;
+                if (areaPincode && !app.pincode) {
+                    updates.pincode = areaPincode;
+                }
+                if (Object.keys(updates).length > 0) {
+                    await Applicant.updateOne({ _id: app._id }, { $set: updates });
+                    passHealedCount++;
+                }
+            }
+            if (passHealedCount > 0) console.log(`🔧 Auto-healed ${passHealedCount} applicant Password PIN & Address Pincode records.`);
+        } catch (passHealErr) { console.error('Failed to auto-heal Password PINs:', passHealErr.message); }
         // ----------------------------------------------------
 
         // Seed Default Company only if missing. Never overwrite existing targetProductsList if admin deleted/edited items.

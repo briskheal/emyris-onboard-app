@@ -32,7 +32,7 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
 
     const handlePinChange = async (e) => {
         const pinVal = e.target.value;
-        setFormData(prev => ({ ...prev, pin: pinVal }));
+        setFormData(prev => ({ ...prev, pin: pinVal, pincode: pinVal }));
         if (pinVal.length === 6 && /^\d{6}$/.test(pinVal)) {
             setFetchingPin(true);
             try {
@@ -43,6 +43,7 @@ const OnboardingForm = ({ applicant, companyData, onComplete }) => {
                     setFormData(prev => ({
                         ...prev,
                         pin: pinVal,
+                        pincode: pinVal,
                         city: prev.city || details.District || details.Name || '',
                         state: details.State || prev.state || ''
                     }));
