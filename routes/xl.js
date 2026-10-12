@@ -2848,9 +2848,38 @@ router.post('/call-plan/bulk', async (req, res) => {
 
 router.get('/hq', async (req, res) => {
     try {
+        const { designation, hq } = req.query;
+        if (hq) {
+            let allowedHqs = [hq.trim()];
+            if (designation && designation !== 'ADMIN') {
+                const subHQs = await getSubordinateHQs(designation, hq);
+                allowedHqs = [...new Set([...allowedHqs, ...subHQs])];
+            } else if (designation === 'ADMIN') {
+                const hqs = await XlHQ.findAll({ order: [['hqName', 'ASC']] });
+                return res.json({ success: true, data: hqs });
+            }
+
+            const { sequelize } = require('../db');
+            const { Op } = require('sequelize');
+            const lowerHqs = allowedHqs.map(h => h.toLowerCase());
+            const dbHqs = await XlHQ.findAll({
+                where: sequelize.where(sequelize.fn('lower', sequelize.col('hqName')), { [Op.in]: lowerHqs }),
+                order: [['hqName', 'ASC']]
+            });
+
+            const resultList = [...dbHqs];
+            for (const h of allowedHqs) {
+                if (!resultList.some(item => (item.hqName || '').toLowerCase() === h.toLowerCase())) {
+                    resultList.push({ hqName: h.toUpperCase() });
+                }
+            }
+            resultList.sort((a, b) => (a.hqName || '').localeCompare(b.hqName || ''));
+            return res.json({ success: true, data: resultList });
+        }
         const hqs = await XlHQ.findAll({ order: [['hqName', 'ASC']] });
         res.json({ success: true, data: hqs });
     } catch(e) {
+        console.error('Error fetching hq:', e);
         res.status(500).json({ success: false });
     }
 });

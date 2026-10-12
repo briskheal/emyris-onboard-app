@@ -230,24 +230,38 @@ export default function ChemistForm() {
   const [newControlName, setNewControlName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
-  // Fetch HQs on mount
+  // Fetch HQs on mount - strictly login user HQ and subordinate reporting HQs
   useEffect(() => {
     const fetchHQs = async () => {
       try {
-        const res = await axios.get('/api/xl/hq');
+        const userHq = (user.hq || '').trim();
+        const designation = (user.designation || '').trim();
+        const url = userHq
+          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}`
+          : '/api/xl/hq';
+
+        const res = await axios.get(url);
         if (res.data.success && Array.isArray(res.data.data)) {
-          const names = res.data.data.map((h: any) => h.hqName || h.name).filter(Boolean);
+          let names = res.data.data.map((h: any) => h.hqName || h.name).filter(Boolean);
+          if (userHq && !names.some((n: string) => n.toLowerCase() === userHq.toLowerCase())) {
+            names.unshift(userHq);
+          }
           const uniqueHqs = Array.from(new Set(names)) as string[];
           uniqueHqs.sort();
           setHqList(uniqueHqs);
 
-          // If user has a default HQ and it's not set in form yet
-          if (!form.hq && user.hq) {
-            setForm(prev => ({ ...prev, hq: user.hq }));
-          }
+          // Set default selected HQ
+          setForm(prev => ({ ...prev, hq: prev.hq || userHq || uniqueHqs[0] || '' }));
+        } else if (userHq) {
+          setHqList([userHq]);
+          setForm(prev => ({ ...prev, hq: userHq }));
         }
       } catch (e) {
         console.error('Failed to fetch HQs', e);
+        if (user.hq) {
+          setHqList([user.hq]);
+          setForm(prev => ({ ...prev, hq: user.hq }));
+        }
       }
     };
     fetchHQs();
