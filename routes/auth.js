@@ -27,47 +27,34 @@ router.post('/applicant-login', async (req, res, next) => {
     }
 });
 
-// Helper to get all allowed access codes from .env or DB
-function getAllowedAccessCodes(company) {
-    const envCodes = (process.env.REGISTRATION_ACCESS_CODE || '')
-        .split(',')
-        .map(c => c.trim().toUpperCase())
-        .filter(Boolean);
-    
-    if (envCodes.length > 0) {
-        return envCodes;
-    }
-    const dbCode = (company?.registrationAccessCode || '').trim().toUpperCase();
-    if (dbCode) {
-        return [dbCode];
+// Helper to get all allowed access codes from .env (with fallback)
+function getAllowedAccessCodes() {
+    const raw = (process.env.REGISTRATION_ACCESS_CODE || '').replace(/['"]/g, '').trim();
+    if (raw) {
+        const envCodes = raw.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+        if (envCodes.length > 0) return envCodes;
     }
     return ['EMYRIS2026'];
 }
 
 function getAccessCodeErrorMessage() {
-    const email = (process.env.REGISTRATION_SUPPORT_EMAIL || 'hradmin@emyrishr.in').trim();
+    const email = (process.env.REGISTRATION_SUPPORT_EMAIL || 'hradmin@emyrishr.in').replace(/['"]/g, '').trim();
     return `Invalid code contact to ${email}.`;
 }
 
 // Verify Registration Access Code
-router.post('/verify-access-code', async (req, res) => {
+router.post('/verify-access-code', (req, res) => {
     let { code } = req.body;
     code = (code || '').trim().toUpperCase();
     const errMsg = getAccessCodeErrorMessage();
     if (!code) {
         return res.status(400).json({ success: false, message: errMsg });
     }
-    try {
-        const company = await Company.findOne().lean();
-        const allowedCodes = getAllowedAccessCodes(company);
-        if (allowedCodes.includes(code)) {
-            return res.json({ success: true, message: 'Access code verified successfully.' });
-        } else {
-            return res.status(400).json({ success: false, message: errMsg });
-        }
-    } catch (err) {
-        console.error('Verify Access Code Error:', err);
-        return res.status(500).json({ success: false, message: errMsg });
+    const allowedCodes = getAllowedAccessCodes();
+    if (allowedCodes.includes(code)) {
+        return res.json({ success: true, message: 'Access code verified successfully.' });
+    } else {
+        return res.status(400).json({ success: false, message: errMsg });
     }
 });
 
@@ -82,14 +69,9 @@ async function handleRegister(req, res) {
     const errMsg = getAccessCodeErrorMessage();
     
     // Verify Access Code
-    try {
-        const company = await Company.findOne().lean();
-        const allowedCodes = getAllowedAccessCodes(company);
-        if (!accessCode || !allowedCodes.includes(accessCode)) {
-            return res.status(400).json({ success: false, message: errMsg });
-        }
-    } catch (err) {
-        console.error('Access Code check error:', err);
+    const allowedCodes = getAllowedAccessCodes();
+    if (!accessCode || !allowedCodes.includes(accessCode)) {
+        return res.status(400).json({ success: false, message: errMsg });
     }
 
     email = (email || '').trim().toLowerCase();
