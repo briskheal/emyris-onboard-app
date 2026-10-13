@@ -618,14 +618,27 @@ function RouteTab() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!distance) return alert('Enter distance');
+    const finalDist = (areaType === 'Local' || areaType === 'Out-Station') ? 0 : Number(distance);
+    if (areaType === 'Ex-Station' && (!finalDist || finalDist <= 0)) {
+      return alert('Enter a valid distance for Ex-Station route');
+    }
     setLoading(true);
     try {
-      const res = await axios.post('/api/admin/locations/routes', { state: stateName, hq: hqName, fromCity, toCity, distance, areaType });
+      const res = await axios.post('/api/admin/locations/routes', { 
+        state: stateName, 
+        hq: hqName, 
+        fromCity, 
+        toCity, 
+        distance: finalDist, 
+        areaType 
+      });
       if (res.data.success) {
         setFromCity(''); setToCity(''); setDistance(''); setAreaType(''); fetchData();
       } else alert(res.data.message);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+    } catch (e: any) { 
+      console.error(e); 
+      alert(e.response?.data?.message || 'Failed to add route');
+    } finally { setLoading(false); }
   };
 
   const startEdit = (r: any) => {
@@ -697,14 +710,29 @@ function RouteTab() {
         </div>
         <div className="flex-1 min-w-0 min-w-[200px]">
           <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT AREA TYPE *</label>
-          <select required value={areaType} onChange={e => setAreaType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
+          <select required value={areaType} onChange={e => {
+            const val = e.target.value;
+            setAreaType(val);
+            if (val === 'Local' || val === 'Out-Station') setDistance(0);
+          }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
             <option value="">Select Area Type</option>
-            <option value="Local">Local</option><option value="Ex-Station">Ex-Station</option><option value="Out-Station">Out-Station</option>
+            <option value="Local">Local (0 KM)</option>
+            <option value="Ex-Station">Ex-Station</option>
+            <option value="Out-Station">Out-Station (0 KM - Ticket Fare)</option>
           </select>
         </div>
         <div className="w-48">
-          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">ENTER DISTANCE (ONE SIDE) *</label>
-          <input type="number" required value={distance} onChange={e => setDistance(Number(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" />
+          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">
+            {areaType === 'Local' ? 'DISTANCE (LOCAL: 0)' : areaType === 'Out-Station' ? 'DISTANCE (TICKET: 0)' : 'DISTANCE (KM) *'}
+          </label>
+          <input 
+            type="number" 
+            required={areaType === 'Ex-Station'} 
+            disabled={areaType === 'Local' || areaType === 'Out-Station'}
+            value={areaType === 'Local' || areaType === 'Out-Station' ? 0 : distance} 
+            onChange={e => setDistance(Number(e.target.value))} 
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500 disabled:opacity-60" 
+          />
         </div>
         <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
           {loading ? 'Adding...' : 'Add Route'}

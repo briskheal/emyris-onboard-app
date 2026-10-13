@@ -1118,12 +1118,273 @@ router.post('/city', async (req, res) => {
     }
 });
 
+// Check if route exists case-insensitively
+router.get('/route/check-duplicate', async (req, res) => {
+    try {
+        const { hq, fromCity, toCity } = req.query;
+        if (!hq || !fromCity || !toCity) {
+            return res.json({ success: true, exists: false });
+        }
+        const { sequelize } = require('../db');
+        const existing = await XlRoute.findOne({
+            where: {
+                [Op.and]: [
+                    sequelize.where(sequelize.fn('lower', sequelize.col('hq')), hq.trim().toLowerCase()),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('fromCity')), fromCity.trim().toLowerCase()),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('toCity')), toCity.trim().toLowerCase())
+                ]
+            }
+        });
+        return res.json({
+            success: true,
+            exists: !!existing,
+            message: existing ? `Route from ${fromCity} to ${toCity} already exists for ${hq}!` : ''
+        });
+    } catch (e) {
+        console.error('Check duplicate route error:', e);
+        res.status(500).json({ success: false, error: 'Failed to check route duplicate' });
+    }
+});
+
+// Auto-calculate road distance between markets
+router.get('/route/distance', async (req, res) => {
+    try {
+        const { fromCity, toCity, state } = req.query;
+        if (!fromCity || !toCity) {
+            return res.status(400).json({ success: false, message: 'fromCity and toCity required' });
+        }
+        
+        // 1. Check if an existing route has this distance already in DB
+        const { sequelize } = require('../db');
+        const knownRoute = await XlRoute.findOne({
+            where: {
+                [Op.or]: [
+                    {
+                        [Op.and]: [
+                            sequelize.where(sequelize.fn('lower', sequelize.col('fromCity')), fromCity.trim().toLowerCase()),
+                            sequelize.where(sequelize.fn('lower', sequelize.col('toCity')), toCity.trim().toLowerCase())
+                        ]
+                    },
+                    {
+                        [Op.and]: [
+                            sequelize.where(sequelize.fn('lower', sequelize.col('fromCity')), toCity.trim().toLowerCase()),
+                            sequelize.where(sequelize.fn('lower', sequelize.col('toCity')), fromCity.trim().toLowerCase())
+                        ]
+                    }
+                ],
+                distance: { [Op.gt]: 0 }
+            }
+        });
+        
+        if (knownRoute && knownRoute.distance > 0) {
+            return res.json({ success: true, distance: knownRoute.distance, source: 'database' });
+        }
+
+        // 2. City coordinates table for instant high-speed accurate calculation across key regions
+        const cityCoords = {
+            'ahmedabad': [23.0225, 72.5714],
+            'gandhinagar': [23.2156, 72.6369],
+            'vadodara': [22.3072, 73.1812],
+            'anand': [22.5645, 72.9289],
+            'nadiad': [22.6916, 72.8634],
+            'surat': [21.1702, 72.8311],
+            'bharuch': [21.7051, 72.9959],
+            'ankleshwar': [21.6264, 73.0152],
+            'navsari': [20.9467, 72.9520],
+            'valsad': [20.5992, 72.9342],
+            'vapi': [20.3893, 72.9106],
+            'rajkot': [22.3039, 70.8022],
+            'morbi': [22.8173, 70.8370],
+            'jamnagar': [22.4707, 70.0577],
+            'bhavnagar': [21.7645, 72.1519],
+            'junagadh': [21.5222, 70.4579],
+            'porbandar': [21.6417, 69.6293],
+            'mehsana': [23.5880, 72.3693],
+            'palanpur': [24.1724, 72.4346],
+            'himatnagar': [23.5977, 72.9698],
+            'bhuj': [23.2420, 69.6669],
+            'gandhidham': [23.0753, 70.1337],
+            'bhubaneswar': [20.2961, 85.8245],
+            'cuttack': [20.4625, 85.8830],
+            'puri': [19.8135, 85.8312],
+            'berhampur': [19.3149, 84.7941],
+            'rourkela': [22.2604, 84.8536],
+            'sambalpur': [21.4669, 83.9812],
+            'balasore': [21.4934, 86.9135],
+            'mumbai': [19.0760, 72.8777],
+            'thane': [19.2183, 72.9781],
+            'navi mumbai': [19.0330, 73.0297],
+            'pune': [18.5204, 73.8567],
+            'nashik': [19.9975, 73.7898],
+            'nagpur': [21.1458, 79.0882],
+            'aurangabad': [19.8762, 75.3433],
+            'chhatrapati sambhajinagar': [19.8762, 75.3433],
+            'kolhapur': [16.7050, 74.2433],
+            'solapur': [17.6599, 75.9064],
+            'delhi': [28.6139, 77.2090],
+            'noida': [28.5355, 77.3910],
+            'gurugram': [28.4595, 77.0266],
+            'faridabad': [28.4089, 77.3178],
+            'jaipur': [26.9124, 75.7873],
+            'jodhpur': [26.2389, 73.0243],
+            'udaipur': [24.5854, 73.7125],
+            'kota': [25.2138, 75.8648],
+            'bhopal': [23.2599, 77.4126],
+            'indore': [22.7196, 75.8577],
+            'gwalior': [26.2183, 78.1828],
+            'jabalpur': [23.1815, 79.9864],
+            'raipur': [21.2514, 81.6296],
+            'bilaspur': [22.0797, 82.1409],
+            'durg': [21.1904, 81.2849],
+            'bhilai': [21.1938, 81.3509],
+            'hyderabad': [17.3850, 78.4867],
+            'secunderabad': [17.4399, 78.4983],
+            'bengaluru': [12.9716, 77.5946],
+            'bangalore': [12.9716, 77.5946],
+            'chennai': [13.0827, 80.2707],
+            'kolkata': [22.5726, 88.3639],
+            'patna': [25.5941, 85.1376],
+            'lucknow': [26.8467, 80.9462],
+            'kanpur': [26.4499, 80.3319],
+            'varanasi': [25.3176, 82.9739]
+        };
+
+        const cleanFrom = fromCity.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+        const cleanTo = toCity.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+
+        const findCoord = (name) => {
+            if (cityCoords[name]) return cityCoords[name];
+            for (const key of Object.keys(cityCoords)) {
+                if (name.includes(key) || key.includes(name)) return cityCoords[key];
+            }
+            return null;
+        };
+
+        const c1 = findCoord(cleanFrom);
+        const c2 = findCoord(cleanTo);
+
+        if (c1 && c2) {
+            const R = 6371; // km
+            const dLat = (c2[0] - c1[0]) * Math.PI / 180;
+            const dLon = (c2[1] - c1[1]) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(c1[0] * Math.PI / 180) * Math.cos(c2[0] * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const straightDistance = R * c;
+            const roadKm = Math.round(straightDistance * 1.28);
+            return res.json({ success: true, distance: Math.max(5, roadKm), source: 'calculated' });
+        }
+
+        // 3. Fallback: query OSRM or OpenStreetMap nominatim with a short timeout
+        try {
+            const axios = require('axios');
+            const geo1 = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fromCity + (state ? ' ' + state : ''))}&countrycodes=in&limit=1`, { timeout: 3000, headers: { 'User-Agent': 'EmyrisCRM/1.0' } });
+            const geo2 = await axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(toCity + (state ? ' ' + state : ''))}&countrycodes=in&limit=1`, { timeout: 3000, headers: { 'User-Agent': 'EmyrisCRM/1.0' } });
+            
+            if (geo1.data?.length && geo2.data?.length) {
+                const lat1 = parseFloat(geo1.data[0].lat);
+                const lon1 = parseFloat(geo1.data[0].lon);
+                const lat2 = parseFloat(geo2.data[0].lat);
+                const lon2 = parseFloat(geo2.data[0].lon);
+
+                const osrm = await axios.get(`https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`, { timeout: 3000 });
+                if (osrm.data?.routes?.length) {
+                    const distMeters = osrm.data.routes[0].distance;
+                    const distKm = Math.round(distMeters / 1000);
+                    return res.json({ success: true, distance: distKm, source: 'google_map_osrm' });
+                }
+
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                          Math.sin(dLon/2) * Math.sin(dLon/2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+                const roadKm = Math.round(R * c * 1.28);
+                return res.json({ success: true, distance: Math.max(5, roadKm), source: 'calculated_nominatim' });
+            }
+        } catch (apiErr) {
+            // Silently fallback if network request times out
+        }
+
+        return res.json({ success: true, distance: 40, source: 'default_estimate' });
+    } catch (e) {
+        console.error('Distance calc error:', e);
+        return res.json({ success: true, distance: 40, source: 'fallback' });
+    }
+});
+
 router.post('/route', async (req, res) => {
     try {
-        const route = await XlRoute.create(req.body);
+        let { state, hq, fromCity, toCity, areaType, distance, employeeId, employeeName } = req.body;
+        
+        state = (state || '').trim();
+        hq = (hq || '').toUpperCase().trim();
+        fromCity = (fromCity || '').trim();
+        toCity = (toCity || '').trim();
+        areaType = (areaType || '').trim();
+
+        if (!state || !hq || !fromCity || !toCity || !areaType) {
+            return res.status(400).json({ success: false, message: 'State, HQ, From City, To City, and Area Type are required.' });
+        }
+
+        // Distance rules:
+        // Local: 0 KM
+        // Out-Station: 0 KM (Actual ticket fare reimbursed)
+        // Ex-Station: Captured / edited KM
+        if (areaType === 'Local' || areaType === 'Out-Station') {
+            distance = 0;
+        } else {
+            distance = parseFloat(distance) || 0;
+        }
+
+        // Case-insensitive duplicate check for fromCity -> toCity under the same HQ
+        const { sequelize } = require('../db');
+        const existing = await XlRoute.findOne({
+            where: {
+                [Op.and]: [
+                    sequelize.where(sequelize.fn('lower', sequelize.col('hq')), hq.toLowerCase()),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('fromCity')), fromCity.toLowerCase()),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('toCity')), toCity.toLowerCase())
+                ]
+            }
+        });
+
+        if (existing) {
+            return res.status(400).json({
+                success: false,
+                message: `Route from "${fromCity}" to "${toCity}" already exists for ${hq}!`
+            });
+        }
+
+        let uid = req.body.uid;
+        if (!uid) {
+            try {
+                const max = await getMaxUID(XlRoute, 'RTE');
+                uid = 'RTE' + (max + 1);
+            } catch (err) {
+                uid = 'RTE' + Date.now();
+            }
+        }
+
+        const route = await XlRoute.create({
+            state,
+            hq,
+            fromCity,
+            toCity,
+            areaType,
+            distance,
+            uid,
+            employeeId: employeeId || req.body.userAllotted || '',
+            status: 'Active'
+        });
+
         res.json({ success: true, message: 'Route created successfully!', data: route });
     } catch (e) {
-        res.status(500).json({ error: 'Failed to create route' });
+        console.error('Create route error:', e);
+        res.status(500).json({ success: false, error: 'Failed to create route: ' + e.message, message: e.message });
     }
 });
 

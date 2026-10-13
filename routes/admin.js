@@ -4666,14 +4666,44 @@ router.get('/locations/routes', async (req, res) => {
 
 router.post('/locations/routes', async (req, res) => {
     try {
-        const { state, hq, fromCity, toCity, areaType, distance } = req.body;
+        let { state, hq, fromCity, toCity, areaType, distance } = req.body;
+        state = (state || '').trim();
+        hq = (hq || '').toUpperCase().trim();
+        fromCity = (fromCity || '').trim();
+        toCity = (toCity || '').trim();
+        areaType = (areaType || '').trim();
+
+        if (areaType === 'Local' || areaType === 'Out-Station') {
+            distance = 0;
+        } else {
+            distance = parseFloat(distance) || 0;
+        }
+
+        const { sequelize } = require('../db');
+        const existing = await XlRoute.findOne({
+            where: {
+                [Op.and]: [
+                    sequelize.where(sequelize.fn('lower', sequelize.col('hq')), hq.toLowerCase()),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('fromCity')), fromCity.toLowerCase()),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('toCity')), toCity.toLowerCase())
+                ]
+            }
+        });
+
+        if (existing) {
+            return res.status(400).json({
+                success: false,
+                message: `Route from "${fromCity}" to "${toCity}" already exists for ${hq}!`
+            });
+        }
+
         const max = await getMaxUID(XlRoute, 'RTE');
         const uid = 'RTE' + (max + 1);
         const newRoute = await XlRoute.create({ state, hq, fromCity, toCity, areaType, distance, uid });
         res.json({ success: true, route: newRoute });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ success: false, message: 'Failed to create route' });
+        res.status(500).json({ success: false, message: 'Failed to create route: ' + e.message });
     }
 });
 
