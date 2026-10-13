@@ -1,7 +1,10 @@
 import * as XLSX from 'xlsx';
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, ArrowUp, Download, MapPinOff } from 'lucide-react';
+import { 
+  Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, ArrowUp, Download, MapPinOff,
+  Stethoscope, Pill, Building2, UserCog, UploadCloud, ListChecks, PanelLeftClose, PanelLeftOpen
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fetchData, onEdit }: any) => {
@@ -271,9 +274,19 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
 
 export default function ManageDCS() {
   const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'create_doctor' | 'create_chemist' | 'create_stockist' | 'edit_delete' | 'upload_dcs' | 'dcs_list_management'>('create_doctor');
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [editingType, setEditingType] = useState<string>('');
+
+  const menuItems = [
+    { id: 'create_doctor', label: 'Create Doctors', icon: Stethoscope },
+    { id: 'create_chemist', label: 'Create Chemists', icon: Pill },
+    { id: 'create_stockist', label: 'Create Stockists', icon: Building2 },
+    { id: 'edit_delete', label: 'Edit / Delete', icon: UserCog },
+    { id: 'upload_dcs', label: 'Upload DCS City / Area', icon: UploadCloud },
+    { id: 'dcs_list_management', label: 'DCS List Management', icon: ListChecks },
+  ] as const;
   
   // Data
   const [doctors, setDoctors] = useState<any[]>([]);
@@ -708,38 +721,56 @@ export default function ManageDCS() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-900 font-sans relative">
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-sky-900/20 blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-900/20 blur-[120px]"></div>
+    <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
+      <div className="flex items-center gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
+        <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={22} /> <span className="font-bold text-base md:text-lg tracking-wide uppercase">Back to Admin Menu</span>
+        </button>
       </div>
-      
-      <div className="w-64 shrink-0 bg-slate-900/80 border-r border-slate-800 flex flex-col sticky top-0 h-screen z-40 backdrop-blur-xl">
-        <div className="p-8 border-b border-slate-800 flex flex-col gap-4">
-          <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-            <ArrowLeft size={18} /> <span className="font-black text-xs tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
-          </button>
-          <h2 className="text-white font-black text-sm tracking-widest">Manage Doctors, Stockists & Chemists</h2>
-        </div>
-        <div className="flex-1 min-w-0 overflow-y-auto py-6">
-          <ul className="space-y-1 px-4">
-            {[
-              { id: 'create_doctor', label: 'Create Doctors' },
-              { id: 'create_chemist', label: 'Create Chemists' },
-              { id: 'create_stockist', label: 'Create Stockists' },
-              { id: 'edit_delete', label: 'Edit / Delete' },
-              { id: 'upload_dcs', label: 'Upload DCS City / Area' },
-              { id: 'dcs_list_management', label: 'DCS List Management' }
-            ].map(tab => (
-              <li key={tab.id}>
-                <button onClick={() => setActiveTab(tab.id as any)} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm ${activeTab === tab.id ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
-                  {tab.label}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left Sidebar Menu */}
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-52'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-4 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-3`}>
+            {!sidebarCollapsed && (
+              <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
+                Manage DCS
+              </h2>
+            )}
+            <button 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-700/50 transition-colors"
+              title={sidebarCollapsed ? "Expand Menu" : "Collapse Menu to Free Space"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+          </div>
+          <div className="flex flex-col space-y-1 px-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  title={sidebarCollapsed ? item.label : undefined}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors text-xs font-medium ${
+                    sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'text-left'
+                  } ${
+                    isActive
+                      ? "bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  }`}
+                >
+                  <Icon size={16} className={`flex-shrink-0 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+                  {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
                 </button>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </div>
-      </div>
+        
+        {/* Right Content Area */}
+        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-6 overflow-y-auto">
       
       {activeTab === 'create_doctor' && <CreateDoctorTab />}
       {activeTab === 'create_chemist' && <CreateChemistTab />}
@@ -754,6 +785,8 @@ export default function ManageDCS() {
       {activeTab === 'edit_delete' && editingRecord && editingType === 'Stockist' && <CreateStockistTab editData={editingRecord} onCancel={() => setEditingRecord(null)} />}
       {activeTab === 'upload_dcs' && <UploadDCSTab />}
       {activeTab === 'dcs_list_management' && <ListManagementTab />}
+        </div>
+      </div>
     </div>
   );
 }

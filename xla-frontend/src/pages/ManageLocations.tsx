@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ArrowLeft, Trash2, Edit, Save, X } from 'lucide-react';
+import { 
+  ArrowLeft, Trash2, Edit, Save, X,
+  Map, Building2, MapPin, Route, UploadCloud, PanelLeftClose, PanelLeftOpen
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
@@ -916,60 +919,68 @@ function UploadLocationTab() {
 
 export default function ManageLocations() {
   const [activeTab, setActiveTab] = useState<'state' | 'hq' | 'city' | 'route' | 'upload'>('city');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const navigate = useNavigate();
 
+  const menuItems = [
+    { id: 'state', label: 'Create State', icon: Map },
+    { id: 'hq', label: 'Create Headquarters', icon: Building2 },
+    { id: 'city', label: 'Create City / Area', icon: MapPin },
+    { id: 'route', label: 'Create Route', icon: Route },
+    { id: 'upload', label: 'Upload Locations', icon: UploadCloud },
+  ] as const;
+
   return (
-    <div className="flex h-screen bg-slate-900 font-sans relative overflow-hidden">
-      <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-sky-900/20 blur-[120px]"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-900/20 blur-[120px]"></div>
+    <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
+      <div className="flex items-center gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
+        <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={22} /> <span className="font-bold text-base md:text-lg tracking-wide uppercase">Back to Admin Menu</span>
+        </button>
       </div>
-      
-      <div className="w-full flex h-full relative z-10 backdrop-blur-sm">
+      <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar Menu */}
-        <div className="w-64 shrink-0 bg-slate-900/80 border-r border-slate-800 flex flex-col backdrop-blur-xl">
-          <div className="p-8 border-b border-slate-800">
-            <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2 mb-8">
-              <ArrowLeft size={18} /> <span className="font-black text-xs tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-52'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-4 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-3`}>
+            {!sidebarCollapsed && (
+              <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
+                Area Creation
+              </h2>
+            )}
+            <button 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-700/50 transition-colors"
+              title={sidebarCollapsed ? "Expand Menu" : "Collapse Menu to Free Space"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
             </button>
-            <h2 className="text-white font-black text-sm tracking-widest uppercase">AREA CREATION</h2>
           </div>
-          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
-            <button 
-              onClick={() => setActiveTab('state')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'state' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
-            >
-              Create State
-            </button>
-            <button 
-              onClick={() => setActiveTab('hq')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'hq' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
-            >
-              Create Headquarters
-            </button>
-            <button 
-              onClick={() => setActiveTab('city')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'city' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
-            >
-              Create City / Area
-            </button>
-            <button 
-              onClick={() => setActiveTab('route')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'route' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
-            >
-              Create Route
-            </button>
-            <button 
-              onClick={() => setActiveTab('upload')} 
-              className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'upload' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}
-            >
-              Upload Locations
-            </button>
+          <div className="flex flex-col space-y-1 px-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  title={sidebarCollapsed ? item.label : undefined}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors text-xs font-medium ${
+                    sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'text-left'
+                  } ${
+                    isActive
+                      ? "bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  }`}
+                >
+                  <Icon size={16} className={`flex-shrink-0 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+                  {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
-
+        
         {/* Right Content Area */}
-        <div className="flex-1 min-w-0 bg-slate-900 p-8 overflow-y-auto">
+        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-6 overflow-y-auto">
           {activeTab === 'state' && <StateTab />}
           {activeTab === 'hq' && <HQTab />}
           {activeTab === 'city' && <CityTab />}

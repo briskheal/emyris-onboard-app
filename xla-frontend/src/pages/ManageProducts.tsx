@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Trash2, Edit, Eye, Upload, Search } from 'lucide-react';
+import { 
+  ArrowLeft, Trash2, Edit, Eye, Upload, Search,
+  Boxes, Layers, Package, UploadCloud, Truck, Warehouse, PanelLeftClose, PanelLeftOpen 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -42,28 +45,69 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
 
 export default function ManageProducts() {
   const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<'category' | 'type' | 'product' | 'upload' | 'supplier' | 'inventory'>('category');
+
+  const menuItems = [
+    { id: 'category', label: 'Product Category', icon: Layers },
+    { id: 'type', label: 'Product Type', icon: Boxes },
+    { id: 'product', label: 'Product', icon: Package },
+    { id: 'upload', label: 'Upload Product', icon: UploadCloud },
+    { id: 'supplier', label: 'Product Supplier', icon: Truck },
+    { id: 'inventory', label: 'Inventory', icon: Warehouse },
+  ] as const;
   
   return (
     <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
-      <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
+      <div className="flex items-center gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
         <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={18} /> <span className="font-black text-xs tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
+          <ArrowLeft size={22} /> <span className="font-bold text-base md:text-lg tracking-wide uppercase">Back to Admin Menu</span>
         </button>
       </div>
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-72 bg-slate-800/50 border-r border-slate-800 flex flex-col py-6 overflow-y-auto">
-          <h2 className="px-6 text-emerald-400 font-black text-xl tracking-wider mb-6 uppercase">Manage Products</h2>
-          <div className="flex flex-col space-y-2 px-4">
-            <button onClick={() => setActiveTab('category')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'category' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product Category</button>
-            <button onClick={() => setActiveTab('type')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'type' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product Type</button>
-            <button onClick={() => setActiveTab('product')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'product' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product</button>
-            <button onClick={() => setActiveTab('upload')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'upload' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Upload Product</button>
-            <button onClick={() => setActiveTab('supplier')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'supplier' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Product Supplier</button>
-            <button onClick={() => setActiveTab('inventory')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'inventory' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Inventory</button>
+        {/* Left Sidebar Menu */}
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-52'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-4 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-3`}>
+            {!sidebarCollapsed && (
+              <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
+                Manage Products
+              </h2>
+            )}
+            <button 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-700/50 transition-colors"
+              title={sidebarCollapsed ? "Expand Menu" : "Collapse Menu to Free Space"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+          </div>
+          <div className="flex flex-col space-y-1 px-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  title={sidebarCollapsed ? item.label : undefined}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors text-xs font-medium ${
+                    sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'text-left'
+                  } ${
+                    isActive
+                      ? "bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  }`}
+                >
+                  <Icon size={16} className={`flex-shrink-0 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+                  {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className="flex-1 min-w-0 bg-slate-900 p-8 overflow-y-auto">
+        
+        {/* Right Content Area */}
+        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-6 overflow-y-auto">
           {activeTab === 'category' && <CategoryTab />}
           {activeTab === 'type' && <TypeTab />}
           {activeTab === 'product' && <ProductTab />}
