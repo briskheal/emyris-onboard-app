@@ -36,7 +36,7 @@ export default function GeoFencingMenu() {
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/extras')} className="text-slate-300">
+          <button onClick={() => navigate(-1)} className="text-slate-300">
             <ChevronLeft size={24} />
           </button>
           <h1 className="text-lg font-black tracking-tight">Geo Fencing</h1>

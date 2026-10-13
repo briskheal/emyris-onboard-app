@@ -297,7 +297,7 @@ export default function PrimarySalesForm() {
 
       {/* App Header */}
       <div className="bg-[#1e2032] p-4 flex items-center border-b border-slate-700 sticky top-0 z-10 shrink-0">
-        <button onClick={() => navigate('/creation')} className="mr-3 text-slate-400 hover:text-white transition-colors">
+        <button onClick={() => navigate(-1)} className="mr-3 text-slate-400 hover:text-white transition-colors">
           <ArrowLeft size={20} />
         </button>
         <PackageSearch size={20} className="mr-2 text-cyan-400" />

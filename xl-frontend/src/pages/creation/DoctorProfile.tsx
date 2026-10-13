@@ -47,7 +47,7 @@ export default function DoctorProfile() {
       <div className="px-4 pt-12 pb-4 bg-slate-800 border-b border-slate-700/50 flex items-center justify-between sticky top-0 z-50 shadow-md">
         <div className="flex items-center gap-3">
           <button 
-            onClick={() => selectedDoctor ? setSelectedDoctor(null) : navigate('/creation')}
+            onClick={() => selectedDoctor ? setSelectedDoctor(null) : navigate(-1)}
             className="w-10 h-10 flex items-center justify-center bg-slate-700/50 text-sky-400 rounded-full active:scale-95 transition-transform"
           >
             <ChevronLeft size={22} strokeWidth={2.5} />

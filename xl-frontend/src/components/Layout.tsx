@@ -69,9 +69,8 @@ export default function Layout() {
   const handleBack = () => {
       if (showNotifMenu) {
           setShowNotifMenu(false);
-      } else {
-          navigate(-1);
       }
+      navigate('/dashboard');
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
