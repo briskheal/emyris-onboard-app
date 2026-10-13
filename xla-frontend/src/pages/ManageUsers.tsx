@@ -1,6 +1,10 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Check, Trash2, Edit, Save, RefreshCw, Key, Mail , Eye, Search, Download } from 'lucide-react';
+import { 
+  ArrowLeft, Check, Trash2, Edit, Save, RefreshCw, Key, Mail, Eye, Search, Download,
+  UserPlus, ShieldPlus, Users, UserCog, ShieldCheck, Layers, Briefcase, Target, Upload, 
+  KeyRound, Smartphone, DollarSign, PanelLeftClose, PanelLeftOpen
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
@@ -545,38 +549,79 @@ function UploadTargetTab() {
 
 export default function ManageUsers() {
   const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'create_user' | 'create_admin' | 'user_info' | 'edit_delete' | 'admin_info' | 
     'divisions' | 'designations' | 'set_target' | 'upload_target' | 
     'access_control' | 'user_devices' | 'ta_da'
   >('create_user');
+
+  const menuItems = [
+    { id: 'create_user', label: 'Create User', icon: UserPlus },
+    { id: 'create_admin', label: 'Create Admin', icon: ShieldPlus },
+    { id: 'user_info', label: 'User Info', icon: Users },
+    { id: 'edit_delete', label: 'Edit / Delete', icon: UserCog },
+    { id: 'admin_info', label: 'Admin Info', icon: ShieldCheck },
+    { id: 'divisions', label: 'Manage Divisions', icon: Layers },
+    { id: 'designations', label: 'Manage Designations', icon: Briefcase },
+    { id: 'set_target', label: 'Set User Target', icon: Target },
+    { id: 'upload_target', label: 'Upload Target', icon: Upload },
+    { id: 'access_control', label: 'Access Control', icon: KeyRound },
+    { id: 'user_devices', label: 'User Devices', icon: Smartphone },
+    { id: 'ta_da', label: 'Ta, Da Manage', icon: DollarSign },
+  ] as const;
   
   return (
     <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
-      <div className="flex items-center gap-4 px-8 py-5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
+      <div className="flex items-center gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={24} /> <span className="font-bold text-lg tracking-wide uppercase">Back to Admin Menu</span>
+          <ArrowLeft size={22} /> <span className="font-bold text-base md:text-lg tracking-wide uppercase">Back to Admin Menu</span>
         </button>
       </div>
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-72 bg-slate-800/50 border-r border-slate-800 flex flex-col py-6 overflow-y-auto">
-          <h2 className="px-6 text-emerald-400 font-black text-xl tracking-wider mb-6 uppercase">Manage Users</h2>
-          <div className="flex flex-col space-y-2 px-4">
-            <button onClick={() => setActiveTab('create_user')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'create_user' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Create User</button>
-            <button onClick={() => setActiveTab('create_admin')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'create_admin' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Create Admin</button>
-            <button onClick={() => setActiveTab('user_info')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'user_info' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>User Info</button>
-            <button onClick={() => setActiveTab('edit_delete')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'edit_delete' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Edit / Delete</button>
-            <button onClick={() => setActiveTab('admin_info')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'admin_info' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Admin Info</button>
-            <button onClick={() => setActiveTab('divisions')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'divisions' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Manage Divisions</button>
-            <button onClick={() => setActiveTab('designations')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'designations' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Manage Designations</button>
-            <button onClick={() => setActiveTab('set_target')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'set_target' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Set User Target</button>
-            <button onClick={() => setActiveTab('upload_target')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'upload_target' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Upload Target</button>
-            <button onClick={() => setActiveTab('access_control')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'access_control' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Access Control</button>
-            <button onClick={() => setActiveTab('user_devices')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'user_devices' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>User Devices</button>
-            <button onClick={() => setActiveTab('ta_da')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'ta_da' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>Ta, Da Manage</button>
+        {/* Left Sidebar Menu */}
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-52'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-4 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-3`}>
+            {!sidebarCollapsed && (
+              <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
+                Manage Users
+              </h2>
+            )}
+            <button 
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-700/50 transition-colors"
+              title={sidebarCollapsed ? "Expand Menu" : "Collapse Menu to Free Space"}
+            >
+              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+            </button>
+          </div>
+          <div className="flex flex-col space-y-1 px-2">
+            {menuItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  title={sidebarCollapsed ? item.label : undefined}
+                  className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors text-xs font-medium ${
+                    sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'text-left'
+                  } ${
+                    isActive
+                      ? "bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  }`}
+                >
+                  <Icon size={16} className={`flex-shrink-0 ${isActive ? 'text-sky-400' : 'text-slate-400'}`} />
+                  {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
-        <div className={`flex-1 bg-slate-900 overflow-y-auto ${activeTab === 'set_target' ? 'p-0' : 'p-8'}`}>
+        
+        {/* Right Content Panel */}
+        <div className={`flex-1 bg-slate-900 overflow-y-auto ${activeTab === 'set_target' ? 'p-0' : 'p-4 md:p-6'}`}>
           {activeTab === 'create_user' && <CreateProfileTab isAdmin={false} />}
           {activeTab === 'create_admin' && <CreateProfileTab isAdmin={true} />}
           {activeTab === 'user_info' && <ProfileInfoTab isAdmin={false} />}
@@ -805,118 +850,121 @@ useEffect(() => {
   const eligibleDesignations = designations.filter(d => d.level > selectedLevel);
 
   return (
-    <div className="w-full px-4 pb-12">
-<div className="flex items-center gap-4 mb-8">
-          {editUser && onBack && (
-            <button type="button" onClick={onBack} className="text-sky-400 hover:text-white font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
-              <ArrowLeft size={16} /> Back to List
-            </button>
-          )}
-          <h2 className="text-lg font-bold text-white tracking-wide uppercase">
-            {editUser ? 'EDIT' : 'CREATE'} {isAdmin ? 'ADMIN' : 'USER'} PROFILE
-          </h2>
-        </div>
-      <form onSubmit={handleSubmit} className="w-full mt-4">
+    <div className="w-full px-1 md:px-3 pb-12">
+      <div className="flex items-center gap-4 mb-6">
+        {editUser && onBack && (
+          <button type="button" onClick={onBack} className="text-sky-400 hover:text-white font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
+            <ArrowLeft size={16} /> Back to List
+          </button>
+        )}
+        <h2 className="text-lg font-bold text-white tracking-wide uppercase">
+          {editUser ? 'EDIT' : 'CREATE'} {isAdmin ? 'ADMIN' : 'USER'} PROFILE
+        </h2>
+      </div>
+      <form onSubmit={handleSubmit} className="w-full mt-2">
 
         {/* Import HR Applicant */}
-{!editUser && <div className="mb-6 bg-slate-900 border border-slate-700 border-l-4 border-l-emerald-500 p-6 shadow-sm">
-          <label className="text-xs text-emerald-400 font-bold mb-2 block flex items-center gap-2">
-            IMPORT FROM HR SYSTEM (AUTO-FILL)
-          </label>
-          <select onChange={handleImport} className="w-full max-w-2xl bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-emerald-500 focus:outline-none transition-colors">
-            <option value="">-- Select Approved Applicant --</option>
-            {applicants.map(a => <option key={a._id} value={a.email}>{a.fullName} ({a.email})</option>)}
-          </select>
-          <p className="text-xs text-emerald-300/70 mt-2">Selecting an applicant will instantly auto-fill their Name, Email, DOB, Phone, Address, Aadhar, PAN, Employee Code, and ADOJ from the HR database.</p>
-        </div>}
+        {!editUser && (
+          <div className="mb-5 bg-slate-900 border border-slate-700 border-l-4 border-l-emerald-500 p-4 md:p-5 rounded-r-lg shadow-sm">
+            <label className="text-xs text-emerald-400 font-bold mb-2 block flex items-center gap-2">
+              IMPORT FROM HR SYSTEM (AUTO-FILL)
+            </label>
+            <select onChange={handleImport} className="w-full max-w-2xl bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:border-emerald-500 focus:outline-none transition-colors">
+              <option value="">-- Select Approved Applicant --</option>
+              {applicants.map(a => <option key={a._id} value={a.email}>{a.fullName} ({a.email})</option>)}
+            </select>
+            <p className="text-xs text-emerald-300/70 mt-1.5">Selecting an applicant will instantly auto-fill their Name, Email, DOB, Phone, Address, Aadhar, PAN, Employee Code, and ADOJ from the HR database.</p>
+          </div>
+        )}
 
         {/* Basic Info */}
-
-        <div className="mb-6">
-          <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-sm mb-4 border-b border-slate-700 pb-2">Personal Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">FIRST NAME *</label><input required name="firstName" value={formData.firstName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">MIDDLE NAME</label><input name="middleName" value={formData.middleName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME</label><input name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
-            <div className="md:col-span-2"><label className="text-xs text-slate-400 font-bold mb-1 block">PHONE NUMBER *</label><input required name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+        <div className="mb-5">
+          <h3 className="text-emerald-400 font-bold uppercase tracking-wider text-xs mb-3 border-b border-slate-700 pb-2">Personal Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">FIRST NAME *</label><input required name="firstName" value={formData.firstName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">MIDDLE NAME</label><input name="middleName" value={formData.middleName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">LAST NAME</label><input name="lastName" value={formData.lastName || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">GENDER</label><select name="gender" value={formData.gender || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors"><option value="">Select Gender</option><option value="Male">Male</option><option value="Female">Female</option><option value="Other">Other</option></select></div>
+            <div className="md:col-span-2"><label className="text-xs text-slate-400 font-bold mb-1 block">PHONE NUMBER *</label><input required name="phone" value={formData.phone || ''} onChange={handleChange} className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white focus:border-sky-500 focus:outline-none transition-colors" /></div>
           </div>
         </div>
 
         {/* Login Credentials */}
-        <div className="mb-6 bg-slate-900/50 p-6 rounded-xl border border-slate-700">
-          <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
-            <h3 className="text-amber-400 font-bold uppercase tracking-wider text-sm">Login Credentials</h3>
+        <div className="mb-5 bg-slate-900/50 p-4 md:p-5 rounded-xl border border-slate-700">
+          <div className="flex justify-between items-center mb-3 border-b border-slate-700 pb-2">
+            <h3 className="text-amber-400 font-bold uppercase tracking-wider text-xs">Login Credentials</h3>
             <button type="button" onClick={generatePassword} className="text-xs bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-3 py-1.5 rounded-lg transition-colors font-bold flex items-center gap-1">
               <RefreshCw size={14} /> Auto-Generate
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <div>
               <label className="text-xs text-slate-400 font-bold mb-1 flex items-center gap-2">
                 <Mail size={14} className="text-slate-500"/> LOGIN ID (EMAIL) *
               </label>
-              <input type="email" required name="email" value={formData.email || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white focus:border-amber-500 focus:outline-none transition-colors" placeholder="user@company.com" />
+              <input type="email" required name="email" value={formData.email || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white focus:border-amber-500 focus:outline-none transition-colors" placeholder="user@company.com" />
             </div>
             <div>
               <label className="text-xs text-slate-400 font-bold mb-1 flex items-center gap-2">
                 <Key size={14} className="text-slate-500"/> PASSWORD *
               </label>
-              <input type="text" required name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-amber-400 font-mono focus:border-amber-500 focus:outline-none transition-colors" placeholder="Click Auto-Generate" />
+              <input type="text" required name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-amber-400 font-mono focus:border-amber-500 focus:outline-none transition-colors" placeholder="Click Auto-Generate" />
             </div>
           </div>
         </div>
 
         {/* Company Info */}
-        <div className="mb-6">
-          <h3 className="text-sky-400 font-bold uppercase tracking-wider text-sm mb-4 border-b border-slate-700 pb-2">Employment Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-5 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF BIRTH</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">HEADQUARTER</label><select name="hq" value={formData.hq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select HQ</option>{hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DESIGNATION</label><select name="designation" value={formData.designation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DIVISION</label><select name="division" value={formData.division || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Division</option>{divisions.map(d => <option key={d._id} value={d.divisionName}>{d.divisionName}</option>)}</select></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMPLOYEE ID</label><input name="employeeId" value={formData.employeeId || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF JOINING</label><input type="date" name="doj" value={formData.doj || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+        <div className="mb-5">
+          <h3 className="text-sky-400 font-bold uppercase tracking-wider text-xs mb-3 border-b border-slate-700 pb-2">Employment Details</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3.5">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF BIRTH</label><input type="date" name="dob" value={formData.dob || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">HEADQUARTER</label><select name="hq" value={formData.hq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white"><option value="">Select HQ</option>{hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DESIGNATION</label><select name="designation" value={formData.designation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white"><option value="">Select Designation</option>{designations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DIVISION</label><select name="division" value={formData.division || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white"><option value="">Select Division</option>{divisions.map(d => <option key={d._id} value={d.divisionName}>{d.divisionName}</option>)}</select></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMPLOYEE ID</label><input name="employeeId" value={formData.employeeId || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DATE OF JOINING</label><input type="date" name="doj" value={formData.doj || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
             
-              <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING DESG.</label>
-                <select name="reportingDesignation" value={formData.reportingDesignation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
-                  <option value="">Select Designation</option>
-                  <option value="ADMIN">ADMIN</option>
-                  {eligibleDesignations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}
+            <div>
+              <label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING DESG.</label>
+              <select name="reportingDesignation" value={formData.reportingDesignation || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white">
+                <option value="">Select Designation</option>
+                <option value="ADMIN">ADMIN</option>
+                {eligibleDesignations.map(d => <option key={d._id} value={d.designationName}>{d.designationName}</option>)}
+              </select>
+            </div>
+            {formData.reportingDesignation && formData.reportingDesignation !== 'ADMIN' && (
+              <div>
+                <label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER HQ</label>
+                <select name="reportingHq" value={formData.reportingHq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white">
+                  <option value="">Select HQ</option>
+                  {hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
                 </select>
               </div>
-              {formData.reportingDesignation && formData.reportingDesignation !== 'ADMIN' && (
-                  <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER HQ</label>
-                    <select name="reportingHq" value={formData.reportingHq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
-                      <option value="">Select HQ</option>
-                      {hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
-                    </select>
-                  </div>
-              )}
+            )}
 
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">AADHAR NUMBER</label><input name="aadhar" value={formData.aadhar || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PAN NUMBER</label><input name="pan" value={formData.pan || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">AADHAR NUMBER</label><input name="aadhar" value={formData.aadhar || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">PAN NUMBER</label><input name="pan" value={formData.pan || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
           </div>
         </div>
 
         {/* Allowances */}
-        <div>
-          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Allowances</h3>
-          <div className="grid grid-cols-3 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DAILY ALLOWANCE</label><input type="number" name="dailyAllowance" value={formData.dailyAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EX-STATION ALLOWANCE</label><input type="number" name="exStationAllowance" value={formData.exStationAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">OUT-STATION ALLOWANCE</label><input type="number" name="outStationAllowance" value={formData.outStationAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+        <div className="mb-5">
+          <h3 className="text-emerald-400 font-bold mb-3 uppercase text-xs tracking-wider border-b border-slate-700 pb-2">Allowances</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">DAILY ALLOWANCE</label><input type="number" name="dailyAllowance" value={formData.dailyAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">EX-STATION ALLOWANCE</label><input type="number" name="exStationAllowance" value={formData.exStationAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">OUT-STATION ALLOWANCE</label><input type="number" name="outStationAllowance" value={formData.outStationAllowance || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
           </div>
         </div>
 
         {/* Address */}
-        <div>
-          <h3 className="text-emerald-400 font-bold mb-4 uppercase text-sm tracking-wider border-b border-slate-700 pb-2">Address</h3>
-          <div className="grid grid-cols-2 gap-6">
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STREET ADDRESS 1</label><input name="streetAddress1" value={formData.streetAddress1 || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STREET ADDRESS 2</label><input name="streetAddress2" value={formData.streetAddress2 || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CITY</label><input name="city" value={formData.city || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
-            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STATE</label><input name="state" value={formData.state || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
+        <div className="mb-5">
+          <h3 className="text-emerald-400 font-bold mb-3 uppercase text-xs tracking-wider border-b border-slate-700 pb-2">Address</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STREET ADDRESS 1</label><input name="streetAddress1" value={formData.streetAddress1 || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STREET ADDRESS 2</label><input name="streetAddress2" value={formData.streetAddress2 || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">CITY</label><input name="city" value={formData.city || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
+            <div><label className="text-xs text-slate-400 font-bold mb-1 block">STATE</label><input name="state" value={formData.state || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-white" /></div>
           </div>
         </div>
 
