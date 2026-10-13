@@ -606,7 +606,7 @@ router.get('/user-performance/rankings', async (req, res) => {
     }
 });
 
-const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlDoctorControl, XlState, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, XlHQ, XlDivision, generateId } = require('../db');
+const { XlUser, XlDesignation, XlDoctor, XlChemist, XlStockist, XlDoctorControl, XlState, XlCity, XlRoute, XlTourProgram, XlDCR, XlAttendance, XlLeave, XlLeaveType, XlAssignedLeave, XlLeaveTemplate, XlExpense, XlBacklogRequest, XlCallPlan, XlPerformanceAnalysis, XlNotification, XlSample, XlGift, XlPrimarySales, XlSecondarySales, XlGeoFencing, XlGlobalSettings, XlHoliday, XlProduct, XlHQ, XlDivision, generateId, sequelize } = require('../db');
 const { Op } = require('sequelize');
 
 // Middleware to block locked users from any mobile API route instantly
@@ -3111,18 +3111,23 @@ router.get('/approvals/pending', async (req, res) => {
                 }
             }
             if (!pData.employeeName || pData.employeeName === '-' || pData.employeeName.trim() === '') {
-                if (pData.hq) {
-                    const cleanHq = pData.hq.trim().toLowerCase();
-                    const uByHq = await XlUser.findOne({
-                        where: sequelize.where(sequelize.fn('lower', sequelize.col('hq')), cleanHq)
-                    });
-                    if (uByHq) {
-                        pData.employeeName = ((uByHq.firstName || '') + ' ' + (uByHq.lastName || '')).trim() || uByHq.name || uByHq.employeeId;
-                        pData.employeeId = pData.employeeId || uByHq.employeeId;
+                try {
+                    if (pData.hq) {
+                        const cleanHq = pData.hq.trim().toLowerCase();
+                        const { sequelize: dbSequelize } = require('../db');
+                        const uByHq = await XlUser.findOne({
+                            where: dbSequelize.where(dbSequelize.fn('lower', dbSequelize.col('hq')), cleanHq)
+                        });
+                        if (uByHq) {
+                            pData.employeeName = ((uByHq.firstName || '') + ' ' + (uByHq.lastName || '')).trim() || uByHq.name || uByHq.employeeId;
+                            pData.employeeId = pData.employeeId || uByHq.employeeId;
+                        } else {
+                            pData.employeeName = 'Admin';
+                        }
                     } else {
                         pData.employeeName = 'Admin';
                     }
-                } else {
+                } catch (hqErr) {
                     pData.employeeName = 'Admin';
                 }
             }
