@@ -187,9 +187,11 @@ function CustomSelect({
 export default function DoctorForm() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('xl_user') || '{}');
+  const userHq = (user.hq || '').trim();
+  const designation = (user.designation || '').trim();
   
   const [form, setForm] = useState<Record<string, string>>({
-    hq: user.hq || ''
+    hq: userHq || ''
   });
   const [geo1, setGeo1] = useState<GeoPoint | null>(null);
   
