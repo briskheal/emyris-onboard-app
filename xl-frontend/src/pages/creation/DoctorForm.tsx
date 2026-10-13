@@ -199,6 +199,7 @@ export default function DoctorForm() {
 
   const [controls, setControls] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [routes, setRoutes] = useState<any[]>([]);
   const [hqList, setHqList] = useState<string[]>([]);
 
   // Add Control State
@@ -245,6 +246,26 @@ export default function DoctorForm() {
     fetchInitial();
   }, []);
 
+  useEffect(() => {
+    const fetchRoutes = async () => {
+      if (!form.hq) {
+        setRoutes([]);
+        return;
+      }
+      try {
+        const res = await axios.get(
+          `/api/xl/routes?designation=${encodeURIComponent(user?.designation || '')}&hq=${encodeURIComponent(form.hq)}`
+        );
+        if (res.data.success && Array.isArray(res.data.data)) {
+          setRoutes(res.data.data);
+        }
+      } catch (e) {
+        console.error('Failed to fetch routes for HQ', e);
+      }
+    };
+    fetchRoutes();
+  }, [form.hq]);
+
   const handleChange = (name: string, value: string) => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
@@ -266,11 +287,21 @@ export default function DoctorForm() {
   };
 
   const getCityNames = () => {
-    return Array.from(new Set(
-      cities
-        .filter(c => checkHQMatch(c.hq))
-        .map(c => c.cityName)
-    )).sort();
+    const matchedCities = cities
+      .filter(c => checkHQMatch(c.hq))
+      .map(c => c.cityName);
+
+    const matchedRoutes = routes.flatMap((r: any) => {
+      const names: string[] = [];
+      if (r.toCity) names.push(r.toCity);
+      if (r.fromCity && r.toCity && r.fromCity !== r.toCity) {
+        names.push(`${r.fromCity} - ${r.toCity}`);
+      }
+      if (r.name) names.push(r.name);
+      return names;
+    });
+
+    return Array.from(new Set([...matchedCities, ...matchedRoutes])).filter(Boolean).sort();
   };
 
   const handleAddControl = async (e: React.FormEvent) => {
@@ -386,15 +417,6 @@ export default function DoctorForm() {
       <form onSubmit={handleSubmit} className="px-4 py-5 flex-1 max-w-lg mx-auto w-full">
         {renderInput('name', 'Name', { required: true, placeholder: "Enter Doctor's Name" })}
         
-        {/* Linked HQ Dropdown */}
-        <CustomSelect 
-          label="Headquarter (HQ)" 
-          value={form.hq || ''} 
-          options={hqList} 
-          onChange={v => handleChange('hq', v)} 
-          required 
-          placeholder="Select Headquarter"
-        />
         
         <CustomSelect 
           label="Degree" 
@@ -481,7 +503,18 @@ export default function DoctorForm() {
 
         {renderInput('address', "Clinic's Address", { placeholder: "Enter Clinic's Address" })}
         
-        {renderInput('hq', 'HQ', { required: true, readOnly: true, placeholder: 'Select HQ' })}
+        {/* Linked HQ Dropdown */}
+        <CustomSelect 
+          label="Headquarter (HQ)" 
+          value={form.hq || ''} 
+          options={hqList} 
+          onChange={v => {
+            handleChange('hq', v);
+            handleChange('workingArea', '');
+          }} 
+          required 
+          placeholder="Select Headquarter"
+        />
         
         <CustomSelect 
           label="Working Area" 

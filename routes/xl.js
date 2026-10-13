@@ -658,6 +658,34 @@ function haversineMetres(lat1, lng1, lat2, lng2) {
 
 const DEFAULT_RADIUS_METRES = 200;
 
+// Helper to generate common designation aliases (Sr. vs Senior, ZSM, ABM, etc.)
+function getDesignationAliases(desig) {
+    if (!desig) return [];
+    const clean = desig.trim().toLowerCase();
+    const aliases = new Set([clean]);
+
+    if (clean.includes('sr.') || clean.includes('sr ')) {
+        aliases.add(clean.replace(/sr\.?/g, 'senior').replace(/\s+/g, ' ').trim());
+    }
+    if (clean.includes('senior')) {
+        aliases.add(clean.replace(/senior/g, 'sr.').replace(/\s+/g, ' ').trim());
+        aliases.add(clean.replace(/senior/g, 'sr').replace(/\s+/g, ' ').trim());
+    }
+    if (clean.includes('area business manager')) aliases.add('abm');
+    if (clean === 'abm') aliases.add('area business manager');
+    if (clean.includes('regional business manager')) aliases.add('rbm');
+    if (clean === 'rbm') aliases.add('regional business manager');
+    if (clean.includes('zonal sales manager')) aliases.add('zsm');
+    if (clean.includes('sr. zonal sales manager') || clean.includes('senior zonal sales manager')) aliases.add('szsm');
+    if (clean === 'szsm') {
+        aliases.add('sr. zonal sales manager');
+        aliases.add('senior zonal sales manager');
+    }
+    if (clean === 'zsm') aliases.add('zonal sales manager');
+
+    return Array.from(aliases);
+}
+
 // N-Level Recursive Hierarchy Lookup for Users and HQs
 async function getReporteeUsers(designation, hq, division, userList = [], visited = new Set()) {
     if (!designation || designation === 'ADMIN') return userList;
@@ -670,34 +698,52 @@ async function getReporteeUsers(designation, hq, division, userList = [], visite
 
     const { Op, fn, col, where: seqWhere } = require('sequelize');
 
-    const orConditions = [
-        // 1. Exact designation match (case-insensitive)
-        seqWhere(fn('lower', col('reportingManager')), cleanDesig.toLowerCase()),
-        // 2. Designation + Manager's HQ match (case-insensitive)
-        seqWhere(fn('lower', col('reportingManager')), `${cleanDesig.toLowerCase()} (${cleanHq.toLowerCase()})`)
-    ];
+    const orConditions = [];
 
-    // 3. Senior/Zonal/Regional/Director level managers oversee multiple territories in a zone
-    const isSeniorManager = /zonal|regional|state|national|general|director|vice president|vp|gm|head/i.test(cleanDesig);
-    if (isSeniorManager) {
-        orConditions.push(
-            seqWhere(fn('lower', col('reportingManager')), {
-                [Op.like]: `${cleanDesig.toLowerCase()}%`
-            })
-        );
+    // 1. Designation variants match
+    const desigVariants = getDesignationAliases(cleanDesig);
+    for (const v of desigVariants) {
+        orConditions.push(seqWhere(fn('lower', col('reportingManager')), v));
+        if (cleanHq) {
+            orConditions.push(seqWhere(fn('lower', col('reportingManager')), `${v} (${cleanHq.toLowerCase()})`));
+            orConditions.push(seqWhere(fn('lower', col('reportingManager')), `${v} - ${cleanHq.toLowerCase()}`));
+        }
     }
 
-    // 4. Also match any employee whose reportingManager specifies the manager's assigned HQ
+    // 2. Senior/Zonal/Regional/Director level managers oversee multiple territories in a zone
+    const isSeniorManager = /zonal|regional|state|national|general|director|vice president|vp|gm|head/i.test(cleanDesig);
+    if (isSeniorManager) {
+        for (const v of desigVariants) {
+            orConditions.push(
+                seqWhere(fn('lower', col('reportingManager')), {
+                    [Op.like]: `${v}%`
+                })
+            );
+        }
+    }
+
+    // 3. Match any employee whose reportingManager specifies the manager's assigned HQ (e.g. Ahmedabad)
     if (cleanHq) {
         orConditions.push(
             seqWhere(fn('lower', col('reportingManager')), {
                 [Op.like]: `%(${cleanHq.toLowerCase()})%`
             })
         );
+        orConditions.push(
+            seqWhere(fn('lower', col('reportingManager')), {
+                [Op.like]: `%${cleanHq.toLowerCase()}%`
+            })
+        );
     }
 
     const queryWhere = { [Op.or]: orConditions };
-    if (division) queryWhere.division = division;
+    if (division && division !== 'All' && division !== 'null' && division !== 'undefined') {
+        queryWhere[Op.and] = [
+            { [Op.or]: orConditions },
+            { [Op.or]: [{ division: division }, { division: null }, { division: '' }] }
+        ];
+        delete queryWhere[Op.or];
+    }
 
     const reportees = await XlUser.findAll({ where: queryWhere });
     if (!reportees || reportees.length === 0) return userList;
@@ -719,17 +765,34 @@ async function getSubordinateHQs(designation, hq, division, hqSet = new Set()) {
     if (!designation || designation === 'ADMIN') return Array.from(hqSet);
     const reportees = await getReporteeUsers(designation, hq, division);
     for (const r of reportees) {
-        if (r.hq) hqSet.add(r.hq.trim());
+        if (r.hq) {
+            const clean = r.hq.trim();
+            hqSet.add(clean);
+            hqSet.add(clean.toUpperCase());
+            hqSet.add(clean.toLowerCase());
+            hqSet.add(clean.replace(/\s+/g, '-'));
+            hqSet.add(clean.replace(/-/g, ' '));
+        }
     }
     return Array.from(hqSet);
 }
 
-
-
 // Get routes for user and their team
 router.get('/routes', async (req, res) => {
     try {
-        const { designation, hq } = req.query;
+        let { designation, hq, employeeId } = req.query;
+
+        // If employeeId is passed and designation/hq are missing, resolve from database
+        if (employeeId && (!designation || !hq)) {
+            const userRecord = await XlUser.findOne({
+                where: { [Op.or]: [{ employeeId }, { uid: employeeId }, { email: employeeId }] }
+            });
+            if (userRecord) {
+                designation = designation || userRecord.designation;
+                hq = hq || userRecord.hq;
+            }
+        }
+
         let hqList = [];
         if (hq) {
             const trimmed = hq.trim().toLowerCase();
@@ -1023,13 +1086,42 @@ router.get('/states', async (req, res) => {
     }
 });
 
-// Get all cities/areas
+// Get all cities/areas (supports subordinate HQs for managers)
 router.get('/cities', async (req, res) => {
     try {
-        const { state, hq } = req.query;
+        const { state, hq, designation, division } = req.query;
+        const { sequelize } = require('../db');
+        let hqList = [];
+        if (hq) {
+            const trimmed = hq.trim().toLowerCase();
+            hqList.push(trimmed);
+            hqList.push(trimmed.replace(/\s+/g, '-'));
+            hqList.push(trimmed.replace(/-/g, ' '));
+        }
+
+        if (designation && designation !== 'ADMIN') {
+            const subHQs = await getSubordinateHQs(designation, hq, division);
+            subHQs.forEach(sub => {
+                const subTrim = sub.trim().toLowerCase();
+                hqList.push(subTrim);
+                hqList.push(subTrim.replace(/\s+/g, '-'));
+                hqList.push(subTrim.replace(/-/g, ' '));
+            });
+            hqList = [...new Set(hqList)];
+        }
+
+        let whereConditions = [];
+        if (state) {
+            whereConditions.push(sequelize.where(sequelize.fn('lower', sequelize.col('state')), state.trim().toLowerCase()));
+        }
+        if (hqList.length > 0) {
+            whereConditions.push(sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList }));
+        }
+
         let where = {};
-        if (state) where.state = state;
-        if (hq) where.hq = hq;
+        if (whereConditions.length === 1) where = whereConditions[0];
+        else if (whereConditions.length > 1) where = { [Op.and]: whereConditions };
+
         const cities = await XlCity.findAll({
             where,
             order: [['cityName', 'ASC']]
@@ -3456,11 +3548,11 @@ router.get('/hq', async (req, res) => {
 
         let resultList = dbHqs.map(h => h.toJSON ? h.toJSON() : h);
 
-        // If user has allowed HQs and no state filter was passed, ensure their own HQ exists in result
-        if (allowedHqs && !state) {
+        // If user has allowed HQs, ensure all allowed/subordinate HQs exist in result
+        if (allowedHqs) {
             for (const h of allowedHqs) {
                 if (!resultList.some(item => (item.hqName || '').toLowerCase() === h.toLowerCase())) {
-                    resultList.push({ hqName: h.toUpperCase(), state: '' });
+                    resultList.push({ hqName: h.toUpperCase(), state: state || '' });
                 }
             }
         }

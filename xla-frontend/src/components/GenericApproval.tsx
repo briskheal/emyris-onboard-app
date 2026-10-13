@@ -104,10 +104,29 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
-  const columns = MODULE_CONFIG[selectedModule] || [
-    { label: 'Created By', key: 'employeeName' },
-    { label: 'Details', key: 'details' }
-  ];
+  const getColumns = (mod: string) => {
+    if (!mod) return [];
+    if (MODULE_CONFIG[mod]) return MODULE_CONFIG[mod];
+    const modLower = mod.toLowerCase().trim();
+    for (const k of Object.keys(MODULE_CONFIG)) {
+      const kLower = k.toLowerCase().trim();
+      if (kLower === modLower || kLower.replace(/s$/, '') === modLower.replace(/s$/, '')) {
+        return MODULE_CONFIG[k];
+      }
+    }
+    return [
+      { label: 'Created By ↑', key: 'employeeName' },
+      { label: 'From City', key: 'fromCity' },
+      { label: 'To City', key: 'toCity' },
+      { label: 'Area Type', key: 'areaType' },
+      { label: 'Distance', key: 'distance' },
+      { label: 'HQ', key: 'headquarter' },
+      { label: 'State', key: 'state' },
+      { label: 'Status', key: 'status' }
+    ];
+  };
+
+  const columns = getColumns(selectedModule);
 
   // Some modules don't have View icon in video
   const hasView = ['Doctors', 'Chemists', 'Stockists', 'Deletion Request'].includes(selectedModule);
@@ -185,7 +204,13 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
   };
 
   const renderCellValue = (item: any, col: any) => {
-    if (col.key === 'details') return JSON.stringify(item).substring(0, 50) + '...';
+    if (col.key === 'details') {
+      if (item.details) return item.details;
+      if (item.fromCity && item.toCity) {
+        return `${item.fromCity} → ${item.toCity} (${item.areaType || ''}, ${item.distance ?? 0} KM)`;
+      }
+      return item.name || item.businessName || '-';
+    }
     if (col.key === 'proprietorName') return item.proprietorName || item.name || '-';
     if (col.key === 'employeeName') {
       return item.employeeName || item.userAllotted || item.employeeId || '-';

@@ -162,7 +162,9 @@ export default function TourProgram() {
 
   const fetchMarkets = async () => {
     try {
-      const res = await axios.get(`/api/xl/routes?designation=${user?.designation || ''}&hq=${user?.hq || ''}`);
+      const res = await axios.get(
+        `/api/xl/routes?designation=${encodeURIComponent(user?.designation || '')}&hq=${encodeURIComponent(user?.hq || '')}&employeeId=${encodeURIComponent(user?.employeeId || '')}&division=${encodeURIComponent(user?.division || '')}`
+      );
       if (res.data.success) {
         setRouteList(res.data.data || []);
       }

@@ -196,8 +196,9 @@ export default function RouteForm() {
         setStates(loadedStates);
 
         // Fetch HQs
+        const division = (user.division || '').trim();
         const hqUrl = userHq
-          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}`
+          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}&division=${encodeURIComponent(division)}`
           : '/api/xl/hq';
         const hqRes = await axios.get(hqUrl).catch(() => null);
         let loadedHqs: HqItem[] = [];
