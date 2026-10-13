@@ -238,8 +238,10 @@ export default function StockistForm() {
       try {
         const userHq = (user.hq || '').trim();
         const designation = (user.designation || '').trim();
+        const division = (user.division || '').trim();
+        const employeeId = (user.employeeId || '').trim();
         const url = userHq
-          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}`
+          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}&employeeId=${encodeURIComponent(employeeId)}&division=${encodeURIComponent(division)}`
           : '/api/xl/hq';
 
         const res = await axios.get(url);
@@ -278,7 +280,7 @@ export default function StockistForm() {
       }
       try {
         const res = await axios.get(
-          `/api/xl/routes?designation=${user?.designation || ''}&hq=${encodeURIComponent(form.hq)}`
+          `/api/xl/routes?designation=${encodeURIComponent(user?.designation || '')}&hq=${encodeURIComponent(form.hq)}&employeeId=${encodeURIComponent(user?.employeeId || '')}&division=${encodeURIComponent(user?.division || '')}`
         );
         if (res.data.success && Array.isArray(res.data.data)) {
           const mapped = res.data.data

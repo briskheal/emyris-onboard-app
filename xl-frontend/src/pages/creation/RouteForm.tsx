@@ -251,30 +251,42 @@ export default function RouteForm() {
 
     const fetchHqData = async () => {
       try {
+        const queryParams = `state=${encodeURIComponent(form.state)}&hq=${encodeURIComponent(form.hq)}&designation=${encodeURIComponent(user?.designation || '')}&employeeId=${encodeURIComponent(user?.employeeId || '')}&division=${encodeURIComponent(user?.division || '')}`;
+
         // Fetch existing cities in this state/HQ
-        const cityRes = await axios.get(`/api/xl/cities?state=${encodeURIComponent(form.state)}&hq=${encodeURIComponent(form.hq)}`).catch(() => null);
+        const cityRes = await axios.get(`/api/xl/cities?${queryParams}`).catch(() => null);
+
+        // Fetch existing routes for this HQ to check duplicates
+        const routeRes = await axios.get(`/api/xl/routes?${queryParams}`).catch(() => null);
+
+        let loadedCities: string[] = [];
         if (cityRes?.data?.success && Array.isArray(cityRes.data.cities)) {
-          setCities(cityRes.data.cities);
+          loadedCities = cityRes.data.cities;
         } else {
           const adminCities = await axios.get('/api/admin/locations/cities').catch(() => null);
           if (adminCities?.data?.success && Array.isArray(adminCities.data.cities)) {
             const list = adminCities.data.cities
               .filter((c: any) => !form.state || c.state?.toLowerCase() === form.state.toLowerCase())
               .map((c: any) => c.cityName);
-            setCities([...new Set(list)]);
+            loadedCities = list;
           }
         }
 
-        // Fetch existing routes for this HQ to check duplicates
-        const routeRes = await axios.get(`/api/xl/routes?hq=${encodeURIComponent(form.hq)}`).catch(() => null);
         if (routeRes?.data?.success && Array.isArray(routeRes.data.data)) {
           setExistingRoutes(routeRes.data.data);
+          const routeCities = routeRes.data.data.flatMap((r: any) => [r.fromCity, r.toCity]).filter(Boolean);
+          loadedCities = [...loadedCities, ...routeCities];
         } else {
           const adminRoutes = await axios.get('/api/admin/locations/routes').catch(() => null);
           if (adminRoutes?.data?.success && Array.isArray(adminRoutes.data.routes)) {
-            setExistingRoutes(adminRoutes.data.routes.filter((r: any) => !form.hq || r.hq?.toLowerCase() === form.hq.toLowerCase()));
+            const list = adminRoutes.data.routes.filter((r: any) => !form.hq || r.hq?.toLowerCase() === form.hq.toLowerCase());
+            setExistingRoutes(list);
+            const routeCities = list.flatMap((r: any) => [r.fromCity, r.toCity]).filter(Boolean);
+            loadedCities = [...loadedCities, ...routeCities];
           }
         }
+
+        setCities([...new Set(loadedCities)].filter(Boolean).sort());
       } catch (err) {
         console.error('Error fetching HQ cities and routes:', err);
       }

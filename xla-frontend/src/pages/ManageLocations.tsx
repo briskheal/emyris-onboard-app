@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   ArrowLeft, Trash2, Edit, Save, X,
-  Map, Building2, MapPin, Route, UploadCloud, PanelLeftClose, PanelLeftOpen
+  Map, Building2, MapPin, Route, UploadCloud, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
@@ -979,7 +979,7 @@ export default function ManageLocations() {
               className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-700/50 transition-colors"
               title={sidebarCollapsed ? "Expand Menu" : "Collapse Menu to Free Space"}
             >
-              {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+              {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
             </button>
           </div>
           <div className="flex flex-col space-y-1 px-2">

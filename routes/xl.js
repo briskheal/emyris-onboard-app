@@ -1089,8 +1089,22 @@ router.get('/states', async (req, res) => {
 // Get all cities/areas (supports subordinate HQs for managers)
 router.get('/cities', async (req, res) => {
     try {
-        const { state, hq, designation, division } = req.query;
+        let { state, hq, designation, division, employeeId } = req.query;
         const { sequelize } = require('../db');
+        const { Op } = require('sequelize');
+
+        // If employeeId is passed and designation/hq are missing, resolve from database
+        if (employeeId && (!designation || !hq)) {
+            const userRecord = await XlUser.findOne({
+                where: { [Op.or]: [{ employeeId }, { uid: employeeId }, { email: employeeId }] }
+            });
+            if (userRecord) {
+                designation = designation || userRecord.designation;
+                hq = hq || userRecord.hq;
+                division = division || userRecord.division;
+            }
+        }
+
         let hqList = [];
         if (hq) {
             const trimmed = hq.trim().toLowerCase();
@@ -1126,9 +1140,30 @@ router.get('/cities', async (req, res) => {
             where,
             order: [['cityName', 'ASC']]
         });
+
+        // Also fetch routes for these HQs to include markets / destination cities (like Palanpur)
+        let routeWhere = {};
+        let routeConditions = [];
+        if (state) {
+            routeConditions.push(sequelize.where(sequelize.fn('lower', sequelize.col('state')), state.trim().toLowerCase()));
+        }
+        if (hqList.length > 0) {
+            routeConditions.push(sequelize.where(sequelize.fn('lower', sequelize.col('hq')), { [Op.in]: hqList }));
+        }
+        if (routeConditions.length === 1) routeWhere = routeConditions[0];
+        else if (routeConditions.length > 1) routeWhere = { [Op.and]: routeConditions };
+
+        const routes = await XlRoute.findAll({ where: routeWhere });
+        const allCityNames = new Set(cities.map(c => c.cityName));
+        routes.forEach(r => {
+            if (r.fromCity) allCityNames.add(r.fromCity);
+            if (r.toCity) allCityNames.add(r.toCity);
+        });
+
+        const sortedCityNames = Array.from(allCityNames).filter(Boolean).sort();
         res.json({
             success: true,
-            cities: cities.map(c => c.cityName),
+            cities: sortedCityNames,
             data: cities
         });
     } catch (e) {

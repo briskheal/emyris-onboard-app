@@ -161,9 +161,10 @@ export default function CityForm() {
           }
         }
 
-        // 2. Fetch HQs for user (and reporting team if manager)
+        const division = (user.division || '').trim();
+        const employeeId = (user.employeeId || '').trim();
         const hqUrl = userHq
-          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}`
+          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}&employeeId=${encodeURIComponent(employeeId)}&division=${encodeURIComponent(division)}`
           : '/api/xl/hq';
 
         const hqRes = await axios.get(hqUrl).catch(() => null);
