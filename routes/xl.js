@@ -687,12 +687,12 @@ function getDesignationAliases(desig) {
 }
 
 // N-Level Recursive Hierarchy Lookup for Users and HQs
-async function getReporteeUsers(designation, hq, division, userList = [], visited = new Set()) {
-    if (!designation || designation === 'ADMIN') return userList;
+async function getReporteeUsers(designation, hq, division, userList = [], visited = new Set(), managerUser = null) {
+    if (!designation || designation.toUpperCase() === 'ADMIN') return userList;
     
     const cleanDesig = (designation || '').trim();
     const cleanHq = (hq || '').trim();
-    const visitKey = `${cleanDesig.toLowerCase()}_${cleanHq.toLowerCase()}`;
+    const visitKey = `${cleanDesig.toLowerCase()}_${cleanHq.toLowerCase()}_${managerUser?.employeeId || ''}`;
     if (visited.has(visitKey)) return userList;
     visited.add(visitKey);
 
@@ -736,6 +736,24 @@ async function getReporteeUsers(designation, hq, division, userList = [], visite
         );
     }
 
+    // 4. Match by Manager User details (employeeId, email, uid, fullName)
+    if (managerUser) {
+        if (managerUser.employeeId) {
+            orConditions.push(seqWhere(fn('lower', col('reportingManager')), managerUser.employeeId.toLowerCase().trim()));
+        }
+        if (managerUser.email) {
+            orConditions.push(seqWhere(fn('lower', col('reportingManager')), managerUser.email.toLowerCase().trim()));
+        }
+        if (managerUser.uid) {
+            orConditions.push(seqWhere(fn('lower', col('reportingManager')), managerUser.uid.toLowerCase().trim()));
+        }
+        const fullName = `${managerUser.firstName || ''} ${managerUser.lastName || ''}`.trim().toLowerCase();
+        if (fullName) {
+            orConditions.push(seqWhere(fn('lower', col('reportingManager')), fullName));
+            orConditions.push(seqWhere(fn('lower', col('reportingManager')), { [Op.like]: `%${fullName}%` }));
+        }
+    }
+
     const queryWhere = { [Op.or]: orConditions };
     if (division && division !== 'All' && division !== 'null' && division !== 'undefined') {
         queryWhere[Op.and] = [
@@ -755,7 +773,7 @@ async function getReporteeUsers(designation, hq, division, userList = [], visite
         }
         // Recursively resolve subordinates of reportees (e.g. MRs under ABMs under SZSM)
         if (r.designation && r.designation.toLowerCase() !== cleanDesig.toLowerCase()) {
-            await getReporteeUsers(r.designation, r.hq, r.division || division, userList, visited);
+            await getReporteeUsers(r.designation, r.hq, r.division || division, userList, visited, r);
         }
     }
     return userList;
@@ -2844,15 +2862,41 @@ router.post('/performance/effort-analysis', async (req, res) => {
 // Get counts of pending approvals for all modules
 router.get('/approvals/counts', async (req, res) => {
     try {
-        const { designation, hq, division } = req.query;
+        const { designation, hq, division, employeeId, email, userAllotted } = req.query;
         let reporteeEmails = null;
-        if (designation !== 'ADMIN') {
-            const reportees = await getReporteeUsers(designation, hq, division);
-            reporteeEmails = reportees.map(u => u.employeeId).filter(Boolean);
-            if (reporteeEmails.length === 0) return res.json({ success: true, counts: {} });
+        let subordinateHQs = [];
+
+        const empIdentifier = employeeId || email || userAllotted;
+        let mgrUser = null;
+        if (empIdentifier) {
+            mgrUser = await XlUser.findOne({
+                where: { [Op.or]: [{ employeeId: empIdentifier }, { email: empIdentifier }, { uid: empIdentifier }] }
+            });
         }
 
-        const condition = designation === 'ADMIN' ? { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] } : { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'], employeeId: { [Op.in]: reporteeEmails } };
+        const effectiveDesig = (mgrUser && mgrUser.designation) || designation || '';
+        const effectiveHq = (mgrUser && mgrUser.hq) || hq || '';
+        const effectiveDiv = (mgrUser && mgrUser.division) || division || '';
+        const isAdmin = effectiveDesig.toUpperCase() === 'ADMIN' || (mgrUser && mgrUser.isAdmin);
+
+        if (!isAdmin) {
+            const reportees = await getReporteeUsers(effectiveDesig, effectiveHq, effectiveDiv, [], new Set(), mgrUser);
+            reporteeEmails = reportees.map(u => u.employeeId).filter(Boolean);
+            subordinateHQs = await getSubordinateHQs(effectiveDesig, effectiveHq, effectiveDiv);
+            if (effectiveHq) {
+                subordinateHQs.push(effectiveHq, effectiveHq.toUpperCase(), effectiveHq.toLowerCase());
+            }
+            if (reporteeEmails.length === 0 && subordinateHQs.length === 0) {
+                return res.json({ success: true, counts: {} });
+            }
+        }
+
+        const condition = isAdmin 
+            ? { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] } 
+            : { 
+                status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'], 
+                employeeId: { [Op.in]: reporteeEmails } 
+            };
         
         const counts = {};
         
@@ -2869,10 +2913,27 @@ router.get('/approvals/counts', async (req, res) => {
         counts['Tour Program'] = await XlTourProgram.count({ where: condition });
         counts['Call Plans'] = await XlCallPlan.count({ where: condition });
         counts['Doctors'] = await XlDoctor.count({ where: condition });
-        counts['Chemists'] = await XlChemist.count({ where: condition });
-        counts['Stockists'] = await XlStockist.count({ where: condition });
-        counts['City'] = await XlCity.count({ where: condition });
-        counts['Routes'] = await XlRoute.count({ where: condition });
+
+        const chemistStockistCond = isAdmin ? condition : {
+            status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'],
+            [Op.or]: [
+                { employeeId: { [Op.in]: reporteeEmails } },
+                { userAllotted: { [Op.in]: reporteeEmails } },
+                ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }, { hq: { [Op.in]: subordinateHQs } }] : [])
+            ]
+        };
+        counts['Chemists'] = await XlChemist.count({ where: chemistStockistCond });
+        counts['Stockists'] = await XlStockist.count({ where: chemistStockistCond });
+
+        const locationCond = isAdmin ? condition : {
+            status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'],
+            [Op.or]: [
+                { employeeId: { [Op.in]: reporteeEmails } },
+                ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
+            ]
+        };
+        counts['City'] = await XlCity.count({ where: locationCond });
+        counts['Routes'] = await XlRoute.count({ where: locationCond });
         
         // Group Expenses by employeeId and date to match the UI behavior
         const expenseGroups = await XlExpense.findAll({
@@ -2886,9 +2947,12 @@ router.get('/approvals/counts', async (req, res) => {
         counts['Leave Request'] = await XlLeave.count({ where: condition });
         counts['Primary Sales'] = await XlPrimarySales.count({ where: condition });
         counts['Secondary Sales'] = await XlSecondarySales.count({ where: condition });
+        counts['Samples'] = await XlSample.count({ where: condition });
+        counts['Gifts'] = await XlGift.count({ where: condition });
+        counts['Geo Fencing'] = await XlGeoFencing.count({ where: condition });
 
         counts['Performance KPI'] = await XlPerformanceAnalysis.count({
-            where: designation === 'ADMIN' 
+            where: isAdmin 
                 ? { planningSubmittedAt: { [Op.ne]: null } } 
                 : { planningSubmittedAt: { [Op.ne]: null }, employeeId: { [Op.in]: reporteeEmails } }
         });
@@ -2902,12 +2966,33 @@ router.get('/approvals/counts', async (req, res) => {
 
 router.get('/approvals/pending', async (req, res) => {
     try {
-        const { type, designation, hq, division, status } = req.query;
+        const { type, designation, hq, division, status, employeeId, email, userAllotted } = req.query;
         let reporteeEmails = null;
-        if (designation !== 'ADMIN') {
-            const reportees = await getReporteeUsers(designation, hq, division);
+        let subordinateHQs = [];
+
+        const empIdentifier = employeeId || email || userAllotted;
+        let mgrUser = null;
+        if (empIdentifier) {
+            mgrUser = await XlUser.findOne({
+                where: { [Op.or]: [{ employeeId: empIdentifier }, { email: empIdentifier }, { uid: empIdentifier }] }
+            });
+        }
+
+        const effectiveDesig = (mgrUser && mgrUser.designation) || designation || '';
+        const effectiveHq = (mgrUser && mgrUser.hq) || hq || '';
+        const effectiveDiv = (mgrUser && mgrUser.division) || division || '';
+        const isAdmin = effectiveDesig.toUpperCase() === 'ADMIN' || (mgrUser && mgrUser.isAdmin);
+
+        if (!isAdmin) {
+            const reportees = await getReporteeUsers(effectiveDesig, effectiveHq, effectiveDiv, [], new Set(), mgrUser);
             reporteeEmails = reportees.map(u => u.employeeId).filter(Boolean);
-            if (reporteeEmails.length === 0) return res.json({ success: true, data: [] });
+            subordinateHQs = await getSubordinateHQs(effectiveDesig, effectiveHq, effectiveDiv);
+            if (effectiveHq) {
+                subordinateHQs.push(effectiveHq, effectiveHq.toUpperCase(), effectiveHq.toLowerCase());
+            }
+            if (reporteeEmails.length === 0 && subordinateHQs.length === 0) {
+                return res.json({ success: true, data: [] });
+            }
         }
 
         if (type === 'Performance KPI') {
@@ -2965,11 +3050,27 @@ router.get('/approvals/pending', async (req, res) => {
             } catch(e){}
         }
 
-        const userFilter = reporteeEmails 
-            ? ((type === 'Chemists' || type === 'Stockists') 
-                ? { [Op.or]: [{ employeeId: reporteeEmails }, { userAllotted: reporteeEmails }] } 
-                : { employeeId: reporteeEmails })
-            : {};
+        let userFilter = {};
+        if (!isAdmin) {
+            if (type === 'City' || type === 'Routes' || type === 'Route') {
+                userFilter = {
+                    [Op.or]: [
+                        { employeeId: reporteeEmails },
+                        ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
+                    ]
+                };
+            } else if (type === 'Chemists' || type === 'Stockists') {
+                userFilter = {
+                    [Op.or]: [
+                        { employeeId: reporteeEmails },
+                        { userAllotted: reporteeEmails },
+                        ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }, { hq: { [Op.in]: subordinateHQs } }] : [])
+                    ]
+                };
+            } else {
+                userFilter = { employeeId: reporteeEmails };
+            }
+        }
 
         const pending = await Model.findAll({ 
             where: { 

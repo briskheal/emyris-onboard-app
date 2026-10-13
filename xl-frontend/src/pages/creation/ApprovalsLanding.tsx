@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { UserRound, ShoppingBag, Building2, Navigation, Banknote, FileSignature, NotebookPen, MapPin, Truck, Gift, Target, ShieldCheck, Map } from 'lucide-react';
+import { UserRound, ShoppingBag, Building2, Navigation, Banknote, FileSignature, NotebookPen, MapPin, Truck, Gift, Target, ShieldCheck, Map, ChevronLeft } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -28,15 +28,23 @@ export default function ApprovalsLanding() {
   useEffect(() => {
     const fetchCounts = async () => {
       try {
-        const u = localStorage.getItem('emyris_user');
+        const u = localStorage.getItem('xl_user') || localStorage.getItem('user');
         if (!u) return;
         const user = JSON.parse(u);
-        const res = await axios.get('/api/xl/approvals/counts?designation=' + user.designation);
+        const isAdmin = user.isAdmin || (user.designation && user.designation.toUpperCase() === 'ADMIN');
+        const desig = isAdmin ? 'ADMIN' : (user.designation || '');
+        const queryParams = new URLSearchParams({
+          designation: desig,
+          hq: user.hq || '',
+          division: user.division || '',
+          employeeId: user.employeeId || user.email || ''
+        });
+        const res = await axios.get('/api/xl/approvals/counts?' + queryParams.toString());
         if (res.data.success) {
           setCounts(res.data.counts || {});
         }
       } catch (e) {
-        console.error('Failed to fetch approval counts');
+        console.error('Failed to fetch approval counts', e);
       }
     };
     fetchCounts();
@@ -46,7 +54,13 @@ export default function ApprovalsLanding() {
     <div className="min-h-full bg-slate-800 pb-24">
       {/* Header */}
       <div className="px-4 pt-4 pb-6 bg-gradient-to-b from-slate-800 to-slate-900 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="text-sky-400 font-medium">← Back</button>
+        <button 
+          type="button"
+          onClick={() => navigate(-1)} 
+          className="w-9 h-9 bg-slate-700/60 hover:bg-slate-700 rounded-xl flex items-center justify-center text-slate-300 transition-colors shrink-0"
+        >
+          <ChevronLeft size={20} />
+        </button>
         <div>
           <h1 className="text-xl font-bold text-white">Approvals</h1>
           <p className="text-xs text-slate-400">Select a module to view pending approvals.</p>
