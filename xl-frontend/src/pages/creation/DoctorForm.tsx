@@ -199,6 +199,7 @@ export default function DoctorForm() {
 
   const [controls, setControls] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [hqList, setHqList] = useState<string[]>([]);
 
   // Add Control State
   const [addControl, setAddControl] = useState<{type: string, hq: string} | null>(null);
@@ -206,18 +207,42 @@ export default function DoctorForm() {
   const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
-    const fetchControls = async () => {
+    const fetchInitial = async () => {
       try {
-        const res = await axios.get('/api/xl/controls');
-        if (res.data.success) {
-          setControls(res.data.controls || []);
-          setCities(res.data.cities || []);
+        const userHq = (user.hq || '').trim();
+        const designation = (user.designation || '').trim();
+        const url = userHq
+          ? `/api/xl/hq?designation=${encodeURIComponent(designation)}&hq=${encodeURIComponent(userHq)}`
+          : '/api/xl/hq';
+
+        const [cRes, hqRes] = await Promise.all([
+          axios.get('/api/xl/controls'),
+          axios.get(url).catch(() => null)
+        ]);
+
+        if (cRes.data.success) {
+          setControls(cRes.data.controls || []);
+          setCities(cRes.data.cities || []);
+        }
+
+        if (hqRes?.data?.success && Array.isArray(hqRes.data.data)) {
+          let names = hqRes.data.data.map((h: any) => h.hqName || h.name).filter(Boolean);
+          if (userHq && !names.some((n: string) => n.toLowerCase() === userHq.toLowerCase())) {
+            names.unshift(userHq);
+          }
+          const uniqueHqs = Array.from(new Set(names)) as string[];
+          uniqueHqs.sort();
+          setHqList(uniqueHqs);
+          setForm(prev => ({ ...prev, hq: prev.hq || userHq || uniqueHqs[0] || '' }));
+        } else if (userHq) {
+          setHqList([userHq]);
+          setForm(prev => ({ ...prev, hq: userHq }));
         }
       } catch (e) {
-        console.error('Failed to fetch controls', e);
+        console.error('Failed to fetch initial doctor form data', e);
       }
     };
-    fetchControls();
+    fetchInitial();
   }, []);
 
   const handleChange = (name: string, value: string) => {
@@ -360,6 +385,16 @@ export default function DoctorForm() {
 
       <form onSubmit={handleSubmit} className="px-4 py-5 flex-1 max-w-lg mx-auto w-full">
         {renderInput('name', 'Name', { required: true, placeholder: "Enter Doctor's Name" })}
+        
+        {/* Linked HQ Dropdown */}
+        <CustomSelect 
+          label="Headquarter (HQ)" 
+          value={form.hq || ''} 
+          options={hqList} 
+          onChange={v => handleChange('hq', v)} 
+          required 
+          placeholder="Select Headquarter"
+        />
         
         <CustomSelect 
           label="Degree" 

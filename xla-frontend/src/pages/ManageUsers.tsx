@@ -886,7 +886,7 @@ useEffect(() => {
                 </select>
               </div>
               {formData.reportingDesignation && formData.reportingDesignation !== 'ADMIN' && (
-                  <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING HQ</label>
+                  <div><label className="text-xs text-slate-400 font-bold mb-1 block">REPORTING MANAGER HQ</label>
                     <select name="reportingHq" value={formData.reportingHq || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-sm text-white">
                       <option value="">Select HQ</option>
                       {hqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}

@@ -658,30 +658,68 @@ function haversineMetres(lat1, lng1, lat2, lng2) {
 
 const DEFAULT_RADIUS_METRES = 200;
 
-// N-Level Recursive Hierarchy Lookup for HQs
-async function getSubordinateHQs(designation, hq, hqSet = new Set()) {
-    if (!designation || designation === 'ADMIN') return Array.from(hqSet);
+// N-Level Recursive Hierarchy Lookup for Users and HQs
+async function getReporteeUsers(designation, hq, division, userList = [], visited = new Set()) {
+    if (!designation || designation === 'ADMIN') return userList;
     
-    let whereClause;
-    if (hq) {
-        const position = designation + ' (' + hq.trim().toUpperCase() + ')';
-        const { Op } = require('sequelize');
-        whereClause = {
-            [Op.or]: [
-                { reportingManager: position },
-                { reportingManager: designation }
-            ]
-        };
-    } else {
-        whereClause = { reportingManager: designation };
+    const cleanDesig = (designation || '').trim();
+    const cleanHq = (hq || '').trim();
+    const visitKey = `${cleanDesig.toLowerCase()}_${cleanHq.toLowerCase()}`;
+    if (visited.has(visitKey)) return userList;
+    visited.add(visitKey);
+
+    const { Op, fn, col, where: seqWhere } = require('sequelize');
+
+    const orConditions = [
+        // 1. Exact designation match (case-insensitive)
+        seqWhere(fn('lower', col('reportingManager')), cleanDesig.toLowerCase()),
+        // 2. Designation + Manager's HQ match (case-insensitive)
+        seqWhere(fn('lower', col('reportingManager')), `${cleanDesig.toLowerCase()} (${cleanHq.toLowerCase()})`)
+    ];
+
+    // 3. Senior/Zonal/Regional/Director level managers oversee multiple territories in a zone
+    const isSeniorManager = /zonal|regional|state|national|general|director|vice president|vp|gm|head/i.test(cleanDesig);
+    if (isSeniorManager) {
+        orConditions.push(
+            seqWhere(fn('lower', col('reportingManager')), {
+                [Op.like]: `${cleanDesig.toLowerCase()}%`
+            })
+        );
     }
 
-    const reportees = await XlUser.findAll({ where: whereClause });
-    if (!reportees || reportees.length === 0) return Array.from(hqSet);
-    
+    // 4. Also match any employee whose reportingManager specifies the manager's assigned HQ
+    if (cleanHq) {
+        orConditions.push(
+            seqWhere(fn('lower', col('reportingManager')), {
+                [Op.like]: `%(${cleanHq.toLowerCase()})%`
+            })
+        );
+    }
+
+    const queryWhere = { [Op.or]: orConditions };
+    if (division) queryWhere.division = division;
+
+    const reportees = await XlUser.findAll({ where: queryWhere });
+    if (!reportees || reportees.length === 0) return userList;
+
     for (const r of reportees) {
-        if (r.hq) hqSet.add(r.hq.trim().toLowerCase());
-        await getSubordinateHQs(r.designation, r.hq, hqSet);
+        const empId = r.employeeId || r._id;
+        if (!userList.some(existing => (existing.employeeId || existing._id) === empId)) {
+            userList.push(r);
+        }
+        // Recursively resolve subordinates of reportees (e.g. MRs under ABMs under SZSM)
+        if (r.designation && r.designation.toLowerCase() !== cleanDesig.toLowerCase()) {
+            await getReporteeUsers(r.designation, r.hq, r.division || division, userList, visited);
+        }
+    }
+    return userList;
+}
+
+async function getSubordinateHQs(designation, hq, division, hqSet = new Set()) {
+    if (!designation || designation === 'ADMIN') return Array.from(hqSet);
+    const reportees = await getReporteeUsers(designation, hq, division);
+    for (const r of reportees) {
+        if (r.hq) hqSet.add(r.hq.trim());
     }
     return Array.from(hqSet);
 }
@@ -701,8 +739,14 @@ router.get('/routes', async (req, res) => {
         }
         
         if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
-            hqList = [...new Set([...hqList, ...subHQs])];
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, req.query.division);
+            subHQs.forEach(sub => {
+                const subTrim = sub.trim().toLowerCase();
+                hqList.push(subTrim);
+                hqList.push(subTrim.replace(/\s+/g, '-'));
+                hqList.push(subTrim.replace(/-/g, ' '));
+            });
+            hqList = [...new Set(hqList)];
         } else if (designation === 'ADMIN') {
             const routes = await XlRoute.findAll();
             return res.json({ success: true, data: routes });
@@ -1218,13 +1262,13 @@ router.get('/reports/locations', async (req, res) => {
 
 router.get('/doctors', async (req, res) => {
     try {
-        const { designation, hq } = req.query;
+        const { designation, hq, division } = req.query;
         let hqList = [];
         if (hq) hqList.push(hq.trim().toLowerCase());
         
         if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
-            hqList = [...new Set([...hqList, ...subHQs])];
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, division);
+            hqList = [...new Set([...hqList, ...subHQs.map(h => h.trim().toLowerCase())])];
         }
 
         let where = {};
@@ -1248,13 +1292,13 @@ router.get('/doctors', async (req, res) => {
 // Fetch all chemists
 router.get('/chemists', async (req, res) => {
     try {
-        const { designation, hq } = req.query;
+        const { designation, hq, division } = req.query;
         let hqList = [];
         if (hq) hqList.push(hq.trim().toLowerCase());
         
         if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
-            hqList = [...new Set([...hqList, ...subHQs])];
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, division);
+            hqList = [...new Set([...hqList, ...subHQs.map(h => h.trim().toLowerCase())])];
         }
 
         let where = {};
@@ -1276,13 +1320,13 @@ router.get('/chemists', async (req, res) => {
 
 router.get('/stockists', async (req, res) => {
     try {
-        const { designation, hq } = req.query;
+        const { designation, hq, division } = req.query;
         let hqList = [];
         if (hq) hqList.push(hq.trim().toLowerCase());
         
         if (designation && designation !== 'ADMIN') {
-            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq);
-            hqList = [...new Set([...hqList, ...subHQs])];
+            const subHQs = await getSubordinateHQs(designation, req.query.hq || hq, division);
+            hqList = [...new Set([...hqList, ...subHQs.map(h => h.trim().toLowerCase())])];
         }
 
         let where = {};
@@ -2351,11 +2395,11 @@ router.post('/performance/effort-analysis', async (req, res) => {
 // Get counts of pending approvals for all modules
 router.get('/approvals/counts', async (req, res) => {
     try {
-        const { designation } = req.query;
+        const { designation, hq, division } = req.query;
         let reporteeEmails = null;
         if (designation !== 'ADMIN') {
-            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
-            reporteeEmails = reportees.map(u => u.employeeId);
+            const reportees = await getReporteeUsers(designation, hq, division);
+            reporteeEmails = reportees.map(u => u.employeeId).filter(Boolean);
             if (reporteeEmails.length === 0) return res.json({ success: true, counts: {} });
         }
 
@@ -2409,11 +2453,11 @@ router.get('/approvals/counts', async (req, res) => {
 
 router.get('/approvals/pending', async (req, res) => {
     try {
-        const { type, designation, status } = req.query;
+        const { type, designation, hq, division, status } = req.query;
         let reporteeEmails = null;
         if (designation !== 'ADMIN') {
-            const reportees = await XlUser.findAll({ where: { reportingManager: designation } });
-            reporteeEmails = reportees.map(u => u.employeeId);
+            const reportees = await getReporteeUsers(designation, hq, division);
+            reporteeEmails = reportees.map(u => u.employeeId).filter(Boolean);
             if (reporteeEmails.length === 0) return res.json({ success: true, data: [] });
         }
 
@@ -3022,7 +3066,7 @@ router.post('/call-plan/bulk', async (req, res) => {
 
 router.get('/hq', async (req, res) => {
     try {
-        const { designation, hq, state } = req.query;
+        const { designation, hq, state, division } = req.query;
         const { sequelize } = require('../db');
         const { Op } = require('sequelize');
 
@@ -3032,7 +3076,7 @@ router.get('/hq', async (req, res) => {
         if (hq) {
             let userAllowed = [hq.trim()];
             if (designation && designation !== 'ADMIN') {
-                const subHQs = await getSubordinateHQs(designation, hq);
+                const subHQs = await getSubordinateHQs(designation, hq, division);
                 hasReportees = subHQs.length > 0;
                 userAllowed = [...new Set([...userAllowed, ...subHQs])];
             } else if (designation === 'ADMIN') {
