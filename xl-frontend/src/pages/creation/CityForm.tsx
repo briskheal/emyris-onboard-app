@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Search, ChevronDown, Check, AlertCircle, Building2, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Search, ChevronDown, Check, AlertCircle, Building2, CheckCircle2, X, MapPin } from 'lucide-react';
 import axios from 'axios';
 
 // Searchable Scrollable Custom Dropdown Component
@@ -142,6 +142,16 @@ export default function CityForm() {
   const [success, setSuccess] = useState(false);
   const [serverError, setServerError] = useState('');
   const [duplicateMessage, setDuplicateMessage] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Filter existing markets matching the user input in real-time
+  const matchingSuggestions = useMemo(() => {
+    const q = form.cityName.trim().toLowerCase();
+    if (!q) {
+      return existingCities.slice(0, 50);
+    }
+    return existingCities.filter(c => c && c.toLowerCase().includes(q));
+  }, [form.cityName, existingCities]);
 
   // Fetch initial states, HQs (with hierarchy & reportee check), and existing cities
   useEffect(() => {
@@ -197,11 +207,21 @@ export default function CityForm() {
         setAllHqs(loadedHqs);
         setHasReportees(userHasReportees);
 
-        // 3. Fetch existing cities from database for real-time duplicate checking
-        const cityRes = await axios.get('/api/xl/cities').catch(() => null);
+        // 3. Fetch existing cities and route markets from database for real-time duplicate checking
+        const [cityRes, routeRes] = await Promise.all([
+          axios.get(`/api/xl/cities?designation=${encodeURIComponent(designation)}&employeeId=${encodeURIComponent(employeeId)}&division=${encodeURIComponent(division)}`).catch(() => null),
+          axios.get(`/api/xl/routes?designation=${encodeURIComponent(designation)}&employeeId=${encodeURIComponent(employeeId)}&division=${encodeURIComponent(division)}`).catch(() => null)
+        ]);
+
+        let loaded: string[] = [];
         if (cityRes?.data?.success && Array.isArray(cityRes.data.cities)) {
-          setExistingCities(cityRes.data.cities);
+          loaded = [...loaded, ...cityRes.data.cities];
         }
+        if (routeRes?.data?.success && Array.isArray(routeRes.data.data)) {
+          const rCities = routeRes.data.data.flatMap((r: any) => [r.fromCity, r.toCity]).filter(Boolean);
+          loaded = [...loaded, ...rCities];
+        }
+        setExistingCities([...new Set(loaded)].filter(Boolean).sort());
 
         // 4. Default State & HQ behavior:
         // "if the user doesnt have any reportee then show state and his hq by default"
@@ -461,20 +481,25 @@ export default function CityForm() {
             onChange={val => setForm(prev => ({ ...prev, hq: val }))}
           />
 
-          {/* City / Area Name Input with Real-time Duplicate Check */}
-          <div className="mb-6">
-            <label className="block text-[13px] font-semibold text-slate-200 mb-1.5 ml-1">
-              City / Area Name <span className="text-rose-400">*</span>
+          {/* City / Area Name Input with Real-time Scroll Box of Available Markets */}
+          <div className="mb-6 relative">
+            <label className="block text-[13px] font-semibold text-slate-200 mb-1.5 ml-1 flex items-center justify-between">
+              <span>City / Area Name <span className="text-rose-400">*</span></span>
+              <span className="text-[11px] text-sky-400 font-normal">
+                {existingCities.length} registered markets in system
+              </span>
             </label>
             <div className="relative">
               <input
                 type="text"
                 required
-                placeholder="Enter city or area name..."
+                placeholder="Type or search city / area name..."
                 value={form.cityName}
+                onFocus={() => setShowSuggestions(true)}
                 onChange={e => {
                   setServerError('');
                   setForm(prev => ({ ...prev, cityName: e.target.value }));
+                  setShowSuggestions(true);
                 }}
                 className={`w-full h-[46px] bg-[#111322] border rounded-xl px-4 text-sm text-white placeholder-slate-500 focus:outline-none transition-all ${
                   duplicateMessage
@@ -497,20 +522,91 @@ export default function CityForm() {
               ) : null}
             </div>
 
-            {/* Prominent Duplicate Warning Message */}
+            {/* Status indicator below input */}
             {duplicateMessage ? (
               <div className="mt-2 flex items-center gap-1.5 text-rose-400 text-xs font-semibold px-1">
                 <AlertCircle size={14} className="flex-shrink-0" />
-                <span>{duplicateMessage}</span>
+                <span>{duplicateMessage}: "{form.cityName.trim()}" is already registered in the system.</span>
               </div>
             ) : form.cityName.trim().length > 1 ? (
-              <p className="mt-1.5 text-emerald-400 text-[11px] font-medium px-1">
-                City / Area name is available ✓
+              <p className="mt-1.5 text-emerald-400 text-[11px] font-medium px-1 flex items-center gap-1">
+                <span>✓ City / Area name is unique and available</span>
               </p>
             ) : (
               <p className="mt-1.5 text-slate-400 text-[11px] px-1">
-                Checked automatically against existing database cities (case-insensitive)
+                Tap or type to view available markets in the scroll box below.
               </p>
+            )}
+
+            {/* LIVE SCROLL BOX OF AVAILABLE MARKETS */}
+            {showSuggestions && (
+              <>
+                <div 
+                  className="fixed inset-0 z-30" 
+                  onClick={() => setShowSuggestions(false)} 
+                />
+                <div className="absolute left-0 right-0 top-[75px] z-40 bg-[#17192c] border border-[#3b4168] rounded-2xl shadow-2xl overflow-hidden animate-in fade-in duration-150">
+                  <div className="px-3.5 py-2.5 bg-[#141527] border-b border-[#2a2f4c] flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <MapPin size={14} className="text-sky-400" />
+                      <span className="text-xs font-bold text-slate-200">
+                        {form.cityName.trim() 
+                          ? `Matching Markets (${matchingSuggestions.length} found)`
+                          : `All Available Markets (${existingCities.length} total)`}
+                      </span>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={() => setShowSuggestions(false)}
+                      className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 transition-colors"
+                      title="Close"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  <div className="overflow-y-auto max-h-[220px] p-1.5 scrollbar-thin scrollbar-thumb-[#3b4168]">
+                    {matchingSuggestions.length === 0 ? (
+                      <div className="p-4 text-center">
+                        <p className="text-xs text-emerald-400 font-bold mb-1">
+                          ✓ No existing market matching "{form.cityName.trim()}"
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          This city name is completely new and ready to be registered!
+                        </p>
+                      </div>
+                    ) : (
+                      matchingSuggestions.map((cityName, idx) => {
+                        const isExact = (cityName || '').trim().toLowerCase() === form.cityName.trim().toLowerCase();
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => {
+                              setForm(prev => ({ ...prev, cityName }));
+                              setShowSuggestions(false);
+                            }}
+                            className={`w-full text-left px-3 py-2.5 rounded-xl text-sm flex items-center justify-between transition-colors mb-1 ${
+                              isExact
+                                ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30 font-bold'
+                                : 'text-slate-200 hover:bg-[#252a48] border border-transparent'
+                            }`}
+                          >
+                            <span className="truncate">{cityName}</span>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ml-2 flex-shrink-0 ${
+                              isExact
+                                ? 'bg-rose-500/25 text-rose-300 border border-rose-500/40'
+                                : 'bg-slate-700/80 text-slate-300'
+                            }`}>
+                              {isExact ? 'Already Exists' : 'Registered'}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              </>
             )}
           </div>
 
