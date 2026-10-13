@@ -42,9 +42,20 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'From City', key: 'fromCity' },
     { label: 'To City', key: 'toCity' },
     { label: 'Area Type', key: 'areaType' },
-    { label: 'Distance ↑', key: 'distance' },
-    { label: 'HQ ↑', key: 'headquarter' },
-    { label: 'State', key: 'state' }
+    { label: 'Distance', key: 'distance' },
+    { label: 'HQ', key: 'headquarter' },
+    { label: 'State', key: 'state' },
+    { label: 'Status', key: 'status' }
+  ],
+  'Routes': [
+    { label: 'Created By ↑', key: 'employeeName' },
+    { label: 'From City', key: 'fromCity' },
+    { label: 'To City', key: 'toCity' },
+    { label: 'Area Type', key: 'areaType' },
+    { label: 'Distance', key: 'distance' },
+    { label: 'HQ', key: 'headquarter' },
+    { label: 'State', key: 'state' },
+    { label: 'Status', key: 'status' }
   ],
   'Secondary Sales': [
     { label: 'Creation Date ↑', key: 'createdAt', isDate: true },
@@ -179,7 +190,19 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
     if (col.key === 'employeeName') {
       return item.employeeName || item.userAllotted || item.employeeId || '-';
     }
-    let val = item[col.key] || 
+    if (col.key === 'distance') {
+      const d = item.distance;
+      if (d === 0 || d === '0') return '0 KM';
+      return (d !== undefined && d !== null && d !== '') ? `${d} KM` : '-';
+    }
+    if (col.key === 'status') {
+      const st = item.status || 'Pending';
+      const color = st === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                    st === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                    'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      return <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${color}`}>{st}</span>;
+    }
+    let val = (item[col.key] !== undefined && item[col.key] !== null && item[col.key] !== '') ? item[col.key] :
       (col.key === 'businessName' ? item.name : undefined) ||
       (col.key === 'name' ? (item.cityName || item.businessName) : undefined) ||
       (col.key === 'headquarter' ? item.hq : undefined) || 
@@ -257,7 +280,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                </div>
                <div className="text-center py-4">
                   <p className="text-slate-300 font-bold uppercase tracking-wide text-sm mb-8">
-                    DO YOU WANT TO APPROVE THE {selectedRows.length} {selectedModule.toUpperCase()}{selectedRows.length !== 1 && 'S'}?
+                    DO YOU WANT TO APPROVE THE {selectedRows.length} {selectedModule.toUpperCase()}{selectedRows.length !== 1 && !selectedModule.toUpperCase().endsWith('S') ? 'S' : ''}?
                   </p>
                   <div className="flex gap-4">
                     <button onClick={() => handleBulkAction('Approved')} className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white py-3 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">

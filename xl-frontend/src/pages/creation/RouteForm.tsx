@@ -590,12 +590,13 @@ export default function RouteForm() {
                   <div className="relative flex-1">
                     <input
                       type="number"
-                      min="1"
+                      step="any"
+                      min="0"
                       max="1000"
                       value={form.distance || ''}
-                      onChange={e => setForm(prev => ({ ...prev, distance: Number(e.target.value) }))}
-                      disabled={!isDistanceEditable && !form.distance}
-                      className="w-full bg-[#141527] border border-[#3b4168] rounded-xl px-4 py-3 text-white font-bold text-base focus:border-sky-500 focus:outline-none"
+                      onChange={e => setForm(prev => ({ ...prev, distance: parseFloat(e.target.value) || 0 }))}
+                      disabled={!isDistanceEditable}
+                      className="w-full bg-[#141527] border border-[#3b4168] rounded-xl px-4 py-3 text-white font-bold text-base focus:border-sky-500 focus:outline-none disabled:opacity-80"
                       placeholder="Enter distance in KM"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-sky-400">

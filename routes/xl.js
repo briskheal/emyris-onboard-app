@@ -1252,6 +1252,55 @@ router.get('/route/distance', async (req, res) => {
         const cleanFrom = fromCity.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
         const cleanTo = toCity.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
 
+        // 2. Curated standard road distances for common pharma hubs
+        const curatedDistances = {
+            'vadodara_bharuch': 76.3,
+            'bharuch_vadodara': 76.3,
+            'vadodara_ankleshwar': 85.0,
+            'ankleshwar_vadodara': 85.0,
+            'vadodara_anand': 45.0,
+            'anand_vadodara': 45.0,
+            'vadodara_nadiad': 58.0,
+            'nadiad_vadodara': 58.0,
+            'vadodara_surat': 152.0,
+            'surat_vadodara': 152.0,
+            'vadodara_ahmedabad': 111.0,
+            'ahmedabad_vadodara': 111.0,
+            'ahmedabad_gandhinagar': 27.0,
+            'gandhinagar_ahmedabad': 27.0,
+            'ahmedabad_anand': 76.0,
+            'anand_ahmedabad': 76.0,
+            'ahmedabad_nadiad': 60.0,
+            'nadiad_ahmedabad': 60.0,
+            'surat_navsari': 38.0,
+            'navsari_surat': 38.0,
+            'surat_valsad': 92.0,
+            'valsad_surat': 92.0,
+            'surat_vapi': 115.0,
+            'vapi_surat': 115.0,
+            'surat_bharuch': 74.0,
+            'bharuch_surat': 74.0,
+            'surat_ankleshwar': 66.0,
+            'ankleshwar_surat': 66.0,
+            'bhubaneswar_cuttack': 28.0,
+            'cuttack_bhubaneswar': 28.0,
+            'bhubaneswar_puri': 58.0,
+            'puri_bhubaneswar': 58.0,
+            'mumbai_thane': 24.0,
+            'thane_mumbai': 24.0,
+            'mumbai_pune': 150.0,
+            'pune_mumbai': 150.0
+        };
+
+        const pair1 = `${cleanFrom}_${cleanTo}`;
+        const pair2 = `${cleanTo}_${cleanFrom}`;
+        if (curatedDistances[pair1]) {
+            return res.json({ success: true, distance: curatedDistances[pair1], source: 'curated_benchmark' });
+        }
+        if (curatedDistances[pair2]) {
+            return res.json({ success: true, distance: curatedDistances[pair2], source: 'curated_benchmark' });
+        }
+
         const findCoord = (name) => {
             if (cityCoords[name]) return cityCoords[name];
             for (const key of Object.keys(cityCoords)) {
@@ -1264,6 +1313,18 @@ router.get('/route/distance', async (req, res) => {
         const c2 = findCoord(cleanTo);
 
         if (c1 && c2) {
+            try {
+                const axios = require('axios');
+                const osrm = await axios.get(`https://router.project-osrm.org/route/v1/driving/${c1[1]},${c1[0]};${c2[1]},${c2[0]}?overview=false`, { timeout: 3500 });
+                if (osrm.data?.routes?.length) {
+                    const distMeters = osrm.data.routes[0].distance;
+                    const distKm = Math.round((distMeters / 1000) * 10) / 10;
+                    return res.json({ success: true, distance: distKm, source: 'osrm_driving' });
+                }
+            } catch (osrmErr) {
+                // Fallback to Haversine
+            }
+
             const R = 6371; // km
             const dLat = (c2[0] - c1[0]) * Math.PI / 180;
             const dLon = (c2[1] - c1[1]) * Math.PI / 180;
@@ -1272,7 +1333,7 @@ router.get('/route/distance', async (req, res) => {
                       Math.sin(dLon/2) * Math.sin(dLon/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
             const straightDistance = R * c;
-            const roadKm = Math.round(straightDistance * 1.28);
+            const roadKm = Math.round(straightDistance * 1.12 * 10) / 10;
             return res.json({ success: true, distance: Math.max(5, roadKm), source: 'calculated' });
         }
 
@@ -1291,7 +1352,7 @@ router.get('/route/distance', async (req, res) => {
                 const osrm = await axios.get(`https://router.project-osrm.org/route/v1/driving/${lon1},${lat1};${lon2},${lat2}?overview=false`, { timeout: 3000 });
                 if (osrm.data?.routes?.length) {
                     const distMeters = osrm.data.routes[0].distance;
-                    const distKm = Math.round(distMeters / 1000);
+                    const distKm = Math.round((distMeters / 1000) * 10) / 10;
                     return res.json({ success: true, distance: distKm, source: 'google_map_osrm' });
                 }
 
@@ -1302,7 +1363,7 @@ router.get('/route/distance', async (req, res) => {
                           Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
                           Math.sin(dLon/2) * Math.sin(dLon/2);
                 const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-                const roadKm = Math.round(R * c * 1.28);
+                const roadKm = Math.round(R * c * 1.12 * 10) / 10;
                 return res.json({ success: true, distance: Math.max(5, roadKm), source: 'calculated_nominatim' });
             }
         } catch (apiErr) {
@@ -1378,10 +1439,10 @@ router.post('/route', async (req, res) => {
             distance,
             uid,
             employeeId: employeeId || req.body.userAllotted || '',
-            status: 'Active'
+            status: 'Pending'
         });
 
-        res.json({ success: true, message: 'Route created successfully!', data: route });
+        res.json({ success: true, message: 'Route submitted for approval successfully!', data: route });
     } catch (e) {
         console.error('Create route error:', e);
         res.status(500).json({ success: false, error: 'Failed to create route: ' + e.message, message: e.message });
@@ -2755,13 +2816,28 @@ router.get('/approvals/pending', async (req, res) => {
         else if (type === 'Expense') Model = XlExpense;
         else if (type === 'Leave Request') Model = XlLeave;
         else if (type === 'City') Model = XlCity;
-        else if (type === 'Routes') Model = XlRoute;
+        else if (type === 'Routes' || type === 'Route') Model = XlRoute;
         else if (type === 'Samples') Model = XlSample;
         else if (type === 'Gifts') Model = XlGift;
         else if (type === 'Primary Sales') Model = XlPrimarySales;
         else if (type === 'Secondary Sales') Model = XlSecondarySales;
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else return res.status(400).json({ error: 'Invalid module type' });
+
+        if (type === 'Routes' || type === 'Route') {
+            try {
+                await XlRoute.update(
+                    { status: 'Pending' },
+                    { 
+                        where: { 
+                            status: 'Active', 
+                            employeeId: { [Op.ne]: null, [Op.ne]: '' } 
+                        } 
+                    }
+                );
+            } catch(e){}
+        }
+
         const userFilter = reporteeEmails 
             ? ((type === 'Chemists' || type === 'Stockists') 
                 ? { [Op.or]: [{ employeeId: reporteeEmails }, { userAllotted: reporteeEmails }] } 
@@ -2821,6 +2897,13 @@ router.get('/approvals/pending', async (req, res) => {
                 pData.cityName = pData.cityName || pData.name;
                 pData.headquarter = pData.hq || pData.headquarter;
                 pData.hq = pData.hq || pData.headquarter;
+            }
+
+            if (type === 'Routes' || type === 'Route') {
+                pData.name = `${pData.fromCity} → ${pData.toCity}`;
+                pData.headquarter = pData.hq || pData.headquarter || '';
+                pData.hq = pData.hq || pData.headquarter || '';
+                pData.details = `${pData.fromCity} to ${pData.toCity} (${pData.areaType}, ${pData.distance} KM)`;
             }
 
             if ((type === 'Primary Sales' || type === 'Secondary Sales') && pData.stockist) {
@@ -2892,7 +2975,7 @@ router.post('/approvals/action', async (req, res) => {
         else if (type === 'Expense') Model = XlExpense;
         else if (type === 'Leave Request') Model = XlLeave;
         else if (type === 'City') Model = XlCity;
-        else if (type === 'Routes') Model = XlRoute;
+        else if (type === 'Routes' || type === 'Route') Model = XlRoute;
         else if (type === 'Samples') Model = XlSample;
         else if (type === 'Gifts') Model = XlGift;
         else if (type === 'Primary Sales') Model = XlPrimarySales;
