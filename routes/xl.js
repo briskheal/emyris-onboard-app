@@ -3009,8 +3009,21 @@ router.get('/approvals/pending', async (req, res) => {
                     pData.reportingManager = u.reportingManager || '-';
                 }
             }
-            if (!pData.employeeName) {
-                pData.employeeName = pData.userAllotted || pData.employeeId || '-';
+            if (!pData.employeeName || pData.employeeName === '-' || pData.employeeName.trim() === '') {
+                if (pData.hq) {
+                    const cleanHq = pData.hq.trim().toLowerCase();
+                    const uByHq = await XlUser.findOne({
+                        where: sequelize.where(sequelize.fn('lower', sequelize.col('hq')), cleanHq)
+                    });
+                    if (uByHq) {
+                        pData.employeeName = ((uByHq.firstName || '') + ' ' + (uByHq.lastName || '')).trim() || uByHq.name || uByHq.employeeId;
+                        pData.employeeId = pData.employeeId || uByHq.employeeId;
+                    } else {
+                        pData.employeeName = 'Admin';
+                    }
+                } else {
+                    pData.employeeName = 'Admin';
+                }
             }
             if (!pData.businessName && pData.name) {
                 pData.businessName = pData.name;

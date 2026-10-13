@@ -4612,7 +4612,7 @@ router.get('/locations/cities', async (req, res) => {
 
 router.post('/locations/cities', async (req, res) => {
     try {
-        const { state, hq, cityName, areaType } = req.body;
+        let { state, hq, cityName, areaType, employeeId, employeeName } = req.body;
         const max = await getMaxUID(XlCity, 'CTY');
         const uid = 'CTY' + (max + 1);
         const cleanName = (cityName || '').trim();
@@ -4625,7 +4625,19 @@ router.post('/locations/cities', async (req, res) => {
         if (existing) {
             return res.status(400).json({ success: false, message: 'City/Area Exists', error: 'City/Area Exists' });
         }
-        const newCity = await XlCity.create({ state, hq, cityName: cleanName, uid, areaType });
+        if (!employeeName && hq) {
+            const cleanHq = hq.trim().toLowerCase();
+            const uByHq = await XlUser.findOne({
+                where: sequelize.where(sequelize.fn('lower', sequelize.col('hq')), cleanHq)
+            });
+            if (uByHq) {
+                employeeName = ((uByHq.firstName || '') + ' ' + (uByHq.lastName || '')).trim() || uByHq.name || uByHq.employeeId;
+                employeeId = employeeId || uByHq.employeeId;
+            } else {
+                employeeName = 'Admin';
+            }
+        }
+        const newCity = await XlCity.create({ state, hq, cityName: cleanName, uid, areaType, employeeId, employeeName });
         res.json({ success: true, city: newCity });
     } catch (e) {
         console.error(e);
@@ -4666,7 +4678,7 @@ router.get('/locations/routes', async (req, res) => {
 
 router.post('/locations/routes', async (req, res) => {
     try {
-        let { state, hq, fromCity, toCity, areaType, distance } = req.body;
+        let { state, hq, fromCity, toCity, areaType, distance, employeeId } = req.body;
         state = (state || '').trim();
         hq = (hq || '').toUpperCase().trim();
         fromCity = (fromCity || '').trim();
@@ -4697,9 +4709,19 @@ router.post('/locations/routes', async (req, res) => {
             });
         }
 
+        if (!employeeId && hq) {
+            const cleanHq = hq.trim().toLowerCase();
+            const uByHq = await XlUser.findOne({
+                where: sequelize.where(sequelize.fn('lower', sequelize.col('hq')), cleanHq)
+            });
+            if (uByHq) {
+                employeeId = uByHq.employeeId;
+            }
+        }
+
         const max = await getMaxUID(XlRoute, 'RTE');
         const uid = 'RTE' + (max + 1);
-        const newRoute = await XlRoute.create({ state, hq, fromCity, toCity, areaType, distance, uid });
+        const newRoute = await XlRoute.create({ state, hq, fromCity, toCity, areaType, distance, uid, employeeId });
         res.json({ success: true, route: newRoute });
     } catch (e) {
         console.error(e);

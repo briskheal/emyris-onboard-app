@@ -213,7 +213,8 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
     }
     if (col.key === 'proprietorName') return item.proprietorName || item.name || '-';
     if (col.key === 'employeeName') {
-      return item.employeeName || item.userAllotted || item.employeeId || '-';
+      const name = item.employeeName || item.userAllotted || item.employeeId;
+      return (name && name !== '-') ? name : 'Admin';
     }
     if (col.key === 'distance') {
       const d = item.distance;
