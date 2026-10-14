@@ -3647,6 +3647,8 @@ router.post('/approvals/action', async (req, res) => {
                     const max = await getMaxUID(XlStockist, 'STK');
                     record.uid = 'STK' + (max + 1);
                 }
+            }
+
             if (type === 'Tour Program') {
                 let entries = [];
                 try { entries = JSON.parse(record.entries || '[]'); } catch(e){}
