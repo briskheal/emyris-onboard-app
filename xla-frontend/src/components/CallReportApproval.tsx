@@ -102,7 +102,7 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
     const activeGroup = groupedData.find(g => g.employeeId === detailedDateData.employeeId && g.date === detailedDateData.date);
     const dt = new Date(detailedDateData.date);
     const monthName = dt.toLocaleString('default', { month: 'long' });
-    const formattedDate = dt.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
+    const formattedDate = formatDDMMYYYY(detailedDateData.date);
 
     const doctorCalls = activeGroup?.calls.filter(c => c.entityType === 'Doctor') || [];
     const chemistCalls = activeGroup?.calls.filter(c => c.entityType === 'Chemist') || [];
@@ -287,12 +287,11 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
                       <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Reports</td></tr>
                     ) : groupedData.map((d: any, idx: number) => {
                       const rowId = `${d.employeeId}_${formatDDMMYYYY(d.date)}`;
-                      const dt = new Date(d.date);
                       return (
                         <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
                           <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{dt.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-slate-300 whitespace-nowrap">{dt.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-')}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{formatDDMMYYYY(d.date)}</td>
+                          <td className="px-4 py-4 text-sm font-bold text-slate-300 whitespace-nowrap">{formatDDMMYYYY(d.date)}</td>
                           <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName}</td>
                         <td className="px-4 py-4 text-center">
                           {d.isBacklog ? <CheckCircle size={18} className="text-rose-500 mx-auto" /> : <XCircle size={18} className="text-slate-500 mx-auto opacity-30" />}

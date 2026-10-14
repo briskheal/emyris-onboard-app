@@ -172,14 +172,16 @@ export default function Approvals() {
   return (
     <div className="flex h-screen bg-[#1e1e2d] text-white overflow-hidden font-sans">
        {/* Sidebar */}
-       <div className="w-64 bg-[#151521] border-r border-[#3b3b5a] flex flex-col h-full shrink-0 shadow-2xl z-10">
-          <div className="p-5 border-b border-[#3b3b5a] flex items-center gap-3">
-             <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-white p-1 rounded hover:bg-[#27273f]">
-               <ChevronLeft size={24} />
+       <div className="w-52 bg-[#151521] border-r border-[#3b3b5a] flex flex-col h-full shrink-0 shadow-2xl z-10">
+          <div className="p-4 border-b border-[#3b3b5a] flex items-center">
+             <button 
+               onClick={() => navigate('/admin')} 
+               className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-bold uppercase tracking-widest text-xs transition-colors"
+             >
+               <ChevronLeft size={18} /> Approvals
              </button>
-             <h2 className="text-sm font-black uppercase tracking-widest text-emerald-400">Approvals</h2>
           </div>
-          <div className="flex-1 overflow-y-auto py-2 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
              {sidebarItems.map(item => {
                 const count = counts[item.path] || 0;
                 const isSelected = selectedModule === item.path;
@@ -188,11 +190,11 @@ export default function Approvals() {
                     key={item.label}
                     id={`sidebar-item-${item.path}`}
                     onClick={() => { sessionStorage.setItem('adminApprovalModule', item.path); setSelectedModule(item.path); setSelectedRows([]); }}
-                    className={`w-full text-left px-5 py-3.5 flex items-center justify-between transition-colors ${isSelected ? 'bg-emerald-500/10 text-emerald-400 border-r-[3px] border-emerald-400' : 'text-slate-400 hover:bg-[#27273f] hover:text-slate-200'}`}
+                    className={`w-full text-left px-3.5 py-2.5 rounded-lg flex items-center justify-between transition-colors text-xs font-bold uppercase tracking-wider ${isSelected ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-[#27273f] hover:text-slate-200 border border-transparent'}`}
                   >
-                     <span className="text-[11px] font-bold uppercase tracking-wider">{item.label}</span>
+                     <span className="truncate">{item.label}</span>
                      {count > 0 && (
-                        <span className="w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold shadow-lg shadow-rose-500/30">
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm shrink-0">
                           {count > 99 ? '99+' : count}
                         </span>
                      )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Plus, Check } from 'lucide-react';
+import { ChevronLeft, Plus, Check, CheckCircle } from 'lucide-react';
 
 
 function SearchableSelect({ value, onChange, options, placeholder, hideSearch }: { value: string, onChange: (val: string) => void, options: any[], placeholder?: string, hideSearch?: boolean }) {
@@ -234,6 +234,36 @@ export default function TourProgram() {
     setShowForm(true);
   };
 
+
+  const submitTourProgramForApproval = async () => {
+    if (!tpId || Object.keys(entries).length === 0) {
+      showToast('Please add at least one day before submitting.');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await axios.put(`/api/xl/tour-program/${tpId}/submit`);
+      setTpStatus('Submitted');
+      showToast('Tour Program submitted for approval!');
+    } catch (e: any) {
+      console.error('Failed to submit TP:', e);
+      showToast(e?.response?.data?.error || e?.message || 'Failed to submit Tour Program');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const revertToDraft = async () => {
+    if (!tpId) return;
+    try {
+      await axios.put(`/api/xl/tour-program/${tpId}/unsubmit`);
+      setTpStatus('Draft');
+      showToast('Tour Program reverted to Draft! You can now edit freely.');
+    } catch (e: any) {
+      showToast(e?.response?.data?.error || e?.message || 'Failed to revert to Draft');
+    }
+  };
+
   const applyForm = async (overrideRemark?: string) => {
       if ((tpStatus === 'Submitted' || tpStatus === 'Approved') && overrideRemark === undefined) {
         setShowRemarkModal(true);
@@ -285,15 +315,16 @@ export default function TourProgram() {
       const newTpId = saveRes.data?.data?._id || saveRes.data?.data?.id || tpId;
       if (newTpId) {
         setTpId(newTpId);
-        // 3. Auto-Submit for Approval
-        await axios.put(`/api/xl/tour-program/${newTpId}/submit`);
-        setTpStatus('Submitted');
       }
       
       setShowForm(false);
       setSelectionMode(false);
       setSelectedDates([]);
-      showToast('Tour Program Saved & Submitted Successfully!');
+      if (tpStatus === 'Submitted' || tpStatus === 'Approved') {
+        showToast('Tour Program updated with remark!');
+      } else {
+        showToast('Day plan saved to Tour Program!');
+      }
     } catch (e: any) {
       console.error('Failed to save TP:', e);
       showToast(e?.response?.data?.error || e?.message || 'Failed to save to database');
@@ -317,8 +348,25 @@ export default function TourProgram() {
 
       {/* Selectors */}
       <div className="px-2 py-1.5 bg-slate-800 border-b border-slate-700 flex items-center gap-2 shadow-sm sticky top-0 z-10">
-        <div className="text-[10px] font-bold text-slate-300 flex flex-col justify-center items-center px-2">
-           <span className="text-orange-400">{tpStatus}</span>
+        <div className="flex items-center gap-1.5 px-1.5">
+           <span className={`text-[10px] font-bold px-2 py-0.5 rounded border uppercase tracking-wider ${
+             tpStatus === 'Approved' ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' :
+             tpStatus === 'Submitted' ? 'bg-sky-500/15 text-sky-400 border-sky-500/30' :
+             tpStatus === 'Rejected' ? 'bg-rose-500/15 text-rose-400 border-rose-500/30' :
+             'bg-amber-500/15 text-amber-400 border-amber-500/30'
+           }`}>
+             {tpStatus}
+           </span>
+           {tpStatus === 'Submitted' && (
+             <button 
+               type="button"
+               onClick={revertToDraft} 
+               title="Revert to Draft to edit freely without remarks" 
+               className="text-[9px] text-slate-400 hover:text-sky-300 underline font-semibold transition-colors"
+             >
+               Revert to Draft
+             </button>
+           )}
         </div>
         <div className="flex-1 relative">
             <button onClick={() => {setShowMonthDropdown(!showMonthDropdown); setShowYearDropdown(false)}} className="w-full text-left bg-[#27273f] border border-[#3b3b5a] rounded-lg p-2 text-sky-300 font-bold flex justify-between items-center text-sm shadow-sm">
@@ -454,6 +502,29 @@ export default function TourProgram() {
           You have Reached the end of the List
           <div className="h-px bg-slate-700 flex-1"></div>
         </div>
+
+        {tpStatus === 'Draft' && Object.keys(entries).length > 0 && !selectionMode && (
+          <div className="p-4 mb-2">
+            <button 
+              type="button"
+              disabled={submitting} 
+              onClick={submitTourProgramForApproval} 
+              className="w-full bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 text-sm transition-all"
+            >
+              {submitting ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Submitting for Approval...
+                </>
+              ) : (
+                <>
+                  <CheckCircle size={18} />
+                  Submit {month} Tour Program for Approval
+                </>
+              )}
+            </button>
+          </div>
+        )}
 
         {!selectionMode && (
           <button 
@@ -598,10 +669,10 @@ export default function TourProgram() {
               {saving ? (
                 <>
                   <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  Saving & Submitting...
+                  Saving...
                 </>
               ) : (
-                'Save & Submit for Approval'
+                (tpStatus === 'Submitted' || tpStatus === 'Approved') ? 'Update Date Plan' : 'Save Date Plan'
               )}
             </button>
           </div>

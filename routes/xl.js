@@ -1973,6 +1973,23 @@ router.put('/tour-program/:id/submit', async (req, res) => {
         res.status(500).json({ error: 'Failed to submit Tour Program' });
     }
 });
+// Revert TP from Submitted back to Draft (if not approved)
+router.put('/tour-program/:id/unsubmit', async (req, res) => {
+    try {
+        const { XlTourProgram } = require('../db');
+        const tp = await XlTourProgram.findOne({ where: { _id: req.params.id } });
+        if (!tp) return res.status(404).json({ error: 'Tour Program not found' });
+        if (tp.status === 'Approved') {
+            return res.status(400).json({ error: 'Approved Tour Program cannot be reverted to Draft' });
+        }
+        await XlTourProgram.update({ status: 'Draft', submittedAt: null }, { where: { _id: req.params.id } });
+        res.json({ success: true, message: 'Tour Program reverted to Draft' });
+    } catch (e) {
+        console.error('Error reverting TP:', e);
+        res.status(500).json({ error: 'Failed to revert Tour Program' });
+    }
+});
+
 
 // Get my TP for a specific month/year
 router.get('/tour-program/my', async (req, res) => {
@@ -1991,7 +2008,24 @@ router.get('/tour-program/my', async (req, res) => {
             if (user.uid) idArray.push(user.uid);
         }
         
-          const tps = await XlTourProgram.findAll({ where: { employeeId: { [Op.in]: idArray }, month, year } });
+          const rawMonth = (req.query.month || '').trim();
+        const cleanMonth = rawMonth.toLowerCase();
+        const monthVariants = Array.from(new Set([
+            rawMonth,
+            cleanMonth,
+            cleanMonth.charAt(0).toUpperCase() + cleanMonth.slice(1),
+            rawMonth.slice(0, 3),
+            rawMonth.slice(0, 3).toLowerCase(),
+            rawMonth.slice(0, 3).charAt(0).toUpperCase() + rawMonth.slice(0, 3).toLowerCase().slice(1)
+        ])).filter(Boolean);
+
+        const tps = await XlTourProgram.findAll({ 
+            where: { 
+                employeeId: { [Op.in]: idArray }, 
+                month: { [Op.in]: monthVariants }, 
+                year 
+            } 
+        });
           let tp = null;
           if (tps.length > 0) {
               // Prefer Approved/Submitted over Draft, and longer entries over shorter ones
