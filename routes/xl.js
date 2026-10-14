@@ -3481,8 +3481,20 @@ router.post('/approvals/action', async (req, res) => {
             try { entries = JSON.parse(record.entries || '[]'); } catch(e){}
             if (!Array.isArray(entries)) entries = Object.values(entries);
             
+            const normalizeDate = (d) => {
+                if (!d) return '';
+                if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0];
+                if (/^\d{2}-\d{2}-\d{4}/.test(d)) {
+                    const p = d.split('-');
+                    return `${p[2]}-${p[1]}-${p[0]}`;
+                }
+                return d;
+            };
+            const reqDatesNorm = req.body.dates.map(normalizeDate);
+
             entries = entries.map(e => {
-                if (req.body.dates.includes(e.date)) {
+                const eNorm = normalizeDate(e.date);
+                if (req.body.dates.includes(e.date) || (eNorm && reqDatesNorm.includes(eNorm))) {
                     return { ...e, status: action };
                 }
                 return e;
@@ -3635,6 +3647,12 @@ router.post('/approvals/action', async (req, res) => {
                     const max = await getMaxUID(XlStockist, 'STK');
                     record.uid = 'STK' + (max + 1);
                 }
+            if (type === 'Tour Program') {
+                let entries = [];
+                try { entries = JSON.parse(record.entries || '[]'); } catch(e){}
+                if (!Array.isArray(entries)) entries = Object.values(entries);
+                entries = entries.map(e => ({ ...e, status: action }));
+                record.entries = JSON.stringify(entries);
             }
 
             record.status = action;

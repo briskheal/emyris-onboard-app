@@ -1,7 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, CheckCircle, XCircle, MapPin, Navigation, UserRound, ShoppingBag, Building2, Banknote, FileSignature, Calendar, Target, ShieldCheck, Truck, Gift } from 'lucide-react';
+import { ChevronLeft, ChevronDown, ChevronUp, CheckCircle, XCircle, MapPin, Navigation, UserRound, ShoppingBag, Building2, Banknote, FileSignature, Calendar, CalendarDays, Target, ShieldCheck, Truck, Gift } from 'lucide-react';
+
+function formatDDMMYYYY(dateStr: string) {
+  if (!dateStr) return '-';
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
+  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
+      const parts = dateStr.split('T')[0].split('-');
+      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+  }
+  try {
+      const d = new Date(dateStr);
+      if (!isNaN(d.getTime())) {
+          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
+      }
+  } catch (e) {}
+  return dateStr;
+}
+
+function getDayName(dateStr: string) {
+  try {
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) {
+      return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+    }
+  } catch(e) {}
+  return '';
+}
 
 export default function ApprovalDetail() {
   const navigate = useNavigate();
@@ -9,11 +35,39 @@ export default function ApprovalDetail() {
   
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<any[]>([]);
+  const [expandedTps, setExpandedTps] = useState<Record<string, boolean>>({});
+  const [selectedDatesMap, setSelectedDatesMap] = useState<Record<string, string[]>>({});
 
   const storedUser = localStorage.getItem('xl_user') || localStorage.getItem('user');
   const user = storedUser ? JSON.parse(storedUser) : null;
   const isAdmin = user?.isAdmin || (user?.designation && user.designation.toUpperCase() === 'ADMIN');
   const managerDesignation = isAdmin ? 'ADMIN' : (user?.designation || '');
+
+  const toggleExpand = (tpId: string) => {
+    setExpandedTps(prev => ({ ...prev, [tpId]: !prev[tpId] }));
+  };
+
+  const toggleDate = (tpId: string, dateStr: string) => {
+    setSelectedDatesMap(prev => {
+      const current = prev[tpId] || [];
+      if (current.includes(dateStr)) {
+        return { ...prev, [tpId]: current.filter(d => d !== dateStr) };
+      } else {
+        return { ...prev, [tpId]: [...current, dateStr] };
+      }
+    });
+  };
+
+  const toggleSelectAll = (tpId: string, allDates: string[]) => {
+    setSelectedDatesMap(prev => {
+      const current = prev[tpId] || [];
+      if (current.length === allDates.length) {
+        return { ...prev, [tpId]: [] };
+      } else {
+        return { ...prev, [tpId]: [...allDates] };
+      }
+    });
+  };
 
   const fetchPending = async () => {
     try {
@@ -41,8 +95,13 @@ export default function ApprovalDetail() {
     fetchPending();
   }, [type]);
 
-  const handleAction = async (recordId: string, action: string) => {
-    if (!window.confirm(`Are you sure you want to ${action} this request?`)) return;
+  const handleAction = async (recordId: string, action: string, dates?: string[]) => {
+    const isPartial = dates && dates.length > 0;
+    const confirmMsg = isPartial 
+      ? `Are you sure you want to ${action} the ${dates.length} selected day(s)?` 
+      : `Are you sure you want to ${action} this entire request?`;
+    if (!window.confirm(confirmMsg)) return;
+
     try {
       let remarks = '';
       if (action === 'Rejected') {
@@ -51,15 +110,24 @@ export default function ApprovalDetail() {
          remarks = reason;
       }
       const approverName = ((user?.firstName || '') + ' ' + (user?.lastName || '')).trim() || user?.name || user?.employeeId || (isAdmin ? 'Admin' : 'Line Manager');
-      const res = await axios.post('/api/xl/approvals/action', {
+      const payload: any = {
         recordId,
         type,
         action,
         remarks,
         approvedBy: approverName
-      });
+      };
+      if (isPartial) {
+        payload.dates = dates;
+      }
+      const res = await axios.post('/api/xl/approvals/action', payload);
       if (res.data.success) {
-        setItems(prev => prev.filter(item => item._id !== recordId));
+        if (!isPartial) {
+          setItems(prev => prev.filter(item => item._id !== recordId));
+        } else {
+          // Refresh list to update statuses of days
+          fetchPending();
+        }
       } else {
         alert(res.data.message || 'Action failed');
       }
@@ -168,19 +236,188 @@ export default function ApprovalDetail() {
           </div>
         );
 
-      case 'Tour Program':
+      case 'Tour Program': {
+        let entries: any[] = [];
+        try {
+          entries = typeof item.entries === 'string' ? JSON.parse(item.entries || '[]') : (item.entries || []);
+        } catch (e) {}
+        if (!Array.isArray(entries)) entries = Object.values(entries || {});
+
+        const sortedEntries = [...entries].sort((a: any, b: any) => {
+          const tA = new Date(a.date).getTime();
+          const tB = new Date(b.date).getTime();
+          if (isNaN(tA) || isNaN(tB)) return (a.date || '').localeCompare(b.date || '');
+          return tA - tB;
+        });
+
+        const isExpanded = expandedTps[item._id] !== false; // expanded by default
+        const selectedDates = selectedDatesMap[item._id] || [];
+        const allDates = sortedEntries.map((e: any) => e.date).filter(Boolean);
+
+        const approvedCount = sortedEntries.filter((e: any) => e.status === 'Approved').length;
+        const rejectedCount = sortedEntries.filter((e: any) => e.status === 'Rejected').length;
+        const pendingCount = sortedEntries.filter((e: any) => !e.status || e.status === 'Pending' || e.status === 'Submitted').length;
+
         return (
-          <div className="space-y-1 text-xs text-slate-300">
-            <p className="font-bold text-white text-sm flex items-center gap-1.5">
-              <Calendar size={15} className="text-sky-400" /> {item.month} {item.year}
-            </p>
-            <p className="text-slate-400">
-              Days Planned: <strong className="text-slate-200">
-                {Array.isArray(item.entries) ? item.entries.length : (typeof item.entries === 'string' ? (() => { try { return JSON.parse(item.entries).length; } catch(e){ return '-'; } })() : '-')} days
-              </strong>
-            </p>
+          <div className="space-y-3">
+            {/* Header summary bar */}
+            <div className="flex items-center justify-between bg-slate-800/80 p-3 rounded-xl border border-slate-600/60">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-400 flex items-center justify-center border border-sky-500/20 shrink-0">
+                  <CalendarDays size={18} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-white text-sm capitalize">{item.month} {item.year}</h4>
+                  <p className="text-[11px] text-slate-400">{sortedEntries.length} Days Planned</p>
+                </div>
+              </div>
+
+              {/* Status counters and expand toggle */}
+              <div className="flex items-center gap-1.5">
+                {approvedCount > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    {approvedCount} Appr
+                  </span>
+                )}
+                {rejectedCount > 0 && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                    {rejectedCount} Rej
+                  </span>
+                )}
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  {pendingCount} Pend
+                </span>
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(item._id)}
+                  className="ml-1 p-1 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-white transition-colors"
+                  title={isExpanded ? 'Collapse Day-wise Plan' : 'Expand Day-wise Plan'}
+                >
+                  {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Day-wise schedule */}
+            {isExpanded && (
+              <div className="space-y-2 pt-1">
+                {/* Select All Bar */}
+                <div className="flex items-center justify-between px-1 py-1 text-xs">
+                  <label className="flex items-center gap-2 cursor-pointer select-none font-semibold text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={allDates.length > 0 && selectedDates.length === allDates.length}
+                      onChange={() => toggleSelectAll(item._id, allDates)}
+                      className="w-4 h-4 rounded bg-slate-800 border-slate-600 text-sky-500 focus:ring-sky-500"
+                    />
+                    <span>Select All ({allDates.length} days)</span>
+                  </label>
+                  {selectedDates.length > 0 && (
+                    <span className="text-[11px] font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-500/20">
+                      {selectedDates.length} selected
+                    </span>
+                  )}
+                </div>
+
+                {/* Scrollable list of days */}
+                <div className="max-h-80 overflow-y-auto space-y-1.5 pr-0.5">
+                  {sortedEntries.length === 0 ? (
+                    <p className="text-center py-4 text-xs text-slate-500 italic">No tour program entries found</p>
+                  ) : (
+                    sortedEntries.map((entry: any, idx: number) => {
+                      const isSelected = selectedDates.includes(entry.date);
+                      const dayStatus = entry.status || item.status || 'Pending';
+                      const areaType = entry.type || entry.areaType || 'HQ';
+                      
+                      let areaBadgeClass = 'bg-slate-700/60 text-slate-300 border-slate-600';
+                      if (areaType === 'HQ') areaBadgeClass = 'bg-sky-500/15 text-sky-300 border-sky-500/30';
+                      else if (areaType === 'EX-HQ' || areaType === 'Ex-Mkt') areaBadgeClass = 'bg-violet-500/15 text-violet-300 border-violet-500/30';
+                      else if (areaType === 'Out-Station') areaBadgeClass = 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+                      else if (areaType === 'Transit') areaBadgeClass = 'bg-teal-500/15 text-teal-300 border-teal-500/30';
+
+                      return (
+                        <div
+                          key={entry.date || idx}
+                          onClick={() => toggleDate(item._id, entry.date)}
+                          className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center gap-2.5 ${
+                            isSelected 
+                              ? 'bg-sky-950/40 border-sky-500/50 shadow-sm' 
+                              : 'bg-slate-800/60 hover:bg-slate-800/90 border-slate-700/70'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleDate(item._id, entry.date);
+                            }}
+                            className="w-4 h-4 rounded bg-slate-700 border-slate-500 text-sky-500 focus:ring-sky-500 shrink-0"
+                          />
+
+                          {/* Date & Day */}
+                          <div className="w-24 shrink-0">
+                            <div className="font-bold text-white text-xs">
+                              {formatDDMMYYYY(entry.date)}
+                            </div>
+                            <div className="text-[10px] font-semibold text-slate-400">
+                              {getDayName(entry.date)}
+                            </div>
+                          </div>
+
+                          {/* Location & Details */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wider ${areaBadgeClass}`}>
+                                {areaType}
+                              </span>
+                              {entry.isEdited && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 uppercase tracking-wider">
+                                  Edited
+                                </span>
+                              )}
+                              {entry.activityType && entry.activityType !== 'Working' && (
+                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${
+                                  entry.activityType === 'Leave' 
+                                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                    : 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                }`}>
+                                  {entry.activityType}
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-sky-300 font-semibold truncate mt-0.5" title={entry.toMarket || '-'}>
+                              {entry.toMarket || '-'}
+                            </div>
+                            {entry.remarks && (
+                              <div className="text-[10px] text-slate-400 italic truncate">
+                                {entry.remarks}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status Badge */}
+                          <div className="shrink-0 text-right">
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border ${
+                              dayStatus === 'Approved'
+                                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                : dayStatus === 'Rejected'
+                                ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                                : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                            }`}>
+                              {dayStatus}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
+      }
 
       case 'Call Report':
         return (
@@ -289,18 +526,49 @@ export default function ApprovalDetail() {
 
                 {/* Actions */}
                 <div className="flex gap-2 mt-3 pt-3 border-t border-slate-600/50">
-                  <button 
-                    onClick={() => handleAction(item._id, 'Rejected')} 
-                    className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-xl py-2 flex items-center justify-center gap-1.5 text-xs font-bold active:bg-rose-500/20 transition-colors"
-                  >
-                    <XCircle size={15} /> Reject
-                  </button>
-                  <button 
-                    onClick={() => handleAction(item._id, 'Approved')} 
-                    className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl py-2 flex items-center justify-center gap-1.5 text-xs font-bold active:bg-emerald-500/20 transition-colors"
-                  >
-                    <CheckCircle size={15} /> Approve
-                  </button>
+                  {type === 'Tour Program' ? (
+                    <>
+                      <button 
+                        onClick={() => {
+                          const selected = selectedDatesMap[item._id] || [];
+                          handleAction(item._id, 'Rejected', selected.length > 0 ? selected : undefined);
+                        }} 
+                        className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
+                      >
+                        <XCircle size={15} /> 
+                        {(selectedDatesMap[item._id] || []).length > 0 
+                          ? `Reject Selected (${selectedDatesMap[item._id].length})` 
+                          : 'Reject Entire Plan'}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const selected = selectedDatesMap[item._id] || [];
+                          handleAction(item._id, 'Approved', selected.length > 0 ? selected : undefined);
+                        }} 
+                        className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
+                      >
+                        <CheckCircle size={15} /> 
+                        {(selectedDatesMap[item._id] || []).length > 0 
+                          ? `Approve Selected (${selectedDatesMap[item._id].length})` 
+                          : 'Approve Entire Plan'}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={() => handleAction(item._id, 'Rejected')} 
+                        className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-xl py-2 flex items-center justify-center gap-1.5 text-xs font-bold active:bg-rose-500/20 transition-colors"
+                      >
+                        <XCircle size={15} /> Reject
+                      </button>
+                      <button 
+                        onClick={() => handleAction(item._id, 'Approved')} 
+                        className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl py-2 flex items-center justify-center gap-1.5 text-xs font-bold active:bg-emerald-500/20 transition-colors"
+                      >
+                        <CheckCircle size={15} /> Approve
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
