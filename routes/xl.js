@@ -1861,11 +1861,24 @@ router.post('/tour-program', async (req, res) => {
                 const u = await XlUser.findOne({ where: { employeeId } });
                 if (u && u.reportingManager) {
                     try {
-                        await XlNotification.create({
-                            employeeId: u.reportingManager,
-                            title: 'Tour Program Resubmitted',
-                            message: `${employeeName} modified their ${month} ${year} Tour Program. Remark: ${resubmitRemark}`
+                        const managers = await XlUser.findAll({
+                            where: {
+                                [Op.or]: [
+                                    { designation: u.reportingManager },
+                                    { employeeId: u.reportingManager }
+                                ]
+                            }
                         });
+                        for (const m of managers) {
+                            if (m.employeeId) {
+                                await XlNotification.create({
+                                    _id: generateId(),
+                                    employeeId: m.employeeId,
+                                    title: 'Tour Program Resubmitted',
+                                    message: `${employeeName} modified their ${month} ${year} Tour Program. Remark: ${resubmitRemark}`
+                                }).catch(() => {});
+                            }
+                        }
                     } catch(e) {}
                 }
             }
@@ -1882,7 +1895,6 @@ router.post('/tour-program', async (req, res) => {
         res.json({ success: true, message: 'Tour Program saved!', data: tp });
     } catch (e) {
         console.error('TP save error:', e);
-          require('fs').appendFileSync('tp_error.log', e.stack + '\n');
         res.status(500).json({ error: 'Failed to save Tour Program' });
     }
 });
@@ -1890,42 +1902,55 @@ router.post('/tour-program', async (req, res) => {
 // Submit TP for approval
 router.put('/tour-program/:id/submit', async (req, res) => {
     try {
-        
         const tp = await XlTourProgram.findOne({ where: { _id: req.params.id } });
         if (!tp) return res.status(404).json({ error: 'Not found' });
 
         await XlTourProgram.update({ status: 'Submitted', submittedAt: new Date() }, { where: { _id: req.params.id } });
 
-        // Notify reporting manager
-        const user = await XlUser.findOne({ where: { employeeId: tp.employeeId } });
-        if (user && user.reportingManager) {
-            // Find managers who hold this designation
-            const managers = await XlUser.findAll({ where: { designation: user.reportingManager } });
-            for (const m of managers) {
+        // Non-blocking notifications
+        try {
+            const user = await XlUser.findOne({ where: { employeeId: tp.employeeId } });
+            if (user && user.reportingManager) {
+                const managers = await XlUser.findAll({ 
+                    where: { 
+                        [Op.or]: [
+                            { designation: user.reportingManager },
+                            { employeeId: user.reportingManager }
+                        ]
+                    } 
+                });
+                for (const m of managers) {
+                    if (m.employeeId) {
+                        await XlNotification.create({
+                            _id: generateId(),
+                            employeeId: m.employeeId,
+                            title: 'Tour Program Submitted',
+                            message: `${tp.employeeName || 'A user'} has submitted their Tour Program for ${tp.month} ${tp.year} for approval.`
+                        }).catch(() => {});
+                    }
+                }
+            }
+            
+            // Also notify global admin
+            await XlNotification.create({
+                _id: generateId(),
+                employeeId: 'ADMIN',
+                title: 'Tour Program Submitted',
+                message: `${tp.employeeName || 'A user'} has submitted their Tour Program for ${tp.month} ${tp.year} for approval.`
+            }).catch(() => {});
+            
+            // Notify the submitter
+            if (tp.employeeId) {
                 await XlNotification.create({
                     _id: generateId(),
-                    employeeId: m.employeeId,
+                    employeeId: tp.employeeId,
                     title: 'Tour Program Submitted',
-                    message: `${tp.employeeName} has submitted their Tour Program for ${tp.month} ${tp.year} for approval.`
-                });
+                    message: `You have successfully submitted your Tour Program for ${tp.month} ${tp.year} for approval.`
+                }).catch(() => {});
             }
+        } catch (notifErr) {
+            console.error('Notification warning in TP submit:', notifErr);
         }
-        
-        // Also notify global admin
-        await XlNotification.create({
-            _id: generateId(),
-            employeeId: 'ADMIN',
-            title: 'Tour Program Submitted',
-            message: `${tp.employeeName} has submitted their Tour Program for ${tp.month} ${tp.year} for approval.`
-        });
-        
-        // Notify the submitter
-        await XlNotification.create({
-            _id: generateId(),
-            employeeId: tp.employeeId,
-            title: 'Tour Program Submitted',
-            message: `You have successfully submitted your Tour Program for ${tp.month} ${tp.year} for approval.`
-        });
 
         res.json({ success: true, message: 'Tour Program submitted for approval!' });
     } catch (e) {

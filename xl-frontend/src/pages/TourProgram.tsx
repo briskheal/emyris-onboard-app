@@ -278,22 +278,25 @@ export default function TourProgram() {
         hq: user?.hq || '', 
         month, 
         year, 
-        entries: entriesArr
+        entries: entriesArr,
+        resubmitRemark
       });
       
-      const newTpId = saveRes.data.data._id;
-      setTpId(newTpId);
-      
-      // 3. Auto-Submit for Approval
-      await axios.put(`/api/xl/tour-program/${newTpId}/submit`);
-      setTpStatus('Submitted');
+      const newTpId = saveRes.data?.data?._id || saveRes.data?.data?.id || tpId;
+      if (newTpId) {
+        setTpId(newTpId);
+        // 3. Auto-Submit for Approval
+        await axios.put(`/api/xl/tour-program/${newTpId}/submit`);
+        setTpStatus('Submitted');
+      }
       
       setShowForm(false);
       setSelectionMode(false);
       setSelectedDates([]);
-      showToast('Auto Approved! Tour Program Created Successfully');
+      showToast('Tour Program Saved & Submitted Successfully!');
     } catch (e: any) {
-      showToast(e?.response?.data?.error || 'Failed to save to database');
+      console.error('Failed to save TP:', e);
+      showToast(e?.response?.data?.error || e?.message || 'Failed to save to database');
     } finally {
       setSaving(false);
     }
@@ -307,115 +310,6 @@ export default function TourProgram() {
       default: return <span className="px-2 py-1 bg-purple-500/20 text-purple-400 text-[10px] font-bold rounded border border-purple-500/30">{type.substring(0,3).toUpperCase()}</span>;
     }
   };
-
-  if (showForm) {
-    return (
-      <div className="fixed inset-y-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 bg-slate-900 z-[100] flex flex-col font-sans">
-        {/* Form Header */}
-        <div className="flex items-center px-4 py-3 bg-slate-800 gap-3 border-b border-slate-700 shadow-md">
-          <button onClick={() => setShowForm(false)} className="text-slate-300 hover:text-white">
-            <ChevronLeft size={24}/>
-          </button>
-          <div>
-            <div className="text-white font-bold text-lg">
-              {formDates.length === 1 ? formDates[0] : `Creating Tour Programs for ${formDates.length} dates`}
-            </div>
-            <div className="text-sky-400 text-xs">Tap to view all dates</div>
-          </div>
-        </div>
-
-        {/* Form Content */}
-        <div className="p-4 flex flex-col gap-5 overflow-y-auto pb-[140px] relative z-[60]">
-          <div className="text-xl font-semibold text-white mb-2 border-b border-slate-700 pb-2">Tour Program</div>
-
-          {/* Activity Type */}
-          <div>
-            <label className="text-slate-300 text-sm mb-1.5 block font-medium">Activity Type <span className="text-red-500">*</span></label>
-            <div className="relative">
-              <SearchableSelect 
-                  value={formActivity}
-                  onChange={val => setFormActivity(val)}
-                  options={[
-                    {value: 'Working', label: 'Working'},
-                    {value: 'Half Day', label: 'Half Day'},
-                    {value: 'Training', label: 'Training'},
-                    {value: 'Seminar', label: 'Seminar'},
-                    {value: 'Transit', label: 'Transit'},
-                    {value: 'Meeting', label: 'Meeting'},
-                    {value: 'Conference', label: 'Conference'},
-                    {value: 'Half Day (Meeting)', label: 'Half Day (Meeting)'},
-                    {value: 'Half Day (Field work)', label: 'Half Day (Field work)'},
-                    {value: 'Admin', label: 'Admin'},
-                    {value: 'Market Survey and camp', label: 'Market Survey and camp'},
-                    {value: 'Leave', label: 'Leave'}
-                  ]}
-                />
-            </div>
-          </div>
-
-          {/* Area Type */}
-            <div>
-              <label className="text-slate-300 text-sm mb-1.5 block font-medium">Area Type <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <SearchableSelect 
-                    value={formArea}
-                    onChange={val => { setFormArea(val); setFormLocation(''); }}
-                    options={[
-                    {value: 'HQ', label: 'HQ'},
-                    {value: 'Ex-Mkt', label: 'Ex-Mkt'},
-                    {value: 'Out-Mkt', label: 'Out-Mkt'},
-                    {value: 'Out-Ex-Mkt', label: 'Out-Ex-Mkt'},
-                    {value: 'Out-Stn-Last-Day', label: 'Out-Stn-Last-Day'}
-                  ]}
-                />
-            </div>
-          </div>
-
-          {/* Route / Location */}
-          {/* Route / Location */}
-            <div>
-      <label className="text-slate-300 text-sm mb-1.5 block font-medium">Route / Location <span className="text-red-500">*</span></label>
-      <div className="relative">
-        {(() => {
-            const filteredRoutes = routeList ? routeList.filter((r: any) => {
-                  const at = formArea;
-                  let expectedType = '';
-                  if (at === 'HQ') expectedType = 'Local';
-                  else if (at === 'Ex-Mkt' || at === 'Out-Ex-Mkt') expectedType = 'Ex-Station';
-                  else if (at === 'Out-Mkt' || at === 'Out-Stn-Last-Day') expectedType = 'Out-Station';
-                  
-                  if (!expectedType) return true;
-                  return r.areaType === expectedType;
-            }).map((r: any) => ({
-                value: `${r.fromCity} - ${r.toCity}`,
-                label: `${r.fromCity} - ${r.toCity}`
-            })) : [];
-
-            return (
-                <SearchableSelect 
-                  value={formLocation}
-                  onChange={val => setFormLocation(val)}
-                  placeholder="Select Route"
-                  options={filteredRoutes}
-                />
-            );
-          })()}
-        </div>
-      </div>
-          </div>
-  
-          {/* Form Footer */}
-        <div className="fixed bottom-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-[50]">
-          <button 
-            onClick={applyForm}
-            className="w-full bg-teal-600 active:bg-teal-700 text-white py-3.5 rounded-lg font-bold text-lg shadow-lg"
-          >
-            Save & Submit for Approval
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-full bg-[#1e2335] font-sans flex flex-col" style={{ paddingBottom: 'calc(105px + env(safe-area-inset-bottom))' }}>
@@ -597,8 +491,125 @@ export default function TourProgram() {
       )}
 
       
+      {/* Form Overlay Modal */}
+      {showForm && (
+        <div className="fixed inset-0 w-full max-w-md mx-auto bg-slate-900 z-[100] flex flex-col font-sans">
+          {/* Form Header */}
+          <div className="flex items-center px-4 py-3 bg-slate-800 gap-3 border-b border-slate-700 shadow-md">
+            <button onClick={() => setShowForm(false)} className="text-slate-300 hover:text-white">
+              <ChevronLeft size={24}/>
+            </button>
+            <div>
+              <div className="text-white font-bold text-lg">
+                {formDates.length === 1 ? formDates[0] : `Creating Tour Programs for ${formDates.length} dates`}
+              </div>
+              <div className="text-sky-400 text-xs">Tap to view all dates</div>
+            </div>
+          </div>
+
+          {/* Form Content */}
+          <div className="p-4 flex flex-col gap-5 overflow-y-auto pb-[140px] relative z-[60]">
+            <div className="text-xl font-semibold text-white mb-2 border-b border-slate-700 pb-2">Tour Program</div>
+
+            {/* Activity Type */}
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block font-medium">Activity Type <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <SearchableSelect 
+                  value={formActivity}
+                  onChange={val => setFormActivity(val)}
+                  options={[
+                    {value: 'Working', label: 'Working'},
+                    {value: 'Half Day', label: 'Half Day'},
+                    {value: 'Training', label: 'Training'},
+                    {value: 'Seminar', label: 'Seminar'},
+                    {value: 'Transit', label: 'Transit'},
+                    {value: 'Meeting', label: 'Meeting'},
+                    {value: 'Conference', label: 'Conference'},
+                    {value: 'Half Day (Meeting)', label: 'Half Day (Meeting)'},
+                    {value: 'Half Day (Field work)', label: 'Half Day (Field work)'},
+                    {value: 'Admin', label: 'Admin'},
+                    {value: 'Market Survey and camp', label: 'Market Survey and camp'},
+                    {value: 'Leave', label: 'Leave'}
+                  ]}
+                />
+              </div>
+            </div>
+
+            {/* Area Type */}
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block font-medium">Area Type <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <SearchableSelect 
+                  value={formArea}
+                  onChange={val => { setFormArea(val); setFormLocation(''); }}
+                  options={[
+                    {value: 'HQ', label: 'HQ'},
+                    {value: 'Ex-Mkt', label: 'Ex-Mkt'},
+                    {value: 'Out-Mkt', label: 'Out-Mkt'},
+                    {value: 'Out-Ex-Mkt', label: 'Out-Ex-Mkt'},
+                    {value: 'Out-Stn-Last-Day', label: 'Out-Stn-Last-Day'}
+                  ]}
+                />
+              </div>
+            </div>
+
+            {/* Route / Location */}
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block font-medium">
+                Route / Location {['Ex-Mkt', 'Out-Mkt', 'Out-Ex-Mkt', 'Out-Stn-Last-Day'].includes(formArea) ? <span className="text-red-500">*</span> : <span className="text-slate-500 font-normal text-xs">(Optional for HQ)</span>}
+              </label>
+              <div className="relative">
+                {(() => {
+                  const filteredRoutes = routeList ? routeList.filter((r: any) => {
+                    const at = formArea;
+                    let expectedType = '';
+                    if (at === 'HQ') expectedType = 'Local';
+                    else if (at === 'Ex-Mkt' || at === 'Out-Ex-Mkt') expectedType = 'Ex-Station';
+                    else if (at === 'Out-Mkt' || at === 'Out-Stn-Last-Day') expectedType = 'Out-Station';
+                    
+                    if (!expectedType) return true;
+                    return r.areaType === expectedType;
+                  }).map((r: any) => ({
+                    value: `${r.fromCity} - ${r.toCity}`,
+                    label: `${r.fromCity} - ${r.toCity}`
+                  })) : [];
+
+                  return (
+                    <SearchableSelect 
+                      value={formLocation}
+                      onChange={val => setFormLocation(val)}
+                      placeholder="Select Route"
+                      options={filteredRoutes}
+                    />
+                  );
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* Form Footer */}
+          <div className="fixed bottom-0 w-full max-w-md mx-auto left-1/2 -translate-x-1/2 p-4 bg-slate-900 border-t border-slate-800 shadow-[0_-4px_15px_rgba(0,0,0,0.5)] z-[50]">
+            <button 
+              disabled={saving}
+              onClick={() => applyForm()}
+              className="w-full bg-teal-600 active:bg-teal-700 disabled:opacity-50 text-white py-3.5 rounded-lg font-bold text-lg shadow-lg flex items-center justify-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                  Saving & Submitting...
+                </>
+              ) : (
+                'Save & Submit for Approval'
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
       {showRemarkModal && (
-        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div className="fixed inset-0 bg-black/70 z-[200] flex items-center justify-center p-4 backdrop-blur-sm">
            <div className="bg-[#1e2335] border border-[#3b3b5a] rounded-xl p-5 w-full max-w-sm shadow-2xl">
                <h3 className="text-white font-bold text-lg mb-2">Resubmission Remark</h3>
                <p className="text-slate-400 text-sm mb-4">You are modifying a submitted Tour Program. Please provide a reason for this change.</p>
@@ -627,7 +638,7 @@ export default function TourProgram() {
       )}
 
       {toastMsg && (
-        <div className="fixed bottom-32 left-4 right-4 bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 text-sm font-bold text-white text-center z-[150] shadow-2xl">
+        <div className="fixed bottom-32 left-4 right-4 bg-slate-800 border border-slate-600 text-white rounded-xl px-4 py-3 text-sm font-bold text-center z-[300] shadow-2xl">
           {toastMsg}
         </div>
       )}
