@@ -3013,7 +3013,7 @@ router.get('/approvals/counts', async (req, res) => {
         let reporteeEmails = null;
         let subordinateHQs = [];
 
-        const empIdentifier = employeeId || email || userAllotted;
+        const empIdentifier = employeeId || email || userAllotted || (req.user && (req.user.email || req.user.id));
         let mgrUser = null;
         if (empIdentifier) {
             mgrUser = await XlUser.findOne({
@@ -3047,80 +3047,93 @@ router.get('/approvals/counts', async (req, res) => {
         }
 
         const baseStatus = ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'];
+        const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
         const empCondition = isAdmin 
             ? { status: baseStatus } 
-            : { status: baseStatus, employeeId: { [Op.in]: reporteeEmails } };
+            : { status: baseStatus, employeeId: empIn };
         
         const counts = {};
-        
-        // Modules that support approvals
-        // Group Call Reports by employeeId and date
-        const callGroups = await XlDCR.findAll({
-            where: empCondition,
-            attributes: ['employeeId', 'date'],
-            group: ['employeeId', 'date'],
-            raw: true
-        });
-        counts['Call Report'] = callGroups.length;
-        
+        const countErrors = {};
+        const safeCount = async (name, fn) => {
+            try {
+                counts[name] = await fn();
+            } catch (err) {
+                console.error(`[Approvals Count] Error in ${name}:`, err.message);
+                counts[name] = 0;
+                countErrors[name] = err.message;
+            }
+        };
+
         const tourProgramCond = isAdmin ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
-                { employeeId: { [Op.in]: reporteeEmails } },
+                { employeeId: empIn },
                 ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
             ]
         };
-        counts['Tour Program'] = await XlTourProgram.count({ where: tourProgramCond });
-        counts['Call Plans'] = await XlCallPlan.count({ where: empCondition });
-        counts['Doctors'] = await XlDoctor.count({ where: empCondition });
 
         const chemistStockistCond = isAdmin ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
-                { employeeId: { [Op.in]: reporteeEmails } },
-                { userAllotted: { [Op.in]: reporteeEmails } },
+                { employeeId: empIn },
+                { userAllotted: empIn },
                 ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }] : [])
             ]
         };
-        counts['Chemists'] = await XlChemist.count({ where: chemistStockistCond });
-        counts['Stockists'] = await XlStockist.count({ where: chemistStockistCond });
 
         const locationCond = isAdmin ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
-                { employeeId: { [Op.in]: reporteeEmails } },
+                { employeeId: empIn },
                 ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
             ]
         };
-        counts['City'] = await XlCity.count({ where: locationCond });
-        counts['Routes'] = await XlRoute.count({ where: locationCond });
-        
-        // Group Expenses by employeeId and date to match the UI behavior
-        const expenseGroups = await XlExpense.findAll({
-            where: empCondition,
-            attributes: ['employeeId', 'date'],
-            group: ['employeeId', 'date'],
-            raw: true
+
+        await safeCount('Call Report', async () => {
+            const callGroups = await XlDCR.findAll({
+                where: empCondition,
+                attributes: ['employeeId', 'date'],
+                group: ['employeeId', 'date'],
+                raw: true
+            });
+            return callGroups.length;
         });
-        counts['Expense'] = expenseGroups.length;
 
-        counts['Leave Request'] = await XlLeave.count({ where: empCondition });
-        counts['Primary Sales'] = await XlPrimarySales.count({ where: empCondition });
-        counts['Secondary Sales'] = await XlSecondarySales.count({ where: empCondition });
-        counts['Samples'] = await XlSample.count({ where: empCondition });
-        counts['Gifts'] = await XlGift.count({ where: empCondition });
-        counts['Geo Fencing'] = await XlGeoFencing.count({ where: empCondition });
+        await safeCount('Tour Program', () => XlTourProgram.count({ where: tourProgramCond }));
+        await safeCount('Call Plans', () => XlCallPlan.count({ where: empCondition }));
+        await safeCount('Doctors', () => XlDoctor.count({ where: empCondition }));
+        await safeCount('Chemists', () => XlChemist.count({ where: chemistStockistCond }));
+        await safeCount('Stockists', () => XlStockist.count({ where: chemistStockistCond }));
+        await safeCount('City', () => XlCity.count({ where: locationCond }));
+        await safeCount('Routes', () => XlRoute.count({ where: locationCond }));
 
-        counts['Performance KPI'] = await XlPerformanceAnalysis.count({
+        await safeCount('Expense', async () => {
+            const expenseGroups = await XlExpense.findAll({
+                where: empCondition,
+                attributes: ['employeeId', 'date'],
+                group: ['employeeId', 'date'],
+                raw: true
+            });
+            return expenseGroups.length;
+        });
+
+        await safeCount('Leave Request', () => XlLeave.count({ where: empCondition }));
+        await safeCount('Primary Sales', () => XlPrimarySales.count({ where: empCondition }));
+        await safeCount('Secondary Sales', () => XlSecondarySales.count({ where: empCondition }));
+        await safeCount('Samples', () => XlSample.count({ where: empCondition }));
+        await safeCount('Gifts', () => XlGift.count({ where: empCondition }));
+        await safeCount('Geo Fencing', () => XlGeoFencing.count({ where: empCondition }));
+
+        await safeCount('Performance KPI', () => XlPerformanceAnalysis.count({
             where: isAdmin 
                 ? { planningSubmittedAt: { [Op.ne]: null } } 
-                : { planningSubmittedAt: { [Op.ne]: null }, employeeId: { [Op.in]: reporteeEmails } }
-        });
+                : { planningSubmittedAt: { [Op.ne]: null }, employeeId: empIn }
+        }));
         
-        res.json({ success: true, counts });
+        res.json({ success: true, counts, ...(Object.keys(countErrors).length > 0 ? { countErrors } : {}) });
     } catch (e) {
         console.error('Approvals count error:', e);
-        res.status(500).json({ error: 'Failed to fetch counts' });
+        res.status(500).json({ error: 'Failed to fetch counts', message: e.message, stack: e.stack });
     }
 });
 
@@ -3130,7 +3143,7 @@ router.get('/approvals/pending', async (req, res) => {
         let reporteeEmails = null;
         let subordinateHQs = [];
 
-        const empIdentifier = employeeId || email || userAllotted;
+        const empIdentifier = employeeId || email || userAllotted || (req.user && (req.user.email || req.user.id));
         let mgrUser = null;
         if (empIdentifier) {
             mgrUser = await XlUser.findOne({
@@ -3164,9 +3177,10 @@ router.get('/approvals/pending', async (req, res) => {
         }
 
         if (type === 'Performance KPI') {
+            const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
             const perfs = await XlPerformanceAnalysis.findAll({
                 where: {
-                    ...(reporteeEmails ? { employeeId: reporteeEmails } : {}),
+                    ...(isAdmin ? {} : { employeeId: empIn }),
                     planningSubmittedAt: { [Op.ne]: null }
                 },
                 raw: true
@@ -3220,23 +3234,24 @@ router.get('/approvals/pending', async (req, res) => {
 
         let userFilter = {};
         if (!isAdmin) {
+            const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
             if (type === 'Chemists' || type === 'Stockists') {
                 userFilter = {
                     [Op.or]: [
-                        { employeeId: reporteeEmails },
-                        { userAllotted: reporteeEmails },
+                        { employeeId: empIn },
+                        { userAllotted: empIn },
                         ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }] : [])
                     ]
                 };
             } else if (type === 'Tour Program' || type === 'City' || type === 'Routes' || type === 'Route') {
                 userFilter = {
                     [Op.or]: [
-                        { employeeId: reporteeEmails },
+                        { employeeId: empIn },
                         ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
                     ]
                 };
             } else {
-                userFilter = { employeeId: reporteeEmails };
+                userFilter = { employeeId: empIn };
             }
         }
 
@@ -3371,8 +3386,8 @@ router.get('/approvals/pending', async (req, res) => {
 
         res.json({ success: true, data });
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: 'Failed to fetch pending approvals' });
+        console.error('Pending approvals error:', e);
+        res.status(500).json({ error: 'Failed to fetch pending approvals', message: e.message, stack: e.stack });
     }
 });
 
