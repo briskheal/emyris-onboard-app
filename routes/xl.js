@@ -3072,7 +3072,15 @@ router.get('/approvals/counts', async (req, res) => {
             ]
         };
 
-        const chemistStockistCond = isAdmin ? { status: baseStatus } : {
+        const chemistCond = isAdmin ? { status: baseStatus } : {
+            status: baseStatus,
+            [Op.or]: [
+                { userAllotted: empIn },
+                ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }] : [])
+            ]
+        };
+
+        const stockistCond = isAdmin ? { status: baseStatus } : {
             status: baseStatus,
             [Op.or]: [
                 { employeeId: empIn },
@@ -3102,8 +3110,8 @@ router.get('/approvals/counts', async (req, res) => {
         await safeCount('Tour Program', () => XlTourProgram.count({ where: tourProgramCond }));
         await safeCount('Call Plans', () => XlCallPlan.count({ where: empCondition }));
         await safeCount('Doctors', () => XlDoctor.count({ where: empCondition }));
-        await safeCount('Chemists', () => XlChemist.count({ where: chemistStockistCond }));
-        await safeCount('Stockists', () => XlStockist.count({ where: chemistStockistCond }));
+        await safeCount('Chemists', () => XlChemist.count({ where: chemistCond }));
+        await safeCount('Stockists', () => XlStockist.count({ where: stockistCond }));
         await safeCount('City', () => XlCity.count({ where: locationCond }));
         await safeCount('Routes', () => XlRoute.count({ where: locationCond }));
 
@@ -3235,7 +3243,14 @@ router.get('/approvals/pending', async (req, res) => {
         let userFilter = {};
         if (!isAdmin) {
             const empIn = (reporteeEmails && reporteeEmails.length > 0) ? { [Op.in]: reporteeEmails } : { [Op.in]: ['__NONE__'] };
-            if (type === 'Chemists' || type === 'Stockists') {
+            if (type === 'Chemists') {
+                userFilter = {
+                    [Op.or]: [
+                        { userAllotted: empIn },
+                        ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }] : [])
+                    ]
+                };
+            } else if (type === 'Stockists') {
                 userFilter = {
                     [Op.or]: [
                         { employeeId: empIn },
