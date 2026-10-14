@@ -245,6 +245,7 @@ app.use('/dist-applicant', express.static(path.join(__dirname, 'public', 'dist-a
 app.get('/style.css', (req, res) => res.sendFile(path.join(__dirname, 'applicant-portal', 'style.css')));
 app.get('/script.js', (req, res) => res.sendFile(path.join(__dirname, 'applicant-portal', 'script.js')));
 app.get('/shared-utils.js', (req, res) => res.sendFile(path.join(__dirname, 'applicant-portal', 'shared-utils.js')));
+app.get('/favicon.ico', (req, res) => res.sendFile(path.join(__dirname, 'public', 'favicon.ico')));
 
 // Mount modular routers
 const applicantRouter = require('./routes/applicant');
