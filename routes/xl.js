@@ -1818,6 +1818,24 @@ router.get('/stockists', async (req, res) => {
 // Save/Update draft TP for the month
 router.post('/tour-program', async (req, res) => {
     try {
+        const { Op } = require('sequelize');
+        const { XlUser, XlHoliday, XlTourProgram, XlNotification, generateId, sequelize } = require('../db');
+        
+        // Auto-migrate any missing tour program columns safely
+        try {
+            if (sequelize.getDialect() === 'postgres') {
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedBy" VARCHAR(255);');
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "adminRemarks" TEXT;');
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP WITH TIME ZONE;');
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP WITH TIME ZONE;');
+            } else {
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN approvedBy VARCHAR(255);').catch(() => {});
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN adminRemarks TEXT;').catch(() => {});
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN submittedAt DATETIME;').catch(() => {});
+                await sequelize.query('ALTER TABLE xl_tour_programs ADD COLUMN approvedAt DATETIME;').catch(() => {});
+            }
+        } catch (mErr) {}
+
         const { employeeId, employeeName, hq, year, entries, resubmitRemark } = req.body;
         let { month } = req.body;
         if (!employeeId || !month || !year) return res.status(400).json({ error: 'Missing required fields' });
@@ -1844,9 +1862,6 @@ router.post('/tour-program', async (req, res) => {
         // ---------------------
 
         // Upsert: one TP per employee per month/year
-        
-        const { Op } = require('sequelize');
-        const { XlUser } = require('../db');
         const userForId = await XlUser.findOne({ where: { employeeId } }) || await XlUser.findOne({ where: { email: employeeId } }) || await XlUser.findOne({ where: { uid: employeeId } });
         let idArray3 = [employeeId];
         if (userForId) {
@@ -1895,7 +1910,7 @@ router.post('/tour-program', async (req, res) => {
         res.json({ success: true, message: 'Tour Program saved!', data: tp });
     } catch (e) {
         console.error('TP save error:', e);
-        res.status(500).json({ error: 'Failed to save Tour Program' });
+        res.status(500).json({ error: 'Failed to save Tour Program: ' + e.message });
     }
 });
 

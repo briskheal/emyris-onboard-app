@@ -150,8 +150,11 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "lng2" DOUBLE PRECISION;',
             'ALTER TABLE xl_stockists ADD COLUMN IF NOT EXISTS "geoAddress2" VARCHAR(255);',
             'ALTER TABLE xl_attendances ADD COLUMN IF NOT EXISTS "dayRemarks" TEXT;',
-            'ALTER TABLE xl_attendances ADD COLUMN IF NOT EXISTS "daySubmitted" BOOLEAN DEFAULT false;'
-
+            'ALTER TABLE xl_attendances ADD COLUMN IF NOT EXISTS "daySubmitted" BOOLEAN DEFAULT false;',
+            'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedBy" VARCHAR(255);',
+            'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "adminRemarks" TEXT;',
+            'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP WITH TIME ZONE;',
+            'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP WITH TIME ZONE;'
         ] : [
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricTestCompleted BOOLEAN DEFAULT 0;',
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricScores TEXT;',
@@ -192,8 +195,11 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE xl_stockists ADD COLUMN lng2 DOUBLE;',
             'ALTER TABLE xl_stockists ADD COLUMN geoAddress2 VARCHAR(255);',
             'ALTER TABLE xl_attendances ADD COLUMN dayRemarks TEXT;',
-            'ALTER TABLE xl_attendances ADD COLUMN daySubmitted BOOLEAN DEFAULT 0;'
-
+            'ALTER TABLE xl_attendances ADD COLUMN daySubmitted BOOLEAN DEFAULT 0;',
+            'ALTER TABLE xl_tour_programs ADD COLUMN approvedBy VARCHAR(255);',
+            'ALTER TABLE xl_tour_programs ADD COLUMN adminRemarks TEXT;',
+            'ALTER TABLE xl_tour_programs ADD COLUMN submittedAt DATETIME;',
+            'ALTER TABLE xl_tour_programs ADD COLUMN approvedAt DATETIME;'
         ];
         for (const q of queries) {
             try { await sequelize.query(q); } catch (e) {}
