@@ -3046,45 +3046,47 @@ router.get('/approvals/counts', async (req, res) => {
             }
         }
 
-        const condition = isAdmin 
-            ? { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] } 
-            : { 
-                status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'], 
-                [Op.or]: [
-                    { employeeId: { [Op.in]: reporteeEmails } },
-                    ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
-                ]
-            };
+        const baseStatus = ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'];
+        const empCondition = isAdmin 
+            ? { status: baseStatus } 
+            : { status: baseStatus, employeeId: { [Op.in]: reporteeEmails } };
         
         const counts = {};
         
         // Modules that support approvals
         // Group Call Reports by employeeId and date
         const callGroups = await XlDCR.findAll({
-            where: condition,
+            where: empCondition,
             attributes: ['employeeId', 'date'],
             group: ['employeeId', 'date'],
             raw: true
         });
         counts['Call Report'] = callGroups.length;
         
-        counts['Tour Program'] = await XlTourProgram.count({ where: condition });
-        counts['Call Plans'] = await XlCallPlan.count({ where: condition });
-        counts['Doctors'] = await XlDoctor.count({ where: condition });
+        const tourProgramCond = isAdmin ? { status: baseStatus } : {
+            status: baseStatus,
+            [Op.or]: [
+                { employeeId: { [Op.in]: reporteeEmails } },
+                ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
+            ]
+        };
+        counts['Tour Program'] = await XlTourProgram.count({ where: tourProgramCond });
+        counts['Call Plans'] = await XlCallPlan.count({ where: empCondition });
+        counts['Doctors'] = await XlDoctor.count({ where: empCondition });
 
-        const chemistStockistCond = isAdmin ? condition : {
-            status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'],
+        const chemistStockistCond = isAdmin ? { status: baseStatus } : {
+            status: baseStatus,
             [Op.or]: [
                 { employeeId: { [Op.in]: reporteeEmails } },
                 { userAllotted: { [Op.in]: reporteeEmails } },
-                ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }, { hq: { [Op.in]: subordinateHQs } }] : [])
+                ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }] : [])
             ]
         };
         counts['Chemists'] = await XlChemist.count({ where: chemistStockistCond });
         counts['Stockists'] = await XlStockist.count({ where: chemistStockistCond });
 
-        const locationCond = isAdmin ? condition : {
-            status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'],
+        const locationCond = isAdmin ? { status: baseStatus } : {
+            status: baseStatus,
             [Op.or]: [
                 { employeeId: { [Op.in]: reporteeEmails } },
                 ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
@@ -3095,19 +3097,19 @@ router.get('/approvals/counts', async (req, res) => {
         
         // Group Expenses by employeeId and date to match the UI behavior
         const expenseGroups = await XlExpense.findAll({
-            where: condition,
+            where: empCondition,
             attributes: ['employeeId', 'date'],
             group: ['employeeId', 'date'],
             raw: true
         });
         counts['Expense'] = expenseGroups.length;
 
-        counts['Leave Request'] = await XlLeave.count({ where: condition });
-        counts['Primary Sales'] = await XlPrimarySales.count({ where: condition });
-        counts['Secondary Sales'] = await XlSecondarySales.count({ where: condition });
-        counts['Samples'] = await XlSample.count({ where: condition });
-        counts['Gifts'] = await XlGift.count({ where: condition });
-        counts['Geo Fencing'] = await XlGeoFencing.count({ where: condition });
+        counts['Leave Request'] = await XlLeave.count({ where: empCondition });
+        counts['Primary Sales'] = await XlPrimarySales.count({ where: empCondition });
+        counts['Secondary Sales'] = await XlSecondarySales.count({ where: empCondition });
+        counts['Samples'] = await XlSample.count({ where: empCondition });
+        counts['Gifts'] = await XlGift.count({ where: empCondition });
+        counts['Geo Fencing'] = await XlGeoFencing.count({ where: empCondition });
 
         counts['Performance KPI'] = await XlPerformanceAnalysis.count({
             where: isAdmin 
@@ -3223,16 +3225,18 @@ router.get('/approvals/pending', async (req, res) => {
                     [Op.or]: [
                         { employeeId: reporteeEmails },
                         { userAllotted: reporteeEmails },
-                        ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }, { hq: { [Op.in]: subordinateHQs } }] : [])
+                        ...(subordinateHQs.length > 0 ? [{ headquarter: { [Op.in]: subordinateHQs } }] : [])
                     ]
                 };
-            } else {
+            } else if (type === 'Tour Program' || type === 'City' || type === 'Routes' || type === 'Route') {
                 userFilter = {
                     [Op.or]: [
                         { employeeId: reporteeEmails },
                         ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
                     ]
                 };
+            } else {
+                userFilter = { employeeId: reporteeEmails };
             }
         }
 
