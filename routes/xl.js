@@ -878,6 +878,55 @@ router.get('/debug-call-plans', async (req, res) => {
     }
 });
 
+router.get('/debug-linkage', async (req, res) => {
+    try {
+        const users = await XlUser.findAll({
+            attributes: ['_id', 'employeeId', 'firstName', 'lastName', 'designation', 'hq', 'division', 'reportingManager', 'email', 'isAdmin', 'status']
+        });
+        const pendingTPs = await XlTourProgram.findAll({
+            where: { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] },
+            attributes: ['_id', 'employeeId', 'employeeName', 'hq', 'month', 'year', 'status']
+        });
+        const pendingExpenses = await XlExpense.findAll({
+            where: { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] },
+            attributes: ['_id', 'employeeId', 'date', 'amount', 'category', 'status'],
+            limit: 10
+        });
+
+        const linkageResults = [];
+        for (const u of users) {
+            const desig = (u.designation || '').toLowerCase();
+            const isMgr = desig.includes('manager') || desig.includes('abm') || desig.includes('rbm') || desig.includes('zsm') || u.isAdmin;
+            if (isMgr) {
+                const reportees = await getReporteeUsers(u.designation, u.hq, u.division, [], new Set(), u);
+                const subHQs = await getSubordinateHQs(u.designation, u.hq, u.division);
+                linkageResults.push({
+                    name: `${u.firstName} ${u.lastName}`,
+                    email: u.email,
+                    employeeId: u.employeeId,
+                    designation: u.designation,
+                    hq: u.hq,
+                    division: u.division,
+                    isAdmin: u.isAdmin,
+                    reporteesCount: reportees.length,
+                    reportees: reportees.map(r => ({ name: `${r.firstName} ${r.lastName}`, employeeId: r.employeeId, designation: r.designation, hq: r.hq, division: r.division, reportingManager: r.reportingManager })),
+                    subordinateHQs: subHQs
+                });
+            }
+        }
+
+        res.json({
+            usersCount: users.length,
+            users: users.map(u => ({ name: `${u.firstName} ${u.lastName}`, employeeId: u.employeeId, designation: u.designation, hq: u.hq, division: u.division, reportingManager: u.reportingManager, email: u.email })),
+            pendingTPs,
+            pendingExpenses,
+            linkageResults
+        });
+    } catch(e) {
+        res.status(500).json({ error: e.message, stack: e.stack });
+    }
+});
+
 // --- DOCTOR CONTROL ROUTES ---
 router.post('/login', async (req, res) => {
     try {
