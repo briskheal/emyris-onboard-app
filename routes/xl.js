@@ -664,24 +664,31 @@ function getDesignationAliases(desig) {
     const clean = desig.trim().toLowerCase();
     const aliases = new Set([clean]);
 
-    if (clean.includes('sr.') || clean.includes('sr ')) {
-        aliases.add(clean.replace(/sr\.?/g, 'senior').replace(/\s+/g, ' ').trim());
+    // Strip out (HQ) if present: e.g. "Area Business Manager (Palanpur)" -> "area business manager"
+    const base = clean.replace(/\s*\([^)]*\)/g, '').trim();
+    if (base && base !== clean) {
+        aliases.add(base);
     }
-    if (clean.includes('senior')) {
-        aliases.add(clean.replace(/senior/g, 'sr.').replace(/\s+/g, ' ').trim());
-        aliases.add(clean.replace(/senior/g, 'sr').replace(/\s+/g, ' ').trim());
+
+    const check = base || clean;
+    if (check.includes('sr.') || check.includes('sr ')) {
+        aliases.add(check.replace(/sr\.?/g, 'senior').replace(/\s+/g, ' ').trim());
     }
-    if (clean.includes('area business manager')) aliases.add('abm');
-    if (clean === 'abm') aliases.add('area business manager');
-    if (clean.includes('regional business manager')) aliases.add('rbm');
-    if (clean === 'rbm') aliases.add('regional business manager');
-    if (clean.includes('zonal sales manager')) aliases.add('zsm');
-    if (clean.includes('sr. zonal sales manager') || clean.includes('senior zonal sales manager')) aliases.add('szsm');
-    if (clean === 'szsm') {
+    if (check.includes('senior')) {
+        aliases.add(check.replace(/senior/g, 'sr.').replace(/\s+/g, ' ').trim());
+        aliases.add(check.replace(/senior/g, 'sr').replace(/\s+/g, ' ').trim());
+    }
+    if (check.includes('area business manager')) aliases.add('abm');
+    if (check === 'abm') aliases.add('area business manager');
+    if (check.includes('regional business manager')) aliases.add('rbm');
+    if (check === 'rbm') aliases.add('regional business manager');
+    if (check.includes('zonal sales manager')) aliases.add('zsm');
+    if (check.includes('sr. zonal sales manager') || check.includes('senior zonal sales manager')) aliases.add('szsm');
+    if (check === 'szsm') {
         aliases.add('sr. zonal sales manager');
         aliases.add('senior zonal sales manager');
     }
-    if (clean === 'zsm') aliases.add('zonal sales manager');
+    if (check === 'zsm') aliases.add('zonal sales manager');
 
     return Array.from(aliases);
 }
@@ -704,6 +711,16 @@ async function getReporteeUsers(designation, hq, division, userList = [], visite
     const desigVariants = getDesignationAliases(cleanDesig);
     for (const v of desigVariants) {
         orConditions.push(seqWhere(fn('lower', col('reportingManager')), v));
+        orConditions.push(
+            seqWhere(fn('lower', col('reportingManager')), {
+                [Op.like]: `${v}%`
+            })
+        );
+        orConditions.push(
+            seqWhere(fn('lower', col('reportingManager')), {
+                [Op.like]: `%${v}%`
+            })
+        );
         if (cleanHq) {
             orConditions.push(seqWhere(fn('lower', col('reportingManager')), `${v} (${cleanHq.toLowerCase()})`));
             orConditions.push(seqWhere(fn('lower', col('reportingManager')), `${v} - ${cleanHq.toLowerCase()}`));
@@ -756,9 +773,16 @@ async function getReporteeUsers(designation, hq, division, userList = [], visite
 
     const queryWhere = { [Op.or]: orConditions };
     if (division && division !== 'All' && division !== 'null' && division !== 'undefined') {
+        const cleanDiv = division.trim().toLowerCase();
         queryWhere[Op.and] = [
             { [Op.or]: orConditions },
-            { [Op.or]: [{ division: division }, { division: null }, { division: '' }] }
+            { 
+                [Op.or]: [
+                    seqWhere(fn('lower', col('division')), cleanDiv), 
+                    { division: null }, 
+                    { division: '' }
+                ] 
+            }
         ];
         delete queryWhere[Op.or];
     }
@@ -2955,7 +2979,15 @@ router.get('/approvals/counts', async (req, res) => {
 
         if (!isAdmin) {
             const reportees = await getReporteeUsers(effectiveDesig, effectiveHq, effectiveDiv, [], new Set(), mgrUser);
-            reporteeEmails = reportees.map(u => u.employeeId).filter(Boolean);
+            const reporteeIdentifiers = [];
+            for (const u of reportees) {
+                if (u.employeeId) reporteeIdentifiers.push(u.employeeId);
+                if (u.email) reporteeIdentifiers.push(u.email);
+                if (u.uid) reporteeIdentifiers.push(u.uid);
+                const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                if (fullName) reporteeIdentifiers.push(fullName);
+            }
+            reporteeEmails = Array.from(new Set(reporteeIdentifiers.filter(Boolean)));
             subordinateHQs = await getSubordinateHQs(effectiveDesig, effectiveHq, effectiveDiv);
             if (effectiveHq) {
                 subordinateHQs.push(effectiveHq, effectiveHq.toUpperCase(), effectiveHq.toLowerCase());
@@ -2969,7 +3001,10 @@ router.get('/approvals/counts', async (req, res) => {
             ? { status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] } 
             : { 
                 status: ['Submitted', 'Pending', 'pending', 'submitted', 'Re-Submitted', 're-submitted'], 
-                employeeId: { [Op.in]: reporteeEmails } 
+                [Op.or]: [
+                    { employeeId: { [Op.in]: reporteeEmails } },
+                    ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
+                ]
             };
         
         const counts = {};
@@ -3059,7 +3094,15 @@ router.get('/approvals/pending', async (req, res) => {
 
         if (!isAdmin) {
             const reportees = await getReporteeUsers(effectiveDesig, effectiveHq, effectiveDiv, [], new Set(), mgrUser);
-            reporteeEmails = reportees.map(u => u.employeeId).filter(Boolean);
+            const reporteeIdentifiers = [];
+            for (const u of reportees) {
+                if (u.employeeId) reporteeIdentifiers.push(u.employeeId);
+                if (u.email) reporteeIdentifiers.push(u.email);
+                if (u.uid) reporteeIdentifiers.push(u.uid);
+                const fullName = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+                if (fullName) reporteeIdentifiers.push(fullName);
+            }
+            reporteeEmails = Array.from(new Set(reporteeIdentifiers.filter(Boolean)));
             subordinateHQs = await getSubordinateHQs(effectiveDesig, effectiveHq, effectiveDiv);
             if (effectiveHq) {
                 subordinateHQs.push(effectiveHq, effectiveHq.toUpperCase(), effectiveHq.toLowerCase());
@@ -3126,14 +3169,7 @@ router.get('/approvals/pending', async (req, res) => {
 
         let userFilter = {};
         if (!isAdmin) {
-            if (type === 'City' || type === 'Routes' || type === 'Route') {
-                userFilter = {
-                    [Op.or]: [
-                        { employeeId: reporteeEmails },
-                        ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
-                    ]
-                };
-            } else if (type === 'Chemists' || type === 'Stockists') {
+            if (type === 'Chemists' || type === 'Stockists') {
                 userFilter = {
                     [Op.or]: [
                         { employeeId: reporteeEmails },
@@ -3142,7 +3178,12 @@ router.get('/approvals/pending', async (req, res) => {
                     ]
                 };
             } else {
-                userFilter = { employeeId: reporteeEmails };
+                userFilter = {
+                    [Op.or]: [
+                        { employeeId: reporteeEmails },
+                        ...(subordinateHQs.length > 0 ? [{ hq: { [Op.in]: subordinateHQs } }] : [])
+                    ]
+                };
             }
         }
 

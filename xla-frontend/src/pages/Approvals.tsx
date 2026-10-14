@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { ChevronLeft } from 'lucide-react';
+import { 
+  ArrowLeft, PanelLeftClose, PanelLeftOpen,
+  Calendar, Banknote, UserRound, NotebookPen, FileSignature, 
+  ShoppingBag, Building2, MapPin, Map, ShieldCheck, Target, 
+  Truck, Gift, Compass, Trash2, TrendingUp 
+} from 'lucide-react';
 import TourProgramApproval from '../components/TourProgramApproval';
 import ExpenseApproval from '../components/ExpenseApproval';
 import CallReportApproval from '../components/CallReportApproval';
@@ -11,27 +16,28 @@ import GenericApproval from '../components/GenericApproval';
 import { useNavigate } from 'react-router-dom';
 
 const sidebarItems = [
-  { label: 'TOUR PROGRAM', path: 'Tour Program' },
-  { label: 'EXPENSE', path: 'Expense' },
-  { label: 'CALL REPORT', path: 'Call Report' },
-  { label: 'CALL PLANNING', path: 'Call Plans' },
-  { label: 'LEAVE REQUEST', path: 'Leave Request' },
-  { label: 'DOCTORS', path: 'Doctors' },
-  { label: 'CHEMISTS', path: 'Chemists' },
-  { label: 'STOCKISTS', path: 'Stockists' },
-  { label: 'CITY', path: 'City' },
-  { label: 'ROUTE', path: 'Routes' },
-  { label: 'SECONDARY SALES', path: 'Secondary Sales' },
-  { label: 'PRIMARY SALES', path: 'Primary Sales' },
-  { label: 'SAMPLES', path: 'Samples' },
-  { label: 'GIFTS', path: 'Gifts' },
-  { label: 'GEO FENCING', path: 'Geo Fencing' },
-  { label: 'DELETION REQUEST', path: 'Deletion Request' },
-  { label: 'PERFORMANCE KPI', path: 'Performance KPI' }
+  { label: 'Tour Program', path: 'Tour Program', icon: Calendar },
+  { label: 'Expense', path: 'Expense', icon: Banknote },
+  { label: 'Call Report', path: 'Call Report', icon: UserRound },
+  { label: 'Call Planning', path: 'Call Plans', icon: NotebookPen },
+  { label: 'Leave Request', path: 'Leave Request', icon: FileSignature },
+  { label: 'Doctors', path: 'Doctors', icon: UserRound },
+  { label: 'Chemists', path: 'Chemists', icon: ShoppingBag },
+  { label: 'Stockists', path: 'Stockists', icon: Building2 },
+  { label: 'City', path: 'City', icon: MapPin },
+  { label: 'Route', path: 'Routes', icon: Map },
+  { label: 'Secondary Sales', path: 'Secondary Sales', icon: ShieldCheck },
+  { label: 'Primary Sales', path: 'Primary Sales', icon: Target },
+  { label: 'Samples', path: 'Samples', icon: Truck },
+  { label: 'Gifts', path: 'Gifts', icon: Gift },
+  { label: 'Geo Fencing', path: 'Geo Fencing', icon: Compass },
+  { label: 'Deletion Request', path: 'Deletion Request', icon: Trash2 },
+  { label: 'Performance KPI', path: 'Performance KPI', icon: TrendingUp }
 ];
 
 export default function Approvals() {
   const navigate = useNavigate();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedModule, setSelectedModule] = useState(sessionStorage.getItem('adminApprovalModule') || 'Tour Program');
   const [items, setItems] = useState<any[]>([]);
    // @ts-ignore
@@ -172,29 +178,60 @@ export default function Approvals() {
   return (
     <div className="flex h-screen bg-[#1e1e2d] text-white overflow-hidden font-sans">
        {/* Sidebar */}
-       <div className="w-52 bg-[#151521] border-r border-[#3b3b5a] flex flex-col h-full shrink-0 shadow-2xl z-10">
-          <div className="p-4 border-b border-[#3b3b5a] flex items-center">
+       <div className={`${sidebarCollapsed ? 'w-16' : 'w-48'} bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0 shadow-2xl z-10 transition-all duration-200`}>
+          <div className="p-3.5 border-b border-slate-800 flex flex-col gap-2.5">
              <button 
                onClick={() => navigate('/admin')} 
-               className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 font-bold uppercase tracking-widest text-xs transition-colors"
+               className="text-white hover:text-sky-400 transition-colors flex items-center gap-1.5"
+               title="Back to Admin Menu"
              >
-               <ChevronLeft size={18} /> Approvals
+               <ArrowLeft size={16} /> 
+               {!sidebarCollapsed && (
+                 <span className="font-black text-[11px] tracking-widest text-sky-400 uppercase hover:text-white transition-colors truncate">
+                   BACK TO ADMIN MENU
+                 </span>
+               )}
              </button>
+             <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+               {!sidebarCollapsed && (
+                 <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
+                   APPROVALS
+                 </h2>
+               )}
+               <button 
+                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                 className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-800 transition-colors"
+                 title={sidebarCollapsed ? "Expand Menu" : "Collapse Menu to Free Space"}
+               >
+                 {sidebarCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+               </button>
+             </div>
           </div>
           <div className="flex-1 overflow-y-auto p-2 space-y-1 custom-scrollbar">
              {sidebarItems.map(item => {
                 const count = counts[item.path] || 0;
                 const isSelected = selectedModule === item.path;
+                const Icon = item.icon;
                 return (
                   <button 
                     key={item.label}
                     id={`sidebar-item-${item.path}`}
                     onClick={() => { sessionStorage.setItem('adminApprovalModule', item.path); setSelectedModule(item.path); setSelectedRows([]); }}
-                    className={`w-full text-left px-3.5 py-2.5 rounded-lg flex items-center justify-between transition-colors text-xs font-bold uppercase tracking-wider ${isSelected ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-slate-400 hover:bg-[#27273f] hover:text-slate-200 border border-transparent'}`}
+                    title={sidebarCollapsed ? `${item.label} (${count})` : undefined}
+                    className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg transition-colors text-xs font-medium relative ${
+                      sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'text-left justify-between'
+                    } ${
+                      isSelected 
+                        ? 'bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm' 
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
+                    }`}
                   >
-                     <span className="truncate">{item.label}</span>
+                     <div className="flex items-center gap-2 min-w-0">
+                       <Icon size={15} className={`shrink-0 ${isSelected ? 'text-sky-400' : 'text-slate-400'}`} />
+                       {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
+                     </div>
                      {count > 0 && (
-                        <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm shrink-0">
+                        <span className={`px-1.5 py-0.5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px] font-bold shadow-sm shrink-0 ${sidebarCollapsed ? 'absolute top-1 right-1 text-[9px] px-1' : 'ml-1'}`}>
                           {count > 99 ? '99+' : count}
                         </span>
                      )}
