@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import axios from 'axios';
-import { CheckCircle, Eye, ChevronLeft, Trash2, Plus, X } from 'lucide-react';
+import { Eye, ChevronLeft, Trash2, Plus, X } from 'lucide-react';
 
 function formatDDMMYYYY(dateStr: string) {
   if (!dateStr) return '-';
@@ -181,152 +181,162 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
     };
 
     return (
-      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
          {showAddModal && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-                <div className="bg-[#1c1c2e] rounded-xl border border-[#3b3b5a] p-6 w-full max-w-md shadow-2xl">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-black text-white uppercase">Add Entry - {showAddModal}</h3>
-                        <button onClick={() => setShowAddModal(null)} className="text-slate-400 hover:text-white"><X size={20}/></button>
+            <div className="fixed inset-0 z-50 bg-[#0b0f19]/80 backdrop-blur-sm flex items-center justify-center p-4">
+                <div className="bg-[#1c1c2e] rounded-xl border border-slate-700 p-6 w-full max-w-md shadow-2xl">
+                    <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-3">
+                        <h3 className="text-sm font-black text-white uppercase tracking-wider">Add Entry - {showAddModal}</h3>
+                        <button onClick={() => setShowAddModal(null)} className="text-slate-400 hover:text-white"><X size={18}/></button>
                     </div>
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Area Type</label>
-                            <select value={addForm.type} onChange={e => setAddForm({...addForm, type: e.target.value})} className="w-full bg-[#151521] border border-[#3b3b5a] rounded-lg p-3 text-white">
+                            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5">Area Type</label>
+                            <select value={addForm.type} onChange={e => setAddForm({...addForm, type: e.target.value})} className="w-full bg-[#0b0f19] border border-slate-700/60 rounded-lg p-2.5 text-xs text-white">
                                 <option value="HQ">HQ</option><option value="EX-HQ">EX-HQ</option><option value="Out-Station">Out-Station</option><option value="Transit">Transit</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Work Area</label>
-                            <input type="text" value={addForm.toMarket} onChange={e => setAddForm({...addForm, toMarket: e.target.value})} className="w-full bg-[#151521] border border-[#3b3b5a] rounded-lg p-3 text-white" />
+                            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5">Work Area</label>
+                            <input type="text" value={addForm.toMarket} onChange={e => setAddForm({...addForm, toMarket: e.target.value})} className="w-full bg-[#0b0f19] border border-slate-700/60 rounded-lg p-2.5 text-xs text-white" />
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase mb-2">Activity Type</label>
-                            <select value={addForm.activityType} onChange={e => setAddForm({...addForm, activityType: e.target.value})} className="w-full bg-[#151521] border border-[#3b3b5a] rounded-lg p-3 text-white">
+                            <label className="block text-[11px] font-bold text-slate-400 uppercase mb-1.5">Activity Type</label>
+                            <select value={addForm.activityType} onChange={e => setAddForm({...addForm, activityType: e.target.value})} className="w-full bg-[#0b0f19] border border-slate-700/60 rounded-lg p-2.5 text-xs text-white">
                                 <option value="Working">Working</option><option value="Leave">Leave</option><option value="Meeting">Meeting</option>
                             </select>
                         </div>
-                        <button onClick={handleAddSubmit} className="w-full bg-sky-500 hover:bg-sky-400 text-white font-bold py-3 rounded-lg uppercase tracking-wider mt-4">Save Entry</button>
+                        <button onClick={handleAddSubmit} className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-lg text-xs uppercase tracking-wider mt-4">Save Entry</button>
                     </div>
                 </div>
             </div>
          )}
 
-         <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-            <button onClick={() => { setDetailedMonthTpId(null); setSelectedRows([]); }} className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider mb-4 hover:text-sky-300 transition-colors">
-               <ChevronLeft size={20} /> MONTHLY TOUR PROGRAM DETAILS
-            </button>
-            <div className="flex flex-wrap gap-6 items-center text-xs font-black uppercase tracking-widest text-slate-400">
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-500"></div> Approved</div>
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500"></div> Rejected</div>
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div> Pending</div>
+         {/* Calendar Detail Top Control Bar */}
+         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+            <div className="flex items-center gap-4">
+               <button onClick={() => { setDetailedMonthTpId(null); setSelectedRows([]); }} className="flex items-center gap-1.5 text-xs font-bold text-sky-400 uppercase tracking-wider hover:text-sky-300 transition-colors">
+                  <ChevronLeft size={16} /> MONTHLY TOUR PROGRAM: {tp.month} {tp.year} ({tp.employeeName || tp.employeeId})
+               </button>
+               <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+                 {calendarDays.length} Days
+               </span>
+               <div className="hidden lg:flex items-center gap-4 ml-2 border-l border-slate-700/50 pl-4">
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-[11px] font-bold text-slate-300">Approved</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div><span className="text-[11px] font-bold text-slate-300">Rejected</span></div>
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div><span className="text-[11px] font-bold text-slate-300">Pending</span></div>
+               </div>
             </div>
+
+            {selectedRows.length > 0 && (
+               <div className="flex items-center gap-2">
+                 <span className="text-xs font-bold text-slate-300">{selectedRows.length} selected</span>
+                 <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow">Approve</button>
+                 <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow">Reject</button>
+               </div>
+            )}
          </div>
 
-         {selectedRows.length > 0 && (
-            <div className="absolute top-6 right-8 z-20 flex gap-3 bg-sky-900/90 backdrop-blur-md rounded-xl border border-sky-500/50 items-center px-4 py-2 shadow-2xl">
-              <span className="text-sky-400 font-bold text-sm">{selectedRows.length} selected</span>
-              <div className="w-px h-6 bg-sky-500/30 mx-1"></div>
-              <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Approve</button>
-              <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Reject</button>
-            </div>
-         )}
+         {/* Calendar Grid Table */}
+         <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
+            <table className="w-full text-left border-collapse relative">
+              <thead>
+                <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Date</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Day</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Area Type</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Work Areas</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Status</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Actions</th>
+                  <th className="p-3.5 w-16 text-center">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                      <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === calendarDays.filter(d => d.entry).length} onChange={toggleMonthAll} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {calendarDays.map((dayItem) => {
+                  const { d, dateStr, dateObj, isSunday, holiday, entry } = dayItem;
+                  const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
+                  const rowId = `${tp._id}_${dateStr}`;
+                  
+                  if (holiday) {
+                      return (
+                          <tr key={dateStr} className="border-b border-slate-700/30 bg-rose-500/10">
+                              <td className="p-3 text-[13px] font-bold text-rose-400 bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {tp.month.substring(0,3)}</td>
+                              <td className="p-3 text-[13px] font-bold text-rose-400 border-r border-slate-700/30">{dayName}</td>
+                              <td colSpan={5} className="p-3 text-[12px] font-black text-rose-400 tracking-wider uppercase">HOLIDAY: {holiday.title}</td>
+                          </tr>
+                      );
+                  }
+                  if (isSunday && !entry) {
+                      return (
+                          <tr key={dateStr} className="border-b border-slate-700/30 bg-slate-800/30">
+                              <td className="p-3 text-[13px] font-bold text-slate-500 bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {tp.month.substring(0,3)}</td>
+                              <td className="p-3 text-[13px] font-bold text-slate-500 border-r border-slate-700/30">{dayName}</td>
+                              <td colSpan={5} className="p-3 text-[12px] font-black text-slate-600 tracking-wider uppercase">SUNDAY</td>
+                          </tr>
+                      );
+                  }
+                  
+                  if (!entry) {
+                      return (
+                          <tr key={dateStr} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                              <td className="p-3 text-[13px] font-bold text-white bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {tp.month.substring(0,3)}</td>
+                              <td className="p-3 text-[13px] font-medium text-slate-400 border-r border-slate-700/30">{dayName}</td>
+                              <td colSpan={3} className="p-3 text-[13px] font-medium text-slate-500 italic border-r border-slate-700/30">No entry submitted</td>
+                              <td className="p-3 text-center border-r border-slate-700/30">
+                                  <button onClick={() => { setAddForm({ type: 'HQ', toMarket: '', remarks: '', activityType: 'Working' }); setShowAddModal(dateStr); }} className="px-2.5 py-1 bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white rounded text-[11px] font-bold uppercase tracking-wider flex items-center justify-center gap-1 mx-auto transition-colors">
+                                      <Plus size={13} /> Add
+                                  </button>
+                              </td>
+                              <td className="p-3 text-center"></td>
+                          </tr>
+                      );
+                  }
 
-         <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-            <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
-               <table className="w-full text-left border-collapse whitespace-nowrap">
-                 <thead>
-                   <tr className="border-b border-[#3b3b5a] bg-[#1c1c2e]">
-                     <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Date</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Day</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Area Type</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Work Areas</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
-                     <th className="p-4 w-16 text-center">
-                       <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === calendarDays.filter(d => d.entry).length} onChange={toggleMonthAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                     </th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   {calendarDays.map((dayItem) => {
-                     const { d, dateStr, dateObj, isSunday, holiday, entry } = dayItem;
-                     const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
-                     const rowId = `${tp._id}_${dateStr}`;
-                     
-                     if (holiday) {
-                         return (
-                             <tr key={dateStr} className="border-b border-[#3b3b5a] bg-rose-500/5">
-                                 <td className="px-6 py-4 text-sm font-bold text-rose-400">{d} {tp.month.substring(0,3)}</td>
-                                 <td className="px-4 py-4 text-sm font-bold text-rose-400">{dayName}</td>
-                                 <td colSpan={5} className="px-4 py-4 text-sm font-black text-rose-500 tracking-widest uppercase">HOLIDAY: {holiday.title}</td>
-                             </tr>
-                         );
-                     }
-                     if (isSunday && !entry) {
-                         return (
-                             <tr key={dateStr} className="border-b border-[#3b3b5a] bg-slate-800/30">
-                                 <td className="px-6 py-4 text-sm font-bold text-slate-500">{d} {tp.month.substring(0,3)}</td>
-                                 <td className="px-4 py-4 text-sm font-bold text-slate-500">{dayName}</td>
-                                 <td colSpan={5} className="px-4 py-4 text-sm font-black text-slate-600 tracking-widest uppercase">SUNDAY</td>
-                             </tr>
-                         );
-                     }
-                     
-                     if (!entry) {
-                         return (
-                             <tr key={dateStr} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30">
-                                 <td className="px-6 py-4 text-sm font-bold text-white">{d} {tp.month.substring(0,3)}</td>
-                                 <td className="px-4 py-4 text-sm font-medium text-slate-400">{dayName}</td>
-                                 <td colSpan={3} className="px-4 py-4 text-sm font-medium text-slate-600 italic">No entry submitted</td>
-                                 <td className="px-4 py-4 text-center">
-                                     <button onClick={() => { setAddForm({ type: 'HQ', toMarket: '', remarks: '', activityType: 'Working' }); setShowAddModal(dateStr); }} className="px-3 py-1.5 bg-sky-500/10 text-sky-400 hover:bg-sky-500 hover:text-white rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1 mx-auto transition-colors">
-                                         <Plus size={14} /> Add
-                                     </button>
-                                 </td>
-                                 <td></td>
-                             </tr>
-                         );
-                     }
-
-                     const status = entry.status || tp.status || 'Pending';
-                     return (
-                       <tr key={dateStr} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                         <td className="px-6 py-4 text-sm font-bold text-white">{d} {tp.month.substring(0,3)}</td>
-                         <td className="px-4 py-4 text-sm font-medium text-slate-300">{dayName}</td>
-                         <td className="px-4 py-4 text-sm text-slate-300">{entry.type || entry.areaType || '-'}</td>
-                          <td className="px-4 py-4 text-sm text-sky-400">
-                            <div className="flex items-center gap-2">
-                                <span>{entry.toMarket || '-'}</span>
-                                {entry.isEdited && (
-                                    <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                        Edited
-                                    </span>
-                                )}
-                            </div>
-                            {entry.activityType && entry.activityType !== 'Working' && (
-                                <div className="text-[10px] text-slate-400 font-semibold mt-1 uppercase tracking-wider">{entry.activityType}</div>
+                  const status = entry.status || tp.status || 'Pending';
+                  const statusColor = status === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                      status === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                                      'bg-amber-500/20 text-amber-400 border border-amber-500/30';
+                  return (
+                    <tr key={dateStr} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                      <td className="p-3 text-[13px] font-bold text-white bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {tp.month.substring(0,3)}</td>
+                      <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{dayName}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{entry.type || entry.areaType || '-'}</td>
+                      <td className="p-3 text-[13px] text-sky-400 border-r border-slate-700/30">
+                        <div className="flex items-center gap-2">
+                            <span>{entry.toMarket || '-'}</span>
+                            {entry.isEdited && (
+                                <span className="bg-orange-500/10 text-orange-400 border border-orange-500/20 text-[10px] font-bold px-1.5 py-0.2 rounded uppercase">
+                                    Edited
+                                </span>
                             )}
-                          </td>
-                         <td className="px-4 py-4 text-center">
-                           <span className={`px-3 py-1 text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm ${status === 'Approved' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : status === 'Rejected' ? 'bg-rose-500/10 text-rose-500 border border-rose-500/20' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20'}`}>
-                             {status}
-                           </span>
-                         </td>
-                         <td className="px-4 py-4 text-center">
-                            <button onClick={() => handleDeleteEntry(dateStr)} className="p-1.5 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors mx-auto block">
-                                <Trash2 size={16} />
-                            </button>
-                         </td>
-                         <td className="p-4 text-center">
-                           <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                         </td>
-                       </tr>
-                     );
-                   })}
-                 </tbody>
-               </table>
-            </div>
+                        </div>
+                        {entry.activityType && entry.activityType !== 'Working' && (
+                            <div className="text-[10px] text-slate-400 font-semibold mt-0.5 uppercase">{entry.activityType}</div>
+                        )}
+                      </td>
+                      <td className="p-3 text-center border-r border-slate-700/30">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${statusColor}`}>
+                          {status}
+                        </span>
+                      </td>
+                      <td className="p-3 text-center border-r border-slate-700/30">
+                         <button onClick={() => handleDeleteEntry(dateStr)} className="p-1 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors mx-auto block">
+                             <Trash2 size={15} />
+                         </button>
+                      </td>
+                      <td className="p-3 text-center">
+                        <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
          </div>
       </div>
     );
@@ -335,134 +345,144 @@ export default function TourProgramApproval({ items, fetchPending, fetchCounts, 
 
   // Summary / Day-wise Views
   return (
-    <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
        {/* Top Control Bar */}
-       <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-          <div className="flex justify-between items-start mb-6">
-             <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
-                     <CheckCircle size={24} strokeWidth={2.5}/>
-                 </div>
-                 <div>
-                    <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wide">APPROVE {selectedModule}</h1>
-                 </div>
+       <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2">
+                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                 <h1 className="text-sm font-black text-white uppercase tracking-wider">APPROVE {selectedModule}</h1>
              </div>
-             {selectedRows.length > 0 && !isMonthlyView && (
-               <div className="flex gap-3 bg-sky-900/30 rounded-xl border border-sky-500/30 items-center px-4 py-2 shadow-xl">
-                 <span className="text-sky-400 font-bold text-sm hidden md:inline">{selectedRows.length} selected</span>
-                 <div className="w-px h-6 bg-sky-500/30 mx-1 hidden md:block"></div>
-                 <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Approve</button>
-                 <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Reject</button>
-               </div>
-             )}
+             <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+               {isMonthlyView ? filteredItems.length : dayWiseData.length} {((isMonthlyView ? filteredItems.length : dayWiseData.length) === 1) ? 'Entry' : 'Entries'}
+             </span>
+             {/* Status Legend Pills */}
+             <div className="hidden lg:flex items-center gap-4 ml-2 border-l border-slate-700/50 pl-4">
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-[11px] font-bold text-slate-300">Approved</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div><span className="text-[11px] font-bold text-slate-300">Rejected</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div><span className="text-[11px] font-bold text-slate-300">Pending</span></div>
+             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row gap-6 md:items-center">
-            <div className="flex-1 min-w-0">
-              <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">Select User</label>
-              <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full max-w-sm bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
+          <div className="flex items-center gap-3">
+            {/* Monthly View Toggle Switch */}
+            <div 
+              onClick={() => { setIsMonthlyView(!isMonthlyView); setSelectedRows([]); }}
+              className="flex items-center gap-2 bg-[#0b0f19] px-2.5 py-1 rounded-lg border border-slate-700/60 cursor-pointer hover:border-slate-600 transition-colors"
+            >
+              <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${isMonthlyView ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isMonthlyView ? 'translate-x-4' : 'translate-x-0'}`}></div>
+              </div>
+              <span className="text-xs font-bold text-slate-300">Monthly TP</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide hidden sm:inline">User:</span>
+              <select 
+                value={selectedUser} 
+                onChange={e => setSelectedUser(e.target.value)} 
+                className="bg-[#0b0f19] border border-slate-700/60 text-white rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-sky-500"
+              >
                 <option value="">All Users</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
-            <div className="flex items-center gap-3 bg-[#151521] px-5 py-3 rounded-xl border border-[#3b3b5a]">
-              <div 
-                onClick={() => { setIsMonthlyView(!isMonthlyView); setSelectedRows([]); }} 
-                className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${isMonthlyView ? 'bg-emerald-500' : 'bg-slate-700'}`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isMonthlyView ? 'translate-x-6' : 'translate-x-0'}`}></div>
-              </div>
-              <span className="text-sm font-bold text-slate-300">View Monthly Tour Program</span>
-            </div>
+            
+            {selectedRows.length > 0 && !isMonthlyView && (
+               <div className="flex items-center gap-2">
+                 <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow transition-transform active:scale-95">
+                   Approve ({selectedRows.length})
+                 </button>
+                 <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow transition-transform active:scale-95">
+                   Reject
+                 </button>
+               </div>
+            )}
           </div>
        </div>
 
-       <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-          <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-[#3b3b5a] bg-[#1c1c2e]">
-               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">SHOWING ({isMonthlyView ? filteredItems.length : dayWiseData.length}) ENTRIES</span>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="border-b border-[#3b3b5a] bg-[#151521]">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                    {isMonthlyView ? (
-                      <>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Month ↑</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Year ↑</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Name ↑</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Designation ↑</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Reporting Manager</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">View</th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Date ↑</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Employee Name ↑</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Designation ↑</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Area Type</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Location</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Remarks</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Activity</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Worked with</th>
-                        <th className="p-4 w-12 text-center">
-                          <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === dayWiseData.length} onChange={() => {
-                            if (selectedRows.length === dayWiseData.length) setSelectedRows([]);
-                            else setSelectedRows(dayWiseData.map(d => `${d.tpId}_${formatDDMMYYYY(d.date)}`));
-                          }} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                        </th>
-                      </>
-                    )}
+       {/* Full Width Excel Grid Table */}
+       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
+          <table className="w-full text-left border-collapse relative">
+            <thead>
+              <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
+                {isMonthlyView ? (
+                  <>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Month ↑</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Year ↑</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Name ↑</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Designation ↑</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Reporting Manager</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center w-16">View</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Date ↑</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Employee Name ↑</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Designation ↑</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Area Type</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Location</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Remarks</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Activity</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Worked with</th>
+                    <th className="p-3.5 w-16 text-center">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                        <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === dayWiseData.length} onChange={() => {
+                          if (selectedRows.length === dayWiseData.length) setSelectedRows([]);
+                          else setSelectedRows(dayWiseData.map(d => `${d.tpId}_${formatDDMMYYYY(d.date)}`));
+                        }} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                      </div>
+                    </th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/30">
+              {isMonthlyView ? (
+                filteredItems.length === 0 ? (
+                  <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Monthly TPs</td></tr>
+                ) : filteredItems.map((item: any, idx: number) => (
+                  <tr key={item._id} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                    <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
+                    <td className="p-3 text-[13px] font-bold text-white capitalize bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{item.month}</td>
+                    <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{item.year}</td>
+                    <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{item.employeeName || item.employeeId}</td>
+                    <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.designation || "-"}</td>
+                    <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.reportingManager || "-"}</td>
+                    <td className="p-3 text-center">
+                      <button onClick={() => setDetailedMonthTpId(item._id)} className="p-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
+                        <Eye size={16} strokeWidth={2.5}/>
+                      </button>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {isMonthlyView ? (
-                    filteredItems.length === 0 ? (
-                      <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Monthly TPs</td></tr>
-                    ) : filteredItems.map((item: any, idx: number) => (
-                      <tr key={item._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
-                        <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                        <td className="px-4 py-4 text-sm font-bold text-white capitalize">{item.month}</td>
-                        <td className="px-4 py-4 text-sm font-medium text-slate-300">{item.year}</td>
-                        <td className="px-4 py-4 text-sm font-bold text-sky-400">{item.employeeName || item.employeeId}</td>
-                        <td className="px-4 py-4 text-sm text-slate-300">{item.designation || "-"}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{item.reportingManager || "-"}</td>
-                        <td className="px-4 py-4 text-center">
-                          <button onClick={() => setDetailedMonthTpId(item._id)} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
-                            <Eye size={18} strokeWidth={2.5}/>
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    dayWiseData.length === 0 ? (
-                      <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily TPs</td></tr>
-                    ) : dayWiseData.map((d: any, idx: number) => {
-                      const rowId = `${d.tpId}_${formatDDMMYYYY(d.date)}`;
-                      return (
-                        <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
-                          <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{formatDDMMYYYY(d.date)}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{d.designation}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{d.areaType}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{d.location}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{d.remarks}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{d.activity}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{d.workedWith}</td>
-                          <td className="p-4 text-center">
-                            <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                ))
+              ) : (
+                dayWiseData.length === 0 ? (
+                  <tr><td colSpan={10} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Daily TPs</td></tr>
+                ) : dayWiseData.map((d: any, idx: number) => {
+                  const rowId = `${d.tpId}_${formatDDMMYYYY(d.date)}`;
+                  return (
+                    <tr key={rowId} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                      <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
+                      <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">{formatDDMMYYYY(d.date)}</td>
+                      <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.designation}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.areaType}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.location}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.remarks}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.activity}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{d.workedWith}</td>
+                      <td className="p-3 text-center">
+                        <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
        </div>
     </div>
   );

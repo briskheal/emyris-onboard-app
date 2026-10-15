@@ -157,57 +157,60 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     const stockistCalls = stIds.map(id => stockistMap.get(id) || `Stockist (${id})`);
 
     return (
-      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
-         <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-            <button onClick={() => setDetailedDateData(null)} className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider hover:text-sky-300 transition-colors">
-               <ChevronLeft size={20} /> CALL DETAILS
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
+         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+            <button onClick={() => setDetailedDateData(null)} className="flex items-center gap-1.5 text-xs font-bold text-sky-400 uppercase tracking-wider hover:text-sky-300 transition-colors">
+               <ChevronLeft size={16} /> CALL DETAILS: {detailedDateData.name} ({formattedDate})
             </button>
+            <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+              {doctorCalls.length + chemistCalls.length + stockistCalls.length} Total Calls
+            </span>
          </div>
          
-         <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-4 mb-8">
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Date</div>
-                  <div className="text-sm font-bold text-white">{formattedDate}</div>
+         <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Date</div>
+                  <div className="text-xs font-bold text-white">{formattedDate}</div>
                </div>
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Doctors</div>
-                  <div className="text-sm font-bold text-white">{doctorCalls.length}</div>
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Doctors</div>
+                  <div className="text-xs font-bold text-emerald-400">{doctorCalls.length}</div>
                </div>
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Chemists</div>
-                  <div className="text-sm font-bold text-white">{chemistCalls.length}</div>
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Chemists</div>
+                  <div className="text-xs font-bold text-emerald-400">{chemistCalls.length}</div>
                </div>
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Stockists</div>
-                  <div className="text-sm font-bold text-white">{stockistCalls.length}</div>
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Stockists</div>
+                  <div className="text-xs font-bold text-emerald-400">{stockistCalls.length}</div>
                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] p-6 shadow-xl">
-                 <h4 className="text-xs font-black text-sky-400 uppercase tracking-widest mb-6 border-b border-[#3b3b5a] pb-4">Doctors Planned</h4>
-                 {doctorCalls.length === 0 ? <p className="text-slate-500 text-sm italic">No doctors planned</p> : (
-                   <div className="space-y-3">
-                     {doctorCalls.map((n, i) => <div key={i} className="flex items-center gap-3 bg-[#1c1c2e] p-3 rounded-xl border border-[#3b3b5a] shadow-sm"><div className="w-6 h-6 rounded bg-sky-500/10 text-sky-400 flex items-center justify-center text-xs font-bold">{i+1}</div><span className="text-sm font-bold text-slate-200">{n}</span></div>)}
+               <div className="bg-[#1e2336] rounded-xl border border-slate-700/60 p-4">
+                 <h4 className="text-xs font-black text-sky-400 uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">Doctors Planned ({doctorCalls.length})</h4>
+                 {doctorCalls.length === 0 ? <p className="text-slate-500 text-xs italic">No doctors planned</p> : (
+                   <div className="space-y-2">
+                     {doctorCalls.map((n, i) => <div key={i} className="flex items-center gap-2.5 bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200"><div className="w-5 h-5 rounded bg-sky-500/10 text-sky-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div><span>{n}</span></div>)}
                    </div>
                  )}
                </div>
 
-               <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] p-6 shadow-xl">
-                 <h4 className="text-xs font-black text-emerald-400 uppercase tracking-widest mb-6 border-b border-[#3b3b5a] pb-4">Chemists Planned</h4>
-                 {chemistCalls.length === 0 ? <p className="text-slate-500 text-sm italic">No chemists planned</p> : (
-                   <div className="space-y-3">
-                     {chemistCalls.map((n, i) => <div key={i} className="flex items-center gap-3 bg-[#1c1c2e] p-3 rounded-xl border border-[#3b3b5a] shadow-sm"><div className="w-6 h-6 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xs font-bold">{i+1}</div><span className="text-sm font-bold text-slate-200">{n}</span></div>)}
+               <div className="bg-[#1e2336] rounded-xl border border-slate-700/60 p-4">
+                 <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">Chemists Planned ({chemistCalls.length})</h4>
+                 {chemistCalls.length === 0 ? <p className="text-slate-500 text-xs italic">No chemists planned</p> : (
+                   <div className="space-y-2">
+                     {chemistCalls.map((n, i) => <div key={i} className="flex items-center gap-2.5 bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200"><div className="w-5 h-5 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div><span>{n}</span></div>)}
                    </div>
                  )}
                </div>
 
-               <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] p-6 shadow-xl">
-                 <h4 className="text-xs font-black text-amber-400 uppercase tracking-widest mb-6 border-b border-[#3b3b5a] pb-4">Stockists Planned</h4>
-                 {stockistCalls.length === 0 ? <p className="text-slate-500 text-sm italic">No stockists planned</p> : (
-                   <div className="space-y-3">
-                     {stockistCalls.map((n, i) => <div key={i} className="flex items-center gap-3 bg-[#1c1c2e] p-3 rounded-xl border border-[#3b3b5a] shadow-sm"><div className="w-6 h-6 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center text-xs font-bold">{i+1}</div><span className="text-sm font-bold text-slate-200">{n}</span></div>)}
+               <div className="bg-[#1e2336] rounded-xl border border-slate-700/60 p-4">
+                 <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">Stockists Planned ({stockistCalls.length})</h4>
+                 {stockistCalls.length === 0 ? <p className="text-slate-500 text-xs italic">No stockists planned</p> : (
+                   <div className="space-y-2">
+                     {stockistCalls.map((n, i) => <div key={i} className="flex items-center gap-2.5 bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200"><div className="w-5 h-5 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div><span>{n}</span></div>)}
                    </div>
                  )}
                </div>
@@ -240,7 +243,6 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     const handleDeleteEntry = async (entryId: string, dateStr: string) => {
         if (!window.confirm(`Are you sure you want to delete the Call Plan for ${dateStr}?`)) return;
         try {
-            // Use Reject action to effectively clear/delete the pending entry for now
             await axios.post('/api/xl/approvals/action', { type: 'Call Plans', action: 'Rejected', recordId: entryId });
             fetchPending();
             fetchCounts();
@@ -254,106 +256,112 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     };
 
     return (
-      <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
-         <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-            <button onClick={() => { setDetailedMonthId(null); setSelectedRows([]); }} className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider mb-4 hover:text-sky-300 transition-colors">
-               <ChevronLeft size={20} /> MONTHLY CALL PLAN DETAILS
-            </button>
-            <div className="flex flex-wrap gap-6 items-center text-xs font-black uppercase tracking-widest text-slate-400">
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-500"></div> Pending Call Plans for {grp.employeeName}</div>
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
+         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+            <div className="flex items-center gap-4">
+               <button onClick={() => { setDetailedMonthId(null); setSelectedRows([]); }} className="flex items-center gap-1.5 text-xs font-bold text-sky-400 uppercase tracking-wider hover:text-sky-300 transition-colors">
+                  <ChevronLeft size={16} /> MONTHLY CALL PLAN: {grp.monthKey} ({grp.employeeName || grp.employeeId})
+               </button>
+               <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+                 {calendarDays.length} Days
+               </span>
+               <div className="hidden lg:flex items-center gap-4 ml-2 border-l border-slate-700/50 pl-4">
+                  <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div><span className="text-[11px] font-bold text-slate-300">Pending</span></div>
+               </div>
             </div>
+
+            {selectedRows.length > 0 && (
+               <div className="flex items-center gap-2">
+                 <span className="text-xs font-bold text-slate-300">{selectedRows.length} selected</span>
+                 <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow">Approve</button>
+                 <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow">Reject</button>
+               </div>
+            )}
          </div>
 
-         {selectedRows.length > 0 && (
-            <div className="absolute top-6 right-8 z-20 flex gap-3 bg-sky-900/90 backdrop-blur-md rounded-xl border border-sky-500/50 items-center px-4 py-2 shadow-2xl">
-              <span className="text-sky-400 font-bold text-sm">{selectedRows.length} selected</span>
-              <div className="w-px h-6 bg-sky-500/30 mx-1"></div>
-              <button onClick={() => handleBulkAction('Approved')} className="bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Approve</button>
-              <button onClick={() => handleBulkAction('Rejected')} className="bg-rose-500 hover:bg-rose-400 text-white px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-wider shadow-lg">Reject</button>
-            </div>
-         )}
+         {/* Calendar Grid Table */}
+         <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
+            <table className="w-full text-left border-collapse relative">
+              <thead>
+                <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Date</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Day</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Doctors</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Chemists</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Stockists</th>
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50 text-center">Actions</th>
+                  <th className="p-3.5 w-16 text-center">
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                      <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === calendarDays.filter(d => d.entry).length} onChange={toggleMonthAll} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-700/30">
+                {calendarDays.map((dayItem) => {
+                  const { d, dateStr, dateObj, isSunday, holiday, entry } = dayItem;
+                  const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
+                  
+                  if (holiday) {
+                      return (
+                          <tr key={dateStr} className="border-b border-slate-700/30 bg-rose-500/10">
+                              <td className="p-3 text-[13px] font-bold text-rose-400 bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {monthShort}</td>
+                              <td className="p-3 text-[13px] font-bold text-rose-400 border-r border-slate-700/30">{dayName}</td>
+                              <td colSpan={5} className="p-3 text-[12px] font-black text-rose-400 tracking-wider uppercase">HOLIDAY: {holiday.title}</td>
+                          </tr>
+                      );
+                  }
+                  if (isSunday && !entry) {
+                      return (
+                          <tr key={dateStr} className="border-b border-slate-700/30 bg-slate-800/30">
+                              <td className="p-3 text-[13px] font-bold text-slate-500 bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {monthShort}</td>
+                              <td className="p-3 text-[13px] font-bold text-slate-500 border-r border-slate-700/30">{dayName}</td>
+                              <td colSpan={5} className="p-3 text-[12px] font-black text-slate-600 tracking-wider uppercase">SUNDAY</td>
+                          </tr>
+                      );
+                  }
+                  
+                  if (!entry) {
+                      return (
+                          <tr key={dateStr} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                              <td className="p-3 text-[13px] font-bold text-white bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {monthShort}</td>
+                              <td className="p-3 text-[13px] font-medium text-slate-400 border-r border-slate-700/30">{dayName}</td>
+                              <td colSpan={5} className="p-3 text-[13px] font-medium text-slate-500 italic">No Call Plan submitted</td>
+                          </tr>
+                      );
+                  }
 
-         <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-            <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
-               <table className="w-full text-left border-collapse whitespace-nowrap">
-                 <thead>
-                   <tr className="border-b border-[#3b3b5a] bg-[#1c1c2e]">
-                     <th className="px-6 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Date</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest">Day</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Doctors</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Chemists</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Stockists</th>
-                     <th className="px-4 py-5 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
-                     <th className="p-4 w-16 text-center">
-                       <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === calendarDays.filter(d => d.entry).length} onChange={toggleMonthAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                     </th>
-                   </tr>
-                 </thead>
-                 <tbody>
-                   {calendarDays.map((dayItem) => {
-                     const { d, dateStr, dateObj, isSunday, holiday, entry } = dayItem;
-                     const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
-                     
-                     if (holiday) {
-                         return (
-                             <tr key={dateStr} className="border-b border-[#3b3b5a] bg-rose-500/5">
-                                 <td className="px-6 py-4 text-sm font-bold text-rose-400">{d} {monthShort}</td>
-                                 <td className="px-4 py-4 text-sm font-bold text-rose-400">{dayName}</td>
-                                 <td colSpan={5} className="px-4 py-4 text-sm font-black text-rose-500 tracking-widest uppercase">HOLIDAY: {holiday.title}</td>
-                             </tr>
-                         );
-                     }
-                     if (isSunday && !entry) {
-                         return (
-                             <tr key={dateStr} className="border-b border-[#3b3b5a] bg-slate-800/30">
-                                 <td className="px-6 py-4 text-sm font-bold text-slate-500">{d} {monthShort}</td>
-                                 <td className="px-4 py-4 text-sm font-bold text-slate-500">{dayName}</td>
-                                 <td colSpan={5} className="px-4 py-4 text-sm font-black text-slate-600 tracking-widest uppercase">SUNDAY</td>
-                             </tr>
-                         );
-                     }
-                     
-                     if (!entry) {
-                         return (
-                             <tr key={dateStr} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30">
-                                 <td className="px-6 py-4 text-sm font-bold text-white">{d} {monthShort}</td>
-                                 <td className="px-4 py-4 text-sm font-medium text-slate-400">{dayName}</td>
-                                 <td colSpan={5} className="px-4 py-4 text-sm font-medium text-slate-600 italic">No Call Plan submitted</td>
-                             </tr>
-                         );
-                     }
+                  let dCount = 0, cCount = 0, sCount = 0;
+                  try { dCount = JSON.parse(entry.doctors || '[]').length; } catch(e){}
+                  try { cCount = JSON.parse(entry.chemists || '[]').length; } catch(e){}
+                  try { sCount = JSON.parse(entry.stockists || '[]').length; } catch(e){}
 
-                     let dCount = 0, cCount = 0, sCount = 0;
-                     try { dCount = JSON.parse(entry.doctors || '[]').length; } catch(e){}
-                     try { cCount = JSON.parse(entry.chemists || '[]').length; } catch(e){}
-                     try { sCount = JSON.parse(entry.stockists || '[]').length; } catch(e){}
-
-                     return (
-                       <tr key={dateStr} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/50 transition-colors">
-                         <td className="px-6 py-4 text-sm font-bold text-white">{d} {monthShort}</td>
-                         <td className="px-4 py-4 text-sm font-medium text-slate-300">{dayName}</td>
-                         <td className="px-4 py-4 text-center text-sm font-bold text-emerald-400">{dCount}</td>
-                         <td className="px-4 py-4 text-center text-sm font-bold text-emerald-400">{cCount}</td>
-                         <td className="px-4 py-4 text-center text-sm font-bold text-emerald-400">{sCount}</td>
-                         <td className="px-4 py-4 text-center">
-                            <div className="flex items-center justify-center gap-2">
-                                <button onClick={() => setDetailedDateData({employeeId: entry.employeeId, date: entry.date, name: entry.employeeName})} className="p-1.5 text-sky-400 hover:bg-sky-500/10 rounded-lg transition-colors">
-                                    <Eye size={18} />
-                                </button>
-                                <button onClick={() => handleDeleteEntry(entry._id, dateStr)} className="p-1.5 text-slate-500 hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition-colors">
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                         </td>
-                         <td className="p-4 text-center">
-                           <input type="checkbox" checked={selectedRows.includes(entry._id)} onChange={() => toggleRow(entry._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                         </td>
-                       </tr>
-                     );
-                   })}
-                 </tbody>
-               </table>
-            </div>
+                  return (
+                    <tr key={dateStr} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                      <td className="p-3 text-[13px] font-bold text-white bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{d} {monthShort}</td>
+                      <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{dayName}</td>
+                      <td className="p-3 text-center text-[13px] font-bold text-emerald-400 border-r border-slate-700/30">{dCount}</td>
+                      <td className="p-3 text-center text-[13px] font-bold text-emerald-400 border-r border-slate-700/30">{cCount}</td>
+                      <td className="p-3 text-center text-[13px] font-bold text-emerald-400 border-r border-slate-700/30">{sCount}</td>
+                      <td className="p-3 text-center border-r border-slate-700/30">
+                         <div className="flex items-center justify-center gap-2">
+                             <button onClick={() => setDetailedDateData({employeeId: entry.employeeId, date: entry.date, name: entry.employeeName})} className="p-1.5 text-sky-400 hover:bg-sky-500/10 rounded transition-colors">
+                                 <Eye size={16} />
+                             </button>
+                             <button onClick={() => handleDeleteEntry(entry._id, dateStr)} className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors">
+                                 <Trash2 size={16} />
+                             </button>
+                         </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        <input type="checkbox" checked={selectedRows.includes(entry._id)} onChange={() => toggleRow(entry._id)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
          </div>
       </div>
     );
@@ -361,51 +369,64 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
 
   // --- 3. MAIN APPROVAL LIST VIEW ---
   return (
-    <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
-       <div className="p-6 md:p-8 pb-6 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-          <div className="flex flex-col md:flex-row justify-between md:items-center gap-6 mb-8">
-             <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
-                     <CheckCircle size={24} strokeWidth={2.5}/>
-                 </div>
-                 <div>
-                    <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wide">APPROVE {selectedModule}</h1>
-                 </div>
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
+       {/* Top Control Bar */}
+       <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2">
+                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                 <h1 className="text-sm font-black text-white uppercase tracking-wider">APPROVE {selectedModule}</h1>
              </div>
-             
-             {/* Monthly View Toggle */}
-             <div className="flex items-center gap-3 bg-[#151521] px-5 py-3 rounded-xl border border-[#3b3b5a]">
-                <div 
-                  onClick={() => { setIsMonthlyView(!isMonthlyView); setSelectedRows([]); }} 
-                  className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${isMonthlyView ? 'bg-emerald-500' : 'bg-slate-700'}`}
-                >
-                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isMonthlyView ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                </div>
-                <span className="text-sm font-bold text-slate-300">View Monthly Call Plan</span>
+             <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+               {isMonthlyView ? monthlyGrouped.length : filteredItems.length} {((isMonthlyView ? monthlyGrouped.length : filteredItems.length) === 1) ? 'Entry' : 'Entries'}
+             </span>
+             {/* Status Legend Pills */}
+             <div className="hidden lg:flex items-center gap-4 ml-2 border-l border-slate-700/50 pl-4">
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-[11px] font-bold text-slate-300">Approved</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div><span className="text-[11px] font-bold text-slate-300">Rejected</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div><span className="text-[11px] font-bold text-slate-300">Pending</span></div>
              </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
-            <div className="flex-1 min-w-0 w-full max-w-sm">
-              <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">Select User</label>
-              <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
+          <div className="flex items-center gap-3">
+            {/* Monthly View Toggle Switch */}
+            <div 
+              onClick={() => { setIsMonthlyView(!isMonthlyView); setSelectedRows([]); }}
+              className="flex items-center gap-2 bg-[#0b0f19] px-2.5 py-1 rounded-lg border border-slate-700/60 cursor-pointer hover:border-slate-600 transition-colors"
+            >
+              <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${isMonthlyView ? 'bg-emerald-500' : 'bg-slate-700'}`}>
+                <div className={`w-3 h-3 rounded-full bg-white transition-transform ${isMonthlyView ? 'translate-x-4' : 'translate-x-0'}`}></div>
+              </div>
+              <span className="text-xs font-bold text-slate-300">Monthly Call Plan</span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide hidden sm:inline">User:</span>
+              <select 
+                value={selectedUser} 
+                onChange={e => setSelectedUser(e.target.value)} 
+                className="bg-[#0b0f19] border border-slate-700/60 text-white rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-sky-500"
+              >
                 <option value="">All Users</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             
-            {selectedRows.length > 0 && (
-               <button onClick={() => setShowConfirmModal(true)} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg transition-transform active:scale-95">
-                 <CheckCircle size={18} /> Actions
+            {selectedRows.length > 0 && !isMonthlyView && (
+               <button 
+                 onClick={() => setShowConfirmModal(true)} 
+                 className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow transition-transform active:scale-95"
+               >
+                 <CheckCircle size={14} /> Actions ({selectedRows.length})
                </button>
             )}
           </div>
        </div>
 
        {showConfirmModal && (
-          <div className="absolute inset-0 bg-[#151521]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-             <div className="bg-[#1c1c2e] border border-[#3b3b5a] shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
-               <div className="flex justify-between items-center mb-6 border-b border-[#3b3b5a] pb-4">
+          <div className="absolute inset-0 bg-[#0b0f19]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+             <div className="bg-[#1c1c2e] border border-slate-700 shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
+               <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
                  <h3 className="text-white font-black uppercase tracking-wider text-sm">CONFIRM DETAILS</h3>
                  <button onClick={() => setShowConfirmModal(false)} className="text-rose-500 hover:text-rose-400"><XCircle size={20} /></button>
                </div>
@@ -426,105 +447,103 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
           </div>
        )}
 
-       <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-          <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-[#3b3b5a] bg-[#1c1c2e]">
-               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">SHOWING ({isMonthlyView ? monthlyGrouped.length : filteredItems.length}) ENTRIES</span>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="border-b border-[#3b3b5a] bg-[#151521]">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                    {isMonthlyView ? (
-                      <>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Month</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Year</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Name</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Designation</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Reporting Manager</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">View</th>
-                      </>
-                    ) : (
-                      <>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Date</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Day</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Employee Name</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">Doctors</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">Chemists</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">Stockists</th>
-                        <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">View</th>
-                        <th className="p-4 w-16 text-center">
-                           <div className="flex items-center justify-center gap-2">
-                             <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Select</span>
-                             <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === filteredItems.length} onChange={toggleAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                           </div>
-                        </th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {isMonthlyView ? (
-                    monthlyGrouped.length === 0 ? (
-                      <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Monthly Call Plans</td></tr>
-                    ) : monthlyGrouped.map((item: any, idx: number) => {
-                      const dt = new Date(item.year, item.monthIndex, 1);
-                      const mName = dt.toLocaleString('default', { month: 'long' });
-                      return (
-                        <tr key={item._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
-                          <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-white capitalize">{mName}</td>
-                          <td className="px-4 py-4 text-sm font-medium text-slate-300">{item.year}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-sky-400">{item.employeeName}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{item.designation}</td>
-                          <td className="px-4 py-4 text-sm text-slate-300">{item.reportingManager}</td>
-                          <td className="px-4 py-4 text-center">
-                            <button onClick={() => setDetailedMonthId(item._id)} className="p-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
-                              <Eye size={18} strokeWidth={2.5}/>
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    filteredItems.length === 0 ? (
-                      <tr><td colSpan={9} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Plans</td></tr>
-                    ) : filteredItems.map((d: any, idx: number) => {
-                      let dCount = 0, cCount = 0, sCount = 0;
-                      try { dCount = JSON.parse(d.doctors || '[]').length; } catch(e){}
-                      try { cCount = JSON.parse(d.chemists || '[]').length; } catch(e){}
-                      try { sCount = JSON.parse(d.stockists || '[]').length; } catch(e){}
-                      
-                      const dateObj = new Date(d.date);
-                      const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
+       {/* Full Width Excel Grid Table */}
+       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
+          <table className="w-full text-left border-collapse relative">
+            <thead>
+              <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
+                {isMonthlyView ? (
+                  <>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Month</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Year</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Name</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Designation</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Reporting Manager</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center w-16">View</th>
+                  </>
+                ) : (
+                  <>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Date</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Day</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Employee Name</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border-r border-slate-700/50">Doctors</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border-r border-slate-700/50">Chemists</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border-r border-slate-700/50">Stockists</th>
+                    <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center w-16 border-r border-slate-700/50">View</th>
+                    <th className="p-3.5 w-16 text-center">
+                       <div className="flex items-center justify-center gap-1.5">
+                         <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                         <input 
+                           type="checkbox" 
+                           checked={selectedRows.length > 0 && selectedRows.length === filteredItems.length} 
+                           onChange={toggleAll} 
+                           className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" 
+                         />
+                       </div>
+                    </th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/30">
+              {isMonthlyView ? (
+                monthlyGrouped.length === 0 ? (
+                  <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Monthly Call Plans</td></tr>
+                ) : monthlyGrouped.map((item: any, idx: number) => {
+                  const dt = new Date(item.year, item.monthIndex, 1);
+                  const mName = dt.toLocaleString('default', { month: 'long' });
+                  return (
+                    <tr key={item._id} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                      <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
+                      <td className="p-3 text-[13px] font-bold text-white capitalize bg-slate-800/10 border-r border-slate-700/30 whitespace-nowrap">{mName}</td>
+                      <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{item.year}</td>
+                      <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{item.employeeName}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.designation}</td>
+                      <td className="p-3 text-[13px] text-slate-300 border-r border-slate-700/30">{item.reportingManager}</td>
+                      <td className="p-3 text-center">
+                        <button onClick={() => setDetailedMonthId(item._id)} className="p-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-lg hover:bg-emerald-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
+                          <Eye size={16} strokeWidth={2.5}/>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                filteredItems.length === 0 ? (
+                  <tr><td colSpan={9} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Plans</td></tr>
+                ) : filteredItems.map((d: any, idx: number) => {
+                  let dCount = 0, cCount = 0, sCount = 0;
+                  try { dCount = JSON.parse(d.doctors || '[]').length; } catch(e){}
+                  try { cCount = JSON.parse(d.chemists || '[]').length; } catch(e){}
+                  try { sCount = JSON.parse(d.stockists || '[]').length; } catch(e){}
+                  
+                  const dateObj = new Date(d.date);
+                  const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
 
-                      return (
-                        <tr key={d._id} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
-                          <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{formatDDMMYYYY(d.date)}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-slate-300">{dayName}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName || d.employeeId}</td>
-                          <td className="px-4 py-4 text-center text-sm font-bold text-emerald-400">{dCount}</td>
-                          <td className="px-4 py-4 text-center text-sm font-bold text-emerald-400">{cCount}</td>
-                          <td className="px-4 py-4 text-center text-sm font-bold text-emerald-400">{sCount}</td>
-                          <td className="px-4 py-4 text-center">
-                            <button onClick={() => setDetailedDateData({employeeId: d.employeeId, date: d.date, name: d.employeeName})} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
-                              <Eye size={18} strokeWidth={2.5}/>
-                            </button>
-                          </td>
-                          <td className="p-4 text-center">
-                            <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                  return (
+                    <tr key={d._id} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                      <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
+                      <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">{formatDDMMYYYY(d.date)}</td>
+                      <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{dayName}</td>
+                      <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName || d.employeeId}</td>
+                      <td className="p-3 text-center text-[13px] font-bold text-emerald-400 border-r border-slate-700/30">{dCount}</td>
+                      <td className="p-3 text-center text-[13px] font-bold text-emerald-400 border-r border-slate-700/30">{cCount}</td>
+                      <td className="p-3 text-center text-[13px] font-bold text-emerald-400 border-r border-slate-700/30">{sCount}</td>
+                      <td className="p-3 text-center border-r border-slate-700/30">
+                        <button onClick={() => setDetailedDateData({employeeId: d.employeeId, date: d.date, name: d.employeeName})} className="p-1.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
+                          <Eye size={16} strokeWidth={2.5}/>
+                        </button>
+                      </td>
+                      <td className="p-3 text-center">
+                        <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
        </div>
     </div>
   );

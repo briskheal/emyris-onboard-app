@@ -176,7 +176,7 @@ export default function Approvals() {
   };
 
   return (
-    <div className="flex h-screen bg-[#1e1e2d] text-white overflow-hidden font-sans">
+    <div className="flex h-full bg-[#151c2c] text-white overflow-hidden font-sans">
        {/* Sidebar */}
        <div className={`${sidebarCollapsed ? 'w-16' : 'w-48'} bg-slate-900 border-r border-slate-800 flex flex-col h-full shrink-0 shadow-2xl z-10 transition-all duration-200`}>
           <div className="p-3.5 border-b border-slate-800 flex flex-col gap-2.5">

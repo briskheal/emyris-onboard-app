@@ -225,8 +225,8 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
       const st = item.status || 'Pending';
       const color = st === 'Approved' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
                     st === 'Rejected' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
-                    'bg-amber-500/20 text-amber-400 border border-amber-500/30';
-      return <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase ${color}`}>{st}</span>;
+                    'bg-sky-500/20 text-sky-400 border border-sky-500/30';
+      return <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${color}`}>{st}</span>;
     }
     let val = (item[col.key] !== undefined && item[col.key] !== null && item[col.key] !== '') ? item[col.key] :
       (col.key === 'businessName' ? item.name : undefined) ||
@@ -280,64 +280,67 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
-       {/* Top Control Bar */}
-       <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-          <div className="flex justify-between items-start mb-6">
-             <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
-                     <CheckCircle size={24} strokeWidth={2.5}/>
-                 </div>
-                 <div>
-                    <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wide">APPROVE {selectedModule}</h1>
-                 </div>
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
+       {/* Top Control Bar - Excel Header Style matching Expense.tsx */}
+       <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2">
+                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                 <h1 className="text-sm font-black text-white uppercase tracking-wider">APPROVE {selectedModule}</h1>
+             </div>
+             <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+               {filteredItems.length} {filteredItems.length === 1 ? 'Entry' : 'Entries'}
+             </span>
+             {/* Status Legend Pills */}
+             <div className="hidden lg:flex items-center gap-4 ml-2 border-l border-slate-700/50 pl-4">
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-[11px] font-bold text-slate-300">Approved</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div><span className="text-[11px] font-bold text-slate-300">Rejected</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div><span className="text-[11px] font-bold text-slate-300">Pending</span></div>
              </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
-            <div className="flex-1 w-full max-w-sm">
-              <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">Select User</label>
-              <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
+          <div className="flex items-center gap-3">
+            {hasEntityToggles && (
+              <div className="flex items-center gap-1 bg-[#0b0f19] p-1 rounded-lg border border-slate-700/60">
+                 {['DOCTORS', 'STOCKISTS', 'CHEMISTS'].map((t) => (
+                   <button
+                     key={t}
+                     onClick={() => setActiveToggle(t)}
+                     className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded transition-colors ${activeToggle === t ? 'bg-sky-500 text-white' : 'text-slate-400 hover:text-white'}`}
+                   >
+                     {t}
+                   </button>
+                 ))}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide hidden sm:inline">User:</span>
+              <select 
+                value={selectedUser} 
+                onChange={e => setSelectedUser(e.target.value)} 
+                className="bg-[#0b0f19] border border-slate-700/60 text-white rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-sky-500"
+              >
                 <option value="">All Users</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             
             {selectedRows.length > 0 && (
-               <button onClick={() => setShowConfirmModal(true)} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg transition-transform active:scale-95">
-                 <CheckCircle size={18} /> Actions
+               <button 
+                 onClick={() => setShowConfirmModal(true)} 
+                 className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow transition-transform active:scale-95"
+               >
+                 <CheckCircle size={14} /> Actions ({selectedRows.length})
                </button>
             )}
           </div>
-          {hasEntityToggles && (
-            <div className="flex items-center gap-8 mt-6 pt-4 border-t border-[#3b3b5a]">
-               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveToggle('DOCTORS')}>
-                  <div className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 ${activeToggle === 'DOCTORS' ? 'bg-emerald-500' : 'bg-[#27273f]'}`}>
-                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${activeToggle === 'DOCTORS' ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                  </div>
-                  <span className="text-xs font-black text-white uppercase tracking-widest">DOCTORS</span>
-               </div>
-               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveToggle('STOCKISTS')}>
-                  <div className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 ${activeToggle === 'STOCKISTS' ? 'bg-emerald-500' : 'bg-[#27273f]'}`}>
-                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${activeToggle === 'STOCKISTS' ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                  </div>
-                  <span className="text-xs font-black text-white uppercase tracking-widest">STOCKISTS</span>
-               </div>
-               <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveToggle('CHEMISTS')}>
-                  <div className={`w-12 h-6 rounded-full transition-colors flex items-center px-1 ${activeToggle === 'CHEMISTS' ? 'bg-emerald-500' : 'bg-[#27273f]'}`}>
-                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${activeToggle === 'CHEMISTS' ? 'translate-x-6' : 'translate-x-0'}`}></div>
-                  </div>
-                  <span className="text-xs font-black text-white uppercase tracking-widest">CHEMISTS</span>
-               </div>
-            </div>
-          )}
        </div>
 
        {showConfirmModal && (
-
-          <div className="absolute inset-0 bg-[#151521]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-             <div className="bg-[#1c1c2e] border border-[#3b3b5a] shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
-               <div className="flex justify-between items-center mb-6 border-b border-[#3b3b5a] pb-4">
+          <div className="absolute inset-0 bg-[#0b0f19]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+             <div className="bg-[#1c1c2e] border border-slate-700 shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
+               <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
                  <h3 className="text-white font-black uppercase tracking-wider text-sm">CONFIRM DETAILS</h3>
                  <button onClick={() => setShowConfirmModal(false)} className="text-rose-500 hover:text-rose-400"><XCircle size={20} /></button>
                </div>
@@ -358,65 +361,88 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
           </div>
        )}
 
-       <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-          <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-[#3b3b5a] bg-[#1c1c2e] flex gap-4">
-               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">SHOWING ({filteredItems.length}) ENTRIES</span>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                <thead>
-                  <tr className="border-b border-[#3b3b5a] bg-[#151521]">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
+       {/* Full Width Excel Grid Table */}
+       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
+          <table className="w-full text-left border-collapse relative">
+            <thead>
+              <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
+                {columns.map((col: any, i: number) => (
+                  <th key={i} className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">
+                    {col.label}
+                  </th>
+                ))}
+                {hasView && (
+                  <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-16 border-r border-slate-700/50">
+                    View
+                  </th>
+                )}
+                <th className="p-3.5 w-16 text-center">
+                   <div className="flex items-center justify-center gap-1.5">
+                     <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                     <input 
+                       type="checkbox" 
+                       checked={selectedRows.length > 0 && selectedRows.length === filteredItems.length} 
+                       onChange={toggleAll} 
+                       className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" 
+                     />
+                   </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/30">
+              {filteredItems.length === 0 ? (
+                <tr>
+                  <td colSpan={columns.length + 3} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">
+                    No Records Found
+                  </td>
+                </tr>
+              ) : filteredItems.map((d: any, idx: number) => {
+                return (
+                  <tr 
+                    key={d._id} 
+                    onClick={() => {
+                      if (['Primary Sales', 'Secondary Sales', 'Doctors', 'Chemists', 'Stockists'].includes(selectedModule)) {
+                        handleViewItem(d);
+                      }
+                    }} 
+                    className={`hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group ${['Primary Sales', 'Secondary Sales', 'Doctors', 'Chemists', 'Stockists'].includes(selectedModule) ? 'cursor-pointer' : ''}`}
+                  >
+                    <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">
+                      {idx + 1}
+                    </td>
                     {columns.map((col: any, i: number) => (
-                      <th key={i} className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">{col.label}</th>
+                      <td key={i} className={`p-3 text-[13px] border-r border-slate-700/30 ${i === 0 ? 'font-bold text-white whitespace-nowrap bg-slate-800/10' : 'font-medium text-slate-300'}`}>
+                        {renderCellValue(d, col)}
+                      </td>
                     ))}
-                    {hasView && <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">View</th>}
-                    <th className="p-4 w-16 text-center">
-                       <div className="flex items-center justify-center gap-2">
-                         <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Select</span>
-                         <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === filteredItems.length} onChange={toggleAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                       </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredItems.length === 0 ? (
-                    <tr><td colSpan={columns.length + 3} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Data Found</td></tr>
-                  ) : filteredItems.map((d: any, idx: number) => {
-                    return (
-                      <tr key={d._id} onClick={() => {
-                          if (['Primary Sales', 'Secondary Sales', 'Doctors', 'Chemists', 'Stockists'].includes(selectedModule)) {
+                    {hasView && (
+                      <td className="p-2 text-center border-r border-slate-700/30">
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
                             handleViewItem(d);
-                          }
-                        }} className={`border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors ${['Primary Sales', 'Secondary Sales', 'Doctors', 'Chemists', 'Stockists'].includes(selectedModule) ? 'cursor-pointer' : ''}`}>
-                        <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                        {columns.map((col: any, i: number) => (
-                          <td key={i} className={`px-4 py-4 text-sm font-bold ${i === 0 ? 'text-sky-400' : 'text-slate-300'}`}>
-                            {renderCellValue(d, col)}
-                          </td>
-                        ))}
-                        {hasView && (
-                          <td className="px-4 py-4 text-center">
-                            <button onClick={(e) => {
-                                e.stopPropagation();
-                                handleViewItem(d);
-                              }} title="View & Review Details" className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
-                              <Eye size={18} strokeWidth={2.5}/>
-                            </button>
-                          </td>
-                        )}
-                        <td className="p-4 text-center" onClick={e => e.stopPropagation()}>
-                            <input type="checkbox" checked={selectedRows.includes(d._id)} onChange={() => toggleRow(d._id)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                          }} 
+                          title="View & Review Details" 
+                          className="p-1.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-md hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block"
+                        >
+                          <Eye size={15} strokeWidth={2.5}/>
+                        </button>
+                      </td>
+                    )}
+                    <td className="p-2 text-center" onClick={e => e.stopPropagation()}>
+                        <input 
+                          type="checkbox" 
+                          checked={selectedRows.includes(d._id)} 
+                          onChange={() => toggleRow(d._id)} 
+                          className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" 
+                        />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
        </div>
     </div>
   );

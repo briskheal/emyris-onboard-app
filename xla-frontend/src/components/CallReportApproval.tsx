@@ -109,49 +109,53 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
     const stockistCalls = activeGroup?.calls.filter(c => c.entityType === 'Stockist') || [];
 
     return (
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
-         <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-            <button onClick={() => setDetailedDateData(null)} className="flex items-center gap-2 text-sky-400 font-bold uppercase tracking-wider hover:text-sky-300 transition-colors">
-               <ChevronLeft size={20} /> CALL DETAILS
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
+         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+            <button onClick={() => setDetailedDateData(null)} className="flex items-center gap-1.5 text-xs font-bold text-sky-400 uppercase tracking-wider hover:text-sky-300 transition-colors">
+               <ChevronLeft size={16} /> CALL DETAILS: {detailedDateData.name} ({formattedDate})
             </button>
+            <div className="flex items-center gap-4">
+              <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+                {doctorCalls.length + chemistCalls.length + stockistCalls.length} Total Calls
+              </span>
+              <div className="flex items-center gap-4 border-l border-slate-700/50 pl-4">
+                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-pink-500"></div> <span className="text-[11px] font-bold text-slate-300">Planned</span></div>
+                 <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div> <span className="text-[11px] font-bold text-slate-300">Unplanned</span></div>
+              </div>
+            </div>
          </div>
          
-         <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-            <div className="grid grid-cols-4 gap-4 mb-8">
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Date</div>
-                  <div className="text-sm font-bold text-white">{formattedDate}</div>
+         <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Date</div>
+                  <div className="text-xs font-bold text-white">{formattedDate}</div>
                </div>
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Month</div>
-                  <div className="text-sm font-bold text-white capitalize">{monthName}</div>
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Month</div>
+                  <div className="text-xs font-bold text-white capitalize">{monthName}</div>
                </div>
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Area Type</div>
-                  <div className="text-sm font-bold text-white">{activeGroup?.areaType || '-'}</div>
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Area Type</div>
+                  <div className="text-xs font-bold text-white">{activeGroup?.areaType || '-'}</div>
                </div>
-               <div className="bg-[#151521] border border-[#3b3b5a] rounded-xl p-4 text-center">
-                  <div className="text-[10px] font-black text-sky-500 uppercase tracking-widest mb-1">Work Areas</div>
-                  <div className="text-sm font-bold text-sky-400">{activeGroup?.workAreas || '-'}</div>
+               <div className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3 text-center">
+                  <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Work Areas</div>
+                  <div className="text-xs font-bold text-sky-400">{activeGroup?.workAreas || '-'}</div>
                </div>
             </div>
 
-            <div className="flex gap-6 mb-6 px-2">
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-pink-500"></div> <span className="text-xs font-black uppercase tracking-widest text-slate-400">Planned</span></div>
-               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-sky-500"></div> <span className="text-xs font-black uppercase tracking-widest text-slate-400">Unplanned</span></div>
-            </div>
-
-            <div className="flex gap-6">
+            <div className="flex flex-col lg:flex-row gap-6">
               <div className="flex-1 space-y-6">
                  {/* DOCTOR CALLS */}
                  <div>
-                    <h3 className="text-[11px] font-black text-emerald-400 uppercase tracking-widest mb-3 px-2">DOCTOR CALLS</h3>
+                    <h3 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-2.5">DOCTOR CALLS ({doctorCalls.length})</h3>
                     <div className="space-y-2">
-                      {doctorCalls.length === 0 ? <div className="text-slate-500 text-sm italic px-2">No calls</div> : doctorCalls.map((c, i) => (
-                        <div key={i} className="bg-[#151521] border border-[#3b3b5a] rounded-lg p-4 flex justify-between items-center hover:bg-[#27273f]/50 transition-colors cursor-pointer">
+                      {doctorCalls.length === 0 ? <div className="text-slate-500 text-xs italic">No calls</div> : doctorCalls.map((c, i) => (
+                        <div key={i} className="bg-[#1e2336] border border-slate-700/60 rounded-lg p-3.5 flex justify-between items-center hover:bg-slate-800 transition-colors cursor-pointer">
                            <div className="flex items-center gap-3">
                               <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? 'bg-pink-500' : 'bg-sky-500'}`}></div>
-                              <span className="text-sm font-bold text-white">{c.entityName}</span>
+                              <span className="text-xs font-bold text-white">{c.entityName}</span>
                            </div>
                            <ChevronLeft size={16} className="text-slate-500 rotate-[-90deg]" />
                         </div>
@@ -161,13 +165,13 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
 
                  {/* CHEMIST CALLS */}
                  <div>
-                    <h3 className="text-[11px] font-black text-emerald-400 uppercase tracking-widest mb-3 px-2">CHEMIST CALLS</h3>
+                    <h3 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-2.5">CHEMIST CALLS ({chemistCalls.length})</h3>
                     <div className="space-y-2">
-                      {chemistCalls.length === 0 ? <div className="text-slate-500 text-sm italic px-2">No calls</div> : chemistCalls.map((c, i) => (
-                        <div key={i} className="bg-[#151521] border border-[#3b3b5a] rounded-lg p-4 flex justify-between items-center hover:bg-[#27273f]/50 transition-colors cursor-pointer">
+                      {chemistCalls.length === 0 ? <div className="text-slate-500 text-xs italic">No calls</div> : chemistCalls.map((c, i) => (
+                        <div key={i} className="bg-[#1e2336] border border-slate-700/60 rounded-lg p-3.5 flex justify-between items-center hover:bg-slate-800 transition-colors cursor-pointer">
                            <div className="flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                              <span className="text-sm font-bold text-white">{c.entityName}</span>
+                              <span className="text-xs font-bold text-white">{c.entityName}</span>
                            </div>
                            <ChevronLeft size={16} className="text-slate-500 rotate-[-90deg]" />
                         </div>
@@ -177,13 +181,13 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
 
                  {/* STOCKIST CALLS */}
                  <div>
-                    <h3 className="text-[11px] font-black text-emerald-400 uppercase tracking-widest mb-3 px-2">STOCKIST CALLS</h3>
+                    <h3 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-2.5">STOCKIST CALLS ({stockistCalls.length})</h3>
                     <div className="space-y-2">
-                      {stockistCalls.length === 0 ? <div className="text-slate-500 text-sm italic px-2">No calls</div> : stockistCalls.map((c, i) => (
-                        <div key={i} className="bg-[#151521] border border-[#3b3b5a] rounded-lg p-4 flex justify-between items-center hover:bg-[#27273f]/50 transition-colors cursor-pointer">
+                      {stockistCalls.length === 0 ? <div className="text-slate-500 text-xs italic">No calls</div> : stockistCalls.map((c, i) => (
+                        <div key={i} className="bg-[#1e2336] border border-slate-700/60 rounded-lg p-3.5 flex justify-between items-center hover:bg-slate-800 transition-colors cursor-pointer">
                            <div className="flex items-center gap-3">
                               <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                              <span className="text-sm font-bold text-white">{c.entityName}</span>
+                              <span className="text-xs font-bold text-white">{c.entityName}</span>
                            </div>
                            <ChevronLeft size={16} className="text-slate-500 rotate-[-90deg]" />
                         </div>
@@ -193,8 +197,8 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
               </div>
 
               {/* IMAGES SIDEBAR */}
-              <div className="w-64 shrink-0 bg-[#151521] border border-[#3b3b5a] rounded-xl flex items-center justify-center p-8 min-h-[400px]">
-                 <span className="text-xs font-black text-sky-500 uppercase tracking-widest text-center">NO IMAGES<br/>HERE</span>
+              <div className="w-full lg:w-64 shrink-0 bg-[#1e2336] border border-slate-700/60 rounded-xl flex items-center justify-center p-8 min-h-[300px]">
+                 <span className="text-xs font-black text-slate-500 uppercase tracking-widest text-center">NO IMAGES<br/>ATTACHED</span>
               </div>
             </div>
          </div>
@@ -203,41 +207,53 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
   }
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
        {/* Top Control Bar */}
-       <div className="p-6 md:p-8 pb-5 border-b border-[#3b3b5a] bg-[#1c1c2e] shrink-0">
-          <div className="flex justify-between items-start mb-6">
-             <div className="flex items-center gap-4">
-                 <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-inner">
-                     <CheckCircle size={24} strokeWidth={2.5}/>
-                 </div>
-                 <div>
-                    <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wide">APPROVE {selectedModule}</h1>
-                 </div>
+       <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-3.5 bg-[#1e2336] border-b border-slate-800/80 shrink-0">
+          <div className="flex items-center gap-4">
+             <div className="flex items-center gap-2">
+                 <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                 <h1 className="text-sm font-black text-white uppercase tracking-wider">APPROVE {selectedModule}</h1>
+             </div>
+             <span className="text-[11px] font-bold text-slate-400 bg-slate-800/80 px-2.5 py-0.5 rounded-full border border-slate-700/60">
+               {groupedData.length} {groupedData.length === 1 ? 'Entry' : 'Entries'}
+             </span>
+             {/* Status Legend Pills */}
+             <div className="hidden lg:flex items-center gap-4 ml-2 border-l border-slate-700/50 pl-4">
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div><span className="text-[11px] font-bold text-slate-300">Approved</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div><span className="text-[11px] font-bold text-slate-300">Rejected</span></div>
+               <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div><span className="text-[11px] font-bold text-slate-300">Pending</span></div>
              </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between md:items-end gap-4">
-            <div className="flex-1 w-full max-w-sm">
-              <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest mb-2 block">Select User</label>
-              <select value={selectedUser} onChange={e => setSelectedUser(e.target.value)} className="w-full bg-[#151521] border border-[#3b3b5a] text-white rounded-xl px-4 py-3 text-sm font-bold focus:outline-none focus:border-sky-500">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wide hidden sm:inline">User:</span>
+              <select 
+                value={selectedUser} 
+                onChange={e => setSelectedUser(e.target.value)} 
+                className="bg-[#0b0f19] border border-slate-700/60 text-white rounded-lg px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-sky-500"
+              >
                 <option value="">All Users</option>
                 {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
               </select>
             </div>
             
             {selectedRows.length > 0 && (
-               <button onClick={() => setShowConfirmModal(true)} className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-6 py-3 rounded-xl font-bold text-sm uppercase tracking-wider shadow-lg transition-transform active:scale-95">
-                 <CheckCircle size={18} /> Actions
+               <button 
+                 onClick={() => setShowConfirmModal(true)} 
+                 className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-1.5 rounded-lg font-bold text-xs uppercase tracking-wider shadow transition-transform active:scale-95"
+               >
+                 <CheckCircle size={14} /> Actions ({selectedRows.length})
                </button>
             )}
           </div>
        </div>
 
        {showConfirmModal && (
-          <div className="absolute inset-0 bg-[#151521]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-             <div className="bg-[#1c1c2e] border border-[#3b3b5a] shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
-               <div className="flex justify-between items-center mb-6 border-b border-[#3b3b5a] pb-4">
+          <div className="absolute inset-0 bg-[#0b0f19]/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+             <div className="bg-[#1c1c2e] border border-slate-700 shadow-2xl rounded-2xl w-full max-w-md p-6 relative">
+               <div className="flex justify-between items-center mb-6 border-b border-slate-700 pb-4">
                  <h3 className="text-white font-black uppercase tracking-wider text-sm">CONFIRM DETAILS</h3>
                  <button onClick={() => setShowConfirmModal(false)} className="text-rose-500 hover:text-rose-400"><XCircle size={20} /></button>
                </div>
@@ -258,59 +274,58 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
           </div>
        )}
 
-       <div className="p-6 md:p-8 flex-1 overflow-y-auto">
-          <div className="bg-[#151521] rounded-2xl border border-[#3b3b5a] shadow-2xl overflow-hidden">
-            <div className="p-4 border-b border-[#3b3b5a] bg-[#1c1c2e]">
-               <span className="text-xs font-black text-slate-400 uppercase tracking-widest">SHOWING ({groupedData.length}) ENTRIES</span>
-            </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse whitespace-nowrap">
-                  <thead>
-                    <tr className="border-b border-[#3b3b5a] bg-[#151521]">
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sr no.</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Date &uarr;</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Day</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest">Employee Name &uarr;</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">Backlog</th>
-                      <th className="px-4 py-4 text-[10px] font-black text-sky-500 uppercase tracking-widest text-center">View</th>
-                      <th className="p-4 w-16 text-center">
-                         <div className="flex items-center justify-center gap-2">
-                           <span className="text-[10px] font-black text-sky-500 uppercase tracking-widest">Select</span>
-                           <input type="checkbox" checked={selectedRows.length > 0 && selectedRows.length === groupedData.length} onChange={toggleAll} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                         </div>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groupedData.length === 0 ? (
-                      <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Reports</td></tr>
-                    ) : groupedData.map((d: any, idx: number) => {
-                      const rowId = `${d.employeeId}_${formatDDMMYYYY(d.date)}`;
-                      return (
-                        <tr key={rowId} className="border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors">
-                          <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-white whitespace-nowrap">{formatDDMMYYYY(d.date)}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-slate-300 whitespace-nowrap">{formatDDMMYYYY(d.date)}</td>
-                          <td className="px-4 py-4 text-sm font-bold text-sky-400">{d.employeeName}</td>
-                        <td className="px-4 py-4 text-center">
-                          {d.isBacklog ? <CheckCircle size={18} className="text-rose-500 mx-auto" /> : <XCircle size={18} className="text-slate-500 mx-auto opacity-30" />}
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <button onClick={() => setDetailedDateData({employeeId: d.employeeId, date: d.date, name: d.employeeName})} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
-                            <Eye size={18} strokeWidth={2.5}/>
-                          </button>
-                        </td>
-                        <td className="p-4 text-center">
-                          <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-4 h-4 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500 focus:ring-offset-[#151521]" />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+       {/* Full Width Excel Grid Table */}
+       <div className="flex-1 overflow-auto custom-scrollbar bg-[#151c2c]">
+          <table className="w-full text-left border-collapse relative">
+            <thead>
+              <tr className="bg-[#242b42] border-b border-slate-700/50 sticky top-0 z-20 shadow-sm">
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 text-center w-14 border-r border-slate-700/50">Sr no.</th>
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Date ↑</th>
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Day</th>
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider border-r border-slate-700/50">Employee Name ↑</th>
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center border-r border-slate-700/50">Backlog</th>
+                <th className="p-3.5 text-[11px] font-bold text-slate-300 uppercase tracking-wider text-center w-16 border-r border-slate-700/50">View</th>
+                <th className="p-3.5 w-16 text-center">
+                   <div className="flex items-center justify-center gap-1.5">
+                     <span className="text-[11px] font-bold text-slate-300 uppercase">Select</span>
+                     <input 
+                       type="checkbox" 
+                       checked={selectedRows.length > 0 && selectedRows.length === groupedData.length} 
+                       onChange={toggleAll} 
+                       className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" 
+                     />
+                   </div>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-700/30">
+              {groupedData.length === 0 ? (
+                <tr><td colSpan={7} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Reports</td></tr>
+              ) : groupedData.map((d: any, idx: number) => {
+                const rowId = `${d.employeeId}_${formatDDMMYYYY(d.date)}`;
+                const dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][new Date(d.date).getDay()];
+                return (
+                  <tr key={rowId} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
+                    <td className="p-3 text-[13px] font-semibold text-slate-400 text-center bg-slate-800/10 border-r border-slate-700/30">{idx + 1}</td>
+                    <td className="p-3 text-[13px] font-bold text-white whitespace-nowrap bg-slate-800/10 border-r border-slate-700/30">{formatDDMMYYYY(d.date)}</td>
+                    <td className="p-3 text-[13px] font-medium text-slate-300 border-r border-slate-700/30">{dayName}</td>
+                    <td className="p-3 text-[13px] font-bold text-sky-400 border-r border-slate-700/30">{d.employeeName}</td>
+                    <td className="p-3 text-center border-r border-slate-700/30">
+                      {d.isBacklog ? <CheckCircle size={16} className="text-rose-500 mx-auto" /> : <XCircle size={16} className="text-slate-600 mx-auto opacity-40" />}
+                    </td>
+                    <td className="p-3 text-center border-r border-slate-700/30">
+                      <button onClick={() => setDetailedDateData({employeeId: d.employeeId, date: d.date, name: d.employeeName})} className="p-1.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
+                        <Eye size={16} strokeWidth={2.5}/>
+                      </button>
+                    </td>
+                    <td className="p-3 text-center">
+                      <input type="checkbox" checked={selectedRows.includes(rowId)} onChange={() => toggleRow(rowId)} className="w-3.5 h-3.5 rounded bg-[#27273f] border-[#3b3b5a] text-emerald-500 focus:ring-emerald-500" />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
        </div>
     </div>
   );
