@@ -3329,7 +3329,101 @@ router.get('/approvals/pending', async (req, res) => {
         const data = [];
         const allBacklogs = type === 'Call Report' ? await require('../db').XlBacklogRequest.findAll({ where: { status: 'Approved' } }) : [];
         const attendances = type === 'Call Report' && status !== 'History' ? await require('../db').XlAttendance.findAll({ where: { daySubmitted: true } }) : [];
-        
+
+        if (type === 'Call Report') {
+            const grouped = {};
+            for (const p of pending) {
+                const pData = p.toJSON();
+                if (status !== 'History') {
+                    const isDaySubmitted = attendances.some(a => a.employeeId === pData.employeeId && a.date === pData.date);
+                    if (!isDaySubmitted) continue;
+                }
+                const key = `${pData.employeeId}_${pData.date}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        _id: key,
+                        employeeId: pData.employeeId,
+                        date: pData.date,
+                        status: pData.status || 'Pending',
+                        calls: [],
+                        isBacklog: allBacklogs.some(b => b.employeeId === pData.employeeId && b.date === pData.date),
+                        workArea: pData.workingAreas || pData.workingAreaType || 'HQ'
+                    };
+                }
+                grouped[key].calls.push(pData);
+            }
+
+            for (const k of Object.keys(grouped)) {
+                const g = grouped[k];
+                const empId = g.employeeId;
+                const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: empId }, { uid: empId }, { email: empId }] } });
+                if (u) {
+                    g.employeeName = ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || u.name || empId;
+                    g.hq = u.hq || 'HQ';
+                    g.designation = u.designation || '-';
+                } else {
+                    g.employeeName = empId;
+                    g.hq = 'HQ';
+                }
+
+                g.doctorCalls = g.calls.filter(c => c.entityType === 'Doctor' || (!c.entityType && (c.entityName?.toLowerCase().startsWith('dr') || c.entityName?.toLowerCase().includes('dr.'))));
+                g.chemistCalls = g.calls.filter(c => c.entityType === 'Chemist');
+                g.stockistCalls = g.calls.filter(c => c.entityType === 'Stockist');
+
+                g.doctorCount = g.doctorCalls.length;
+                g.chemistCount = g.chemistCalls.length;
+                g.stockistCount = g.stockistCalls.length;
+
+                data.push(g);
+            }
+
+            return res.json({ success: true, data });
+        }
+
+        if (type === 'Expense') {
+            const grouped = {};
+            for (const p of pending) {
+                const pData = p.toJSON();
+                const key = `${pData.employeeId}_${pData.date}`;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        _id: key,
+                        employeeId: pData.employeeId,
+                        date: pData.date,
+                        status: pData.status || 'Pending',
+                        expenses: [],
+                        totalAmount: 0,
+                        receipts: [],
+                        areaType: pData.workingAreaType || pData.areaType || 'HQ',
+                        workAreas: pData.workingAreas || pData.workAreas || '-'
+                    };
+                }
+                grouped[key].expenses.push(pData);
+                grouped[key].totalAmount += parseFloat(pData.amount || 0);
+                if (pData.receiptImage && !grouped[key].receipts.includes(pData.receiptImage)) {
+                    grouped[key].receipts.push(pData.receiptImage);
+                }
+            }
+
+            for (const k of Object.keys(grouped)) {
+                const g = grouped[k];
+                const empId = g.employeeId;
+                const u = await XlUser.findOne({ where: { [Op.or]: [{ employeeId: empId }, { uid: empId }, { email: empId }] } });
+                if (u) {
+                    g.employeeName = ((u.firstName || '') + ' ' + (u.lastName || '')).trim() || u.name || empId;
+                    g.hq = u.hq || 'HQ';
+                    g.designation = u.designation || '-';
+                } else {
+                    g.employeeName = empId;
+                    g.hq = 'HQ';
+                }
+                g.totalAmount = Math.round(g.totalAmount * 100) / 100;
+                data.push(g);
+            }
+
+            return res.json({ success: true, data });
+        }
+
         for (const p of pending) {
             const pData = p.toJSON();
             if (type === 'Call Report') {
@@ -3511,9 +3605,9 @@ router.post('/approvals/action', async (req, res) => {
         else if (type === 'Geo Fencing') Model = XlGeoFencing;
         else if (type !== 'CallReportGroup' && type !== 'ExpenseGroup') return res.status(400).json({ error: 'Invalid module type' });
         
-        if (type === 'CallReportGroup') {
+        if (type === 'CallReportGroup' || (type === 'Call Report' && req.body.employeeId && req.body.date)) {
             const { employeeId, date } = req.body;
-            const records = await XlDCR.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted'] } });
+            const records = await XlDCR.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted'] } });
             
             for (const rec of records) {
                 rec.status = action;
@@ -3524,7 +3618,7 @@ router.post('/approvals/action', async (req, res) => {
             return res.json({ success: true, message: 'Successfully ' + action + ' call reports' });
         }
         
-        if (type === 'ExpenseGroup') {
+        if (type === 'ExpenseGroup' || (type === 'Expense' && req.body.employeeId && req.body.date)) {
             const { employeeId, date, miscExpense } = req.body;
             const records = await XlExpense.findAll({ where: { employeeId, date, status: ['Pending', 'Submitted', 'pending', 'submitted', 'Re-Submitted', 're-submitted'] } });
             

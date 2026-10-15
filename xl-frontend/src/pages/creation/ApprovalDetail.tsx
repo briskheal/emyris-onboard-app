@@ -123,11 +123,11 @@ export default function ApprovalDetail() {
     fetchPending();
   }, [type]);
 
-  const handleAction = async (recordId: string, action: string, dates?: string[]) => {
+  const handleAction = async (target: any, action: string, dates?: string[]) => {
     const isPartial = dates && dates.length > 0;
     const confirmMsg = isPartial 
       ? `Are you sure you want to ${action} the ${dates.length} selected day(s)?` 
-      : `Are you sure you want to ${action} this entire request?`;
+      : `Are you sure you want to ${action} this request?`;
     if (!window.confirm(confirmMsg)) return;
 
     try {
@@ -138,12 +138,20 @@ export default function ApprovalDetail() {
          remarks = reason;
       }
       const approverName = ((user?.firstName || '') + ' ' + (user?.lastName || '')).trim() || user?.name || user?.employeeId || (isAdmin ? 'Admin' : 'Line Manager');
+      
+      const targetObj = typeof target === 'object' ? target : items.find(i => i._id === target);
+      const recordId = targetObj ? targetObj._id : target;
+      const empId = targetObj ? targetObj.employeeId : undefined;
+      const dateVal = targetObj ? targetObj.date : undefined;
+
       const payload: any = {
         recordId,
         type,
         action,
         remarks,
-        approvedBy: approverName
+        approvedBy: approverName,
+        employeeId: empId,
+        date: dateVal
       };
       if (isPartial) {
         payload.dates = dates;
@@ -655,6 +663,137 @@ export default function ApprovalDetail() {
                 </div>
               )}
             </>
+          ) : type === 'Call Report' ? (
+            <>
+              {/* Call Report Doctor Visits */}
+              <div>
+                <h2 className="text-emerald-400 font-bold text-sm mb-2.5 flex items-center gap-2">
+                  <UserRound size={16} />
+                  <span>Doctor Visits ({drillDownItem.doctorCalls?.length || 0})</span>
+                </h2>
+                {(drillDownItem.doctorCalls?.length || 0) === 0 ? (
+                  <p className="text-xs text-slate-500 italic p-3 bg-slate-900/40 rounded-xl border border-slate-700/40">No doctor visits recorded</p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {drillDownItem.doctorCalls.map((call: any, i: number) => {
+                      let samples = [];
+                      try { samples = typeof call.samplesGiven === 'string' ? JSON.parse(call.samplesGiven) : (call.samplesGiven || []); } catch(e){}
+                      return (
+                        <div key={i} className="bg-slate-700/80 border border-slate-600/70 rounded-xl p-3 shadow-sm space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-white font-bold text-xs flex items-center gap-2">
+                              <UserRound size={14} className="text-emerald-400" />
+                              {call.entityName}
+                            </span>
+                            {call.checkInTime && (
+                              <span className="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
+                                {call.checkInTime}
+                              </span>
+                            )}
+                          </div>
+                          {call.discussion && (
+                            <p className="text-[11px] text-slate-300 italic">"{call.discussion}"</p>
+                          )}
+                          {samples.length > 0 && (
+                            <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                              <span className="text-[10px] text-slate-400 font-semibold">Samples:</span>
+                              {samples.map((s: any, sIdx: number) => (
+                                <span key={sIdx} className="text-[9px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/25 px-1.5 py-0.5 rounded">
+                                  {s.product || s.name} ({s.qty || s.quantity || 1})
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {call.geoAddress && (
+                            <p className="text-[10px] text-slate-400 flex items-center gap-1 pt-0.5">
+                              <MapPin size={11} className="text-rose-400 shrink-0" />
+                              <span className="truncate">{call.geoAddress}</span>
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Chemist Visits */}
+              {(drillDownItem.chemistCalls?.length || 0) > 0 && (
+                <div>
+                  <h2 className="text-amber-400 font-bold text-sm mb-2.5 flex items-center gap-2">
+                    <ShoppingBag size={16} />
+                    <span>Chemist Visits ({drillDownItem.chemistCalls.length})</span>
+                  </h2>
+                  <div className="space-y-2">
+                    {drillDownItem.chemistCalls.map((call: any, i: number) => (
+                      <div key={i} className="bg-slate-700/80 border border-slate-600/70 rounded-xl p-3 shadow-sm space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-white font-bold text-xs flex items-center gap-2">
+                            <ShoppingBag size={14} className="text-amber-400" />
+                            {call.entityName}
+                          </span>
+                          {call.checkInTime && <span className="text-[10px] text-slate-400">{call.checkInTime}</span>}
+                        </div>
+                        {call.discussion && <p className="text-[11px] text-slate-300 italic">"{call.discussion}"</p>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : type === 'Expense' ? (
+            <>
+              {/* Expense Total & Items */}
+              <div className="bg-gradient-to-r from-emerald-950/60 to-slate-800 p-4 rounded-2xl border border-emerald-500/30 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-slate-400 font-semibold">Total Claimed Amount</span>
+                  <div className="text-2xl font-black text-emerald-400 mt-0.5">
+                    ₹{drillDownItem.totalAmount || drillDownItem.amount || 0}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-600 uppercase">
+                    {drillDownItem.areaType || 'HQ'}
+                  </span>
+                  <div className="text-[11px] text-slate-400 mt-1">{drillDownItem.workAreas || ''}</div>
+                </div>
+              </div>
+
+              <div>
+                <h2 className="text-slate-200 font-bold text-sm mb-2.5 flex items-center gap-2">
+                  <Banknote size={16} className="text-emerald-400" />
+                  <span>Itemized Expenses ({drillDownItem.expenses?.length || 1})</span>
+                </h2>
+                <div className="space-y-2">
+                  {(drillDownItem.expenses || [drillDownItem]).map((exp: any, i: number) => (
+                    <div key={i} className="bg-slate-700/80 border border-slate-600/70 rounded-xl p-3 shadow-sm space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-xs">
+                          {exp.category || 'Daily Allowance'}
+                        </span>
+                        <span className="font-bold text-emerald-400 text-sm">
+                          ₹{exp.amount || 0}
+                        </span>
+                      </div>
+                      {(exp.fromCity || exp.toCity) && (
+                        <div className="text-[11px] text-slate-300 flex items-center gap-2">
+                          <Navigation size={12} className="text-sky-400" />
+                          <span>{exp.fromCity} → {exp.toCity} ({exp.distance || 0} KM)</span>
+                        </div>
+                      )}
+                      {exp.remarks && <p className="text-[11px] text-slate-400 italic">"{exp.remarks}"</p>}
+                      {exp.receiptImage && (
+                        <div className="pt-1">
+                          <a href={exp.receiptImage} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[11px] text-sky-400 hover:text-sky-300 font-semibold">
+                            <span>View Attached Receipt</span>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
           ) : (
             <div className="bg-slate-700/80 border border-slate-600 rounded-2xl p-4">
               {renderDetails(drillDownItem)}
@@ -665,17 +804,17 @@ export default function ApprovalDetail() {
           <div className="flex gap-2 pt-4 mt-6 border-t border-slate-700">
             <button
               type="button"
-              onClick={() => handleAction(drillDownItem._id, 'Rejected')}
+              onClick={() => handleAction(drillDownItem, 'Rejected')}
               className="flex-1 bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 rounded-xl py-2.5 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
             >
-              <XCircle size={16} /> Reject Call Plan
+              <XCircle size={16} /> Reject
             </button>
             <button
               type="button"
-              onClick={() => handleAction(drillDownItem._id, 'Approved')}
+              onClick={() => handleAction(drillDownItem, 'Approved')}
               className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2.5 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
             >
-              <CheckCircle size={16} /> Approve Call Plan
+              <CheckCircle size={16} /> Approve
             </button>
           </div>
         </div>
@@ -818,7 +957,7 @@ export default function ApprovalDetail() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAction(item._id, 'Approved');
+                          handleAction(item, 'Approved');
                         }}
                         className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
                       >
@@ -828,8 +967,236 @@ export default function ApprovalDetail() {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAction(item._id, 'Rejected');
+                          handleAction(item, 'Rejected');
                         }}
+                        className="w-9 h-9 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                        title="Reject"
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (type === 'Call Report') {
+                const docCount = item.doctorCount ?? (item.doctorCalls?.length || 0);
+                const chemCount = item.chemistCount ?? (item.chemistCalls?.length || 0);
+                const stockCount = item.stockistCount ?? (item.stockistCalls?.length || 0);
+
+                return (
+                  <div
+                    key={item._id}
+                    onClick={() => setDrillDownItem(item)}
+                    className="bg-slate-700/90 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 shadow-lg cursor-pointer transition-all active:scale-[0.99]"
+                  >
+                    {/* Top Row: Avatar + Date/Name/HQ + 3 Badges */}
+                    <div className="flex items-center gap-3">
+                      {/* Subordinate Avatar Circle */}
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center text-white font-bold text-sm shrink-0 border border-slate-500/50 shadow-md">
+                        <img
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(item.employeeName || 'MR')}&background=1e293b&color=38bdf8&bold=true`}
+                          alt={item.employeeName}
+                          className="w-full h-full object-cover"
+                          onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
+
+                      {/* Date & Subordinate Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-sm">
+                            {formatDisplayDate(item.date)}
+                          </span>
+                          {item.isBacklog && (
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                              Backlog
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs font-semibold text-slate-300 truncate mt-0.5">
+                          {item.employeeName || item.employeeId || 'Rep'}
+                        </div>
+                        <div className="text-[10px] text-sky-400 font-medium">
+                          {item.hq || 'HQ'} {item.workArea ? `• ${item.workArea}` : ''}
+                        </div>
+                      </div>
+
+                      {/* Entity Count Badges (Doctor, Chemist, Stockist) */}
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold justify-end min-w-[48px]" title="Doctor Calls">
+                          <UserRound size={13} />
+                          <span>{docCount}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-400 text-xs font-bold justify-end min-w-[48px]" title="Chemist Calls">
+                          <ShoppingBag size={13} />
+                          <span>{chemCount}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-orange-500/15 border border-orange-500/30 text-orange-400 text-xs font-bold justify-end min-w-[48px]" title="Stockist Calls">
+                          <Building2 size={13} />
+                          <span>{stockCount}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Approve & Reject Buttons */}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-600/50">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Approved');
+                        }}
+                        className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
+                      >
+                        <CheckCircle size={16} /> Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Rejected');
+                        }}
+                        className="w-9 h-9 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                        title="Reject"
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (type === 'Expense') {
+                const totalAmt = item.totalAmount ?? item.amount ?? 0;
+                const itemsCount = item.expenses?.length || 1;
+                const receiptCount = item.receipts?.length || (item.receiptImage ? 1 : 0);
+
+                return (
+                  <div
+                    key={item._id}
+                    onClick={() => setDrillDownItem(item)}
+                    className="bg-slate-700/90 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 shadow-lg cursor-pointer transition-all active:scale-[0.99]"
+                  >
+                    {/* Top Row: Avatar + Date/Name/HQ + Amount Badges */}
+                    <div className="flex items-center gap-3">
+                      {/* Subordinate Avatar Circle */}
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center text-white font-bold text-sm shrink-0 border border-slate-500/50 shadow-md">
+                        <img
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(item.employeeName || 'MR')}&background=1e293b&color=38bdf8&bold=true`}
+                          alt={item.employeeName}
+                          className="w-full h-full object-cover"
+                          onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
+
+                      {/* Date & Subordinate Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-white text-sm">
+                          {formatDisplayDate(item.date)}
+                        </div>
+                        <div className="text-xs font-semibold text-slate-300 truncate mt-0.5">
+                          {item.employeeName || item.employeeId || 'Rep'}
+                        </div>
+                        <div className="text-[10px] text-sky-400 font-medium">
+                          {item.hq || 'HQ'} • {item.areaType || item.workingAreaType || 'HQ'}
+                        </div>
+                      </div>
+
+                      {/* Right side: Amount & Item Count */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-black">
+                          <span>₹{totalAmt}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {receiptCount > 0 && (
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/15 text-sky-300 border border-sky-500/25">
+                              📎 {receiptCount}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-slate-400 font-medium">
+                            {itemsCount} item{itemsCount > 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Bottom Row: Approve & Reject Buttons */}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-600/50">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Approved');
+                        }}
+                        className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
+                      >
+                        <CheckCircle size={16} /> Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAction(item, 'Rejected');
+                        }}
+                        className="w-9 h-9 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                        title="Reject"
+                      >
+                        <XCircle size={18} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              if (type === 'Leave Request') {
+                return (
+                  <div
+                    key={item._id}
+                    className="bg-slate-700/90 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 shadow-lg transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center text-white font-bold text-sm shrink-0 border border-slate-500/50 shadow-md">
+                        <img
+                          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(item.employeeName || 'MR')}&background=1e293b&color=38bdf8&bold=true`}
+                          alt={item.employeeName}
+                          className="w-full h-full object-cover"
+                          onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-white text-sm">
+                            {item.leaveType || 'Leave Request'}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                            {item.status || 'Pending'}
+                          </span>
+                        </div>
+                        <div className="text-xs font-semibold text-slate-300 truncate mt-0.5">
+                          {item.employeeName || item.employeeId || 'Rep'}
+                        </div>
+                        <div className="text-[10px] text-sky-400 font-medium">
+                          {item.hq || 'HQ'} • {item.startDate} {item.endDate && item.endDate !== item.startDate ? `to ${item.endDate}` : ''}
+                        </div>
+                      </div>
+                    </div>
+                    {item.reason && (
+                      <p className="text-[11px] text-slate-300 bg-slate-800/60 p-2.5 rounded-xl mt-2.5 border border-slate-700/60 italic">
+                        "{item.reason}"
+                      </p>
+                    )}
+                    <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-600/50">
+                      <button
+                        type="button"
+                        onClick={() => handleAction(item, 'Approved')}
+                        className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
+                      >
+                        <CheckCircle size={16} /> Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleAction(item, 'Rejected')}
                         className="w-9 h-9 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 flex items-center justify-center transition-all active:scale-95 shrink-0"
                         title="Reject"
                       >
