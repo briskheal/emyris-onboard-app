@@ -5025,6 +5025,33 @@ router.delete('/admins/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+router.post('/send-credentials', async (req, res) => {
+    try {
+        const { email, password, name } = req.body;
+        if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password required' });
+        const { sendEmail } = require('../utils/mailer');
+        const baseUrl = process.env.BASE_URL || 'https://emyrishr.in';
+        const html = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <h2 style="color: #0f172a; margin-top: 0;">Your Emyris Portal Credentials</h2>
+                <p style="font-size: 14px; color: #475569;">Hello <strong>${name || 'User'}</strong>,</p>
+                <p style="font-size: 14px; color: #475569;">Your login credentials have been set up as follows:</p>
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #f43f5e; margin: 18px 0;">
+                    <p style="margin: 0; font-size: 14px;"><strong>Email:</strong> ${email}</p>
+                    <p style="margin: 8px 0 0 0; font-size: 14px;"><strong>Password:</strong> <span style="font-family: monospace; font-size: 16px; font-weight: bold; color: #e11d48;">${password}</span></p>
+                    <p style="margin: 8px 0 0 0; font-size: 14px;"><strong>Login URL:</strong> <a href="${baseUrl}/xla/login">${baseUrl}/xla/login</a></p>
+                </div>
+                <p style="color: #64748b; font-size: 12px; margin-bottom: 0;">Please keep your credentials safe and do not share them.</p>
+            </div>
+        `;
+        await sendEmail({ to: email, subject: 'Your Emyris Portal Credentials', html });
+        res.json({ success: true, message: 'Credentials sent to ' + email });
+    } catch (e) {
+        console.error('[send-credentials error]', e);
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
 // --- MANAGE PRODUCTS ---
 const { XlProductCategory, XlProductType, XlProduct, XlProductSupplier, XlInventory } = require('../db');
 

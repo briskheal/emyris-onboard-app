@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { useState, useEffect } from 'react';
 import { 
-  ArrowLeft, Check, Trash2, Edit, Save, RefreshCw, Key, Mail, Eye, Search, Download,
+  ArrowLeft, Check, Trash2, Edit, Save, RefreshCw, Key, Mail, Eye, Search, Download, X,
   UserPlus, ShieldPlus, Users, UserCog, ShieldCheck, Layers, Briefcase, Target, Upload, 
   KeyRound, Smartphone, DollarSign, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
@@ -991,6 +991,138 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
   const [pageSize, setPageSize] = useState(10);
   const [viewUser, setViewUser] = useState<any>(null);
   const [activationMode, setActivationMode] = useState(false);
+  const [resetPassTarget, setResetPassTarget] = useState<any>(null);
+  const [newPasswordVal, setNewPasswordVal] = useState('');
+  const [sendCredsEmail, setSendCredsEmail] = useState(true);
+  const [resetPassLoading, setResetPassLoading] = useState(false);
+  const [resetPassMsg, setResetPassMsg] = useState({ text: '', isError: false });
+
+  const handleAutoGeneratePass = () => {
+    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$";
+    let pwd = "";
+    for(let i=0; i<8; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    setNewPasswordVal(pwd);
+  };
+
+  const handleSaveNewPassword = async () => {
+    if (!newPasswordVal.trim()) {
+      setResetPassMsg({ text: 'Please enter a password', isError: true });
+      return;
+    }
+    setResetPassLoading(true);
+    setResetPassMsg({ text: '', isError: false });
+    try {
+      const url = isAdmin ? `/api/admin/admins/${resetPassTarget._id}` : `/api/admin/users/${resetPassTarget._id}`;
+      const res = await axios.put(url, { password: newPasswordVal });
+      if (res.data.success) {
+        if (sendCredsEmail && resetPassTarget.email) {
+          try {
+            await axios.post('/api/admin/send-credentials', {
+              email: resetPassTarget.email,
+              password: newPasswordVal,
+              name: resetPassTarget.firstName
+            });
+          } catch(e) { console.error('Failed to send credentials email', e); }
+        }
+        setResetPassMsg({ text: 'Password set in database successfully!', isError: false });
+        fetchProfiles();
+        if (viewUser && viewUser._id === resetPassTarget._id) {
+          setViewUser({ ...viewUser, password: newPasswordVal });
+        }
+        setTimeout(() => {
+          setResetPassTarget(null);
+          setNewPasswordVal('');
+          setResetPassMsg({ text: '', isError: false });
+        }, 1500);
+      } else {
+        setResetPassMsg({ text: res.data.message || 'Failed to update password', isError: true });
+      }
+    } catch(err: any) {
+      setResetPassMsg({ text: err.response?.data?.message || 'Error updating password', isError: true });
+    } finally {
+      setResetPassLoading(false);
+    }
+  };
+
+  const renderResetPassModal = () => {
+    if (!resetPassTarget) return null;
+    return (
+      <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
+          <button 
+            type="button"
+            onClick={() => setResetPassTarget(null)} 
+            className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+          <div className="flex items-center gap-2.5 mb-4 text-amber-400">
+            <Key size={20} />
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+              Set Password in Database ({isAdmin ? 'Admin' : 'User'})
+            </h3>
+          </div>
+          <div className="bg-slate-900/60 p-3 rounded-lg border border-slate-800 mb-4 text-xs">
+            <div className="text-slate-400">Target: <strong className="text-white">{resetPassTarget.firstName} {resetPassTarget.lastName}</strong></div>
+            <div className="text-slate-400">Email: <strong className="text-sky-400">{resetPassTarget.email}</strong></div>
+          </div>
+
+          {resetPassMsg.text && (
+            <div className={`p-3 rounded-lg mb-4 text-xs font-bold ${resetPassMsg.isError ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}`}>
+              {resetPassMsg.text}
+            </div>
+          )}
+
+          <div className="space-y-3 mb-5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">New Password *</label>
+              <button 
+                type="button" 
+                onClick={handleAutoGeneratePass} 
+                className="text-[11px] bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-2 py-0.5 rounded font-bold transition-colors flex items-center gap-1"
+              >
+                <RefreshCw size={12} /> Auto-Generate
+              </button>
+            </div>
+            <input 
+              type="text" 
+              value={newPasswordVal} 
+              onChange={e => setNewPasswordVal(e.target.value)} 
+              placeholder="Enter or generate password" 
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-amber-400 font-mono font-bold focus:border-amber-500 focus:outline-none" 
+            />
+            <label className="flex items-center gap-2 cursor-pointer pt-1">
+              <input 
+                type="checkbox" 
+                checked={sendCredsEmail} 
+                onChange={e => setSendCredsEmail(e.target.checked)} 
+                className="rounded bg-slate-900 border-slate-700 text-sky-500 focus:ring-sky-500" 
+              />
+              <span className="text-xs text-slate-300 font-medium">Email new credentials to user</span>
+            </label>
+          </div>
+
+          <div className="flex justify-end gap-2.5">
+            <button 
+              type="button" 
+              onClick={() => setResetPassTarget(null)} 
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              disabled={resetPassLoading} 
+              onClick={handleSaveNewPassword} 
+              className="px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {resetPassLoading ? 'Saving...' : 'Set in Database'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const fetchProfiles = async () => {
     try {
@@ -1039,7 +1171,16 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
               </div>
               <div>
                 <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">PASSWORD</p>
-                <p className="text-amber-400 font-mono font-bold break-all">{viewUser.password || '-'}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-amber-400 font-mono font-bold break-all">{viewUser.password || '-'}</p>
+                  <button 
+                    type="button"
+                    onClick={() => { setResetPassTarget(viewUser); setNewPasswordVal(''); handleAutoGeneratePass(); }} 
+                    className="text-[10px] bg-amber-500/20 text-amber-400 hover:bg-amber-500 hover:text-white px-2 py-0.5 rounded font-bold transition-colors flex items-center gap-1"
+                  >
+                    <Key size={11} /> Set in Database
+                  </button>
+                </div>
               </div>
             <div>
               <p className="text-xs text-slate-400 font-bold mb-1 uppercase tracking-wider">PHONE NUMBER</p>
@@ -1118,6 +1259,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
             </div>
           </div>
         </div>
+        {renderResetPassModal()}
       </div>
     );
   }
@@ -1224,9 +1366,16 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
                     <td className="border-r border-slate-700 p-3 text-slate-300">{p.outStationAllowance || '0'}</td>
                     <td className="border-r border-slate-700 p-3 text-slate-300 uppercase">{p.pan || '-'}</td>
                     <td className="border-r border-slate-700 p-3 text-slate-300">{p.aadhar || '-'}</td>
-                    <td className="border-r border-slate-700 p-3 text-center bg-slate-800/90 sticky right-0 z-10">
-                      <button onClick={() => setViewUser(p)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-1.5 rounded transition-colors">
+                    <td className="border-r border-slate-700 p-3 text-center bg-slate-800/90 sticky right-0 z-10 flex items-center justify-center gap-1.5">
+                      <button onClick={() => setViewUser(p)} title="View Details" className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-1.5 rounded transition-colors">
                         <Eye size={16} />
+                      </button>
+                      <button 
+                        onClick={() => { setResetPassTarget(p); setNewPasswordVal(''); handleAutoGeneratePass(); }} 
+                        title="Set Password in Database" 
+                        className="text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 p-1.5 rounded transition-colors"
+                      >
+                        <Key size={16} />
                       </button>
                     </td>
                   </tr>
@@ -1237,6 +1386,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
         </div>
         <TableFooter data={profiles} fileName={isAdmin ? "Admins" : "Users"} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
       </div>
+      {renderResetPassModal()}
     </div>
   );
 }

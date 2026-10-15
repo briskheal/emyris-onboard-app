@@ -20,6 +20,7 @@ const verifyToken = (req, res, next) => {
     const openRoutes = ["/api/xl/debug-user", 
         '/api/xl/login', '/login', 
         '/api/xl/admin-login', '/admin-login', 
+        '/api/xl/forgot-password', '/forgot-password',
         '/api/xl/register', '/register',
         '/company-profile'
     ];
@@ -51,11 +52,19 @@ router.post('/admin-login', async (req, res) => {
         const loginEmail = (email || username || '').trim();
         if (!loginEmail || !password) return res.json({ success: false, message: 'Email and password required' });
 
-        const { XlAdmin } = require('../db');
+        const { XlAdmin, sequelize } = require('../db');
         const bcrypt = require('bcryptjs');
 
-        // Look up by email in XlAdmin table
-        const admin = await XlAdmin.findOne({ where: { email: loginEmail } });
+        // Look up by email in XlAdmin table (case-insensitive)
+        let admin = await XlAdmin.findOne({ where: { email: loginEmail } });
+        if (!admin) {
+            admin = await XlAdmin.findOne({ 
+                where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('email')), 
+                    loginEmail.toLowerCase()
+                ) 
+            });
+        }
 
         if (!admin) {
             return res.json({ success: false, message: 'Invalid XLA credentials. Use your XLA admin login.' });
@@ -91,6 +100,111 @@ router.post('/admin-login', async (req, res) => {
     } catch (e) {
         console.error('[XLA Admin Login Error]', e.message);
         res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// XLA Admin Forgot Password
+// Generates a new secure password, sets it in the database for the admin, and emails it to the linked admin email
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const targetEmail = (email || '').trim().toLowerCase();
+        if (!targetEmail) {
+            return res.json({ success: false, message: 'Please provide your registered admin email address.' });
+        }
+
+        const { XlAdmin, sequelize } = require('../db');
+        const bcrypt = require('bcryptjs');
+        const { sendEmail } = require('../utils/mailer');
+
+        // Lookup admin by email (case-insensitive)
+        let admin = await XlAdmin.findOne({ where: { email: targetEmail } });
+        if (!admin) {
+            admin = await XlAdmin.findOne({ 
+                where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('email')), 
+                    targetEmail
+                ) 
+            });
+        }
+
+        if (!admin) {
+            return res.json({ 
+                success: false, 
+                message: 'No registered XLA Admin account was found matching this email address.' 
+            });
+        }
+
+        // Generate a clean, secure temporary password (e.g. Emyris@7294AB)
+        const randomDigits = Math.floor(1000 + Math.random() * 9000);
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        const letter1 = chars.charAt(Math.floor(Math.random() * chars.length));
+        const letter2 = chars.charAt(Math.floor(Math.random() * chars.length));
+        const newPassword = `Emyris@${randomDigits}${letter1}${letter2}`;
+
+        // Hash and update directly in the database for this admin
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
+        await XlAdmin.update({ password: hashedPassword }, { where: { _id: admin._id } });
+        console.log(`[XLA FORGOT PASSWORD] Successfully updated password in database for admin: ${admin.email}`);
+
+        // Prepare email notification
+        const adminName = `${admin.firstName || 'Admin'} ${admin.lastName || ''}`.trim();
+        const baseUrl = process.env.BASE_URL || 'https://emyrishr.in';
+        const loginUrl = `${baseUrl}/xla/login`;
+
+        const emailHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <div style="display: inline-block; background: linear-gradient(135deg, #f43f5e, #be123c); padding: 12px 28px; border-radius: 10px; color: #ffffff; font-weight: 900; font-size: 22px; letter-spacing: -0.5px;">
+                        EMYRIS
+                    </div>
+                    <p style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #f43f5e; text-transform: uppercase; letter-spacing: 2px;">Admin Portal</p>
+                </div>
+
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Admin Password Reset</h2>
+                <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 16px;">
+                    Hello <strong>${adminName}</strong>,
+                </p>
+                <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
+                    A password reset was requested for your XLA Admin account. Your password has been successfully updated in the database. Use your new credentials below to log in:
+                </p>
+
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f43f5e; border-radius: 8px; padding: 18px; margin-bottom: 24px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Registered Admin Email</div>
+                    <div style="font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 14px;">${admin.email}</div>
+
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">New Password</div>
+                    <div style="font-family: Monaco, Consolas, 'Courier New', monospace; font-size: 20px; font-weight: 800; color: #e11d48; letter-spacing: 1.5px; background: #ffffff; padding: 10px 16px; border-radius: 6px; border: 1px dashed #f43f5e; display: inline-block;">
+                        ${newPassword}
+                    </div>
+                </div>
+
+                <div style="text-align: center; margin-bottom: 28px;">
+                    <a href="${loginUrl}" style="display: inline-block; background-color: #f43f5e; color: #ffffff; font-weight: 700; font-size: 14px; text-decoration: none; padding: 12px 36px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.3);">
+                        Login to Admin Portal
+                    </a>
+                </div>
+
+                <div style="font-size: 12px; line-height: 1.5; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 16px;">
+                    <p style="margin: 0 0 6px 0;"><strong>Security Note:</strong> Please keep this password secure. You may change your password after logging in from the Admin Panel.</p>
+                    <p style="margin: 0;">If you did not request this reset, please verify your account security immediately.</p>
+                </div>
+            </div>
+        `;
+
+        await sendEmail({
+            to: admin.email,
+            subject: 'XLA Admin Portal - Password Reset Credentials',
+            html: emailHtml
+        });
+
+        res.json({ 
+            success: true, 
+            message: `A new password has been set in the database and sent to your email (${admin.email}). Please check your inbox and log in.` 
+        });
+    } catch (e) {
+        console.error('[XLA Forgot Password Error]', e);
+        res.status(500).json({ success: false, message: 'Server error processing password reset: ' + e.message });
     }
 });
 

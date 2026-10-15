@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, LogIn, ArrowRight, Eye, EyeOff, Key, X, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import axios from 'axios';
 
 export default function Login() {
@@ -9,6 +9,13 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
+
+  // Forgot Password States
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState('');
+  const [forgotError, setForgotError] = useState('');
 
   useEffect(() => {
     const fetchCompanyInfo = async () => {
@@ -47,9 +54,33 @@ export default function Login() {
         } else {
           setError(res.data.message || 'Invalid credentials');
         }
-      } catch (err) {
-        setError('Invalid credentials or server error');
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Invalid credentials or server error');
       }
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotError('');
+    setForgotSuccess('');
+    if (!forgotEmail) {
+      setForgotError('Please enter your admin email address.');
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const res = await axios.post('/api/xl/forgot-password', { email: forgotEmail });
+      if (res.data.success) {
+        setForgotSuccess(res.data.message || 'Password reset successfully! Check your email.');
+        setEmail(forgotEmail);
+      } else {
+        setForgotError(res.data.message || 'Failed to reset password.');
+      }
+    } catch (err: any) {
+      setForgotError(err.response?.data?.message || 'Server error. Please try again.');
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -77,7 +108,7 @@ export default function Login() {
 
         {/* Login Form */}
         {error && <div className="text-rose-500 text-sm font-bold mb-4 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20">{error}</div>}
-          <form onSubmit={handleLogin} className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
+        <form onSubmit={handleLogin} className="bg-slate-800/80 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-6 shadow-2xl">
           <h2 className="text-lg font-bold text-white mb-6">Admin Login,</h2>
           
           <div className="space-y-4 mb-6">
@@ -96,20 +127,20 @@ export default function Login() {
             <div className="relative">
               <Lock size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
               <input 
-                  type={showPassword ? "text" : "password"} 
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Password"
-                  className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-12 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-colors"
-                  required
-                />
-                <button 
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none"
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+                type={showPassword ? "text" : "password"} 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password"
+                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-2xl py-4 pl-12 pr-12 text-sm font-medium text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-colors"
+                required
+              />
+              <button 
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 focus:outline-none"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
           </div>
 
@@ -118,7 +149,18 @@ export default function Login() {
               <input type="checkbox" className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-rose-500 focus:ring-rose-500 focus:ring-offset-slate-800" />
               <span className="text-xs font-medium text-slate-400">Remember me</span>
             </label>
-            <button type="button" className="text-xs font-bold text-rose-400">Forgot Password?</button>
+            <button 
+              type="button" 
+              onClick={() => {
+                setForgotEmail(email || '');
+                setForgotError('');
+                setForgotSuccess('');
+                setIsForgotModalOpen(true);
+              }}
+              className="text-xs font-bold text-rose-400 hover:text-rose-300 transition-colors focus:outline-none"
+            >
+              Forgot Password?
+            </button>
           </div>
 
           <button 
@@ -139,7 +181,113 @@ export default function Login() {
         </div>
 
       </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl p-6 sm:p-7 w-full max-w-md shadow-2xl relative">
+            <button 
+              type="button"
+              onClick={() => setIsForgotModalOpen(false)}
+              className="absolute right-5 top-5 text-slate-400 hover:text-white transition-colors p-1 rounded-lg hover:bg-slate-700/50"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                <Key size={20} />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Reset Admin Password</h3>
+                <p className="text-xs text-slate-400">Directly set and receive new credentials</p>
+              </div>
+            </div>
+
+            {forgotSuccess ? (
+              <div className="space-y-4 my-2">
+                <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 text-left">
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 size={18} className="text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-xs font-bold text-emerald-300">Password Reset Completed</p>
+                      <p className="text-xs text-emerald-200/90 mt-1 leading-relaxed">
+                        {forgotSuccess}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-400 text-center">
+                  Your new password is now active in the database. Please check your email inbox to retrieve it, then log in.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotModalOpen(false);
+                    setError('');
+                  }}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20"
+                >
+                  Back to Login Form
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4 mt-4">
+                <p className="text-xs text-slate-300 leading-relaxed">
+                  Enter your linked Admin Email. The system will set a new password in the database and send it to your email address immediately.
+                </p>
+
+                {forgotError && (
+                  <div className="bg-rose-500/10 border border-rose-500/30 rounded-xl p-3 flex items-start gap-2 text-rose-400 text-xs font-medium">
+                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                    <span>{forgotError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Admin Email Address</label>
+                  <div className="relative">
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input 
+                      type="email" 
+                      required
+                      value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
+                      placeholder="e.g. hradmin@emyrishr.in"
+                      className="w-full bg-slate-900/90 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-2.5 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotModalOpen(false)}
+                    className="flex-1 bg-slate-700/60 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="flex-1 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {forgotLoading ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Setting & Sending...
+                      </>
+                    ) : (
+                      'Reset Password'
+                    )}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
-
