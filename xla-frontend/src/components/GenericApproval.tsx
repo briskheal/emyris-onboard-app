@@ -242,6 +242,43 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
     return val;
   };
 
+  const handleViewItem = (item: any) => {
+    if (selectedModule === 'Primary Sales') {
+      navigate('/extras/primary-sales/edit/' + item._id);
+    } else if (selectedModule === 'Secondary Sales') {
+      navigate('/extras/secondary/edit/' + item._id);
+    } else if (selectedModule === 'Doctors') {
+      navigate('/admin/dcs', {
+        state: {
+          activeTab: 'create_doctor',
+          approvalData: item,
+          approvalType: 'Doctor',
+          isApprovalView: true
+        }
+      });
+    } else if (selectedModule === 'Chemists') {
+      navigate('/admin/dcs', {
+        state: {
+          activeTab: 'create_chemist',
+          approvalData: item,
+          approvalType: 'Chemist',
+          isApprovalView: true
+        }
+      });
+    } else if (selectedModule === 'Stockists') {
+      navigate('/admin/dcs', {
+        state: {
+          activeTab: 'create_stockist',
+          approvalData: item,
+          approvalType: 'Stockist',
+          isApprovalView: true
+        }
+      });
+    } else {
+      alert('View details feature coming soon');
+    }
+  };
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#1e1e2d] relative">
        {/* Top Control Bar */}
@@ -350,9 +387,10 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                   ) : filteredItems.map((d: any, idx: number) => {
                     return (
                       <tr key={d._id} onClick={() => {
-                          if (selectedModule === 'Primary Sales') navigate('/extras/primary-sales/edit/' + d._id);
-                          else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary/edit/' + d._id);
-                        }} className={`border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors ${['Primary Sales', 'Secondary Sales'].includes(selectedModule) ? 'cursor-pointer' : ''}`}>
+                          if (['Primary Sales', 'Secondary Sales', 'Doctors', 'Chemists', 'Stockists'].includes(selectedModule)) {
+                            handleViewItem(d);
+                          }
+                        }} className={`border-b border-[#3b3b5a] hover:bg-[#27273f]/30 transition-colors ${['Primary Sales', 'Secondary Sales', 'Doctors', 'Chemists', 'Stockists'].includes(selectedModule) ? 'cursor-pointer' : ''}`}>
                         <td className="px-6 py-4 text-sm font-medium text-slate-400">{idx + 1}</td>
                         {columns.map((col: any, i: number) => (
                           <td key={i} className={`px-4 py-4 text-sm font-bold ${i === 0 ? 'text-sky-400' : 'text-slate-300'}`}>
@@ -363,10 +401,8 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
                           <td className="px-4 py-4 text-center">
                             <button onClick={(e) => {
                                 e.stopPropagation();
-                                if (selectedModule === 'Primary Sales') navigate('/extras/primary-sales/edit/' + d._id);
-                                else if (selectedModule === 'Secondary Sales') navigate('/extras/secondary/edit/' + d._id);
-                                else alert('View details feature coming soon');
-                              }} className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
+                                handleViewItem(d);
+                              }} title="View & Review Details" className="p-2 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-lg hover:bg-sky-500 hover:text-white transition-all shadow-sm active:scale-95 mx-auto block">
                               <Eye size={18} strokeWidth={2.5}/>
                             </button>
                           </td>

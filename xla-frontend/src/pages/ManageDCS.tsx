@@ -3,9 +3,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Trash2, Edit2, Upload, Users, UserMinus, ArrowRightLeft, ArrowLeft, ArrowUp, Download, MapPinOff,
-  Stethoscope, Pill, Building2, UserCog, UploadCloud, ListChecks, PanelLeftClose, PanelLeftOpen
+  Stethoscope, Pill, Building2, UserCog, UploadCloud, ListChecks, PanelLeftClose, PanelLeftOpen,
+  CheckCircle, XCircle
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fetchData, onEdit }: any) => {
   const checkHQMatch = (h1?: string, h2?: string) => {
@@ -274,10 +275,49 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
 
 export default function ManageDCS() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [activeTab, setActiveTab] = useState<'create_doctor' | 'create_chemist' | 'create_stockist' | 'edit_delete' | 'upload_dcs' | 'dcs_list_management'>('create_doctor');
+  const [activeTab, setActiveTab] = useState<'create_doctor' | 'create_chemist' | 'create_stockist' | 'edit_delete' | 'upload_dcs' | 'dcs_list_management'>(
+    location.state?.activeTab || 'create_doctor'
+  );
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const [editingType, setEditingType] = useState<string>('');
+
+  // Approval review state
+  const [approvalRecord, setApprovalRecord] = useState<any>(location.state?.approvalData || null);
+  const [approvalType, setApprovalType] = useState<string>(location.state?.approvalType || 'Doctor');
+  const [isApprovalMode, setIsApprovalMode] = useState<boolean>(!!location.state?.isApprovalView);
+
+  useEffect(() => {
+    if (location.state?.approvalData) {
+      setApprovalRecord(location.state.approvalData);
+      const type = location.state.approvalType || 'Doctor';
+      setApprovalType(type);
+      setIsApprovalMode(true);
+      if (type === 'Doctor') setActiveTab('create_doctor');
+      else if (type === 'Chemist') setActiveTab('create_chemist');
+      else if (type === 'Stockist') setActiveTab('create_stockist');
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const approvalId = params.get('approvalId') || params.get('id');
+    const typeParam = params.get('type') || 'Doctor';
+    if (approvalId && !approvalRecord) {
+      axios.get('/api/admin/dcs/doctors').then(res => {
+        if (res.data?.success && res.data.doctors) {
+          const found = res.data.doctors.find((d: any) => d._id === approvalId);
+          if (found) {
+            setApprovalRecord(found);
+            setApprovalType(typeParam);
+            setIsApprovalMode(true);
+            setActiveTab('create_doctor');
+          }
+        }
+      }).catch(() => {});
+    }
+  }, [location.search]);
 
   const menuItems = [
     { id: 'create_doctor', label: 'Create Doctors', icon: Stethoscope },
@@ -327,12 +367,45 @@ export default function ManageDCS() {
   const getControls = (type: string, hq?: string) => controls.filter(c => c.type === type && c.isActive !== false && (type !== 'Hospital' || !hq || !c.hq || c.hq.toLowerCase() === hq.toLowerCase()));
 
   // --- DOCTOR TAB ---
-  const CreateDoctorTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
+  const CreateDoctorTab = ({ 
+    editData, 
+    onCancel, 
+    isApprovalView 
+  }: { 
+    editData?: any, 
+    onCancel?: () => void,
+    isApprovalView?: boolean
+  }) => {
     const [formData, setFormData] = useState(editData || {
       name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '',
       mobile: '', clinicContact: '', email: '', category: '', userAllotted: '',
-      headquarter: '', workingArea: '', address: '', extraInformation: ''
+      headquarter: '', workingArea: '', address: '', extraInformation: '', visitDays: ''
     });
+
+    useEffect(() => {
+      if (editData) {
+        setFormData({
+          ...editData,
+          name: editData.name || '',
+          degree: editData.degree || '',
+          specialization: editData.specialization || '',
+          hospital: editData.hospital || '',
+          birthday: editData.birthday || '',
+          anniversary: editData.anniversary || '',
+          mobile: editData.mobile || '',
+          clinicContact: editData.clinicContact || '',
+          email: editData.email || '',
+          category: editData.category || '',
+          userAllotted: editData.userAllotted || '',
+          headquarter: editData.headquarter || '',
+          workingArea: editData.workingArea || '',
+          address: editData.address || '',
+          extraInformation: editData.extraInformation || '',
+          visitDays: editData.visitDays || '',
+          uid: editData.uid || ''
+        });
+      }
+    }, [editData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -340,20 +413,134 @@ export default function ManageDCS() {
       try {
         if (editData) {
           const res = await axios.put(`/api/admin/dcs/doctors/${editData._id}`, formData);
-          if(res.data.success) { alert('Doctor updated successfully'); fetchData(); if(onCancel) onCancel(); }
+          if(res.data.success) { 
+            alert(isApprovalView ? 'Doctor details updated successfully' : 'Doctor updated successfully'); 
+            fetchData(); 
+            if(onCancel && !isApprovalView) onCancel(); 
+          }
         } else {
           const res = await axios.post('/api/admin/dcs/doctors', formData);
-          if(res.data.success) { alert('Doctor added successfully'); fetchData(); setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: '', visitDays: ''}); }
+          if(res.data.success) { 
+            alert('Doctor added successfully'); 
+            fetchData(); 
+            setFormData({name: '', degree: '', specialization: '', hospital: '', birthday: '', anniversary: '', mobile: '', clinicContact: '', email: '', category: '', userAllotted: '', headquarter: '', workingArea: '', address: '', extraInformation: '', visitDays: ''}); 
+          }
         }
-      } catch (e: any) { alert(editData ? 'Error updating doctor: ' + (e.response?.data?.message || e.message) : 'Error adding doctor'); } finally { setLoading(false); }
+      } catch (e: any) { 
+        alert(editData ? 'Error updating doctor: ' + (e.response?.data?.message || e.message) : 'Error adding doctor'); 
+      } finally { 
+        setLoading(false); 
+      }
+    };
+
+    const handleApprovalAction = async (action: 'Approved' | 'Rejected') => {
+      if (!formData._id) return;
+      
+      if (action === 'Rejected') {
+        const reason = window.prompt(`Are you sure you want to REJECT doctor "${formData.name}"? Enter rejection remarks (optional):`);
+        if (reason === null) return;
+        setLoading(true);
+        try {
+          const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+          const approver = userObj.employeeId || userObj.uid || userObj.name || 'Admin';
+          const res = await axios.post('/api/xl/approvals/action', {
+            recordId: formData._id,
+            type: 'Doctors',
+            action: 'Rejected',
+            remarks: reason || '',
+            approvedBy: approver
+          });
+          if (res.data.success) {
+            alert(`Doctor "${formData.name}" has been rejected.`);
+            navigate('/admin/approvals');
+          } else {
+            alert(res.data.message || 'Failed to reject doctor');
+          }
+        } catch (err: any) {
+          console.error(err);
+          alert('Error rejecting doctor: ' + (err.response?.data?.message || err.message));
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
+      // If Approved:
+      if (!window.confirm(`Are you sure you want to APPROVE doctor "${formData.name}"?`)) return;
+      setLoading(true);
+      try {
+        // First save any modifications the admin made in the form
+        await axios.put(`/api/admin/dcs/doctors/${formData._id}`, formData);
+
+        // Execute approval action
+        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+        const approver = userObj.employeeId || userObj.uid || userObj.name || 'Admin';
+        const res = await axios.post('/api/xl/approvals/action', {
+          recordId: formData._id,
+          type: 'Doctors',
+          action: 'Approved',
+          approvedBy: approver
+        });
+
+        if (res.data.success) {
+          alert(`Doctor "${formData.name}" approved successfully!`);
+          navigate('/admin/approvals');
+        } else {
+          alert(res.data.message || 'Failed to approve doctor');
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert('Error approving doctor: ' + (err.response?.data?.message || err.message));
+      } finally {
+        setLoading(false);
+      }
     };
 
     return (
       <div className="flex-1 min-w-0 overflow-auto p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT DOCTOR: ${editData.name}` : 'CREATE DOCTOR...'}</h2>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-wide uppercase">
+              {isApprovalView ? `REVIEW PENDING DOCTOR: ${formData.name || 'NEW'}` : (editData ? `EDIT DOCTOR: ${editData.name}` : 'CREATE DOCTOR...')}
+            </h2>
+            {isApprovalView && (
+              <p className="text-xs text-amber-400 mt-1 font-semibold">
+                Review and modify any doctor details below, then click Approve or Reject.
+              </p>
+            )}
+          </div>
           <button type="button" onClick={() => navigate('/extras/settings?tab=doctor_controls')} className="text-sky-400 text-sm font-bold hover:underline">Do you want to add more Degrees and Specializations?</button>
         </div>
+
+        {isApprovalView && (
+          <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold shrink-0">
+                <Stethoscope size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-black text-sm uppercase">Doctor Approval Review</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    {formData.status || 'Pending Approval'}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  Submitted by: <strong className="text-sky-300">{formData.employeeName || formData.employeeId || 'MR'}</strong>
+                  {formData.createdAt ? ` • Submitted on: ${new Date(formData.createdAt).toLocaleDateString()}` : ''}
+                </div>
+              </div>
+            </div>
+            {(formData.lat1 || formData.lng1 || formData.geoAddress1) && (
+              <div className="flex items-center gap-2 text-xs bg-[#151521] px-3 py-2 rounded-lg border border-slate-700">
+                <span className="text-emerald-400 font-bold">📍 Tagged GPS:</span>
+                <span className="text-slate-300 font-mono">{formData.lat1 ?? '-'}, {formData.lng1 ?? '-'}</span>
+                {formData.geoAddress1 && <span className="text-slate-400 truncate max-w-xs">({formData.geoAddress1})</span>}
+              </div>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">NAME *</label><input required value={formData.name} onChange={e=>setFormData({...formData, name: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Doctor's Name" /></div>
@@ -407,14 +594,14 @@ export default function ManageDCS() {
                   { k: 'Th', d: 'T' }, { k: 'F', d: 'F' }, { k: 'Sa', d: 'S' },
                   { k: 'ALL', d: 'ALL' }
                 ].map(item => {
-                  const currentDays = formData.visitDays ? formData.visitDays.split(',').filter(Boolean) : [];
+                  const currentDays = formData.visitDays ? formData.visitDays.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
                   const isSelected = item.k === 'ALL' 
-                    ? currentDays.length === 6 
+                    ? currentDays.length === 6 || (formData.visitDays && formData.visitDays.toUpperCase() === 'ALL')
                     : currentDays.includes(item.k);
                     
                   const toggle = () => {
                     if (item.k === 'ALL') {
-                      setFormData({...formData, visitDays: currentDays.length === 6 ? '' : 'M,Tu,W,Th,F,Sa'});
+                      setFormData({...formData, visitDays: (currentDays.length === 6 || formData.visitDays?.toUpperCase() === 'ALL') ? '' : 'M,Tu,W,Th,F,Sa'});
                     } else {
                       let next = new Set(currentDays);
                       if (next.has(item.k)) next.delete(item.k);
@@ -442,7 +629,6 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">MOBILE NUMBER *</label><input required value={formData.mobile} onChange={e=>setFormData({...formData, mobile: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Mobile Number" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CLINICS CONTACT NUMBER</label><input value={formData.clinicContact} onChange={e=>setFormData({...formData, clinicContact: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Alternate Number" /></div>
             
-            
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
             <div>
               <label className="text-xs text-slate-400 font-bold mb-1 block">CATEGORY *</label>
@@ -466,21 +652,83 @@ export default function ManageDCS() {
 
             <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">EXTRA INFORMATION</label><textarea value={formData.extraInformation} onChange={e=>setFormData({...formData, extraInformation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white h-24" placeholder="Enter Extra Information" /></div>
           </div>
-          <div className="flex gap-4">
-            <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Doctor' : 'Add Doctor'}</button>
-            {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
-          </div>
+          {isApprovalView ? (
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-700">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleApprovalAction('Approved')}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider"
+              >
+                <CheckCircle size={18} strokeWidth={2.5} /> Approve Doctor
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleApprovalAction('Rejected')}
+                className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider"
+              >
+                <XCircle size={18} strokeWidth={2.5} /> Reject Doctor
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-6 rounded-xl transition-colors text-sm"
+              >
+                Save Changes Only
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/approvals')}
+                className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 px-6 rounded-xl transition-colors text-sm"
+              >
+                Back to Approvals
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Doctor' : 'Add Doctor'}</button>
+              {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
+            </div>
+          )}
         </form>
       </div>
     );
   };
 
   // --- CHEMIST TAB ---
-  const CreateChemistTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
+  const CreateChemistTab = ({ 
+    editData, 
+    onCancel,
+    isApprovalView
+  }: { 
+    editData?: any, 
+    onCancel?: () => void,
+    isApprovalView?: boolean
+  }) => {
     const [formData, setFormData] = useState(editData || {
       businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '',
       userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''
     });
+
+    useEffect(() => {
+      if (editData) {
+        setFormData({
+          ...editData,
+          businessName: editData.businessName || '',
+          proprietorName: editData.proprietorName || '',
+          certifications: editData.certifications || '',
+          birthday: editData.birthday || '',
+          email: editData.email || '',
+          mobile: editData.mobile || '',
+          userAllotted: editData.userAllotted || '',
+          address: editData.address || '',
+          headquarter: editData.headquarter || '',
+          workingArea: editData.workingArea || '',
+          extraInformation: editData.extraInformation || ''
+        });
+      }
+    }, [editData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -488,17 +736,119 @@ export default function ManageDCS() {
       try {
         if (editData) {
           const res = await axios.put(`/api/admin/dcs/chemists/${editData._id}`, formData);
-          if(res.data.success) { alert('Chemist updated successfully'); fetchData(); if(onCancel) onCancel(); }
+          if(res.data.success) { 
+            alert(isApprovalView ? 'Chemist details updated successfully' : 'Chemist updated successfully'); 
+            fetchData(); 
+            if(onCancel && !isApprovalView) onCancel(); 
+          }
         } else {
           const res = await axios.post('/api/admin/dcs/chemists', formData);
-          if(res.data.success) { alert('Chemist added successfully'); fetchData(); setFormData({businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: '', visitDays: ''}); }
+          if(res.data.success) { 
+            alert('Chemist added successfully'); 
+            fetchData(); 
+            setFormData({businessName: '', proprietorName: '', certifications: '', birthday: '', email: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: '', visitDays: ''}); 
+          }
         }
       } catch (e: any) { alert(editData ? 'Error updating chemist: ' + (e.response?.data?.message || e.message) : 'Error adding chemist'); } finally { setLoading(false); }
     };
 
+    const handleApprovalAction = async (action: 'Approved' | 'Rejected') => {
+      if (!formData._id) return;
+      if (action === 'Rejected') {
+        const reason = window.prompt(`Are you sure you want to REJECT chemist "${formData.businessName}"? Enter rejection remarks (optional):`);
+        if (reason === null) return;
+        setLoading(true);
+        try {
+          const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+          const approver = userObj.employeeId || userObj.uid || userObj.name || 'Admin';
+          const res = await axios.post('/api/xl/approvals/action', {
+            recordId: formData._id,
+            type: 'Chemists',
+            action: 'Rejected',
+            remarks: reason || '',
+            approvedBy: approver
+          });
+          if (res.data.success) {
+            alert(`Chemist "${formData.businessName}" has been rejected.`);
+            navigate('/admin/approvals');
+          } else {
+            alert(res.data.message || 'Failed to reject chemist');
+          }
+        } catch (err: any) {
+          console.error(err);
+          alert('Error rejecting chemist: ' + (err.response?.data?.message || err.message));
+        } finally { setLoading(false); }
+        return;
+      }
+
+      if (!window.confirm(`Are you sure you want to APPROVE chemist "${formData.businessName}"?`)) return;
+      setLoading(true);
+      try {
+        await axios.put(`/api/admin/dcs/chemists/${formData._id}`, formData);
+        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+        const approver = userObj.employeeId || userObj.uid || userObj.name || 'Admin';
+        const res = await axios.post('/api/xl/approvals/action', {
+          recordId: formData._id,
+          type: 'Chemists',
+          action: 'Approved',
+          approvedBy: approver
+        });
+        if (res.data.success) {
+          alert(`Chemist "${formData.businessName}" approved successfully!`);
+          navigate('/admin/approvals');
+        } else {
+          alert(res.data.message || 'Failed to approve chemist');
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert('Error approving chemist: ' + (err.response?.data?.message || err.message));
+      } finally { setLoading(false); }
+    };
+
     return (
       <div className="flex-1 min-w-0 overflow-auto p-8">
-        <div className="flex justify-between items-center mb-8"><h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT CHEMIST: ${editData.businessName}` : 'CREATE CHEMIST'}</h2></div>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-wide uppercase">
+              {isApprovalView ? `REVIEW PENDING CHEMIST: ${formData.businessName || 'NEW'}` : (editData ? `EDIT CHEMIST: ${editData.businessName}` : 'CREATE CHEMIST')}
+            </h2>
+            {isApprovalView && (
+              <p className="text-xs text-amber-400 mt-1 font-semibold">
+                Review and modify chemist details below, then click Approve or Reject.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {isApprovalView && (
+          <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold shrink-0">
+                <Pill size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-black text-sm uppercase">Chemist Approval Review</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    {formData.status || 'Pending Approval'}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  Submitted by: <strong className="text-sky-300">{formData.employeeName || formData.employeeId || 'MR'}</strong>
+                  {formData.createdAt ? ` • Submitted on: ${new Date(formData.createdAt).toLocaleDateString()}` : ''}
+                </div>
+              </div>
+            </div>
+            {(formData.lat1 || formData.lng1 || formData.geoAddress1) && (
+              <div className="flex items-center gap-2 text-xs bg-[#151521] px-3 py-2 rounded-lg border border-slate-700">
+                <span className="text-emerald-400 font-bold">📍 Tagged GPS:</span>
+                <span className="text-slate-300 font-mono">{formData.lat1 ?? '-'}, {formData.lng1 ?? '-'}</span>
+                {formData.geoAddress1 && <span className="text-slate-400 truncate max-w-xs">({formData.geoAddress1})</span>}
+              </div>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BUSINESS NAME *</label><input required value={formData.businessName} onChange={e=>setFormData({...formData, businessName: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Chemist's Name" /></div>
@@ -509,7 +859,6 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">EMAIL</label><input type="text" value={formData.email} onChange={e=>setFormData({...formData, email: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Email Address" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">CHEMISTS CONTACT NUMBER *</label><input required value={formData.mobile} onChange={e=>setFormData({...formData, mobile: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Number" /></div>
             
-            
             <div className="md:col-span-2"><label className="text-xs text-slate-400 font-bold mb-1 block">CHEMISTS ADDRESS</label><input value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Clinic Address" /></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ *</label><select required value={formData.headquarter} onChange={e=>setFormData({...formData, headquarter: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Headquarter</option>{hqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
@@ -517,21 +866,86 @@ export default function ManageDCS() {
             
             <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">EXTRA INFORMATION</label><textarea value={formData.extraInformation} onChange={e=>setFormData({...formData, extraInformation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white h-24" placeholder="Enter Extra Information" /></div>
           </div>
-          <div className="flex gap-4">
-            <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Chemist' : 'Add Chemist'}</button>
-            {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
-          </div>
+          {isApprovalView ? (
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-700">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleApprovalAction('Approved')}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider"
+              >
+                <CheckCircle size={18} strokeWidth={2.5} /> Approve Chemist
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleApprovalAction('Rejected')}
+                className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider"
+              >
+                <XCircle size={18} strokeWidth={2.5} /> Reject Chemist
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-6 rounded-xl transition-colors text-sm"
+              >
+                Save Changes Only
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/approvals')}
+                className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 px-6 rounded-xl transition-colors text-sm"
+              >
+                Back to Approvals
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Chemist' : 'Add Chemist'}</button>
+              {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
+            </div>
+          )}
         </form>
       </div>
     );
   };
 
   // --- STOCKIST TAB ---
-  const CreateStockistTab = ({ editData, onCancel }: { editData?: any, onCancel?: () => void }) => {
+  const CreateStockistTab = ({ 
+    editData, 
+    onCancel,
+    isApprovalView
+  }: { 
+    editData?: any, 
+    onCancel?: () => void,
+    isApprovalView?: boolean
+  }) => {
     const [formData, setFormData] = useState(editData || {
       businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '',
       userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: ''
     });
+
+    useEffect(() => {
+      if (editData) {
+        setFormData({
+          ...editData,
+          businessName: editData.businessName || '',
+          name: editData.name || '',
+          certifications: editData.certifications || '',
+          email: editData.email || '',
+          gst: editData.gst || '',
+          drugLicense: editData.drugLicense || '',
+          drugExpiryDate: editData.drugExpiryDate || '',
+          establishmentDate: editData.establishmentDate || '',
+          mobile: editData.mobile || '',
+          userAllotted: editData.userAllotted || '',
+          address: editData.address || '',
+          headquarter: editData.headquarter || '',
+          workingArea: editData.workingArea || '',
+          extraInformation: editData.extraInformation || ''
+        });
+      }
+    }, [editData]);
 
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
@@ -539,17 +953,119 @@ export default function ManageDCS() {
       try {
         if (editData) {
           const res = await axios.put(`/api/admin/dcs/stockists/${editData._id}`, formData);
-          if(res.data.success) { alert('Stockist updated successfully'); fetchData(); if(onCancel) onCancel(); }
+          if(res.data.success) { 
+            alert(isApprovalView ? 'Stockist details updated successfully' : 'Stockist updated successfully'); 
+            fetchData(); 
+            if(onCancel && !isApprovalView) onCancel(); 
+          }
         } else {
           const res = await axios.post('/api/admin/dcs/stockists', formData);
-          if(res.data.success) { alert('Stockist added successfully'); fetchData(); setFormData({businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: '', visitDays: ''}); }
+          if(res.data.success) { 
+            alert('Stockist added successfully'); 
+            fetchData(); 
+            setFormData({businessName: '', name: '', certifications: '', email: '', gst: '', drugLicense: '', drugExpiryDate: '', establishmentDate: '', mobile: '', userAllotted: '', address: '', headquarter: '', workingArea: '', extraInformation: '', visitDays: ''}); 
+          }
         }
       } catch (e: any) { alert(editData ? 'Error updating stockist: ' + (e.response?.data?.message || e.message) : 'Error adding stockist'); } finally { setLoading(false); }
     };
 
+    const handleApprovalAction = async (action: 'Approved' | 'Rejected') => {
+      if (!formData._id) return;
+      if (action === 'Rejected') {
+        const reason = window.prompt(`Are you sure you want to REJECT stockist "${formData.businessName}"? Enter rejection remarks (optional):`);
+        if (reason === null) return;
+        setLoading(true);
+        try {
+          const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+          const approver = userObj.employeeId || userObj.uid || userObj.name || 'Admin';
+          const res = await axios.post('/api/xl/approvals/action', {
+            recordId: formData._id,
+            type: 'Stockists',
+            action: 'Rejected',
+            remarks: reason || '',
+            approvedBy: approver
+          });
+          if (res.data.success) {
+            alert(`Stockist "${formData.businessName}" has been rejected.`);
+            navigate('/admin/approvals');
+          } else {
+            alert(res.data.message || 'Failed to reject stockist');
+          }
+        } catch (err: any) {
+          console.error(err);
+          alert('Error rejecting stockist: ' + (err.response?.data?.message || err.message));
+        } finally { setLoading(false); }
+        return;
+      }
+
+      if (!window.confirm(`Are you sure you want to APPROVE stockist "${formData.businessName}"?`)) return;
+      setLoading(true);
+      try {
+        await axios.put(`/api/admin/dcs/stockists/${formData._id}`, formData);
+        const userObj = JSON.parse(localStorage.getItem('user') || '{}');
+        const approver = userObj.employeeId || userObj.uid || userObj.name || 'Admin';
+        const res = await axios.post('/api/xl/approvals/action', {
+          recordId: formData._id,
+          type: 'Stockists',
+          action: 'Approved',
+          approvedBy: approver
+        });
+        if (res.data.success) {
+          alert(`Stockist "${formData.businessName}" approved successfully!`);
+          navigate('/admin/approvals');
+        } else {
+          alert(res.data.message || 'Failed to approve stockist');
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert('Error approving stockist: ' + (err.response?.data?.message || err.message));
+      } finally { setLoading(false); }
+    };
+
     return (
       <div className="flex-1 min-w-0 overflow-auto p-8">
-        <div className="flex justify-between items-center mb-8"><h2 className="text-lg font-bold text-white tracking-wide uppercase">{editData ? `EDIT STOCKIST: ${editData.businessName}` : 'CREATE STOCKIST'}</h2></div>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-lg font-bold text-white tracking-wide uppercase">
+              {isApprovalView ? `REVIEW PENDING STOCKIST: ${formData.businessName || 'NEW'}` : (editData ? `EDIT STOCKIST: ${editData.businessName}` : 'CREATE STOCKIST')}
+            </h2>
+            {isApprovalView && (
+              <p className="text-xs text-amber-400 mt-1 font-semibold">
+                Review and modify stockist details below, then click Approve or Reject.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {isApprovalView && (
+          <div className="bg-sky-500/10 border border-sky-500/20 rounded-xl p-4 mb-6 flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold shrink-0">
+                <Building2 size={20} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-white font-black text-sm uppercase">Stockist Approval Review</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                    {formData.status || 'Pending Approval'}
+                  </span>
+                </div>
+                <div className="text-xs text-slate-400 mt-0.5">
+                  Submitted by: <strong className="text-sky-300">{formData.employeeName || formData.employeeId || 'MR'}</strong>
+                  {formData.createdAt ? ` • Submitted on: ${new Date(formData.createdAt).toLocaleDateString()}` : ''}
+                </div>
+              </div>
+            </div>
+            {(formData.lat1 || formData.lng1 || formData.geoAddress1) && (
+              <div className="flex items-center gap-2 text-xs bg-[#151521] px-3 py-2 rounded-lg border border-slate-700">
+                <span className="text-emerald-400 font-bold">📍 Tagged GPS:</span>
+                <span className="text-slate-300 font-mono">{formData.lat1 ?? '-'}, {formData.lng1 ?? '-'}</span>
+                {formData.geoAddress1 && <span className="text-slate-400 truncate max-w-xs">({formData.geoAddress1})</span>}
+              </div>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700 flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">BUSINESS NAME *</label><input required value={formData.businessName} onChange={e=>setFormData({...formData, businessName: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Stockist's Name" /></div>
@@ -564,7 +1080,6 @@ export default function ManageDCS() {
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">ESTABLISHMENT DATE</label><input type="date" value={formData.establishmentDate} onChange={e=>setFormData({...formData, establishmentDate: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" /></div>
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">STOCKISTS CONTACT NUMBER *</label><input required value={formData.mobile} onChange={e=>setFormData({...formData, mobile: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Number" /></div>
             
-            
             <div className="md:col-span-2"><label className="text-xs text-slate-400 font-bold mb-1 block">STOCKISTS ADDRESS</label><input value={formData.address} onChange={e=>setFormData({...formData, address: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white" placeholder="Enter Clinic Address" /></div>
             
             <div><label className="text-xs text-slate-400 font-bold mb-1 block">SELECT HQ *</label><select required value={formData.headquarter} onChange={e=>setFormData({...formData, headquarter: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white"><option value="">Select Headquarter</option>{hqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}</select></div>
@@ -572,10 +1087,45 @@ export default function ManageDCS() {
             
             <div className="md:col-span-3"><label className="text-xs text-slate-400 font-bold mb-1 block">EXTRA INFORMATION</label><textarea value={formData.extraInformation} onChange={e=>setFormData({...formData, extraInformation: e.target.value})} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white h-24" placeholder="Enter Extra Information" /></div>
           </div>
-          <div className="flex gap-4">
-            <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Stockist' : 'Add Stockist'}</button>
-            {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
-          </div>
+          {isApprovalView ? (
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-700">
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleApprovalAction('Approved')}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider"
+              >
+                <CheckCircle size={18} strokeWidth={2.5} /> Approve Stockist
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => handleApprovalAction('Rejected')}
+                className="flex items-center gap-2 bg-rose-600 hover:bg-rose-500 text-white font-black py-3 px-8 rounded-xl shadow-lg transition-all active:scale-95 text-sm uppercase tracking-wider"
+              >
+                <XCircle size={18} strokeWidth={2.5} /> Reject Stockist
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-6 rounded-xl transition-colors text-sm"
+              >
+                Save Changes Only
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/admin/approvals')}
+                className="bg-slate-700 hover:bg-slate-600 text-slate-200 font-bold py-3 px-6 rounded-xl transition-colors text-sm"
+              >
+                Back to Approvals
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <button type="submit" disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">{editData ? 'Update Stockist' : 'Add Stockist'}</button>
+              {editData && <button type="button" onClick={onCancel} className="bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">Cancel Edit</button>}
+            </div>
+          )}
         </form>
       </div>
     );
@@ -722,10 +1272,26 @@ export default function ManageDCS() {
 
   return (
     <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
-      <div className="flex items-center gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
-        <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={22} /> <span className="font-bold text-base md:text-lg tracking-wide uppercase">Back to Admin Menu</span>
+      <div className="flex items-center justify-between px-6 py-3.5 bg-slate-900 border-b border-slate-800 sticky top-0 z-20">
+        <button onClick={() => navigate(isApprovalMode ? '/admin/approvals' : '/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+          <ArrowLeft size={20} /> <span className="font-bold text-sm md:text-base tracking-wide uppercase">{isApprovalMode ? 'Back to Approvals' : 'Back to Admin Menu'}</span>
         </button>
+        {isApprovalMode && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-black tracking-widest uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full">
+              Approvals Mode: Reviewing Pending {approvalType}
+            </span>
+            <button
+              onClick={() => {
+                setIsApprovalMode(false);
+                setApprovalRecord(null);
+              }}
+              className="text-xs font-bold text-slate-400 hover:text-white px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+            >
+              Exit Review Mode
+            </button>
+          </div>
+        )}
       </div>
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar Menu */}
@@ -751,7 +1317,24 @@ export default function ManageDCS() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveTab(item.id)}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    if (isApprovalMode) {
+                      if (item.id === 'create_doctor' && approvalType !== 'Doctor') {
+                        setIsApprovalMode(false);
+                        setApprovalRecord(null);
+                      } else if (item.id === 'create_chemist' && approvalType !== 'Chemist') {
+                        setIsApprovalMode(false);
+                        setApprovalRecord(null);
+                      } else if (item.id === 'create_stockist' && approvalType !== 'Stockist') {
+                        setIsApprovalMode(false);
+                        setApprovalRecord(null);
+                      } else if (!['create_doctor', 'create_chemist', 'create_stockist'].includes(item.id)) {
+                        setIsApprovalMode(false);
+                        setApprovalRecord(null);
+                      }
+                    }
+                  }}
                   title={sidebarCollapsed ? item.label : undefined}
                   className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg transition-colors text-xs font-medium ${
                     sidebarCollapsed ? 'justify-center px-0 py-2.5' : 'text-left'
@@ -772,9 +1355,45 @@ export default function ManageDCS() {
         {/* Right Content Area */}
         <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-6 overflow-y-auto">
       
-      {activeTab === 'create_doctor' && <CreateDoctorTab />}
-      {activeTab === 'create_chemist' && <CreateChemistTab />}
-      {activeTab === 'create_stockist' && <CreateStockistTab />}
+      {activeTab === 'create_doctor' && (
+        <CreateDoctorTab 
+          editData={isApprovalMode && approvalType === 'Doctor' ? approvalRecord : undefined}
+          isApprovalView={isApprovalMode && approvalType === 'Doctor'}
+          onCancel={() => {
+            if (isApprovalMode) {
+              setIsApprovalMode(false);
+              setApprovalRecord(null);
+              navigate('/admin/approvals');
+            }
+          }}
+        />
+      )}
+      {activeTab === 'create_chemist' && (
+        <CreateChemistTab 
+          editData={isApprovalMode && approvalType === 'Chemist' ? approvalRecord : undefined}
+          isApprovalView={isApprovalMode && approvalType === 'Chemist'}
+          onCancel={() => {
+            if (isApprovalMode) {
+              setIsApprovalMode(false);
+              setApprovalRecord(null);
+              navigate('/admin/approvals');
+            }
+          }}
+        />
+      )}
+      {activeTab === 'create_stockist' && (
+        <CreateStockistTab 
+          editData={isApprovalMode && approvalType === 'Stockist' ? approvalRecord : undefined}
+          isApprovalView={isApprovalMode && approvalType === 'Stockist'}
+          onCancel={() => {
+            if (isApprovalMode) {
+              setIsApprovalMode(false);
+              setApprovalRecord(null);
+              navigate('/admin/approvals');
+            }
+          }}
+        />
+      )}
       {activeTab === 'edit_delete' && !editingRecord && (
         <div className="flex-1 min-w-0" style={{ display: 'flex' }}>
           <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} fetchData={fetchData} />
