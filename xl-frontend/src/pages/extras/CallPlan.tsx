@@ -237,7 +237,7 @@ function CallPlan() {
   };
 
   return (
-    <div className="min-h-screen bg-[#1c1c2e] text-white font-sans pb-24">
+    <div className="min-h-full bg-[#1c1c2e] text-white font-sans pb-24">
       {/* Header */}
       <div className="px-4 pt-4 pb-4 bg-[#1c1c2e] shadow-md border-b border-[#3b3b5a] sticky top-0 z-40">
         <div className="flex items-center gap-3">
@@ -364,7 +364,10 @@ function CallPlan() {
 
       {/* Multiple CPs button - Fixed bottom */}
       {!loading && (
-        <div className="fixed bottom-20 right-4 z-50 flex gap-2">
+        <div 
+          className="fixed right-4 sm:right-auto sm:left-1/2 sm:ml-[110px] z-50 flex gap-2"
+          style={{ bottom: 'calc(64px + env(safe-area-inset-bottom) + 16px)' }}
+        >
           {!isMultiMode ? (
             <button onClick={() => setIsMultiMode(true)} className="bg-sky-500 text-white px-5 py-3 rounded-full font-bold shadow-lg shadow-sky-500/30 flex items-center gap-2">
               <Plus className="w-5 h-5" /> Multiple CPs
@@ -384,7 +387,7 @@ function CallPlan() {
 
       {/* Plan Modal */}
       {showPlanModal && (
-        <div className="fixed inset-0 z-[60] bg-[#1c1c2e] flex flex-col">
+        <div className="fixed inset-0 w-full max-w-md mx-auto z-[60] bg-[#1c1c2e] flex flex-col sm:shadow-2xl sm:border-x sm:border-[#3b3b5a]">
           <div className="p-4 border-b border-[#3b3b5a] flex items-center gap-3">
             <button onClick={() => setShowPlanModal(false)}><ChevronLeft className="w-6 h-6 text-sky-400" /></button>
             <div>
@@ -434,7 +437,7 @@ function CallPlan() {
 
       {/* Entity Selector Modal */}
       {showEntityModal && (
-        <div className="fixed inset-0 z-[70] bg-[#1c1c2e] flex flex-col">
+        <div className="fixed inset-0 w-full max-w-md mx-auto z-[70] bg-[#1c1c2e] flex flex-col sm:shadow-2xl sm:border-x sm:border-[#3b3b5a]">
           <div className="p-4 border-b border-[#3b3b5a] flex items-center justify-between">
             <h2 className="font-bold text-lg text-white">Select {activeTab}</h2>
             <button onClick={() => setShowEntityModal(false)}><X className="w-6 h-6 text-slate-400" /></button>
@@ -480,7 +483,7 @@ function CallPlan() {
 
       {/* Subordinate Selector Modal */}
       {showSubordinateModal && (
-        <div className="fixed inset-0 z-[80] bg-[#1c1c2e] flex flex-col">
+        <div className="fixed inset-0 w-full max-w-md mx-auto z-[80] bg-[#1c1c2e] flex flex-col sm:shadow-2xl sm:border-x sm:border-[#3b3b5a]">
           <div className="p-4 border-b border-[#3b3b5a] flex items-center justify-between">
             <h2 className="font-bold text-lg text-white">Select User to Plan For</h2>
             <button onClick={() => setShowSubordinateModal(false)}><X className="w-6 h-6 text-slate-400" /></button>

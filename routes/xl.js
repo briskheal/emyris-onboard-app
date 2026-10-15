@@ -2131,16 +2131,57 @@ router.post('/dcr', async (req, res) => {
 
         // Check if rep has an APPROVED TP for this date
         const dateObj = new Date(date);
-        const month = dateObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+        const monthLong = dateObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+        const monthShort = dateObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
+        const monthNum = String(dateObj.getMonth() + 1);
+        const monthNumPad = monthNum.padStart(2, '0');
         const year = String(dateObj.getFullYear());
-        const tp = await XlTourProgram.findOne({ where: { employeeId, month, year, status: 'Approved' } });
+
+        const userForId = await XlUser.findOne({ where: { employeeId } }) || 
+                          await XlUser.findOne({ where: { email: employeeId } }) || 
+                          await XlUser.findOne({ where: { uid: employeeId } });
+        let idArray = [employeeId];
+        if (userForId) {
+            if (userForId.employeeId) idArray.push(userForId.employeeId);
+            if (userForId.email) idArray.push(userForId.email);
+            if (userForId.uid) idArray.push(userForId.uid);
+        }
+        idArray = Array.from(new Set(idArray));
+
+        const tp = await XlTourProgram.findOne({
+            where: {
+                employeeId: { [Op.in]: idArray },
+                year,
+                status: 'Approved',
+                [Op.or]: [
+                    sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthLong),
+                    sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthShort),
+                    { month: monthNum },
+                    { month: monthNumPad }
+                ]
+            }
+        });
         if (!tp) {
             return res.status(403).json({ error: 'No approved Tour Program found for this date. Please submit and get your TP approved first.' });
         }
 
+        const normalizeDate = (d) => {
+            if (!d) return '';
+            if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0];
+            if (/^\d{2}-\d{2}-\d{4}/.test(d)) {
+                const p = d.split('-');
+                return `${p[2]}-${p[1]}-${p[0]}`;
+            }
+            return d;
+        };
+
         // Check entries contain this date
-        const entries = JSON.parse(tp.entries || '[]');
-        const entry = entries.find((e) => e.date === date);
+        let entries = [];
+        try { entries = JSON.parse(tp.entries || '[]'); } catch(e){}
+        if (!Array.isArray(entries)) entries = Object.values(entries);
+
+        const normDate = normalizeDate(date);
+        const entry = entries.find((e) => normalizeDate(e.date) === normDate);
         if (!entry) {
             return res.status(403).json({ error: `Date ${date} is not in your approved Tour Program.` });
         }
@@ -3744,6 +3785,16 @@ router.get('/call-plan/month', async (req, res) => {
         
         const { Op } = require('sequelize');
         
+        const userForId = await XlUser.findOne({ where: { employeeId: email } }) || 
+                          await XlUser.findOne({ where: { email } }) || 
+                          await XlUser.findOne({ where: { uid: email } });
+        let idArray = [email];
+        if (userForId) {
+            if (userForId.employeeId) idArray.push(userForId.employeeId);
+            if (userForId.email) idArray.push(userForId.email);
+            if (userForId.uid) idArray.push(userForId.uid);
+        }
+        idArray = Array.from(new Set(idArray));
         
         const startDate = `${year}-${month.padStart(2, '0')}-01`;
         const _ld = new Date(parseInt(year), parseInt(month), 0).getDate();
@@ -3751,7 +3802,7 @@ router.get('/call-plan/month', async (req, res) => {
         
         const plans = await XlCallPlan.findAll({
             where: {
-                employeeId: email,
+                employeeId: { [Op.in]: idArray },
                 date: { [Op.between]: [startDate, endDate] }
             },
             order: [['date', 'ASC']]
@@ -3768,32 +3819,78 @@ router.post('/call-plan/bulk', async (req, res) => {
     try {
         const { employeeId, dates, doctors, chemists, stockists } = req.body;
         if (!employeeId || !dates || !Array.isArray(dates)) return res.status(400).json({ error: 'Invalid payload' });
+
+        const userForId = await XlUser.findOne({ where: { employeeId } }) || 
+                          await XlUser.findOne({ where: { email: employeeId } }) || 
+                          await XlUser.findOne({ where: { uid: employeeId } });
+        let idArray = [employeeId];
+        if (userForId) {
+            if (userForId.employeeId) idArray.push(userForId.employeeId);
+            if (userForId.email) idArray.push(userForId.email);
+            if (userForId.uid) idArray.push(userForId.uid);
+        }
+        idArray = Array.from(new Set(idArray));
+
+        const normalizeDate = (d) => {
+            if (!d) return '';
+            if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0];
+            if (/^\d{2}-\d{2}-\d{4}/.test(d)) {
+                const p = d.split('-');
+                return `${p[2]}-${p[1]}-${p[0]}`;
+            }
+            return d;
+        };
+
         // --- STRICT TP DATE CHECK ---
         for (const date of dates) {
             const dObj = new Date(date);
-            const tpMonth = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+            const monthLong = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
+            const monthShort = dObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
+            const monthNum = String(dObj.getMonth() + 1);
+            const monthNumPad = monthNum.padStart(2, '0');
             const tpYear = String(dObj.getFullYear());
             
-            const approvedTp = await XlTourProgram.findOne({ where: { employeeId, month: tpMonth, year: tpYear, status: 'Approved' } });
+            const approvedTp = await XlTourProgram.findOne({
+                where: {
+                    employeeId: { [Op.in]: idArray },
+                    year: tpYear,
+                    status: 'Approved',
+                    [Op.or]: [
+                        sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthLong),
+                        sequelize.where(sequelize.fn('lower', sequelize.col('month')), monthShort),
+                        { month: monthNum },
+                        { month: monthNumPad }
+                    ]
+                }
+            });
+
             if (!approvedTp) {
-                return res.json({ success: false, message: `You must have an Approved Tour Program for ${tpMonth} ${tpYear} before submitting Call Plans.` });
+                return res.json({ success: false, message: `You must have an Approved Tour Program for ${monthLong} ${tpYear} before submitting Call Plans.` });
             }
             
-            const tpEntries = JSON.parse(approvedTp.entries || '[]');
-            const validTpDates = new Set(tpEntries.map(e => e.date));
-            if (!validTpDates.has(date)) {
+            let tpEntries = [];
+            try { tpEntries = JSON.parse(approvedTp.entries || '[]'); } catch(e){}
+            if (!Array.isArray(tpEntries)) tpEntries = Object.values(tpEntries);
+
+            const normDate = normalizeDate(date);
+            const matchingEntry = tpEntries.find(e => normalizeDate(e.date) === normDate);
+
+            if (!matchingEntry) {
                 return res.json({ success: false, message: `Cannot submit Call Plan for ${date} because it is not planned as a working day in your Approved Tour Program.` });
+            }
+
+            if (matchingEntry.activityType === 'Leave' || matchingEntry.type === 'Holiday' || matchingEntry.activityType === 'Holiday' || matchingEntry.type === 'SUNDAY') {
+                return res.json({ success: false, message: `Cannot submit Call Plan for ${date} because it is marked as ${matchingEntry.activityType || matchingEntry.type} in your Tour Program.` });
             }
         }
         // ----------------------------
 
         // --- HOLIDAY CHECK ---
-        const user = await XlUser.findOne({ where: { employeeId } });
-        if (user && user.state) {
+        if (userForId && userForId.state) {
             const holidays = await XlHoliday.findAll({
                 where: {
                     [Op.or]: [
-                        { state: user.state },
+                        { state: userForId.state },
                         { state: null },
                         { state: 'All' },
                         { state: 'N/A' },
@@ -3801,8 +3898,8 @@ router.post('/call-plan/bulk', async (req, res) => {
                     ]
                 }
             });
-            const holidayDates = new Set(holidays.map(h => h.date));
-            const invalidDates = dates.filter(d => holidayDates.has(d));
+            const holidayDates = new Set(holidays.map(h => normalizeDate(h.date)));
+            const invalidDates = dates.filter(d => holidayDates.has(normalizeDate(d)));
             if (invalidDates.length > 0) {
                 return res.json({ success: false, message: 'Cannot submit Call Plan on a Holiday: ' + invalidDates.join(', ') });
             }
@@ -3810,7 +3907,7 @@ router.post('/call-plan/bulk', async (req, res) => {
         // -----------------------
         
         for (const date of dates) {
-            let plan = await XlCallPlan.findOne({ where: { employeeId, date } });
+            let plan = await XlCallPlan.findOne({ where: { employeeId: { [Op.in]: idArray }, date } });
             try {
                 if (plan) {
                     plan.doctors = JSON.stringify(doctors || []);
@@ -3820,7 +3917,7 @@ router.post('/call-plan/bulk', async (req, res) => {
                     await plan.save();
                 } else {
                     await XlCallPlan.create({
-                        employeeId,
+                        employeeId: userForId?.employeeId || employeeId,
                         date,
                         doctors: JSON.stringify(doctors || []),
                         chemists: JSON.stringify(chemists || []),
