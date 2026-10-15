@@ -3437,6 +3437,49 @@ router.get('/approvals/pending', async (req, res) => {
                 }
             }
 
+            if (type === 'Call Plans') {
+                let docList = [];
+                let chemList = [];
+                let stockList = [];
+                try { docList = typeof pData.doctors === 'string' ? JSON.parse(pData.doctors || '[]') : (pData.doctors || []); } catch(e){}
+                try { chemList = typeof pData.chemists === 'string' ? JSON.parse(pData.chemists || '[]') : (pData.chemists || []); } catch(e){}
+                try { stockList = typeof pData.stockists === 'string' ? JSON.parse(pData.stockists || '[]') : (pData.stockists || []); } catch(e){}
+                if (!Array.isArray(docList)) docList = Object.values(docList || {});
+                if (!Array.isArray(chemList)) chemList = Object.values(chemList || {});
+                if (!Array.isArray(stockList)) stockList = Object.values(stockList || {});
+
+                pData.parsedDoctors = docList.map(d => {
+                    if (typeof d === 'string') return { id: d, name: d };
+                    return {
+                        id: d.id || d._id || d.doctorId || '',
+                        name: d.name || d.doctorName || d.id || 'Doctor',
+                        info: d.info || d.headquarter || d.hq || d.speciality || '',
+                        shifts: d.shifts || (d.shift ? [d.shift] : []),
+                        priority: d.priority || ''
+                    };
+                });
+                pData.parsedChemists = chemList.map(c => {
+                    if (typeof c === 'string') return { id: c, name: c };
+                    return {
+                        id: c.id || c._id || c.chemistId || '',
+                        name: c.name || c.businessName || c.chemistName || c.id || 'Chemist',
+                        info: c.info || c.headquarter || c.hq || ''
+                    };
+                });
+                pData.parsedStockists = stockList.map(s => {
+                    if (typeof s === 'string') return { id: s, name: s };
+                    return {
+                        id: s.id || s._id || s.stockistId || '',
+                        name: s.name || s.businessName || s.stockistName || s.id || 'Stockist',
+                        info: s.info || s.headquarter || s.hq || ''
+                    };
+                });
+
+                pData.doctorCount = pData.parsedDoctors.length;
+                pData.chemistCount = pData.parsedChemists.length;
+                pData.stockistCount = pData.parsedStockists.length;
+            }
+
             data.push(pData);
         }
 

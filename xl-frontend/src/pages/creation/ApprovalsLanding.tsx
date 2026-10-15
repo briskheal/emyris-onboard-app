@@ -82,12 +82,14 @@ export default function ApprovalsLanding() {
               </div>
               
               {count > 0 ? (
-                <div className="flex items-center justify-center bg-sky-500/20 text-sky-400 px-3 py-1 rounded-full border border-sky-500/30">
-                  <span className="text-xs font-bold">{count} pending</span>
+                <div className="flex items-center justify-center min-w-[26px] h-6 px-2 bg-emerald-500/20 text-emerald-400 rounded-full border border-emerald-500/30">
+                  <span className="text-xs font-bold">{count}</span>
                 </div>
-              ) : (
-                <span className="text-xs font-medium text-slate-500">0 pending</span>
-              )}
+              ) : item.path === 'Geo Fencing' ? (
+                <div className="flex items-center justify-center min-w-[26px] h-6 px-2 bg-emerald-500/10 text-emerald-400/80 rounded-full border border-emerald-500/20">
+                  <span className="text-xs font-bold">0</span>
+                </div>
+              ) : null}
             </button>
           );
         })}
