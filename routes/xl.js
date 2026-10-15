@@ -3931,7 +3931,8 @@ router.post('/call-plan/bulk', async (req, res) => {
         }
         
         // Notify manager of call plan update
-        const mgrUser = await XlUser.findOne({ where: { employeeId } });
+        const mgrUser = userForId || await XlUser.findOne({ where: { employeeId } });
+        const senderName = mgrUser ? (((mgrUser.firstName || '') + ' ' + (mgrUser.lastName || '')).trim() || mgrUser.name || employeeId) : employeeId;
         if (mgrUser && mgrUser.reportingManager) {
             const managers = await XlUser.findAll({ where: { designation: mgrUser.reportingManager } });
             for (const m of managers) {
@@ -3939,8 +3940,10 @@ router.post('/call-plan/bulk', async (req, res) => {
                     _id: generateId(),
                     employeeId: m.employeeId,
                     title: 'Call Plan Updated',
-                    message: `${user.firstName} ${user.lastName} has submitted their Call Plan.`
-                });
+                    message: `${senderName} has submitted their Call Plan.`
+                }).catch(() => {});
+            }
+        }
         
         // Notify the submitter
         await XlNotification.create({
@@ -3948,16 +3951,14 @@ router.post('/call-plan/bulk', async (req, res) => {
             employeeId,
             title: 'Call Plan Submitted',
             message: `You have successfully submitted your Call Plan. It has been sent to your manager.`
-        });
-            }
-        }
+        }).catch(() => {});
         
         await XlNotification.create({
             _id: generateId(),
             employeeId: 'ADMIN',
             title: 'Call Plan Updated',
-            message: `Call Plan submitted by ${user ? user.firstName : employeeId}.`
-        });
+            message: `Call Plan submitted by ${senderName}.`
+        }).catch(() => {});
 
         res.json({ success: true });
     } catch (e) {
