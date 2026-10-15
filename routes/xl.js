@@ -3441,8 +3441,15 @@ router.get('/approvals/pending', async (req, res) => {
                     pData.employeeEmail = pData.employeeEmail || u.email;
                     pData.designation = u.designation || '-';
                     pData.reportingManager = u.reportingManager || '-';
+                    pData.hq = pData.headquarter || pData.hq || u.hq || 'HQ';
                 }
             }
+            if (!pData.date && pData.createdAt) {
+                try {
+                    pData.date = typeof pData.createdAt === 'string' ? pData.createdAt.split('T')[0] : new Date(pData.createdAt).toISOString().split('T')[0];
+                } catch(e) {}
+            }
+            pData.hq = pData.headquarter || pData.hq || 'HQ';
             if (!pData.employeeName || pData.employeeName === '-' || pData.employeeName.trim() === '') {
                 try {
                     if (pData.hq) {

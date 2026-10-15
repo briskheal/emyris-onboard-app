@@ -794,6 +794,214 @@ export default function ApprovalDetail() {
                 </div>
               </div>
             </>
+          ) : type === 'Doctors' ? (
+            <div>
+              <h2 className="text-emerald-400 font-bold text-sm mb-3 flex items-center gap-2">
+                <UserRound size={16} />
+                <span>Doctor Profile Details</span>
+              </h2>
+              <div className="bg-slate-700/80 border border-slate-600/70 rounded-2xl p-4 shadow-md space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                    <UserRound size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-bold text-white text-base truncate">
+                        Dr. {(drillDownItem.name || '').replace(/^Dr\.?\s*/i, '')}
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase shrink-0">
+                        {drillDownItem.status || 'Pending'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-sky-400 truncate mt-0.5">
+                      {drillDownItem.specialization || drillDownItem.speciality || 'General Physician'} {drillDownItem.degree ? `• ${drillDownItem.degree}` : ''}
+                    </p>
+                    {drillDownItem.hospital && (
+                      <p className="text-[11px] text-slate-300 truncate mt-1 flex items-center gap-1.5">
+                        <Building2 size={13} className="text-slate-400 shrink-0" />
+                        <span>{drillDownItem.hospital}</span>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-600/60 text-xs">
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Category / Class</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.category || drillDownItem.class || 'Core'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Visit Days / Frequency</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.visitDays || drillDownItem.frequency || 'Monthly'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Mobile / Contact</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.mobile || drillDownItem.clinicContact || drillDownItem.contact || '-'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Working Area</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.workingArea || drillDownItem.market || '-'}
+                    </span>
+                  </div>
+                </div>
+
+                {(drillDownItem.geoAddress1 || (drillDownItem.lat1 && drillDownItem.lng1)) && (
+                  <div className="bg-slate-800/70 p-2.5 rounded-xl border border-emerald-500/20 flex items-center gap-2.5 text-xs">
+                    <MapPin size={16} className="text-emerald-400 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-emerald-400 block">GPS Coordinates Tagged</span>
+                      <span className="text-[11px] text-slate-300 truncate block">
+                        {drillDownItem.geoAddress1 || `${drillDownItem.lat1}, ${drillDownItem.lng1}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {(drillDownItem.address || drillDownItem.extraInformation) && (
+                  <div className="text-[11px] text-slate-300 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50 space-y-1">
+                    {drillDownItem.address && <p><span className="text-slate-400 font-semibold">Address: </span>{drillDownItem.address}</p>}
+                    {drillDownItem.extraInformation && <p className="italic text-slate-400">"{drillDownItem.extraInformation}"</p>}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : type === 'Chemists' ? (
+            <div>
+              <h2 className="text-amber-400 font-bold text-sm mb-3 flex items-center gap-2">
+                <ShoppingBag size={16} />
+                <span>Chemist Profile Details</span>
+              </h2>
+              <div className="bg-slate-700/80 border border-slate-600/70 rounded-2xl p-4 shadow-md space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400 flex items-center justify-center shrink-0">
+                    <ShoppingBag size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-bold text-white text-base truncate">
+                        {drillDownItem.businessName || drillDownItem.name}
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase shrink-0">
+                        {drillDownItem.status || 'Pending'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-sky-400 truncate mt-0.5">
+                      Proprietor: {drillDownItem.proprietorName || drillDownItem.contactPerson || '-'}
+                    </p>
+                    {drillDownItem.uid && (
+                      <span className="inline-block text-[10px] font-bold px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-600 mt-1">
+                        UID: {drillDownItem.uid}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-600/60 text-xs">
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Mobile / Phone</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.mobile || drillDownItem.phone || '-'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Working Area</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.workingArea || drillDownItem.market || '-'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Drug License (DL No)</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.dlNumber || drillDownItem.certifications || '-'}
+                    </span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Headquarter</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">
+                      {drillDownItem.headquarter || drillDownItem.hq || '-'}
+                    </span>
+                  </div>
+                </div>
+
+                {(drillDownItem.geoAddress1 || (drillDownItem.lat1 && drillDownItem.lng1)) && (
+                  <div className="bg-slate-800/70 p-2.5 rounded-xl border border-amber-500/20 flex items-center gap-2.5 text-xs">
+                    <MapPin size={16} className="text-amber-400 shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-amber-400 block">GPS Coordinates Tagged</span>
+                      <span className="text-[11px] text-slate-300 truncate block">
+                        {drillDownItem.geoAddress1 || `${drillDownItem.lat1}, ${drillDownItem.lng1}`}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {drillDownItem.address && (
+                  <div className="text-[11px] text-slate-300 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-slate-400 font-semibold">Address: </span>{drillDownItem.address}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : type === 'Stockists' ? (
+            <div>
+              <h2 className="text-orange-400 font-bold text-sm mb-3 flex items-center gap-2">
+                <Building2 size={16} />
+                <span>Stockist Profile Details</span>
+              </h2>
+              <div className="bg-slate-700/80 border border-slate-600/70 rounded-2xl p-4 shadow-md space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-orange-500/15 border border-orange-500/30 text-orange-400 flex items-center justify-center shrink-0">
+                    <Building2 size={22} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-bold text-white text-base truncate">
+                        {drillDownItem.businessName || drillDownItem.name}
+                      </h3>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase shrink-0">
+                        {drillDownItem.status || 'Pending'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-sky-400 truncate mt-0.5">
+                      Contact: {drillDownItem.contactPerson || drillDownItem.proprietorName || '-'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-600/60 text-xs">
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Phone / Mobile</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">{drillDownItem.phone || drillDownItem.mobile || '-'}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">DL Number</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">{drillDownItem.dlNumber || drillDownItem.drugLicense || '-'}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">GST Number</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">{drillDownItem.gstNumber || drillDownItem.gst || '-'}</span>
+                  </div>
+                  <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-[10px] font-medium text-slate-400 block">Headquarter</span>
+                    <span className="font-bold text-slate-200 mt-0.5 block truncate">{drillDownItem.headquarter || drillDownItem.hq || '-'}</span>
+                  </div>
+                </div>
+
+                {drillDownItem.address && (
+                  <div className="text-[11px] text-slate-300 bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
+                    <span className="text-slate-400 font-semibold">Address: </span>{drillDownItem.address}
+                  </div>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="bg-slate-700/80 border border-slate-600 rounded-2xl p-4">
               {renderDetails(drillDownItem)}
@@ -1207,72 +1415,123 @@ export default function ApprovalDetail() {
                 );
               }
 
-              // Standard Layout for other approval modules
-              return (
-                <div key={item._id} className="bg-slate-700/90 border border-slate-600 rounded-2xl p-4 shadow-lg">
-                  {/* Rep Header */}
-                  <div className="flex justify-between items-start mb-2.5 pb-2 border-b border-slate-600/50">
-                    <div>
-                      <h3 className="text-white font-bold text-sm">
-                        {item.employeeName || item.userAllotted || item.employeeId || 'MR'}
-                      </h3>
-                      <p className="text-[11px] text-sky-400 font-semibold">{item.hq || item.headquarter || 'HQ'}</p>
+              // Tour Program specialized day-wise approval layout
+              if (type === 'Tour Program') {
+                return (
+                  <div key={item._id} className="bg-slate-700/90 border border-slate-600 rounded-2xl p-4 shadow-lg">
+                    <div className="flex justify-between items-start mb-2.5 pb-2 border-b border-slate-600/50">
+                      <div>
+                        <h3 className="text-white font-bold text-sm">
+                          {item.employeeName || item.userAllotted || item.employeeId || 'MR'}
+                        </h3>
+                        <p className="text-[11px] text-sky-400 font-semibold">{item.hq || item.headquarter || 'HQ'}</p>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                        {item.status || 'Pending'}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
-                      {item.status || 'Pending'}
-                    </span>
-                  </div>
-                  
-                  {/* Module Details */}
-                  <div className="py-1">
-                    {renderDetails(item)}
-                  </div>
+                    
+                    <div className="py-1">
+                      {renderDetails(item)}
+                    </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2 mt-3 pt-3 border-t border-slate-600/50">
-                    {type === 'Tour Program' ? (
-                      <>
-                        <button 
-                          onClick={() => {
-                            const selected = selectedDatesMap[item._id] || [];
-                            handleAction(item._id, 'Rejected', selected.length > 0 ? selected : undefined);
-                          }} 
-                          className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
-                        >
-                          <XCircle size={15} /> 
-                          {(selectedDatesMap[item._id] || []).length > 0 
-                            ? `Reject Selected (${selectedDatesMap[item._id].length})` 
-                            : 'Reject Entire Plan'}
-                        </button>
-                        <button 
-                          onClick={() => {
-                            const selected = selectedDatesMap[item._id] || [];
-                            handleAction(item._id, 'Approved', selected.length > 0 ? selected : undefined);
-                          }} 
-                          className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
-                        >
-                          <CheckCircle size={15} /> 
-                          {(selectedDatesMap[item._id] || []).length > 0 
-                            ? `Approve Selected (${selectedDatesMap[item._id].length})` 
-                            : 'Approve Entire Plan'}
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={() => handleAction(item._id, 'Rejected')} 
-                          className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 rounded-xl py-2 flex items-center justify-center gap-1.5 text-xs font-bold active:bg-rose-500/20 transition-colors"
-                        >
-                          <XCircle size={15} /> Reject
-                        </button>
-                        <button 
-                          onClick={() => handleAction(item._id, 'Approved')} 
-                          className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 rounded-xl py-2 flex items-center justify-center gap-1.5 text-xs font-bold active:bg-emerald-500/20 transition-colors"
-                        >
-                          <CheckCircle size={15} /> Approve
-                        </button>
-                      </>
-                    )}
+                    <div className="flex gap-2 mt-3 pt-3 border-t border-slate-600/50">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const selected = selectedDatesMap[item._id] || [];
+                          handleAction(item, 'Rejected', selected.length > 0 ? selected : undefined);
+                        }} 
+                        className="flex-1 bg-rose-500/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
+                      >
+                        <XCircle size={15} /> 
+                        {(selectedDatesMap[item._id] || []).length > 0 
+                          ? `Reject Selected (${selectedDatesMap[item._id].length})` 
+                          : 'Reject Entire Plan'}
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const selected = selectedDatesMap[item._id] || [];
+                          handleAction(item, 'Approved', selected.length > 0 ? selected : undefined);
+                        }} 
+                        className="flex-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/20 rounded-xl py-2.5 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-all"
+                      >
+                        <CheckCircle size={15} /> 
+                        {(selectedDatesMap[item._id] || []).length > 0 
+                          ? `Approve Selected (${selectedDatesMap[item._id].length})` 
+                          : 'Approve Entire Plan'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Standard Video Layout for ALL Other Approvals (Doctors, Chemists, Stockists, City, Routes, etc.)
+              return (
+                <div
+                  key={item._id}
+                  onClick={() => setDrillDownItem(item)}
+                  className="bg-slate-700/90 hover:bg-slate-700 border border-slate-600 rounded-2xl p-4 shadow-lg cursor-pointer transition-all active:scale-[0.99]"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 flex items-center justify-center text-white font-bold text-sm shrink-0 border border-slate-500/50 shadow-md">
+                      <img
+                        src={`https://ui-avatars.com/api/?name=${encodeURIComponent(item.employeeName || 'MR')}&background=1e293b&color=38bdf8&bold=true`}
+                        alt={item.employeeName}
+                        className="w-full h-full object-cover"
+                        onError={(e: any) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-bold text-white text-sm truncate">
+                        {type === 'Doctors' 
+                          ? `Dr. ${(item.name || '').replace(/^Dr\.?\s*/i, '')}` 
+                          : (item.businessName || item.name || item.cityName || item.fromCity || 'Request')}
+                      </div>
+                      <div className="text-xs font-semibold text-slate-300 truncate mt-0.5">
+                        Submitted by: {item.employeeName || item.employeeId || 'Rep'}
+                      </div>
+                      <div className="text-[10px] text-sky-400 font-medium">
+                        {item.hq || item.headquarter || 'HQ'} • {formatDisplayDate(item.date || item.createdAt)}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+                        {type === 'Doctors' && <UserRound size={13} />}
+                        {type === 'Chemists' && <ShoppingBag size={13} />}
+                        {type === 'Stockists' && <Building2 size={13} />}
+                        {type === 'City' && <MapPin size={13} />}
+                        {(type === 'Routes' || type === 'Route') && <Navigation size={13} />}
+                        <span>{item.specialization || item.workingArea || item.areaType || type}</span>
+                      </div>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase">
+                        {item.category || item.status || 'Pending'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3 pt-3 border-t border-slate-600/50">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAction(item, 'Approved');
+                      }}
+                      className="flex-1 bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/40 rounded-xl py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold transition-all active:scale-95"
+                    >
+                      <CheckCircle size={16} /> Approve
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAction(item, 'Rejected');
+                      }}
+                      className="w-9 h-9 rounded-full bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/40 flex items-center justify-center transition-all active:scale-95 shrink-0"
+                      title="Reject"
+                    >
+                      <XCircle size={18} />
+                    </button>
                   </div>
                 </div>
               );
