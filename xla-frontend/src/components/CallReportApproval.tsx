@@ -26,23 +26,71 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
 
   // Group by Employee + Date
   const groupedData = useMemo(() => {
-    const grouped: Record<string, { employeeId: string, employeeName: string, date: string, calls: any[], isBacklog: boolean, areaType: string, workAreas: string }> = {};
+    const grouped: Record<string, { 
+      employeeId: string; 
+      employeeName: string; 
+      date: string; 
+      calls: any[]; 
+      doctorCalls: any[]; 
+      chemistCalls: any[]; 
+      stockistCalls: any[]; 
+      isBacklog: boolean; 
+      areaType: string; 
+      workAreas: string;
+    }> = {};
+
     items.forEach((i: any) => {
       if (selectedUser && i.employeeId !== selectedUser) return;
-      const key = `${i.employeeId}_${formatDDMMYYYY(i.date)}`;
+      const dateKey = i.date ? (String(i.date).includes('T') ? String(i.date).split('T')[0] : String(i.date)) : '';
+      const key = `${i.employeeId}_${dateKey}`;
       if (!grouped[key]) {
         grouped[key] = {
           employeeId: i.employeeId,
           employeeName: i.employeeName || i.employeeEmail || i.employeeId,
           date: i.date,
           calls: [],
-          isBacklog: i.isBacklog || false, // assuming schema handles backlog flag or deduce it
-          areaType: 'Local',
-          workAreas: '-'
+          doctorCalls: [],
+          chemistCalls: [],
+          stockistCalls: [],
+          isBacklog: i.isBacklog || false,
+          areaType: i.areaType || i.workingAreaType || 'Local',
+          workAreas: i.workArea || i.workingAreas || '-'
         };
       }
-      grouped[key].calls.push(i);
+
+      if (Array.isArray(i.calls) && i.calls.length > 0) {
+        grouped[key].calls.push(...i.calls);
+      } else if (i.entityType || i.entityName) {
+        grouped[key].calls.push(i);
+      }
+
+      if (Array.isArray(i.doctorCalls) && i.doctorCalls.length > 0) {
+        grouped[key].doctorCalls.push(...i.doctorCalls);
+      }
+      if (Array.isArray(i.chemistCalls) && i.chemistCalls.length > 0) {
+        grouped[key].chemistCalls.push(...i.chemistCalls);
+      }
+      if (Array.isArray(i.stockistCalls) && i.stockistCalls.length > 0) {
+        grouped[key].stockistCalls.push(...i.stockistCalls);
+      }
+      if (i.workArea) grouped[key].workAreas = i.workArea;
+      if (i.isBacklog) grouped[key].isBacklog = true;
+      if (i.employeeName) grouped[key].employeeName = i.employeeName;
     });
+
+    // Derive calls if doctorCalls/chemistCalls/stockistCalls are empty
+    Object.values(grouped).forEach(g => {
+      if (g.doctorCalls.length === 0 && g.calls.length > 0) {
+        g.doctorCalls = g.calls.filter(c => c.entityType === 'Doctor' || (!c.entityType && (c.entityName?.toLowerCase().startsWith('dr') || c.entityName?.toLowerCase().includes('dr.'))));
+      }
+      if (g.chemistCalls.length === 0 && g.calls.length > 0) {
+        g.chemistCalls = g.calls.filter(c => c.entityType === 'Chemist');
+      }
+      if (g.stockistCalls.length === 0 && g.calls.length > 0) {
+        g.stockistCalls = g.calls.filter(c => c.entityType === 'Stockist');
+      }
+    });
+
     return Object.values(grouped).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [items, selectedUser]);
 
@@ -99,14 +147,74 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
   };
 
   if (detailedDateData) {
-    const activeGroup = groupedData.find(g => g.employeeId === detailedDateData.employeeId && g.date === detailedDateData.date);
+    const activeGroup = groupedData.find(g => 
+      g.employeeId === detailedDateData.employeeId && 
+      (g.date === detailedDateData.date || formatDDMMYYYY(g.date) === formatDDMMYYYY(detailedDateData.date))
+    );
     const dt = new Date(detailedDateData.date);
-    const monthName = dt.toLocaleString('default', { month: 'long' });
+    const monthName = isNaN(dt.getTime()) ? '-' : dt.toLocaleString('default', { month: 'long' });
     const formattedDate = formatDDMMYYYY(detailedDateData.date);
 
-    const doctorCalls = activeGroup?.calls.filter(c => c.entityType === 'Doctor') || [];
-    const chemistCalls = activeGroup?.calls.filter(c => c.entityType === 'Chemist') || [];
-    const stockistCalls = activeGroup?.calls.filter(c => c.entityType === 'Stockist') || [];
+    const doctorCalls = activeGroup?.doctorCalls || activeGroup?.calls?.filter((c: any) => c.entityType === 'Doctor' || (!c.entityType && (c.entityName?.toLowerCase().startsWith('dr') || c.entityName?.toLowerCase().includes('dr.')))) || [];
+    const chemistCalls = activeGroup?.chemistCalls || activeGroup?.calls?.filter((c: any) => c.entityType === 'Chemist') || [];
+    const stockistCalls = activeGroup?.stockistCalls || activeGroup?.calls?.filter((c: any) => c.entityType === 'Stockist') || [];
+
+    const allImages: string[] = [];
+    [...doctorCalls, ...chemistCalls, ...stockistCalls].forEach((c: any) => {
+      if (c.imageUrl) allImages.push(c.imageUrl);
+      if (c.image) allImages.push(c.image);
+      if (Array.isArray(c.images)) allImages.push(...c.images);
+    });
+
+    const renderCallCard = (c: any, index: number, _isDoctor = false) => {
+      let samples: any[] = [];
+      try {
+        samples = typeof c.samplesGiven === 'string' ? JSON.parse(c.samplesGiven) : (c.samplesGiven || []);
+      } catch(e) {}
+      
+      const entityTitle = (c.entityName || c.doctorName || c.chemistName || c.stockistName || c.name || 'Unnamed Call').trim();
+      const isPlanned = c.isPlanned ?? (index % 2 === 0);
+
+      return (
+        <div key={c._id || index} className="bg-[#1e2336] border border-slate-700/60 rounded-xl p-3.5 space-y-2 hover:border-slate-600 transition-colors">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${isPlanned ? 'bg-pink-500' : 'bg-sky-500'}`} title={isPlanned ? 'Planned' : 'Unplanned'}></div>
+              <span className="text-xs font-bold text-white truncate">{entityTitle}</span>
+            </div>
+            {c.checkInTime && (
+              <span className="text-[10px] font-semibold text-slate-300 bg-slate-800/90 px-2 py-0.5 rounded border border-slate-700/50 shrink-0">
+                {c.checkInTime}
+              </span>
+            )}
+          </div>
+
+          {c.discussion && (
+            <p className="text-[11px] text-slate-300 italic pl-5">
+              "{c.discussion}"
+            </p>
+          )}
+
+          {samples.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pl-5 pt-0.5">
+              <span className="text-[10px] text-slate-400 font-semibold">Samples:</span>
+              {samples.map((s: any, sIdx: number) => (
+                <span key={sIdx} className="text-[9px] font-bold bg-sky-500/15 text-sky-300 border border-sky-500/25 px-1.5 py-0.5 rounded">
+                  {s.product || s.name} ({s.qty || s.quantity || 1})
+                </span>
+              ))}
+            </div>
+          )}
+
+          {c.geoAddress && (
+            <p className="text-[10px] text-slate-400 flex items-center gap-1.5 pl-5 truncate">
+              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 shrink-0"></span>
+              <span className="truncate">{c.geoAddress}</span>
+            </p>
+          )}
+        </div>
+      );
+    };
 
     return (
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
@@ -151,54 +259,57 @@ export default function CallReportApproval({ items, fetchPending, fetchCounts, s
                  <div>
                     <h3 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-2.5">DOCTOR CALLS ({doctorCalls.length})</h3>
                     <div className="space-y-2">
-                      {doctorCalls.length === 0 ? <div className="text-slate-500 text-xs italic">No calls</div> : doctorCalls.map((c, i) => (
-                        <div key={i} className="bg-[#1e2336] border border-slate-700/60 rounded-lg p-3.5 flex justify-between items-center hover:bg-slate-800 transition-colors cursor-pointer">
-                           <div className="flex items-center gap-3">
-                              <div className={`w-2 h-2 rounded-full ${i % 2 === 0 ? 'bg-pink-500' : 'bg-sky-500'}`}></div>
-                              <span className="text-xs font-bold text-white">{c.entityName}</span>
-                           </div>
-                           <ChevronLeft size={16} className="text-slate-500 rotate-[-90deg]" />
-                        </div>
-                      ))}
+                      {doctorCalls.length === 0 ? (
+                        <div className="text-slate-500 text-xs italic bg-[#1e2336]/40 p-3 rounded-lg border border-slate-800">No calls</div>
+                      ) : (
+                        doctorCalls.map((c: any, i: number) => renderCallCard(c, i, true))
+                      )}
                     </div>
                  </div>
 
                  {/* CHEMIST CALLS */}
                  <div>
-                    <h3 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-2.5">CHEMIST CALLS ({chemistCalls.length})</h3>
+                    <h3 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-2.5">CHEMIST CALLS ({chemistCalls.length})</h3>
                     <div className="space-y-2">
-                      {chemistCalls.length === 0 ? <div className="text-slate-500 text-xs italic">No calls</div> : chemistCalls.map((c, i) => (
-                        <div key={i} className="bg-[#1e2336] border border-slate-700/60 rounded-lg p-3.5 flex justify-between items-center hover:bg-slate-800 transition-colors cursor-pointer">
-                           <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                              <span className="text-xs font-bold text-white">{c.entityName}</span>
-                           </div>
-                           <ChevronLeft size={16} className="text-slate-500 rotate-[-90deg]" />
-                        </div>
-                      ))}
+                      {chemistCalls.length === 0 ? (
+                        <div className="text-slate-500 text-xs italic bg-[#1e2336]/40 p-3 rounded-lg border border-slate-800">No calls</div>
+                      ) : (
+                        chemistCalls.map((c: any, i: number) => renderCallCard(c, i, false))
+                      )}
                     </div>
                  </div>
 
                  {/* STOCKIST CALLS */}
                  <div>
-                    <h3 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-2.5">STOCKIST CALLS ({stockistCalls.length})</h3>
+                    <h3 className="text-xs font-black text-sky-400 uppercase tracking-wider mb-2.5">STOCKIST CALLS ({stockistCalls.length})</h3>
                     <div className="space-y-2">
-                      {stockistCalls.length === 0 ? <div className="text-slate-500 text-xs italic">No calls</div> : stockistCalls.map((c, i) => (
-                        <div key={i} className="bg-[#1e2336] border border-slate-700/60 rounded-lg p-3.5 flex justify-between items-center hover:bg-slate-800 transition-colors cursor-pointer">
-                           <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-pink-500"></div>
-                              <span className="text-xs font-bold text-white">{c.entityName}</span>
-                           </div>
-                           <ChevronLeft size={16} className="text-slate-500 rotate-[-90deg]" />
-                        </div>
-                      ))}
+                      {stockistCalls.length === 0 ? (
+                        <div className="text-slate-500 text-xs italic bg-[#1e2336]/40 p-3 rounded-lg border border-slate-800">No calls</div>
+                      ) : (
+                        stockistCalls.map((c: any, i: number) => renderCallCard(c, i, false))
+                      )}
                     </div>
                  </div>
               </div>
 
               {/* IMAGES SIDEBAR */}
-              <div className="w-full lg:w-64 shrink-0 bg-[#1e2336] border border-slate-700/60 rounded-xl flex items-center justify-center p-8 min-h-[300px]">
-                 <span className="text-xs font-black text-slate-500 uppercase tracking-widest text-center">NO IMAGES<br/>ATTACHED</span>
+              <div className="w-full lg:w-72 shrink-0 bg-[#1e2336] border border-slate-700/60 rounded-xl p-4 flex flex-col min-h-[300px]">
+                 <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-wider mb-3 pb-2 border-b border-slate-700/60">
+                   ATTACHED IMAGES ({allImages.length})
+                 </h4>
+                 {allImages.length === 0 ? (
+                   <div className="flex-1 flex items-center justify-center p-6 text-center">
+                     <span className="text-xs font-black text-slate-500 uppercase tracking-widest">NO IMAGES<br/>ATTACHED</span>
+                   </div>
+                 ) : (
+                   <div className="grid grid-cols-2 gap-2 overflow-y-auto custom-scrollbar max-h-[500px]">
+                     {allImages.map((img, i) => (
+                       <a key={i} href={img} target="_blank" rel="noopener noreferrer" className="block rounded-lg overflow-hidden border border-slate-700 hover:border-sky-400 transition-colors">
+                         <img src={img} alt={`Attachment ${i+1}`} className="w-full h-24 object-cover" />
+                       </a>
+                     ))}
+                   </div>
+                 )}
               </div>
             </div>
          </div>

@@ -53,9 +53,66 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     axios.get('/api/admin/users').then(res => { if(res.data.success) setAllUsers(res.data.users) });
   }, []);
 
-  const doctorMap = useMemo(() => new Map(allDoctors.map(d => [d.uid || d._id, d.doctorName])), [allDoctors]);
-  const chemistMap = useMemo(() => new Map(allChemists.map(c => [c.uid || c._id, c.chemistName])), [allChemists]);
-  const stockistMap = useMemo(() => new Map(allStockists.map(s => [s.uid || s._id, s.stockistName])), [allStockists]);
+  const parseEntityList = (data: any): any[] => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (typeof data === 'string') {
+      try {
+        const parsed = JSON.parse(data);
+        if (Array.isArray(parsed)) return parsed;
+        if (parsed) return [parsed];
+      } catch (e) {
+        return [data];
+      }
+    }
+    return [];
+  };
+
+  const resolveEntity = (item: any, map: Map<string, string>, defaultPrefix: string) => {
+    if (!item) return { name: '-', info: '' };
+    if (typeof item === 'object') {
+      const id = item.id || item._id || item.uid;
+      const name = (item.name || item.doctorName || item.chemistName || item.stockistName || (id && map.get(id)) || `${defaultPrefix} (${id || 'Unknown'})`).trim();
+      const info = item.info || item.headquarter || item.hq || item.address || '';
+      return { name, info };
+    }
+    const idStr = String(item).trim();
+    const name = map.get(idStr) || `${defaultPrefix} (${idStr})`;
+    return { name, info: '' };
+  };
+
+  const doctorMap = useMemo(() => {
+    const map = new Map();
+    allDoctors.forEach(d => {
+      const name = d.doctorName || d.name;
+      if (d._id) map.set(d._id, name);
+      if (d.uid) map.set(d.uid, name);
+      if (d.id) map.set(d.id, name);
+    });
+    return map;
+  }, [allDoctors]);
+
+  const chemistMap = useMemo(() => {
+    const map = new Map();
+    allChemists.forEach(c => {
+      const name = c.chemistName || c.name || c.businessName;
+      if (c._id) map.set(c._id, name);
+      if (c.uid) map.set(c.uid, name);
+      if (c.id) map.set(c.id, name);
+    });
+    return map;
+  }, [allChemists]);
+
+  const stockistMap = useMemo(() => {
+    const map = new Map();
+    allStockists.forEach(s => {
+      const name = s.stockistName || s.name || s.businessName;
+      if (s._id) map.set(s._id, name);
+      if (s.uid) map.set(s.uid, name);
+      if (s.id) map.set(s.id, name);
+    });
+    return map;
+  }, [allStockists]);
 
   // Filter by user
   const filteredItems = useMemo(() => {
@@ -145,16 +202,9 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
     const dt = new Date(detailedDateData.date);
     const formattedDate = dt.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
 
-    let drIds: string[] = [];
-    let chIds: string[] = [];
-    let stIds: string[] = [];
-    try { drIds = JSON.parse(activeItem?.doctors || '[]'); } catch(e){}
-    try { chIds = JSON.parse(activeItem?.chemists || '[]'); } catch(e){}
-    try { stIds = JSON.parse(activeItem?.stockists || '[]'); } catch(e){}
-
-    const doctorCalls = drIds.map(id => doctorMap.get(id) || `Doctor (${id})`);
-    const chemistCalls = chIds.map(id => chemistMap.get(id) || `Chemist (${id})`);
-    const stockistCalls = stIds.map(id => stockistMap.get(id) || `Stockist (${id})`);
+    const doctorCalls = parseEntityList(activeItem?.doctors).map(item => resolveEntity(item, doctorMap, 'Doctor'));
+    const chemistCalls = parseEntityList(activeItem?.chemists).map(item => resolveEntity(item, chemistMap, 'Chemist'));
+    const stockistCalls = parseEntityList(activeItem?.stockists).map(item => resolveEntity(item, stockistMap, 'Stockist'));
 
     return (
       <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#151c2c] relative">
@@ -192,7 +242,19 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
                  <h4 className="text-xs font-black text-sky-400 uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">Doctors Planned ({doctorCalls.length})</h4>
                  {doctorCalls.length === 0 ? <p className="text-slate-500 text-xs italic">No doctors planned</p> : (
                    <div className="space-y-2">
-                     {doctorCalls.map((n, i) => <div key={i} className="flex items-center gap-2.5 bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200"><div className="w-5 h-5 rounded bg-sky-500/10 text-sky-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div><span>{n}</span></div>)}
+                     {doctorCalls.map((item, i) => (
+                       <div key={i} className="flex items-center justify-between bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200">
+                         <div className="flex items-center gap-2.5 min-w-0">
+                           <div className="w-5 h-5 rounded bg-sky-500/10 text-sky-400 flex items-center justify-center text-[10px] font-bold shrink-0">{i+1}</div>
+                           <span className="truncate">{item.name}</span>
+                         </div>
+                         {item.info && (
+                           <span className="text-[10px] font-medium text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/50 shrink-0 ml-2">
+                             {item.info}
+                           </span>
+                         )}
+                       </div>
+                     ))}
                    </div>
                  )}
                </div>
@@ -201,7 +263,19 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
                  <h4 className="text-xs font-black text-emerald-400 uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">Chemists Planned ({chemistCalls.length})</h4>
                  {chemistCalls.length === 0 ? <p className="text-slate-500 text-xs italic">No chemists planned</p> : (
                    <div className="space-y-2">
-                     {chemistCalls.map((n, i) => <div key={i} className="flex items-center gap-2.5 bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200"><div className="w-5 h-5 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div><span>{n}</span></div>)}
+                     {chemistCalls.map((item, i) => (
+                       <div key={i} className="flex items-center justify-between bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200">
+                         <div className="flex items-center gap-2.5 min-w-0">
+                           <div className="w-5 h-5 rounded bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-[10px] font-bold shrink-0">{i+1}</div>
+                           <span className="truncate">{item.name}</span>
+                         </div>
+                         {item.info && (
+                           <span className="text-[10px] font-medium text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/50 shrink-0 ml-2">
+                             {item.info}
+                           </span>
+                         )}
+                       </div>
+                     ))}
                    </div>
                  )}
                </div>
@@ -210,7 +284,19 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
                  <h4 className="text-xs font-black text-amber-400 uppercase tracking-wider mb-4 border-b border-slate-700/50 pb-2">Stockists Planned ({stockistCalls.length})</h4>
                  {stockistCalls.length === 0 ? <p className="text-slate-500 text-xs italic">No stockists planned</p> : (
                    <div className="space-y-2">
-                     {stockistCalls.map((n, i) => <div key={i} className="flex items-center gap-2.5 bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200"><div className="w-5 h-5 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center text-[10px] font-bold">{i+1}</div><span>{n}</span></div>)}
+                     {stockistCalls.map((item, i) => (
+                       <div key={i} className="flex items-center justify-between bg-[#151c2c] p-2.5 rounded-lg border border-slate-700/40 text-xs font-bold text-slate-200">
+                         <div className="flex items-center gap-2.5 min-w-0">
+                           <div className="w-5 h-5 rounded bg-amber-500/10 text-amber-400 flex items-center justify-center text-[10px] font-bold shrink-0">{i+1}</div>
+                           <span className="truncate">{item.name}</span>
+                         </div>
+                         {item.info && (
+                           <span className="text-[10px] font-medium text-slate-400 bg-slate-800/80 px-2 py-0.5 rounded border border-slate-700/50 shrink-0 ml-2">
+                             {item.info}
+                           </span>
+                         )}
+                       </div>
+                     ))}
                    </div>
                  )}
                </div>
@@ -332,10 +418,9 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
                       );
                   }
 
-                  let dCount = 0, cCount = 0, sCount = 0;
-                  try { dCount = JSON.parse(entry.doctors || '[]').length; } catch(e){}
-                  try { cCount = JSON.parse(entry.chemists || '[]').length; } catch(e){}
-                  try { sCount = JSON.parse(entry.stockists || '[]').length; } catch(e){}
+                  const dCount = parseEntityList(entry.doctors).length;
+                  const cCount = parseEntityList(entry.chemists).length;
+                  const sCount = parseEntityList(entry.stockists).length;
 
                   return (
                     <tr key={dateStr} className="hover:bg-[#1e2336] transition-colors border-b border-slate-700/30 group">
@@ -513,10 +598,9 @@ export default function CallPlanApproval({ items, fetchPending, fetchCounts, sel
                 filteredItems.length === 0 ? (
                   <tr><td colSpan={9} className="p-12 text-center text-slate-500 font-bold uppercase tracking-widest text-sm">No Pending Call Plans</td></tr>
                 ) : filteredItems.map((d: any, idx: number) => {
-                  let dCount = 0, cCount = 0, sCount = 0;
-                  try { dCount = JSON.parse(d.doctors || '[]').length; } catch(e){}
-                  try { cCount = JSON.parse(d.chemists || '[]').length; } catch(e){}
-                  try { sCount = JSON.parse(d.stockists || '[]').length; } catch(e){}
+                  const dCount = parseEntityList(d.doctors).length;
+                  const cCount = parseEntityList(d.chemists).length;
+                  const sCount = parseEntityList(d.stockists).length;
                   
                   const dateObj = new Date(d.date);
                   const dayName = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dateObj.getDay()];
