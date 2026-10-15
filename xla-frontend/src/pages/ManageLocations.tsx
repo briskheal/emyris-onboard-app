@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   ArrowLeft, Trash2, Edit, Save, X,
-  Map, Building2, MapPin, Route, UploadCloud, ChevronLeft, ChevronRight
+  Map, Building2, MapPin, Route, UploadCloud, ChevronLeft, ChevronRight, Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
@@ -21,35 +21,35 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
   };
 
   return (
-    <div className="p-4 border-t border-slate-700 bg-slate-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-      <div className="flex gap-2">
+    <div className="px-3.5 py-2.5 border-t border-slate-700/80 bg-slate-800/90 flex flex-col sm:flex-row justify-between items-center gap-3">
+      <div className="flex items-center gap-2">
         <button 
           onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} 
           disabled={currentPage === 1}
-          className="px-4 py-2 bg-slate-700 text-white rounded-lg disabled:opacity-50 text-sm font-bold"
+          className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-semibold disabled:opacity-40 transition-colors"
         >
           &lt; Prev
         </button>
-        <span className="px-4 py-2 text-slate-300 text-sm font-bold">Page {currentPage} of {totalPages}</span>
+        <span className="px-2 text-slate-300 text-xs font-medium">Page {currentPage} of {totalPages}</span>
         <button 
           onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))} 
           disabled={currentPage === totalPages}
-          className="px-4 py-2 bg-slate-700 text-white rounded-lg disabled:opacity-50 text-sm font-bold"
+          className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-semibold disabled:opacity-40 transition-colors"
         >
           Next &gt;
         </button>
       </div>
       <div className="flex items-center gap-4">
-        <button onClick={handleExport} className="text-sm font-bold text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+        <button onClick={handleExport} className="text-xs font-semibold text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1.5">
+          <Download size={13} />
           Export
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-400 font-bold">Show</span>
+          <span className="text-xs text-slate-400 font-medium">Show</span>
           <select 
             value={pageSize} 
             onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-            className="bg-slate-700 border border-slate-600 text-white rounded p-1 text-sm outline-none"
+            className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-0.5 text-xs outline-none"
           >
             <option value={10}>10</option>
             <option value={20}>20</option>
@@ -131,73 +131,90 @@ function StateTab() {
   const paginatedStates = searchedStates.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="max-w-6xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE STATE</h2>
+    <div className="max-w-6xl space-y-4">
+      {/* Form Card */}
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 shadow-sm">
+        <h2 className="text-xs font-bold text-sky-400 mb-3 tracking-wider uppercase flex items-center gap-1.5">
+          <Map size={14} /> Create State
+        </h2>
+        
+        <form onSubmit={handleAdd} className="flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[220px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">State Name *</label>
+            <input 
+              type="text" 
+              required 
+              value={stateName} 
+              onChange={e => setStateName(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors" 
+              placeholder="e.g. Maharashtra, Gujarat" 
+            />
+          </div>
+          <button 
+            disabled={loading} 
+            className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 text-xs rounded-lg transition-colors h-[32px] shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
+          >
+            {loading ? 'Adding...' : 'Add State'}
+          </button>
+        </form>
+      </div>
       
-      <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
-        <div className="flex-1 min-w-0">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER STATE *</label>
-          <input type="text" required value={stateName} onChange={e => setStateName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="State Name" />
-        </div>
-        <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
-          {loading ? 'Adding...' : 'Add State'}
-        </button>
-      </form>
-      
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedStates.length}) ENTRIES</h3>
+      {/* Search & Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">Showing ({searchedStates.length}) States</h3>
         <input 
           type="text" 
           placeholder="Search State..." 
           value={searchTerm}
           onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+          className="bg-slate-800 border border-slate-700 text-white px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:border-sky-500 w-64 placeholder-slate-500"
         />
       </div>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+      {/* Grid Table */}
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700/80 overflow-hidden shadow-md flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-sm">
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-16 text-center">Sr No.</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">State</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-28">UID</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginatedStates.map((s, i) => (
                 <tr key={s._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
                   
                   {editId === s._id ? (
-                    <td className="border-r border-slate-700 p-3">
-                      <input type="text" value={editData.stateName} onChange={e => setEditData({...editData, stateName: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
+                    <td className="border-r border-slate-700/60 px-2 py-1">
+                      <input type="text" value={editData.stateName} onChange={e => setEditData({...editData, stateName: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white" />
                     </td>
                   ) : (
-                    <td className="border-r border-slate-700 p-5 text-white font-bold">{s.stateName}</td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{s.stateName}</td>
                   )}
                   
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{s.uid || '-'}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 font-mono">{s.uid || '-'}</td>
                   
-                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
+                  <td className="border-r border-slate-700/60 px-2 py-1.5 text-center flex justify-center items-center gap-1.5">
                     {editId === s._id ? (
                       <>
-                        <button onClick={saveEdit} className="text-emerald-500 hover:text-emerald-400 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-2 rounded-lg"><Save size={20} /></button>
-                        <button onClick={cancelEdit} className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg"><X size={20} /></button>
+                        <button onClick={saveEdit} title="Save" className="text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-1.5 rounded"><Save size={14} /></button>
+                        <button onClick={cancelEdit} title="Cancel" className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-1.5 rounded"><X size={14} /></button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => startEdit(s)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg"><Edit size={20} /></button>
-                        <button onClick={() => handleDelete(s._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg"><Trash2 size={20} /></button>
+                        <button onClick={() => startEdit(s)} title="Edit" className="text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-1.5 rounded"><Edit size={14} /></button>
+                        <button onClick={() => handleDelete(s._id)} title="Delete" className="text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded"><Trash2 size={14} /></button>
                       </>
                     )}
                   </td>
                 </tr>
               ))}
               {states.length === 0 && (
-                <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-bold">No states found.</td></tr>
+                <tr><td colSpan={4} className="p-6 text-center text-slate-500 text-xs font-semibold">No states found.</td></tr>
               )}
             </tbody>
           </table>
@@ -272,62 +289,84 @@ function HQTab() {
   const paginatedHqs = searchedHqs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="max-w-6xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE HEADQUARTERS</h2>
+    <div className="max-w-6xl space-y-4">
+      {/* Form Card */}
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 shadow-sm">
+        <h2 className="text-xs font-bold text-sky-400 mb-3 tracking-wider uppercase flex items-center gap-1.5">
+          <Building2 size={14} /> Create Headquarters
+        </h2>
+        
+        <form onSubmit={handleAdd} className="flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Select State *</label>
+            <select 
+              required 
+              value={stateName} 
+              onChange={e => setStateName(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">Select State</option>
+              {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[200px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">HQ Name *</label>
+            <input 
+              type="text" 
+              required 
+              value={hqName} 
+              onChange={e => setHqName(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors" 
+              placeholder="Headquarter Name" 
+            />
+          </div>
+          <button 
+            disabled={loading} 
+            className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 text-xs rounded-lg transition-colors h-[32px] shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
+          >
+            {loading ? 'Adding...' : 'Add HQ'}
+          </button>
+        </form>
+      </div>
       
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">SELECT STATE *</label>
-          <select required value={stateName} onChange={e => setStateName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select State</option>
-            {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">HQ NAME *</label>
-          <input type="text" required value={hqName} onChange={e => setHqName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Headquarter Name" />
-        </div>
-        <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
-          {loading ? 'Adding...' : 'Add HQ'}
-        </button>
-      </form>
-      
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedHqs.length}) HEADQUARTERS</h3>
+      {/* Search & Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">Showing ({searchedHqs.length}) Headquarters</h3>
         <input 
           type="text" 
           placeholder="Search HQ or State..." 
           value={searchTerm}
           onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+          className="bg-slate-800 border border-slate-700 text-white px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:border-sky-500 w-64 placeholder-slate-500"
         />
       </div>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+      {/* Grid Table */}
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700/80 overflow-hidden shadow-md flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-sm">
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-16 text-center">Sr No.</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">HQ</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-28">UID</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">State</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginatedHqs.map((h, i) => (
                 <tr key={h._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
                   
                   {editId === h._id ? (
                     <>
-                      <td className="border-r border-slate-700 p-3">
-                        <input type="text" value={editData.hqName} onChange={e => setEditData({...editData, hqName: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white" />
+                      <td className="border-r border-slate-700/60 px-2 py-1">
+                        <input type="text" value={editData.hqName} onChange={e => setEditData({...editData, hqName: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white" />
                       </td>
-                      <td className="border-r border-slate-700 p-5 text-slate-300">{h.uid || '-'}</td>
-                      <td className="border-r border-slate-700 p-3">
-                        <select value={editData.state} onChange={e => setEditData({...editData, state: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white">
+                      <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 font-mono">{h.uid || '-'}</td>
+                      <td className="border-r border-slate-700/60 px-2 py-1">
+                        <select value={editData.state} onChange={e => setEditData({...editData, state: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                           <option value="">Select State</option>
                           {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
                         </select>
@@ -335,29 +374,29 @@ function HQTab() {
                     </>
                   ) : (
                     <>
-                      <td className="border-r border-slate-700 p-5 text-white font-bold">{h.hqName}</td>
-                      <td className="border-r border-slate-700 p-5 text-slate-300">{h.uid || '-'}</td>
-                      <td className="border-r border-slate-700 p-5 text-slate-300">{h.state}</td>
+                      <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{h.hqName}</td>
+                      <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 font-mono">{h.uid || '-'}</td>
+                      <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{h.state}</td>
                     </>
                   )}
                   
-                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
+                  <td className="border-r border-slate-700/60 px-2 py-1.5 text-center flex justify-center items-center gap-1.5">
                     {editId === h._id ? (
                       <>
-                        <button onClick={saveEdit} className="text-emerald-500 hover:text-emerald-400 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-2 rounded-lg"><Save size={20} /></button>
-                        <button onClick={cancelEdit} className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg"><X size={20} /></button>
+                        <button onClick={saveEdit} title="Save" className="text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-1.5 rounded"><Save size={14} /></button>
+                        <button onClick={cancelEdit} title="Cancel" className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-1.5 rounded"><X size={14} /></button>
                       </>
                     ) : (
                       <>
-                        <button onClick={() => startEdit(h)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg"><Edit size={20} /></button>
-                        <button onClick={() => handleDelete(h._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg"><Trash2 size={20} /></button>
+                        <button onClick={() => startEdit(h)} title="Edit" className="text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-1.5 rounded"><Edit size={14} /></button>
+                        <button onClick={() => handleDelete(h._id)} title="Delete" className="text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded"><Trash2 size={14} /></button>
                       </>
                     )}
                   </td>
                 </tr>
               ))}
               {hqs.length === 0 && (
-                <tr><td colSpan={5} className="p-8 text-center text-slate-500 font-bold">No HQs found.</td></tr>
+                <tr><td colSpan={5} className="p-6 text-center text-slate-500 text-xs font-semibold">No HQs found.</td></tr>
               )}
             </tbody>
           </table>
@@ -441,61 +480,93 @@ function CityTab() {
   const paginatedCities = searchedCities.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="max-w-6xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">CREATE CITY / AREA</h2>
+    <div className="max-w-6xl space-y-4">
+      {/* Form Card */}
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 shadow-sm">
+        <h2 className="text-xs font-bold text-sky-400 mb-3 tracking-wider uppercase flex items-center gap-1.5">
+          <MapPin size={14} /> Create City / Area
+        </h2>
+        
+        <form onSubmit={handleAdd} className="flex flex-wrap gap-3 items-end">
+          <div className="flex-1 min-w-[150px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Type *</label>
+            <select 
+              value={type} 
+              onChange={e => setType(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="City">City</option>
+              <option value="Local Area">Local Area</option>
+            </select>
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Select State *</label>
+            <select 
+              required 
+              value={stateName} 
+              onChange={e => { setStateName(e.target.value); setHqName(''); }} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">Select State</option>
+              {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Select HQ *</label>
+            <select 
+              required 
+              value={hqName} 
+              onChange={e => setHqName(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">Select HQ</option>
+              {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[180px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">City / Area Name *</label>
+            <input 
+              type="text" 
+              required 
+              value={cityName} 
+              onChange={e => setCityName(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors" 
+              placeholder="Name" 
+            />
+          </div>
+          <button 
+            disabled={loading} 
+            className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 text-xs rounded-lg transition-colors h-[32px] shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
+          >
+            {loading ? 'Adding...' : 'Add'}
+          </button>
+        </form>
+      </div>
       
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">TYPE *</label>
-          <select value={type} onChange={e => setType(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="City">City</option><option value="Local Area">Local Area</option>
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">SELECT STATE *</label>
-          <select required value={stateName} onChange={e => { setStateName(e.target.value); setHqName(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select State</option>
-            {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">SELECT HQ *</label>
-          <select required value={hqName} onChange={e => setHqName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select HQ</option>
-            {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">CITY / AREA NAME *</label>
-          <input type="text" required value={cityName} onChange={e => setCityName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Name" />
-        </div>
-        <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
-          {loading ? 'Adding...' : 'Add'}
-        </button>
-      </form>
-      
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedCities.length}) CITIES</h3>
+      {/* Search & Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">Showing ({searchedCities.length}) Cities</h3>
         <input 
           type="text" 
           placeholder="Search City, HQ, or State..." 
           value={searchTerm}
           onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+          className="bg-slate-800 border border-slate-700 text-white px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:border-sky-500 w-64 placeholder-slate-500"
         />
       </div>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+      {/* Grid Table */}
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700/80 overflow-hidden shadow-md flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">City</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-sm">
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-16 text-center">Sr No.</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">City</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-28">UID</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">HQ</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">State</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
@@ -506,37 +577,37 @@ function CityTab() {
 
                 return (
                   <tr key={c._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                    <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
                     
                     {isEditing ? (
-                      <td className="border-r border-slate-700 p-3">
-                        <div className="flex gap-2">
-                          <input type="text" value={editData.cityName} onChange={e => setEditData({...editData, cityName: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm" />
-                          <select value={editData.areaType} onChange={e => setEditData({...editData, areaType: e.target.value})} className="bg-slate-900 border border-slate-600 rounded p-2 text-white text-xs w-28">
+                      <td className="border-r border-slate-700/60 px-2 py-1">
+                        <div className="flex gap-1.5">
+                          <input type="text" value={editData.cityName} onChange={e => setEditData({...editData, cityName: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white" />
+                          <select value={editData.areaType} onChange={e => setEditData({...editData, areaType: e.target.value})} className="bg-slate-900 border border-slate-600 rounded px-1.5 py-1 text-white text-[10px] w-24">
                             <option value="City">City</option>
                             <option value="Local Area">Local Area</option>
                           </select>
                         </div>
                       </td>
                     ) : (
-                      <td className="border-r border-slate-700 p-5 text-white font-bold">
+                      <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">
                         {c.cityName}
-                        <span className="ml-2 text-xs bg-slate-700 px-2 py-1 rounded-full text-slate-300 font-normal">{c.areaType}</span>
+                        <span className="ml-2 text-[10px] bg-slate-700/80 px-1.5 py-0.5 rounded text-slate-300 font-normal">{c.areaType}</span>
                       </td>
                     )}
                     
-                    <td className="border-r border-slate-700 p-5 text-slate-300">{c.uid || '-'}</td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 font-mono">{c.uid || '-'}</td>
                     
                     {isEditing ? (
                       <>
-                        <td className="border-r border-slate-700 p-3">
-                          <select value={editData.hq} onChange={e => setEditData({...editData, hq: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <select value={editData.hq} onChange={e => setEditData({...editData, hq: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                             <option value="">Select HQ</option>
                             {dynamicHqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
                           </select>
                         </td>
-                        <td className="border-r border-slate-700 p-3">
-                          <select value={editData.state} onChange={e => setEditData({...editData, state: e.target.value, hq: ''})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <select value={editData.state} onChange={e => setEditData({...editData, state: e.target.value, hq: ''})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                             <option value="">Select State</option>
                             {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
                           </select>
@@ -544,21 +615,21 @@ function CityTab() {
                       </>
                     ) : (
                       <>
-                        <td className="border-r border-slate-700 p-5 text-slate-300">{c.hq}</td>
-                        <td className="border-r border-slate-700 p-5 text-slate-300">{c.state}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{c.hq}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{c.state}</td>
                       </>
                     )}
                     
-                    <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
+                    <td className="border-r border-slate-700/60 px-2 py-1.5 text-center flex justify-center items-center gap-1.5">
                       {isEditing ? (
                         <>
-                          <button onClick={saveEdit} className="text-emerald-500 hover:text-emerald-400 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-2 rounded-lg"><Save size={20} /></button>
-                          <button onClick={cancelEdit} className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg"><X size={20} /></button>
+                          <button onClick={saveEdit} title="Save" className="text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-1.5 rounded"><Save size={14} /></button>
+                          <button onClick={cancelEdit} title="Cancel" className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-1.5 rounded"><X size={14} /></button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEdit(c)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg"><Edit size={20} /></button>
-                          <button onClick={() => handleDelete(c._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg"><Trash2 size={20} /></button>
+                          <button onClick={() => startEdit(c)} title="Edit" className="text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-1.5 rounded"><Edit size={14} /></button>
+                          <button onClick={() => handleDelete(c._id)} title="Delete" className="text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded"><Trash2 size={14} /></button>
                         </>
                       )}
                     </td>
@@ -566,7 +637,7 @@ function CityTab() {
                 );
               })}
               {cities.length === 0 && (
-                <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No cities found.</td></tr>
+                <tr><td colSpan={6} className="p-6 text-center text-slate-500 text-xs font-semibold">No cities found.</td></tr>
               )}
             </tbody>
           </table>
@@ -673,96 +744,134 @@ function RouteTab() {
   const paginatedRoutes = searchedRoutes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="max-w-6xl">
-      <h2 className="text-lg font-bold text-white mb-4 tracking-wide uppercase">CREATE ROUTE</h2>
-      <div className="bg-emerald-900/40 border border-emerald-500/30 text-emerald-400 p-4 rounded-xl mb-8 font-bold text-sm">
-        Note: If the distance of a route is edited, the updated distance will not be reflected in the tour programs. However, the new distance will be applied to newly created tour programs.
+    <div className="max-w-6xl space-y-4">
+      {/* Form Card */}
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xs font-bold text-sky-400 tracking-wider uppercase flex items-center gap-1.5">
+            <Route size={14} /> Create Route
+          </h2>
+          <span className="text-[11px] text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded">
+            Updated distance applies to newly created tour programs
+          </span>
+        </div>
+        
+        <form onSubmit={handleAdd} className="flex flex-wrap gap-2.5 items-end">
+          <div className="flex-1 min-w-[140px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Select State *</label>
+            <select 
+              required 
+              value={stateName} 
+              onChange={e => { setStateName(e.target.value); setHqName(''); setFromCity(''); setToCity(''); }} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">Select State</option>
+              {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[140px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Select HQ *</label>
+            <select 
+              required 
+              value={hqName} 
+              onChange={e => { setHqName(e.target.value); setFromCity(''); setToCity(''); }} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">Select HQ</option>
+              {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[130px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">From City *</label>
+            <select 
+              required 
+              value={fromCity} 
+              onChange={e => setFromCity(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">From City</option>
+              {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[130px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">To City *</label>
+            <select 
+              required 
+              value={toCity} 
+              onChange={e => setToCity(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">To City</option>
+              {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
+            </select>
+          </div>
+          <div className="flex-1 min-w-[130px]">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Area Type *</label>
+            <select 
+              required 
+              value={areaType} 
+              onChange={e => {
+                const val = e.target.value;
+                setAreaType(val);
+                if (val === 'Local' || val === 'Out-Station') setDistance(0);
+              }} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
+              <option value="">Select Area Type</option>
+              <option value="Local">Local (0 KM)</option>
+              <option value="Ex-Station">Ex-Station</option>
+              <option value="Out-Station">Out-Station (Ticket)</option>
+            </select>
+          </div>
+          <div className="w-28">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">
+              {areaType === 'Local' ? 'Dist (0)' : areaType === 'Out-Station' ? 'Dist (Ticket)' : 'Dist (KM) *'}
+            </label>
+            <input 
+              type="number" 
+              required={areaType === 'Ex-Station'} 
+              disabled={areaType === 'Local' || areaType === 'Out-Station'}
+              value={areaType === 'Local' || areaType === 'Out-Station' ? 0 : distance} 
+              onChange={e => setDistance(Number(e.target.value))} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 disabled:opacity-50" 
+              placeholder="KM"
+            />
+          </div>
+          <button 
+            disabled={loading} 
+            className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 text-xs rounded-lg transition-colors h-[32px] shadow-sm flex items-center justify-center shrink-0 disabled:opacity-50"
+          >
+            {loading ? 'Adding...' : 'Add Route'}
+          </button>
+        </form>
       </div>
       
-      <form onSubmit={handleAdd} className="flex flex-wrap gap-6 items-end mb-12">
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT STATE *</label>
-          <select required value={stateName} onChange={e => { setStateName(e.target.value); setHqName(''); setFromCity(''); setToCity(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select State</option>
-            {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT HQ *</label>
-          <select required value={hqName} onChange={e => { setHqName(e.target.value); setFromCity(''); setToCity(''); }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select Headquarter</option>
-            {filteredHqs.map(h => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">FROM CITY *</label>
-          <select required value={fromCity} onChange={e => setFromCity(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select From City</option>
-            {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">TO CITY *</label>
-          <select required value={toCity} onChange={e => setToCity(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select To City</option>
-            {filteredCities.map(c => <option key={c._id} value={c.cityName}>{c.cityName}</option>)}
-          </select>
-        </div>
-        <div className="flex-1 min-w-0 min-w-[200px]">
-          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">SELECT AREA TYPE *</label>
-          <select required value={areaType} onChange={e => {
-            const val = e.target.value;
-            setAreaType(val);
-            if (val === 'Local' || val === 'Out-Station') setDistance(0);
-          }} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500">
-            <option value="">Select Area Type</option>
-            <option value="Local">Local (0 KM)</option>
-            <option value="Ex-Station">Ex-Station</option>
-            <option value="Out-Station">Out-Station (0 KM - Ticket Fare)</option>
-          </select>
-        </div>
-        <div className="w-48">
-          <label className="text-sm text-slate-400 font-bold mb-2 block uppercase">
-            {areaType === 'Local' ? 'DISTANCE (LOCAL: 0)' : areaType === 'Out-Station' ? 'DISTANCE (TICKET: 0)' : 'DISTANCE (KM) *'}
-          </label>
-          <input 
-            type="number" 
-            required={areaType === 'Ex-Station'} 
-            disabled={areaType === 'Local' || areaType === 'Out-Station'}
-            value={areaType === 'Local' || areaType === 'Out-Station' ? 0 : distance} 
-            onChange={e => setDistance(Number(e.target.value))} 
-            className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500 disabled:opacity-60" 
-          />
-        </div>
-        <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">
-          {loading ? 'Adding...' : 'Add Route'}
-        </button>
-      </form>
-      
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-slate-400 tracking-wider uppercase">SHOWING ({searchedRoutes.length}) ROUTES</h3>
+      {/* Search & Header */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">Showing ({searchedRoutes.length}) Routes</h3>
         <input 
           type="text" 
           placeholder="Search HQ or City..." 
           value={searchTerm}
           onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-          className="bg-slate-800 border border-slate-600 text-white px-4 py-2 rounded-lg text-sm focus:outline-none focus:border-sky-500 w-72"
+          className="bg-slate-800 border border-slate-700 text-white px-3 py-1.5 rounded-lg text-xs focus:outline-none focus:border-sky-500 w-64 placeholder-slate-500"
         />
       </div>
       
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+      {/* Grid Table */}
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700/80 overflow-hidden shadow-md flex flex-col">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr no.</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Area Type</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">From City</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">To City</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">HQ</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">State</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Distance</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+            <thead className="sticky top-0 bg-slate-800 z-10 shadow-sm">
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-14 text-center">Sr no.</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Area Type</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">From City</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">To City</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">HQ</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">State</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-right w-20">Distance</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
@@ -775,65 +884,65 @@ function RouteTab() {
 
                 return (
                   <tr key={r._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                    <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
                     
                     {isEditing ? (
                       <>
-                        <td className="border-r border-slate-700 p-3">
-                          <select value={editData.areaType} onChange={e => setEditData({...editData, areaType: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <select value={editData.areaType} onChange={e => setEditData({...editData, areaType: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                             <option value="">Select</option>
                             <option value="Local">Local</option><option value="Ex-Station">Ex-Station</option><option value="Out-Station">Out-Station</option>
                           </select>
                         </td>
-                        <td className="border-r border-slate-700 p-3">
-                          <select value={editData.fromCity} onChange={e => setEditData({...editData, fromCity: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <select value={editData.fromCity} onChange={e => setEditData({...editData, fromCity: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                             <option value="">Select From</option>
                             {dynamicCities.map((c: any) => <option key={`f_${c._id}`} value={c.cityName}>{c.cityName}</option>)}
                           </select>
                         </td>
-                        <td className="border-r border-slate-700 p-3">
-                          <select value={editData.toCity} onChange={e => setEditData({...editData, toCity: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <select value={editData.toCity} onChange={e => setEditData({...editData, toCity: e.target.value})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                             <option value="">Select To</option>
                             {dynamicCities.map((c: any) => <option key={`t_${c._id}`} value={c.cityName}>{c.cityName}</option>)}
                           </select>
                         </td>
-                        <td className="border-r border-slate-700 p-3">
-                          <select value={editData.hq} onChange={e => setEditData({...editData, hq: e.target.value, fromCity: '', toCity: ''})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <select value={editData.hq} onChange={e => setEditData({...editData, hq: e.target.value, fromCity: '', toCity: ''})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                             <option value="">Select HQ</option>
                             {dynamicHqs.map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
                           </select>
                         </td>
-                        <td className="border-r border-slate-700 p-3">
-                          <select value={editData.state} onChange={e => setEditData({...editData, state: e.target.value, hq: '', fromCity: '', toCity: ''})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm">
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <select value={editData.state} onChange={e => setEditData({...editData, state: e.target.value, hq: '', fromCity: '', toCity: ''})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white">
                             <option value="">Select State</option>
                             {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
                           </select>
                         </td>
-                        <td className="border-r border-slate-700 p-3">
-                          <input type="number" value={editData.distance} onChange={e => setEditData({...editData, distance: Number(e.target.value)})} className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-white text-sm" />
+                        <td className="border-r border-slate-700/60 px-2 py-1">
+                          <input type="number" value={editData.distance} onChange={e => setEditData({...editData, distance: Number(e.target.value)})} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white" />
                         </td>
                       </>
                     ) : (
                       <>
-                        <td className="border-r border-slate-700 p-5 text-slate-300">{r.areaType || '-'}</td>
-                        <td className="border-r border-slate-700 p-5 text-white font-bold">{r.fromCity}</td>
-                        <td className="border-r border-slate-700 p-5 text-white font-bold">{r.toCity}</td>
-                        <td className="border-r border-slate-700 p-5 text-slate-300">{r.hq || '-'}</td>
-                        <td className="border-r border-slate-700 p-5 text-slate-300">{r.state || '-'}</td>
-                        <td className="border-r border-slate-700 p-5 text-slate-300">{r.distance}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{r.areaType || '-'}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{r.fromCity}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{r.toCity}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{r.hq || '-'}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{r.state || '-'}</td>
+                        <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300 text-right font-mono">{r.distance}</td>
                       </>
                     )}
                     
-                    <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
+                    <td className="border-r border-slate-700/60 px-2 py-1.5 text-center flex justify-center items-center gap-1.5">
                       {isEditing ? (
                         <>
-                          <button onClick={saveEdit} className="text-emerald-500 hover:text-emerald-400 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-2 rounded-lg"><Save size={20} /></button>
-                          <button onClick={cancelEdit} className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-2 rounded-lg"><X size={20} /></button>
+                          <button onClick={saveEdit} title="Save" className="text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-500/10 hover:bg-emerald-500/20 p-1.5 rounded"><Save size={14} /></button>
+                          <button onClick={cancelEdit} title="Cancel" className="text-slate-400 hover:text-slate-300 transition-colors bg-slate-700/50 hover:bg-slate-700 p-1.5 rounded"><X size={14} /></button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => startEdit(r)} className="text-sky-500 hover:text-sky-400 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-2 rounded-lg"><Edit size={20} /></button>
-                          <button onClick={() => handleDelete(r._id)} className="text-rose-500 hover:text-rose-400 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-2 rounded-lg"><Trash2 size={20} /></button>
+                          <button onClick={() => startEdit(r)} title="Edit" className="text-sky-400 hover:text-sky-300 transition-colors bg-sky-500/10 hover:bg-sky-500/20 p-1.5 rounded"><Edit size={14} /></button>
+                          <button onClick={() => handleDelete(r._id)} title="Delete" className="text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded"><Trash2 size={14} /></button>
                         </>
                       )}
                     </td>
@@ -841,7 +950,7 @@ function RouteTab() {
                 );
               })}
               {routes.length === 0 && (
-                <tr><td colSpan={8} className="p-8 text-center text-slate-500 font-bold">No routes found.</td></tr>
+                <tr><td colSpan={8} className="p-6 text-center text-slate-500 text-xs font-semibold">No routes found.</td></tr>
               )}
             </tbody>
           </table>
@@ -853,9 +962,8 @@ function RouteTab() {
 }
 
 // -------------------------------------------------------------
-// Main Export Layout
+// Upload Location Tab
 // -------------------------------------------------------------
-
 
 function UploadLocationTab() {
   const [uploadType, setUploadType] = React.useState('State');
@@ -912,18 +1020,24 @@ function UploadLocationTab() {
   };
 
   return (
-    <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">UPLOAD LOCATIONS</h2>
-      
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl p-8 mb-8">
-        <p className="text-sm text-slate-400 mb-8 leading-relaxed max-w-4xl bg-slate-900/50 p-6 rounded-xl border border-slate-800">
-          The UID is a system-generated unique identifier assigned to each entity (e.g. STE1, HQS1, CTY1, RTE1). These UIDs are automatically created by the system.
+    <div className="max-w-4xl space-y-4">
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-5 shadow-sm">
+        <h2 className="text-xs font-bold text-sky-400 mb-3 tracking-wider uppercase flex items-center gap-1.5">
+          <UploadCloud size={14} /> Upload Locations
+        </h2>
+        
+        <p className="text-xs text-slate-400 mb-4 leading-relaxed bg-slate-900/50 p-3 rounded-lg border border-slate-800">
+          The UID is a system-generated unique identifier assigned to each entity (e.g. STE1, HQS1, CTY1, RTE1). These UIDs are automatically created by the system upon upload.
         </p>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-end max-w-4xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div>
-            <label className="text-xs text-slate-400 font-bold mb-2 block">SELECT TYPE *</label>
-            <select value={uploadType} onChange={e => setUploadType(e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Select Type *</label>
+            <select 
+              value={uploadType} 
+              onChange={e => setUploadType(e.target.value)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors"
+            >
               <option value="State">State</option>
               <option value="Headquarter">Headquarter</option>
               <option value="CityOrArea">City / Area</option>
@@ -931,19 +1045,40 @@ function UploadLocationTab() {
             </select>
           </div>
           <div>
-            <label className="text-xs text-slate-400 font-bold mb-2 block">UPLOAD EXCEL *</label>
-            <input type="file" accept=".xlsx,.csv" onChange={e => setUploadFile(e.target.files?.[0] || null)} className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-sky-500/20 file:text-sky-400 hover:file:bg-sky-500/30" />
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Upload Excel *</label>
+            <input 
+              type="file" 
+              accept=".xlsx,.csv" 
+              onChange={e => setUploadFile(e.target.files?.[0] || null)} 
+              className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-2 py-1 text-xs text-slate-300 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-sky-500/20 file:text-sky-400 hover:file:bg-sky-500/30" 
+            />
           </div>
         </div>
         
-        <div className="mt-8 flex justify-between items-center">
-          <button onClick={handleUpload} disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 px-8 rounded-lg transition-colors flex items-center gap-2">Upload Data</button>
-          <button onClick={handleDownloadFormat} className="text-emerald-400 font-semibold text-sm hover:underline border border-emerald-500/30 px-6 py-3 rounded-lg hover:bg-emerald-500/10 transition-colors">Download Format</button>
+        <div className="mt-5 flex justify-between items-center pt-4 border-t border-slate-700/60">
+          <button 
+            onClick={handleUpload} 
+            disabled={loading} 
+            className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-1.5 text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+          >
+            {loading ? 'Uploading...' : 'Upload Data'}
+          </button>
+          <button 
+            onClick={handleDownloadFormat} 
+            className="text-emerald-400 font-semibold text-xs hover:underline border border-emerald-500/30 px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-colors flex items-center gap-1.5"
+          >
+            <Download size={13} />
+            Download Format
+          </button>
         </div>
       </div>
     </div>
   );
 }
+
+// -------------------------------------------------------------
+// Main Export Layout
+// -------------------------------------------------------------
 
 export default function ManageLocations() {
   const [activeTab, setActiveTab] = useState<'state' | 'hq' | 'city' | 'route' | 'upload'>('city');
@@ -960,15 +1095,15 @@ export default function ManageLocations() {
 
   return (
     <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
-      <div className="flex items-center gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
+      <div className="flex items-center gap-3 px-4 py-2.5 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
         <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={22} /> <span className="font-bold text-base md:text-lg tracking-wide uppercase">Back to Admin Menu</span>
+          <ArrowLeft size={18} /> <span className="font-bold text-sm tracking-wide uppercase">Back to Admin Menu</span>
         </button>
       </div>
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar Menu */}
-        <div className={`${sidebarCollapsed ? 'w-16' : 'w-60'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-4 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
-          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-3`}>
+        <div className={`${sidebarCollapsed ? 'w-16' : 'w-60'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-3 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
+          <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-2.5`}>
             {!sidebarCollapsed && (
               <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
                 Area Creation
@@ -979,7 +1114,7 @@ export default function ManageLocations() {
               className="text-slate-400 hover:text-white p-1 rounded-md hover:bg-slate-700/50 transition-colors"
               title={sidebarCollapsed ? "Expand Menu" : "Collapse Menu to Free Space"}
             >
-              {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+              {sidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
             </button>
           </div>
           <div className="flex flex-col space-y-1 px-2">
@@ -1008,7 +1143,7 @@ export default function ManageLocations() {
         </div>
         
         {/* Right Content Area */}
-        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-6 overflow-y-auto">
+        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-5 overflow-y-auto">
           {activeTab === 'state' && <StateTab />}
           {activeTab === 'hq' && <HQTab />}
           {activeTab === 'city' && <CityTab />}
@@ -1019,4 +1154,3 @@ export default function ManageLocations() {
     </div>
   );
 }
-

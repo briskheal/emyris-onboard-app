@@ -3,9 +3,10 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, Receipt, 
   MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, 
-  Users, History, CheckSquare, LogOut, Sun, Moon, Search, MessageSquare
+  Users, History, CheckSquare, LogOut, Sun, Moon, Search, MessageSquare, Sliders
 } from 'lucide-react';
 import NavigationDrawer from './NavigationDrawer';
+import TypographySettingsModal from './TypographySettingsModal';
 import axios from 'axios';
 import { GLOBAL_ROUTES } from '../config/navigation';
 
@@ -43,6 +44,9 @@ export default function Layout() {
   const [broadcastMessage, setBroadcastMessage] = useState('');
   const [validFrom, setValidFrom] = useState('');
   const [validUntil, setValidUntil] = useState('');
+
+  // Typography Management
+  const [isTypographyModalOpen, setIsTypographyModalOpen] = useState(false);
 
   // Theme Management
   const [isLightMode, setIsLightMode] = useState(() => {
@@ -229,6 +233,18 @@ export default function Layout() {
             {isLightMode ? <Moon size={20} /> : <Sun size={20} />}
             <span className="text-[10px] absolute -bottom-6 right-0 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-slate-800 text-white px-2 py-1 rounded shadow-lg pointer-events-none z-50">
               Change Theme
+            </span>
+          </button>
+
+          {/* Typography Settings with Tooltip */}
+          <button 
+            onClick={() => setIsTypographyModalOpen(true)} 
+            className="text-slate-500 dark:text-[#8b8baf] hover:text-indigo-400 transition-colors relative flex items-center gap-1 group p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" 
+            title="Font & Size Settings"
+          >
+            <Sliders size={20} />
+            <span className="text-[10px] absolute -bottom-6 right-0 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap bg-slate-800 text-white px-2 py-1 rounded shadow-lg pointer-events-none z-50">
+              Font & Size
             </span>
           </button>
 
@@ -456,6 +472,12 @@ export default function Layout() {
           </div>
         </div>
       )}
+
+      {/* Typography Settings Modal */}
+      <TypographySettingsModal 
+        isOpen={isTypographyModalOpen} 
+        onClose={() => setIsTypographyModalOpen(false)} 
+      />
 
     </div>
   );

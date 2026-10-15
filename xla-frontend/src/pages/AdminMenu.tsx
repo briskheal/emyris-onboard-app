@@ -1,6 +1,7 @@
 import { useOutletContext, useNavigate } from 'react-router-dom';
 import { Menu, MessageSquare, Bell } from 'lucide-react';
 import { adminItems } from '../config/navigation';
+import TypographySettingsModal from '../components/TypographySettingsModal';
 
 export default function AdminMenu() {
   const { openDrawer } = useOutletContext<{ openDrawer: () => void }>();
@@ -33,14 +34,19 @@ export default function AdminMenu() {
         </div>
       </div>
 
-      <div className="px-5 mt-6 md:p-8">
+      <div className="px-5 mt-6 md:p-8 space-y-8">
         
         {/* Desktop Banner */}
-        <div className="hidden md:block bg-slate-800 border-l-4 border-emerald-500 rounded-r-xl p-6 mb-8 shadow-lg">
+        <div className="hidden md:block bg-slate-800 border-l-4 border-emerald-500 rounded-r-xl p-6 shadow-lg">
           <h2 className="text-xl font-black text-white mb-2 uppercase tracking-wide">Welcome to the Admin Panel</h2>
           <p className="text-sm text-slate-400 leading-relaxed max-w-4xl">
             Admins sometime refuse editing, deleting or making some changes in the software. You can always reach out to us in case anything goes wrong. Anything that you edit or modify can be rolled back to the previous version.
           </p>
+        </div>
+
+        {/* Typography & Font Settings Provision in Admin Block */}
+        <div>
+          <TypographySettingsModal isInline={true} />
         </div>
 
         {/* Mobile Title */}
