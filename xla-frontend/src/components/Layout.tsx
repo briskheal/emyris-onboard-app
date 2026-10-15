@@ -308,7 +308,7 @@ export default function Layout() {
       <div className="flex flex-1 overflow-hidden relative">
         
         {/* DESKTOP SIDEBAR - RUNS UNDER THE HEADER */}
-        <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white dark:bg-[#1a1a2e] border-r border-slate-200 dark:border-slate-800 flex-shrink-0 transition-all duration-300 relative`}>
+        <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-16' : 'w-60'} bg-white dark:bg-[#1a1a2e] border-r border-slate-200 dark:border-slate-800 flex-shrink-0 transition-all duration-200 relative`}>
           <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 custom-scrollbar">
             {navItems.map((item, idx) => {
               const active = isActive(item.path);
