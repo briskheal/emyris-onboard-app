@@ -118,7 +118,7 @@ export default function SettingsPreferences() {
   return (
     <div className="w-full h-full overflow-y-auto pr-2 pb-12">
        <div className="flex items-center gap-3 mb-6">
-          <h2 className="text-xl font-black text-white uppercase tracking-wide">SET PREFERENCES</h2>
+          <h2 className="text-xl font-bold text-white tracking-wide">Set Preferences</h2>
        </div>
 
        <div className="space-y-4">
@@ -138,7 +138,7 @@ export default function SettingsPreferences() {
                    <div key={toggle.id} className="border-b border-[#3b3b5a]/30 pb-6 last:border-0 last:pb-0">
                      <div className="flex justify-between items-start gap-8">
                        <div>
-                         <h3 className="text-[13px] font-bold text-slate-200 uppercase tracking-widest">{toggle.label}</h3>
+                         <h3 className="text-[13px] font-bold text-slate-200 tracking-wide">{toggle.label.toLowerCase().replace(/(?:^|\s|\.)[a-z]/g, m => m.toUpperCase()).replace(/\bHqs\b/g, "HQs").replace(/\bHq\b/g, "HQ").replace(/\bDcr\b/g, "DCR").replace(/\bOtp\b/g, "OTP")}</h3>
                          <p className="text-xs text-slate-400 mt-1.5 leading-relaxed">{toggle.desc}</p>
                        </div>
                        <label className="relative inline-flex items-center cursor-pointer shrink-0 mt-1">

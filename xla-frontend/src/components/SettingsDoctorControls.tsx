@@ -163,7 +163,7 @@ export default function SettingsDoctorControls() {
     <div className="flex-1 flex flex-col h-full bg-[#1e1e2d]">
       <div className="p-8 pb-4 border-b border-[#3b3b5a] shrink-0">
         <h2 className="text-sky-400 font-bold uppercase tracking-wider flex items-center gap-2">
-          <ArrowLeft size={16} /> DOCTOR CONTROLS
+          <ArrowLeft size={16} /> Doctor Controls
         </h2>
       </div>
 

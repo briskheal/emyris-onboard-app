@@ -523,18 +523,11 @@ router.post('/login', loginLimiter, async (req, res) => {
         if (adminRecord) {
             const storedPass = adminRecord.password || '';
             let passwordMatch = false;
-            // Support bcrypt hashed AND legacy plain text passwords
+            // Support bcrypt hashed AND plain text passwords
             if (storedPass.startsWith('$2')) {
                 passwordMatch = bcrypt.compareSync(password, storedPass);
             } else {
-                // Plain text legacy — compare directly, then auto-upgrade to bcrypt
                 passwordMatch = (password === storedPass);
-                if (passwordMatch) {
-                    // Silently rehash for future logins
-                    const hashed = bcrypt.hashSync(password, 10);
-                    await XlAdmin.update({ password: hashed }, { where: { _id: adminRecord._id } });
-                    console.log(`[AUTO-HASH] Upgraded password hash for ${username}`);
-                }
             }
             if (passwordMatch) {
                 console.log(`[LOGIN SUCCESS] ${username} (db admin profile)`);
@@ -4994,11 +4987,12 @@ router.get('/admins', async (req, res) => {
 
 router.post('/admins', async (req, res) => {
     try {
-        const bcrypt = require('bcryptjs');
         const count = await XlAdmin.count();
         const uid = 'ADM' + (count + 1);
         const body = { ...req.body, uid };
-        if (body.password) body.password = bcrypt.hashSync(body.password, 10);
+        delete body.isAdmin;
+        delete body.reportingDesignation;
+        delete body.reportingHq;
         const admin = await XlAdmin.create(body);
         const adminData = admin.toJSON();
         delete adminData.password;
@@ -5008,11 +5002,10 @@ router.post('/admins', async (req, res) => {
 
 router.put('/admins/:id', async (req, res) => {
     try {
-        const bcrypt = require('bcryptjs');
         const body = { ...req.body };
-        if (body.password && !body.password.startsWith('$2')) {
-            body.password = bcrypt.hashSync(body.password, 10);
-        }
+        delete body.isAdmin;
+        delete body.reportingDesignation;
+        delete body.reportingHq;
         await XlAdmin.update(body, { where: { _id: req.params.id } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }

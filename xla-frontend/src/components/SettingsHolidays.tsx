@@ -188,7 +188,7 @@ export default function SettingsHolidays() {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden">
       <div className="flex items-center justify-between gap-3 mb-6 shrink-0">
-        <h2 className="text-xl font-black text-white uppercase tracking-wide">CREATE HOLIDAYS</h2>
+        <h2 className="text-xl font-black text-white uppercase tracking-wide">Create Holidays</h2>
         {holidays.length > 0 && (
           <button
             onClick={downloadHolidays}

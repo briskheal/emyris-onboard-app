@@ -55,7 +55,7 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
           </div>
           <div>
             <h3 className="text-sm font-black text-white uppercase tracking-wider">
-              DISPLAY & TYPOGRAPHY SETTINGS
+              Display & Typography Settings
             </h3>
             <p className="text-[11px] text-slate-400">
               Customize system font family and global text scaling across all pages
@@ -85,7 +85,7 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
       <div>
         <div className="flex items-center justify-between mb-2.5">
           <label className="text-xs font-black text-sky-400 uppercase tracking-wider flex items-center gap-2">
-            <span>FONT SIZE / SCALE</span>
+            <span>Font Size / Scale</span>
             <span className="text-[10px] text-slate-400 font-normal">({currentSize} base scale)</span>
           </label>
         </div>
@@ -118,7 +118,7 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
       {/* Font Family Selection */}
       <div>
         <label className="text-xs font-black text-emerald-400 uppercase tracking-wider block mb-2.5">
-          SYSTEM FONT FAMILY
+          System Font Family
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
           {AVAILABLE_FONTS.map((font) => {

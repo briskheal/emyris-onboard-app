@@ -727,6 +727,9 @@ useEffect(() => {
             finalRM = finalRM + ' (' + formData.reportingHq + ')';
         }
         const payload = { ...formData, reportingManager: finalRM, isAdmin };
+        if (editUser && (formData.password?.startsWith('$2') || !formData.password?.trim())) {
+            delete payload.password;
+        }
         let res;
 
         if (editUser) {
@@ -906,9 +909,17 @@ useEffect(() => {
             </div>
             <div>
               <label className="text-xs text-slate-400 font-bold mb-1 flex items-center gap-2">
-                <Key size={14} className="text-slate-500"/> PASSWORD *
+                <Key size={14} className="text-slate-500"/> PASSWORD {editUser ? '(LEAVE BLANK TO KEEP CURRENT)' : '*'}
               </label>
-              <input type="text" required name="password" value={formData.password || ''} onChange={handleChange} className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-amber-400 font-mono focus:border-amber-500 focus:outline-none transition-colors" placeholder="Click Auto-Generate" />
+              <input 
+                type="text" 
+                required={!editUser} 
+                name="password" 
+                value={formData.password?.startsWith('$2') ? '' : (formData.password || '')} 
+                onChange={handleChange} 
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg py-2.5 px-3 text-sm text-amber-400 font-mono focus:border-amber-500 focus:outline-none transition-colors" 
+                placeholder={editUser && formData.password?.startsWith('$2') ? '•••••••• (Encrypted - enter new password to change)' : 'Click Auto-Generate or enter password'} 
+              />
             </div>
           </div>
         </div>
@@ -1353,7 +1364,15 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
                     <td className="border-r border-slate-700 p-3 text-white font-bold bg-slate-800/90 sticky left-[50px] z-10">{p.firstName} {p.lastName}</td>
                     <td className="border-r border-slate-700 p-3 text-emerald-400 font-bold">{p.employeeId || p.uid || '-'}</td>
                     <td className="border-r border-slate-700 p-3 text-sky-400 font-bold">{p.email || '-'}</td>
-                    <td className="border-r border-slate-700 p-3 text-amber-400 font-mono font-bold">{p.password || '-'}</td>
+                    <td className="border-r border-slate-700 p-3 text-amber-400 font-mono font-bold">
+                      {p.password?.startsWith('$2') ? (
+                        <span className="text-amber-400 font-mono text-[11px] inline-flex items-center gap-1.5" title="Bcrypt encrypted hash. Click the yellow Key icon on the right to set a new plain password.">
+                          •••••••• <span className="text-[10px] text-slate-400 font-sans font-normal">(Encrypted)</span>
+                        </span>
+                      ) : (
+                        p.password || '-'
+                      )}
+                    </td>
                     <td className="border-r border-slate-700 p-3 text-white font-bold">{p.phone || '-'}</td>
                     <td className="border-r border-slate-700 p-3 text-slate-300">{p.designation || '-'}</td>
                     <td className="border-r border-slate-700 p-3 text-slate-300">{p.division || '-'}</td>

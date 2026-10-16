@@ -154,7 +154,9 @@ await XlTarget.sync({ alter: true });
             'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedBy" VARCHAR(255);',
             'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "adminRemarks" TEXT;',
             'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "submittedAt" TIMESTAMP WITH TIME ZONE;',
-            'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP WITH TIME ZONE;'
+            'ALTER TABLE xl_tour_programs ADD COLUMN IF NOT EXISTS "approvedAt" TIMESTAMP WITH TIME ZONE;',
+            'ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "resetOtp" VARCHAR(255);',
+            'ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "resetOtpExpires" TIMESTAMP WITH TIME ZONE;'
         ] : [
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricTestCompleted BOOLEAN DEFAULT 0;',
             'ALTER TABLE onboard_applicants ADD COLUMN psychometricScores TEXT;',

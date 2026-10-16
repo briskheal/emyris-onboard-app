@@ -24,7 +24,7 @@ const verifyToken = (req, res, next) => {
         '/api/xl/register', '/register',
         '/company-profile'
     ];
-    if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-')) {
+    if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password')) {
         return next();
     }
     
@@ -70,18 +70,13 @@ router.post('/admin-login', async (req, res) => {
             return res.json({ success: false, message: 'Invalid XLA credentials. Use your XLA admin login.' });
         }
 
-        // Verify password (supports both bcrypt-hashed and legacy plain text)
+        // Verify password (supports both bcrypt-hashed and plain text)
         const storedPass = admin.password || '';
         let passwordMatch = false;
         if (storedPass.startsWith('$2')) {
             passwordMatch = bcrypt.compareSync(password, storedPass);
         } else {
             passwordMatch = (password === storedPass);
-            if (passwordMatch) {
-                // Auto-upgrade to bcrypt for next login
-                const hashed = bcrypt.hashSync(password, 10);
-                await XlAdmin.update({ password: hashed }, { where: { _id: admin._id } });
-            }
         }
 
         if (!passwordMatch) {
@@ -103,9 +98,12 @@ router.post('/admin-login', async (req, res) => {
     }
 });
 
-// XLA Admin Forgot Password
-// Generates a new secure password, sets it in the database for the admin, and emails it to the linked admin email
-router.post('/forgot-password', async (req, res) => {
+// ==========================================
+// ROBUST 2-STEP OTP ADMIN PASSWORD RESET
+// ==========================================
+
+// Step 1: Send OTP to Admin's Pre-Linked Email Only
+router.post('/forgot-password/request-otp', async (req, res) => {
     try {
         const { email } = req.body;
         const targetEmail = (email || '').trim().toLowerCase();
@@ -114,10 +112,9 @@ router.post('/forgot-password', async (req, res) => {
         }
 
         const { XlAdmin, sequelize } = require('../db');
-        const bcrypt = require('bcryptjs');
         const { sendEmail } = require('../utils/mailer');
 
-        // Lookup admin by email (case-insensitive)
+        // Strictly verify that the email belongs to a registered admin in the database
         let admin = await XlAdmin.findOne({ where: { email: targetEmail } });
         if (!admin) {
             admin = await XlAdmin.findOne({ 
@@ -135,22 +132,30 @@ router.post('/forgot-password', async (req, res) => {
             });
         }
 
-        // Generate a clean, secure temporary password (e.g. Emyris@7294AB)
-        const randomDigits = Math.floor(1000 + Math.random() * 9000);
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-        const letter1 = chars.charAt(Math.floor(Math.random() * chars.length));
-        const letter2 = chars.charAt(Math.floor(Math.random() * chars.length));
-        const newPassword = `Emyris@${randomDigits}${letter1}${letter2}`;
+        // Anti-Spam / Rate-limiting: Require 45 seconds between OTP requests
+        if (admin.resetOtpExpires) {
+            const timeDiff = new Date(admin.resetOtpExpires).getTime() - Date.now();
+            if (timeDiff > (9 * 60 + 15) * 1000) {
+                return res.json({ success: false, message: 'A verification code was recently sent. Please wait 45 seconds before requesting another.' });
+            }
+        }
 
-        // Hash and update directly in the database for this admin
-        const hashedPassword = bcrypt.hashSync(newPassword, 10);
-        await XlAdmin.update({ password: hashedPassword }, { where: { _id: admin._id } });
-        console.log(`[XLA FORGOT PASSWORD] Successfully updated password in database for admin: ${admin.email}`);
+        // Generate a secure 6-digit verification code
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        // Prepare email notification
+        // Store OTP & Expiry in database on admin's record
+        // (NOTE: The admin's password is NOT changed at this step!)
+        await XlAdmin.update({ resetOtp: otp, resetOtpExpires: expires }, { where: { _id: admin._id } });
+        console.log(`[XLA PASSWORD RESET OTP] Code generated for admin: ${admin.email}`);
+
+        // Mask the email for privacy/confirmation display (e.g. h•••••n@emyrishr.in)
+        const [userPart, domainPart] = admin.email.split('@');
+        const maskedEmail = userPart.length > 2 
+            ? userPart.charAt(0) + '••••' + userPart.charAt(userPart.length - 1) + '@' + domainPart
+            : userPart.charAt(0) + '••••@' + domainPart;
+
         const adminName = `${admin.firstName || 'Admin'} ${admin.lastName || ''}`.trim();
-        const baseUrl = process.env.BASE_URL || 'https://emyrishr.in';
-        const loginUrl = `${baseUrl}/xla/login`;
 
         const emailHtml = `
             <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
@@ -158,53 +163,134 @@ router.post('/forgot-password', async (req, res) => {
                     <div style="display: inline-block; background: linear-gradient(135deg, #f43f5e, #be123c); padding: 12px 28px; border-radius: 10px; color: #ffffff; font-weight: 900; font-size: 22px; letter-spacing: -0.5px;">
                         EMYRIS
                     </div>
-                    <p style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #f43f5e; text-transform: uppercase; letter-spacing: 2px;">Admin Portal</p>
+                    <p style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #f43f5e; text-transform: uppercase; letter-spacing: 2px;">Admin Portal Security</p>
                 </div>
 
-                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Admin Password Reset</h2>
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Password Reset Verification Code</h2>
                 <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 16px;">
                     Hello <strong>${adminName}</strong>,
                 </p>
                 <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
-                    A password reset was requested for your XLA Admin account. Your password has been successfully updated in the database. Use your new credentials below to log in:
+                    We received a request to reset the password for your XLA Admin account. Please use the One-Time Password (OTP) verification code below to authorize this request:
                 </p>
 
-                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f43f5e; border-radius: 8px; padding: 18px; margin-bottom: 24px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Registered Admin Email</div>
-                    <div style="font-size: 15px; font-weight: 600; color: #0f172a; margin-bottom: 14px;">${admin.email}</div>
-
-                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px;">New Password</div>
-                    <div style="font-family: Monaco, Consolas, 'Courier New', monospace; font-size: 20px; font-weight: 800; color: #e11d48; letter-spacing: 1.5px; background: #ffffff; padding: 10px 16px; border-radius: 6px; border: 1px dashed #f43f5e; display: inline-block;">
-                        ${newPassword}
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f43f5e; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 24px;">
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Your 6-Digit Verification Code (OTP)</div>
+                    <div style="font-family: Monaco, Consolas, 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #e11d48; letter-spacing: 8px; background: #ffffff; padding: 12px 24px; border-radius: 8px; border: 1px dashed #f43f5e; display: inline-block;">
+                        ${otp}
                     </div>
-                </div>
-
-                <div style="text-align: center; margin-bottom: 28px;">
-                    <a href="${loginUrl}" style="display: inline-block; background-color: #f43f5e; color: #ffffff; font-weight: 700; font-size: 14px; text-decoration: none; padding: 12px 36px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(244, 63, 94, 0.3);">
-                        Login to Admin Portal
-                    </a>
+                    <p style="margin: 8px 0 0 0; font-size: 12px; color: #64748b;">This code expires in <strong>10 minutes</strong>.</p>
                 </div>
 
                 <div style="font-size: 12px; line-height: 1.5; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                    <p style="margin: 0 0 6px 0;"><strong>Security Note:</strong> Please keep this password secure. You may change your password after logging in from the Admin Panel.</p>
-                    <p style="margin: 0;">If you did not request this reset, please verify your account security immediately.</p>
+                    <p style="margin: 0 0 6px 0;"><strong>Security Notice:</strong> Never share this code with anyone. Emyris personnel will never ask for your verification code.</p>
+                    <p style="margin: 0;">If you did not request this, you can safely ignore this email. Your current password remains active and unchanged in the database.</p>
                 </div>
             </div>
         `;
 
         await sendEmail({
             to: admin.email,
-            subject: 'XLA Admin Portal - Password Reset Credentials',
+            subject: `XLA Admin Portal - Security Verification Code: ${otp}`,
             html: emailHtml
         });
 
         res.json({ 
             success: true, 
-            message: `A new password has been set in the database and sent to your email (${admin.email}). Please check your inbox and log in.` 
+            maskedEmail,
+            message: `A 6-digit verification code has been sent to ${maskedEmail}. Please check your inbox.` 
         });
     } catch (e) {
-        console.error('[XLA Forgot Password Error]', e);
-        res.status(500).json({ success: false, message: 'Server error processing password reset: ' + e.message });
+        console.error('[XLA Request OTP Error]', e);
+        res.status(500).json({ success: false, message: 'Server error generating verification code: ' + e.message });
+    }
+});
+
+// Step 2: Verify OTP & Set User's Chosen New Password in Database
+router.post('/forgot-password/verify-otp', async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const targetEmail = (email || '').trim().toLowerCase();
+        const submittedOtp = (otp || '').trim();
+        const trimmedNewPass = (newPassword || '').trim();
+
+        if (!targetEmail || !submittedOtp || !trimmedNewPass) {
+            return res.json({ success: false, message: 'Email, verification code, and new password are required.' });
+        }
+
+        if (trimmedNewPass.length < 6) {
+            return res.json({ success: false, message: 'New password must be at least 6 characters long.' });
+        }
+
+        const { XlAdmin, sequelize } = require('../db');
+        const bcrypt = require('bcryptjs');
+        const { sendEmail } = require('../utils/mailer');
+
+        let admin = await XlAdmin.findOne({ where: { email: targetEmail } });
+        if (!admin) {
+            admin = await XlAdmin.findOne({ 
+                where: sequelize.where(
+                    sequelize.fn('LOWER', sequelize.col('email')), 
+                    targetEmail
+                ) 
+            });
+        }
+
+        if (!admin) {
+            return res.json({ success: false, message: 'Admin account not found.' });
+        }
+
+        // Validate OTP
+        if (!admin.resetOtp || admin.resetOtp.trim() !== submittedOtp) {
+            return res.json({ success: false, message: 'Invalid verification code. Please check your email and try again.' });
+        }
+
+        // Validate Expiry
+        if (!admin.resetOtpExpires || new Date() > new Date(admin.resetOtpExpires)) {
+            return res.json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+        }
+
+        // Update password directly in database; invalidate OTP
+        await XlAdmin.update({ 
+            password: trimmedNewPass,
+            resetOtp: null,
+            resetOtpExpires: null
+        }, { where: { _id: admin._id } });
+
+        console.log(`[XLA PASSWORD RESET SUCCESS] Password successfully updated in database for admin: ${admin.email}`);
+
+        // Send confirmation email
+        const adminName = `${admin.firstName || 'Admin'} ${admin.lastName || ''}`.trim();
+        const baseUrl = process.env.BASE_URL || 'https://emyrishr.in';
+        const loginUrl = `${baseUrl}/xla/login`;
+
+        const confirmationHtml = `
+            <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff; color: #1e293b;">
+                <h2 style="color: #0f172a; margin-top: 0;">Password Successfully Changed</h2>
+                <p style="font-size: 14px; color: #475569;">Hello <strong>${adminName}</strong>,</p>
+                <p style="font-size: 14px; color: #475569;">Your XLA Admin password has been successfully updated in the database.</p>
+                <div style="margin: 24px 0;">
+                    <a href="${loginUrl}" style="background-color: #f43f5e; color: #ffffff; font-weight: bold; font-size: 14px; text-decoration: none; padding: 12px 28px; border-radius: 8px; display: inline-block;">
+                        Login to Admin Portal
+                    </a>
+                </div>
+                <p style="font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 16px;">If you did not perform this action, please alert your systems administrator immediately.</p>
+            </div>
+        `;
+
+        await sendEmail({
+            to: admin.email,
+            subject: 'XLA Admin Portal - Password Changed Successfully',
+            html: confirmationHtml
+        }).catch(err => console.error('Failed to send confirmation email', err));
+
+        res.json({ 
+            success: true, 
+            message: 'Your password has been successfully updated in the database! You can now log in.' 
+        });
+    } catch (e) {
+        console.error('[XLA Verify OTP Error]', e);
+        res.status(500).json({ success: false, message: 'Server error setting new password: ' + e.message });
     }
 });
 

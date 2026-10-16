@@ -332,6 +332,8 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         phone: { type: DataTypes.STRING },
         email: { type: DataTypes.STRING },
         password: { type: DataTypes.STRING },
+        resetOtp: { type: DataTypes.STRING },
+        resetOtpExpires: { type: DataTypes.DATE },
         dob: { type: DataTypes.STRING },
         hq: { type: DataTypes.STRING, set(val) { if(val) this.setDataValue('hq', val.toUpperCase().trim()); } },
         designation: { type: DataTypes.STRING },
