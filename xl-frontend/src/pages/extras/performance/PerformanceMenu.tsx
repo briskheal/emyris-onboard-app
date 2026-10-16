@@ -92,7 +92,7 @@ export default function PerformanceMenu() {
   };
 
   return (
-    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-24 text-white">
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-44 text-white">
       <div className="flex flex-col px-4 py-6 mb-4">
         <h2 className="text-xl font-black text-sky-400 mb-6">User Performance Analysis (KPI's)</h2>
 
@@ -228,6 +228,8 @@ export default function PerformanceMenu() {
             )}
           </div>
         )}
+        {/* Bottom Spacer to ensure full visibility above footer */}
+        <div id="performance-menu-bottom-spacer" className="h-32" />
       </div>
     </div>
   );

@@ -6,7 +6,9 @@ import * as XLSX from 'xlsx';
 
 // Helper to calculate calendar weeks for a given month and year
 function getCalendarWeeks(monthStr: string, yearStr: string) {
-  const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthStr.toLowerCase());
+  const clean = (monthStr || '').trim().toLowerCase();
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const monthIndex = months.indexOf(clean.slice(0, 3));
   const year = parseInt(yearStr);
   if (monthIndex === -1 || isNaN(year)) return [];
 
@@ -266,11 +268,11 @@ export default function TargetAchievementView({ kpiId, month, year, initialTarge
       </div>
 
       {/* Save Button */}
-      <div className="fixed bottom-20 left-4 z-40">
+      <div className="fixed bottom-20 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-40 pointer-events-none flex justify-start">
         <button 
           onClick={handleSave}
           disabled={isSaving}
-          className="bg-sky-500 hover:bg-sky-400 text-white font-bold h-10 px-5 rounded-xl shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm"
+          className="pointer-events-auto bg-sky-500 hover:bg-sky-400 text-white font-bold h-10 px-5 rounded-xl shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 text-sm"
         >
           <Save size={16} />
           {isSaving ? 'Saving...' : 'Save'}

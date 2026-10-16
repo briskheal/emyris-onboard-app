@@ -22,7 +22,9 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
 
   useEffect(() => {
     // Generate calendar weeks
-    const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month.toLowerCase());
+    const clean = (month || '').trim().toLowerCase();
+    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+    const monthIndex = months.indexOf(clean.slice(0, 3));
     const y = parseInt(year);
     if (monthIndex === -1 || isNaN(y)) return;
 
@@ -198,7 +200,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   };
 
   return (
-    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-4 text-white">
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-44 text-white">
       <div className="px-4 py-4 mt-2">
         <h2 className="text-xl font-bold text-sky-400 mb-6">Plan Targets</h2>
 
@@ -280,7 +282,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
       </div>
 
       {/* Sticky Submit Button */}
-      <div className="fixed bottom-16 z-40 left-0 right-0 p-4 bg-slate-800 border-t border-slate-700 flex gap-3">
+      <div className="fixed bottom-16 z-40 left-1/2 -translate-x-1/2 w-full max-w-md p-4 bg-slate-800 border-t border-slate-700 flex gap-3 shadow-2xl">
         {onCancelEdit && (
           <button 
             onClick={onCancelEdit}
@@ -320,10 +322,12 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
             </div>
 
             {/* Modal Body */}
-            <div className="p-5 overflow-y-auto pb-32">
+            <div className="p-5 overflow-y-auto pb-44">
               <div className="mb-6">
                 <label className="text-sm font-bold text-white block mb-1">My Monthly Target</label>
-                <p className="text-[10px] text-slate-200 mb-3">{month.charAt(0).toUpperCase() + month.slice(1)} 1 - {month.charAt(0).toUpperCase() + month.slice(1)} 30</p>
+                <p className="text-[10px] text-slate-200 mb-3">
+                  {month.charAt(0).toUpperCase() + month.slice(1)} 1 - {month.charAt(0).toUpperCase() + month.slice(1)} {weeks.length > 0 ? new Date(parseInt(year), ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf((month || '').trim().toLowerCase().slice(0, 3)) + 1, 0).getDate() : 31}
+                </p>
                 <div className="bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 font-black text-xl text-emerald-400 w-1/2">
                   {calculateMonthlyTarget()}
                 </div>

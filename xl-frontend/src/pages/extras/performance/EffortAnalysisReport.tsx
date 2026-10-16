@@ -10,7 +10,9 @@ const getUserId = () => {
 
 // Same calendar calculation helper as TargetAnalysisReport
 function getCalendarWeeks(monthStr: string, yearStr: string) {
-  const monthIndex = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(monthStr.toLowerCase());
+  const clean = (monthStr || '').trim().toLowerCase();
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const monthIndex = months.indexOf(clean.slice(0, 3));
   const year = parseInt(yearStr);
   if (monthIndex === -1 || isNaN(year)) return [];
 
