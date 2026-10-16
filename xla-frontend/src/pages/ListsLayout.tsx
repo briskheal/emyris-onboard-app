@@ -29,7 +29,7 @@ export default function ListsLayout() {
           </button>
         </div>
         <div className="p-4">
-          <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 px-2">LISTS</h2>
+          <h2 className="text-white font-bold text-base tracking-wide mb-4 px-2">Lists</h2>
           <div className="flex flex-col gap-1">
             {menuItems.map((item, idx) => (
               <button

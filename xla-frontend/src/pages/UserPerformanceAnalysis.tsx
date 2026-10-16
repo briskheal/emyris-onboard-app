@@ -383,7 +383,7 @@ export default function UserPerformanceAnalysis() {
                     <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors bg-transparent p-0">
                         <ChevronLeft size={20} />
                     </button>
-                    <h1 className="text-emerald-400 font-black text-xl tracking-wider uppercase">User Performance Analysis</h1>
+                    <h2 className="text-white font-bold text-base tracking-wide">User Performance Analysis</h2>
                 </div>
 
                 <div className="flex flex-col space-y-2 px-4">

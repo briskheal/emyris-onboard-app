@@ -1105,7 +1105,7 @@ export default function ManageLocations() {
         <div className={`${sidebarCollapsed ? 'w-16' : 'w-60'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-3 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-2.5`}>
             {!sidebarCollapsed && (
-              <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
+              <h2 className="text-white font-bold text-base tracking-wide truncate">
                 Area Creation
               </h2>
             )}

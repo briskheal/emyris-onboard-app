@@ -194,8 +194,8 @@ export default function Approvals() {
              </button>
              <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
                {!sidebarCollapsed && (
-                 <h2 className="text-emerald-400 font-black text-xs tracking-wider uppercase truncate">
-                   APPROVALS
+                 <h2 className="text-white font-bold text-base tracking-wide truncate">
+                   Approvals
                  </h2>
                )}
                <button 
