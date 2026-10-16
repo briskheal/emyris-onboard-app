@@ -167,9 +167,9 @@ export default function EffortAnalysisReport() {
       .replace(/^Doctors Call$/, "Dr's Met (Calls)")
       .replace(/^Unique Doctors Visited$/, "Unique Dr's")
       .replace(/^Missed Doctors$/, "Missed Dr's")
-      .replace(/^Non-Core Doctors \(Met\/Total\)$/, "Non-Core Dr's Met")
-      .replace(/^Core Doctors \(Met\/Total\)$/, "Core Dr's Met")
-      .replace(/^Super-Core Doctors \(Met\/Total\)$/, "Super-Core Dr's Met")
+      .replace(/^Non-Core Doctors \(Met\/Total\)$/, "N-Core Met")
+      .replace(/^Core Doctors \(Met\/Total\)$/, "Core Met")
+      .replace(/^Super-Core Doctors \(Met\/Total\)$/, "S-Core Met")
       .replace(/^Doctors Call Average$/, "Dr's Call Avg.")
       .replace(/^Doctor's Coverage Percentage$/, "Dr's Covg. %")
       .replace(/^Doctor's Compliance Percentage$/, "Dr's Compl. %");
@@ -206,9 +206,9 @@ export default function EffortAnalysisReport() {
         "Dr's Met",
         "Unique Dr's",
         "Missed Dr's",
-        "Non-Core Dr's Met",
-        "Core Dr's Met",
-        "Super-Core Dr's Met",
+        "N-Core Met",
+        "Core Met",
+        "S-Core Met",
         "Dr's Covg. %",
         "Dr's Compl. %"
       ]);
@@ -437,52 +437,53 @@ export default function EffortAnalysisReport() {
         {!loading && effortData && (
           <div className="space-y-6">
             {/* Quick KPI Ribbon */}
+            {/* Quick KPI Ribbon */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
-              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
-                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Dr's Covg.">
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-md flex flex-col justify-between text-center overflow-hidden">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight truncate" title="Dr's Covg.">
                   Dr's Covg.
                 </span>
-                <span className="text-base sm:text-lg md:text-xl font-black text-sky-400">
+                <span className="text-xs sm:text-sm font-bold text-sky-400">
                   {effortData.summary?.coverage}%
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
-                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Dr's Compl.">
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-md flex flex-col justify-between text-center overflow-hidden">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight truncate" title="Dr's Compl.">
                   Dr's Compl.
                 </span>
-                <span className="text-base sm:text-lg md:text-xl font-black text-emerald-400">
+                <span className="text-xs sm:text-sm font-bold text-emerald-400">
                   {effortData.summary?.compliance}%
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
-                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Tot Dr's">
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-md flex flex-col justify-between text-center overflow-hidden">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight truncate" title="Tot Dr's">
                   Tot Dr's
                 </span>
-                <span className="text-base sm:text-lg md:text-xl font-black text-white">
+                <span className="text-xs sm:text-sm font-bold text-white">
                   {effortData.summary?.totalDoctors}
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
-                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Dr's Met">
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-md flex flex-col justify-between text-center overflow-hidden">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight truncate" title="Dr's Met">
                   Dr's Met
                 </span>
-                <span className="text-base sm:text-lg md:text-xl font-black text-sky-300">
+                <span className="text-xs sm:text-sm font-bold text-sky-300">
                   {effortData.summary?.totalDoctorsMet}
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
-                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Unique Dr's">
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-md flex flex-col justify-between text-center overflow-hidden">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight truncate" title="Unique Dr's">
                   Unique Dr's
                 </span>
-                <span className="text-base sm:text-lg md:text-xl font-black text-teal-300">
+                <span className="text-xs sm:text-sm font-bold text-teal-300">
                   {effortData.summary?.totalUniqueDoctors}
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
-                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Missed Dr's">
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl px-1.5 py-1.5 sm:px-2 sm:py-2 shadow-md flex flex-col justify-between text-center overflow-hidden">
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight truncate" title="Missed Dr's">
                   Missed Dr's
                 </span>
-                <span className="text-base sm:text-lg md:text-xl font-black text-rose-400">
+                <span className="text-xs sm:text-sm font-bold text-rose-400">
                   {effortData.summary?.totalMissedDoctors}
                 </span>
               </div>
@@ -508,9 +509,9 @@ export default function EffortAnalysisReport() {
                       <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Dr's<br/>Met</th>
                       <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Unique<br/>Dr's</th>
                       <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Missed<br/>Dr's</th>
-                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Non-Core<br/>Dr's Met</th>
-                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Core<br/>Dr's Met</th>
-                      <th className="border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Super-Core<br/>Dr's Met</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">N-Core<br/>Met</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Core<br/>Met</th>
+                      <th className="border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">S-Core<br/>Met</th>
                     </tr>
                   </thead>
                   <tbody>
