@@ -726,7 +726,7 @@ export default function ManageLeave() {
         {/* Sidebar */}
         <div className={`absolute inset-y-0 left-0 transform ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-200 ease-in-out z-10`}>
           <div className="p-4 border-b border-slate-800 flex justify-between items-center">
-            <h2 className="text-white font-bold text-base tracking-wide">Manage Leave</h2>
+            <h2 className="text-white font-bold text-base tracking-wide" style={{ fontSize: 'var(--menu-heading-size, 16px)' }}>Manage Leave</h2>
             <button onClick={() => setMobileMenuOpen(false)} className="md:hidden text-slate-400"><X size={20}/></button>
           </div>
           <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">

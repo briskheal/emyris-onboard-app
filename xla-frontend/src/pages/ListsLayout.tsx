@@ -6,14 +6,14 @@ export default function ListsLayout() {
   const location = useLocation();
 
   const menuItems = [
-    { label: 'DOCTORS LIST', path: '/utilities/lists/doctors' },
-    { label: 'CHEMISTS LIST', path: '/utilities/lists/chemists' },
-    { label: 'STOCKISTS LIST', path: '/utilities/lists/stockists' },
-    { label: 'HQ / CITY / LOCAL AREA', path: '/utilities/lists/locations' },
-    { label: 'GEO FENCING', path: '/utilities/lists/geo-fencing' },
-    { label: 'PRODUCT LIST', path: '/utilities/lists/products' },
-    { label: 'GIFT LIST', path: '/utilities/lists/gifts' },
-    { label: 'ROUTE LIST', path: '/utilities/lists/routes' },
+    { label: 'Doctors List', path: '/utilities/lists/doctors' },
+    { label: 'Chemists List', path: '/utilities/lists/chemists' },
+    { label: 'Stockists List', path: '/utilities/lists/stockists' },
+    { label: 'HQ / City / Local Area', path: '/utilities/lists/locations' },
+    { label: 'Geo Fencing', path: '/utilities/lists/geo-fencing' },
+    { label: 'Product List', path: '/utilities/lists/products' },
+    { label: 'Gift List', path: '/utilities/lists/gifts' },
+    { label: 'Route List', path: '/utilities/lists/routes' },
   ];
 
   return (
@@ -23,21 +23,21 @@ export default function ListsLayout() {
         <div className="p-4 border-b border-slate-700/50">
           <button 
             onClick={() => navigate('/utilities')}
-            className="flex items-center gap-2 text-sky-400 font-bold hover:text-sky-300 transition-colors uppercase tracking-widest text-sm"
+            className="flex items-center gap-2 text-sky-400 font-bold hover:text-sky-300 transition-colors tracking-wide text-xs"
           >
-            <ChevronLeft size={18} /> BACK TO UTILITIES
+            <ChevronLeft size={18} /> Back to Utilities
           </button>
         </div>
         <div className="p-4">
-          <h2 className="text-white font-bold text-base tracking-wide mb-4 px-2">Lists</h2>
+          <h2 className="text-white font-bold text-base tracking-wide mb-4 px-2" style={{ fontSize: 'var(--menu-heading-size, 16px)' }}>Lists</h2>
           <div className="flex flex-col gap-1">
             {menuItems.map((item, idx) => (
               <button
                 key={idx}
                 onClick={() => navigate(item.path)}
-                className={`text-left px-4 py-3 rounded-lg font-bold text-xs uppercase tracking-widest transition-colors ${
+                className={`text-left px-4 py-2.5 rounded-xl font-medium text-xs tracking-wide transition-colors ${
                   location.pathname === item.path 
-                    ? 'bg-sky-500/20 text-sky-400 border border-sky-500/30' 
+                    ? 'bg-sky-500/20 text-sky-400 font-bold border border-sky-500/30' 
                     : 'text-slate-300 hover:bg-slate-700 hover:text-white border border-transparent'
                 }`}
               >

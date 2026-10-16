@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import CustomSelect from '../components/CustomSelect';
 import { useNavigate } from 'react-router-dom';
-import { 
-    ChevronLeft, Settings, Award, User, Save, Check
+import {
+    ArrowLeft, ChevronLeft, Settings, Award, User, Save, Check
 
 } from 'lucide-react';
 
@@ -20,7 +20,7 @@ function UserKpisView({ userRow, selectedMonth, onBack, onViewKpi }: { userRow: 
     return (
         <div className="max-w-7xl mx-auto pb-32">
             <div className="mb-6 flex items-center text-[#a1a5b7] gap-2 w-max">
-                <h2 className="text-[15px] font-bold uppercase tracking-wider text-[#b5b5c3] flex items-center gap-2">
+                <h2 className="text-base font-bold tracking-wide text-slate-200 flex items-center gap-2">
                     <span onClick={onBack} className="cursor-pointer hover:text-white transition-colors">
                         <ChevronLeft size={20} />
                     </span>
@@ -378,25 +378,48 @@ export default function UserPerformanceAnalysis() {
     return (
         <div className="h-screen bg-slate-900 flex flex-col md:flex-row font-sans text-slate-100 overflow-hidden relative z-10">
             {/* SIDEBAR */}
-            <div className="w-full md:w-72 bg-slate-800/50 border-r border-slate-800 flex flex-col shrink-0 py-6 overflow-y-auto">
-                <div className="px-6 mb-6 flex items-center gap-3 border-b-0">
-                    <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors bg-transparent p-0">
-                        <ChevronLeft size={20} />
+            <div className="w-full md:w-64 bg-slate-900/80 border-r border-slate-800 flex flex-col shrink-0 py-6 overflow-y-auto">
+                <div className="px-5 pb-5 mb-4 border-b border-slate-800 flex flex-col gap-3">
+                    <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+                        <ArrowLeft size={18} /> <span className="font-bold text-xs tracking-wide text-sky-400 hover:text-white transition-colors">Back to Admin Menu</span>
                     </button>
-                    <h2 className="text-white font-bold text-base tracking-wide">User Performance Analysis</h2>
+                    <h2 className="text-white font-bold text-base tracking-wide" style={{ fontSize: 'var(--menu-heading-size, 16px)' }}>
+                        User Performance Analysis
+                    </h2>
                 </div>
 
-                <div className="flex flex-col space-y-2 px-4">
-                    <button onClick={() => setActiveTab('rankings')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all flex items-center gap-3 ${activeTab === 'rankings' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                        <Award size={18} />
+                <div className="flex flex-col space-y-1.5 px-4">
+                    <button 
+                        onClick={() => setActiveTab('rankings')} 
+                        className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3 text-sm ${
+                            activeTab === 'rankings' 
+                                ? 'bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm' 
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold'
+                        }`}
+                    >
+                        <Award size={18} className={activeTab === 'rankings' ? 'text-sky-400' : 'text-slate-400'} />
                         Rankings
                     </button>
-                    <button onClick={() => setActiveTab('userwise')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all flex items-center gap-3 ${activeTab === 'userwise' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                        <User size={18} />
+                    <button 
+                        onClick={() => setActiveTab('userwise')} 
+                        className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3 text-sm ${
+                            activeTab === 'userwise' 
+                                ? 'bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm' 
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold'
+                        }`}
+                    >
+                        <User size={18} className={activeTab === 'userwise' ? 'text-sky-400' : 'text-slate-400'} />
                         Userwise Reports
                     </button>
-                    <button onClick={() => setActiveTab('settings')} className={`text-left px-6 py-4 rounded-xl text-sm font-bold uppercase transition-all flex items-center gap-3 ${activeTab === 'settings' ? 'bg-sky-500 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
-                        <Settings size={18} />
+                    <button 
+                        onClick={() => setActiveTab('settings')} 
+                        className={`w-full text-left px-4 py-3 rounded-xl transition-all flex items-center gap-3 text-sm ${
+                            activeTab === 'settings' 
+                                ? 'bg-sky-500/15 text-sky-400 font-bold border-l-2 border-sky-400 shadow-sm' 
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold'
+                        }`}
+                    >
+                        <Settings size={18} className={activeTab === 'settings' ? 'text-sky-400' : 'text-slate-400'} />
                         Settings
                     </button>
                 </div>
@@ -409,11 +432,11 @@ export default function UserPerformanceAnalysis() {
                 {activeTab === 'settings' && (
                     <div className="max-w-4xl mx-auto pb-32">
                         <div className="flex justify-between items-center mb-8">
-                            <h2 className="text-2xl font-bold uppercase tracking-wider text-slate-100 flex items-center gap-3">
+                            <h2 className="text-xl md:text-2xl font-bold tracking-wide text-slate-100 flex items-center gap-3">
                                 <Settings className="text-sky-400" size={28} />
                                 Configuration Settings
                             </h2>
-                            <button onClick={saveSettings} className="bg-emerald-600 hover:bg-emerald-500 text-black px-6 py-2 rounded font-bold uppercase tracking-wider flex items-center gap-2 shadow-[0_0_15px_rgba(16,185,129,0.3)] transition-all">
+                            <button onClick={saveSettings} className="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-xl font-bold text-sm tracking-wide flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition-all">
                                 <Save size={18} />
                                 Save
                             </button>
@@ -422,7 +445,7 @@ export default function UserPerformanceAnalysis() {
                         {/* 1. REPORT WEIGHTAGE */}
                         <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-xl overflow-hidden mb-8">
                             <div className="bg-slate-800 p-4 border-b border-slate-700">
-                                <h3 className="font-bold text-lg uppercase tracking-wider text-slate-200">Configure Report Weightage</h3>
+                                <h3 className="font-bold text-base md:text-lg tracking-wide text-slate-200">Configure Report Weightage</h3>
                                 <p className="text-sm text-slate-400 mt-1">Assign percentages to each report. The total must equal 100%.</p>
                             </div>
                             <div className="p-6">
@@ -602,7 +625,7 @@ export default function UserPerformanceAnalysis() {
                                 <span onClick={() => setActiveTab('settings')} className="cursor-pointer hover:text-white transition-colors">
                                     <ChevronLeft size={20} />
                                 </span>
-                                RANKINGS FOR {selectedMonth.toUpperCase()}
+                                Rankings for {selectedMonth}
                             </h2>
                         </div>
                         
@@ -723,7 +746,7 @@ export default function UserPerformanceAnalysis() {
                     <div className="max-w-6xl mx-auto pb-32">
                         <div className="flex justify-between items-center mb-8">
                             <div>
-                                <h2 className="text-2xl font-bold uppercase tracking-wider text-slate-100">Performance</h2>
+                                <h2 className="text-xl md:text-2xl font-bold tracking-wide text-slate-100">Performance</h2>
                                 <p className="text-sm text-slate-400 mt-1">Track your employees goals and achievements</p>
                             </div>
                         </div>

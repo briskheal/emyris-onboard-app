@@ -69,7 +69,7 @@ export default function ManageProducts() {
         <div className={`${sidebarCollapsed ? 'w-16' : 'w-60'} bg-slate-800/60 border-r border-slate-800 flex flex-col py-4 overflow-y-auto transition-all duration-200 flex-shrink-0`}>
           <div className={`flex items-center ${sidebarCollapsed ? 'justify-center px-1' : 'justify-between px-3.5'} mb-3`}>
             {!sidebarCollapsed && (
-              <h2 className="text-white font-bold text-base tracking-wide truncate">
+              <h2 className="text-white font-bold text-base tracking-wide truncate" style={{ fontSize: 'var(--menu-heading-size, 16px)' }}>
                 Manage Products
               </h2>
             )}

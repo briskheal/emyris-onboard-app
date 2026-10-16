@@ -194,7 +194,7 @@ export default function Approvals() {
              </button>
              <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
                {!sidebarCollapsed && (
-                 <h2 className="text-white font-bold text-base tracking-wide truncate">
+                 <h2 className="text-white font-bold text-base tracking-wide truncate" style={{ fontSize: 'var(--menu-heading-size, 16px)' }}>
                    Approvals
                  </h2>
                )}

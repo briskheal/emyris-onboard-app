@@ -24,22 +24,30 @@ export const AVAILABLE_FONTS: FontOption[] = [
 
 export const FONT_SIZES: FontSizeOption[] = [
   { id: '13px', name: 'Compact', scale: '13px', desc: 'Dense data grids & high information density' },
-  { id: '14px', name: 'Standard', scale: '14px', desc: 'Balanced SaaS standard (Recommended)' },
+  { id: '14px', name: 'Standard (Default)', scale: '14px', desc: 'Balanced standard UI scale (Recommended)' },
   { id: '15px', name: 'Comfortable', scale: '15px', desc: 'Enhanced clarity & comfortable reading' },
   { id: '16px', name: 'Large', scale: '16px', desc: 'High visibility & readability for all screens' }
+];
+
+export const MENU_HEADING_SIZES: FontSizeOption[] = [
+  { id: '16px', name: 'Standard 16px (Default)', scale: '16px', desc: 'Default Benchmark — 16px Bold, Title Case (Recommended)' },
+  { id: '14px', name: 'Compact 14px', scale: '14px', desc: '14px Bold, Title Case for smaller screens' },
+  { id: '18px', name: 'Large 18px', scale: '18px', desc: '18px Bold, Title Case for high visibility' }
 ];
 
 export function getSavedTypography() {
   return {
     fontFamily: localStorage.getItem('xla_font_family') || 'Montserrat',
-    fontSize: localStorage.getItem('xla_font_size') || '14px'
+    fontSize: localStorage.getItem('xla_font_size') || '14px',
+    menuHeadingSize: localStorage.getItem('xla_menu_heading_size') || '16px'
   };
 }
 
-export function applyTypography(fontFamily: string, fontSize: string) {
+export function applyTypography(fontFamily: string, fontSize: string, menuHeadingSize: string = '16px') {
   try {
     localStorage.setItem('xla_font_family', fontFamily);
     localStorage.setItem('xla_font_size', fontSize);
+    localStorage.setItem('xla_menu_heading_size', menuHeadingSize);
 
     const fontValue = fontFamily === 'system-ui'
       ? '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
@@ -47,16 +55,19 @@ export function applyTypography(fontFamily: string, fontSize: string) {
 
     document.documentElement.style.setProperty('--font-sans', fontValue);
     document.documentElement.style.setProperty('--app-font-size', fontSize);
+    document.documentElement.style.setProperty('--menu-heading-size', menuHeadingSize);
     document.documentElement.style.fontSize = fontSize;
     document.body.style.fontFamily = fontValue;
 
-    window.dispatchEvent(new CustomEvent('xla_typography_changed', { detail: { fontFamily, fontSize } }));
+    window.dispatchEvent(new CustomEvent('xla_typography_changed', { 
+      detail: { fontFamily, fontSize, menuHeadingSize } 
+    }));
   } catch (e) {
     console.error('Failed to apply typography', e);
   }
 }
 
 export function initializeTypography() {
-  const { fontFamily, fontSize } = getSavedTypography();
-  applyTypography(fontFamily, fontSize);
+  const { fontFamily, fontSize, menuHeadingSize } = getSavedTypography();
+  applyTypography(fontFamily, fontSize, menuHeadingSize);
 }

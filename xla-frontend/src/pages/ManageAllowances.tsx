@@ -441,7 +441,7 @@ export default function ManageAllowances() {
           <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
             <ArrowLeft size={18} /> <span className="font-bold text-xs tracking-wide text-sky-400 hover:text-white transition-colors">Back to Admin Menu</span>
           </button>
-          <h2 className="text-white font-bold text-base tracking-wide">Manage Expenses</h2>
+          <h2 className="text-white font-bold text-base tracking-wide" style={{ fontSize: 'var(--menu-heading-size, 16px)' }}>Manage Expenses</h2>
         </div>
         <div className="flex-1 min-w-0 overflow-y-auto py-6">
           <ul className="space-y-1 px-4">
