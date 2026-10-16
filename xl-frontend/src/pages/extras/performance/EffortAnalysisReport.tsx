@@ -160,6 +160,21 @@ export default function EffortAnalysisReport() {
     setSearchParams({ month: selectedMonth, year: y });
   };
 
+  // Format metric labels to concise Dr's standard
+  const formatMetricLabel = (label: string): string => {
+    return label
+      .replace(/^Total Doctors$/, "Tot Dr's")
+      .replace(/^Doctors Call$/, "Dr's Met (Calls)")
+      .replace(/^Unique Doctors Visited$/, "Unique Dr's")
+      .replace(/^Missed Doctors$/, "Missed Dr's")
+      .replace(/^Non-Core Doctors \(Met\/Total\)$/, "Non-Core Dr's Met")
+      .replace(/^Core Doctors \(Met\/Total\)$/, "Core Dr's Met")
+      .replace(/^Super-Core Doctors \(Met\/Total\)$/, "Super-Core Dr's Met")
+      .replace(/^Doctors Call Average$/, "Dr's Call Avg.")
+      .replace(/^Doctor's Coverage Percentage$/, "Dr's Covg. %")
+      .replace(/^Doctor's Compliance Percentage$/, "Dr's Compl. %");
+  };
+
   // Handle Export / Share to Excel
   const handleShare = async () => {
     if (!effortData || !effortData.matrix || effortData.matrix.length === 0) {
@@ -187,15 +202,15 @@ export default function EffortAnalysisReport() {
       // Summary Block
       rows.push(['EFFORT SUMMARY OVERVIEW']);
       rows.push([
-        'Total Doctors',
-        'Total Doctors Met',
-        'Total Unique Visited',
-        'Total Missed Doctors',
-        'Non-Core Met/Total',
-        'Core Met/Total',
-        'Super-Core Met/Total',
-        'Doctor Coverage %',
-        'Doctor Compliance %'
+        "Tot Dr's",
+        "Dr's Met",
+        "Unique Dr's",
+        "Missed Dr's",
+        "Non-Core Dr's Met",
+        "Core Dr's Met",
+        "Super-Core Dr's Met",
+        "Dr's Covg. %",
+        "Dr's Compl. %"
       ]);
       rows.push([
         effortData.summary?.totalDoctors ?? 0,
@@ -222,7 +237,7 @@ export default function EffortAnalysisReport() {
           }
           return val;
         });
-        rows.push([row.label, ...rowVals]);
+        rows.push([formatMetricLabel(row.label), ...rowVals]);
       });
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
@@ -422,52 +437,52 @@ export default function EffortAnalysisReport() {
         {!loading && effortData && (
           <div className="space-y-6">
             {/* Quick KPI Ribbon */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <div className="bg-[#14192d] border border-[#363e63] rounded-2xl p-3.5 shadow-md">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Doctor Coverage
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
+                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Dr's Covg.">
+                  Dr's Covg.
                 </span>
-                <span className="text-2xl font-black text-sky-400">
+                <span className="text-base sm:text-lg md:text-xl font-black text-sky-400">
                   {effortData.summary?.coverage}%
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-2xl p-3.5 shadow-md">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Doctor Compliance
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
+                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Dr's Compl.">
+                  Dr's Compl.
                 </span>
-                <span className="text-2xl font-black text-emerald-400">
+                <span className="text-base sm:text-lg md:text-xl font-black text-emerald-400">
                   {effortData.summary?.compliance}%
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-2xl p-3.5 shadow-md">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Total Doctors
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
+                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Tot Dr's">
+                  Tot Dr's
                 </span>
-                <span className="text-2xl font-black text-white">
+                <span className="text-base sm:text-lg md:text-xl font-black text-white">
                   {effortData.summary?.totalDoctors}
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-2xl p-3.5 shadow-md">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Doctors Met (Calls)
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
+                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Dr's Met">
+                  Dr's Met
                 </span>
-                <span className="text-2xl font-black text-sky-300">
+                <span className="text-base sm:text-lg md:text-xl font-black text-sky-300">
                   {effortData.summary?.totalDoctorsMet}
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-2xl p-3.5 shadow-md">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Unique Doctors Visited
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
+                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Unique Dr's">
+                  Unique Dr's
                 </span>
-                <span className="text-2xl font-black text-teal-300">
+                <span className="text-base sm:text-lg md:text-xl font-black text-teal-300">
                   {effortData.summary?.totalUniqueDoctors}
                 </span>
               </div>
-              <div className="bg-[#14192d] border border-[#363e63] rounded-2xl p-3.5 shadow-md">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Missed Doctors
+              <div className="bg-[#14192d] border border-[#363e63] rounded-xl p-2 sm:p-2.5 shadow-md flex flex-col justify-between text-center">
+                <span className="text-[9.5px] sm:text-[10.5px] font-bold text-slate-400 uppercase tracking-tight block mb-0.5 leading-tight" title="Missed Dr's">
+                  Missed Dr's
                 </span>
-                <span className="text-2xl font-black text-rose-400">
+                <span className="text-base sm:text-lg md:text-xl font-black text-rose-400">
                   {effortData.summary?.totalMissedDoctors}
                 </span>
               </div>
@@ -485,29 +500,29 @@ export default function EffortAnalysisReport() {
                 </span>
               </div>
               <div className="border border-[#363e63] rounded-lg shadow-xl overflow-x-auto">
-                <table className="w-full border-collapse border border-[#363e63] text-xs md:text-sm text-slate-200 whitespace-nowrap">
+                <table className="w-full border-collapse border border-[#363e63] text-[11px] sm:text-xs text-slate-200 whitespace-nowrap">
                   <thead className="bg-[#1e243d]">
                     <tr>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Sr<br/>no.</th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Total<br/>Doctors</th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Total Doctors<br/>Met</th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Total Unique<br/>Doctors Visited</th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Total Missed<br/>Doctors</th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Total Non-<br/>Core Doctors Met</th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Total Core<br/>Doctors Met</th>
-                      <th className="border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-300 uppercase tracking-wider">Total Super<br/>Core Doctors Met</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Sr<br/>No.</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Tot<br/>Dr's</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Dr's<br/>Met</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Unique<br/>Dr's</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Missed<br/>Dr's</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Non-Core<br/>Dr's Met</th>
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Core<br/>Dr's Met</th>
+                      <th className="border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-300 uppercase tracking-wider text-[10px] sm:text-[11px]">Super-Core<br/>Dr's Met</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="bg-[#14192d] hover:bg-[#20294a] transition-colors text-center font-medium">
-                      <td className="border-r border-b border-[#363e63] px-3 py-3 text-slate-400">1</td>
-                      <td className="border-r border-b border-[#363e63] px-3 py-3 font-bold text-white">{effortData.summary?.totalDoctors}</td>
-                      <td className="border-r border-b border-[#363e63] px-3 py-3 font-semibold text-slate-200">{effortData.summary?.totalDoctorsMet}</td>
-                      <td className="border-r border-b border-[#363e63] px-3 py-3 font-semibold text-sky-300">{effortData.summary?.totalUniqueDoctors}</td>
-                      <td className="border-r border-b border-[#363e63] px-3 py-3 font-bold text-red-400">{effortData.summary?.totalMissedDoctors}</td>
-                      <td className="border-r border-b border-[#363e63] px-3 py-3 text-slate-300">{effortData.summary?.totalNonCore}</td>
-                      <td className="border-r border-b border-[#363e63] px-3 py-3 text-slate-300">{effortData.summary?.totalCore}</td>
-                      <td className="border-b border-b border-[#363e63] px-3 py-3 text-slate-300">{effortData.summary?.totalSuperCore}</td>
+                      <td className="border-r border-b border-[#363e63] px-2.5 py-2 text-slate-400">1</td>
+                      <td className="border-r border-b border-[#363e63] px-2.5 py-2 font-bold text-white">{effortData.summary?.totalDoctors}</td>
+                      <td className="border-r border-b border-[#363e63] px-2.5 py-2 font-semibold text-slate-200">{effortData.summary?.totalDoctorsMet}</td>
+                      <td className="border-r border-b border-[#363e63] px-2.5 py-2 font-semibold text-sky-300">{effortData.summary?.totalUniqueDoctors}</td>
+                      <td className="border-r border-b border-[#363e63] px-2.5 py-2 font-bold text-rose-400">{effortData.summary?.totalMissedDoctors}</td>
+                      <td className="border-r border-b border-[#363e63] px-2.5 py-2 text-slate-300">{effortData.summary?.totalNonCore}</td>
+                      <td className="border-r border-b border-[#363e63] px-2.5 py-2 text-slate-300">{effortData.summary?.totalCore}</td>
+                      <td className="border-b border-b border-[#363e63] px-2.5 py-2 text-slate-300">{effortData.summary?.totalSuperCore}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -527,63 +542,66 @@ export default function EffortAnalysisReport() {
               </div>
               
               <div className="border border-[#363e63] rounded-lg shadow-xl overflow-x-auto">
-                <table className="w-full border-collapse border border-[#363e63] text-xs md:text-sm text-slate-200">
+                <table className="w-full border-collapse border border-[#363e63] text-[11px] sm:text-xs text-slate-200">
                   <thead className="bg-[#1e243d]">
                     <tr>
-                      <th className="border-r border-b border-[#363e63] px-4 py-3 text-left font-bold text-sky-300 uppercase tracking-wider sticky left-0 bg-[#1e243d] z-10 whitespace-nowrap">
+                      <th className="border-r border-b border-[#363e63] px-3 py-2 text-left font-bold text-sky-300 uppercase tracking-wider sticky left-0 bg-[#1e243d] z-10 whitespace-nowrap text-[10px] sm:text-[11px]">
                         Metrics
                       </th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap text-[10px] sm:text-[11px]">
                         Week 1
                       </th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap text-[10px] sm:text-[11px]">
                         Week 2
                       </th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap text-[10px] sm:text-[11px]">
                         Week 3
                       </th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap text-[10px] sm:text-[11px]">
                         Week 4
                       </th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap text-[10px] sm:text-[11px]">
                         Week 5
                       </th>
-                      <th className="border-r border-b border-[#363e63] px-3 py-3 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap">
+                      <th className="border-r border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-slate-200 uppercase tracking-wider whitespace-nowrap text-[10px] sm:text-[11px]">
                         Week 6
                       </th>
-                      <th className="border-b border-[#363e63] px-3 py-3 text-center font-bold text-sky-400 uppercase tracking-wider bg-[#222a47] whitespace-nowrap">
+                      <th className="border-b border-[#363e63] px-2.5 py-2 text-center font-bold text-sky-400 uppercase tracking-wider bg-[#222a47] whitespace-nowrap text-[10px] sm:text-[11px]">
                         Total
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {effortData.matrix.map((row, i) => (
-                      <tr key={i} className="even:bg-[#181f38] odd:bg-[#14192d] hover:bg-[#20294a] transition-colors">
-                        <td className="border-r border-b border-[#363e63] px-4 py-2.5 font-semibold text-white whitespace-nowrap sticky left-0 bg-inherit z-10">
-                          {row.label}
-                        </td>
-                        {row.data.map((val, colIdx) => {
-                          let displayVal = val;
-                          if (typeof val === 'number') {
-                            if (row.label.includes('Percentage')) displayVal = val.toFixed(2) + '%';
-                            else if (row.label.includes('Average')) displayVal = val.toFixed(2);
-                          }
-                          const isTotalCol = colIdx === 6;
-                          return (
-                            <td 
-                              key={colIdx} 
-                              className={`border-r border-b border-[#363e63] px-3 py-2.5 text-center whitespace-nowrap ${
-                                isTotalCol 
-                                  ? 'font-bold text-sky-300 bg-[#1c233c]/60' 
-                                  : 'text-slate-200 font-medium'
-                              }`}
-                            >
-                              {displayVal}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                    {effortData.matrix.map((row, i) => {
+                      const displayLabel = formatMetricLabel(row.label);
+                      return (
+                        <tr key={i} className="even:bg-[#181f38] odd:bg-[#14192d] hover:bg-[#20294a] transition-colors">
+                          <td className="border-r border-b border-[#363e63] px-3 py-2 font-semibold text-white whitespace-nowrap sticky left-0 bg-inherit z-10 text-[11px] sm:text-xs">
+                            {displayLabel}
+                          </td>
+                          {row.data.map((val, colIdx) => {
+                            let displayVal = val;
+                            if (typeof val === 'number') {
+                              if (row.label.includes('Percentage')) displayVal = val.toFixed(2) + '%';
+                              else if (row.label.includes('Average')) displayVal = val.toFixed(2);
+                            }
+                            const isTotalCol = colIdx === 6;
+                            return (
+                              <td 
+                                key={colIdx} 
+                                className={`border-r border-b border-[#363e63] px-2.5 py-2 text-center whitespace-nowrap text-[11px] sm:text-xs ${
+                                  isTotalCol 
+                                    ? 'font-bold text-sky-300 bg-[#1c233c]/60' 
+                                    : 'text-slate-200 font-medium'
+                                }`}
+                              >
+                                {displayVal}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
