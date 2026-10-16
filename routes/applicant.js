@@ -1132,6 +1132,7 @@ router.post('/save-draft', async (req, res) => {
             dob: formData.dob, // Store as string DD-MM-YYYY
             address: formData.address || "",
             pincode: formData.pincode || formData.pin || "",
+            pin: formData.pincode || formData.pin || "",
             state: formData.state || "",
             salary: formData.salary || "",
             maritalStatus: formData.maritalStatus || "",
@@ -1797,6 +1798,7 @@ router.post('/submit-onboarding', async (req, res) => {
                 dob: formData.dob, 
                 address: formData.address || "",
                 pincode: formData.pincode || formData.pin || "",
+                pin: formData.pincode || formData.pin || "",
                 state: formData.state || "",
                 salary: formData.salary || "",
                 maritalStatus: formData.maritalStatus || "Unmarried",

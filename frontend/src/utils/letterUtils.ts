@@ -67,9 +67,9 @@ export function fillLetterPlaceholders(text: string, app: any, companyData: any 
         "{{BLOOD_GROUP}}": (fd.bloodGroup || "").toUpperCase(),
         "{{PAN_NO}}": (fd.panNo || "").toUpperCase(),
         "{{PHONE}}": fd.phone || "",
-        "{{ADDRESS}}": [fd.address || "", fd.city || "", fd.state || "", fd.pin ? `PIN: ${fd.pin}` : ""].filter(Boolean).join(", ").toUpperCase(),
-        "{{CITY_STATE}}": `${fd.city || ""}, ${fd.state || ""}`.toUpperCase(),
-        "{{PIN}}": fd.pin || "",
+        "{{ADDRESS}}": [app.address || fd.address || "", fd.city || "", app.state || fd.state || "", (app.pincode || fd.pincode || fd.pin || (app.pin && app.pin !== app.password ? app.pin : "")) ? `PIN: ${app.pincode || fd.pincode || fd.pin || (app.pin && app.pin !== app.password ? app.pin : "")}` : ""].filter(Boolean).join(", ").toUpperCase(),
+        "{{CITY_STATE}}": `${fd.city || ""}, ${app.state || fd.state || ""}`.toUpperCase(),
+        "{{PIN}}": app.pincode || fd.pincode || fd.pin || (app.pin && app.pin !== app.password ? app.pin : "") || "",
         "{{DESIGNATION}}": (app.designation || fd.designation || "").toUpperCase(),
         "{{EMP_CODE}}": (() => {
             if (app.empCode) return app.empCode;

@@ -1884,7 +1884,13 @@ router.post('/update-workflow-data', async (req, res) => {
         if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
         if (address !== undefined) update.address = address;
           if (state !== undefined) update.state = state;
-          if (pin !== undefined) update.pin = pin;
+          if (pin !== undefined || req.body.pincode !== undefined) {
+              const postalPin = pin !== undefined ? pin : req.body.pincode;
+              update.pin = postalPin;
+              update.pincode = postalPin;
+              update['formData.pin'] = postalPin;
+              update['formData.pincode'] = postalPin;
+          }
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;
@@ -2575,7 +2581,13 @@ router.post('/update-workflow-data', async (req, res) => {
         if (actualJoiningDate !== undefined) update.actualJoiningDate = actualJoiningDate;
         if (address !== undefined) update.address = address;
           if (state !== undefined) update.state = state;
-          if (pin !== undefined) update.pin = pin;
+          if (pin !== undefined || req.body.pincode !== undefined) {
+              const postalPin = pin !== undefined ? pin : req.body.pincode;
+              update.pin = postalPin;
+              update.pincode = postalPin;
+              update['formData.pin'] = postalPin;
+              update['formData.pincode'] = postalPin;
+          }
         if (verificationChecks !== undefined) update.verificationChecks = verificationChecks;
         if (tasks !== undefined) update.tasks = tasks;
         if (incrementData !== undefined) update.incrementData = incrementData;

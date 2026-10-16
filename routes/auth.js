@@ -109,7 +109,7 @@ async function handleRegister(req, res) {
         const newApplicant = await Applicant.create({
             email, title, fullName, phone, division, designation,
             password: passwordPin, // Password PIN strictly stored in password column
-            pin: passwordPin,      // legacy backward compatibility
+            pin: null,             // Postal PIN remains null until onboarding address is submitted
             status: 'draft',
             canLogin: true,
             formData: {

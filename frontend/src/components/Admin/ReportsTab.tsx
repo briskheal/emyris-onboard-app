@@ -595,7 +595,7 @@ const ReportsTab: React.FC<ReportsTabProps> = ({ initialTab = 'details', isStand
                       <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                         <td style={{ padding: '6px 0', color: 'var(--text-muted)' }}>Full Address:</td>
                         <td style={{ padding: '6px 0', fontWeight: 500, textAlign: 'right', maxWidth: '180px', wordWrap: 'break-word' }}>
-                          {[currentApplicant.formData?.address, currentApplicant.formData?.city, currentApplicant.formData?.state, currentApplicant.formData?.pin].filter(Boolean).join(", ") || 'N/A'}
+                          {[currentApplicant.address || currentApplicant.formData?.address, currentApplicant.formData?.city, currentApplicant.state || currentApplicant.formData?.state, currentApplicant.pincode || currentApplicant.formData?.pin || currentApplicant.formData?.pincode || (currentApplicant.pin && currentApplicant.pin !== currentApplicant.password ? currentApplicant.pin : '')].filter(Boolean).join(", ") || 'N/A'}
                         </td>
                       </tr>
                     </tbody>

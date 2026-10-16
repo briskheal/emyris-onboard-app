@@ -10,6 +10,15 @@ interface ApplicantVerificationModalProps {
   onRefresh?: () => void;
 }
 
+const getPostalPin = (app: any): string => {
+  if (!app) return '';
+  return app.pincode || 
+         app.formData?.pincode || 
+         app.formData?.pin || 
+         (app.pin && app.pin !== app.password ? app.pin : '') || 
+         '';
+};
+
 export default function ApplicantVerificationModal({ applicant: initialApplicant, managersList, onClose, onSuccess, onRefresh }: ApplicantVerificationModalProps) {
   const adminRole = sessionStorage.getItem('admin_role') || 'superadmin';
   const [applicant, setApplicant] = useState<any>(initialApplicant);
@@ -20,7 +29,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
   const [editPhone, setEditPhone] = useState(initialApplicant.phone || '');
   const [editAddress, setEditAddress] = useState(initialApplicant.address || '');
   const [editState, setEditState] = useState(initialApplicant.state || '');
-  const [editPin, setEditPin] = useState(initialApplicant.pin || '');
+  const [editPin, setEditPin] = useState(getPostalPin(initialApplicant));
   
   // Local state for internal assignment
   const [dob, setDob] = useState(() => {
@@ -96,7 +105,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
         setEditPhone(fullApp.phone || '');
         setEditAddress(fullApp.address || '');
         setEditState(fullApp.state || '');
-        setEditPin(fullApp.pin || '');
+        setEditPin(getPostalPin(fullApp));
         setSalBasic(fullApp.salaryBreakup?.basic?.toString() || '0');
       setSalHra(fullApp.salaryBreakup?.hra?.toString() || '0');
       setSalLta(fullApp.salaryBreakup?.lta?.toString() || '0');
@@ -320,7 +329,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, newEmail: editEmail !== applicant.email ? editEmail : undefined, fullName: editName, phone: editPhone, address: editAddress, state: editState, pin: editPin, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
+        email: applicant.email, newEmail: editEmail !== applicant.email ? editEmail : undefined, fullName: editName, phone: editPhone, address: editAddress, state: editState, pin: editPin, pincode: editPin, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
         epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary, verificationChecks,
         dob, bloodGroup, maritalStatus, anniversaryDate
       });
@@ -361,7 +370,7 @@ export default function ApplicantVerificationModal({ applicant: initialApplicant
       };
 
       const updateRes = await api.post('/admin/update-workflow-data', {
-        email: applicant.email, newEmail: editEmail !== applicant.email ? editEmail : undefined, fullName: editName, phone: editPhone, address: editAddress, state: editState, pin: editPin, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
+        email: applicant.email, newEmail: editEmail !== applicant.email ? editEmail : undefined, fullName: editName, phone: editPhone, address: editAddress, state: editState, pin: editPin, pincode: editPin, division, reportingTo, hq, empCode, actualJoiningDate, salaryBreakup, detailDesignation: designation,
         epfNumber, uanNumber, esiNumber, bankName, accNo, ifsc, salary
       });
       if (!updateRes.data.success) throw new Error(updateRes.data.error || 'Failed to update assignment');
