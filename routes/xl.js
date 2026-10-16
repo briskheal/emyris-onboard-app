@@ -4415,36 +4415,27 @@ router.get('/user-performance/userwise', async (req, res) => {
         let data = {};
 
         if (reportType === 'Effort Analysis') {
+            const { XlDCR, XlDoctor, XlChemist, XlStockist } = require('../db');
+            const effortMatrix = await buildEffortMatrix(user, month, year, XlDCR, XlDoctor, XlChemist, XlStockist);
             
-            const monthNum = String(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].indexOf(month) + 1).padStart(2, '0');
-            const datePrefix = `${year}-${monthNum}-`;
-            const { Op } = require('sequelize');
-            const dcrs = await XlDCR.findAll({ 
-                where: { 
-                    employeeId: user.employeeId || null, 
-                    date: { [Op.like]: `${datePrefix}%` } 
-                } 
-            });
+            const totalDocsRow = effortMatrix.find(r => r.label === 'Total Doctors');
+            const totalDocs = totalDocsRow ? totalDocsRow.data[6] : 0;
+            const drCalls = effortMatrix.find(r => r.label === 'Doctors Call')?.data[6] || 0;
+            const drUnique = effortMatrix.find(r => r.label === 'Unique Doctors Visited')?.data[6] || 0;
+            const drMissed = effortMatrix.find(r => r.label === 'Missed Doctors')?.data[6] || 0;
+            const nonCore = effortMatrix.find(r => r.label === 'Non-Core Doctors (Met/Total)')?.data[6] || '0 / 0';
+            const core = effortMatrix.find(r => r.label === 'Core Doctors (Met/Total)')?.data[6] || '0 / 0';
+            const superCore = effortMatrix.find(r => r.label === 'Super-Core Doctors (Met/Total)')?.data[6] || '0 / 0';
 
-            let totalDoctorsMet = 0;
-            let totalUniqueDoctors = new Set();
-            dcrs.forEach(dcr => {
-                if (dcr.entityType === 'Doctor' && dcr.status === 'Approved') {
-                    totalDoctorsMet++;
-                    if (dcr.entityId) {
-                        totalUniqueDoctors.add(dcr.entityId);
-                    }
-                }
-            });
-            const uniqueDocsCount = totalUniqueDoctors.size;
             data = {
-                totalDoctors: 1000, 
-                totalDoctorsMet,
-                totalUniqueDoctors: uniqueDocsCount,
-                totalMissedDoctors: Math.max(0, 1000 - uniqueDocsCount),
-                totalNonCore: Math.floor(uniqueDocsCount * 0.3),
-                totalCore: Math.floor(uniqueDocsCount * 0.5),
-                totalSuperCore: Math.floor(uniqueDocsCount * 0.2)
+                totalDoctors: totalDocs, 
+                totalDoctorsMet: drCalls,
+                totalUniqueDoctors: drUnique,
+                totalMissedDoctors: drMissed,
+                totalNonCore: nonCore,
+                totalCore: core,
+                totalSuperCore: superCore,
+                matrix: effortMatrix
             };
         } else {
             // Fetch from XlPerformanceAnalysis
