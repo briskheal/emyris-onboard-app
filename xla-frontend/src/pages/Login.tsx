@@ -10,9 +10,9 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [logoUrl, setLogoUrl] = useState('');
 
-  // 2-Step Robust Forgot Password States
+  // 2-Step Robust Forgot Password States (Direct PIN & Password Reset)
   const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
-  const [forgotStep, setForgotStep] = useState<'email' | 'otp' | 'success'>('email');
+  const [forgotStep, setForgotStep] = useState<'otp' | 'success'>('otp');
   const [forgotEmail, setForgotEmail] = useState('');
   const [maskedEmail, setMaskedEmail] = useState('');
   const [otpVal, setOtpVal] = useState('');
@@ -66,36 +66,34 @@ export default function Login() {
     }
   };
 
-  // Step 1: Request 6-Digit OTP to linked admin email
-  const handleRequestOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setForgotError('');
-    if (!forgotEmail) {
-      setForgotError('Please enter your registered admin email address.');
-      return;
-    }
+  // Automatically request 6-digit security PIN to registered Admin email
+  const triggerSendPin = async (overrideEmail?: string) => {
     setForgotLoading(true);
+    setForgotError('');
     try {
-      const res = await axios.post('/api/xl/forgot-password/request-otp', { email: forgotEmail });
+      const res = await axios.post('/api/xl/forgot-password/request-otp', {
+        email: overrideEmail || email || 'hradmin@emyrishr.in'
+      });
       if (res.data.success) {
-        setMaskedEmail(res.data.maskedEmail || forgotEmail);
+        setForgotEmail(res.data.adminEmail || 'hradmin@emyrishr.in');
+        setMaskedEmail(res.data.maskedEmail || 'h•••••n@emyrishr.in');
         setForgotStep('otp');
       } else {
-        setForgotError(res.data.message || 'Failed to dispatch verification code.');
+        setForgotError(res.data.message || 'Failed to dispatch security PIN.');
       }
     } catch (err: any) {
-      setForgotError(err.response?.data?.message || 'Server error. Please verify your connection.');
+      setForgotError(err.response?.data?.message || 'Server error sending security PIN.');
     } finally {
       setForgotLoading(false);
     }
   };
 
-  // Step 2: Verify OTP and save user's chosen password in database
+  // Step 2: Verify PIN and save encrypted password in database
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     setForgotError('');
     if (!otpVal || otpVal.trim().length !== 6) {
-      setForgotError('Please enter the 6-digit verification code sent to your email.');
+      setForgotError('Please enter the 6-digit verification PIN sent to your admin email.');
       return;
     }
     if (!newPassVal || newPassVal.length < 6) {
@@ -110,17 +108,17 @@ export default function Login() {
     setForgotLoading(true);
     try {
       const res = await axios.post('/api/xl/forgot-password/verify-otp', {
-        email: forgotEmail,
+        email: forgotEmail || email || 'hradmin@emyrishr.in',
         otp: otpVal.trim(),
         newPassword: newPassVal
       });
       if (res.data.success) {
-        setForgotSuccess(res.data.message || 'Your password has been successfully updated in the database!');
+        setForgotSuccess(res.data.message || 'Your password has been encrypted and updated in the database!');
         setForgotStep('success');
-        setEmail(forgotEmail);
+        setEmail(forgotEmail || 'hradmin@emyrishr.in');
         setPassword(newPassVal);
       } else {
-        setForgotError(res.data.message || 'Verification failed. Please check the code.');
+        setForgotError(res.data.message || 'PIN verification failed. Please check the code.');
       }
     } catch (err: any) {
       setForgotError(err.response?.data?.message || 'Server error updating password.');
@@ -197,10 +195,14 @@ export default function Login() {
             <button 
               type="button" 
               onClick={() => {
-                setForgotEmail(email || '');
                 setForgotError('');
                 setForgotSuccess('');
+                setOtpVal('');
+                setNewPassVal('');
+                setConfirmPassVal('');
                 setIsForgotModalOpen(true);
+                setForgotStep('otp');
+                triggerSendPin(email);
               }}
               className="text-xs font-bold text-rose-400 hover:text-rose-300 transition-colors focus:outline-none"
             >
@@ -246,9 +248,8 @@ export default function Login() {
               <div>
                 <h3 className="text-base font-bold text-white">Reset Admin Password</h3>
                 <p className="text-xs text-slate-400">
-                  {forgotStep === 'email' && 'Step 1: Identity Verification'}
-                  {forgotStep === 'otp' && 'Step 2: Enter OTP & Set Password'}
-                  {forgotStep === 'success' && 'Reset Complete'}
+                  {forgotStep === 'otp' && 'Enter 6-Digit PIN & Set New Password'}
+                  {forgotStep === 'success' && 'Password Reset Complete'}
                 </p>
               </div>
             </div>
@@ -260,7 +261,7 @@ export default function Login() {
               </div>
             )}
 
-            {/* Step 3 / Success View */}
+            {/* Success View */}
             {forgotStep === 'success' ? (
               <div className="space-y-4 my-2">
                 <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 text-left">
@@ -275,7 +276,7 @@ export default function Login() {
                   </div>
                 </div>
                 <p className="text-[11px] text-slate-400 text-center">
-                  Your new password is now active in the database and pre-filled in your login form.
+                  Your new password is now encrypted (bcrypt) in the database and pre-filled in your login form.
                 </p>
                 <button
                   type="button"
@@ -288,70 +289,49 @@ export default function Login() {
                   Return to Login
                 </button>
               </div>
-            ) : forgotStep === 'email' ? (
-              /* Step 1: Email Form */
-              <form onSubmit={handleRequestOtp} className="space-y-4">
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Enter your registered Admin Email. The system will strictly verify your account in the database and send a secure 6-digit One-Time Password (OTP) to your private inbox.
-                </p>
-
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Admin Email Address</label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input 
-                      type="email" 
-                      required
-                      value={forgotEmail}
-                      onChange={e => setForgotEmail(e.target.value)}
-                      placeholder="e.g. hradmin@emyrishr.in"
-                      className="w-full bg-slate-900/90 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-rose-500 transition-colors"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2.5 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsForgotModalOpen(false)}
-                    className="flex-1 bg-slate-700/60 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={forgotLoading}
-                    className="flex-1 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow-lg shadow-rose-500/20 flex items-center justify-center gap-1.5 disabled:opacity-50"
-                  >
-                    {forgotLoading ? (
-                      <>
-                        <Loader2 size={14} className="animate-spin" />
-                        Verifying & Sending...
-                      </>
-                    ) : (
-                      'Send Verification Code'
-                    )}
-                  </button>
-                </div>
-              </form>
             ) : (
-              /* Step 2: OTP Verification & New Password Setting */
+              /* Direct PIN Verification & New Password Setting (No manual email entry) */
               <form onSubmit={handleVerifyOtp} className="space-y-4">
-                <div className="bg-slate-900/60 p-3 rounded-xl border border-slate-700/60">
-                  <p className="text-xs text-slate-300">
-                    Verification code dispatched to <strong className="text-rose-400">{maskedEmail}</strong>. Please enter the code and set your new password.
-                  </p>
+                <div className="bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/60">
+                  {forgotLoading && !maskedEmail ? (
+                    <div className="flex items-center gap-2 text-xs text-rose-300">
+                      <Loader2 size={15} className="animate-spin text-rose-400 shrink-0" />
+                      <span>Dispatching security PIN to registered admin email...</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-xs text-slate-300">
+                        Security PIN sent to Admin Email:{' '}
+                        <strong className="text-rose-400 font-mono">{maskedEmail || 'hradmin@emyrishr.in'}</strong>
+                      </p>
+                      <p className="text-[11px] text-slate-400">
+                        Check your inbox, enter the 6-digit PIN below, and set your new password.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">6-Digit Verification Code (OTP)</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                      6-Digit Security PIN
+                    </label>
+                    <button
+                      type="button"
+                      disabled={forgotLoading}
+                      onClick={() => triggerSendPin(email)}
+                      className="text-[11px] font-bold text-rose-400 hover:text-rose-300 transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      Resend PIN
+                    </button>
+                  </div>
                   <input 
                     type="text"
                     required
                     maxLength={6}
                     value={otpVal}
                     onChange={e => setOtpVal(e.target.value.replace(/\D/g, ''))}
-                    placeholder="Enter 6-digit code"
+                    placeholder="Enter 6-digit PIN"
                     className="w-full bg-slate-900/90 border border-slate-700 rounded-xl py-3 px-4 text-center text-lg font-mono tracking-[6px] font-bold text-white placeholder-slate-600 focus:outline-none focus:border-rose-500 transition-colors"
                   />
                 </div>
@@ -397,12 +377,12 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => {
-                      setForgotStep('email');
+                      setIsForgotModalOpen(false);
                       setForgotError('');
                     }}
                     className="px-4 bg-slate-700/60 hover:bg-slate-700 text-slate-300 font-bold py-2.5 rounded-xl text-xs transition-colors"
                   >
-                    Back
+                    Cancel
                   </button>
                   <button
                     type="submit"
@@ -415,7 +395,7 @@ export default function Login() {
                         Verifying & Saving...
                       </>
                     ) : (
-                      'Verify & Set New Password'
+                      'Verify PIN & Set Password'
                     )}
                   </button>
                 </div>

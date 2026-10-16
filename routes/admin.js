@@ -5005,6 +5005,12 @@ router.post('/admins', async (req, res) => {
         delete body.isAdmin;
         delete body.reportingDesignation;
         delete body.reportingHq;
+        if (body.password) {
+            const bcrypt = require('bcryptjs');
+            if (!body.password.startsWith('$2')) {
+                body.password = bcrypt.hashSync(body.password.trim(), 10);
+            }
+        }
         const admin = await XlAdmin.create(body);
         const adminData = admin.toJSON();
         delete adminData.password;
@@ -5018,6 +5024,12 @@ router.put('/admins/:id', async (req, res) => {
         delete body.isAdmin;
         delete body.reportingDesignation;
         delete body.reportingHq;
+        if (body.password) {
+            const bcrypt = require('bcryptjs');
+            if (!body.password.startsWith('$2')) {
+                body.password = bcrypt.hashSync(body.password.trim(), 10);
+            }
+        }
         await XlAdmin.update(body, { where: { _id: req.params.id } });
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }

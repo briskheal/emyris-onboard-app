@@ -77,6 +77,11 @@ router.post('/admin-login', async (req, res) => {
             passwordMatch = bcrypt.compareSync(password, storedPass);
         } else {
             passwordMatch = (password === storedPass);
+            if (passwordMatch) {
+                // Auto-encrypt plain text to bcrypt in database
+                const upgraded = bcrypt.hashSync(password, 10);
+                await XlAdmin.update({ password: upgraded }, { where: { _id: admin._id } });
+            }
         }
 
         if (!passwordMatch) {
@@ -102,50 +107,54 @@ router.post('/admin-login', async (req, res) => {
 // ROBUST 2-STEP OTP ADMIN PASSWORD RESET
 // ==========================================
 
-// Step 1: Send OTP to Admin's Pre-Linked Email Only
+// Step 1: Send OTP / PIN to Admin's Pre-Linked Email (auto-resolves admin if email not passed)
 router.post('/forgot-password/request-otp', async (req, res) => {
     try {
         const { email } = req.body;
-        const targetEmail = (email || '').trim().toLowerCase();
-        if (!targetEmail) {
-            return res.json({ success: false, message: 'Please provide your registered admin email address.' });
-        }
+        let targetEmail = (email || '').trim().toLowerCase();
 
         const { XlAdmin, sequelize } = require('../db');
         const { sendEmail } = require('../utils/mailer');
 
-        // Strictly verify that the email belongs to a registered admin in the database
-        let admin = await XlAdmin.findOne({ where: { email: targetEmail } });
+        let admin = null;
+        if (targetEmail) {
+            admin = await XlAdmin.findOne({ where: { email: targetEmail } });
+            if (!admin) {
+                admin = await XlAdmin.findOne({ 
+                    where: sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('email')), 
+                        targetEmail
+                    ) 
+                });
+            }
+        }
+
+        // If no email passed or not found by exact string, resolve registered XLA admin directly
         if (!admin) {
-            admin = await XlAdmin.findOne({ 
-                where: sequelize.where(
-                    sequelize.fn('LOWER', sequelize.col('email')), 
-                    targetEmail
-                ) 
-            });
+            admin = await XlAdmin.findOne({ where: { email: 'hradmin@emyrishr.in' } });
+            if (!admin) admin = await XlAdmin.findOne();
         }
 
         if (!admin) {
             return res.json({ 
                 success: false, 
-                message: 'No registered XLA Admin account was found matching this email address.' 
+                message: 'No registered XLA Admin account was found in the system.' 
             });
         }
 
-        // Anti-Spam / Rate-limiting: Require 45 seconds between OTP requests
+        // Anti-Spam / Rate-limiting: Require 30 seconds between OTP requests
         if (admin.resetOtpExpires) {
             const timeDiff = new Date(admin.resetOtpExpires).getTime() - Date.now();
-            if (timeDiff > (9 * 60 + 15) * 1000) {
-                return res.json({ success: false, message: 'A verification code was recently sent. Please wait 45 seconds before requesting another.' });
+            if (timeDiff > (9 * 60 + 30) * 1000) {
+                return res.json({ success: false, message: 'A verification PIN was recently sent. Please wait 30 seconds before requesting another.' });
             }
         }
 
-        // Generate a secure 6-digit verification code
+        // Generate a secure 6-digit verification PIN
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
         // Store OTP & Expiry in database on admin's record
-        // (NOTE: The admin's password is NOT changed at this step!)
         await XlAdmin.update({ resetOtp: otp, resetOtpExpires: expires }, { where: { _id: admin._id } });
         console.log(`[XLA PASSWORD RESET OTP] Code generated for admin: ${admin.email}`);
 
@@ -166,16 +175,16 @@ router.post('/forgot-password/request-otp', async (req, res) => {
                     <p style="margin: 6px 0 0 0; font-size: 11px; font-weight: bold; color: #f43f5e; text-transform: uppercase; letter-spacing: 2px;">Admin Portal Security</p>
                 </div>
 
-                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Password Reset Verification Code</h2>
+                <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px;">Password Reset Verification PIN</h2>
                 <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 16px;">
                     Hello <strong>${adminName}</strong>,
                 </p>
                 <p style="font-size: 14px; line-height: 1.6; color: #475569; margin-bottom: 20px;">
-                    We received a request to reset the password for your XLA Admin account. Please use the One-Time Password (OTP) verification code below to authorize this request:
+                    We received a request to reset the password for your XLA Admin account (<strong>${admin.email}</strong>). Please use the One-Time Security PIN below to authorize this request:
                 </p>
 
                 <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f43f5e; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 24px;">
-                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Your 6-Digit Verification Code (OTP)</div>
+                    <div style="font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">Your 6-Digit Verification PIN</div>
                     <div style="font-family: Monaco, Consolas, 'Courier New', monospace; font-size: 32px; font-weight: 900; color: #e11d48; letter-spacing: 8px; background: #ffffff; padding: 12px 24px; border-radius: 8px; border: 1px dashed #f43f5e; display: inline-block;">
                         ${otp}
                     </div>
@@ -183,7 +192,7 @@ router.post('/forgot-password/request-otp', async (req, res) => {
                 </div>
 
                 <div style="font-size: 12px; line-height: 1.5; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 16px;">
-                    <p style="margin: 0 0 6px 0;"><strong>Security Notice:</strong> Never share this code with anyone. Emyris personnel will never ask for your verification code.</p>
+                    <p style="margin: 0 0 6px 0;"><strong>Security Notice:</strong> Never share this PIN with anyone. Emyris personnel will never ask for your verification code.</p>
                     <p style="margin: 0;">If you did not request this, you can safely ignore this email. Your current password remains active and unchanged in the database.</p>
                 </div>
             </div>
@@ -191,14 +200,15 @@ router.post('/forgot-password/request-otp', async (req, res) => {
 
         await sendEmail({
             to: admin.email,
-            subject: `XLA Admin Portal - Security Verification Code: ${otp}`,
+            subject: `XLA Admin Portal - Security Verification PIN: ${otp}`,
             html: emailHtml
         });
 
         res.json({ 
             success: true, 
+            adminEmail: admin.email,
             maskedEmail,
-            message: `A 6-digit verification code has been sent to ${maskedEmail}. Please check your inbox.` 
+            message: `A 6-digit verification PIN has been sent to ${maskedEmail}. Please check your inbox.` 
         });
     } catch (e) {
         console.error('[XLA Request OTP Error]', e);
@@ -206,16 +216,16 @@ router.post('/forgot-password/request-otp', async (req, res) => {
     }
 });
 
-// Step 2: Verify OTP & Set User's Chosen New Password in Database
+// Step 2: Verify OTP & Set User's Chosen New Password in Database (ENCRYPTED WITH BCRYPT)
 router.post('/forgot-password/verify-otp', async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
-        const targetEmail = (email || '').trim().toLowerCase();
+        let targetEmail = (email || '').trim().toLowerCase();
         const submittedOtp = (otp || '').trim();
         const trimmedNewPass = (newPassword || '').trim();
 
-        if (!targetEmail || !submittedOtp || !trimmedNewPass) {
-            return res.json({ success: false, message: 'Email, verification code, and new password are required.' });
+        if (!submittedOtp || !trimmedNewPass) {
+            return res.json({ success: false, message: 'Verification PIN and new password are required.' });
         }
 
         if (trimmedNewPass.length < 6) {
@@ -226,14 +236,21 @@ router.post('/forgot-password/verify-otp', async (req, res) => {
         const bcrypt = require('bcryptjs');
         const { sendEmail } = require('../utils/mailer');
 
-        let admin = await XlAdmin.findOne({ where: { email: targetEmail } });
+        let admin = null;
+        if (targetEmail) {
+            admin = await XlAdmin.findOne({ where: { email: targetEmail } });
+            if (!admin) {
+                admin = await XlAdmin.findOne({ 
+                    where: sequelize.where(
+                        sequelize.fn('LOWER', sequelize.col('email')), 
+                        targetEmail
+                    ) 
+                });
+            }
+        }
         if (!admin) {
-            admin = await XlAdmin.findOne({ 
-                where: sequelize.where(
-                    sequelize.fn('LOWER', sequelize.col('email')), 
-                    targetEmail
-                ) 
-            });
+            admin = await XlAdmin.findOne({ where: { email: 'hradmin@emyrishr.in' } });
+            if (!admin) admin = await XlAdmin.findOne();
         }
 
         if (!admin) {
@@ -242,22 +259,25 @@ router.post('/forgot-password/verify-otp', async (req, res) => {
 
         // Validate OTP
         if (!admin.resetOtp || admin.resetOtp.trim() !== submittedOtp) {
-            return res.json({ success: false, message: 'Invalid verification code. Please check your email and try again.' });
+            return res.json({ success: false, message: 'Invalid verification PIN. Please check your email and try again.' });
         }
 
         // Validate Expiry
         if (!admin.resetOtpExpires || new Date() > new Date(admin.resetOtpExpires)) {
-            return res.json({ success: false, message: 'Verification code has expired. Please request a new code.' });
+            return res.json({ success: false, message: 'Verification PIN has expired. Please request a new PIN.' });
         }
 
-        // Update password directly in database; invalidate OTP
+        // Encrypt password with bcrypt before storing in database
+        const hashedPassword = bcrypt.hashSync(trimmedNewPass, 10);
+
+        // Update password in database; invalidate OTP
         await XlAdmin.update({ 
-            password: trimmedNewPass,
+            password: hashedPassword,
             resetOtp: null,
             resetOtpExpires: null
         }, { where: { _id: admin._id } });
 
-        console.log(`[XLA PASSWORD RESET SUCCESS] Password successfully updated in database for admin: ${admin.email}`);
+        console.log(`[XLA PASSWORD RESET SUCCESS] Password successfully encrypted (bcrypt) and updated in database for admin: ${admin.email}`);
 
         // Send confirmation email
         const adminName = `${admin.firstName || 'Admin'} ${admin.lastName || ''}`.trim();
