@@ -3339,13 +3339,20 @@ router.get('/approvals/counts', async (req, res) => {
         };
 
         await safeCount('Call Report', async () => {
+            const attendances = await require('../db').XlAttendance.findAll({ 
+                where: { daySubmitted: true },
+                attributes: ['employeeId', 'date'],
+                raw: true 
+            });
+            const submittedDaysSet = new Set(attendances.map(a => `${a.employeeId}_${a.date}`));
+
             const callGroups = await XlDCR.findAll({
                 where: empCondition,
                 attributes: ['employeeId', 'date'],
                 group: ['employeeId', 'date'],
                 raw: true
             });
-            return callGroups.length;
+            return callGroups.filter(g => submittedDaysSet.has(`${g.employeeId}_${g.date}`)).length;
         });
 
         await safeCount('Tour Program', () => XlTourProgram.count({ where: tourProgramCond }));

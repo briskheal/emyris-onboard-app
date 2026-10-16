@@ -1,11 +1,109 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import CustomSelect from '../components/CustomSelect';
 import { useNavigate } from 'react-router-dom';
 import {
-    ArrowLeft, ChevronLeft, Settings, Award, User, Save, Check
-
+    ArrowLeft, ChevronLeft, ChevronRight, Calendar, Settings, Award, User, Save, Check
 } from 'lucide-react';
+
+function SquareMonthPicker({ value, onChange, label }: { value: string, onChange: (v: string) => void, label?: string }) {
+    const [isOpen, setIsOpen] = useState(false);
+    const pickerRef = useRef<HTMLDivElement>(null);
+
+    const parts = (value || '').trim().split(' ');
+    const currentMonth = parts[0] || 'Sep';
+    const currentYear = parseInt(parts[1]) || new Date().getFullYear();
+
+    const [viewYear, setViewYear] = useState<number>(currentYear);
+
+    useEffect(() => {
+        const p = (value || '').trim().split(' ');
+        if (p[1]) {
+            const y = parseInt(p[1]);
+            if (!isNaN(y)) setViewYear(y);
+        }
+    }, [value]);
+
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+                setIsOpen(false);
+            }
+        }
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isOpen]);
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    const handleSelectMonth = (m: string) => {
+        onChange(`${m} ${viewYear}`);
+        setIsOpen(false);
+    };
+
+    return (
+        <div ref={pickerRef} className="relative w-64 select-none">
+            {label && (
+                <label className="block text-[11px] font-bold text-sky-400 mb-1 uppercase tracking-wider">
+                    {label}
+                </label>
+            )}
+            <div 
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full bg-[#1e243d] text-slate-200 px-3.5 py-2.5 rounded-lg text-sm border border-sky-500/50 hover:border-sky-400 outline-none transition-colors cursor-pointer flex items-center justify-between shadow-sm"
+            >
+                <span className="font-medium text-white">{value || `${currentMonth} ${currentYear}`}</span>
+                <Calendar size={16} className="text-sky-400" />
+            </div>
+
+            {isOpen && (
+                <div className="absolute left-0 top-full mt-2 w-[270px] bg-[#1e243d] border border-sky-500/40 rounded-xl shadow-2xl p-4 z-50 backdrop-blur-md">
+                    <div className="flex items-center justify-between mb-3 pb-2 border-b border-[#363e63]">
+                        <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setViewYear(y => y - 1); }}
+                            className="p-1 rounded hover:bg-[#282f4d] text-slate-300 hover:text-white transition-colors"
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
+                        <span className="font-bold text-base text-white tracking-wide">
+                            {viewYear}
+                        </span>
+                        <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setViewYear(y => y + 1); }}
+                            className="p-1 rounded hover:bg-[#282f4d] text-slate-300 hover:text-white transition-colors"
+                        >
+                            <ChevronRight size={18} />
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                        {months.map(m => {
+                            const isSelected = value === `${m} ${viewYear}`;
+                            return (
+                                <button
+                                    key={m}
+                                    type="button"
+                                    onClick={() => handleSelectMonth(m)}
+                                    className={`py-2 px-1 text-center text-xs font-semibold rounded-lg cursor-pointer transition-colors ${
+                                        isSelected 
+                                            ? 'bg-sky-600 text-white shadow-md shadow-sky-600/40 font-bold' 
+                                            : 'text-slate-300 hover:bg-[#282f4d] hover:text-white border border-[#363e63]/40'
+                                    }`}
+                                >
+                                    {m}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 
 function UserKpisView({ userRow, selectedMonth, onBack, onViewKpi }: { userRow: any, selectedMonth: string, onBack: () => void, onViewKpi: (k: string) => void }) {
@@ -629,25 +727,12 @@ export default function UserPerformanceAnalysis() {
                             </h2>
                         </div>
                         
-                        <div className="w-64 mb-6">
-                            <label className="block text-[11px] font-bold text-sky-400 mb-1 uppercase tracking-wider">Select Year *</label>
-                            <div className="relative">
-                                <select 
-                                    className="w-full bg-transparent text-slate-200 p-2.5 rounded text-sm border border-sky-500/50 outline-none focus:border-sky-500 transition-colors cursor-pointer appearance-none"
-                                    value={selectedMonth} 
-                                    onChange={e => setSelectedMonth(e.target.value)}
-                                >
-                                    {[...Array(6)].map((_, i) => {
-                                        const d = new Date();
-                                        d.setMonth(d.getMonth() - i);
-                                        const val = d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getFullYear();
-                                        return <option key={i} value={val} className="bg-slate-800">{val}</option>;
-                                    })}
-                                </select>
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                </div>
-                            </div>
+                        <div className="mb-6">
+                            <SquareMonthPicker 
+                                label="Select Month"
+                                value={selectedMonth} 
+                                onChange={setSelectedMonth} 
+                            />
                         </div>
 
                         {/* Full Leaderboard Table matching Medorn ERP design */}
@@ -752,12 +837,12 @@ export default function UserPerformanceAnalysis() {
                         </div>
 
                         <div className="flex flex-wrap gap-4 mb-8">
-                            <div className="w-48">
-                                <label className="block text-xs text-slate-400 mb-1">Select Month</label>
-                                <select value={selectedMonth} onChange={e => setSelectedMonth(e.target.value)} className="w-full bg-slate-900/50 border border-slate-700 rounded p-2 text-white">
-                                    <option value="Aug 2026">Aug 2026</option>
-                                    <option value="Sep 2026">Sep 2026</option>
-                                </select>
+                            <div className="w-64">
+                                <SquareMonthPicker 
+                                    label="Select Month"
+                                    value={selectedMonth} 
+                                    onChange={setSelectedMonth} 
+                                />
                             </div>
                             <div className="w-56">
                                 <label className="block text-xs text-slate-400 mb-1">Select Report Type</label>
