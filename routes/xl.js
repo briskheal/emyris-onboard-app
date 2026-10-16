@@ -7431,6 +7431,307 @@ router.post('/controls', async (req, res) => {
     }
 });
 
+// Geo-Location Analysis Report Endpoint
+router.get('/reports/geo-location-analysis', async (req, res) => {
+    try {
+        const { employeeId, userId, email, date } = req.query;
+        if (!date) {
+            return res.status(400).json({ success: false, message: 'Date parameter is required (YYYY-MM-DD)' });
+        }
+
+        const { XlUser, XlAttendance, XlDCR, XlDoctor, XlChemist, XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+
+        // Resolve target user
+        let user = null;
+        if (userId) {
+            user = await XlUser.findByPk(userId);
+        }
+        if (!user && (employeeId || email)) {
+            const target = employeeId || email;
+            user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [
+                        { employeeId: target },
+                        { email: target },
+                        { _id: target },
+                        { uid: target }
+                    ]
+                }
+            });
+        }
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const userIds = [user.employeeId, user.email, user._id, user.uid].filter(Boolean);
+
+        // Fetch Attendance for date
+        const attendance = await XlAttendance.findOne({
+            where: {
+                employeeId: { [Op.in]: userIds },
+                date: date
+            }
+        });
+
+        // Fetch DCRs for date
+        const dcrs = await XlDCR.findAll({
+            where: {
+                employeeId: { [Op.in]: userIds },
+                date: date
+            },
+            order: [['createdAt', 'ASC']]
+        });
+
+        const parseTimeToMinutes = (tStr) => {
+            if (!tStr) return null;
+            const clean = String(tStr).trim().toUpperCase();
+            const m = clean.match(/(\d+):(\d+)(?:\s*(AM|PM))?/);
+            if (!m) return null;
+            let hrs = parseInt(m[1], 10);
+            const mins = parseInt(m[2], 10);
+            const meridiem = m[3];
+            if (meridiem === 'PM' && hrs < 12) hrs += 12;
+            if (meridiem === 'AM' && hrs === 12) hrs = 0;
+            return hrs * 60 + mins;
+        };
+
+        const formatMinutesToHours = (mins) => {
+            if (mins == null || isNaN(mins) || mins <= 0) return '0m';
+            const h = Math.floor(mins / 60);
+            const m = Math.round(mins % 60);
+            if (h > 0) return `${h}h ${m}m`;
+            return `${m}m`;
+        };
+
+        const calcDistanceKm = (lat1, lon1, lat2, lon2) => {
+            if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) return 0;
+            if (Number(lat1) === 0 && Number(lon1) === 0) return 0;
+            if (Number(lat2) === 0 && Number(lon2) === 0) return 0;
+            const R = 6371; // km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            return R * c;
+        };
+
+        const sortedDcrs = [...dcrs].sort((a, b) => {
+            const tA = parseTimeToMinutes(a.checkInTime) ?? (a.createdAt ? new Date(a.createdAt).getTime() : 0);
+            const tB = parseTimeToMinutes(b.checkInTime) ?? (b.createdAt ? new Date(b.createdAt).getTime() : 0);
+            return tA - tB;
+        });
+
+        const entityIds = sortedDcrs.map(d => d.entityId).filter(Boolean);
+        const [docs, chems, stocks] = await Promise.all([
+            XlDoctor.findAll({ where: { _id: { [Op.in]: entityIds } } }),
+            XlChemist.findAll({ where: { _id: { [Op.in]: entityIds } } }),
+            XlStockist.findAll({ where: { _id: { [Op.in]: entityIds } } })
+        ]);
+        const entityCoordMap = {};
+        [...docs, ...chems, ...stocks].forEach(ent => {
+            if (ent._id) {
+                entityCoordMap[ent._id] = {
+                    lat: ent.latitude,
+                    lng: ent.longitude,
+                    address: ent.address || ent.city || ''
+                };
+            }
+        });
+
+        const points = [];
+        let cumDistance = 0;
+        let totalMeetingMins = 0;
+        let totalTransitMins = 0;
+        let extendedStoppageCount = 0;
+
+        let prevPoint = null;
+        if (attendance && attendance.punchInTime) {
+            const hasCoords = attendance.punchInLat != null && attendance.punchInLng != null &&
+                              !(Number(attendance.punchInLat) === 0 && Number(attendance.punchInLng) === 0);
+            const pStart = {
+                seq: 0,
+                type: 'punch-in',
+                title: 'Punch-In (Day Start)',
+                entityType: 'Attendance',
+                entityName: 'Day Start Location',
+                checkInTime: attendance.punchInTime,
+                checkOutTime: attendance.punchInTime,
+                lat: hasCoords ? Number(attendance.punchInLat) : null,
+                lng: hasCoords ? Number(attendance.punchInLng) : null,
+                geoAddress: 'Punch-In Location',
+                meetingDurationMins: 0,
+                transitFromPrevMins: 0,
+                distanceFromPrevKm: 0,
+                cumulativeDistanceKm: 0,
+                isExtendedStoppage: false,
+                remarks: attendance.dayRemarks || 'Punched in for work'
+            };
+            points.push(pStart);
+            if (hasCoords) prevPoint = pStart;
+        }
+
+        sortedDcrs.forEach((dcr, index) => {
+            let lat = dcr.latitude != null ? Number(dcr.latitude) : null;
+            let lng = dcr.longitude != null ? Number(dcr.longitude) : null;
+            let address = dcr.geoAddress || '';
+
+            if ((lat == null || lat === 0) && entityCoordMap[dcr.entityId]) {
+                const fb = entityCoordMap[dcr.entityId];
+                if (fb.lat != null && fb.lat !== 0) {
+                    lat = Number(fb.lat);
+                    lng = Number(fb.lng);
+                    if (!address) address = fb.address;
+                }
+            }
+
+            const inMins = parseTimeToMinutes(dcr.checkInTime);
+            const outMins = parseTimeToMinutes(dcr.checkOutTime);
+
+            let meetingDuration = 15;
+            if (inMins != null && outMins != null && outMins >= inMins) {
+                meetingDuration = Math.max(5, outMins - inMins);
+            }
+            totalMeetingMins += meetingDuration;
+
+            let transitMins = 0;
+            let legDist = 0;
+            if (prevPoint) {
+                const prevOutMins = parseTimeToMinutes(prevPoint.checkOutTime) || parseTimeToMinutes(prevPoint.checkInTime);
+                if (inMins != null && prevOutMins != null && inMins >= prevOutMins) {
+                    transitMins = inMins - prevOutMins;
+                }
+                if (lat != null && lng != null && prevPoint.lat != null && prevPoint.lng != null) {
+                    legDist = calcDistanceKm(prevPoint.lat, prevPoint.lng, lat, lng);
+                }
+            }
+            totalTransitMins += transitMins;
+            cumDistance += legDist;
+
+            const isExtended = transitMins >= 30 && legDist <= 2.5;
+            if (isExtended) extendedStoppageCount++;
+
+            let stoppageReason = dcr.discussion || '';
+            if (isExtended && !stoppageReason) {
+                stoppageReason = 'Extended waiting in clinic / transit delay';
+            }
+
+            const pCall = {
+                seq: index + 1,
+                type: 'call',
+                title: `Stop #${index + 1}: ${dcr.entityName || dcr.entityType}`,
+                entityType: dcr.entityType || 'Doctor',
+                entityName: dcr.entityName || 'Doctor Visit',
+                checkInTime: dcr.checkInTime || '--',
+                checkOutTime: dcr.checkOutTime || '--',
+                lat: lat,
+                lng: lng,
+                geoAddress: address || 'Location Coordinates Logged',
+                meetingDurationMins: meetingDuration,
+                transitFromPrevMins: transitMins,
+                distanceFromPrevKm: Number(legDist.toFixed(2)),
+                cumulativeDistanceKm: Number(cumDistance.toFixed(2)),
+                isExtendedStoppage: isExtended,
+                discussion: dcr.discussion || '',
+                remarks: stoppageReason,
+                productsDetailed: dcr.productsDetailed,
+                samplesGiven: dcr.samplesGiven,
+                rating: dcr.rating || 0
+            };
+
+            points.push(pCall);
+            if (lat != null && lng != null) prevPoint = pCall;
+        });
+
+        if (attendance && attendance.punchOutTime) {
+            const hasCoords = attendance.punchOutLat != null && attendance.punchOutLng != null &&
+                              !(Number(attendance.punchOutLat) === 0 && Number(attendance.punchOutLng) === 0);
+            const outLat = hasCoords ? Number(attendance.punchOutLat) : null;
+            const outLng = hasCoords ? Number(attendance.punchOutLng) : null;
+
+            let legDist = 0;
+            let transitMins = 0;
+            if (prevPoint) {
+                const prevOutMins = parseTimeToMinutes(prevPoint.checkOutTime) || parseTimeToMinutes(prevPoint.checkInTime);
+                const outMins = parseTimeToMinutes(attendance.punchOutTime);
+                if (outMins != null && prevOutMins != null && outMins >= prevOutMins) {
+                    transitMins = outMins - prevOutMins;
+                }
+                if (outLat != null && outLng != null && prevPoint.lat != null && prevPoint.lng != null) {
+                    legDist = calcDistanceKm(prevPoint.lat, prevPoint.lng, outLat, outLng);
+                }
+            }
+            cumDistance += legDist;
+            totalTransitMins += transitMins;
+
+            const pEnd = {
+                seq: points.length,
+                type: 'punch-out',
+                title: 'Punch-Out (Day End)',
+                entityType: 'Attendance',
+                entityName: 'Day End Location',
+                checkInTime: attendance.punchOutTime,
+                checkOutTime: attendance.punchOutTime,
+                lat: outLat,
+                lng: outLng,
+                geoAddress: 'Punch-Out Location',
+                meetingDurationMins: 0,
+                transitFromPrevMins: transitMins,
+                distanceFromPrevKm: Number(legDist.toFixed(2)),
+                cumulativeDistanceKm: Number(cumDistance.toFixed(2)),
+                isExtendedStoppage: false,
+                remarks: attendance.dayRemarks || 'Punched out; day ended'
+            };
+            points.push(pEnd);
+        }
+
+        let workingSpanMins = 0;
+        if (attendance && attendance.punchInTime && attendance.punchOutTime) {
+            const pIn = parseTimeToMinutes(attendance.punchInTime);
+            const pOut = parseTimeToMinutes(attendance.punchOutTime);
+            if (pIn != null && pOut != null && pOut >= pIn) {
+                workingSpanMins = pOut - pIn;
+            }
+        }
+
+        const validGpsPoints = points.filter(p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng));
+
+        res.json({
+            success: true,
+            user: {
+                _id: user._id,
+                employeeId: user.employeeId,
+                name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email,
+                designation: user.designation || 'Field Representative',
+                hq: user.hq || '--'
+            },
+            date,
+            summary: {
+                totalDistanceKm: Number(cumDistance.toFixed(2)),
+                punchInTime: attendance?.punchInTime || '--',
+                punchOutTime: attendance?.punchOutTime || '--',
+                totalWorkingHours: formatMinutesToHours(workingSpanMins),
+                totalCalls: sortedDcrs.length,
+                doctorCalls: sortedDcrs.filter(d => (d.entityType || '').toLowerCase() === 'doctor').length,
+                chemistCalls: sortedDcrs.filter(d => (d.entityType || '').toLowerCase() === 'chemist').length,
+                stockistCalls: sortedDcrs.filter(d => (d.entityType || '').toLowerCase() === 'stockist').length,
+                totalMeetingTime: formatMinutesToHours(totalMeetingMins),
+                totalTransitTime: formatMinutesToHours(totalTransitMins),
+                extendedStoppagesCount: extendedStoppageCount,
+                hasGpsData: validGpsPoints.length > 0
+            },
+            timeline: points,
+            routePoints: validGpsPoints
+        });
+    } catch (err) {
+        console.error('Error in /reports/geo-location-analysis:', err);
+        res.status(500).json({ success: false, message: 'Internal server error calculating geo-location analysis' });
+    }
+});
+
 module.exports = router;
 
 

@@ -48,6 +48,7 @@ import RoutesListReport from './pages/RoutesListReport';
 import MissedReports from './pages/MissedReports';
 import PrimarySalesReports from './pages/PrimarySalesReports';
 import SecondarySalesReports from './pages/SecondarySalesReports';
+import GeoLocationAnalysisReport from './pages/GeoLocationAnalysisReport';
 
 
 
@@ -86,6 +87,7 @@ function App() {
           <Route path="reports/missed-reports" element={<MissedReports />} />
           <Route path="reports/primary-sales" element={<PrimarySalesReports />} />
           <Route path="reports/secondary-sales" element={<SecondarySalesReports />} />
+          <Route path="reports/geo-location-analysis" element={<GeoLocationAnalysisReport />} />
           <Route path="report" element={<CallReport />} />
           
           <Route path="extras" element={<Extras />} />
