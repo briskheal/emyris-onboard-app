@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus, X, Search, CheckCircle2 } from 'lucide-react';
 import axios from 'axios';
 
+const KPI_TITLES: Record<string, string> = {
+  brand: 'Product Wise Analysis',
+  account: 'Account Wise Analysis',
+  keyCustomer: 'Key Customer Analysis',
+  roi: 'Customer ROI Analysis',
+  outstanding: 'Outstanding Analysis'
+};
+
 export default function TargetPlanningView({ kpiId, month, year, initialTargets, recordId, onPlanSubmitted, onCancelEdit }: any) {
   const navigate = useNavigate();
   const [weeks, setWeeks] = useState<{id: string, label: string, dateRange: string}[]>([]);
@@ -190,7 +198,7 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
         else if (kpiId === 'outstanding') payload.outstandingData = dataStr;
 
         await axios.post('/api/xl/performance/plan', payload);
-        alert('Monthly Plan Locked In Successfully!');
+        alert('KPI Plan saved successfully!');
         onPlanSubmitted(); // Trigger switch to achievement view
     } catch (e) {
         alert('Failed to submit plan');
@@ -202,7 +210,20 @@ export default function TargetPlanningView({ kpiId, month, year, initialTargets,
   return (
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-44 text-white">
       <div className="px-4 py-4 mt-2">
-        <h2 className="text-xl font-bold text-sky-400 mb-6">Plan Targets</h2>
+        {/* Header with in-page Back Arrow */}
+        <div className="flex items-center gap-3 mb-6">
+          <button 
+            onClick={() => navigate('/extras/performance')} 
+            className="w-10 h-10 rounded-xl bg-slate-700/60 hover:bg-slate-700 border border-slate-600/50 flex items-center justify-center text-slate-200 active:scale-95 transition-all shadow-sm"
+            title="Back to Performance Menu"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <div>
+            <h2 className="text-xl font-bold text-sky-400 leading-tight">{KPI_TITLES[kpiId] || 'Plan Targets'}</h2>
+            <p className="text-xs text-slate-400 font-medium">Monthly Target Planning • {month ? month.charAt(0).toUpperCase() + month.slice(1) : ''} {year}</p>
+          </div>
+        </div>
 
         {/* Search & Add Bar */}
         <div className="flex items-center gap-3 mb-8">

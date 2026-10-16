@@ -82,10 +82,22 @@ export default function EffortAnalysisReport() {
   }, [activeWeek, weeks]);
 
   return (
-    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-4 text-white">
-      <div className="px-4 py-4 mt-2 flex items-center justify-between">
-        <h2 className="text-xl font-bold text-sky-400 mb-6">Effort Analysis Report</h2>
-        <button className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md mb-6">
+    <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-44 text-white">
+      <div className="px-4 py-4 mt-2 flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate('/extras/performance')} 
+            className="w-10 h-10 rounded-xl bg-slate-700/60 hover:bg-slate-700 border border-slate-600/50 flex items-center justify-center text-slate-200 active:scale-95 transition-all shadow-sm"
+            title="Back to Performance Menu"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <div>
+            <h2 className="text-xl font-bold text-sky-400 leading-tight">Effort Analysis Report</h2>
+            <p className="text-xs text-slate-400 font-medium">{month ? month.charAt(0).toUpperCase() + month.slice(1) : ''} {year}</p>
+          </div>
+        </div>
+        <button onClick={handleShare} className="w-10 h-10 bg-sky-500 rounded-full text-white flex items-center justify-center shadow-md hover:bg-sky-400 transition-colors" title="Share">
           <Share2 size={18} />
         </button>
       </div>

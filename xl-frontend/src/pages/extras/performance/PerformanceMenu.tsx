@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { Users, Paperclip, Building2, UserStar, Banknote, ShieldAlert, ChevronDown, CheckCircle2, ChevronLeft } from 'lucide-react';
 import axios from 'axios';
 
 const getUserId = () => {
@@ -9,12 +9,27 @@ const getUserId = () => {
 };
 
 const TARGET_KPIS = [
-  { id: 'brand', label: 'Product Wise Analysis', icon: Paperclip },
-  { id: 'account', label: 'Account Wise Analysis', icon: Building2 },
-  { id: 'keyCustomer', label: 'Key Customer Analysis', icon: UserStar },
-  { id: 'roi', label: 'Customer ROI Analysis', icon: Banknote },
-  { id: 'outstanding', label: 'Outstanding Analysis', icon: ShieldAlert },
+  { id: 'brand', label: 'Product Wise Analysis', icon: Paperclip, dataKey: 'brandData' },
+  { id: 'account', label: 'Account Wise Analysis', icon: Building2, dataKey: 'accountData' },
+  { id: 'keyCustomer', label: 'Key Customer Analysis', icon: UserStar, dataKey: 'keyCustomerData' },
+  { id: 'roi', label: 'Customer ROI Analysis', icon: Banknote, dataKey: 'roiData' },
+  { id: 'outstanding', label: 'Outstanding Analysis', icon: ShieldAlert, dataKey: 'outstandingData' },
 ];
+
+const isKpiPlanned = (rawData: any): boolean => {
+  if (!rawData) return false;
+  try {
+    let parsed = rawData;
+    if (typeof parsed === 'string') {
+      parsed = JSON.parse(parsed);
+      if (typeof parsed === 'string') parsed = JSON.parse(parsed);
+    }
+    if (!Array.isArray(parsed) || parsed.length === 0) return false;
+    return parsed.length > 0;
+  } catch (e) {
+    return false;
+  }
+};
 
 export default function PerformanceMenu() {
   const navigate = useNavigate();
@@ -26,6 +41,7 @@ export default function PerformanceMenu() {
   const [isPlanningPhase, setIsPlanningPhase] = useState(true);
   const [recordId, setRecordId] = useState<string | null>(null);
   const [plannedCount, setPlannedCount] = useState(0);
+  const [plannedKpis, setPlannedKpis] = useState<Record<string, boolean>>({});
   const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
   const [unlockRequested, setUnlockRequested] = useState(false);
   const [isRequestingUnlock, setIsRequestingUnlock] = useState(false);
@@ -46,13 +62,16 @@ export default function PerformanceMenu() {
           setIsPlanningPhase(!data.planningSubmittedAt);
           setUnlockRequested(!!data.unlockRequested);
           
-          // Calculate how many KPIs are planned
-          let count = 0;
-          if (data.brandData) count++;
-          if (data.accountData) count++;
-          if (data.keyCustomerData) count++;
-          if (data.roiData) count++;
-          if (data.outstandingData) count++;
+          // Calculate which and how many KPIs are actually planned
+          const status: Record<string, boolean> = {
+            brand: isKpiPlanned(data.brandData),
+            account: isKpiPlanned(data.accountData),
+            keyCustomer: isKpiPlanned(data.keyCustomerData),
+            roi: isKpiPlanned(data.roiData),
+            outstanding: isKpiPlanned(data.outstandingData),
+          };
+          setPlannedKpis(status);
+          const count = Object.values(status).filter(Boolean).length;
           setPlannedCount(count);
         }
       })
@@ -94,7 +113,20 @@ export default function PerformanceMenu() {
   return (
     <div className="min-h-full bg-slate-800 flex flex-col font-sans pb-44 text-white">
       <div className="flex flex-col px-4 py-6 mb-4">
-        <h2 className="text-xl font-black text-sky-400 mb-6">User Performance Analysis (KPI's)</h2>
+        {/* Header with in-page Back Arrow */}
+        <div className="flex items-center gap-3 mb-6">
+          <button 
+            onClick={() => navigate('/extras')} 
+            className="w-10 h-10 rounded-xl bg-slate-700/60 hover:bg-slate-700 border border-slate-600/50 flex items-center justify-center text-slate-200 active:scale-95 transition-all shadow-sm"
+            title="Back to Extras"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          <div>
+            <h2 className="text-xl font-bold text-sky-400 leading-tight">User Performance Analysis</h2>
+            <p className="text-xs text-slate-400 font-medium">Monthly KPI Planning & Tracking</p>
+          </div>
+        </div>
 
         {/* Month & Year Selector */}
         <div className="flex gap-3 mb-8 bg-slate-800/80 p-4 rounded-2xl border border-slate-700 shadow-inner">
@@ -180,18 +212,41 @@ export default function PerformanceMenu() {
         )}
         
         <div className="grid grid-cols-2 gap-4 pb-4">
-          {TARGET_KPIS.map(kpi => (
-            <button
-              key={kpi.id}
-              onClick={() => navigate(`/extras/performance/targets/${kpi.id}?month=${selectedMonth}&year=${selectedYear}`)}
-              className="bg-[#25273c] rounded-3xl p-6 flex flex-col items-center justify-center gap-4 shadow-xl active:scale-95 transition-transform border border-slate-700 hover:border-sky-500/50"
-            >
-              <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center shadow-inner mb-2">
-                <kpi.icon size={32} className="text-sky-400" />
-              </div>
-              <span className="text-sm font-bold text-slate-300 text-center px-1 leading-tight">{kpi.label}</span>
-            </button>
-          ))}
+          {TARGET_KPIS.map(kpi => {
+            const isPlanned = !!plannedKpis[kpi.id];
+            return (
+              <button
+                key={kpi.id}
+                onClick={() => navigate(`/extras/performance/targets/${kpi.id}?month=${selectedMonth}&year=${selectedYear}`)}
+                className={`bg-[#25273c] rounded-3xl p-5 flex flex-col items-center justify-center gap-3 shadow-xl active:scale-95 transition-all border ${
+                  isPlanned ? 'border-emerald-500/50 hover:border-emerald-400 bg-[#252a3c]' : 'border-slate-700 hover:border-sky-500/50'
+                }`}
+              >
+                <div className="w-14 h-14 bg-slate-800 rounded-full flex items-center justify-center shadow-inner relative">
+                  <kpi.icon size={28} className={isPlanned ? 'text-emerald-400' : 'text-sky-400'} />
+                  {isPlanned && (
+                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow">
+                      <CheckCircle2 size={13} />
+                    </div>
+                  )}
+                </div>
+                <span className="text-sm font-bold text-slate-200 text-center px-1 leading-tight">{kpi.label}</span>
+                
+                {/* Status Badge */}
+                <div className="mt-1">
+                  {isPlanned ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                      <CheckCircle2 size={11} /> Planned
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center text-[11px] font-semibold text-amber-400/90 bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 rounded-full">
+                      Pending
+                    </span>
+                  )}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/* Final Submission Section */}
@@ -221,9 +276,9 @@ export default function PerformanceMenu() {
             ) : (
               <button
                 disabled
-                className="w-full h-14 bg-slate-700 text-slate-400 font-bold rounded-2xl cursor-not-allowed border border-slate-600 border-dashed"
+                className="w-full h-14 bg-slate-700/80 text-slate-400 font-bold rounded-2xl cursor-not-allowed border border-slate-600 border-dashed flex items-center justify-center"
               >
-                Plan all KPIs to Submit
+                Plan all KPIs to Submit ({plannedCount}/5 completed)
               </button>
             )}
           </div>

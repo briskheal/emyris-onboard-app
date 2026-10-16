@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, useParams } from 'react-router-dom';
+import { useSearchParams, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import TargetPlanningView from './TargetPlanningView';
 import TargetAchievementView from './TargetAchievementView';
@@ -10,6 +10,7 @@ const getUserId = () => {
 };
 
 export default function TargetAnalysisReport() {
+  const navigate = useNavigate();
   const { kpiId } = useParams<{ kpiId: string }>();
   const [searchParams] = useSearchParams();
   const month = searchParams.get('month') || '';
@@ -73,7 +74,11 @@ export default function TargetAnalysisReport() {
         recordId={recordId} 
         onPlanSubmitted={() => {
           setIsEditing(false);
-          fetchData();
+          if (planningSubmittedAt) {
+            fetchData();
+          } else {
+            navigate('/extras/performance');
+          }
         }}
         onCancelEdit={isEditing ? () => setIsEditing(false) : undefined}
       />

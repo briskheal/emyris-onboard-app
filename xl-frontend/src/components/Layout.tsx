@@ -69,8 +69,20 @@ export default function Layout() {
   const handleBack = () => {
       if (showNotifMenu) {
           setShowNotifMenu(false);
+          return;
       }
-      navigate('/dashboard');
+      const path = location.pathname;
+      if (path.startsWith('/extras/performance/')) {
+          navigate('/extras/performance');
+      } else if (path === '/extras/performance') {
+          navigate('/extras');
+      } else if (path.startsWith('/extras/')) {
+          navigate('/extras');
+      } else if (window.history.state && window.history.state.idx > 0) {
+          navigate(-1);
+      } else {
+          navigate('/dashboard');
+      }
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
