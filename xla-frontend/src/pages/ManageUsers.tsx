@@ -572,7 +572,7 @@ export default function ManageUsers() {
   ] as const;
   
   return (
-    <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
+    <div className="h-full bg-slate-900 flex flex-col font-sans text-slate-100 overflow-hidden">
       <div className="flex items-center gap-4 px-6 py-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-10">
         <button onClick={() => navigate(-1)} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
           <ArrowLeft size={22} /> <span className="font-bold text-base md:text-lg tracking-wide uppercase">Back to Admin Menu</span>
@@ -1560,84 +1560,90 @@ function DesignationsTab() {
   const paginated = filteredDsgs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="max-w-5xl">
-      <h2 className="text-lg font-bold text-white mb-4 tracking-wide uppercase">&lt; CREATE DESIGNATION</h2>
+    <div className="max-w-6xl space-y-4">
+      <h2 className="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-2">
+        &lt; CREATE DESIGNATION
+      </h2>
       
-      <div className="bg-emerald-900/40 border border-emerald-500/30 p-4 rounded-xl mb-8">
-        <h3 className="text-emerald-400 font-bold text-sm mb-2 uppercase">Usage Instructions</h3>
-        <p className="text-xs text-emerald-300/80 leading-relaxed">
-          The designation Level is based on the hierarchy rank. Level 1 is considered entry level, and higher numbers indicate a higher position in the company hierarchy. An employee can only report to a manager with a higher level number.
-          <br/><br/>
-          <strong className="text-emerald-200">Call Targets:</strong> Setting Doctor/Chemist/Stockist target calls per day will dynamically compute monthly targets on the dashboard based on working days. Leave as 0 to use system defaults (Level 1-2: 8 calls, Level 3-4: 6 calls, Level 5+: 5 calls).
-          <br/><br/>
-          <strong className="text-emerald-200">Central Master:</strong> Designations created here serve as the single source of truth across XLA, Emyris HR Admin, and new applicant registration on emyrishr.in.
+      <div className="bg-emerald-950/40 border border-emerald-500/30 p-3 rounded-xl text-xs leading-relaxed">
+        <div className="text-emerald-400 font-bold text-[11px] uppercase tracking-wider mb-1">
+          Usage & Hierarchy Instructions
+        </div>
+        <p className="text-[11px] text-emerald-300/80 leading-normal">
+          <strong className="text-emerald-300">Level Rank:</strong> Level 1 is entry level; higher numbers denote senior ranks. An employee can only report to a manager with a higher level rank.
+          <span className="mx-2 text-emerald-500">•</span>
+          <strong className="text-emerald-300">Call Targets:</strong> Custom daily calls for DR / CHM / STK dynamically calculate monthly targets (defaults: Level 1-2: 8, Level 3-4: 6, Level 5+: 5).
+          <span className="mx-2 text-emerald-500">•</span>
+          <strong className="text-emerald-300">Central Master:</strong> Designations created here serve as the single source of truth across XLA, Emyris HR Admin, and candidate registration on emyrishr.in.
         </p>
       </div>
 
-      <form onSubmit={handleAdd} className="grid grid-cols-12 gap-4 items-end mb-12">
-        <div className="col-span-2">
-          <label className="text-[10px] text-slate-400 font-bold mb-2 block">LEVEL</label>
-          <select required value={level} onChange={e => setLevel(Number(e.target.value))} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-sky-500">
-            {[1,2,3,4,5,6,7,8,9,10].map(n => <option key={n} value={n}>{n}</option>)}
-          </select>
-        </div>
-        <div className="col-span-3">
-          <label className="text-[10px] text-slate-400 font-bold mb-2 block">DESIGNATION *</label>
-          <input required value={designationName} onChange={e => setDesignationName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-sky-500" placeholder="e.g. Sales Manager" />
-        </div>
-        <div className="col-span-2">
-          <label className="text-[10px] text-slate-400 font-bold mb-2 block">DEPARTMENT</label>
-          <select value={department} onChange={e => setDepartment(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-sky-500">
-            <option value="SALES">SALES</option>
-            <option value="MARKETING">MARKETING</option>
-            <option value="OPERATIONS">OPERATIONS</option>
-            <option value="MEDICAL">MEDICAL</option>
-            <option value="ADMIN">ADMIN</option>
-          </select>
-        </div>
-        <div className="col-span-1">
-          <label className="text-[10px] text-sky-400 font-bold mb-2 block">DR</label>
-          <input type="number" min="0" value={targetDoctorCalls} onChange={e => setTargetDoctorCalls(Number(e.target.value))} className="w-full bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 text-sky-200 focus:outline-none" />
-        </div>
-        <div className="col-span-1">
-          <label className="text-[10px] text-amber-400 font-bold mb-2 block">CHM</label>
-          <input type="number" min="0" value={targetChemistCalls} onChange={e => setTargetChemistCalls(Number(e.target.value))} className="w-full bg-amber-900/20 border border-amber-500/30 rounded-xl p-3 text-amber-200 focus:outline-none" />
-        </div>
-        <div className="col-span-1">
-          <label className="text-[10px] text-rose-400 font-bold mb-2 block">STK</label>
-          <input type="number" min="0" value={targetStockistCalls} onChange={e => setTargetStockistCalls(Number(e.target.value))} className="w-full bg-rose-900/20 border border-rose-500/30 rounded-xl p-3 text-rose-200 focus:outline-none" />
-        </div>
-        <div className="col-span-2">
-          <button disabled={loading} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors text-sm h-[50px]">Add</button>
-        </div>
-      </form>
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 shadow-sm">
+        <form onSubmit={handleAdd} className="grid grid-cols-12 gap-3 items-end">
+          <div className="col-span-2">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Level</label>
+            <select required value={level} onChange={e => setLevel(Number(e.target.value))} className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors h-[34px]">
+              {[...Array(20)].map((_, i) => <option key={i+1} value={i+1}>{i+1}</option>)}
+            </select>
+          </div>
+          <div className="col-span-3">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Designation *</label>
+            <input required value={designationName} onChange={e => setDesignationName(e.target.value)} className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors h-[34px]" placeholder="e.g. Sales Manager" />
+          </div>
+          <div className="col-span-2">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Department</label>
+            <select value={department} onChange={e => setDepartment(e.target.value)} className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors h-[34px]">
+              <option value="SALES">SALES</option>
+              <option value="MARKETING">MARKETING</option>
+              <option value="OPERATIONS">OPERATIONS</option>
+              <option value="MEDICAL">MEDICAL</option>
+              <option value="ADMIN">ADMIN</option>
+            </select>
+          </div>
+          <div className="col-span-1">
+            <label className="text-[11px] font-bold text-sky-400 mb-1 block uppercase tracking-wider">DR</label>
+            <input type="number" min="0" value={targetDoctorCalls} onChange={e => setTargetDoctorCalls(Number(e.target.value))} className="w-full bg-sky-950/40 border border-sky-500/40 rounded-lg px-2 py-1.5 text-xs text-sky-200 text-center focus:outline-none h-[34px]" />
+          </div>
+          <div className="col-span-1">
+            <label className="text-[11px] font-bold text-amber-400 mb-1 block uppercase tracking-wider">CHM</label>
+            <input type="number" min="0" value={targetChemistCalls} onChange={e => setTargetChemistCalls(Number(e.target.value))} className="w-full bg-amber-950/40 border border-amber-500/40 rounded-lg px-2 py-1.5 text-xs text-amber-200 text-center focus:outline-none h-[34px]" />
+          </div>
+          <div className="col-span-1">
+            <label className="text-[11px] font-bold text-rose-400 mb-1 block uppercase tracking-wider">STK</label>
+            <input type="number" min="0" value={targetStockistCalls} onChange={e => setTargetStockistCalls(Number(e.target.value))} className="w-full bg-rose-950/40 border border-rose-500/40 rounded-lg px-2 py-1.5 text-xs text-rose-200 text-center focus:outline-none h-[34px]" />
+          </div>
+          <div className="col-span-2">
+            <button disabled={loading} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-1.5 rounded-lg transition-colors text-xs h-[34px] shadow-sm flex items-center justify-center">Add Designation</button>
+          </div>
+        </form>
+      </div>
       
-      <div className="flex justify-between items-end mb-4">
-        <h3 className="text-white font-bold">ALL DESIGNATIONS</h3>
+      <div className="flex justify-between items-center pt-2">
+        <h3 className="text-xs font-bold text-slate-400 tracking-wider uppercase">ALL DESIGNATIONS ({filteredDsgs.length})</h3>
         <div className="relative w-64">
-          <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+          <Search className="absolute left-3 top-2.5 text-slate-400" size={14} />
           <input 
             type="text" 
             placeholder="Search designations..." 
             value={searchTerm} 
             onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }} 
-            className="w-full pl-10 pr-4 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:border-sky-500"
+            className="w-full pl-9 pr-3 py-1.5 bg-slate-800/90 border border-slate-700 rounded-lg text-white text-xs focus:outline-none focus:border-sky-500"
           />
         </div>
       </div>
 
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 shadow-xl flex flex-col">
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-md flex flex-col overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-800">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px]">Designation</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center">Lvl</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-teal-400">Dept</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-sky-400">Dr</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-amber-400">Chm</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-rose-400">Stk</th>
-                <th className="p-4 font-bold uppercase tracking-wider text-[10px] text-center">Actions</th>
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Designation</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-center w-16">Lvl</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-center text-teal-400 w-28">Dept</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-center text-sky-400 w-16">Dr</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-center text-amber-400 w-16">Chm</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-center text-rose-400 w-16">Stk</th>
+                <th className="px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
@@ -1645,13 +1651,13 @@ function DesignationsTab() {
                 const isEdit = editId === d._id;
                 return (
                   <tr key={d._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                    <td className="border-r border-slate-700 p-4 text-white font-bold">
-                      {isEdit ? <input id={"nm-"+d._id} defaultValue={d.designationName} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1" /> : d.designationName}
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">
+                      {isEdit ? <input id={"nm-"+d._id} defaultValue={d.designationName} className="w-full bg-slate-900 border border-slate-600 rounded px-2 py-1 text-xs text-white" /> : d.designationName}
                     </td>
-                    <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold text-center">
-                      {isEdit ? <input type="number" id={"lv-"+d._id} defaultValue={d.level} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1" /> : d.level}
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-emerald-400 font-bold text-center">
+                      {isEdit ? <input type="number" id={"lv-"+d._id} defaultValue={d.level} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white" /> : d.level}
                     </td>
-                    <td className="border-r border-slate-700 p-4 text-teal-300 font-bold text-center">
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-teal-300 font-semibold text-center">
                       {isEdit ? (
                         <select id={"dept-"+d._id} defaultValue={d.department || 'SALES'} className="bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white">
                           <option value="SALES">SALES</option>
@@ -1662,16 +1668,16 @@ function DesignationsTab() {
                         </select>
                       ) : (d.department || 'SALES')}
                     </td>
-                    <td className="border-r border-slate-700 p-4 text-sky-300 font-bold text-center">
-                      {isEdit ? <input type="number" id={"d-"+d._id} defaultValue={d.targetDoctorCalls || 0} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1" /> : (d.targetDoctorCalls || 0)}
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-sky-300 font-semibold text-center">
+                      {isEdit ? <input type="number" id={"d-"+d._id} defaultValue={d.targetDoctorCalls || 0} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white" /> : (d.targetDoctorCalls || 0)}
                     </td>
-                    <td className="border-r border-slate-700 p-4 text-amber-300 font-bold text-center">
-                      {isEdit ? <input type="number" id={"c-"+d._id} defaultValue={d.targetChemistCalls || 0} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1" /> : (d.targetChemistCalls || 0)}
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-amber-300 font-semibold text-center">
+                      {isEdit ? <input type="number" id={"c-"+d._id} defaultValue={d.targetChemistCalls || 0} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white" /> : (d.targetChemistCalls || 0)}
                     </td>
-                    <td className="border-r border-slate-700 p-4 text-rose-300 font-bold text-center">
-                      {isEdit ? <input type="number" id={"s-"+d._id} defaultValue={d.targetStockistCalls || 0} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1" /> : (d.targetStockistCalls || 0)}
+                    <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-rose-300 font-semibold text-center">
+                      {isEdit ? <input type="number" id={"s-"+d._id} defaultValue={d.targetStockistCalls || 0} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white" /> : (d.targetStockistCalls || 0)}
                     </td>
-                    <td className="p-4 text-center flex justify-center gap-2">
+                    <td className="px-2 py-1.5 text-center flex justify-center items-center gap-1.5">
                       {isEdit ? (
                         <>
                           <button onClick={() => {
@@ -1682,20 +1688,20 @@ function DesignationsTab() {
                             const tC = parseInt((document.getElementById("c-"+d._id) as HTMLInputElement).value);
                             const tS = parseInt((document.getElementById("s-"+d._id) as HTMLInputElement).value);
                             saveEdit(d._id, nm, lv, dept, tD, tC, tS);
-                          }} className="text-emerald-500 hover:bg-emerald-500/10 p-2 rounded-lg font-bold text-xs uppercase">Save</button>
-                          <button onClick={() => setEditId(null)} className="text-slate-400 hover:bg-slate-700 p-2 rounded-lg font-bold text-xs uppercase">Cancel</button>
+                          }} className="text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded text-xs font-bold uppercase transition-colors">Save</button>
+                          <button onClick={() => setEditId(null)} className="text-slate-400 hover:text-slate-300 bg-slate-700/50 hover:bg-slate-700 px-2 py-1 rounded text-xs font-bold uppercase transition-colors">Cancel</button>
                         </>
                       ) : (
                         <>
-                          <button onClick={() => setEditId(d._id)} className="text-sky-500 hover:bg-sky-500/10 p-2 rounded-lg"><Edit size={16}/></button>
-                          <button onClick={() => handleDelete(d._id)} className="text-rose-500 hover:bg-rose-500/10 p-2 rounded-lg"><Trash2 size={16}/></button>
+                          <button onClick={() => setEditId(d._id)} title="Edit" className="text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 p-1.5 rounded transition-colors"><Edit size={14}/></button>
+                          <button onClick={() => handleDelete(d._id)} title="Delete" className="text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded transition-colors"><Trash2 size={14}/></button>
                         </>
                       )}
                     </td>
                   </tr>
                 );
               })}
-              {filteredDsgs.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
+              {filteredDsgs.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-slate-500 text-xs font-semibold">No designations found.</td></tr>}
             </tbody>
           </table>
         </div>

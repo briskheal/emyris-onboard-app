@@ -363,7 +363,7 @@ export default function Layout() {
           </div>
           
           {/* Main content area */}
-          <main className="flex-1 overflow-y-auto pb-24 md:pb-0">
+          <main className={`flex-1 pb-24 md:pb-0 ${location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/locations') ? 'overflow-hidden' : 'overflow-y-auto'}`}>
             <Outlet context={{ openDrawer: () => setIsDrawerOpen(true) }} />
           </main>
 
