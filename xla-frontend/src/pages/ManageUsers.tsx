@@ -1501,6 +1501,7 @@ function DesignationsTab() {
   const [dsgs, setDsgs] = useState<any[]>([]);
   const [designationName, setDesignationName] = useState('');
   const [level, setLevel] = useState(1);
+  const [department, setDepartment] = useState('SALES');
   const [targetDoctorCalls, setTargetDoctorCalls] = useState(0);
   const [targetChemistCalls, setTargetChemistCalls] = useState(0);
   const [targetStockistCalls, setTargetStockistCalls] = useState(0);
@@ -1525,18 +1526,18 @@ function DesignationsTab() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('/api/admin/locations/designations', { designationName, level, targetDoctorCalls, targetChemistCalls, targetStockistCalls });
+      const res = await axios.post('/api/admin/locations/designations', { designationName, level, department, targetDoctorCalls, targetChemistCalls, targetStockistCalls });
       if (res.data.success) { 
-        setDesignationName(''); setLevel(1); 
+        setDesignationName(''); setLevel(1); setDepartment('SALES');
         setTargetDoctorCalls(0); setTargetChemistCalls(0); setTargetStockistCalls(0);
         fetchDsgs(); 
       } else alert(res.data.message);
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
-  const saveEdit = async (id: string, newName: string, newLevel: number, newD: number, newC: number, newS: number) => {
+  const saveEdit = async (id: string, newName: string, newLevel: number, newDept: string, newD: number, newC: number, newS: number) => {
     try {
-      const res = await axios.put(`/api/admin/locations/designations/${id}`, { designationName: newName.trim(), level: newLevel, targetDoctorCalls: newD, targetChemistCalls: newC, targetStockistCalls: newS });
+      const res = await axios.put(`/api/admin/locations/designations/${id}`, { designationName: newName.trim(), level: newLevel, department: newDept, targetDoctorCalls: newD, targetChemistCalls: newC, targetStockistCalls: newS });
       if (res.data.success) {
         setEditId(null);
         fetchDsgs();
@@ -1552,7 +1553,10 @@ function DesignationsTab() {
     } catch (e) { console.error(e); }
   };
 
-  const filteredDsgs = dsgs.filter(d => d.designationName.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredDsgs = dsgs.filter(d => 
+    d.designationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (d.department && d.department.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
   const paginated = filteredDsgs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
@@ -1565,6 +1569,8 @@ function DesignationsTab() {
           The designation Level is based on the hierarchy rank. Level 1 is considered entry level, and higher numbers indicate a higher position in the company hierarchy. An employee can only report to a manager with a higher level number.
           <br/><br/>
           <strong className="text-emerald-200">Call Targets:</strong> Setting Doctor/Chemist/Stockist target calls per day will dynamically compute monthly targets on the dashboard based on working days. Leave as 0 to use system defaults (Level 1-2: 8 calls, Level 3-4: 6 calls, Level 5+: 5 calls).
+          <br/><br/>
+          <strong className="text-emerald-200">Central Master:</strong> Designations created here serve as the single source of truth across XLA, Emyris HR Admin, and new applicant registration on emyrishr.in.
         </p>
       </div>
 
@@ -1579,6 +1585,16 @@ function DesignationsTab() {
           <label className="text-[10px] text-slate-400 font-bold mb-2 block">DESIGNATION *</label>
           <input required value={designationName} onChange={e => setDesignationName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-sky-500" placeholder="e.g. Sales Manager" />
         </div>
+        <div className="col-span-2">
+          <label className="text-[10px] text-slate-400 font-bold mb-2 block">DEPARTMENT</label>
+          <select value={department} onChange={e => setDepartment(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:outline-none focus:border-sky-500">
+            <option value="SALES">SALES</option>
+            <option value="MARKETING">MARKETING</option>
+            <option value="OPERATIONS">OPERATIONS</option>
+            <option value="MEDICAL">MEDICAL</option>
+            <option value="ADMIN">ADMIN</option>
+          </select>
+        </div>
         <div className="col-span-1">
           <label className="text-[10px] text-sky-400 font-bold mb-2 block">DR</label>
           <input type="number" min="0" value={targetDoctorCalls} onChange={e => setTargetDoctorCalls(Number(e.target.value))} className="w-full bg-sky-900/20 border border-sky-500/30 rounded-xl p-3 text-sky-200 focus:outline-none" />
@@ -1591,8 +1607,8 @@ function DesignationsTab() {
           <label className="text-[10px] text-rose-400 font-bold mb-2 block">STK</label>
           <input type="number" min="0" value={targetStockistCalls} onChange={e => setTargetStockistCalls(Number(e.target.value))} className="w-full bg-rose-900/20 border border-rose-500/30 rounded-xl p-3 text-rose-200 focus:outline-none" />
         </div>
-        <div className="col-span-4">
-          <button disabled={loading} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors text-sm h-[50px]">Add Designation</button>
+        <div className="col-span-2">
+          <button disabled={loading} className="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-xl transition-colors text-sm h-[50px]">Add</button>
         </div>
       </form>
       
@@ -1617,6 +1633,7 @@ function DesignationsTab() {
               <tr className="border-b border-slate-700/50 text-slate-300">
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px]">Designation</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center">Lvl</th>
+                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-teal-400">Dept</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-sky-400">Dr</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-amber-400">Chm</th>
                 <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-[10px] text-center text-rose-400">Stk</th>
@@ -1634,6 +1651,17 @@ function DesignationsTab() {
                     <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold text-center">
                       {isEdit ? <input type="number" id={"lv-"+d._id} defaultValue={d.level} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1" /> : d.level}
                     </td>
+                    <td className="border-r border-slate-700 p-4 text-teal-300 font-bold text-center">
+                      {isEdit ? (
+                        <select id={"dept-"+d._id} defaultValue={d.department || 'SALES'} className="bg-slate-900 border border-slate-600 rounded px-1 py-1 text-xs text-white">
+                          <option value="SALES">SALES</option>
+                          <option value="MARKETING">MARKETING</option>
+                          <option value="OPERATIONS">OPERATIONS</option>
+                          <option value="MEDICAL">MEDICAL</option>
+                          <option value="ADMIN">ADMIN</option>
+                        </select>
+                      ) : (d.department || 'SALES')}
+                    </td>
                     <td className="border-r border-slate-700 p-4 text-sky-300 font-bold text-center">
                       {isEdit ? <input type="number" id={"d-"+d._id} defaultValue={d.targetDoctorCalls || 0} className="w-12 text-center bg-slate-900 border border-slate-600 rounded px-1 py-1" /> : (d.targetDoctorCalls || 0)}
                     </td>
@@ -1649,10 +1677,11 @@ function DesignationsTab() {
                           <button onClick={() => {
                             const nm = (document.getElementById("nm-"+d._id) as HTMLInputElement).value;
                             const lv = parseInt((document.getElementById("lv-"+d._id) as HTMLInputElement).value);
+                            const dept = (document.getElementById("dept-"+d._id) as HTMLSelectElement).value;
                             const tD = parseInt((document.getElementById("d-"+d._id) as HTMLInputElement).value);
                             const tC = parseInt((document.getElementById("c-"+d._id) as HTMLInputElement).value);
                             const tS = parseInt((document.getElementById("s-"+d._id) as HTMLInputElement).value);
-                            saveEdit(d._id, nm, lv, tD, tC, tS);
+                            saveEdit(d._id, nm, lv, dept, tD, tC, tS);
                           }} className="text-emerald-500 hover:bg-emerald-500/10 p-2 rounded-lg font-bold text-xs uppercase">Save</button>
                           <button onClick={() => setEditId(null)} className="text-slate-400 hover:bg-slate-700 p-2 rounded-lg font-bold text-xs uppercase">Cancel</button>
                         </>
@@ -1666,7 +1695,7 @@ function DesignationsTab() {
                   </tr>
                 );
               })}
-              {filteredDsgs.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
+              {filteredDsgs.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
             </tbody>
           </table>
         </div>

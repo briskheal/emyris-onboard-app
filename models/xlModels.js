@@ -263,6 +263,7 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
         uid: { type: DataTypes.STRING },
         designationName: { type: DataTypes.STRING, allowNull: false },
+        department: { type: DataTypes.STRING, defaultValue: 'SALES' },
         level: { type: DataTypes.INTEGER, allowNull: false },
         dailyAllowance: { type: DataTypes.FLOAT },
         exStationAllowance: { type: DataTypes.FLOAT },

@@ -98,6 +98,28 @@ const { purgeApplicantAndAllAssociatedRecords } = require('../utils/applicantPur
 const { runBirthdayCron } = require('../utils/cron');
 const sharp = require('sharp');
 
+// Sync XlDesignation master to Company profile designations JSON
+async function syncXlDesignationsToCompany() {
+    try {
+        const dsgs = await XlDesignation.findAll({ 
+            where: { status: 'Active' },
+            order: [['level', 'ASC'], ['createdAt', 'ASC']] 
+        });
+        const mapped = dsgs.map(d => ({
+            title: d.designationName,
+            department: d.department || 'SALES',
+            level: d.level,
+            _id: d._id
+        }));
+        const comp = await Company.findOne();
+        if (comp) {
+            await comp.update({ designations: mapped });
+        }
+    } catch (err) {
+        console.error('Error syncing XlDesignation to Company:', err.message);
+    }
+}
+
 // Endpoint to force restart the server
 router.get('/restart', (req, res) => {
     console.log('Restart triggered via browser link.');
@@ -2275,8 +2297,16 @@ router.get('/company-profile', async (req, res) => {
         profile.hqs = hqs;
         
         // Link XLA Designations globally across all portals
-        const xlDsgs = await XlDesignation.findAll({ order: [['level', 'ASC']] });
-        profile.designations = xlDsgs.map(d => ({ title: d.designationName, department: 'SALES' }));
+        const xlDsgs = await XlDesignation.findAll({ 
+            where: { status: 'Active' },
+            order: [['level', 'ASC'], ['createdAt', 'ASC']] 
+        });
+        profile.designations = xlDsgs.map(d => ({ 
+            title: d.designationName, 
+            department: d.department || 'SALES',
+            level: d.level,
+            _id: d._id
+        }));
 
         // Strip heavy HTML template bodies for the main profile endpoint to prevent 4MB payload
         delete profile.offerLetterBody;
@@ -2297,6 +2327,29 @@ router.post('/company-profile', async (req, res) => {
         // Don't allow overwriting _id or active
         delete updateData._id;
         
+        // If designations array is included, sync to XlDesignation
+        if (Array.isArray(updateData.designations)) {
+            for (const item of updateData.designations) {
+                const title = (item.title || item.designationName || (typeof item === 'string' ? item : '')).trim();
+                const dept = (item.department || 'SALES').trim();
+                if (title) {
+                    const existing = await XlDesignation.findOne({ where: { designationName: title } });
+                    if (!existing) {
+                        const count = await XlDesignation.count();
+                        await XlDesignation.create({
+                            uid: 'DSG' + (count + 1),
+                            designationName: title,
+                            department: dept,
+                            level: item.level || 1,
+                            status: 'Active'
+                        });
+                    } else if (dept && existing.department !== dept) {
+                        await existing.update({ department: dept });
+                    }
+                }
+            }
+        }
+
         let profile = await Company.findOne();
         if (!profile) {
             await Company.create({ name: "EMYRIS BIOLIFESCIENCES PVT LTD.", ...updateData });
@@ -2306,6 +2359,7 @@ router.post('/company-profile', async (req, res) => {
                 await Company.updateOne({ _id: profile._id }, { ...updateData, $set: updateData });
             }
         }
+        await syncXlDesignationsToCompany();
         res.json({ success: true, message: 'Profile updated' });
     } catch (e) {
         console.error('Company Profile Update Error:', e);
@@ -2423,8 +2477,17 @@ router.get('/api/company-data', async (req, res) => {
         if (!company) return res.status(404).json({ error: 'Not found' });
         
         // Link XLA Designations globally
-        const xlDsgs = await XlDesignation.findAll({ order: [['level', 'ASC']] });
-        company.designations = xlDsgs.map(d => ({ title: d.designationName, department: 'SALES' }));
+        const xlDsgs = await XlDesignation.findAll({ 
+            where: { status: 'Active' },
+            order: [['level', 'ASC'], ['createdAt', 'ASC']] 
+        });
+        const masterDesignations = xlDsgs.map(d => ({ 
+            title: d.designationName, 
+            department: d.department || 'SALES',
+            level: d.level,
+            _id: d._id
+        }));
+        company.designations = masterDesignations;
 
         const rawDivisions = await Division.find({ active: true }).lean();
         const hqs = await HQ.find({ active: true }).lean(); // Default sort
@@ -2436,14 +2499,15 @@ router.get('/api/company-data', async (req, res) => {
 
         // Enrich divisions with their respective designations from company profile
         const enrichedDivisions = divisions.map(div => {
-            let desgs = (company.designations || []).filter(d => {
-                const dept = (typeof d === 'object' ? d.department : 'SALES') || 'SALES';
-                return dept.toUpperCase().trim() === div.name.toUpperCase().trim();
+            let desgs = masterDesignations.filter(d => {
+                const dept = (d.department || 'SALES').toUpperCase().trim();
+                const divName = (div.name || '').toUpperCase().trim();
+                return dept === divName;
             });
 
             // FALLBACK: If no designations match this division name, provide all designations
             // This prevents "Empty Selection" issues when division names don't exactly match department keys
-            if (desgs.length === 0) desgs = (company.designations || []);
+            if (desgs.length === 0) desgs = masterDesignations;
 
             return {
                 ...div,
@@ -4879,7 +4943,7 @@ router.delete('/locations/divisions/:id', async (req, res) => {
 // ---- Designations ----
 router.get('/locations/designations', async (req, res) => {
     try {
-        const dsgs = await XlDesignation.findAll({ order: [['level', 'ASC'], ['createdAt', 'DESC']] });
+        const dsgs = await XlDesignation.findAll({ order: [['level', 'ASC'], ['createdAt', 'ASC']] });
         res.json({ success: true, designations: dsgs });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -4888,7 +4952,10 @@ router.post('/locations/designations', async (req, res) => {
     try {
         const count = await XlDesignation.count();
         const uid = 'DSG' + (count + 1);
-        const dsg = await XlDesignation.create({ ...req.body, uid });
+        const data = { ...req.body, uid };
+        if (!data.department) data.department = 'SALES';
+        const dsg = await XlDesignation.create(data);
+        await syncXlDesignationsToCompany();
         res.json({ success: true, designation: dsg });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -4896,6 +4963,7 @@ router.post('/locations/designations', async (req, res) => {
 router.put('/locations/designations/:id', async (req, res) => {
     try {
         await XlDesignation.update(req.body, { where: { _id: req.params.id } });
+        await syncXlDesignationsToCompany();
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
@@ -4903,6 +4971,7 @@ router.put('/locations/designations/:id', async (req, res) => {
 router.delete('/locations/designations/:id', async (req, res) => {
     try {
         await XlDesignation.destroy({ where: { _id: req.params.id } });
+        await syncXlDesignationsToCompany();
         res.json({ success: true });
     } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });

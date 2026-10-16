@@ -301,7 +301,12 @@ export default function CompanyProfile() {
             <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>Roles & Targets</h3>
             
             <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-              <label className="form-label">Designations</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label className="form-label" style={{ margin: 0 }}>Designations</label>
+                <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                  Centrally Synced with XLA Manage Designations
+                </span>
+              </div>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
                 <input type="text" className="form-input" placeholder="Title" value={newDesignationTitle} onChange={e => setNewDesignationTitle(e.target.value)} />
                 <input type="text" className="form-input" placeholder="Department" value={newDesignationDept} onChange={e => setNewDesignationDept(e.target.value)} onKeyDown={e => e.key === 'Enter' && addDesignation()} />
