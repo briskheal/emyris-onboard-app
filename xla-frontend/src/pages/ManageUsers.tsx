@@ -27,21 +27,24 @@ function TableFooter({ data, fileName, currentPage, setCurrentPage, pageSize, se
     document.body.appendChild(link); link.click(); document.body.removeChild(link);
   };
   return (
-    <div className="flex flex-wrap items-center justify-between bg-slate-800 p-4 border-t border-slate-700">
-      <div className="flex items-center gap-4">
-        <button onClick={handleExport} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg font-bold text-sm transition-colors">Export to CSV</button>
-        <div className="flex items-center gap-2 text-sm text-slate-300 font-bold">
-          <span>Show</span>
-          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="bg-slate-900 border border-slate-600 rounded px-2 py-1 focus:outline-none">
+    <div className="px-3.5 py-2.5 border-t border-slate-700/80 bg-slate-800/90 flex flex-wrap justify-between items-center gap-3">
+      <div className="flex items-center gap-3">
+        <button onClick={handleExport} className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm">
+          <Download size={13} />
+          Export to CSV
+        </button>
+        <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium">
+          <span className="text-slate-400">Show</span>
+          <select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setCurrentPage(1); }} className="bg-slate-700 border border-slate-600 text-white rounded px-2 py-0.5 text-xs outline-none">
             {[10, 25, 50, 100, 500, 1000].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
-          <span>records</span>
+          <span className="text-slate-400">records</span>
         </div>
       </div>
-      <div className="flex items-center gap-4 text-sm font-bold text-slate-300">
-        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">&lt; Previous</button>
-        <span>Page {currentPage} of {totalPages}</span>
-        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))} className="px-3 py-1 bg-slate-700 rounded hover:bg-slate-600 disabled:opacity-50">Next &gt;</button>
+      <div className="flex items-center gap-2 text-xs font-semibold text-slate-300">
+        <button disabled={currentPage === 1} onClick={() => setCurrentPage((p: number) => Math.max(1, p - 1))} className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-semibold disabled:opacity-40 transition-colors">&lt; Prev</button>
+        <span className="px-2 text-slate-300 text-xs font-medium">Page {currentPage} of {totalPages}</span>
+        <button disabled={currentPage === totalPages} onClick={() => setCurrentPage((p: number) => Math.min(totalPages, p + 1))} className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded text-xs font-semibold disabled:opacity-40 transition-colors">Next &gt;</button>
       </div>
     </div>
   );
@@ -1455,39 +1458,43 @@ function DivisionsTab() {
   const paginated = divs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="max-w-4xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">&lt; CREATE DIVISION</h2>
-      <form onSubmit={handleAdd} className="flex gap-6 items-end mb-12">
-        <div className="flex-1">
-          <label className="text-sm text-slate-400 font-bold mb-2 block">ENTER DIVISION *</label>
-          <input required value={divisionName} onChange={e => setDivisionName(e.target.value)} className="w-full bg-slate-800 border border-slate-700 rounded-xl p-4 text-white focus:outline-none focus:border-sky-500" placeholder="Division Name" />
-        </div>
-        <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 px-10 rounded-xl transition-colors h-[58px]">Add Division</button>
-      </form>
-      <div className="w-full flex flex-col bg-slate-900 border border-slate-700 overflow-hidden">
-        <div className="overflow-y-auto max-h-[60vh]">
-          <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Sr No.</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">Division</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm bg-slate-800">UID</th>
-                <th className="border-r border-slate-700 p-5 font-bold uppercase tracking-wider text-sm text-center bg-slate-800">Actions</th>
+    <div className="max-w-4xl space-y-4">
+      <h2 className="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-2">
+        &lt; CREATE DIVISION
+      </h2>
+      <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 shadow-sm">
+        <form onSubmit={handleAdd} className="flex gap-4 items-end">
+          <div className="flex-1">
+            <label className="text-[11px] font-bold text-slate-400 mb-1 block uppercase tracking-wider">Enter Division *</label>
+            <input required value={divisionName} onChange={e => setDivisionName(e.target.value)} className="w-full bg-slate-900/90 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors h-[34px]" placeholder="e.g. Respiza" />
+          </div>
+          <button disabled={loading} className="bg-sky-500 hover:bg-sky-600 text-white font-bold px-5 py-1.5 rounded-lg transition-colors text-xs h-[34px] shadow-sm flex items-center justify-center shrink-0">Add Division</button>
+        </form>
+      </div>
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-md flex flex-col overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-800">
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-16 text-center">Sr No.</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Division</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-32">UID</th>
+                <th className="px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((d, i) => (
                 <tr key={d._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="border-r border-slate-700 p-5 text-white font-bold">{d.divisionName}</td>
-                  <td className="border-r border-slate-700 p-5 text-slate-300">{d.uid || '-'}</td>
-                  <td className="border-r border-slate-700 p-5 text-center flex justify-center gap-2">
-                    <button onClick={() => handleEdit(d._id, d.divisionName)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 p-2 rounded-lg"><Edit size={20}/></button>
-                    <button onClick={() => handleDelete(d._id)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 p-2 rounded-lg"><Trash2 size={20}/></button>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{d.divisionName}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 font-mono">{d.uid || '-'}</td>
+                  <td className="px-2 py-1.5 text-center flex justify-center items-center gap-1.5">
+                    <button onClick={() => handleEdit(d._id, d.divisionName)} title="Edit" className="text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 p-1.5 rounded transition-colors"><Edit size={14}/></button>
+                    <button onClick={() => handleDelete(d._id)} title="Delete" className="text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded transition-colors"><Trash2 size={14}/></button>
                   </td>
                 </tr>
               ))}
-              {divs.length === 0 && <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-bold">No divisions found.</td></tr>}
+              {divs.length === 0 && <tr><td colSpan={4} className="p-6 text-center text-slate-500 text-xs font-semibold">No divisions found.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1745,43 +1752,45 @@ function TADAManageTab() {
   const paginated = dsgs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="max-w-6xl">
-      <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">&lt; TA, DA MANAGE</h2>
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
-        <div className="overflow-y-auto max-h-[60vh]">
-          <table className="w-full text-left border-collapse relative">
-            <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr className="border-b border-slate-700/50 text-slate-300">
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Level</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Daily Allowance</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Ex-Station Allowance</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Out-Station Allowance</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
+    <div className="max-w-6xl space-y-4">
+      <h2 className="text-sm font-bold text-white tracking-wide uppercase flex items-center gap-2">
+        &lt; TA, DA MANAGE
+      </h2>
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-md flex flex-col overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-800">
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Designation</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 text-center w-16">Level</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Daily Allowance</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Ex-Station Allowance</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Out-Station Allowance</th>
+                <th className="px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-24">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((d) => (
                 <tr key={d._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700 p-4 text-white font-bold">{d.designationName}</td>
-                  <td className="border-r border-slate-700 p-4 text-emerald-400 font-bold text-center">{d.level}</td>
-                  <td className="border-r border-slate-700 p-4">
-                    <input type="number" value={d.dailyAllowance || ''} onChange={e => handleChange(d._id, 'dailyAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{d.designationName}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-emerald-400 font-bold text-center">{d.level}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-1.5">
+                    <input type="number" value={d.dailyAllowance || ''} onChange={e => handleChange(d._id, 'dailyAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white h-[30px]" />
                   </td>
-                  <td className="border-r border-slate-700 p-4">
-                    <input type="number" value={d.exStationAllowance || ''} onChange={e => handleChange(d._id, 'exStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
+                  <td className="border-r border-slate-700/60 px-3 py-1.5">
+                    <input type="number" value={d.exStationAllowance || ''} onChange={e => handleChange(d._id, 'exStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white h-[30px]" />
                   </td>
-                  <td className="border-r border-slate-700 p-4">
-                    <input type="number" value={d.outStationAllowance || ''} onChange={e => handleChange(d._id, 'outStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white" />
+                  <td className="border-r border-slate-700/60 px-3 py-1.5">
+                    <input type="number" value={d.outStationAllowance || ''} onChange={e => handleChange(d._id, 'outStationAllowance', e.target.value)} className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-white h-[30px]" />
                   </td>
-                  <td className="border-r border-slate-700 p-4 text-center">
-                    <button onClick={() => handleSave(d)} className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 mx-auto transition-colors">
-                      <Save size={16} /> Save
+                  <td className="px-2 py-1.5 text-center">
+                    <button onClick={() => handleSave(d)} className="bg-sky-500 hover:bg-sky-600 text-white px-3 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 mx-auto transition-colors h-[30px]">
+                      <Save size={13} /> Save
                     </button>
                   </td>
                 </tr>
               ))}
-              {dsgs.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No designations found.</td></tr>}
+              {dsgs.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-slate-500 text-xs font-semibold">No designations found.</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1893,45 +1902,46 @@ function EditDeleteTab() {
                   placeholder="Search name, hq, email..." 
                   value={searchQuery}
                   onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-slate-800/90 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500 h-[34px]"
+                  placeholder="Search by name, designation, HQ..."
               />
           </div>
       </div>
-      <h3 className="text-sm font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({filteredProfiles.length}) ENTRIES</h3>
-      <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl flex flex-col">
+      <h3 className="text-xs font-bold text-slate-400 mb-3 tracking-wider uppercase">SHOWING ({filteredProfiles.length}) ENTRIES</h3>
+      <div className="bg-slate-800/80 rounded-xl border border-slate-700 shadow-md flex flex-col overflow-hidden">
         <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-              <tr>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Sr No.</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Name</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Designation</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Headquarter</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Division</th>
-                <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Actions</th>
+              <tr className="border-b border-slate-700/80 text-slate-300">
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800 w-16 text-center">Sr No.</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Name</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Designation</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Headquarter</th>
+                <th className="border-r border-slate-700/80 px-3 py-2 font-bold uppercase tracking-wider text-[11px] bg-slate-800">Division</th>
+                <th className="px-3 py-2 font-bold uppercase tracking-wider text-[11px] text-center bg-slate-800 w-36">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/50">
               {paginated.map((p, i) => (
                 <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                  <td className="border-r border-slate-700 p-4 text-slate-400">{(currentPage - 1) * pageSize + i + 1}</td>
-                  <td className="border-r border-slate-700 p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.designation || '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.hq || '-'}</td>
-                  <td className="border-r border-slate-700 p-4 text-slate-300">{p.division || '-'}</td>
-<td className="border-r border-slate-700 p-4 text-center">
-                    <div className="flex items-center justify-center gap-3">
-                      <button onClick={() => setEditUser(p)} className="text-sky-500 hover:text-sky-400 bg-sky-500/10 px-4 py-2 rounded-lg transition-colors font-bold text-xs uppercase flex items-center gap-2">
-                        <Edit size={14} /> Edit
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-400 text-center">{(currentPage - 1) * pageSize + i + 1}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-white font-semibold">{p.firstName} {p.lastName}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.designation || '-'}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.hq || '-'}</td>
+                  <td className="border-r border-slate-700/60 px-3 py-2 text-xs text-slate-300">{p.division || '-'}</td>
+                  <td className="px-2 py-1.5 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <button onClick={() => setEditUser(p)} className="text-sky-400 hover:text-sky-300 bg-sky-500/10 hover:bg-sky-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase flex items-center gap-1.5 transition-colors">
+                        <Edit size={13} /> Edit
                       </button>
-                      <button onClick={() => handleDelete(p._id, p.isAdmin)} className="text-rose-500 hover:text-rose-400 bg-rose-500/10 px-4 py-2 rounded-lg transition-colors font-bold text-xs uppercase flex items-center gap-2" title="Delete User">
-                        <Trash2 size={14} /> Delete
+                      <button onClick={() => handleDelete(p._id, p.isAdmin)} className="text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 px-2.5 py-1 rounded text-xs font-bold uppercase flex items-center gap-1.5 transition-colors" title="Delete User">
+                        <Trash2 size={13} /> Delete
                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
-              {filteredProfiles.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-slate-500 font-bold">No records found.</td></tr>}
+              {filteredProfiles.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-slate-500 text-xs font-semibold">No records found.</td></tr>}
             </tbody>
           </table>
         </div>
