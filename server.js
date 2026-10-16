@@ -513,14 +513,12 @@ const { XlAdmin } = require('./db.js');
 const bcrypt = require('bcryptjs');
 (async () => {
   try {
-    // 1. Force hradmin setup
+    // 1. Setup hradmin if not exists (never overwrite existing admin password)
     const email = 'hradmin@emyrishr.in';
-    const newPass = bcrypt.hashSync('GjzgHEi4', 10);
     const admin = await XlAdmin.findOne({ where: { email } });
-    if (admin) {
-      await admin.update({ password: newPass });
-    } else {
-      await XlAdmin.create({ email, password: newPass, firstName: 'HR', lastName: 'Admin', status: 'Active' });
+    if (!admin) {
+      const initialPass = bcrypt.hashSync('Omrutam@1306', 10);
+      await XlAdmin.create({ email, password: initialPass, firstName: 'HR', lastName: 'Admin', status: 'Active' });
     }
 
     // 2. Global Password Auto-Heal for all other admins
