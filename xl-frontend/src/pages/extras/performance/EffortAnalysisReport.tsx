@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Share2, Users, Download, Calendar, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Share2, Users, Download, Calendar, CheckCircle2, ChevronDown, Check } from 'lucide-react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
 
@@ -53,7 +53,22 @@ const getStoredUser = () => {
 };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const YEARS = ['2025', '2026', '2027'];
+
+// Dynamic rolling years generator (from 2024 to currentYear + 4, min 2030)
+const getDynamicYears = (selectedYear?: string): string[] => {
+  const currentYear = new Date().getFullYear();
+  const startYear = 2024;
+  const endYear = Math.max(currentYear + 4, 2030);
+  const list: string[] = [];
+  for (let y = startYear; y <= endYear; y++) {
+    list.push(String(y));
+  }
+  if (selectedYear && !list.includes(selectedYear)) {
+    list.push(selectedYear);
+    list.sort();
+  }
+  return list;
+};
 
 export default function EffortAnalysisReport() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -73,6 +88,23 @@ export default function EffortAnalysisReport() {
 
   const [selectedMonth, setSelectedMonth] = useState<string>(normalizeMonth(rawMonth));
   const [selectedYear, setSelectedYear] = useState<string>(rawYear || '2026');
+
+  // Year Dropdown State with Scroll Option
+  const [isYearDropdownOpen, setIsYearDropdownOpen] = useState(false);
+  const yearDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close year dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (yearDropdownRef.current && !yearDropdownRef.current.contains(event.target as Node)) {
+        setIsYearDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const yearsList = getDynamicYears(selectedYear);
 
   // Manager & Team State
   const [team, setTeam] = useState<TeamMember[]>([]);
@@ -377,12 +409,14 @@ export default function EffortAnalysisReport() {
           )}
 
           {/* Month & Year Selectors */}
-          <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[#232a45]">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 mr-2">
+          <div className="flex items-center gap-2 pt-1 border-t border-[#232a45]">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-400 mr-1 flex-shrink-0">
               <Calendar size={14} className="text-sky-400" />
               <span>Month:</span>
             </div>
-            <div className="flex-1 flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+
+            {/* Scrollable Month Strip */}
+            <div className="flex-1 flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide min-w-0">
               {MONTHS.map(m => (
                 <button
                   key={m}
@@ -398,21 +432,45 @@ export default function EffortAnalysisReport() {
               ))}
             </div>
 
-            {/* Year Selector */}
-            <div className="flex items-center gap-1 ml-auto">
-              {YEARS.map(y => (
-                <button
-                  key={y}
-                  onClick={() => handleYearChange(y)}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    selectedYear === y
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-[#1e243d] text-slate-400 hover:text-white border border-[#363e63]'
-                  }`}
-                >
-                  {y}
-                </button>
-              ))}
+            {/* Custom Year Dropdown with Scroll Option */}
+            <div className="relative flex-shrink-0" ref={yearDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setIsYearDropdownOpen(prev => !prev)}
+                className="h-8 px-2.5 bg-[#1e243d] hover:bg-[#242c4b] border border-[#363e63] hover:border-sky-500/50 rounded-xl text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all cursor-pointer select-none"
+                title="Select Year (Click to open list with scroll)"
+              >
+                <span className="text-sky-400 font-extrabold">{selectedYear}</span>
+                <ChevronDown size={14} className={`text-slate-400 transition-transform ${isYearDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isYearDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-32 bg-[#14192d] border border-[#363e63] rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-[#232a45]">
+                  <div className="px-3 py-1.5 bg-[#181f38] text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span>Year</span>
+                    <span className="text-[9px] text-sky-400 font-medium">Scroll ↓</span>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto divide-y divide-[#232a45]">
+                    {yearsList.map(y => (
+                      <button
+                        key={y}
+                        onClick={() => {
+                          handleYearChange(y);
+                          setIsYearDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-xs transition-colors flex items-center justify-between cursor-pointer ${
+                          selectedYear === y
+                            ? 'bg-sky-600 text-white font-bold'
+                            : 'text-slate-300 hover:bg-[#1e243d] hover:text-white font-medium'
+                        }`}
+                      >
+                        <span>{y}</span>
+                        {selectedYear === y && <Check size={13} className="text-white" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

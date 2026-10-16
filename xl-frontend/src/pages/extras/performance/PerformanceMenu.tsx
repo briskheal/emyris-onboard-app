@@ -51,7 +51,22 @@ export default function PerformanceMenu() {
   const [isYearOpen, setIsYearOpen] = useState(false);
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const years = ['2025', '2026', '2027'];
+  
+  const getDynamicYears = (selected?: string): string[] => {
+    const cur = new Date().getFullYear();
+    const start = 2024;
+    const end = Math.max(cur + 4, 2030);
+    const list: string[] = [];
+    for (let y = start; y <= end; y++) {
+      list.push(String(y));
+    }
+    if (selected && !list.includes(selected)) {
+      list.push(selected);
+      list.sort();
+    }
+    return list;
+  };
+  const years = getDynamicYears(selectedYear);
 
   const fetchPerformance = () => {
     axios.get(`/api/xl/performance/my?email=${getUserId()}&month=${selectedMonth}&year=${selectedYear}`)
