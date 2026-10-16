@@ -407,7 +407,7 @@ export default function ManageAllowances() {
 
     return (
       <div className="flex-1 min-w-0 overflow-auto p-8 relative z-10">
-        <h2 className="text-lg font-bold text-white mb-8 tracking-wide uppercase">ACTIVITY DA ELIGIBILITY</h2>
+        <h2 className="text-lg font-bold text-white mb-8 tracking-wide">Activity (DA) Eligibility</h2>
         
         <div className="bg-slate-800/80 rounded-2xl border border-slate-700 overflow-hidden shadow-xl p-8 max-w-4xl">
           <p className="text-slate-400 mb-8 text-sm">Select which activities are eligible for Daily Allowance (DA). If turned off, DA will not be applicable when this activity is selected.</p>
@@ -439,9 +439,9 @@ export default function ManageAllowances() {
       <div className="w-64 shrink-0 bg-slate-900/80 border-r border-slate-800 flex flex-col relative z-10 backdrop-blur-xl">
         <div className="p-8 border-b border-slate-800 flex flex-col gap-4">
           <button onClick={() => navigate('/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-            <ArrowLeft size={18} /> <span className="font-black text-xs tracking-widest text-sky-400 uppercase hover:text-white transition-colors">BACK TO ADMIN MENU</span>
+            <ArrowLeft size={18} /> <span className="font-bold text-xs tracking-wide text-sky-400 hover:text-white transition-colors">Back to Admin Menu</span>
           </button>
-          <h2 className="text-white font-black text-sm tracking-widest uppercase">MANAGE EXPENSES</h2>
+          <h2 className="text-white font-bold text-base tracking-wide">Manage Expenses</h2>
         </div>
         <div className="flex-1 min-w-0 overflow-y-auto py-6">
           <ul className="space-y-1 px-4">
@@ -461,8 +461,8 @@ export default function ManageAllowances() {
               </button>
             </li>
             <li>
-              <button onClick={() => setActiveTab('da_eligibility')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm capitalize ${activeTab === 'da_eligibility' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
-                Activity Da Eligibility
+              <button onClick={() => setActiveTab('da_eligibility')} className={`w-full text-left px-4 py-3 rounded-xl transition-colors text-sm ${activeTab === 'da_eligibility' ? "bg-sky-500/10 text-sky-400 font-bold" : "text-slate-400 hover:bg-slate-800 hover:text-slate-200 font-semibold"}`}>
+                Activity (DA) Eligibility
               </button>
             </li>
           </ul>
