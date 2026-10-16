@@ -3245,6 +3245,164 @@ router.post('/performance/effort-analysis', async (req, res) => {
     }
 });
 
+// Get team members for Line Manager
+router.get('/performance/my-team', async (req, res) => {
+    try {
+        const { employeeId, email, userId } = req.query;
+        const empIdentifier = employeeId || email || userId;
+        if (!empIdentifier) {
+            return res.status(400).json({ success: false, message: 'Employee identifier required' });
+        }
+
+        const { XlUser } = require('../db');
+        const { Op } = require('sequelize');
+
+        let mgrUser = null;
+        if (userId) {
+            mgrUser = await XlUser.findByPk(userId);
+        }
+        if (!mgrUser && empIdentifier) {
+            mgrUser = await XlUser.findOne({
+                where: { [Op.or]: [{ employeeId: empIdentifier }, { email: empIdentifier }, { uid: empIdentifier }] }
+            });
+        }
+
+        if (!mgrUser) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const effectiveDesig = mgrUser.designation || '';
+        const effectiveHq = mgrUser.hq || '';
+        const effectiveDiv = mgrUser.division || '';
+        const isAdmin = effectiveDesig.toUpperCase() === 'ADMIN' || !!mgrUser.isAdmin;
+
+        let team = [];
+        if (isAdmin) {
+            team = await XlUser.findAll({
+                where: { 
+                    status: { [Op.ne]: 'Deactivated' },
+                    _id: { [Op.ne]: mgrUser._id }
+                },
+                order: [['firstName', 'ASC']]
+            });
+        } else {
+            team = await getReporteeUsers(effectiveDesig, effectiveHq, effectiveDiv, [], new Set(), mgrUser);
+        }
+
+        const formattedTeam = (team || []).map(u => ({
+            _id: u._id,
+            employeeId: u.employeeId,
+            name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name || u.email,
+            designation: u.designation,
+            hq: u.hq
+        })).filter(u => u.employeeId !== mgrUser.employeeId);
+
+        res.json({
+            success: true,
+            isManager: isAdmin || formattedTeam.length > 0,
+            user: {
+                _id: mgrUser._id,
+                employeeId: mgrUser.employeeId,
+                name: `${mgrUser.firstName || ''} ${mgrUser.lastName || ''}`.trim() || mgrUser.name || mgrUser.email,
+                designation: mgrUser.designation,
+                hq: mgrUser.hq
+            },
+            team: formattedTeam
+        });
+    } catch (err) {
+        console.error('Error in /performance/my-team:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// Get complete week-wise Effort Breakdown Matrix
+router.get('/performance/effort-matrix', async (req, res) => {
+    try {
+        const { month, year, employeeId, email, userId } = req.query;
+        if (!month || !year) {
+            return res.status(400).json({ success: false, message: 'Missing month or year' });
+        }
+
+        const { XlUser, XlDCR, XlDoctor, XlChemist, XlStockist } = require('../db');
+        const { Op } = require('sequelize');
+
+        let user = null;
+        if (userId) {
+            user = await XlUser.findByPk(userId);
+        }
+        if (!user && (employeeId || email)) {
+            const targetId = employeeId || email;
+            user = await XlUser.findOne({
+                where: {
+                    [Op.or]: [{ employeeId: targetId }, { email: targetId }, { uid: targetId }]
+                }
+            });
+        }
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+
+        const monthMap = {
+            'january': 'Jan', 'jan': 'Jan', '01': 'Jan', '1': 'Jan',
+            'february': 'Feb', 'feb': 'Feb', '02': 'Feb', '2': 'Feb',
+            'march': 'Mar', 'mar': 'Mar', '03': 'Mar', '3': 'Mar',
+            'april': 'Apr', 'apr': 'Apr', '04': 'Apr', '4': 'Apr',
+            'may': 'May', '05': 'May', '5': 'May',
+            'june': 'Jun', 'jun': 'Jun', '06': 'Jun', '6': 'Jun',
+            'july': 'Jul', 'jul': 'Jul', '07': 'Jul', '7': 'Jul',
+            'august': 'Aug', 'aug': 'Aug', '08': 'Aug', '8': 'Aug',
+            'september': 'Sep', 'sep': 'Sep', '09': 'Sep', '9': 'Sep',
+            'october': 'Oct', 'oct': 'Oct', '10': 'Oct', '10': 'Oct',
+            'november': 'Nov', 'nov': 'Nov', '11': 'Nov', '11': 'Nov',
+            'december': 'Dec', 'dec': 'Dec', '12': 'Dec', '12': 'Dec'
+        };
+        const rawM = (month || '').trim().toLowerCase();
+        const shortMonth = monthMap[rawM] || (rawM.slice(0, 1).toUpperCase() + rawM.slice(1, 3));
+
+        const effortMatrix = await buildEffortMatrix(user, shortMonth, String(year), XlDCR, XlDoctor, XlChemist, XlStockist);
+
+        const totalDocsRow = effortMatrix.find(r => r.label === 'Total Doctors');
+        const totalDocs = totalDocsRow ? totalDocsRow.data[6] : 0;
+        const drCalls = effortMatrix.find(r => r.label === 'Doctors Call')?.data[6] || 0;
+        const drUnique = effortMatrix.find(r => r.label === 'Unique Doctors Visited')?.data[6] || 0;
+        const drMissed = effortMatrix.find(r => r.label === 'Missed Doctors')?.data[6] || 0;
+        const nonCore = effortMatrix.find(r => r.label === 'Non-Core Doctors (Met/Total)')?.data[6] || '0 / 0';
+        const core = effortMatrix.find(r => r.label === 'Core Doctors (Met/Total)')?.data[6] || '0 / 0';
+        const superCore = effortMatrix.find(r => r.label === 'Super-Core Doctors (Met/Total)')?.data[6] || '0 / 0';
+        const coverageVal = effortMatrix.find(r => r.label.includes('Coverage'))?.data[6] || 0;
+        const complianceVal = effortMatrix.find(r => r.label.includes('Compliance'))?.data[6] || 0;
+
+        res.json({
+            success: true,
+            user: {
+                _id: user._id,
+                employeeId: user.employeeId,
+                name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email,
+                designation: user.designation,
+                hq: user.hq
+            },
+            month: shortMonth,
+            year: String(year),
+            summary: {
+                totalDoctors: totalDocs,
+                totalDoctorsMet: drCalls,
+                totalUniqueDoctors: drUnique,
+                totalMissedDoctors: drMissed,
+                totalNonCore: nonCore,
+                totalCore: core,
+                totalSuperCore: superCore,
+                coverage: typeof coverageVal === 'number' ? coverageVal.toFixed(2) : coverageVal,
+                compliance: typeof complianceVal === 'number' ? complianceVal.toFixed(2) : complianceVal
+            },
+            matrix: effortMatrix
+        });
+    } catch (err) {
+        console.error('Error in /performance/effort-matrix:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // Approvals API
 
 // Get counts of pending approvals for all modules
