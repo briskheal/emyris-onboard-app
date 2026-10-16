@@ -30,6 +30,17 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
     return () => window.removeEventListener('xla_typography_changed', handler);
   }, []);
 
+  useEffect(() => {
+    if (!isOpen || isInline) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && onClose) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, isInline, onClose]);
+
   const handleSelectFont = (fontId: string) => {
     setCurrentFont(fontId);
     applyTypography(fontId, currentSize, currentMenuSize);
@@ -79,12 +90,14 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
           >
             <RotateCcw size={13} /> Reset Default
           </button>
-          {!isInline && onClose && (
+          {!isInline && (
             <button
               onClick={onClose}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors ml-2"
+              className="p-1.5 px-2.5 bg-slate-700/80 hover:bg-rose-600 text-slate-300 hover:text-white rounded-lg transition-colors ml-2 flex items-center gap-1.5 text-xs font-bold shadow-sm"
+              title="Close modal (Esc)"
             >
-              <X size={18} />
+              <X size={16} />
+              <span>Close</span>
             </button>
           )}
         </div>
@@ -245,6 +258,21 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
           </div>
         </div>
       </div>
+
+      {/* Bottom Close Bar */}
+      {!isInline && (
+        <div className="flex items-center justify-between pt-4 border-t border-slate-700/60 mt-1">
+          <span className="text-xs text-slate-400">
+            Press <kbd className="px-2 py-0.5 bg-slate-800 border border-slate-600 rounded text-[11px] font-mono text-slate-300">Esc</kbd> or click outside to close
+          </span>
+          <button
+            onClick={onClose}
+            className="px-5 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+          >
+            Done
+          </button>
+        </div>
+      )}
     </div>
   );
 
@@ -253,8 +281,13 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-[#1a1f30] border border-slate-700 shadow-2xl rounded-2xl w-full max-w-3xl my-8 overflow-hidden animate-in fade-in duration-200">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget && onClose) onClose();
+      }}
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-start justify-center p-4 md:p-6 overflow-y-auto"
+    >
+      <div className="bg-[#1a1f30] border border-slate-700 shadow-2xl rounded-2xl w-full max-w-3xl my-6 overflow-hidden animate-in fade-in duration-200 relative">
         {content}
       </div>
     </div>
