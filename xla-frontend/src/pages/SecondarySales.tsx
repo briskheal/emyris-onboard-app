@@ -4,6 +4,31 @@ import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
 
+function toMMDDYYYY(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const parts = str.substring(0, 10).split('-');
+    return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  }
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${month}-${day}-${year}`;
+    }
+  } catch (e) {}
+  return str;
+}
+
+const todayMMDDYYYY = () => {
+  const d = new Date();
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${d.getFullYear()}`;
+};
+
 export default function SecondarySales() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -17,10 +42,10 @@ export default function SecondarySales() {
   const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }) + ' ' + new Date().getFullYear();
   
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: todayMMDDYYYY(),
     month: currentMonth.split(' ')[0],
     year: currentMonth.split(' ')[1],
-    invoiceDate: new Date().toISOString().split('T')[0],
+    invoiceDate: todayMMDDYYYY(),
     invoiceNumber: '',
     division: '',
     headquarter: '',
@@ -269,6 +294,8 @@ export default function SecondarySales() {
       
       const payload = {
         ...formData,
+        date: toMMDDYYYY(formData.date),
+        invoiceDate: toMMDDYYYY(formData.invoiceDate),
         employeeId: user.employeeId || user._id || 'ADMIN',
         amount: totals.amount,
         status: isDraft ? 'Draft' : 'Pending',
@@ -288,10 +315,10 @@ export default function SecondarySales() {
             navigate('/extras/secondary/all');
         } else {
             setFormData({
-                date: new Date().toISOString().split('T')[0],
+                date: todayMMDDYYYY(),
                 year: currentMonth.split(' ')[1],
                 month: currentMonth.split(' ')[0],
-                invoiceDate: new Date().toISOString().split('T')[0],
+                invoiceDate: todayMMDDYYYY(),
                 invoiceNumber: '',
                 division: '',
                 headquarter: '',

@@ -10,7 +10,7 @@ function toInputDateValue(dateStr: string | null | undefined): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
     const parts = str.split('-');
-    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
   }
   try {
     const d = new Date(str);
@@ -24,6 +24,31 @@ function toInputDateValue(dateStr: string | null | undefined): string {
   return str;
 }
 
+function toMMDDYYYY(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const parts = str.substring(0, 10).split('-');
+    return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  }
+  try {
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const year = d.getFullYear();
+      return `${month}-${day}-${year}`;
+    }
+  } catch (e) {}
+  return str;
+}
+
+const todayMMDDYYYY = () => {
+  const d = new Date();
+  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${d.getFullYear()}`;
+};
+
 export default function PrimarySales() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -34,12 +59,12 @@ export default function PrimarySales() {
   const [divisions, setDivisions] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: todayMMDDYYYY(),
     headquarter: '',
     stockist: '',
     division: '',
     invoiceNumber: '',
-    invoiceDate: new Date().toISOString().split('T')[0],
+    invoiceDate: todayMMDDYYYY(),
   });
 
   const [rows, setRows] = useState([
@@ -122,8 +147,8 @@ export default function PrimarySales() {
           }
 
           setFormData({
-            date: toInputDateValue(d.date) || new Date().toISOString().split('T')[0],
-            invoiceDate: toInputDateValue(d.invoiceDate) || new Date().toISOString().split('T')[0],
+            date: toMMDDYYYY(d.date) || todayMMDDYYYY(),
+            invoiceDate: toMMDDYYYY(d.invoiceDate) || todayMMDDYYYY(),
             invoiceNumber: d.invoiceNumber || '',
             division: d.division || '',
             headquarter: hq,
@@ -264,8 +289,8 @@ export default function PrimarySales() {
       
       const payload = {
         ...formData,
-        date: toInputDateValue(formData.date),
-        invoiceDate: toInputDateValue(formData.invoiceDate),
+        date: toMMDDYYYY(formData.date),
+        invoiceDate: toMMDDYYYY(formData.invoiceDate),
         employeeId: user.employeeId || user._id || 'ADMIN',
         grossInvValue: totals.grossInvValue,
         netInvValue: totals.netInvValue,
@@ -320,8 +345,8 @@ export default function PrimarySales() {
             navigate('/extras/primary-sales/all');
         } else {
             setFormData({
-                date: new Date().toISOString().split('T')[0],
-                invoiceDate: new Date().toISOString().split('T')[0],
+                date: todayMMDDYYYY(),
+                invoiceDate: todayMMDDYYYY(),
                 invoiceNumber: '',
                 division: '',
                 headquarter: '',
@@ -400,7 +425,7 @@ export default function PrimarySales() {
                 <input 
                   type="date" 
                   value={toInputDateValue(formData.date)}
-                  onChange={e => setFormData({...formData, date: e.target.value})}
+                  onChange={e => setFormData({...formData, date: toMMDDYYYY(e.target.value)})}
                   className="w-full bg-transparent outline-none text-xs text-white"
                 />
               </div>
@@ -415,7 +440,7 @@ export default function PrimarySales() {
                 <input 
                   type="date" 
                   value={toInputDateValue(formData.invoiceDate)}
-                  onChange={e => setFormData({...formData, invoiceDate: e.target.value})}
+                  onChange={e => setFormData({...formData, invoiceDate: toMMDDYYYY(e.target.value)})}
                   className="w-full bg-transparent outline-none text-xs text-white"
                 />
               </div>

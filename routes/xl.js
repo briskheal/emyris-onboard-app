@@ -4990,19 +4990,53 @@ const validateProductsData = (pData) => {
 function normalizeDateStr(dStr) {
     if (!dStr) return '';
     const str = String(dStr).trim();
-    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        const parts = str.substring(0, 10).split('-');
+        return `${parts[1]}-${parts[2]}-${parts[0]}`;
+    }
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
-        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+        return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
     }
     const d = new Date(str);
     if (!isNaN(d.getTime())) {
-        const y = d.getFullYear();
         const m = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
+        const y = d.getFullYear();
+        return `${m}-${day}-${y}`;
     }
     return str;
+}
+
+function getMonthYearFromDate(dStr) {
+    if (!dStr) return { month: '', year: '' };
+    const str = String(dStr).trim();
+    const allMonthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    if (/^\d{2}-\d{2}-\d{4}$/.test(str)) {
+        const parts = str.split('-');
+        const monthNum = parseInt(parts[0], 10);
+        return {
+            month: allMonthsShort[monthNum - 1] || '',
+            year: parts[2]
+        };
+    }
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        const parts = str.substring(0, 10).split('-');
+        const monthNum = parseInt(parts[1], 10);
+        return {
+            month: allMonthsShort[monthNum - 1] || '',
+            year: parts[0]
+        };
+    }
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+        return {
+            month: d.toLocaleString('en-US', { month: 'short' }),
+            year: d.getFullYear().toString()
+        };
+    }
+    return { month: '', year: '' };
 }
 
 router.post('/primary-sales/save', async (req, res) => {
@@ -5011,12 +5045,11 @@ router.post('/primary-sales/save', async (req, res) => {
         // Strict Validation
         if (productsData) validateProductsData(productsData);
         
-        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedDate = normalizeDateStr(date) || normalizeDateStr(new Date());
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
-        const dateForMonth = savedInvDate || savedDate;
-        const dObj = new Date(dateForMonth);
-        const month = reqMonth || (!isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' }));
-        const year = reqYear || (!isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString());
+        const my = getMonthYearFromDate(savedInvDate || savedDate);
+        const month = reqMonth || my.month || new Date().toLocaleString('en-US', { month: 'short' });
+        const year = reqYear || my.year || new Date().getFullYear().toString();
 
         const newSale = await XlPrimarySales.create({
             employeeId: employeeId || 'ADMIN',
@@ -5092,15 +5125,16 @@ router.get('/reports/primary-sales', async (req, res) => {
         let whereClauses = [];
         let replacements = {};
 
+        const dateExpr = "(CASE WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE TO_DATE(p.date, 'YYYY-MM-DD') END)";
         if (startDate && endDate) {
-            whereClauses.push('p.date BETWEEN :startDate AND :endDate');
+            whereClauses.push(`${dateExpr} BETWEEN (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END) AND (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
             replacements.startDate = startDate;
             replacements.endDate = endDate;
         } else if (startDate) {
-            whereClauses.push('p.date >= :startDate');
+            whereClauses.push(`${dateExpr} >= (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END)`);
             replacements.startDate = startDate;
         } else if (endDate) {
-            whereClauses.push('p.date <= :endDate');
+            whereClauses.push(`${dateExpr} <= (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
             replacements.endDate = endDate;
         }
 
@@ -5247,15 +5281,16 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         let whereClauses = [];
         let replacements = {};
 
+        const dateExpr = "(CASE WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE TO_DATE(p.date, 'YYYY-MM-DD') END)";
         if (startDate && endDate) {
-            whereClauses.push('p.date BETWEEN :startDate AND :endDate');
+            whereClauses.push(`${dateExpr} BETWEEN (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END) AND (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
             replacements.startDate = startDate;
             replacements.endDate = endDate;
         } else if (startDate) {
-            whereClauses.push('p.date >= :startDate');
+            whereClauses.push(`${dateExpr} >= (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END)`);
             replacements.startDate = startDate;
         } else if (endDate) {
-            whereClauses.push('p.date <= :endDate');
+            whereClauses.push(`${dateExpr} <= (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
             replacements.endDate = endDate;
         }
 
@@ -5404,8 +5439,10 @@ router.get('/primary-sales/all', async (req, res) => {
             include: [{ model: XlPrimarySalesItem, as: 'items' }]
         });
         
-        // Backwards compatibility mapper
+        // Backwards compatibility and date format normalization
         sales.forEach(sale => {
+            if (sale.date) sale.setDataValue('date', normalizeDateStr(sale.date));
+            if (sale.invoiceDate) sale.setDataValue('invoiceDate', normalizeDateStr(sale.invoiceDate));
             if (sale.items && sale.items.length > 0) {
                 sale.setDataValue('productsData', JSON.stringify(sale.items));
             }
@@ -5443,12 +5480,11 @@ router.put('/primary-sales/update/:id', async (req, res) => {
         // Strict Validation
         if (productsData) validateProductsData(productsData);
         
-        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedDate = normalizeDateStr(date) || normalizeDateStr(new Date());
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
-        const dateForMonth = savedInvDate || savedDate;
-        const dObj = new Date(dateForMonth);
-        const month = !isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
-        const year = !isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString();
+        const my = getMonthYearFromDate(savedInvDate || savedDate);
+        const month = my.month || new Date().toLocaleString('en-US', { month: 'short' });
+        const year = my.year || new Date().getFullYear().toString();
 
         const sale = await XlPrimarySales.findByPk(req.params.id);
         if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
@@ -7654,8 +7690,10 @@ router.get('/secondary-sales/all', async (req, res) => {
             include: [{ model: XlSecondarySalesItem, as: 'items' }]
         });
         
-        // Backwards compatibility mapper
+        // Backwards compatibility and date format normalization
         sales.forEach(sale => {
+            if (sale.date) sale.setDataValue('date', normalizeDateStr(sale.date));
+            if (sale.invoiceDate) sale.setDataValue('invoiceDate', normalizeDateStr(sale.invoiceDate));
             if (sale.items && sale.items.length > 0) {
                 sale.setDataValue('productsData', JSON.stringify(sale.items));
             }
@@ -7716,12 +7754,11 @@ router.post('/secondary-sales/save', async (req, res) => {
     try {
         const { employeeId, date, month: reqMonth, year: reqYear, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
         
-        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedDate = normalizeDateStr(date) || normalizeDateStr(new Date());
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
-        const dateForMonth = savedInvDate || savedDate;
-        const dObj = new Date(dateForMonth);
-        const month = reqMonth || (!isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' }));
-        const year = reqYear || (!isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString());
+        const my = getMonthYearFromDate(savedInvDate || savedDate);
+        const month = reqMonth || my.month || new Date().toLocaleString('en-US', { month: 'short' });
+        const year = reqYear || my.year || new Date().getFullYear().toString();
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
         
@@ -7778,12 +7815,11 @@ router.put('/secondary-sales/update/:id', async (req, res) => {
         const { XlSecondarySalesItem } = require('../db');
         const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData, status } = req.body;
         
-        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedDate = normalizeDateStr(date) || normalizeDateStr(new Date());
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
-        const dateForMonth = savedInvDate || savedDate;
-        const dObj = new Date(dateForMonth);
-        const month = !isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
-        const year = !isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString();
+        const my = getMonthYearFromDate(savedInvDate || savedDate);
+        const month = my.month || new Date().toLocaleString('en-US', { month: 'short' });
+        const year = my.year || new Date().getFullYear().toString();
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
 
