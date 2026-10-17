@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, MapPin, Calendar, Users, Navigation, 
-  Download, AlertCircle, Compass
+  Download, AlertCircle, Compass, Camera, Archive, Trash2, CheckCircle2, X, RefreshCw
 } from 'lucide-react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -93,6 +94,15 @@ export default function GeoLocationAnalysisReport() {
   const [loading, setLoading] = useState<boolean>(false);
   const [data, setData] = useState<AnalysisResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Archiving & WebP Snapshots State
+  const [capturingWebp, setCapturingWebp] = useState(false);
+  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [archiveMonth, setArchiveMonth] = useState<number>(new Date().getMonth() + 1);
+  const [archiveYear, setArchiveYear] = useState<number>(new Date().getFullYear());
+  const [exportingZip, setExportingZip] = useState(false);
+  const [pruningDb, setPruningDb] = useState(false);
+  const [pruneResult, setPruneResult] = useState<string | null>(null);
 
   // Map references
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -420,6 +430,108 @@ export default function GeoLocationAnalysisReport() {
     XLSX.writeFile(wb, `Geo_Location_Analysis_${safeUserName}_${data.date}.xlsx`);
   };
 
+  // Capture Map Route Snapshot as WebP
+  const handleSaveMapWebp = async () => {
+    if (!mapContainerRef.current || !data) return;
+    setCapturingWebp(true);
+    try {
+      const canvas = await html2canvas(mapContainerRef.current, {
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#0c101c',
+        scale: 2
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert('Failed to generate image from map.');
+          setCapturingWebp(false);
+          return;
+        }
+
+        const safeUserName = (data.user.name || data.user.employeeId || 'User').replace(/[^a-zA-Z0-9]/g, '_');
+        const filename = `${safeUserName}_${data.date}_Route_Map.webp`;
+
+        // 1. Direct browser download for user to save to Google Drive or local desktop
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // 2. Upload to server archive folder for monthly ZIP inclusion
+        const reader = new FileReader();
+        reader.readAsDataURL(blob);
+        reader.onloadend = async () => {
+          const base64data = reader.result;
+          await axios.post('/api/xl/admin/geo-archive/upload-map', {
+            employeeId: data.user.employeeId || data.user._id,
+            date: data.date,
+            webpBase64: base64data
+          }).catch(e => console.warn('Could not cache WebP to server', e.message));
+        };
+
+        setCapturingWebp(false);
+      }, 'image/webp', 0.85);
+    } catch(err: any) {
+      console.error('Error generating WebP:', err);
+      alert('Could not capture map image: ' + err.message);
+      setCapturingWebp(false);
+    }
+  };
+
+  // Download Monthly ZIP Archive (Excel + WebP maps)
+  const handleDownloadMonthlyZip = async () => {
+    setExportingZip(true);
+    try {
+      const downloadUrl = `/api/xl/admin/geo-archive/export-zip?month=${archiveMonth}&year=${archiveYear}`;
+      const response = await axios.get(downloadUrl, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Emyris_GeoArchive_${archiveYear}_${String(archiveMonth).padStart(2, '0')}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Failed to export monthly ZIP archive: ' + (err.message || 'Unknown error'));
+    } finally {
+      setExportingZip(false);
+    }
+  };
+
+  // Prune coordinates older than 60 days
+  const handlePruneCoordinates = async () => {
+    const confirm = window.confirm(
+      'Confirm 60-Day Coordinate Pruning:\n\n' +
+      'This will remove detailed GPS coordinate histories older than 2 months from the database to save disk space.\n' +
+      'All summary totals, working days, and call counts will be kept intact.\n\n' +
+      'Please make sure you have downloaded the monthly ZIP archive to your Google Drive first!\n\n' +
+      'Do you wish to proceed?'
+    );
+    if (!confirm) return;
+
+    setPruningDb(true);
+    setPruneResult(null);
+    try {
+      const res = await axios.post('/api/xl/admin/geo-archive/prune');
+      if (res.data.success) {
+        setPruneResult(res.data.message);
+      } else {
+        alert(res.data.message || 'Failed to prune database');
+      }
+    } catch(err: any) {
+      alert('Error pruning database: ' + (err.message || 'Unknown error'));
+    } finally {
+      setPruningDb(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#0f1422] text-slate-100 flex flex-col font-sans pb-16">
       
@@ -444,14 +556,25 @@ export default function GeoLocationAnalysisReport() {
           </div>
         </div>
 
-        <button
-          onClick={handleExportExcel}
-          disabled={!data || loading}
-          className="h-10 px-4 bg-sky-600 hover:bg-sky-500 rounded-xl text-white font-bold flex items-center gap-2 shadow-lg shadow-sky-600/30 active:scale-95 transition-all disabled:opacity-50 text-xs md:text-sm cursor-pointer"
-        >
-          <Download size={16} />
-          <span className="hidden sm:inline">Export Excel</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsArchiveModalOpen(true)}
+            className="h-10 px-3.5 bg-[#1e243d] hover:bg-[#283152] border border-[#363e63] rounded-xl text-white font-bold flex items-center gap-2 shadow-sm active:scale-95 transition-all text-xs md:text-sm cursor-pointer"
+            title="Monthly Archiving & 60-Day Retention"
+          >
+            <Archive size={16} className="text-amber-400" />
+            <span className="hidden sm:inline">Monthly Archive (ZIP)</span>
+          </button>
+
+          <button
+            onClick={handleExportExcel}
+            disabled={!data || loading}
+            className="h-10 px-4 bg-sky-600 hover:bg-sky-500 rounded-xl text-white font-bold flex items-center gap-2 shadow-lg shadow-sky-600/30 active:scale-95 transition-all disabled:opacity-50 text-xs md:text-sm cursor-pointer"
+          >
+            <Download size={16} />
+            <span className="hidden sm:inline">Export Excel</span>
+          </button>
+        </div>
       </div>
 
       <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
@@ -693,6 +816,18 @@ export default function GeoLocationAnalysisReport() {
                       OpenStreet
                     </button>
                   </div>
+
+                  {/* Save WebP Snapshot Button */}
+                  <button
+                    type="button"
+                    onClick={handleSaveMapWebp}
+                    disabled={capturingWebp || !data}
+                    className="flex items-center gap-1.5 px-3 py-1 bg-emerald-600/80 hover:bg-emerald-600 border border-emerald-500/50 rounded-lg text-white text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 cursor-pointer"
+                    title="Capture WebP Map Route Snapshot & Save"
+                  >
+                    <Camera size={13} className={capturingWebp ? 'animate-spin' : ''} />
+                    <span>{capturingWebp ? 'Capturing...' : 'Save WebP'}</span>
+                  </button>
                 </div>
               </div>
 
@@ -877,6 +1012,184 @@ export default function GeoLocationAnalysisReport() {
         )}
 
       </div>
+
+      {/* Monthly Archive & Retention Modal */}
+      {isArchiveModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[#14192d] border border-[#363e63] rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="p-4 bg-[#1e243d] border-b border-[#363e63] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Archive size={20} className="text-amber-400" />
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Monthly Geo-Archive & Retention Policy
+                </h3>
+              </div>
+              <button
+                onClick={() => { setIsArchiveModalOpen(false); setPruneResult(null); }}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 space-y-5 overflow-y-auto">
+              
+              {/* Retention Policy Explanation Banner */}
+              <div className="bg-[#1e243d]/60 border border-sky-500/30 rounded-xl p-3.5 space-y-1.5">
+                <div className="text-xs font-bold text-sky-400 flex items-center gap-1.5">
+                  <CheckCircle2 size={15} />
+                  Rolling 2-Month Active Window Policy
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  To keep the database fast and free of bloat, live GPS points are kept for <strong>60 days</strong> (e.g. October is available in November; October clears in December). Download the Monthly ZIP to your desktop for permanent Google Drive storage.
+                </p>
+              </div>
+
+              {/* Month & Year Selectors */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">
+                    Select Month
+                  </label>
+                  <select
+                    value={archiveMonth}
+                    onChange={(e) => setArchiveMonth(Number(e.target.value))}
+                    className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  >
+                    {[
+                      { v: 1, l: '01 - January' },
+                      { v: 2, l: '02 - February' },
+                      { v: 3, l: '03 - March' },
+                      { v: 4, l: '04 - April' },
+                      { v: 5, l: '05 - May' },
+                      { v: 6, l: '06 - June' },
+                      { v: 7, l: '07 - July' },
+                      { v: 8, l: '08 - August' },
+                      { v: 9, l: '09 - September' },
+                      { v: 10, l: '10 - October' },
+                      { v: 11, l: '11 - November' },
+                      { v: 12, l: '12 - December' }
+                    ].map(m => (
+                      <option key={m.v} value={m.v}>{m.l}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 block">
+                    Select Year
+                  </label>
+                  <select
+                    value={archiveYear}
+                    onChange={(e) => setArchiveYear(Number(e.target.value))}
+                    className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs px-3 py-2 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                  >
+                    {[2025, 2026, 2027, 2028].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* Step 1: Download Monthly ZIP */}
+              <div className="bg-[#0f1422] border border-[#363e63] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Download size={14} className="text-sky-400" />
+                    Step 1: Download Monthly Archive (ZIP)
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+                    Excel + WebP Maps
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Compiles all daily attendances, doctor calls, coordinates, stoppage reasons, and saved WebP map routes into a single downloadable ZIP file.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleDownloadMonthlyZip}
+                  disabled={exportingZip}
+                  className="w-full py-2.5 bg-sky-600 hover:bg-sky-500 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-sky-600/30"
+                >
+                  {exportingZip ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      <span>Generating Archive ZIP...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={14} />
+                      <span>Download Archive (ZIP)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Google Drive Tip */}
+              <div className="bg-amber-950/20 border border-amber-500/30 rounded-xl p-3 text-[11px] text-amber-200/90 leading-relaxed">
+                <div className="font-bold text-amber-300 flex items-center gap-1 mb-1">
+                  💡 How to Save to Desktop Google Drive:
+                </div>
+                Simply move the downloaded ZIP file into your local <strong>Google Drive sync folder</strong> (e.g. <code>G:\My Drive\Emyris_Archives\</code>) on your desktop. Google Drive will automatically back it up to the cloud.
+              </div>
+
+              {/* Step 2: Database Cleanup / Pruning */}
+              <div className="bg-[#0f1422] border border-[#363e63] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                    <Trash2 size={14} />
+                    Step 2: Prune Database Coordinates (&gt;60 Days)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Purges heavy GPS coordinates from records older than 2 months to free database space. All attendance dates, work reports, distances, and remarks remain intact.
+                </p>
+                <button
+                  type="button"
+                  onClick={handlePruneCoordinates}
+                  disabled={pruningDb}
+                  className="w-full py-2.5 bg-rose-600/80 hover:bg-rose-600 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-rose-600/30"
+                >
+                  {pruningDb ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      <span>Pruning GPS Coordinates...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={14} />
+                      <span>Prune Older GPS Records</span>
+                    </>
+                  )}
+                </button>
+
+                {pruneResult && (
+                  <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/40 rounded-lg text-emerald-300 text-[11px] flex items-center gap-2">
+                    <CheckCircle2 size={14} className="shrink-0" />
+                    <span>{pruneResult}</span>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-3 bg-[#1e243d] border-t border-[#363e63] flex justify-end">
+              <button
+                type="button"
+                onClick={() => { setIsArchiveModalOpen(false); setPruneResult(null); }}
+                className="px-4 py-2 bg-[#283152] hover:bg-[#363e63] rounded-xl text-slate-200 text-xs font-bold active:scale-95 transition-all cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -7807,6 +7807,226 @@ router.get('/reports/geo-location-analysis', async (req, res) => {
     }
 });
 
+// ==========================================
+// GEO-LOCATION ARCHIVING & 60-DAY RETENTION
+// ==========================================
+
+// 1. Upload WebP map snapshot for a user's date
+router.post('/admin/geo-archive/upload-map', async (req, res) => {
+    try {
+        const { employeeId, date, webpBase64 } = req.body;
+        if (!employeeId || !date || !webpBase64) {
+            return res.status(400).json({ success: false, message: 'Missing employeeId, date, or image data' });
+        }
+
+        const fs = require('fs');
+        const path = require('path');
+        const monthDir = date.substring(0, 7); // YYYY-MM
+        const targetDir = path.join(__dirname, '../uploads/geo-archives', monthDir);
+
+        if (!fs.existsSync(targetDir)) {
+            fs.mkdirSync(targetDir, { recursive: true });
+        }
+
+        // Clean base64 header if present
+        const base64Data = webpBase64.replace(/^data:image\/\w+;base64,/, '');
+        const buffer = Buffer.from(base64Data, 'base64');
+        const filename = `${employeeId.replace(/[^a-zA-Z0-9_-]/g, '_')}_${date}.webp`;
+        const filePath = path.join(targetDir, filename);
+
+        fs.writeFileSync(filePath, buffer);
+        res.json({ success: true, message: 'Map snapshot saved successfully', path: `/uploads/geo-archives/${monthDir}/${filename}` });
+    } catch(err) {
+        console.error('Error in /admin/geo-archive/upload-map:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 2. Export monthly ZIP archive (Excel activity log + WebP route maps)
+router.get('/admin/geo-archive/export-zip', async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        if (!month || !year) {
+            return res.status(400).json({ success: false, message: 'Month and year are required' });
+        }
+
+        const mStr = String(month).padStart(2, '0');
+        const yStr = String(year);
+        const prefix = `${yStr}-${mStr}`;
+
+        const { XlAttendance, XlDCR, XlUser } = require('../db');
+        const { Op } = require('sequelize');
+        const archiver = require('archiver');
+        const XLSX = require('xlsx');
+        const fs = require('fs');
+        const path = require('path');
+
+        // Fetch all attendances and DCRs for this month
+        const [attendances, dcrs, users] = await Promise.all([
+            XlAttendance.findAll({
+                where: { date: { [Op.like]: `${prefix}%` } },
+                order: [['date', 'ASC']]
+            }),
+            XlDCR.findAll({
+                where: { date: { [Op.like]: `${prefix}%` } },
+                order: [['date', 'ASC'], ['createdAt', 'ASC']]
+            }),
+            XlUser.findAll()
+        ]);
+
+        const userMap = {};
+        users.forEach(u => {
+            const keys = [u.employeeId, u.email, u._id, u.uid].filter(Boolean);
+            keys.forEach(k => {
+                userMap[k] = {
+                    name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.employeeId || 'User',
+                    employeeId: u.employeeId || '',
+                    hq: u.hq || '',
+                    designation: u.designation || ''
+                };
+            });
+        });
+
+        // 1. Build Excel workbook
+        // Sheet 1: Daily Attendances
+        const attRows = [
+            ['Date', 'Employee ID', 'Employee Name', 'Designation', 'HQ', 'Punch-In Time', 'Punch-Out Time', 'Punch-In Lat', 'Punch-In Lng', 'Punch-Out Lat', 'Punch-Out Lng', 'Day Remarks']
+        ];
+        attendances.forEach(a => {
+            const u = userMap[a.employeeId] || { name: a.employeeId, designation: '', hq: '' };
+            attRows.push([
+                a.date,
+                a.employeeId,
+                u.name,
+                u.designation,
+                u.hq,
+                a.punchInTime || '--',
+                a.punchOutTime || '--',
+                a.punchInLat || '',
+                a.punchInLng || '',
+                a.punchOutLat || '',
+                a.punchOutLng || '',
+                a.dayRemarks || ''
+            ]);
+        });
+
+        // Sheet 2: Chronological DCR Calls & Stops
+        const dcrRows = [
+            ['Date', 'Employee ID', 'Employee Name', 'HQ', 'Entity Name', 'Entity Type', 'Check-In Time', 'Check-Out Time', 'Latitude', 'Longitude', 'Geo Address', 'Remarks / Stoppage Reason', 'Rating']
+        ];
+        dcrs.forEach(d => {
+            const u = userMap[d.employeeId] || { name: d.employeeId, hq: '' };
+            dcrRows.push([
+                d.date,
+                d.employeeId,
+                u.name,
+                u.hq,
+                d.entityName || '',
+                d.entityType || 'Doctor',
+                d.checkInTime || '--',
+                d.checkOutTime || '--',
+                d.latitude || '',
+                d.longitude || '',
+                d.geoAddress || '',
+                d.discussion || d.remarks || '',
+                d.rating || ''
+            ]);
+        });
+
+        const wb = XLSX.utils.book_new();
+        const wsAtt = XLSX.utils.aoa_to_sheet(attRows);
+        const wsDcr = XLSX.utils.aoa_to_sheet(dcrRows);
+        XLSX.utils.book_append_sheet(wb, wsAtt, 'Daily Attendances');
+        XLSX.utils.book_append_sheet(wb, wsDcr, 'Field Visits & Stops');
+        const excelBuffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+        // 2. Setup Zip Archive Stream
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="Emyris_GeoArchive_${yStr}_${mStr}.zip"`);
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.pipe(res);
+
+        // Append Excel spreadsheet
+        archive.append(excelBuffer, { name: `GeoLocation_Activity_${yStr}_${mStr}.xlsx` });
+
+        // Append any stored WebP route maps for this month
+        const mapsDir = path.join(__dirname, '../uploads/geo-archives', prefix);
+        if (fs.existsSync(mapsDir)) {
+            const files = fs.readdirSync(mapsDir);
+            files.forEach(f => {
+                if (f.endsWith('.webp')) {
+                    archive.file(path.join(mapsDir, f), { name: `Maps/${f}` });
+                }
+            });
+        }
+
+        await archive.finalize();
+    } catch(err) {
+        console.error('Error in /admin/geo-archive/export-zip:', err);
+        if (!res.headersSent) {
+            res.status(500).json({ success: false, message: err.message });
+        }
+    }
+});
+
+// 3. Prune coordinate data older than 2 months (60 days)
+router.post('/admin/geo-archive/prune', async (req, res) => {
+    try {
+        const { XlAttendance, XlDCR } = require('../db');
+        const { Op } = require('sequelize');
+        const fs = require('fs');
+        const path = require('path');
+
+        // Retention policy: Keep current month (M) and previous month (M-1)
+        // Purge anything strictly before M-1 (i.e. older than 60 days)
+        const now = new Date();
+        const cutoffDateObj = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const cutoffDate = cutoffDateObj.toISOString().split('T')[0];
+
+        // 1. Clear raw coordinate columns in Database
+        const [attUpdated] = await XlAttendance.update(
+            { punchInLat: null, punchInLng: null, punchOutLat: null, punchOutLng: null },
+            { where: { date: { [Op.lt]: cutoffDate } } }
+        );
+
+        const [dcrsUpdated] = await XlDCR.update(
+            { latitude: null, longitude: null },
+            { where: { date: { [Op.lt]: cutoffDate } } }
+        );
+
+        // 2. Clear old file folders from uploads/geo-archives older than 90 days
+        const baseDir = path.join(__dirname, '../uploads/geo-archives');
+        let deletedFolders = [];
+        if (fs.existsSync(baseDir)) {
+            const dirs = fs.readdirSync(baseDir);
+            dirs.forEach(d => {
+                if (/^\d{4}-\d{2}$/.test(d)) {
+                    if (d < cutoffDate.substring(0, 7)) {
+                        const fullPath = path.join(baseDir, d);
+                        try {
+                            fs.rmSync(fullPath, { recursive: true, force: true });
+                            deletedFolders.push(d);
+                        } catch(e) {}
+                    }
+                }
+            });
+        }
+
+        res.json({
+            success: true,
+            cutoffDate,
+            attendancesPruned: attUpdated,
+            dcrsPruned: dcrsUpdated,
+            prunedMapFolders: deletedFolders,
+            message: `Successfully pruned GPS coordinates prior to ${cutoffDate}. Preserved all summary metrics and working days.`
+        });
+    } catch(err) {
+        console.error('Error in /admin/geo-archive/prune:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 module.exports = router;
 
 
