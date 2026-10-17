@@ -22,7 +22,8 @@ const verifyToken = (req, res, next) => {
         '/api/xl/admin-login', '/admin-login', 
         '/api/xl/forgot-password', '/forgot-password',
         '/api/xl/register', '/register',
-        '/company-profile'
+        '/company-profile',
+        '/admin/settings/typography', '/api/xl/admin/settings/typography'
     ];
     if (openRoutes.includes(req.path) || req.path.includes('/cleanup-') || req.path.includes('/debug-') || req.path.includes('forgot-password')) {
         return next();
@@ -6066,12 +6067,10 @@ router.get('/admin/dashboard-stats', async (req, res) => {
                     if (dt.getDay() !== 0) workingDays++; // Not a Sunday
                 }
                 const holidays = await require('../db').XlHoliday.count({
-                    where: {
-                        [Op.or]: [
-                            { date: { [Op.like]: `${datePrefix}%` } },
-                            { date: { [Op.like]: altDatePrefix } }
-                        ]
-                    }
+                    where: sequelize.where(
+                        sequelize.cast(sequelize.col('date'), 'text'),
+                        { [Op.like]: `${datePrefix}%` }
+                    )
                 });
                 workingDays -= holidays;
                 if (workingDays < 0) workingDays = 0;

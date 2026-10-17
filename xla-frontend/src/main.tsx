@@ -56,9 +56,11 @@ axios.interceptors.request.use((config: any) => {
 // Global Response Interceptor for 401 Unauthorized
 axios.interceptors.response.use((response) => response, (error) => {
     if (error.response && (error.response.status === 401)) {
-        sessionStorage.removeItem('xla_token');
-        sessionStorage.removeItem('xla_user'); // XLA-specific key only — do NOT touch xl_user (mobile)
-        window.location.href = '/xla/login';
+        if (!error.config?.url?.includes('/settings/typography')) {
+            sessionStorage.removeItem('xla_token');
+            sessionStorage.removeItem('xla_user'); // XLA-specific key only — do NOT touch xl_user (mobile)
+            window.location.href = '/xla/login';
+        }
     }
     return Promise.reject(error);
 });
