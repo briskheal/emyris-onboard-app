@@ -87,7 +87,7 @@ export default function GeoLocationAnalysisReport() {
     const today = new Date();
     return today.toISOString().split('T')[0];
   });
-  const [mapType, setMapType] = useState<'roadmap' | 'satellite'>('roadmap');
+  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'osm'>('roadmap');
 
   // Analysis Data State
   const [loading, setLoading] = useState<boolean>(false);
@@ -158,150 +158,197 @@ export default function GeoLocationAnalysisReport() {
     }
   }, [selectedUser, selectedDate]);
 
+  // Tile URL resolver
+  const getTileUrl = (type: string) => {
+    if (type === 'satellite') {
+      return 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+    }
+    if (type === 'osm') {
+      return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+    }
+    return 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+  };
+
   // 3. Initialize & Update Leaflet Map with Google Maps Tiles
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Create map instance if not existing
-    if (!mapInstanceRef.current) {
-      const map = L.map(mapContainerRef.current, {
-        center: [20.5937, 78.9629], // Center of India default
-        zoom: 5,
-        zoomControl: true,
-        attributionControl: false
-      });
-
-      // Default Google Maps Roadmap tile URL
-      const tileUrl = mapType === 'satellite'
-        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
-        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
-
-      const tiles = L.tileLayer(tileUrl, { maxZoom: 20 });
-      tiles.addTo(map);
-
-      tileLayerRef.current = tiles;
-      markersLayerRef.current = L.layerGroup().addTo(map);
-      mapInstanceRef.current = map;
+    // Destroy previous map instance if element changed or exists
+    if (mapInstanceRef.current) {
+      try {
+        mapInstanceRef.current.remove();
+      } catch (e) {
+        console.warn('Error removing old map instance:', e);
+      }
+      mapInstanceRef.current = null;
+      tileLayerRef.current = null;
+      markersLayerRef.current = null;
     }
 
-    // Update tile layer if mapType toggled
-    if (tileLayerRef.current && mapInstanceRef.current) {
-      const tileUrl = mapType === 'satellite'
-        ? 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'
-        : 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
-      tileLayerRef.current.setUrl(tileUrl);
+    // Clear any residual Leaflet identifier on the DOM element
+    if ((mapContainerRef.current as any)._leaflet_id) {
+      (mapContainerRef.current as any)._leaflet_id = null;
     }
+
+    const map = L.map(mapContainerRef.current, {
+      center: [20.5937, 78.9629], // Center of India default
+      zoom: 5,
+      zoomControl: true,
+      attributionControl: false
+    });
+
+    const tileUrl = getTileUrl(mapType);
+    const tiles = L.tileLayer(tileUrl, { 
+      maxZoom: 20,
+      subdomains: mapType === 'osm' ? ['a', 'b', 'c'] : ['mt0', 'mt1', 'mt2', 'mt3']
+    });
+    tiles.addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+
+    tileLayerRef.current = tiles;
+    markersLayerRef.current = markersLayer;
+    mapInstanceRef.current = map;
 
     // Render markers and polyline
-    if (markersLayerRef.current && mapInstanceRef.current) {
-      markersLayerRef.current.clearLayers();
+    const validPoints = (data?.routePoints || []).filter(
+      p => p.lat != null && p.lng != null && !isNaN(Number(p.lat)) && !isNaN(Number(p.lng)) &&
+           !(Number(p.lat) === 0 && Number(p.lng) === 0)
+    );
 
-      const validPoints = (data?.routePoints || []).filter(
-        p => p.lat != null && p.lng != null && !isNaN(p.lat) && !isNaN(p.lng)
-      );
+    if (validPoints.length > 0) {
+      const latLngs: [number, number][] = [];
 
-      if (validPoints.length > 0) {
-        const latLngs: [number, number][] = [];
+      validPoints.forEach((point) => {
+        const lat = Number(point.lat!);
+        const lng = Number(point.lng!);
+        latLngs.push([lat, lng]);
 
-        validPoints.forEach((point) => {
-          const lat = point.lat!;
-          const lng = point.lng!;
-          latLngs.push([lat, lng]);
-
-          let iconHtml = '';
-          if (point.type === 'punch-in') {
-            iconHtml = `
-              <div style="background-color: #10b981; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
-                <span>IN</span>
-              </div>
-            `;
-          } else if (point.type === 'punch-out') {
-            iconHtml = `
-              <div style="background-color: #ef4444; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
-                <span>OUT</span>
-              </div>
-            `;
-          } else {
-            // Doctor / Chemist stop with number badge
-            const isExtended = point.isExtendedStoppage;
-            const bg = isExtended ? '#f59e0b' : '#38bdf8';
-            iconHtml = `
-              <div style="background-color: ${bg}; color: #0f172a; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900;">
-                ${point.seq}
-              </div>
-            `;
-          }
-
-          const customIcon = L.divIcon({
-            html: iconHtml,
-            className: 'custom-map-pin',
-            iconSize: [34, 34],
-            iconAnchor: [17, 17],
-            popupAnchor: [0, -18]
-          });
-
-          const popupContent = `
-            <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; color: #0f172a; min-width: 200px;">
-              <div style="font-weight: 800; font-size: 13px; color: ${point.type === 'punch-in' ? '#059669' : point.type === 'punch-out' ? '#dc2626' : '#0284c7'}; margin-bottom: 4px;">
-                ${point.title}
-              </div>
-              <div style="color: #475569; margin-bottom: 2px;">
-                <strong>Time:</strong> ${point.checkInTime} ${point.checkOutTime !== point.checkInTime ? `&ndash; ${point.checkOutTime}` : ''}
-              </div>
-              ${point.type === 'call' ? `
-                <div style="color: #475569; margin-bottom: 2px;">
-                  <strong>Meeting Duration:</strong> ${point.meetingDurationMins} mins
-                </div>
-                <div style="color: #475569; margin-bottom: 2px;">
-                  <strong>Transit from Prev:</strong> ${point.transitFromPrevMins} mins (${point.distanceFromPrevKm} km)
-                </div>
-                ${point.isExtendedStoppage ? `
-                  <div style="background-color: #fef3c7; color: #b45309; padding: 4px 6px; border-radius: 6px; font-weight: 700; margin-top: 4px; font-size: 11px;">
-                    ⚠️ Extended Stoppage / Waiting
-                  </div>
-                ` : ''}
-                ${point.remarks ? `
-                  <div style="margin-top: 4px; font-style: italic; color: #64748b; font-size: 11px;">
-                    "${point.remarks}"
-                  </div>
-                ` : ''}
-              ` : `
-                <div style="color: #475569;">
-                  <strong>Total Distance Covered:</strong> ${point.cumulativeDistanceKm} km
-                </div>
-              `}
-              <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">
-                📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}
-              </div>
+        let iconHtml = '';
+        if (point.type === 'punch-in') {
+          iconHtml = `
+            <div style="background-color: #10b981; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
+              <span>IN</span>
             </div>
           `;
+        } else if (point.type === 'punch-out') {
+          iconHtml = `
+            <div style="background-color: #ef4444; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
+              <span>OUT</span>
+            </div>
+          `;
+        } else {
+          // Doctor / Chemist stop with number badge
+          const isExtended = point.isExtendedStoppage;
+          const bg = isExtended ? '#f59e0b' : '#38bdf8';
+          iconHtml = `
+            <div style="background-color: ${bg}; color: #0f172a; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900;">
+              ${point.seq}
+            </div>
+          `;
+        }
 
-          const marker = L.marker([lat, lng], { icon: customIcon });
-          marker.bindPopup(popupContent);
-          markersLayerRef.current?.addLayer(marker);
+        const customIcon = L.divIcon({
+          html: iconHtml,
+          className: 'custom-map-pin',
+          iconSize: [34, 34],
+          iconAnchor: [17, 17],
+          popupAnchor: [0, -18]
         });
 
-        // Add Polyline connecting all points
-        if (latLngs.length > 1) {
-          const polyline = L.polyline(latLngs, {
-            color: '#38bdf8',
-            weight: 4,
-            opacity: 0.85,
-            dashArray: '6, 8',
-            lineJoin: 'round'
-          });
-          markersLayerRef.current?.addLayer(polyline);
+        const popupContent = `
+          <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; color: #0f172a; min-width: 200px;">
+            <div style="font-weight: 800; font-size: 13px; color: ${point.type === 'punch-in' ? '#059669' : point.type === 'punch-out' ? '#dc2626' : '#0284c7'}; margin-bottom: 4px;">
+              ${point.title}
+            </div>
+            <div style="color: #475569; margin-bottom: 2px;">
+              <strong>Time:</strong> ${point.checkInTime} ${point.checkOutTime !== point.checkInTime ? `&ndash; ${point.checkOutTime}` : ''}
+            </div>
+            ${point.type === 'call' ? `
+              <div style="color: #475569; margin-bottom: 2px;">
+                <strong>Meeting Duration:</strong> ${point.meetingDurationMins} mins
+              </div>
+              <div style="color: #475569; margin-bottom: 2px;">
+                <strong>Transit from Prev:</strong> ${point.transitFromPrevMins} mins (${point.distanceFromPrevKm} km)
+              </div>
+              ${point.isExtendedStoppage ? `
+                <div style="background-color: #fef3c7; color: #b45309; padding: 4px 6px; border-radius: 6px; font-weight: 700; margin-top: 4px; font-size: 11px;">
+                  ⚠️ Extended Stoppage / Waiting
+                </div>
+              ` : ''}
+              ${point.remarks ? `
+                <div style="margin-top: 4px; font-style: italic; color: #64748b; font-size: 11px;">
+                  "${point.remarks}"
+                </div>
+              ` : ''}
+            ` : `
+              <div style="color: #475569;">
+                <strong>Total Distance Covered:</strong> ${point.cumulativeDistanceKm} km
+              </div>
+            `}
+            <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">
+              📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}
+            </div>
+          </div>
+        `;
 
-          // Fit bounds to show entire route
-          mapInstanceRef.current.fitBounds(polyline.getBounds(), {
-            padding: [40, 40],
+        const marker = L.marker([lat, lng], { icon: customIcon });
+        marker.bindPopup(popupContent);
+        markersLayer.addLayer(marker);
+      });
+
+      // Calculate max spread
+      let maxSpread = 0;
+      const [lat0, lng0] = latLngs[0];
+      for (let i = 1; i < latLngs.length; i++) {
+        const d = Math.hypot(latLngs[i][0] - lat0, latLngs[i][1] - lng0);
+        if (d > maxSpread) maxSpread = d;
+      }
+
+      // Add Polyline connecting all points if there is measurable movement
+      if (latLngs.length > 1 && maxSpread > 0.0003) {
+        const polyline = L.polyline(latLngs, {
+          color: '#38bdf8',
+          weight: 4,
+          opacity: 0.85,
+          dashArray: '6, 8',
+          lineJoin: 'round'
+        });
+        markersLayer.addLayer(polyline);
+
+        try {
+          map.fitBounds(polyline.getBounds(), {
+            padding: [50, 50],
             maxZoom: 16
           });
-        } else if (latLngs.length === 1) {
-          mapInstanceRef.current.setView(latLngs[0], 15);
+        } catch (e) {
+          map.setView(latLngs[0], 15);
         }
+      } else {
+        // Virtually same location or single stop
+        map.setView(latLngs[0], 16);
       }
     }
+
+    // Critical: Invalidate size after DOM has rendered so tiles immediately load!
+    const timer1 = setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
+
+    const timer2 = setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      try {
+        map.remove();
+      } catch (e) {}
+      mapInstanceRef.current = null;
+      tileLayerRef.current = null;
+      markersLayerRef.current = null;
+    };
   }, [data, mapType]);
 
   // Export Timeline to Excel
@@ -616,7 +663,7 @@ export default function GeoLocationAnalysisReport() {
                     </span>
                   </div>
 
-                  {/* Roadmap / Satellite Toggle */}
+                  {/* Roadmap / Satellite / OpenStreet Toggle */}
                   <div className="flex rounded-lg overflow-hidden border border-[#363e63]">
                     <button
                       type="button"
@@ -636,13 +683,26 @@ export default function GeoLocationAnalysisReport() {
                     >
                       Satellite
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setMapType('osm')}
+                      className={`px-2.5 py-1 text-xs font-bold transition-colors cursor-pointer ${
+                        mapType === 'osm' ? 'bg-sky-600 text-white' : 'bg-[#1e243d] text-slate-300 hover:bg-[#283152]'
+                      }`}
+                    >
+                      OpenStreet
+                    </button>
                   </div>
                 </div>
               </div>
 
               {/* Map Canvas */}
               <div className="relative w-full h-[460px] bg-[#0c101c]">
-                <div ref={mapContainerRef} className="w-full h-full" />
+                <div 
+                  ref={mapContainerRef} 
+                  className="w-full h-full" 
+                  style={{ height: '460px', width: '100%', minHeight: '460px', zIndex: 1 }} 
+                />
                 
                 {data.routePoints.length === 0 && (
                   <div className="absolute inset-0 bg-[#0c101c]/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center text-slate-400 gap-2 z-10">
