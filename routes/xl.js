@@ -71,10 +71,7 @@ router.post('/admin-login', async (req, res) => {
         }
 
         if (admin.status === 'Deactivated' || admin.status === 'Inactive') {
-            const deactMsg = admin.deactivateDate 
-                ? `Your admin account was deactivated on ${admin.deactivateDate}. Reason: ${admin.deactivateReason || 'Administrative decision'}. Please contact administrator.`
-                : `Your admin account is deactivated. Contact administrator.`;
-            return res.json({ success: false, message: deactMsg });
+            return res.json({ success: false, message: 'Not Authorized to Access' });
         }
 
         // Verify password (supports both bcrypt-hashed and plain text)
@@ -855,11 +852,11 @@ router.use(async (req, res, next) => {
                 if (typeof controls === 'string') {
                     try { controls = JSON.parse(controls); } catch(e) { controls = {}; }
                 }
-                if (controls && controls.locked) {
+                if ((controls && controls.locked) || user.status === 'Deactivated' || user.status === 'Inactive') {
                     return res.json({ 
                         success: false, 
                         isLocked: true, // Special flag for mobile app if it wants to log out
-                        message: controls.lockedReason || 'Your account is locked by Admin.' 
+                        message: 'Not Authorized to Access' 
                     });
                 }
             }
@@ -1165,10 +1162,7 @@ router.post('/login', async (req, res) => {
             return res.json({ success: false, message: 'Invalid email or password' });
         }
         if (user.status === 'Deactivated' || user.status === 'Inactive') {
-            const deactMsg = user.deactivateDate 
-                ? `Your account was deactivated on ${user.deactivateDate}. Reason: ${user.deactivateReason || 'Administrative decision'}. Please contact administrator.`
-                : `Your account is deactivated. Contact administrator.`;
-            return res.json({ success: false, message: deactMsg });
+            return res.json({ success: false, message: 'Not Authorized to Access' });
         }
         
         // Remove password before sending to frontend

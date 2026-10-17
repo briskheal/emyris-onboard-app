@@ -599,6 +599,9 @@ router.post('/login', loginLimiter, async (req, res) => {
                 passwordMatch = (password === storedPass);
             }
             if (passwordMatch) {
+                if (adminRecord.status === 'Deactivated' || adminRecord.status === 'Inactive') {
+                    return res.status(403).json({ success: false, message: 'Not Authorized to Access' });
+                }
                 console.log(`[LOGIN SUCCESS] ${username} (db admin profile)`);
                 const adminData = adminRecord.toJSON();
                 delete adminData.password;
