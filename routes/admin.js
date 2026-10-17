@@ -120,6 +120,53 @@ async function syncXlDesignationsToCompany() {
     }
 }
 
+// Sync XlHQ master to OnboardHQ table
+async function syncXlHqsToOnboard() {
+    try {
+        const activeXlHqs = await XlHQ.findAll({ 
+            where: { status: 'Active' },
+            order: [['state', 'ASC'], ['hqName', 'ASC']]
+        });
+        
+        const activeNames = new Set(activeXlHqs.map(h => (h.hqName || '').toUpperCase().trim()));
+
+        // Upsert into onboard_hq
+        for (const h of activeXlHqs) {
+            const cleanName = (h.hqName || '').toUpperCase().trim();
+            if (!cleanName) continue;
+            const existing = await HQ.findOne({ where: { name: cleanName } });
+            if (existing) {
+                await existing.update({ active: true, state: h.state, uid: h.uid });
+            } else {
+                await HQ.create({
+                    _id: h._id,
+                    name: cleanName,
+                    state: h.state,
+                    uid: h.uid,
+                    active: true
+                });
+            }
+        }
+
+        // Deactivate any in onboard_hq not in XlHQ active list
+        const allOnboard = await HQ.findAll();
+        for (const oh of allOnboard) {
+            const ohName = (oh.name || '').toUpperCase().trim();
+            if (!activeNames.has(ohName) && oh.active) {
+                await oh.update({ active: false });
+            }
+        }
+    } catch (err) {
+        console.error('Error syncing XlHQ to OnboardHQ:', err.message);
+    }
+}
+
+// Initial boot synchronization
+setTimeout(() => {
+    syncXlDesignationsToCompany().catch(() => {});
+    syncXlHqsToOnboard().catch(() => {});
+}, 3000);
+
 // Endpoint to force restart the server
 router.get('/restart', (req, res) => {
     console.log('Restart triggered via browser link.');
@@ -1202,9 +1249,22 @@ router.get('/divisions', async (req, res) => {
 
 router.get('/hqs', async (req, res) => {
     try {
-        const hqs = await HQ.find({ active: true }).sort({ name: 1 });
+        const xlHqs = await XlHQ.findAll({ 
+            where: { status: 'Active' },
+            order: [['state', 'ASC'], ['hqName', 'ASC']]
+        });
+        const hqs = xlHqs.map(h => ({
+            _id: h._id,
+            name: (h.hqName || '').toUpperCase().trim(),
+            state: h.state,
+            uid: h.uid,
+            active: true
+        }));
         res.json(hqs);
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+    } catch (e) { 
+        console.error('Error fetching HQs:', e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 // Admin - DB Statistics
@@ -1291,15 +1351,30 @@ router.post('/divisions', async (req, res) => {
 
 router.post('/hqs', async (req, res) => {
     try {
-        const { name } = req.body;
-        const existing = await HQ.findOne({ name: name.toUpperCase().trim() });
-        if (existing) {
-            await HQ.updateOne({ _id: existing._id }, { $set: { active: true } });
+        const { name, state } = req.body;
+        if (!name) return res.status(400).json({ error: 'Name required' });
+        const cleanName = name.toUpperCase().trim();
+        const cleanState = (state || 'Gujarat').trim();
+        
+        let xlHq = await XlHQ.findOne({ where: { hqName: cleanName } });
+        if (xlHq) {
+            await xlHq.update({ status: 'Active', state: cleanState });
         } else {
-            await HQ.create({ name: name.toUpperCase().trim() });
+            const max = await getMaxUID(XlHQ, 'HQS');
+            const uid = 'HQS' + (max + 1);
+            await XlHQ.create({
+                uid,
+                hqName: cleanName,
+                state: cleanState,
+                status: 'Active'
+            });
         }
+        await syncXlHqsToOnboard();
         res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+    } catch (e) { 
+        console.error('Error adding HQ:', e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 router.delete('/divisions/:id', async (req, res) => {
@@ -1311,9 +1386,22 @@ router.delete('/divisions/:id', async (req, res) => {
 
 router.delete('/hqs/:id', async (req, res) => {
     try {
-        await HQ.findByIdAndUpdate(req.params.id, { active: false });
+        const id = req.params.id;
+        const hq = await HQ.findById(id);
+        const nameToDeactivate = hq ? hq.name : null;
+        
+        if (nameToDeactivate) {
+            await XlHQ.update({ status: 'Inactive' }, { where: { hqName: nameToDeactivate } });
+        } else {
+            await XlHQ.update({ status: 'Inactive' }, { where: { _id: id } });
+        }
+        await HQ.findByIdAndUpdate(id, { active: false });
+        await syncXlHqsToOnboard();
         res.json({ success: true });
-    } catch (e) { res.status(500).json({ error: 'Failed' }); }
+    } catch (e) { 
+        console.error('Error deleting HQ:', e);
+        res.status(500).json({ error: 'Failed' }); 
+    }
 });
 
 // --- AUTO REF NUMBER ---
@@ -2293,8 +2381,18 @@ router.get('/company-profile', async (req, res) => {
         // Hydrate with latest active divisions and hqs
         const divisions = await Division.find({ active: true }).sort({ name: 1 }).lean();
         profile.divisions = divisions;
-        const hqs = await HQ.find({ active: true }).sort({ name: 1 }).lean();
-        profile.hqs = hqs;
+        // Link XLA Headquarters globally across all portals
+        const xlHqs = await XlHQ.findAll({ 
+            where: { status: 'Active' },
+            order: [['state', 'ASC'], ['hqName', 'ASC']]
+        });
+        profile.hqs = xlHqs.map(h => ({
+            _id: h._id,
+            name: (h.hqName || '').toUpperCase().trim(),
+            state: h.state,
+            uid: h.uid,
+            active: true
+        }));
         
         // Link XLA Designations globally across all portals
         const xlDsgs = await XlDesignation.findAll({ 
@@ -2490,7 +2588,19 @@ router.get('/api/company-data', async (req, res) => {
         company.designations = masterDesignations;
 
         const rawDivisions = await Division.find({ active: true }).lean();
-        const hqs = await HQ.find({ active: true }).lean(); // Default sort
+        
+        // Link XLA Headquarters globally
+        const xlHqs = await XlHQ.findAll({ 
+            where: { status: 'Active' },
+            order: [['state', 'ASC'], ['hqName', 'ASC']]
+        });
+        const hqs = xlHqs.map(h => ({
+            _id: h._id,
+            name: (h.hqName || '').toUpperCase().trim(),
+            state: h.state,
+            uid: h.uid,
+            active: true
+        }));
 
         // Custom Sort: Move 'SALES' to top, keep others in insertion order
         const salesDiv = rawDivisions.find(d => d.name === 'SALES');
@@ -4641,6 +4751,7 @@ router.post('/locations/hqs', async (req, res) => {
         const max = await getMaxUID(XlHQ, 'HQS');
         const uid = 'HQS' + (max + 1);
         const newHQ = await XlHQ.create({ state, hqName, uid });
+        await syncXlHqsToOnboard();
         res.json({ success: true, hq: newHQ });
     } catch (e) {
         console.error(e);
@@ -4651,6 +4762,7 @@ router.post('/locations/hqs', async (req, res) => {
 router.put('/locations/hqs/:id', async (req, res) => {
     try {
         await XlHQ.update(req.body, { where: { _id: req.params.id } });
+        await syncXlHqsToOnboard();
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -4661,6 +4773,7 @@ router.put('/locations/hqs/:id', async (req, res) => {
 router.delete('/locations/hqs/:id', async (req, res) => {
     try {
         await XlHQ.destroy({ where: { _id: req.params.id } });
+        await syncXlHqsToOnboard();
         res.json({ success: true });
     } catch (e) {
         console.error(e);
@@ -4902,6 +5015,10 @@ router.post('/locations/upload', locationUpload.single('file'), async (req, res)
         if (ex) await ex.update(row); else await XlRoute.create(row);
         docs.push(row);
       }
+    }
+
+    if (type === 'Headquarter') {
+      await syncXlHqsToOnboard();
     }
 
     res.json({ success: true, count: docs.length });

@@ -316,7 +316,10 @@ async function populateDropdowns() {
 
     if (hqSel) {
         hqSel.innerHTML = '<option value="">-- Select HQ --</option>' +
-            (companyData.hqs || []).map(h => `<option value="${h.name}">${h.name}</option>`).join('');
+            (companyData.hqs || []).map(h => {
+                const label = h.state ? `${h.name} (${h.state})` : h.name;
+                return `<option value="${h.name}">${label}</option>`;
+            }).join('');
     }
 }
 

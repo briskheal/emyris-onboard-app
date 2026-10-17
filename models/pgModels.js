@@ -168,6 +168,8 @@ const OnboardDivision = sequelize.define('onboard_division', {
 const OnboardHQ = sequelize.define('onboard_hq', {
     _id: { type: DataTypes.STRING, primaryKey: true, defaultValue: generateId },
     name: { type: DataTypes.STRING, allowNull: false, unique: true },
+    state: { type: DataTypes.STRING },
+    uid: { type: DataTypes.STRING },
     active: { type: DataTypes.BOOLEAN, defaultValue: true }
 });
 

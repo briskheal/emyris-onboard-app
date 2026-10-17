@@ -19,7 +19,7 @@ export default function CompanyProfile() {
   });
 
   const [divisions, setDivisions] = useState<{ name: string }[]>([]);
-  const [hqs, setHQs] = useState<{ name: string }[]>([]);
+  const [hqs, setHQs] = useState<{ name: string; state?: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -278,8 +278,13 @@ export default function CompanyProfile() {
 
           {/* HQ Management */}
           <div className="dash-card" style={{ display: 'flex', flexDirection: 'column' }}>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>🚀 Headquarters (HQ) Management</h3>
-            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define available HQs for recruitment selection.</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', flexWrap: 'wrap', gap: '8px' }}>
+              <h3 style={{ fontSize: '1.2rem', margin: 0 }}>🚀 Headquarters (HQ) Management</h3>
+              <span style={{ fontSize: '0.72rem', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                Centrally Synced with XLA Headquarters Master ({hqs.length})
+              </span>
+            </div>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Define available HQs for recruitment selection and operations.</p>
             
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
@@ -289,7 +294,7 @@ export default function CompanyProfile() {
               <div className="custom-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '250px', overflowY: 'auto', alignContent: 'flex-start', paddingRight: '5px' }}>
                 {hqs.map((hq, i) => (
                   <span key={i} style={{ background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {hq.name} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeHq(i)} />
+                    {hq.name}{hq.state ? ` (${hq.state})` : ''} <Trash2 size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => removeHq(i)} />
                   </span>
                 ))}
               </div>

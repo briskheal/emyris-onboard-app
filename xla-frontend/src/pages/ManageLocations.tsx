@@ -292,9 +292,14 @@ function HQTab() {
     <div className="max-w-6xl space-y-4">
       {/* Form Card */}
       <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 shadow-sm">
-        <h2 className="text-xs font-bold text-sky-400 mb-3 tracking-wider uppercase flex items-center gap-1.5">
-          <Building2 size={14} /> Create Headquarters
-        </h2>
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h2 className="text-xs font-bold text-sky-400 tracking-wider uppercase flex items-center gap-1.5">
+            <Building2 size={14} /> Create Headquarters
+          </h2>
+          <span className="text-[10px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
+            Authoritative Single Source of Truth for HR & Applicant Portals
+          </span>
+        </div>
         
         <form onSubmit={handleAdd} className="flex flex-wrap gap-3 items-end">
           <div className="flex-1 min-w-[200px]">

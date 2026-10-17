@@ -90,6 +90,10 @@ await XlTarget.sync({ alter: true });
         try { await sequelize.query("ALTER TABLE xl_designations ADD COLUMN \"targetStockistCalls\" INTEGER DEFAULT 0;"); } catch(e) {}
         try { await sequelize.query("ALTER TABLE xl_designations ADD COLUMN \"department\" VARCHAR(255) DEFAULT 'SALES';"); } catch(e) {}
         try { await sequelize.query("ALTER TABLE xl_designation ADD COLUMN IF NOT EXISTS \"department\" VARCHAR(255) DEFAULT 'SALES';"); } catch(e) {}
+        try { await sequelize.query("ALTER TABLE onboard_hq ADD COLUMN IF NOT EXISTS \"state\" VARCHAR(255);"); } catch(e) {}
+        try { await sequelize.query("ALTER TABLE onboard_hq ADD COLUMN IF NOT EXISTS \"uid\" VARCHAR(50);"); } catch(e) {}
+        try { await sequelize.query("ALTER TABLE onboard_hqs ADD COLUMN IF NOT EXISTS \"state\" VARCHAR(255);"); } catch(e) {}
+        try { await sequelize.query("ALTER TABLE onboard_hqs ADD COLUMN IF NOT EXISTS \"uid\" VARCHAR(50);"); } catch(e) {}
         await XlStockist.sync({ alter: true }).catch(() => {});
         await XlProduct.sync({ alter: true }).catch(() => {});
         try {
