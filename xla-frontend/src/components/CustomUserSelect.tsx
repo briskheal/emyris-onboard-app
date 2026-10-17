@@ -31,13 +31,18 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
     }
   }, [isOpen]);
 
-  const selectedData = users.find(u => u.employeeId === selectedUser);
+  const getDisplayName = (u: any) => u.name || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.employeeId || 'User';
+
+  const selectedData = users.find(u => u.employeeId === selectedUser || u._id === selectedUser);
 
   const filteredUsers = searchTerm
     ? users.filter(u => {
-        const name = (u.firstName + ' ' + (u.lastName || '')).toLowerCase();
-        const role = (u.designation || u.employeeId || '').toLowerCase();
-        return name.includes(searchTerm.toLowerCase()) || role.includes(searchTerm.toLowerCase());
+        const name = getDisplayName(u).toLowerCase();
+        const role = (u.designation || '').toLowerCase();
+        const empId = (u.employeeId || '').toLowerCase();
+        const hq = (u.hq || '').toLowerCase();
+        const q = searchTerm.toLowerCase();
+        return name.includes(q) || role.includes(q) || empId.includes(q) || hq.includes(q);
       })
     : users;
 
@@ -45,73 +50,81 @@ export default function CustomUserSelect({ users, selectedUser, onChange }: Cust
     <div ref={containerRef} className="relative w-full">
       <div
         onClick={() => setIsOpen(prev => !prev)}
-        className={`w-full bg-[#151521] border ${isOpen ? 'border-indigo-500' : 'border-[#3b3b5a]'} text-slate-300 rounded-lg px-3 py-1 flex items-center justify-between cursor-pointer hover:border-indigo-500 transition-colors h-[42px]`}
+        className={`w-full bg-[#1e243d] border ${isOpen ? 'border-sky-500 ring-2 ring-sky-500/30' : 'border-[#363e63]'} text-slate-300 rounded-xl px-3 py-1 flex items-center justify-between cursor-pointer hover:border-sky-400 transition-colors h-[42px]`}
       >
-        <div className="flex items-center gap-3 w-full pr-4 overflow-hidden">
+        <div className="flex items-center gap-2.5 w-full pr-2 overflow-hidden">
           {isOpen ? (
             <div className="flex items-center gap-2 w-full">
-              <Search size={16} className="text-slate-400 shrink-0" />
+              <Search size={16} className="text-sky-400 shrink-0" />
               <input
                 ref={searchRef}
                 type="text"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 onClick={e => e.stopPropagation()}
-                placeholder="Search users..."
-                className="w-full bg-transparent outline-none text-white placeholder:text-slate-500 font-semibold text-sm"
+                placeholder="Search user by name, ID, HQ..."
+                className="w-full bg-transparent outline-none text-white placeholder:text-slate-400 font-semibold text-xs md:text-sm"
               />
             </div>
           ) : selectedData ? (
             <>
-              <div className="w-6 h-6 rounded-full bg-[#32324f] flex items-center justify-center shrink-0 border border-[#3b3b5a] overflow-hidden">
+              <div className="w-6 h-6 rounded-full bg-[#283152] flex items-center justify-center shrink-0 border border-[#363e63] overflow-hidden">
                 {selectedData.profilePic ? (
                   <img src={selectedData.profilePic} alt="Profile" className="w-full h-full object-cover" />
                 ) : (
-                  <User size={14} className="text-slate-400" />
+                  <User size={13} className="text-sky-400" />
                 )}
               </div>
               <div className="flex flex-col overflow-hidden w-full">
-                <span className="text-sm font-semibold text-slate-300 truncate">{selectedData.firstName} {selectedData.lastName}</span>
-                <span className="text-[9px] text-slate-400 font-medium truncate uppercase tracking-widest leading-none">
-                  {selectedData.designation || selectedData.employeeId}
+                <span className="text-xs md:text-sm font-bold text-white truncate">
+                  {getDisplayName(selectedData)}
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-wider leading-tight">
+                  {selectedData.employeeId}{selectedData.hq ? ` • ${selectedData.hq}` : ''}{selectedData.designation ? ` • ${selectedData.designation}` : ''}
                 </span>
               </div>
             </>
           ) : (
-            <span className="text-slate-400 font-semibold text-sm uppercase tracking-widest">Select User</span>
+            <span className="text-slate-400 font-semibold text-xs md:text-sm uppercase tracking-wider">Select User</span>
           )}
         </div>
-        <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#00e5ff]' : ''}`} />
+        <ChevronDown size={16} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-sky-400' : ''}`} />
       </div>
 
       {isOpen && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-50 bg-[#1e1e30] border border-[#3b3b5a] rounded-xl shadow-2xl flex flex-col overflow-hidden">
-          <div className="max-h-64 overflow-y-auto p-1">
-            {filteredUsers.map(u => (
-              <div
-                key={u.employeeId}
-                onClick={() => { onChange(u.employeeId); setIsOpen(false); setSearchTerm(''); }}
-                className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${selectedUser === u.employeeId ? 'bg-[#32324f] border border-[#00e5ff]/30' : 'hover:bg-[#27273f]'}`}
-              >
-                <div className="w-8 h-8 rounded-full bg-[#27273f] flex items-center justify-center shrink-0 border border-[#3b3b5a] overflow-hidden">
-                  {u.profilePic ? (
-                    <img src={u.profilePic} alt="Profile" className="w-full h-full object-cover" />
-                  ) : (
-                    <User size={16} className="text-slate-300" />
-                  )}
+        <div className="absolute top-full mt-1.5 left-0 right-0 z-50 bg-[#181f38] border border-[#363e63] rounded-xl shadow-2xl flex flex-col overflow-hidden max-h-72">
+          <div className="overflow-y-auto p-1.5 space-y-1">
+            {filteredUsers.map(u => {
+              const uId = u.employeeId || u._id;
+              const isSelected = selectedUser === uId || selectedUser === u.employeeId;
+              return (
+                <div
+                  key={uId}
+                  onClick={() => { onChange(u.employeeId || uId); setIsOpen(false); setSearchTerm(''); }}
+                  className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-colors ${isSelected ? 'bg-sky-600/30 border border-sky-400/50' : 'hover:bg-[#20294a]'}`}
+                >
+                  <div className="w-7 h-7 rounded-full bg-[#283152] flex items-center justify-center shrink-0 border border-[#363e63] overflow-hidden">
+                    {u.profilePic ? (
+                      <img src={u.profilePic} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <User size={14} className="text-slate-300" />
+                    )}
+                  </div>
+                  <div className="flex flex-col flex-1 overflow-hidden">
+                    <span className="text-xs md:text-sm font-bold text-white truncate">
+                      {getDisplayName(u)}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-wider">
+                      {u.employeeId}{u.hq ? ` • ${u.hq}` : ''}{u.designation ? ` • ${u.designation}` : ''}
+                    </span>
+                  </div>
+                  {isSelected && <Check size={16} className="text-sky-400 shrink-0" />}
                 </div>
-                <div className="flex flex-col flex-1 overflow-hidden">
-                  <span className="text-sm font-bold text-white truncate">{u.firstName} {u.lastName}</span>
-                  <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">
-                    {u.designation || u.employeeId}
-                  </span>
-                </div>
-                {selectedUser === u.employeeId && <Check size={16} className="text-[#00e5ff]" />}
-              </div>
-            ))}
+              );
+            })}
             {filteredUsers.length === 0 && (
-              <div className="py-8 text-center">
-                <span className="text-slate-400 font-bold text-sm">No users found</span>
+              <div className="py-6 text-center">
+                <span className="text-slate-400 font-bold text-xs">No users matching search</span>
               </div>
             )}
           </div>

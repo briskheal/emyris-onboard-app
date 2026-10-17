@@ -9,6 +9,7 @@ import * as XLSX from 'xlsx';
 import * as htmlToImage from 'html-to-image';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import CustomUserSelect from '../components/CustomUserSelect';
 
 interface UserItem {
   _id: string;
@@ -837,20 +838,11 @@ export default function GeoLocationAnalysisReport() {
                 <Users size={14} className="text-sky-400" />
                 Select Field User
               </label>
-              <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none"
-              >
-                {users.map(u => {
-                  const displayName = u.name || [u.firstName, u.lastName].filter(Boolean).join(' ') || u.employeeId || 'User';
-                  return (
-                    <option key={u._id} value={u.employeeId || u._id}>
-                      {displayName} ({u.employeeId || 'ID'}) {u.hq ? `- ${u.hq}` : ''}
-                    </option>
-                  );
-                })}
-              </select>
+              <CustomUserSelect
+                users={users}
+                selectedUser={selectedUser}
+                onChange={(id) => setSelectedUser(id)}
+              />
             </div>
 
             {/* Date Select */}
