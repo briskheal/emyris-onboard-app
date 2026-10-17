@@ -6095,8 +6095,9 @@ router.post('/targets/upload', async (req, res) => {
 router.put('/users/bulk-lock', async (req, res) => {
     try {
         const { XlUser } = require('../db');
-        const { hq, locked, lockedReason } = req.body;
+        const { hq, locked, lockedReason, lockedDate } = req.body;
         const users = await XlUser.findAll({ where: { hq } });
+        const dateStr = lockedDate || new Date().toISOString().split('T')[0];
         for (const user of users) {
             let controls = user.controls;
             if (typeof controls === 'string') {
@@ -6105,8 +6106,15 @@ router.put('/users/bulk-lock', async (req, res) => {
             if (!controls || typeof controls !== 'object') controls = {};
             
             controls.locked = locked;
-            controls.lockedReason = lockedReason || '';
-            await user.update({ controls });
+            controls.lockedReason = locked ? (lockedReason || 'HQ Bulk Lock by Admin') : '';
+            controls.lockedDate = locked ? dateStr : '';
+            
+            await user.update({
+                controls,
+                status: locked ? 'Deactivated' : 'Active',
+                deactivateReason: locked ? (lockedReason || 'HQ Bulk Lock by Admin') : null,
+                deactivateDate: locked ? dateStr : null
+            });
         }
         res.json({ success: true, count: users.length });
     } catch (e) {

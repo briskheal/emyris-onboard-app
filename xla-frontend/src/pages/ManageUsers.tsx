@@ -72,11 +72,28 @@ function AccessControlTab() {
   const [selectedHq, setSelectedHq] = useState('');
   const [selectedDivision, setSelectedDivision] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'Active' | 'Deactivated' | 'All'>('Active');
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  // Deactivation Modal states
+  const [deactivateTarget, setDeactivateTarget] = useState<any>(null);
+  const [deactivateDate, setDeactivateDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [reasonCategory, setReasonCategory] = useState('Resigned');
+  const [customReason, setCustomReason] = useState('');
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+
+  // Re-activation Modal states
+  const [reactivateTarget, setReactivateTarget] = useState<any>(null);
+  const [reactivateLoading, setReactivateLoading] = useState(false);
+
+  // HQ Bulk Lock states
   const [showConfirm, setShowConfirm] = useState(false);
-  const [isUnlocking, setIsUnlocking] = useState(false); // true if we want to unlock all, false to lock all
+  const [isUnlocking, setIsUnlocking] = useState(false);
+  const [bulkReason, setBulkReason] = useState('Administrative HQ Lock');
+  const [bulkDate, setBulkDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   useEffect(() => {
     fetchLocations();
@@ -90,15 +107,15 @@ function AccessControlTab() {
         axios.get('/api/admin/locations/states'),
         axios.get('/api/admin/locations/hqs')
       ]);
-      if (stRes.data.success) setStates(stRes.data.states);
-      if (hqRes.data.success) setHqs(hqRes.data.hqs);
+      if (stRes.data.success) setStates(stRes.data.states || []);
+      if (hqRes.data.success) setHqs(hqRes.data.hqs || []);
     } catch (e) { console.error(e); }
   };
 
   const fetchDivisions = async () => {
     try {
       const res = await axios.get('/api/admin/locations/divisions');
-      if (res.data.success) setDivisions(res.data.divisions);
+      if (res.data.success) setDivisions(res.data.divisions || []);
     } catch (e) { console.error(e); }
   };
 
@@ -106,163 +123,537 @@ function AccessControlTab() {
     try {
       const res = await axios.get('/api/admin/users');
       if (res.data.success) {
-        setUsers(res.data.users);
+        setUsers(res.data.users || []);
       }
     } catch (e) { console.error(e); }
   };
 
-  const filteredUsers = users.filter(u => {
-    if (selectedState && u.state !== selectedState && !hqs.find(h => h.hqName === u.hq && h.state === selectedState)) return false;
-    if (selectedHq && u.hq !== selectedHq) return false;
-    if (selectedDivision && u.division !== selectedDivision) return false;
-    if (searchTerm) {
-      const full = (u.firstName + ' ' + (u.lastName || '')).toLowerCase();
-      if (!full.includes(searchTerm.toLowerCase())) return false;
-    }
-    return true;
-  });
-
-  const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-
   const isUserLocked = (user: any) => {
+    if (user.status === 'Deactivated' || user.status === 'Inactive') return true;
     let c = user.controls;
     if (typeof c === 'string') { try { c = JSON.parse(c); } catch(e) { return false; } }
     return c?.locked === true;
   };
 
   const getLockReason = (user: any) => {
+    if (user.deactivateReason) return user.deactivateReason;
     let c = user.controls;
     if (typeof c === 'string') { try { c = JSON.parse(c); } catch(e) { return 'N/A'; } }
     return c?.lockedReason || 'N/A';
   };
 
-  const handleToggleLock = async (user: any) => {
-    const currentLock = isUserLocked(user);
-    const newLock = !currentLock;
-    let currentControls = user.controls || {};
-    if (typeof currentControls === 'string') { try { currentControls = JSON.parse(currentControls); } catch(e) { currentControls = {}; } }
-    
-    const updatedControls = {
-      ...currentControls,
-      locked: newLock,
-      lockedReason: newLock ? 'Locked by Admin' : ''
-    };
+  const getLockDate = (user: any) => {
+    if (user.deactivateDate) return user.deactivateDate;
+    let c = user.controls;
+    if (typeof c === 'string') { try { c = JSON.parse(c); } catch(e) { return '-'; } }
+    return c?.lockedDate || '-';
+  };
 
+  const activeUsers = users.filter(u => !isUserLocked(u));
+  const deactivatedUsers = users.filter(u => isUserLocked(u));
+
+  const filteredByStatus = statusFilter === 'Active'
+    ? activeUsers
+    : statusFilter === 'Deactivated'
+    ? deactivatedUsers
+    : users;
+
+  const filteredUsers = filteredByStatus.filter(u => {
+    if (selectedState && u.state !== selectedState && !hqs.find(h => h.hqName === u.hq && h.state === selectedState)) return false;
+    if (selectedHq && u.hq !== selectedHq) return false;
+    if (selectedDivision && u.division !== selectedDivision) return false;
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase().trim();
+      const full = ((u.firstName || '') + ' ' + (u.lastName || '')).toLowerCase();
+      const empId = (u.employeeId || u.uid || '').toLowerCase();
+      const hq = (u.hq || '').toLowerCase();
+      const div = (u.division || '').toLowerCase();
+      const reason = getLockReason(u).toLowerCase();
+      if (!full.includes(q) && !empId.includes(q) && !hq.includes(q) && !div.includes(q) && !reason.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  const handleToggleClick = (user: any) => {
+    const locked = isUserLocked(user);
+    if (!locked) {
+      // User is active, prompt deactivation modal with date & reason
+      setDeactivateTarget(user);
+      setDeactivateDate(new Date().toISOString().split('T')[0]);
+      setReasonCategory('Resigned');
+      setCustomReason('');
+    } else {
+      // User is locked/deactivated, prompt reactivation modal
+      setReactivateTarget(user);
+    }
+  };
+
+  const handleConfirmDeactivate = async () => {
+    if (!deactivateTarget) return;
+    setDeactivateLoading(true);
     try {
-      const res = await axios.put('/api/admin/users/' + user._id, { controls: updatedControls });
-      if (res.data.success) {
-        setUsers(users.map(u => u._id === user._id ? { ...u, controls: updatedControls } : u));
-      } else {
-        alert(res.data.message);
+      const finalReason = reasonCategory === 'Other'
+        ? (customReason.trim() || 'Other')
+        : (customReason.trim() ? `${reasonCategory} - ${customReason.trim()}` : reasonCategory);
+
+      let currentControls = deactivateTarget.controls || {};
+      if (typeof currentControls === 'string') {
+        try { currentControls = JSON.parse(currentControls); } catch(e) { currentControls = {}; }
       }
-    } catch (e) { alert('Failed to update user lock status.'); }
+
+      const updatedControls = {
+        ...currentControls,
+        locked: true,
+        lockedReason: finalReason,
+        lockedDate: deactivateDate
+      };
+
+      const res = await axios.put('/api/admin/users/' + deactivateTarget._id, {
+        controls: updatedControls,
+        status: 'Deactivated',
+        deactivateReason: finalReason,
+        deactivateDate: deactivateDate
+      });
+
+      if (res.data.success) {
+        setUsers(users.map(u => u._id === deactivateTarget._id ? {
+          ...u,
+          controls: updatedControls,
+          status: 'Deactivated',
+          deactivateReason: finalReason,
+          deactivateDate: deactivateDate
+        } : u));
+        setDeactivateTarget(null);
+      } else {
+        alert(res.data.message || 'Failed to deactivate user');
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.message || e.message || 'Failed to update user lock status.');
+    } finally {
+      setDeactivateLoading(false);
+    }
+  };
+
+  const handleConfirmReactivate = async () => {
+    if (!reactivateTarget) return;
+    setReactivateLoading(true);
+    try {
+      let currentControls = reactivateTarget.controls || {};
+      if (typeof currentControls === 'string') {
+        try { currentControls = JSON.parse(currentControls); } catch(e) { currentControls = {}; }
+      }
+
+      const updatedControls = {
+        ...currentControls,
+        locked: false,
+        lockedReason: '',
+        lockedDate: ''
+      };
+
+      const res = await axios.put('/api/admin/users/' + reactivateTarget._id, {
+        controls: updatedControls,
+        status: 'Active',
+        deactivateReason: null,
+        deactivateDate: null
+      });
+
+      if (res.data.success) {
+        setUsers(users.map(u => u._id === reactivateTarget._id ? {
+          ...u,
+          controls: updatedControls,
+          status: 'Active',
+          deactivateReason: null,
+          deactivateDate: null
+        } : u));
+        setReactivateTarget(null);
+      } else {
+        alert(res.data.message || 'Failed to re-activate user');
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.message || e.message || 'Failed to re-activate user');
+    } finally {
+      setReactivateLoading(false);
+    }
   };
 
   const handleBulkLock = async () => {
     if (!selectedHq) return alert("Please select an HQ first.");
+    setBulkLoading(true);
     try {
       const res = await axios.put('/api/admin/users/bulk-lock', {
         hq: selectedHq,
         locked: !isUnlocking,
-        lockedReason: isUnlocking ? '' : 'Locked by Admin'
+        lockedReason: isUnlocking ? '' : bulkReason,
+        lockedDate: isUnlocking ? '' : bulkDate
       });
       if (res.data.success) {
-        fetchUsers();
+        await fetchUsers();
         setShowConfirm(false);
       } else {
-        alert(res.data.message);
+        alert(res.data.message || 'Bulk lock failed.');
       }
-    } catch(e) { alert('Bulk lock failed.'); }
+    } catch(e) {
+      alert('Bulk lock failed.');
+    } finally {
+      setBulkLoading(false);
+    }
   };
 
   const allFilteredLocked = filteredUsers.length > 0 && filteredUsers.every(u => isUserLocked(u));
 
-  return (
-    <div className="p-8 max-w-7xl mx-auto relative">
-      <div className="flex items-center gap-4 mb-8">
-        <h2 className="text-xl font-bold text-sky-400 uppercase tracking-wider flex items-center gap-2">
-           <ArrowLeft size={20} /> ACCESS CONTROL
-        </h2>
-      </div>
+  const renderDeactivateModal = () => {
+    if (!deactivateTarget) return null;
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+          <button 
+            type="button"
+            onClick={() => setDeactivateTarget(null)} 
+            className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+          
+          <div className="flex items-center gap-2.5 mb-4 text-rose-400">
+            <UserCog size={22} />
+            <h3 className="text-base font-bold text-white uppercase tracking-wider">
+              De-activate / Lock User Access
+            </h3>
+          </div>
 
-      <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700/50 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select State</label>
-            <select value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedHq(''); setCurrentPage(1); }} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
-              <option value="">Select State</option>
+          <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60 mb-4 text-xs space-y-1">
+            <div className="text-slate-300">
+              User: <strong className="text-white text-sm">{deactivateTarget.firstName} {deactivateTarget.lastName}</strong>
+            </div>
+            <div className="text-slate-400 flex flex-wrap gap-x-4">
+              <span>Employee ID: <strong className="text-emerald-400 font-mono">{deactivateTarget.employeeId || deactivateTarget.uid || '-'}</strong></span>
+              <span>HQ: <strong className="text-sky-400">{deactivateTarget.hq || '-'}</strong></span>
+              <span>Designation: <strong className="text-amber-400">{deactivateTarget.designation || '-'}</strong></span>
+            </div>
+          </div>
+
+          <div className="bg-rose-950/30 border border-rose-500/30 p-3 rounded-lg mb-4 text-xs text-rose-300/90 leading-relaxed">
+            ⚠️ <strong>Action Notice:</strong> De-activating this user will immediately block their login to the mobile application and portal. All historical records, doctor calls, sales, and reports remain permanently intact.
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  Effective De-activation Date *
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setDeactivateDate(new Date().toISOString().split('T')[0])}
+                  className="text-[11px] bg-slate-700 hover:bg-slate-600 text-sky-300 px-2 py-0.5 rounded font-medium transition-colors"
+                >
+                  Set Today
+                </button>
+              </div>
+              <input 
+                type="date" 
+                required
+                value={deactivateDate} 
+                onChange={e => setDeactivateDate(e.target.value)} 
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-white focus:border-rose-500 focus:outline-none" 
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Reason Category *
+              </label>
+              <select 
+                value={reasonCategory}
+                onChange={e => setReasonCategory(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-white focus:border-rose-500 focus:outline-none cursor-pointer"
+              >
+                <option value="Resigned">Resigned</option>
+                <option value="Terminated">Terminated / Dismissed</option>
+                <option value="Absconding">Absconding / Left without notice</option>
+                <option value="Medical Leave">Extended / Medical Leave</option>
+                <option value="Administrative Lock">Administrative Lock</option>
+                <option value="Transferred">Transferred to another branch</option>
+                <option value="Other">Other (Specify below)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Specific Reason / Administrative Remarks
+              </label>
+              <textarea 
+                rows={2}
+                value={customReason} 
+                onChange={e => setCustomReason(e.target.value)} 
+                placeholder="Enter remarks or details for this deactivation..." 
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-white focus:border-rose-500 focus:outline-none resize-none placeholder-slate-500" 
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={() => setDeactivateTarget(null)} 
+              className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              disabled={deactivateLoading || !deactivateDate} 
+              onClick={handleConfirmDeactivate} 
+              className="px-5 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-rose-900/30"
+            >
+              {deactivateLoading ? 'Locking...' : 'Confirm De-activation'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReactivateModal = () => {
+    if (!reactivateTarget) return null;
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+          <button 
+            type="button" 
+            onClick={() => setReactivateTarget(null)} 
+            className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+          
+          <div className="flex items-center gap-2.5 mb-4 text-emerald-400">
+            <UserCheck size={22} />
+            <h3 className="text-base font-bold text-white uppercase tracking-wider">
+              Re-activate / Restore Access
+            </h3>
+          </div>
+
+          <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60 mb-4 text-xs space-y-1">
+            <div className="text-slate-300">
+              User: <strong className="text-white text-sm">{reactivateTarget.firstName} {reactivateTarget.lastName}</strong>
+            </div>
+            <div className="text-slate-400">
+              Employee ID: <strong className="text-emerald-400 font-mono">{reactivateTarget.employeeId || reactivateTarget.uid || '-'}</strong>
+            </div>
+            {getLockReason(reactivateTarget) && (
+              <div className="text-amber-400 text-[11px] pt-1">
+                Previous Reason: {getLockReason(reactivateTarget)} ({getLockDate(reactivateTarget)})
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+            Are you sure you want to re-activate this user account? The user will immediately be able to log in to the portal and mobile application.
+          </p>
+
+          <div className="flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={() => setReactivateTarget(null)} 
+              className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              disabled={reactivateLoading} 
+              onClick={handleConfirmReactivate} 
+              className="px-5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-emerald-900/30"
+            >
+              {reactivateLoading ? 'Restoring...' : 'Confirm Activation'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="w-full space-y-3.5 pb-6">
+      {/* Excel Filter Tool Bar (State / HQ / Division) */}
+      <div className="bg-slate-800/80 p-3 rounded-lg border border-slate-700/80 shadow-sm">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Select State</label>
+            <select 
+              value={selectedState} 
+              onChange={e => { setSelectedState(e.target.value); setSelectedHq(''); setCurrentPage(1); }} 
+              className="bg-slate-900 border border-slate-700 rounded py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-sky-500"
+            >
+              <option value="">All States</option>
               {states.map(s => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
             </select>
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select HQ</label>
-            <select value={selectedHq} onChange={e => { setSelectedHq(e.target.value); setCurrentPage(1); }} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
-              <option value="">Select HQ</option>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Select HQ</label>
+            <select 
+              value={selectedHq} 
+              onChange={e => { setSelectedHq(e.target.value); setCurrentPage(1); }} 
+              className="bg-slate-900 border border-slate-700 rounded py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-sky-500"
+            >
+              <option value="">All HeadQuarters</option>
               {hqs.filter(h => h.state === selectedState || h.stateName === selectedState || !selectedState).map(h => (
                 <option key={h._id} value={h.hqName}>{h.hqName}</option>
               ))}
             </select>
           </div>
-          <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Select Division</label>
-            <select value={selectedDivision} onChange={e => { setSelectedDivision(e.target.value); setCurrentPage(1); }} className="bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-white focus:outline-none focus:border-sky-500">
-              <option value="">Select Division</option>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Select Division</label>
+            <select 
+              value={selectedDivision} 
+              onChange={e => { setSelectedDivision(e.target.value); setCurrentPage(1); }} 
+              className="bg-slate-900 border border-slate-700 rounded py-1.5 px-2.5 text-xs text-white focus:outline-none focus:border-sky-500"
+            >
+              <option value="">All Divisions</option>
               {divisions.map(d => <option key={d._id} value={d.divisionName}>{d.divisionName}</option>)}
             </select>
           </div>
         </div>
       </div>
 
-      <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 overflow-hidden relative">
-        <div className="p-4 border-b border-slate-700/50 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider whitespace-nowrap">Showing ({filteredUsers.length}) Entries</h3>
-          
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-4 ml-0 md:ml-auto w-full md:w-auto">
-            <div className="relative w-full md:w-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
-                type="text" 
-                placeholder="Search user..." 
-                value={searchTerm}
-                onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                className="bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 w-full md:w-64"
-              />
-            </div>
-            {selectedHq && (
-               <button 
-                  onClick={() => { setIsUnlocking(allFilteredLocked); setShowConfirm(true); }} 
-                  className="bg-sky-600 hover:bg-sky-500 text-white px-4 py-2 rounded font-bold text-xs uppercase tracking-wider transition-colors whitespace-nowrap w-full md:w-auto">
-                  {allFilteredLocked ? 'Unlock All Users In HQ' : 'Lock All Users In HQ'}
-               </button>
-            )}
+      {/* Control Bar: Folder Dropdown + Live Count + Search + Bulk Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-800/80 px-3.5 py-2.5 rounded-lg border border-slate-700/80 shadow-sm">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Folder:</span>
+            <select 
+              value={statusFilter} 
+              onChange={e => { setStatusFilter(e.target.value as any); setCurrentPage(1); }}
+              className="bg-slate-900 border border-slate-700 text-white font-bold text-xs rounded px-2.5 py-1.5 focus:outline-none focus:border-sky-500 cursor-pointer shadow-sm"
+            >
+              <option value="Active">Active Users ({activeUsers.length})</option>
+              <option value="Deactivated">De-activated Users ({deactivatedUsers.length})</option>
+              <option value="All">All Users ({users.length})</option>
+            </select>
           </div>
+          <div className="h-4 w-[1px] bg-slate-700 hidden sm:block"></div>
+          <h3 className="text-xs font-bold text-slate-200 tracking-wider uppercase">
+            SHOWING ({filteredUsers.length}) {statusFilter === 'Active' ? 'ACTIVE USERS' : statusFilter === 'Deactivated' ? 'DE-ACTIVATED USERS' : 'ENTRIES'}
+          </h3>
         </div>
         
+        <div className="flex items-center gap-3 ml-auto flex-wrap">
+          {/* Right-aligned Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
+            <input 
+              type="text" 
+              placeholder="Search user by name, ID, HQ..." 
+              value={searchTerm}
+              onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+              className="bg-slate-900 border border-slate-700 rounded pl-8 pr-7 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 w-56 md:w-64"
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => { setSearchTerm(''); setCurrentPage(1); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                title="Clear search"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* HQ Bulk Lock Action */}
+          {selectedHq && (
+            <button 
+              onClick={() => { setIsUnlocking(allFilteredLocked); setShowConfirm(true); }} 
+              className="bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded font-bold text-xs uppercase tracking-wider transition-colors whitespace-nowrap shadow-sm"
+            >
+              {allFilteredLocked ? `Unlock All in ${selectedHq}` : `Lock All in ${selectedHq}`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Full Space Edge-to-Edge Excel Grid Table */}
+      <div className="w-full bg-slate-900 border border-slate-700 rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse min-w-max">
+          <table className="w-full text-left border-collapse border-spacing-0">
             <thead>
-              <tr className="bg-slate-900/50 text-slate-400 text-xs font-bold uppercase tracking-widest">
-                <th className="p-4 border-b border-slate-700/50 w-20">Sr no.</th>
-                <th className="p-4 border-b border-slate-700/50">Name</th>
-                <th className="p-4 border-b border-slate-700/50 text-center">Reason</th>
-                <th className="p-4 border-b border-slate-700/50 text-center">Lock User</th>
+              <tr className="bg-slate-800 text-slate-300 text-xs font-bold uppercase tracking-wider border-b border-slate-700">
+                <th className="border-r border-slate-700/80 py-2.5 px-3 text-center w-16">Sr no.</th>
+                <th className="border-r border-slate-700/80 py-2.5 px-3">Name</th>
+                <th className="border-r border-slate-700/80 py-2.5 px-3 text-center w-40">Lock / De-activate User</th>
+                <th className="border-r border-slate-700/80 py-2.5 px-3 text-center">Reason</th>
+                <th className="border-r border-slate-700/80 py-2.5 px-3 text-center w-44">De-activated Date</th>
               </tr>
             </thead>
-            <tbody className="text-sm text-slate-300">
+            <tbody className="divide-y divide-slate-800 text-xs text-slate-300">
               {paginatedUsers.length === 0 ? (
-                <tr><td colSpan={4} className="p-8 text-center text-slate-500 font-medium">No users found.</td></tr>
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400 font-medium">
+                    No users found in this view.
+                  </td>
+                </tr>
               ) : (
                 paginatedUsers.map((u, i) => {
                   const locked = isUserLocked(u);
+                  const reason = getLockReason(u);
+                  const date = getLockDate(u);
                   return (
-                    <tr key={u._id} className="hover:bg-slate-800/30 transition-colors border-b border-slate-700/30 last:border-b-0">
-                      <td className="p-4">{(currentPage - 1) * pageSize + i + 1}</td>
-                      <td className="p-4 font-bold text-white">{u.firstName} {u.lastName}</td>
-                      <td className="p-4 text-center">{getLockReason(u)}</td>
-                      <td className="p-4 text-center">
-                        <button onClick={() => handleToggleLock(u)} className={`w-10 h-5 rounded-full relative transition-colors ${locked ? 'bg-red-500' : 'bg-slate-600'}`}>
-                          <div className={`absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white transition-transform ${locked ? 'translate-x-5' : 'translate-x-1'}`}></div>
+                    <tr key={u._id} className="hover:bg-slate-800/50 transition-colors border-b border-slate-800">
+                      <td className="border-r border-slate-800 py-2 px-3 text-center font-medium text-slate-400">
+                        {(currentPage - 1) * pageSize + i + 1}
+                      </td>
+                      <td className="border-r border-slate-800 py-2 px-3">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-white text-xs">{u.firstName} {u.lastName}</span>
+                          <span className="text-[11px] text-slate-400 font-normal">
+                            {u.employeeId || u.uid || ''} {u.hq ? `• ${u.hq}` : ''} {u.division ? `• ${u.division}` : ''}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="border-r border-slate-800 py-2 px-3 text-center">
+                        <button 
+                          type="button"
+                          onClick={() => handleToggleClick(u)} 
+                          className={`relative inline-flex h-5 w-10 items-center rounded-full transition-colors focus:outline-none ${
+                            locked ? 'bg-rose-600' : 'bg-emerald-600'
+                          }`}
+                          title={locked ? "Click to Re-activate / Unlock" : "Click to De-activate / Lock"}
+                        >
+                          <span 
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
+                              locked ? 'translate-x-5' : 'translate-x-1'
+                            }`} 
+                          />
                         </button>
+                        <div className="text-[10px] font-bold mt-0.5">
+                          {locked ? (
+                            <span className="text-rose-400">Locked</span>
+                          ) : (
+                            <span className="text-emerald-400">Active</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="border-r border-slate-800 py-2 px-3 text-center">
+                        {locked ? (
+                          <span className="text-rose-300 font-semibold bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 text-[11px]">
+                            {reason}
+                          </span>
+                        ) : (
+                          <span className="text-emerald-400/80 font-medium bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20 text-[11px]">
+                            Active
+                          </span>
+                        )}
+                      </td>
+                      <td className="border-r border-slate-800 py-2 px-3 text-center font-mono text-[11px]">
+                        {locked ? (
+                          <span className="text-slate-300 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
+                            {date}
+                          </span>
+                        ) : (
+                          <span className="text-slate-500">-</span>
+                        )}
                       </td>
                     </tr>
                   );
@@ -271,32 +662,75 @@ function AccessControlTab() {
             </tbody>
           </table>
         </div>
-        <TableFooter data={filteredUsers} fileName="Users_Access" currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+        <TableFooter 
+          data={filteredUsers} 
+          fileName="Users_Access_Control" 
+          currentPage={currentPage} 
+          setCurrentPage={setCurrentPage} 
+          pageSize={pageSize} 
+          setPageSize={setPageSize} 
+        />
       </div>
 
+      {/* Modals */}
+      {renderDeactivateModal()}
+      {renderReactivateModal()}
+
+      {/* HQ Bulk Lock Modal */}
       {showConfirm && (
-        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-50 rounded-2xl">
-          <div className="bg-slate-800 border border-slate-700 p-8 rounded-2xl max-w-sm w-full shadow-2xl relative text-center">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 border border-slate-700 p-6 rounded-2xl max-w-md w-full shadow-2xl relative text-left">
             <button onClick={() => setShowConfirm(false)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-               <Trash2 size={20} className="hidden"/>
-               <div className="text-lg font-bold">X</div>
+               <X size={18} />
             </button>
-            <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Confirm Details</h3>
-            <p className="text-white font-bold mb-8">
-              DO YOU WANT TO {isUnlocking ? 'UNLOCK' : 'LOCK'} ALL USERS IN {selectedHq.toUpperCase()}?
+            <h3 className="text-sm font-bold text-sky-400 uppercase tracking-widest mb-4">
+              {isUnlocking ? 'Bulk Unlock Users' : 'Bulk Lock Users'} - {selectedHq.toUpperCase()}
+            </h3>
+            <p className="text-xs text-slate-300 mb-4">
+              Are you sure you want to {isUnlocking ? 'UNLOCK' : 'LOCK'} all users assigned to <strong>{selectedHq}</strong>?
             </p>
-            <div className="flex items-center justify-center gap-4">
-               <button onClick={handleBulkLock} className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                 <Check size={16} /> Yes
+            {!isUnlocking && (
+              <div className="space-y-3 mb-5">
+                <div>
+                  <label className="text-xs font-bold text-slate-400 block mb-1">LOCK REASON</label>
+                  <input 
+                    type="text" 
+                    value={bulkReason} 
+                    onChange={e => setBulkReason(e.target.value)} 
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" 
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-400 block mb-1">EFFECTIVE DATE</label>
+                  <input 
+                    type="date" 
+                    value={bulkDate} 
+                    onChange={e => setBulkDate(e.target.value)} 
+                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white" 
+                  />
+                </div>
+              </div>
+            )}
+            <div className="flex items-center justify-end gap-3 pt-2">
+               <button 
+                 onClick={() => setShowConfirm(false)} 
+                 className="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-bold text-xs"
+               >
+                 Cancel
                </button>
-               <button onClick={() => setShowConfirm(false)} className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2">
-                 <Trash2 size={16} /> No
+               <button 
+                 disabled={bulkLoading}
+                 onClick={handleBulkLock} 
+                 className={`px-5 py-2 rounded-lg font-bold text-xs text-white flex items-center gap-1.5 ${
+                   isUnlocking ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-rose-600 hover:bg-rose-500'
+                 }`}
+               >
+                 {bulkLoading ? 'Processing...' : (isUnlocking ? 'Confirm Unlock All' : 'Confirm Lock All')}
                </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
