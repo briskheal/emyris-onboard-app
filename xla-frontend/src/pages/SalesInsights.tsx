@@ -55,8 +55,8 @@ function SquareMonthPicker({
   };
 
   return (
-    <div ref={pickerRef} className="relative select-none w-full">
-      <label className="block text-[11px] font-bold text-sky-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+    <div ref={pickerRef} className={`relative select-none w-full ${isOpen ? 'z-50' : 'z-20'}`}>
+      <label className="block text-xs font-bold text-sky-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
         Select Month <span className="text-rose-400">*</span>
       </label>
       <div
@@ -70,7 +70,7 @@ function SquareMonthPicker({
       </div>
 
       {isOpen && (
-        <div className="absolute left-0 top-full mt-2 w-[270px] bg-[#1a2035] border border-sky-500/50 rounded-2xl shadow-2xl p-4 z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute left-0 top-full mt-2 w-[280px] bg-[#1a2035] border border-sky-500/60 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-4 z-[999] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
           <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-700/60">
             <button
               type="button"
@@ -150,8 +150,8 @@ function CustomDropdown({
   const selectedOption = options.find((o) => o.value === value) || options[0];
 
   return (
-    <div ref={ref} className="relative select-none w-full">
-      <label className="block text-[11px] font-bold text-sky-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
+    <div ref={ref} className={`relative select-none w-full ${isOpen ? 'z-50' : 'z-20'}`}>
+      <label className="block text-xs font-bold text-sky-400 mb-1.5 uppercase tracking-wider flex items-center gap-1">
         {label} <span className="text-rose-400">*</span>
       </label>
       <div
@@ -163,7 +163,7 @@ function CustomDropdown({
       </div>
 
       {isOpen && (
-        <div className="absolute left-0 top-full mt-2 w-full bg-[#1a2035] border border-sky-500/50 rounded-xl shadow-2xl p-1 z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+        <div className="absolute left-0 top-full mt-2 w-full bg-[#1a2035] border border-sky-500/60 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.9)] p-1 z-[999] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-150">
           {options.map((opt) => (
             <div
               key={opt.value}
@@ -799,7 +799,7 @@ export default function SalesInsights() {
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 space-y-6">
 
         {/* 1. TOP 3 FILTER CONTROLS CARD */}
-        <div className="bg-[#151c35]/90 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-2xl backdrop-blur-md">
+        <div className="relative z-40 bg-[#151c35]/90 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-2xl backdrop-blur-md">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             
             {/* Filter 1: Select Month */}
@@ -839,7 +839,7 @@ export default function SalesInsights() {
         </div>
 
         {/* 2. CHART CAROUSEL SECTION */}
-        <div className="relative bg-[#151c35]/90 border border-slate-800/80 rounded-2xl p-4 md:p-6 shadow-2xl overflow-hidden backdrop-blur-md group">
+        <div className="relative z-10 bg-[#151c35]/90 border border-slate-800/80 rounded-2xl p-4 md:p-6 shadow-2xl overflow-hidden backdrop-blur-md group">
           
           {/* Header & Chart Slide Navigation Controls */}
           <div className="flex flex-col md:flex-row items-center justify-between mb-4 pb-3 border-b border-slate-800/80 gap-3">
@@ -975,7 +975,7 @@ export default function SalesInsights() {
         </div>
 
         {/* 3. REPORT TYPE SELECTOR & DATA TABLE */}
-        <div className="bg-[#151c35]/90 border border-slate-800/80 rounded-2xl p-4 md:p-6 shadow-2xl backdrop-blur-md space-y-4">
+        <div className="relative z-20 bg-[#151c35]/90 border border-slate-800/80 rounded-2xl p-4 md:p-6 shadow-2xl backdrop-blur-md space-y-4">
           
           {/* Report Type Selector (only shown at root level, just like in the video) */}
           {drillLevel === 'root' && (
