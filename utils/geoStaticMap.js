@@ -58,19 +58,19 @@ async function generateWebpMapSnapshot(employeeId, date) {
         XlAttendance.findOne({
             where: {
                 date,
-                [Op.or]: [{ employeeId }, { uid: employeeId }]
+                employeeId
             }
         }),
         XlDCR.findAll({
             where: {
                 date,
-                [Op.or]: [{ employeeId }, { uid: employeeId }]
+                employeeId
             },
             order: [['checkInTime', 'ASC'], ['createdAt', 'ASC']]
         }),
         XlUser.findOne({
             where: {
-                [Op.or]: [{ employeeId }, { uid: employeeId }, { email: employeeId }]
+                [Op.or]: [{ employeeId }, { email: employeeId }]
             }
         })
     ]);
@@ -285,7 +285,7 @@ async function generateWebpMapSnapshot(employeeId, date) {
         await sequelize.query(`
             UPDATE xl_attendances 
             SET "mapSnapshotUrl" = :url 
-            WHERE ("employeeId" = :employeeId OR "uid" = :employeeId) AND "date" = :date
+            WHERE "employeeId" = :employeeId AND "date" = :date
         `, {
             replacements: { url: relativeUrl, employeeId, date }
         });
