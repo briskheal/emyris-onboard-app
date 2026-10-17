@@ -6783,6 +6783,734 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
     }
 });
 
+// ================= SALES INSIGHTS ANALYTICS =================
+
+function getTrailingSixMonths(endMonth, endYear) {
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    let eM = monthNames.indexOf(endMonth);
+    if (eM === -1) eM = new Date().getMonth();
+    let eY = parseInt(endYear) || new Date().getFullYear();
+
+    const result = [];
+    for (let i = 5; i >= 0; i--) {
+        let mIdx = eM - i;
+        let y = eY;
+        while (mIdx < 0) {
+            mIdx += 12;
+            y -= 1;
+        }
+        const mName = monthNames[mIdx];
+        const mm = String(mIdx + 1).padStart(2, '0');
+        result.push({
+            month: mName,
+            year: y,
+            label: mName,
+            yearMonthLike: `${y}-${mm}%`
+        });
+    }
+    return result;
+}
+
+router.get('/reports/sales-insights/charts', async (req, res) => {
+    try {
+        const { sequelize } = require('../db');
+        const { endMonth, endYear, dataType = 'Price', valueFormat = 'Thousands', filterType, filterValue, subFilterType, subFilterValue } = req.query;
+
+        const months = getTrailingSixMonths(endMonth, endYear);
+
+        // Value divisor
+        let divisor = 1000;
+        if (valueFormat === 'Hundreds') divisor = 100;
+        else if (valueFormat === 'Lakhs') divisor = 100000;
+
+        const chartData = [];
+
+        for (const m of months) {
+            let priVal = 0;
+            let secVal = 0;
+
+            // Common Month Condition
+            const priMonthCond = `((p.month = '${m.month}' AND p.year = '${m.year}') OR (p.date LIKE '${m.yearMonthLike}'))`;
+            const secMonthCond = `((s.month = '${m.month}' AND s.year = '${m.year}') OR (s.date LIKE '${m.yearMonthLike}'))`;
+
+            // Entity filters
+            let priEntityCond = '';
+            let secEntityCond = '';
+            let priItemCond = '';
+            let secItemCond = '';
+            let replacements = {};
+
+            const targetFilterType = subFilterType || filterType;
+            const targetFilterVal = subFilterValue || filterValue;
+
+            if (filterType === 'User' && filterValue) {
+                priEntityCond += ` AND p."employeeId" = :userFilter`;
+                secEntityCond += ` AND s."employeeId" = :userFilter`;
+                replacements.userFilter = filterValue;
+            }
+            if (filterType === 'Stockist' && filterValue) {
+                priEntityCond += ` AND (p.stockist = :stockistFilter OR p.stockist ILIKE :stockistFilterLike)`;
+                secEntityCond += ` AND (s.stockist = :stockistFilter OR s.stockist ILIKE :stockistFilterLike)`;
+                replacements.stockistFilter = filterValue;
+                replacements.stockistFilterLike = `%${filterValue}%`;
+            }
+            if ((filterType === 'Headquarter' || filterType === 'Headquarter-Product-Wise' || filterType === 'Headquarter-Stockist-Wise') && filterValue) {
+                priEntityCond += ` AND (p.headquarter = :hqFilter OR p.headquarter ILIKE :hqFilterLike)`;
+                secEntityCond += ` AND (s.headquarter = :hqFilter OR s.headquarter ILIKE :hqFilterLike)`;
+                replacements.hqFilter = filterValue;
+                replacements.hqFilterLike = `%${filterValue}%`;
+            }
+            if (subFilterType === 'Stockist' && subFilterValue) {
+                priEntityCond += ` AND (p.stockist = :subStockistFilter OR p.stockist ILIKE :subStockistFilterLike)`;
+                secEntityCond += ` AND (s.stockist = :subStockistFilter OR s.stockist ILIKE :subStockistFilterLike)`;
+                replacements.subStockistFilter = subFilterValue;
+                replacements.subStockistFilterLike = `%${subFilterValue}%`;
+            }
+            if (targetFilterType === 'Product' && targetFilterVal) {
+                priItemCond += ` AND (i.product = :prodFilter OR i."productId" = :prodFilter OR i.product ILIKE :prodFilterLike)`;
+                secItemCond += ` AND (i.product = :prodFilter OR i."productId" = :prodFilter OR i.product ILIKE :prodFilterLike)`;
+                replacements.prodFilter = targetFilterVal;
+                replacements.prodFilterLike = `%${targetFilterVal}%`;
+            }
+
+            // PRIMARY QUERY
+            try {
+                if (targetFilterType === 'Product') {
+                    if (dataType === 'Quantity') {
+                        const q = `
+                            SELECT COALESCE(SUM(i.qty), 0) as val
+                            FROM xl_primary_sales p
+                            JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                            WHERE ${priMonthCond} ${priEntityCond} ${priItemCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        priVal = Number(row?.val || 0);
+                    } else {
+                        const q = `
+                            SELECT COALESCE(SUM(i.qty * COALESCE(i."basePrice", 0)), 0) as val
+                            FROM xl_primary_sales p
+                            JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                            WHERE ${priMonthCond} ${priEntityCond} ${priItemCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        priVal = Number(row?.val || 0);
+                    }
+                } else {
+                    if (dataType === 'Quantity') {
+                        const q = `
+                            SELECT COALESCE(SUM(i.qty), 0) as val
+                            FROM xl_primary_sales p
+                            JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                            WHERE ${priMonthCond} ${priEntityCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        priVal = Number(row?.val || 0);
+                    } else {
+                        const q = `
+                            SELECT COALESCE(SUM(COALESCE(p."netInvValue", p.amount, 0)), 0) as val
+                            FROM xl_primary_sales p
+                            WHERE ${priMonthCond} ${priEntityCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        priVal = Number(row?.val || 0);
+                    }
+                }
+            } catch (err) {
+                priVal = 0;
+            }
+
+            // SECONDARY QUERY
+            try {
+                if (targetFilterType === 'Product') {
+                    if (dataType === 'Quantity') {
+                        const q = `
+                            SELECT COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0)), 0) as val
+                            FROM xl_secondary_sales s
+                            JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                            WHERE ${secMonthCond} ${secEntityCond} ${secItemCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        secVal = Number(row?.val || 0);
+                    } else {
+                        const q = `
+                            SELECT COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0) * COALESCE(i."basePrice", i."customPrice", 0)), 0) as val
+                            FROM xl_secondary_sales s
+                            JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                            WHERE ${secMonthCond} ${secEntityCond} ${secItemCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        secVal = Number(row?.val || 0);
+                    }
+                } else {
+                    if (dataType === 'Quantity') {
+                        const q = `
+                            SELECT COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0)), 0) as val
+                            FROM xl_secondary_sales s
+                            JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                            WHERE ${secMonthCond} ${secEntityCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        secVal = Number(row?.val || 0);
+                    } else {
+                        const q = `
+                            SELECT COALESCE(SUM(COALESCE(s.amount, 0)), 0) as val
+                            FROM xl_secondary_sales s
+                            WHERE ${secMonthCond} ${secEntityCond}
+                        `;
+                        const [row] = await sequelize.query(q, { replacements, type: sequelize.QueryTypes.SELECT });
+                        secVal = Number(row?.val || 0);
+                    }
+                }
+            } catch (err) {
+                secVal = 0;
+            }
+
+            chartData.push({
+                month: m.month,
+                year: m.year,
+                label: m.label,
+                rawPrimary: priVal,
+                rawSecondary: secVal,
+                primary: Number((priVal / divisor).toFixed(2)),
+                secondary: Number((secVal / divisor).toFixed(2))
+            });
+        }
+
+        res.json({ success: true, data: chartData });
+    } catch (err) {
+        console.error('Sales Insights Chart Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+router.get('/reports/sales-insights/table', async (req, res) => {
+    try {
+        const { sequelize, XlUser, XlStockist, XlHQ, XlProduct, XlDesignation } = require('../db');
+        const { endMonth, endYear, reportType = 'User-Wise', drillLevel = 'root', filterValue, subFilterValue } = req.query;
+
+        const months = getTrailingSixMonths(endMonth, endYear);
+        const priMonthOrClauses = months.map(m => `((p.month = '${m.month}' AND p.year = '${m.year}') OR (p.date LIKE '${m.yearMonthLike}'))`).join(' OR ');
+        const secMonthOrClauses = months.map(m => `((s.month = '${m.month}' AND s.year = '${m.year}') OR (s.date LIKE '${m.yearMonthLike}'))`).join(' OR ');
+
+        // Product cache map
+        const allProducts = await XlProduct.findAll({ raw: true });
+        const prodNameMap = {};
+        allProducts.forEach(p => {
+            const name = p.productName || p.name;
+            if (p.uid) prodNameMap[p.uid] = name;
+            if (p._id) prodNameMap[p._id] = name;
+            if (p.productName) prodNameMap[p.productName] = name;
+        });
+
+        // Stockist cache map
+        const allStockists = await XlStockist.findAll({ raw: true });
+        const stockMap = {};
+        allStockists.forEach(s => {
+            const name = s.businessName || s.name;
+            if (s.uid) stockMap[s.uid] = { name, hq: s.headquarter };
+            if (s._id) stockMap[s._id] = { name, hq: s.headquarter };
+            if (s.name) stockMap[s.name] = { name, hq: s.headquarter };
+            if (s.businessName) stockMap[s.businessName] = { name, hq: s.headquarter };
+        });
+
+        // 1. PRODUCT LEVEL DRILLDOWN
+        if (drillLevel === 'user_products' || drillLevel === 'stockist_products' || drillLevel === 'hq_products' || drillLevel === 'hq_stockist_products') {
+            let priWhere = `(${priMonthOrClauses})`;
+            let secWhere = `(${secMonthOrClauses})`;
+            let replacements = {};
+
+            if (drillLevel === 'user_products' && filterValue) {
+                priWhere += ` AND p."employeeId" = :filterVal`;
+                secWhere += ` AND s."employeeId" = :filterVal`;
+                replacements.filterVal = filterValue;
+            } else if (drillLevel === 'stockist_products' && filterValue) {
+                priWhere += ` AND (p.stockist = :filterVal OR p.stockist ILIKE :filterValLike)`;
+                secWhere += ` AND (s.stockist = :filterVal OR s.stockist ILIKE :filterValLike)`;
+                replacements.filterVal = filterValue;
+                replacements.filterValLike = `%${filterValue}%`;
+            } else if (drillLevel === 'hq_products' && filterValue) {
+                priWhere += ` AND (p.headquarter = :filterVal OR p.headquarter ILIKE :filterValLike)`;
+                secWhere += ` AND (s.headquarter = :filterVal OR s.headquarter ILIKE :filterValLike)`;
+                replacements.filterVal = filterValue;
+                replacements.filterValLike = `%${filterValue}%`;
+            } else if (drillLevel === 'hq_stockist_products') {
+                const stockistVal = subFilterValue || filterValue;
+                priWhere += ` AND (p.stockist = :stockVal OR p.stockist ILIKE :stockValLike)`;
+                secWhere += ` AND (s.stockist = :stockVal OR s.stockist ILIKE :stockValLike)`;
+                replacements.stockVal = stockistVal;
+                replacements.stockValLike = `%${stockistVal}%`;
+            }
+
+            // Primary items aggregated by product
+            const priItemsSql = `
+                SELECT 
+                    i.product as product, 
+                    COALESCE(SUM(i.qty * COALESCE(i."basePrice", 0)), 0) as "primarySalesValue", 
+                    COALESCE(SUM(i.qty), 0) as "primarySalesQty"
+                FROM xl_primary_sales p
+                JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                WHERE ${priWhere}
+                GROUP BY i.product
+            `;
+            let priItemRows = [];
+            try {
+                priItemRows = await sequelize.query(priItemsSql, { replacements, type: sequelize.QueryTypes.SELECT });
+            } catch(e) {}
+
+            // Secondary items aggregated by product
+            const secItemsSql = `
+                SELECT 
+                    i.product as product, 
+                    COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0) * COALESCE(i."basePrice", i."customPrice", 0)), 0) as "secondarySalesValue", 
+                    COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0)), 0) as "secondarySalesQty"
+                FROM xl_secondary_sales s
+                JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                WHERE ${secWhere}
+                GROUP BY i.product
+            `;
+            let secItemRows = [];
+            try {
+                secItemRows = await sequelize.query(secItemsSql, { replacements, type: sequelize.QueryTypes.SELECT });
+            } catch(e) {}
+
+            const mergedProducts = {};
+
+            // Seed with all catalog products so zero sales entries appear if needed, or from query
+            priItemRows.forEach(r => {
+                const rawProd = r.product || 'Unknown Product';
+                const name = prodNameMap[rawProd] || rawProd;
+                if (!mergedProducts[name]) {
+                    mergedProducts[name] = { productName: name, primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                }
+                mergedProducts[name].primarySalesValue += Number(r.primarySalesValue || 0);
+                mergedProducts[name].primarySalesQty += Number(r.primarySalesQty || 0);
+            });
+
+            secItemRows.forEach(r => {
+                const rawProd = r.product || 'Unknown Product';
+                const name = prodNameMap[rawProd] || rawProd;
+                if (!mergedProducts[name]) {
+                    mergedProducts[name] = { productName: name, primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                }
+                mergedProducts[name].secondarySalesValue += Number(r.secondarySalesValue || 0);
+                mergedProducts[name].secondarySalesQty += Number(r.secondarySalesQty || 0);
+            });
+
+            // If empty, return products list from catalog with 0
+            if (Object.keys(mergedProducts).length === 0) {
+                allProducts.slice(0, 30).forEach(p => {
+                    const name = p.productName || p.name;
+                    mergedProducts[name] = { productName: name, primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                });
+            }
+
+            const tableRows = Object.values(mergedProducts).map((item, idx) => ({
+                srNo: idx + 1,
+                productName: item.productName,
+                primarySalesValue: Number(item.primarySalesValue.toFixed(2)),
+                primarySalesQty: Math.round(item.primarySalesQty),
+                secondarySalesValue: Number(item.secondarySalesValue.toFixed(2)),
+                secondarySalesQty: Math.round(item.secondarySalesQty)
+            }));
+
+            return res.json({ success: true, data: tableRows, totalEntries: tableRows.length });
+        }
+
+        // 2. HEADQUARTER-STOCKIST-WISE -> DRILLDOWN TO STOCKISTS
+        if (drillLevel === 'hq_stockists' && filterValue) {
+            let priWhere = `(${priMonthOrClauses}) AND (p.headquarter = :hq OR p.headquarter ILIKE :hqLike)`;
+            let secWhere = `(${secMonthOrClauses}) AND (s.headquarter = :hq OR s.headquarter ILIKE :hqLike)`;
+            let replacements = { hq: filterValue, hqLike: `%${filterValue}%` };
+
+            const priSql = `
+                SELECT 
+                    p.stockist as stockist,
+                    COALESCE(SUM(COALESCE(p."netInvValue", p.amount, 0)), 0) as "primarySalesValue"
+                FROM xl_primary_sales p
+                WHERE ${priWhere}
+                GROUP BY p.stockist
+            `;
+            const priQtySql = `
+                SELECT 
+                    p.stockist as stockist,
+                    COALESCE(SUM(i.qty), 0) as "primarySalesQty"
+                FROM xl_primary_sales p
+                JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                WHERE ${priWhere}
+                GROUP BY p.stockist
+            `;
+
+            const secSql = `
+                SELECT 
+                    s.stockist as stockist,
+                    COALESCE(SUM(COALESCE(s.amount, 0)), 0) as "secondarySalesValue"
+                FROM xl_secondary_sales s
+                WHERE ${secWhere}
+                GROUP BY s.stockist
+            `;
+            const secQtySql = `
+                SELECT 
+                    s.stockist as stockist,
+                    COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0)), 0) as "secondarySalesQty"
+                FROM xl_secondary_sales s
+                JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                WHERE ${secWhere}
+                GROUP BY s.stockist
+            `;
+
+            let priRows = [], priQtyRows = [], secRows = [], secQtyRows = [];
+            try {
+                [priRows, priQtyRows, secRows, secQtyRows] = await Promise.all([
+                    sequelize.query(priSql, { replacements, type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                    sequelize.query(priQtySql, { replacements, type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                    sequelize.query(secSql, { replacements, type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                    sequelize.query(secQtySql, { replacements, type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                ]);
+            } catch(e) {}
+
+            const merged = {};
+            // Also find stockists in that HQ from XlStockist
+            const hqStockists = allStockists.filter(st => (st.headquarter || '').toLowerCase() === filterValue.toLowerCase());
+            hqStockists.forEach(st => {
+                const name = st.businessName || st.name;
+                merged[st.uid || st._id || name] = {
+                    stockistId: st.uid || st._id,
+                    stockistName: name,
+                    primarySalesValue: 0,
+                    primarySalesQty: 0,
+                    secondarySalesValue: 0,
+                    secondarySalesQty: 0
+                };
+            });
+
+            priRows.forEach(r => {
+                const sId = r.stockist || 'Unknown';
+                const sObj = stockMap[sId] || { name: sId };
+                const key = sId;
+                if (!merged[key]) merged[key] = { stockistId: sId, stockistName: sObj.name, primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                merged[key].primarySalesValue += Number(r.primarySalesValue || 0);
+            });
+            priQtyRows.forEach(r => {
+                const key = r.stockist || 'Unknown';
+                if (merged[key]) merged[key].primarySalesQty += Number(r.primarySalesQty || 0);
+            });
+            secRows.forEach(r => {
+                const sId = r.stockist || 'Unknown';
+                const sObj = stockMap[sId] || { name: sId };
+                const key = sId;
+                if (!merged[key]) merged[key] = { stockistId: sId, stockistName: sObj.name, primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                merged[key].secondarySalesValue += Number(r.secondarySalesValue || 0);
+            });
+            secQtyRows.forEach(r => {
+                const key = r.stockist || 'Unknown';
+                if (merged[key]) merged[key].secondarySalesQty += Number(r.secondarySalesQty || 0);
+            });
+
+            const tableRows = Object.values(merged).map((m, idx) => ({
+                srNo: idx + 1,
+                stockistId: m.stockistId,
+                stockistName: m.stockistName,
+                primarySalesValue: Number(m.primarySalesValue.toFixed(2)),
+                primarySalesQty: Math.round(m.primarySalesQty),
+                secondarySalesValue: Number(m.secondarySalesValue.toFixed(2)),
+                secondarySalesQty: Math.round(m.secondarySalesQty)
+            }));
+
+            return res.json({ success: true, data: tableRows, totalEntries: tableRows.length });
+        }
+
+        // 3. ROOT LEVEL: USER-WISE
+        if (reportType === 'User-Wise') {
+            const allUsers = await XlUser.findAll({ raw: true });
+            
+            // Primary sales by user
+            const priUserSql = `
+                SELECT 
+                    p."employeeId" as "employeeId",
+                    COALESCE(SUM(COALESCE(p."netInvValue", p.amount, 0)), 0) as "primarySalesValue"
+                FROM xl_primary_sales p
+                WHERE ${priMonthOrClauses}
+                GROUP BY p."employeeId"
+            `;
+            const priUserQtySql = `
+                SELECT 
+                    p."employeeId" as "employeeId",
+                    COALESCE(SUM(i.qty), 0) as "primarySalesQty"
+                FROM xl_primary_sales p
+                JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                WHERE ${priMonthOrClauses}
+                GROUP BY p."employeeId"
+            `;
+
+            // Secondary sales by user
+            const secUserSql = `
+                SELECT 
+                    s."employeeId" as "employeeId",
+                    COALESCE(SUM(COALESCE(s.amount, 0)), 0) as "secondarySalesValue"
+                FROM xl_secondary_sales s
+                WHERE ${secMonthOrClauses}
+                GROUP BY s."employeeId"
+            `;
+            const secUserQtySql = `
+                SELECT 
+                    s."employeeId" as "employeeId",
+                    COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0)), 0) as "secondarySalesQty"
+                FROM xl_secondary_sales s
+                JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                WHERE ${secMonthOrClauses}
+                GROUP BY s."employeeId"
+            `;
+
+            let [priRows, priQtyRows, secRows, secQtyRows] = await Promise.all([
+                sequelize.query(priUserSql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(priUserQtySql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(secUserSql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(secUserQtySql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+            ]);
+
+            const userMap = {};
+            allUsers.forEach(u => {
+                const empId = u.employeeId || u.uid || u._id;
+                userMap[empId] = {
+                    employeeId: empId,
+                    userName: `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Employee ' + empId,
+                    designation: u.designation || 'MR',
+                    primarySalesValue: 0,
+                    primarySalesQty: 0,
+                    secondarySalesValue: 0,
+                    secondarySalesQty: 0
+                };
+            });
+
+            priRows.forEach(r => {
+                const key = r.employeeId;
+                if (!userMap[key]) {
+                    userMap[key] = { employeeId: key, userName: 'Employee ' + key, designation: 'MR', primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                }
+                userMap[key].primarySalesValue += Number(r.primarySalesValue || 0);
+            });
+            priQtyRows.forEach(r => {
+                if (userMap[r.employeeId]) userMap[r.employeeId].primarySalesQty += Number(r.primarySalesQty || 0);
+            });
+            secRows.forEach(r => {
+                const key = r.employeeId;
+                if (!userMap[key]) {
+                    userMap[key] = { employeeId: key, userName: 'Employee ' + key, designation: 'MR', primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                }
+                userMap[key].secondarySalesValue += Number(r.secondarySalesValue || 0);
+            });
+            secQtyRows.forEach(r => {
+                if (userMap[r.employeeId]) userMap[r.employeeId].secondarySalesQty += Number(r.secondarySalesQty || 0);
+            });
+
+            const tableRows = Object.values(userMap).map((u, idx) => ({
+                srNo: idx + 1,
+                employeeId: u.employeeId,
+                userName: u.userName,
+                designation: u.designation,
+                primarySalesValue: Number(u.primarySalesValue.toFixed(2)),
+                primarySalesQty: Math.round(u.primarySalesQty),
+                secondarySalesValue: Number(u.secondarySalesValue.toFixed(2)),
+                secondarySalesQty: Math.round(u.secondarySalesQty)
+            }));
+
+            return res.json({ success: true, data: tableRows, totalEntries: tableRows.length });
+        }
+
+        // 4. ROOT LEVEL: STOCKIST-WISE
+        if (reportType === 'Stockist-Wise') {
+            const priStockSql = `
+                SELECT 
+                    p.stockist as stockist,
+                    p.headquarter as headquarter,
+                    COALESCE(SUM(COALESCE(p."netInvValue", p.amount, 0)), 0) as "primarySalesValue"
+                FROM xl_primary_sales p
+                WHERE ${priMonthOrClauses}
+                GROUP BY p.stockist, p.headquarter
+            `;
+            const priStockQtySql = `
+                SELECT 
+                    p.stockist as stockist,
+                    COALESCE(SUM(i.qty), 0) as "primarySalesQty"
+                FROM xl_primary_sales p
+                JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                WHERE ${priMonthOrClauses}
+                GROUP BY p.stockist
+            `;
+
+            const secStockSql = `
+                SELECT 
+                    s.stockist as stockist,
+                    s.headquarter as headquarter,
+                    COALESCE(SUM(COALESCE(s.amount, 0)), 0) as "secondarySalesValue"
+                FROM xl_secondary_sales s
+                WHERE ${secMonthOrClauses}
+                GROUP BY s.stockist, s.headquarter
+            `;
+            const secStockQtySql = `
+                SELECT 
+                    s.stockist as stockist,
+                    COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0)), 0) as "secondarySalesQty"
+                FROM xl_secondary_sales s
+                JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                WHERE ${secMonthOrClauses}
+                GROUP BY s.stockist
+            `;
+
+            let [priRows, priQtyRows, secRows, secQtyRows] = await Promise.all([
+                sequelize.query(priStockSql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(priStockQtySql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(secStockSql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(secStockQtySql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+            ]);
+
+            const merged = {};
+            allStockists.forEach(st => {
+                const sId = st.uid || st._id || st.name;
+                merged[sId] = {
+                    stockistId: sId,
+                    stockistName: st.businessName || st.name,
+                    headquarter: st.headquarter || 'HO',
+                    primarySalesValue: 0,
+                    primarySalesQty: 0,
+                    secondarySalesValue: 0,
+                    secondarySalesQty: 0
+                };
+            });
+
+            priRows.forEach(r => {
+                const sId = r.stockist || 'Unknown';
+                const sObj = stockMap[sId] || { name: sId, hq: r.headquarter || 'HO' };
+                if (!merged[sId]) merged[sId] = { stockistId: sId, stockistName: sObj.name, headquarter: sObj.hq || r.headquarter || 'HO', primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                merged[sId].primarySalesValue += Number(r.primarySalesValue || 0);
+                if (r.headquarter) merged[sId].headquarter = r.headquarter;
+            });
+            priQtyRows.forEach(r => {
+                if (merged[r.stockist]) merged[r.stockist].primarySalesQty += Number(r.primarySalesQty || 0);
+            });
+            secRows.forEach(r => {
+                const sId = r.stockist || 'Unknown';
+                const sObj = stockMap[sId] || { name: sId, hq: r.headquarter || 'HO' };
+                if (!merged[sId]) merged[sId] = { stockistId: sId, stockistName: sObj.name, headquarter: sObj.hq || r.headquarter || 'HO', primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                merged[sId].secondarySalesValue += Number(r.secondarySalesValue || 0);
+                if (r.headquarter) merged[sId].headquarter = r.headquarter;
+            });
+            secQtyRows.forEach(r => {
+                if (merged[r.stockist]) merged[r.stockist].secondarySalesQty += Number(r.secondarySalesQty || 0);
+            });
+
+            const tableRows = Object.values(merged).map((s, idx) => ({
+                srNo: idx + 1,
+                stockistId: s.stockistId,
+                stockistName: s.stockistName,
+                headquarter: s.headquarter,
+                primarySalesValue: Number(s.primarySalesValue.toFixed(2)),
+                primarySalesQty: Math.round(s.primarySalesQty),
+                secondarySalesValue: Number(s.secondarySalesValue.toFixed(2)),
+                secondarySalesQty: Math.round(s.secondarySalesQty)
+            }));
+
+            return res.json({ success: true, data: tableRows, totalEntries: tableRows.length });
+        }
+
+        // 5. ROOT LEVEL: HEADQUARTER-PRODUCT-WISE or HEADQUARTER-STOCKIST-WISE
+        if (reportType === 'Headquarter-Product-Wise' || reportType === 'Headquarter-Stockist-Wise') {
+            const allHQs = await XlHQ.findAll({ raw: true });
+
+            const priHqSql = `
+                SELECT 
+                    p.headquarter as headquarter,
+                    COALESCE(SUM(COALESCE(p."netInvValue", p.amount, 0)), 0) as "primarySalesValue"
+                FROM xl_primary_sales p
+                WHERE ${priMonthOrClauses}
+                GROUP BY p.headquarter
+            `;
+            const priHqQtySql = `
+                SELECT 
+                    p.headquarter as headquarter,
+                    COALESCE(SUM(i.qty), 0) as "primarySalesQty"
+                FROM xl_primary_sales p
+                JOIN xl_primary_sales_items i ON p."_id" = i."saleId"
+                WHERE ${priMonthOrClauses}
+                GROUP BY p.headquarter
+            `;
+
+            const secHqSql = `
+                SELECT 
+                    s.headquarter as headquarter,
+                    COALESCE(SUM(COALESCE(s.amount, 0)), 0) as "secondarySalesValue"
+                FROM xl_secondary_sales s
+                WHERE ${secMonthOrClauses}
+                GROUP BY s.headquarter
+            `;
+            const secHqQtySql = `
+                SELECT 
+                    s.headquarter as headquarter,
+                    COALESCE(SUM(COALESCE(i."salesQty", i.qty, 0)), 0) as "secondarySalesQty"
+                FROM xl_secondary_sales s
+                JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                WHERE ${secMonthOrClauses}
+                GROUP BY s.headquarter
+            `;
+
+            let [priRows, priQtyRows, secRows, secQtyRows] = await Promise.all([
+                sequelize.query(priHqSql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(priHqQtySql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(secHqSql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+                sequelize.query(secHqQtySql, { type: sequelize.QueryTypes.SELECT }).catch(() => []),
+            ]);
+
+            const merged = {};
+            allHQs.forEach(hq => {
+                const name = hq.hqName || hq.name;
+                merged[name] = {
+                    headquarter: name,
+                    primarySalesValue: 0,
+                    primarySalesQty: 0,
+                    secondarySalesValue: 0,
+                    secondarySalesQty: 0
+                };
+            });
+
+            priRows.forEach(r => {
+                const name = r.headquarter || 'HO';
+                if (!merged[name]) merged[name] = { headquarter: name, primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                merged[name].primarySalesValue += Number(r.primarySalesValue || 0);
+            });
+            priQtyRows.forEach(r => {
+                const name = r.headquarter || 'HO';
+                if (merged[name]) merged[name].primarySalesQty += Number(r.primarySalesQty || 0);
+            });
+            secRows.forEach(r => {
+                const name = r.headquarter || 'HO';
+                if (!merged[name]) merged[name] = { headquarter: name, primarySalesValue: 0, primarySalesQty: 0, secondarySalesValue: 0, secondarySalesQty: 0 };
+                merged[name].secondarySalesValue += Number(r.secondarySalesValue || 0);
+            });
+            secQtyRows.forEach(r => {
+                const name = r.headquarter || 'HO';
+                if (merged[name]) merged[name].secondarySalesQty += Number(r.secondarySalesQty || 0);
+            });
+
+            const tableRows = Object.values(merged).map((h, idx) => ({
+                srNo: idx + 1,
+                headquarter: h.headquarter,
+                primarySalesValue: Number(h.primarySalesValue.toFixed(2)),
+                primarySalesQty: Math.round(h.primarySalesQty),
+                secondarySalesValue: Number(h.secondarySalesValue.toFixed(2)),
+                secondarySalesQty: Math.round(h.secondarySalesQty)
+            }));
+
+            return res.json({ success: true, data: tableRows, totalEntries: tableRows.length });
+        }
+
+        res.json({ success: true, data: [] });
+    } catch (err) {
+        console.error('Sales Insights Table Error:', err);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
 
 
 
