@@ -87,19 +87,31 @@ export default function Layout() {
   }, []);
 
   useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = () => {
     axios.get('/api/xl/admin/notifications').then(res => {
       if (res.data.success) {
         const clearedAtStr = localStorage.getItem('xla_notifs_cleared');
         const clearedAt = clearedAtStr ? parseInt(clearedAtStr) : 0;
-        const validNotifs = (res.data.data || []).filter((n: any) => new Date(n.date).getTime() > clearedAt);
+        const validNotifs = (res.data.data || []).filter((n: any) => {
+          const t = new Date(n.date).getTime();
+          return !isNaN(t) ? t > clearedAt : true;
+        });
         setNotifications(validNotifs);
       }
     }).catch(e => console.error(e));
-  }, []);
+  };
 
-  const handleClearNotifications = () => {
-    localStorage.setItem('xla_notifs_cleared', Date.now().toString());
+  const handleClearNotifications = async () => {
     setNotifications([]);
+    localStorage.setItem('xla_notifs_cleared', Date.now().toString());
+    try {
+      await axios.post('/api/xl/admin/notifications/clear');
+    } catch(e) {
+      console.error('Failed to clear notifications in database', e);
+    }
   };
 
   const handleBroadcast = async () => {

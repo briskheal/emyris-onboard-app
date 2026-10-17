@@ -1,3 +1,5 @@
+import axios from 'axios';
+
 export interface FontOption {
   id: string;
   name: string;
@@ -30,9 +32,11 @@ export const FONT_SIZES: FontSizeOption[] = [
 ];
 
 export const MENU_HEADING_SIZES: FontSizeOption[] = [
-  { id: '16px', name: 'Standard 16px (Default)', scale: '16px', desc: 'Default Benchmark — 16px Bold, Title Case (Recommended)' },
   { id: '14px', name: 'Compact 14px', scale: '14px', desc: '14px Bold, Title Case for smaller screens' },
-  { id: '18px', name: 'Large 18px', scale: '18px', desc: '18px Bold, Title Case for high visibility' }
+  { id: '16px', name: 'Standard 16px (Default)', scale: '16px', desc: 'Default Benchmark — 16px Bold, Title Case (Recommended)' },
+  { id: '18px', name: 'Large 18px', scale: '18px', desc: '18px Bold, Title Case for high visibility' },
+  { id: '20px', name: 'Ex. Large 20px', scale: '20px', desc: '20px Bold, Title Case — High prominence & enhanced readability' },
+  { id: '22px', name: 'Huge 22px', scale: '22px', desc: '22px Bold, Title Case — Maximum impact' }
 ];
 
 export function getSavedTypography() {
@@ -43,7 +47,7 @@ export function getSavedTypography() {
   };
 }
 
-export function applyTypography(fontFamily: string, fontSize: string, menuHeadingSize: string = '16px') {
+export function applyTypography(fontFamily: string, fontSize: string, menuHeadingSize: string = '16px', syncRemote: boolean = true) {
   try {
     localStorage.setItem('xla_font_family', fontFamily);
     localStorage.setItem('xla_font_size', fontSize);
@@ -62,12 +66,31 @@ export function applyTypography(fontFamily: string, fontSize: string, menuHeadin
     window.dispatchEvent(new CustomEvent('xla_typography_changed', { 
       detail: { fontFamily, fontSize, menuHeadingSize } 
     }));
+
+    if (syncRemote) {
+      axios.post('/api/xl/admin/settings/typography', {
+        fontFamily,
+        fontSize,
+        menuHeadingSize
+      }).catch(e => console.warn('Could not persist typography to server', e.message));
+    }
   } catch (e) {
     console.error('Failed to apply typography', e);
   }
 }
 
 export function initializeTypography() {
-  const { fontFamily, fontSize, menuHeadingSize } = getSavedTypography();
-  applyTypography(fontFamily, fontSize, menuHeadingSize);
+  // Step 1: Immediately apply locally saved preferences for instant render
+  const local = getSavedTypography();
+  applyTypography(local.fontFamily, local.fontSize, local.menuHeadingSize, false);
+
+  // Step 2: Sync with database so settings persist across new logins and devices
+  axios.get('/api/xl/admin/settings/typography').then(res => {
+    if (res.data?.success && res.data.data) {
+      const { fontFamily, fontSize, menuHeadingSize } = res.data.data;
+      if (fontFamily && fontSize && menuHeadingSize) {
+        applyTypography(fontFamily, fontSize, menuHeadingSize, false);
+      }
+    }
+  }).catch(() => {});
 }

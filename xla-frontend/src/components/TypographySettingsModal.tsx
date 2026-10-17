@@ -117,14 +117,14 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
         <p className="text-[11px] text-slate-400 mb-2.5">
           Controls the header typography across all admin sub-menus (Manage Expenses, Area Creation, Users, Products, DCS, Approvals, Leave, Lists, etc.)
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
           {MENU_HEADING_SIZES.map((item) => {
             const isSelected = currentMenuSize === item.scale;
             return (
               <button
                 key={item.id}
                 onClick={() => handleSelectMenuSize(item.scale)}
-                className={`flex flex-col text-left p-3.5 rounded-xl border transition-all ${
+                className={`flex flex-col text-left p-3 rounded-xl border transition-all ${
                   isSelected
                     ? 'bg-amber-500/15 border-amber-500 text-white shadow-sm ring-1 ring-amber-500/30'
                     : 'bg-[#151c2c] border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-600'
@@ -136,10 +136,54 @@ export default function TypographySettingsModal({ isOpen = true, onClose, isInli
                   </span>
                   {isSelected && <Check size={14} className="text-amber-400" />}
                 </div>
-                <span className="text-[10px] text-slate-400">{item.desc}</span>
+                <span className="text-[10px] text-slate-400 leading-tight">{item.desc}</span>
               </button>
             );
           })}
+        </div>
+
+        {/* Fine-Tuning Range Slider with px markers */}
+        <div className="mt-3 bg-[#151c2c] p-3.5 rounded-xl border border-slate-700/60 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+              <Sliders size={13} className="text-amber-400" />
+              <span>Adjust Heading Font Size with Slider:</span>
+            </span>
+            <span className="text-xs font-bold font-mono px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
+              {currentMenuSize}
+            </span>
+          </div>
+
+          <div className="relative pt-1">
+            <input
+              type="range"
+              min="12"
+              max="24"
+              step="1"
+              value={parseInt(currentMenuSize) || 16}
+              onChange={(e) => handleSelectMenuSize(`${e.target.value}px`)}
+              className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-400 focus:outline-none"
+            />
+            {/* px Markers below slider */}
+            <div className="flex justify-between text-[10px] text-slate-400 font-mono mt-1.5 px-0.5">
+              {[12, 14, 16, 18, 20, 22, 24].map((px) => {
+                const isCurrent = (parseInt(currentMenuSize) || 16) === px;
+                return (
+                  <button
+                    key={px}
+                    type="button"
+                    onClick={() => handleSelectMenuSize(`${px}px`)}
+                    className={`hover:text-amber-300 transition-colors flex flex-col items-center cursor-pointer ${
+                      isCurrent ? 'text-amber-400 font-bold scale-110' : 'text-slate-400'
+                    }`}
+                  >
+                    <span className="h-1 w-0.5 bg-slate-600 mb-0.5"></span>
+                    <span>{px}px</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
 

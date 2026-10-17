@@ -5831,13 +5831,23 @@ router.post('/admin/announcement', async (req, res) => {
 // --- ADMIN NOTIFICATIONS (RECENT ACTIVITY) ---
 router.get('/admin/notifications', async (req, res) => {
     try {
-        const { XlPrimarySales, XlSecondarySales, XlExpense } = require('../db');
+        const { XlPrimarySales, XlSecondarySales, XlExpense, XlGlobalSettings } = require('../db');
+        const { Op } = require('sequelize');
         
-        // Fetch 5 most recent from each
+        // Fetch global settings to check when admin cleared notifications
+        const globalSet = await XlGlobalSettings.findOne();
+        const clearedAtStr = (globalSet && globalSet.settings) ? globalSet.settings.notificationsClearedAt : null;
+        const clearedAt = clearedAtStr ? new Date(clearedAtStr) : null;
+        
+        const whereClause = (clearedAt && !isNaN(clearedAt.getTime())) 
+            ? { createdAt: { [Op.gt]: clearedAt } } 
+            : {};
+        
+        // Fetch 5 most recent from each that are newer than clearedAt
         const [primary, secondary, expenses] = await Promise.all([
-            XlPrimarySales.findAll({ order: [['createdAt', 'DESC']], limit: 5 }),
-            XlSecondarySales.findAll({ order: [['createdAt', 'DESC']], limit: 5 }),
-            XlExpense.findAll({ order: [['createdAt', 'DESC']], limit: 5 })
+            XlPrimarySales.findAll({ where: whereClause, order: [['createdAt', 'DESC']], limit: 5 }),
+            XlSecondarySales.findAll({ where: whereClause, order: [['createdAt', 'DESC']], limit: 5 }),
+            XlExpense.findAll({ where: whereClause, order: [['createdAt', 'DESC']], limit: 5 })
         ]);
         
         let allActivity = [];
@@ -5860,7 +5870,69 @@ router.get('/admin/notifications', async (req, res) => {
         allActivity.sort((a, b) => new Date(b.date) - new Date(a.date));
         allActivity = allActivity.slice(0, 10);
         
-        res.json({ success: true, data: allActivity });
+        res.json({ success: true, data: allActivity, clearedAt: clearedAtStr });
+    } catch(e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// POST to clear notifications permanently in database memory
+router.post('/admin/notifications/clear', async (req, res) => {
+    try {
+        const { XlGlobalSettings } = require('../db');
+        let globalSet = await XlGlobalSettings.findOne();
+        const nowIso = new Date().toISOString();
+        if (!globalSet) {
+            globalSet = await XlGlobalSettings.create({ 
+                settings: { notificationsClearedAt: nowIso } 
+            });
+        } else {
+            const current = globalSet.settings || {};
+            globalSet.settings = { ...current, notificationsClearedAt: nowIso };
+            await globalSet.save();
+        }
+        res.json({ success: true, message: 'Notifications cleared successfully', clearedAt: nowIso });
+    } catch(e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+// --- PERSISTENT TYPOGRAPHY SETTINGS ---
+router.get('/admin/settings/typography', async (req, res) => {
+    try {
+        const { XlGlobalSettings } = require('../db');
+        const record = await XlGlobalSettings.findOne();
+        const typography = (record && record.settings && record.settings.typography) || {
+            fontFamily: 'Montserrat',
+            fontSize: '14px',
+            menuHeadingSize: '16px'
+        };
+        res.json({ success: true, data: typography });
+    } catch(e) {
+        res.status(500).json({ success: false, message: e.message });
+    }
+});
+
+router.post('/admin/settings/typography', async (req, res) => {
+    try {
+        const { XlGlobalSettings } = require('../db');
+        let record = await XlGlobalSettings.findOne();
+        const { fontFamily, fontSize, menuHeadingSize } = req.body;
+        const newTypography = {
+            fontFamily: fontFamily || 'Montserrat',
+            fontSize: fontSize || '14px',
+            menuHeadingSize: menuHeadingSize || '16px'
+        };
+        if (!record) {
+            record = await XlGlobalSettings.create({ 
+                settings: { typography: newTypography } 
+            });
+        } else {
+            const current = record.settings || {};
+            record.settings = { ...current, typography: newTypography };
+            await record.save();
+        }
+        res.json({ success: true, data: newTypography });
     } catch(e) {
         res.status(500).json({ success: false, message: e.message });
     }
