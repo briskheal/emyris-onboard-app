@@ -37,6 +37,7 @@ try {
 }
 
 const app = express();
+app.set('trust proxy', 1);
 app.use(compression());
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || 'https://emyrishr.in';
