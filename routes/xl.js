@@ -7808,6 +7808,222 @@ router.get('/reports/geo-location-analysis', async (req, res) => {
     }
 });
 
+// 0.5 Export rich daily Geo-Location Analysis Excel workbook with embedded visual map and clickable links
+router.get('/reports/geo-location-analysis/export-excel', async (req, res) => {
+    try {
+        const { employeeId, date } = req.query;
+        if (!employeeId || !date) {
+            return res.status(400).json({ success: false, message: 'employeeId and date are required' });
+        }
+
+        const fs = require('fs');
+        const path = require('path');
+        const ExcelJS = require('exceljs');
+        const sharp = require('sharp');
+        const { XlAttendance, XlDCR, XlUser } = require('../db');
+        const { Op } = require('sequelize');
+
+        // Fetch user, attendance, DCRs
+        const [user, attendance, dcrs] = await Promise.all([
+            XlUser.findOne({
+                where: {
+                    [Op.or]: [{ employeeId }, { _id: employeeId }, { email: employeeId }]
+                }
+            }),
+            XlAttendance.findOne({
+                where: {
+                    date,
+                    employeeId
+                }
+            }),
+            XlDCR.findAll({
+                where: {
+                    date,
+                    employeeId
+                },
+                order: [['checkInTime', 'ASC'], ['createdAt', 'ASC']]
+            })
+        ]);
+
+        const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.name || user.email : employeeId;
+        const designation = user?.designation || 'Field Representative';
+        const hq = user?.hq || attendance?.hq || '--';
+
+        // Ensure WebP map exists or generate it
+        const monthDir = date.substring(0, 7);
+        const mapFilename = `${employeeId.replace(/[^a-zA-Z0-9_-]/g, '_')}_${date}.webp`;
+        const webpPath = path.join(__dirname, '../uploads/geo-archives', monthDir, mapFilename);
+        
+        let mapPngBuffer = null;
+        try {
+            if (!fs.existsSync(webpPath)) {
+                const { generateWebpMapSnapshot } = require('../utils/geoStaticMap');
+                await generateWebpMapSnapshot(employeeId, date);
+            }
+            if (fs.existsSync(webpPath)) {
+                mapPngBuffer = await sharp(webpPath).png().toBuffer();
+            }
+        } catch (mapErr) {
+            console.warn('Could not generate/convert map image for Excel:', mapErr.message);
+        }
+
+        // Build Excel Workbook with ExcelJS
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'Emyris Field CRM';
+        wb.created = new Date();
+        const ws = wb.addWorksheet('Geo-Location Analysis');
+
+        // Row 1-3: Headers
+        const titleRow = ws.addRow(['GEO-LOCATION ANALYSIS & STOPPAGE TRACKING REPORT']);
+        titleRow.font = { bold: true, size: 14, color: { argb: 'FF1E293B' } };
+
+        const metaRow1 = ws.addRow([`User: ${userName} (${employeeId})`, `Designation: ${designation}`, `HQ: ${hq}`]);
+        metaRow1.font = { bold: true, size: 11, color: { argb: 'FF334155' } };
+
+        const metaRow2 = ws.addRow([`Date: ${date}`, `Generated: ${new Date().toLocaleDateString()}`]);
+        metaRow2.font = { size: 10, color: { argb: 'FF64748B' } };
+        ws.addRow([]);
+
+        // Summary Overview Section
+        const sumHeader = ws.addRow(['SUMMARY OVERVIEW']);
+        sumHeader.font = { bold: true, size: 12, color: { argb: 'FF0284C7' } };
+
+        const sumCols = ws.addRow(['Total Distance (km)', 'Punch-In Time', 'Punch-Out Time', 'Total Work Hours', 'Total Calls', 'In-Call Time', 'Transit/Stoppage Time']);
+        sumCols.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+        sumCols.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+            cell.alignment = { horizontal: 'center' };
+        });
+
+        const pInTime = attendance?.punchInTime || '--';
+        const pOutTime = attendance?.punchOutTime || '--';
+        const sumVals = ws.addRow([
+            attendance?.totalDistanceKm || '--',
+            pInTime,
+            pOutTime,
+            '--',
+            dcrs.length,
+            '--',
+            '--'
+        ]);
+        sumVals.alignment = { horizontal: 'center' };
+        ws.addRow([]);
+
+        // Embedded Visual Map Route Image
+        if (mapPngBuffer) {
+            const visualLabel = ws.addRow(['VISUAL ROUTE MAP SNAPSHOT:']);
+            visualLabel.font = { bold: true, size: 11, color: { argb: 'FF0284C7' } };
+
+            const imageId = wb.addImage({
+                buffer: mapPngBuffer,
+                extension: 'png'
+            });
+
+            const imgStartRow = ws.rowCount + 1;
+            for (let i = 0; i < 18; i++) {
+                ws.addRow([]);
+            }
+
+            ws.addImage(imageId, {
+                tl: { col: 0, row: imgStartRow - 1 },
+                ext: { width: 680, height: 380 }
+            });
+            ws.addRow([]);
+        }
+
+        // Online Interactive Route Links
+        const linksLabel = ws.addRow(['ONLINE ROUTE LINKS (CLICK TO OPEN):']);
+        linksLabel.font = { bold: true, size: 11, color: { argb: 'FF0284C7' } };
+
+        const onlineWebpUrl = `https://emyrishr.in/uploads/geo-archives/${monthDir}/${mapFilename}`;
+        const startLat = attendance?.punchInLat || attendance?.punchOutLat;
+        const startLng = attendance?.punchInLng || attendance?.punchOutLng;
+        const endLat = attendance?.punchOutLat || attendance?.punchInLat;
+        const endLng = attendance?.punchOutLng || attendance?.punchInLng;
+        const gmapsRouteUrl = (startLat && startLng)
+            ? `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${endLat},${endLng}`
+            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(userName + ' ' + hq)}`;
+
+        const linksRow = ws.addRow([
+            { text: '🌐 Open High-Res WebP Map in Browser', hyperlink: onlineWebpUrl },
+            { text: '🗺️ Open Driving Directions in Google Maps', hyperlink: gmapsRouteUrl }
+        ]);
+        linksRow.font = { bold: true, color: { argb: 'FF0284C7' }, underline: true };
+        ws.addRow([]);
+
+        // Chronological Milestone Table
+        const tableLabel = ws.addRow(['CHRONOLOGICAL JOURNEY & STOPPAGE LOG']);
+        tableLabel.font = { bold: true, size: 12, color: { argb: 'FF0284C7' } };
+
+        const th = ws.addRow([
+            'Stop #', 'Activity / Milestone', 'Entity Type', 'Check-In Time', 'Check-Out Time',
+            'Latitude', 'Longitude', 'Google Maps Link', 'Geo Address / Location', 'Remarks / Stoppage Reason'
+        ]);
+        th.font = { bold: true, size: 10, color: { argb: 'FFFFFFFF' } };
+        th.eachCell(cell => {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+            cell.alignment = { horizontal: 'center' };
+        });
+
+        // 1. Punch-In Start Row
+        if (attendance && (attendance.punchInLat || attendance.punchInTime)) {
+            const inLat = attendance.punchInLat || '';
+            const inLng = attendance.punchInLng || '';
+            const gLink = inLat ? { text: '📍 View on Google Maps', hyperlink: `https://www.google.com/maps/search/?api=1&query=${inLat},${inLng}` } : '--';
+            const r = ws.addRow([
+                'Start', 'Punch-In (Day Start)', 'Attendance', attendance.punchInTime || '--', attendance.punchInTime || '--',
+                inLat, inLng, gLink, 'Punch-In Location', attendance.dayRemarks || 'Punched in for work'
+            ]);
+            r.getCell(8).font = { color: { argb: 'FF0284C7' }, underline: true };
+        }
+
+        // 2. Doctor / Chemist DCR Visits
+        dcrs.forEach((d, idx) => {
+            const dLat = d.latitude || '';
+            const dLng = d.longitude || '';
+            const gLink = (dLat && dLng) ? { text: '📍 View on Google Maps', hyperlink: `https://www.google.com/maps/search/?api=1&query=${dLat},${dLng}` } : '--';
+            const r = ws.addRow([
+                idx + 1, d.entityName || 'Doctor Visit', d.entityType || 'Doctor', d.checkInTime || '--', d.checkOutTime || '--',
+                dLat, dLng, gLink, d.geoAddress || '', d.discussion || d.remarks || ''
+            ]);
+            r.getCell(8).font = { color: { argb: 'FF0284C7' }, underline: true };
+        });
+
+        // 3. Punch-Out End Row
+        if (attendance && (attendance.punchOutLat || attendance.punchOutTime)) {
+            const outLat = attendance.punchOutLat || '';
+            const outLng = attendance.punchOutLng || '';
+            const gLink = outLat ? { text: '📍 View on Google Maps', hyperlink: `https://www.google.com/maps/search/?api=1&query=${outLat},${outLng}` } : '--';
+            const r = ws.addRow([
+                'End', 'Punch-Out (Day End)', 'Attendance', attendance.punchOutTime || '--', attendance.punchOutTime || '--',
+                outLat, outLng, gLink, 'Punch-Out Location', attendance.dayRemarks || 'Punched out; day ended'
+            ]);
+            r.getCell(8).font = { color: { argb: 'FF0284C7' }, underline: true };
+        }
+
+        // Auto-fit column widths
+        ws.columns.forEach((col) => {
+            let maxLen = 14;
+            col.eachCell({ includeEmpty: false }, (cell) => {
+                const val = cell.text || (typeof cell.value === 'string' ? cell.value : '');
+                if (val && val.length > maxLen) maxLen = Math.min(val.length + 3, 40);
+            });
+            col.width = maxLen;
+        });
+
+        // Send Excel file
+        const safeUserName = userName.replace(/[^a-zA-Z0-9_-]/g, '_');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="Geo_Location_Analysis_${safeUserName}_${date}.xlsx"`);
+
+        await wb.xlsx.write(res);
+        res.end();
+    } catch (err) {
+        console.error('Error in /reports/geo-location-analysis/export-excel:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
 // ==========================================
 // GEO-LOCATION ARCHIVING & 60-DAY RETENTION
 // ==========================================

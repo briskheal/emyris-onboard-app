@@ -437,73 +437,127 @@ export default function GeoLocationAnalysisReport() {
     };
   }, [data, mapType]);
 
-  // Export Timeline to Excel
-  const handleExportExcel = () => {
-    if (!data || !data.timeline || data.timeline.length === 0) {
+  const [exportingExcel, setExportingExcel] = useState(false);
+
+  // Export Timeline to Excel with embedded visual map snapshot and clickable links
+  const handleExportExcel = async () => {
+    if (!data || !selectedUser || !selectedDate) {
       alert('No data available to export.');
       return;
     }
 
-    const rows: any[][] = [];
-    rows.push(['GEO-LOCATION ANALYSIS & STOPPAGE TRACKING REPORT']);
-    rows.push([`User: ${data.user.name || data.user.employeeId || 'User'} (${data.user.employeeId || '--'})`, `Designation: ${data.user.designation || '--'}`, `HQ: ${data.user.hq || '--'}`]);
-    rows.push([`Date: ${data.date}`, `Generated: ${new Date().toLocaleDateString()}`]);
-    rows.push([]);
-
-    rows.push(['SUMMARY OVERVIEW']);
-    rows.push(['Total Distance (km)', 'Punch-In Time', 'Punch-Out Time', 'Total Working Hours', 'Total Calls', 'In-Call Time', 'Transit/Stoppage Time', 'Extended Stoppages']);
-    rows.push([
-      data.summary.totalDistanceKm,
-      data.summary.punchInTime,
-      data.summary.punchOutTime,
-      data.summary.totalWorkingHours,
-      data.summary.totalCalls,
-      data.summary.totalMeetingTime,
-      data.summary.totalTransitTime,
-      data.summary.extendedStoppagesCount
-    ]);
-    rows.push([]);
-
-    rows.push(['CHRONOLOGICAL JOURNEY & STOPPAGE LOG']);
-    rows.push([
-      'Stop #',
-      'Activity / Milestone',
-      'Entity Type',
-      'Check-In Time',
-      'Check-Out Time',
-      'Meeting Stoppage (mins)',
-      'Transit from Prev (mins)',
-      'Leg Distance (km)',
-      'Cum. Distance (km)',
-      'Latitude',
-      'Longitude',
-      'Location / Address',
-      'Stoppage Reason / Remarks'
-    ]);
-
-    data.timeline.forEach(p => {
-      rows.push([
-        p.seq === 0 ? 'Start' : p.type === 'punch-out' ? 'End' : p.seq,
-        p.entityName,
-        p.entityType,
-        p.checkInTime,
-        p.checkOutTime,
-        p.meetingDurationMins,
-        p.transitFromPrevMins,
-        p.distanceFromPrevKm,
-        p.cumulativeDistanceKm,
-        p.lat ?? '',
-        p.lng ?? '',
-        p.geoAddress,
-        p.remarks || p.discussion || ''
-      ]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Geo-Location Analysis');
+    setExportingExcel(true);
     const safeUserName = (data.user.name || data.user.employeeId || 'User').replace(/[^a-zA-Z0-9]/g, '_');
-    XLSX.writeFile(wb, `Geo_Location_Analysis_${safeUserName}_${data.date}.xlsx`);
+
+    try {
+      // 1. Fetch rich Excel with embedded visual map and clickable links from backend
+      const res = await axios.get(
+        `/api/xl/reports/geo-location-analysis/export-excel?employeeId=${encodeURIComponent(selectedUser)}&date=${encodeURIComponent(selectedDate)}`,
+        {
+          responseType: 'blob',
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }
+      );
+
+      const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Geo_Location_Analysis_${safeUserName}_${data.date}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.warn('Backend rich Excel export failed, using client-side export with links:', err);
+
+      // Fallback: Client-side XLSX generation with clickable links
+      const rows: any[][] = [];
+      rows.push(['GEO-LOCATION ANALYSIS & STOPPAGE TRACKING REPORT']);
+      rows.push([`User: ${data.user.name || data.user.employeeId || 'User'} (${data.user.employeeId || '--'})`, `Designation: ${data.user.designation || '--'}`, `HQ: ${data.user.hq || '--'}`]);
+      rows.push([`Date: ${data.date}`, `Generated: ${new Date().toLocaleDateString()}`]);
+      rows.push([]);
+
+      const monthDir = data.date.substring(0, 7);
+      const mapFilename = `${selectedUser}_${data.date}.webp`;
+      const webpUrl = `https://emyrishr.in/uploads/geo-archives/${monthDir}/${mapFilename}`;
+      const validPoints = (data.timeline || []).filter(p => p.lat != null && p.lng != null);
+      let gmapsRouteUrl = '--';
+      if (validPoints.length > 0) {
+        const p1 = validPoints[0];
+        const pN = validPoints[validPoints.length - 1];
+        gmapsRouteUrl = `https://www.google.com/maps/dir/?api=1&origin=${p1.lat},${p1.lng}&destination=${pN.lat},${pN.lng}`;
+      }
+
+      rows.push(['ONLINE ROUTE LINKS (CLICKABLE)']);
+      rows.push([
+        { t: 's', v: '🌐 Open WebP Map in Browser', l: { Target: webpUrl } },
+        gmapsRouteUrl !== '--' ? { t: 's', v: '🗺️ Open Driving Directions in Google Maps', l: { Target: gmapsRouteUrl } } : '--'
+      ]);
+      rows.push([]);
+
+      rows.push(['SUMMARY OVERVIEW']);
+      rows.push(['Total Distance (km)', 'Punch-In Time', 'Punch-Out Time', 'Total Working Hours', 'Total Calls', 'In-Call Time', 'Transit/Stoppage Time', 'Extended Stoppages']);
+      rows.push([
+        data.summary.totalDistanceKm,
+        data.summary.punchInTime,
+        data.summary.punchOutTime,
+        data.summary.totalWorkingHours,
+        data.summary.totalCalls,
+        data.summary.totalMeetingTime,
+        data.summary.totalTransitTime,
+        data.summary.extendedStoppagesCount
+      ]);
+      rows.push([]);
+
+      rows.push(['CHRONOLOGICAL JOURNEY & STOPPAGE LOG']);
+      rows.push([
+        'Stop #',
+        'Activity / Milestone',
+        'Entity Type',
+        'Check-In Time',
+        'Check-Out Time',
+        'Meeting Stoppage (mins)',
+        'Transit from Prev (mins)',
+        'Leg Distance (km)',
+        'Cum. Distance (km)',
+        'Latitude',
+        'Longitude',
+        'Google Maps Pin (Clickable)',
+        'Location / Address',
+        'Stoppage Reason / Remarks'
+      ]);
+
+      data.timeline.forEach(p => {
+        let pinLink: any = '--';
+        if (p.lat != null && p.lng != null) {
+          pinLink = { t: 's', v: '📍 Open Pin in Google Maps', l: { Target: `https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}` } };
+        }
+        rows.push([
+          p.seq === 0 ? 'Start' : p.type === 'punch-out' ? 'End' : p.seq,
+          p.entityName,
+          p.entityType,
+          p.checkInTime,
+          p.checkOutTime,
+          p.meetingDurationMins,
+          p.transitFromPrevMins,
+          p.distanceFromPrevKm,
+          p.cumulativeDistanceKm,
+          p.lat ?? '',
+          p.lng ?? '',
+          pinLink,
+          p.geoAddress,
+          p.remarks || p.discussion || ''
+        ]);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Geo-Location Analysis');
+      XLSX.writeFile(wb, `Geo_Location_Analysis_${safeUserName}_${data.date}.xlsx`);
+    } finally {
+      setExportingExcel(false);
+    }
   };
 
   // Capture Map Route Snapshot as WebP
@@ -817,11 +871,20 @@ export default function GeoLocationAnalysisReport() {
 
           <button
             onClick={handleExportExcel}
-            disabled={!data || loading}
+            disabled={!data || loading || exportingExcel}
             className="h-10 px-4 bg-sky-600 hover:bg-sky-500 rounded-xl text-white font-bold flex items-center gap-2 shadow-lg shadow-sky-600/30 active:scale-95 transition-all disabled:opacity-50 text-xs md:text-sm cursor-pointer"
           >
-            <Download size={16} />
-            <span className="hidden sm:inline">Export Excel</span>
+            {exportingExcel ? (
+              <>
+                <RefreshCw size={16} className="animate-spin" />
+                <span className="hidden sm:inline">Exporting Map...</span>
+              </>
+            ) : (
+              <>
+                <Download size={16} />
+                <span className="hidden sm:inline">Export Excel</span>
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -885,7 +948,7 @@ export default function GeoLocationAnalysisReport() {
                 value={toYYYYMMDD(selectedDate)}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 style={{ colorScheme: 'dark' }}
-                className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none [color-scheme:dark] cursor-pointer"
+                className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none [color-scheme:dark] cursor-pointer [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:brightness-200 [&::-webkit-calendar-picker-indicator]:opacity-100"
               />
             </div>
 
