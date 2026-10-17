@@ -11,7 +11,7 @@ export default function Utilities() {
   const options = utilitiesOptions;
 
   return (
-    <div className="min-h-full md:h-dvh bg-slate-900 flex flex-col pb-24 md:pb-0 text-slate-100 font-sans overflow-hidden">
+    <div className="min-h-full bg-slate-900 flex flex-col pb-24 md:pb-0 text-slate-100 font-sans">
       
       {/* Mobile Sticky Header */}
       <div className="md:hidden flex items-center justify-between px-5 pt-12 pb-4 sticky top-0 bg-slate-900 z-10 border-b border-slate-800">
@@ -34,7 +34,7 @@ export default function Utilities() {
         </div>
       </div>
 
-      <div className="flex-1 px-5 md:px-8 py-6 overflow-y-auto">
+      <div className="flex-1 px-5 md:px-8 py-6">
         
         {/* DESKTOP HEADER */}
         <div className="hidden md:block mb-8">
