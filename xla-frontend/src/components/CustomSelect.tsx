@@ -17,9 +17,18 @@ interface CustomSelectProps {
   placeholder?: string;
   showAllOption?: boolean;
   allOptionLabel?: string;
+  compact?: boolean;
 }
 
-export default function CustomSelect({ options, value, onChange, placeholder = "Select...", showAllOption = false, allOptionLabel = "All" }: CustomSelectProps) {
+export default function CustomSelect({ 
+  options, 
+  value, 
+  onChange, 
+  placeholder = "Select...", 
+  showAllOption = false, 
+  allOptionLabel = "All",
+  compact = false
+}: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
@@ -61,12 +70,16 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
       {/* TRIGGER */}
       <div
         onClick={() => setIsOpen(prev => !prev)}
-        className={`w-full bg-slate-800 border ${isOpen ? 'border-[#00e5ff]' : 'border-slate-700'} text-white rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-lg min-h-[56px]`}
+        className={
+          compact
+            ? `w-full bg-[#1a1a2e] border ${isOpen ? 'border-sky-400' : 'border-[#3b3b5a]'} text-white rounded-md px-2.5 py-0.5 flex items-center justify-between cursor-pointer transition-colors h-[30px] min-h-[30px]`
+            : `w-full bg-slate-800 border ${isOpen ? 'border-[#00e5ff]' : 'border-slate-700'} text-white rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors shadow-lg min-h-[56px]`
+        }
       >
-        <div className="flex items-center gap-3 w-full pr-4 overflow-hidden">
+        <div className={`flex items-center ${compact ? 'gap-1.5' : 'gap-3'} w-full pr-2 overflow-hidden`}>
           {isOpen ? (
-            <div className="flex items-center gap-2 w-full">
-              <Search size={16} className="text-slate-400 shrink-0" />
+            <div className={`flex items-center ${compact ? 'gap-1.5' : 'gap-2'} w-full`}>
+              <Search size={compact ? 13 : 16} className="text-slate-400 shrink-0" />
               <input
                 ref={searchRef}
                 type="text"
@@ -74,56 +87,56 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
                 onChange={e => setSearchTerm(e.target.value)}
                 onClick={e => e.stopPropagation()}
                 placeholder="Search..."
-                className="w-full bg-transparent outline-none text-white placeholder:text-slate-500 font-semibold text-sm"
+                className={`w-full bg-transparent outline-none text-white placeholder:text-slate-500 font-semibold ${compact ? 'text-xs' : 'text-sm'}`}
               />
             </div>
           ) : selectedData ? (
             <>
               {(selectedData.avatarUrl || selectedData.showDefaultAvatar) && (
-                <div className="w-8 h-8 rounded-full bg-slate-600 flex items-center justify-center shrink-0 border border-slate-500 overflow-hidden">
+                <div className={`${compact ? 'w-5 h-5' : 'w-8 h-8'} rounded-full bg-slate-600 flex items-center justify-center shrink-0 border border-slate-500 overflow-hidden`}>
                   {selectedData.avatarUrl ? (
                     <img src={selectedData.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
-                    <User size={16} className="text-slate-300" />
+                    <User size={compact ? 12 : 16} className="text-slate-300" />
                   )}
                 </div>
               )}
               <div className="flex flex-col overflow-hidden w-full">
-                <span className="text-sm font-bold truncate">{selectedData.label}</span>
+                <span className={`${compact ? 'text-xs font-medium' : 'text-sm font-bold'} truncate`}>{selectedData.label}</span>
                 {selectedData.subLabel && (
-                  <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">
+                  <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5`}>
                     {selectedData.subLabel}
                   </span>
                 )}
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-3 text-slate-400 font-semibold text-sm uppercase tracking-widest">
-              <span>{value === '' && showAllOption ? allOptionLabel : placeholder}</span>
+            <div className={`flex items-center gap-2 text-slate-400 font-medium ${compact ? 'text-xs' : 'text-sm uppercase tracking-widest'}`}>
+              <span className="truncate">{value === '' && showAllOption ? allOptionLabel : placeholder}</span>
             </div>
           )}
         </div>
-        <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-[#00e5ff]' : ''}`} />
+        <ChevronDown size={compact ? 14 : 18} className={`text-slate-400 transition-transform duration-200 shrink-0 ${isOpen ? 'rotate-180 text-sky-400' : ''}`} />
       </div>
 
       {/* DROPDOWN */}
       {isOpen && (
-        <div className="absolute top-full mt-1 left-0 right-0 z-[100] bg-slate-800 border border-slate-700 rounded-xl shadow-2xl flex flex-col overflow-hidden">
+        <div className={`absolute top-full mt-1 left-0 right-0 z-[100] ${compact ? 'bg-[#1a1a2e] border-[#3b3b5a] rounded-lg' : 'bg-slate-800 border-slate-700 rounded-xl'} border shadow-2xl flex flex-col overflow-hidden`}>
           {/* LIST */}
-          <div className="max-h-64 overflow-y-auto p-1">
+          <div className={`${compact ? 'max-h-56 p-1' : 'max-h-64 p-1'} overflow-y-auto`}>
             {showAllOption && (
               <div
                 onClick={() => { onChange(''); setIsOpen(false); setSearchTerm(''); }}
-                className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${value === '' ? 'bg-slate-700 border border-sky-500/30' : 'hover:bg-slate-700/50'}`}
+                className={`flex items-center ${compact ? 'gap-2 p-1.5' : 'gap-3 p-2.5'} rounded-lg cursor-pointer transition-colors ${value === '' ? 'bg-slate-700 border border-sky-500/30' : 'hover:bg-slate-700/50'}`}
               >
-                <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 overflow-hidden">
-                  <User size={16} className="text-slate-300" />
+                <div className={`${compact ? 'w-5 h-5' : 'w-8 h-8'} rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 overflow-hidden`}>
+                  <User size={compact ? 12 : 16} className="text-slate-300" />
                 </div>
                 <div className="flex flex-col flex-1 overflow-hidden">
-                  <span className="text-sm font-bold text-white truncate">{allOptionLabel}</span>
+                  <span className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-white truncate`}>{allOptionLabel}</span>
                   <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">Filter</span>
                 </div>
-                {value === '' && <Check size={16} className="text-[#00e5ff] shrink-0" />}
+                {value === '' && <Check size={compact ? 13 : 16} className="text-[#00e5ff] shrink-0" />}
               </div>
             )}
 
@@ -131,31 +144,31 @@ export default function CustomSelect({ options, value, onChange, placeholder = "
               <div
                 key={o.value}
                 onClick={() => { onChange(o.value); setIsOpen(false); setSearchTerm(''); }}
-                className={`flex items-center gap-3 p-2.5 rounded-lg cursor-pointer transition-colors ${value === o.value ? 'bg-slate-700 border border-sky-500/30' : 'hover:bg-slate-700/50'}`}
+                className={`flex items-center ${compact ? 'gap-2 p-1.5' : 'gap-3 p-2.5'} rounded-lg cursor-pointer transition-colors ${value === o.value ? 'bg-slate-700 border border-sky-500/30' : 'hover:bg-slate-700/50'}`}
               >
                 {(o.avatarUrl || o.showDefaultAvatar) && (
-                  <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 overflow-hidden">
+                  <div className={`${compact ? 'w-5 h-5' : 'w-8 h-8'} rounded-full bg-slate-700 flex items-center justify-center shrink-0 border border-slate-600 overflow-hidden`}>
                     {o.avatarUrl ? (
                       <img src={o.avatarUrl} alt="Profile" className="w-full h-full object-cover" />
                     ) : (
-                      <User size={16} className="text-slate-300" />
+                      <User size={compact ? 12 : 16} className="text-slate-300" />
                     )}
                   </div>
                 )}
                 <div className="flex flex-col flex-1 overflow-hidden">
-                  <span className="text-sm font-bold text-white truncate">{o.label}</span>
+                  <span className={`${compact ? 'text-xs font-semibold' : 'text-sm font-bold'} text-white truncate`}>{o.label}</span>
                   {o.subLabel && (
-                    <span className="text-[10px] text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5">{o.subLabel}</span>
+                    <span className={`${compact ? 'text-[9px]' : 'text-[10px]'} text-slate-400 font-medium truncate uppercase tracking-widest mt-0.5`}>{o.subLabel}</span>
                   )}
                 </div>
                 {o.rightBadge && <div className="shrink-0">{o.rightBadge}</div>}
-                {value === o.value && <Check size={16} className="text-[#00e5ff] shrink-0" />}
+                {value === o.value && <Check size={compact ? 13 : 16} className="text-[#00e5ff] shrink-0" />}
               </div>
             ))}
 
             {filteredOptions.length === 0 && (
-              <div className="py-8 flex flex-col items-center justify-center text-center">
-                <span className="text-slate-400 font-bold text-sm">No matches found</span>
+              <div className={`${compact ? 'py-4' : 'py-8'} flex flex-col items-center justify-center text-center`}>
+                <span className="text-slate-400 font-bold text-xs">No matches found</span>
               </div>
             )}
           </div>

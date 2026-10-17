@@ -4,20 +4,24 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 
-function formatDDMMYYYY(dateStr: string) {
-  if (!dateStr) return '-';
-  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(dateStr)) return dateStr;
-  if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(dateStr)) {
-      const parts = dateStr.split('T')[0].split('-');
-      return parts[2].padStart(2, '0') + '-' + parts[1].padStart(2, '0') + '-' + parts[0];
+function toInputDateValue(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const str = String(dateStr).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+    const parts = str.split('-');
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
   }
   try {
-      const d = new Date(dateStr);
-      if (!isNaN(d.getTime())) {
-          return String(d.getDate()).padStart(2, '0') + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + d.getFullYear();
-      }
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
   } catch (e) {}
-  return dateStr;
+  return str;
 }
 
 export default function PrimarySales() {
@@ -118,8 +122,8 @@ export default function PrimarySales() {
           }
 
           setFormData({
-            date: d.date || '',
-            invoiceDate: d.invoiceDate || '',
+            date: toInputDateValue(d.date) || new Date().toISOString().split('T')[0],
+            invoiceDate: toInputDateValue(d.invoiceDate) || new Date().toISOString().split('T')[0],
             invoiceNumber: d.invoiceNumber || '',
             division: d.division || '',
             headquarter: hq,
@@ -260,11 +264,13 @@ export default function PrimarySales() {
       
       const payload = {
         ...formData,
+        date: toInputDateValue(formData.date),
+        invoiceDate: toInputDateValue(formData.invoiceDate),
         employeeId: user.employeeId || user._id || 'ADMIN',
         grossInvValue: totals.grossInvValue,
-          netInvValue: totals.netInvValue,
-          salableRtnValue: totals.salableRtnValue,
-          expiryRtnValue: totals.expiryRtnValue,
+        netInvValue: totals.netInvValue,
+        salableRtnValue: totals.salableRtnValue,
+        expiryRtnValue: totals.expiryRtnValue,
         productsData: validRows.map((r: any) => {
           // For CUS: save the manually entered customPrice
           // For PTR/PTS/MRP: save lockedPrice (original saved price) if present,
@@ -355,132 +361,140 @@ export default function PrimarySales() {
   return (
     <div className="min-h-screen bg-[#161625] flex flex-col text-[#d1d5db] font-sans">
       {/* STICKY TOP BLOCK */}
-      <div className="sticky top-0 z-40 bg-[#161625] shadow-lg border-b border-[#3b3b5a]/80 pb-2">
+      <div className="sticky top-0 z-40 bg-[#161625] shadow-md border-b border-[#3b3b5a]/70">
       
-      {/* HEADER */}
-      <div className="flex items-center justify-between px-5 py-3 bg-[#1e1e30] border-b border-[#3b3b5a] shrink-0">
-        <div className="flex items-center gap-4">
-            <button onClick={() => navigate('/admin')} className="text-slate-300 hover:text-emerald-400 transition-colors bg-[#27273f] p-2 rounded-lg" title="Go to Admin Menu">
-              <Home size={18} />
+        {/* HEADER */}
+        <div className="flex items-center justify-between px-3 md:px-4 py-1.5 bg-[#1a1a2e] border-b border-[#3b3b5a]/60 shrink-0">
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate('/admin')} className="text-slate-400 hover:text-emerald-400 transition-colors bg-[#232338] p-1.5 rounded" title="Go to Admin Menu">
+              <Home size={15} />
             </button>
-          <button onClick={() => navigate(-1)} className="text-slate-300 hover:text-white transition-colors bg-[#27273f] p-2 rounded-lg">
-            <ArrowLeft size={18} />
-          </button>
-          <h1 className="text-lg font-bold text-white tracking-wide uppercase">PRIMARY SALES</h1>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {id && (
-            <button onClick={handleDelete} className="bg-transparent border border-rose-500/50 text-rose-400 hover:bg-rose-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
-              <Trash2 size={14} /> Delete Record
+            <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-white transition-colors bg-[#232338] p-1.5 rounded" title="Back">
+              <ArrowLeft size={15} />
             </button>
-          )}
-          <button className="bg-transparent border border-sky-500/50 text-sky-400 hover:bg-sky-500/10 px-4 py-1.5 rounded text-xs font-bold transition-colors flex items-center gap-2">
-              <Upload size={14} /> Upload Primary Sales
-            </button>
-        </div>
-      </div>
-
-      <div className="px-3 md:px-4 pt-3 md:pt-4 pb-1">
-        
-        {/* COMPACT FORM CONTAINER */}
-        <div className="bg-[#212136] rounded-xl p-4 mb-4 shadow-lg border border-[#3b3b5a]/50 shrink-0">
+            <h1 className="text-xs md:text-sm font-bold text-white tracking-wider uppercase ml-1">PRIMARY SALES</h1>
+          </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+          <div className="flex items-center gap-2">
+            {id && (
+              <button onClick={handleDelete} className="bg-transparent border border-rose-500/40 text-rose-400 hover:bg-rose-500/10 px-2.5 py-1 rounded text-[11px] font-semibold transition-colors flex items-center gap-1.5">
+                <Trash2 size={13} /> Delete Record
+              </button>
+            )}
+            <button className="bg-transparent border border-sky-500/40 text-sky-400 hover:bg-sky-500/10 px-2.5 py-1 rounded text-[11px] font-semibold transition-colors flex items-center gap-1.5">
+              <Upload size={13} /> Upload Primary Sales
+            </button>
+          </div>
+        </div>
+
+        {/* COMPACT BORDERLESS CONTROLS STRIP */}
+        <div className="px-3 md:px-4 py-2 bg-[#161625]">
+          <div className="flex flex-wrap items-end gap-2 md:gap-2.5">
             
-            {/* Row 1/Col 1: Date */}
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[11px] font-semibold text-[#8b8baf]">Date <span className="text-rose-500">*</span></label>
-              <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-3 py-1 flex items-center h-[36px]">
+            {/* Date */}
+            <div className="flex flex-col w-[125px] shrink-0">
+              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
+                Date <span className="text-rose-500">*</span>
+              </label>
+              <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-2 flex items-center h-[30px]">
                 <input 
                   type="date" 
-                  value={formatDDMMYYYY(formData.date)}
+                  value={toInputDateValue(formData.date)}
                   onChange={e => setFormData({...formData, date: e.target.value})}
-                  className="w-full bg-transparent outline-none text-sm text-white"
-                />
-              </div>
-            </div>
-            
-            {/* Row 1/Col 2: Invoice Date */}
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[11px] font-semibold text-[#8b8baf]">Invoice Date <span className="text-rose-500">*</span></label>
-              <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-3 py-1 flex items-center h-[36px]">
-                <input 
-                  type="date" 
-                  value={formData.invoiceDate}
-                  onChange={e => setFormData({...formData, invoiceDate: e.target.value})}
-                  className="w-full bg-transparent outline-none text-sm text-white"
+                  className="w-full bg-transparent outline-none text-xs text-white"
                 />
               </div>
             </div>
 
-            {/* Row 1/Col 3: Invoice Number */}
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[11px] font-semibold text-[#8b8baf]">Invoice Number <span className="text-rose-500">*</span></label>
+            {/* Invoice Date */}
+            <div className="flex flex-col w-[125px] shrink-0">
+              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
+                Invoice Date <span className="text-rose-500">*</span>
+              </label>
+              <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-2 flex items-center h-[30px]">
+                <input 
+                  type="date" 
+                  value={toInputDateValue(formData.invoiceDate)}
+                  onChange={e => setFormData({...formData, invoiceDate: e.target.value})}
+                  className="w-full bg-transparent outline-none text-xs text-white"
+                />
+              </div>
+            </div>
+
+            {/* Invoice Number */}
+            <div className="flex flex-col w-[115px] shrink-0">
+              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
+                Invoice No <span className="text-rose-500">*</span>
+              </label>
               <input 
                 type="text"
                 value={formData.invoiceNumber}
                 onChange={e => setFormData({...formData, invoiceNumber: e.target.value})}
                 placeholder="Invoice No"
-                className="w-full h-[36px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-3 text-sm text-white outline-none focus:border-sky-500"
+                className="w-full h-[30px] bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-2.5 text-xs text-white outline-none focus:border-sky-500"
               />
             </div>
 
-            {/* Row 1/Col 4: All Primary Sales Button */}
-            <div className="flex flex-col justify-end md:col-span-1">
-              <button onClick={() => navigate('/extras/primary-sales/all')} className="h-[36px] bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 rounded-md font-bold text-xs flex items-center justify-center gap-1.5 transition-colors">
-                <Folder size={14} /> All Pri Sales
+            {/* Select Division */}
+            <div className="flex flex-col w-[135px] shrink-0">
+              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
+                Division <span className="text-rose-500">*</span>
+              </label>
+              <CustomSelect 
+                compact={true}
+                options={divisions}
+                value={formData.division}
+                onChange={(val) => setFormData({...formData, division: val})}
+                placeholder="Select Division"
+              />
+            </div>
+
+            {/* Select Headquarter */}
+            <div className="flex flex-col w-[150px] shrink-0">
+              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
+                Headquarter <span className="text-rose-500">*</span>
+              </label>
+              <CustomSelect 
+                compact={true}
+                options={hqs}
+                value={formData.headquarter}
+                onChange={(val) => setFormData({...formData, headquarter: val, stockist: ''})}
+                placeholder="Select HQ"
+              />
+            </div>
+
+            {/* Select Stockist */}
+            <div className="flex flex-col flex-1 min-w-[200px] max-w-[320px]">
+              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
+                Stockist <span className="text-rose-500">*</span>
+              </label>
+              <CustomSelect 
+                compact={true}
+                options={filteredStockists.map((s: any) => ({ value: s.uid || s._id, label: s.businessName || s.name }))}
+                value={formData.stockist}
+                onChange={(val) => setFormData({...formData, stockist: val})}
+                placeholder="Select Stockist"
+              />
+            </div>
+
+            {/* All Pri Sales Button */}
+            <div className="flex flex-col justify-end w-[105px] shrink-0">
+              <button 
+                onClick={() => navigate('/extras/primary-sales/all')} 
+                className="h-[30px] bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 rounded-md font-semibold text-[11px] flex items-center justify-center gap-1.5 transition-colors"
+              >
+                <Folder size={13} /> All Pri Sales
               </button>
-            </div>
-
-            {/* Row 2/Col 1: Division */}
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[11px] font-semibold text-[#8b8baf]">Select Division <span className="text-rose-500">*</span></label>
-              <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
-                <CustomSelect 
-                  options={divisions}
-                  value={formData.division}
-                  onChange={(val) => setFormData({...formData, division: val})}
-                  placeholder="Select Division"
-                />
-              </div>
-            </div>
-
-            {/* Row 2/Col 2: Headquarter */}
-            <div className="flex flex-col gap-1.5 md:col-span-2">
-              <label className="text-[11px] font-semibold text-[#8b8baf]">Select Headquarter <span className="text-rose-500">*</span></label>
-              <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
-                <CustomSelect 
-                  options={hqs}
-                  value={formData.headquarter}
-                  onChange={(val) => setFormData({...formData, headquarter: val, stockist: ''})}
-                  placeholder="Select Headquarter"
-                />
-              </div>
-            </div>
-
-            {/* Row 2/Col 3: Stockist */}
-            <div className="flex flex-col gap-1.5 md:col-span-3">
-              <label className="text-[11px] font-semibold text-[#8b8baf]">Select Stockist <span className="text-rose-500">*</span></label>
-              <div className="h-[36px] [&>div>div]:min-h-[36px] [&>div>div]:py-1.5">
-                <CustomSelect 
-                  options={filteredStockists.map((s: any) => ({ value: s.uid || s._id, label: s.businessName || s.name }))}
-                  value={formData.stockist}
-                  onChange={(val) => setFormData({...formData, stockist: val})}
-                  placeholder="Select Stockist"
-                />
-              </div>
             </div>
 
           </div>
         </div>
-        </div>
       </div>
 
       {/* SCROLLING TABLE BLOCK */}
-      <div className="flex-1 px-3 md:px-4 pb-3">
+      <div className="flex-1 px-3 md:px-4 py-2">
         {/* DATA TABLE */}
-        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 mb-96">
+        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 mb-24">
           <div className="w-full">
             <table className="w-full text-left border-collapse min-w-[1000px]">
               <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
@@ -536,7 +550,9 @@ export default function PrimarySales() {
                       <td className="p-1.5 text-center text-xs font-semibold border-r border-[#3b3b5a]/50 w-12 max-w-[48px]">{index + 1}</td>
                       
                       {/* Product - Reduced Width */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[250px] w-auto"><div className="h-[34px] [&>div>div]:min-h-[34px] [&>div>div]:py-1"><CustomSelect 
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 min-w-[250px] w-auto">
+                        <CustomSelect 
+                          compact={true}
                           options={(() => {
                             const opts = products.map((p: any) => ({ value: p.uid || p._id, label: p.productName }));
                             // If this row's productId doesn't match any option, add a fallback so it's visible
@@ -547,8 +563,9 @@ export default function PrimarySales() {
                           })()}
                           value={row.productId}
                           onChange={(val) => handleRowChange(index, 'productId', val)}
-                          placeholder="Select"
-                        /></div></td>
+                          placeholder="Select Product"
+                        />
+                      </td>
 
                       {/* Price Block: PTR/PTS/MRP = auto from master (or locked saved price); CUS = editable input */}
                       <td className="p-1.5 border-r border-[#3b3b5a]/50 w-[140px]">

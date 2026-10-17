@@ -4986,19 +4986,41 @@ const validateProductsData = (pData) => {
     }
     return true;
 };
+
+function normalizeDateStr(dStr) {
+    if (!dStr) return '';
+    const str = String(dStr).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+        const parts = str.split('-');
+        return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    return str;
+}
+
 router.post('/primary-sales/save', async (req, res) => {
     try {
         const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData, status, month: reqMonth, year: reqYear } = req.body;
         // Strict Validation
         if (productsData) validateProductsData(productsData);
         
-        const month = reqMonth || (date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' }));
-        const year = reqYear || (date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString());
+        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
+        const dObj = new Date(savedDate);
+        const month = reqMonth || (!isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' }));
+        const year = reqYear || (!isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString());
 
         const newSale = await XlPrimarySales.create({
             employeeId: employeeId || 'ADMIN',
-            date,
-            invoiceDate,
+            date: savedDate,
+            invoiceDate: savedInvDate,
             invoiceNumber,
             division,
             headquarter,
@@ -5383,8 +5405,11 @@ router.put('/primary-sales/update/:id', async (req, res) => {
         // Strict Validation
         if (productsData) validateProductsData(productsData);
         
-        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
-        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
+        const dObj = new Date(savedDate);
+        const month = !isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
+        const year = !isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString();
 
         const sale = await XlPrimarySales.findByPk(req.params.id);
         if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
@@ -5408,8 +5433,8 @@ router.put('/primary-sales/update/:id', async (req, res) => {
         }
 
         await sale.update({
-            date,
-            invoiceDate,
+            date: savedDate,
+            invoiceDate: savedInvDate,
             invoiceNumber,
             division,
             headquarter,
