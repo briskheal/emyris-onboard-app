@@ -8031,18 +8031,28 @@ router.post('/admin/geo-archive/prune', async (req, res) => {
 // 4. Map Tile Proxy (allows Leaflet tiles to load with full CORS headers and bypass restrictive blocking)
 router.get('/tile-proxy', (req, res) => {
     try {
-        const { lyrs = 'm', x, y, z } = req.query;
+        const { type, lyrs = 'm', x, y, z } = req.query;
         if (!x || !y || !z) return res.status(400).end();
 
         const https = require('https');
-        const googleUrl = `https://mt1.google.com/vt/lyrs=${encodeURIComponent(lyrs)}&x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}&z=${encodeURIComponent(z)}`;
-        
-        const headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Referer': 'https://www.google.com/'
-        };
+        let remoteUrl = '';
+        let headers = {};
 
-        const remoteReq = https.get(googleUrl, { headers }, (remoteRes) => {
+        if (type === 'osm') {
+            remoteUrl = `https://tile.openstreetmap.org/${encodeURIComponent(z)}/${encodeURIComponent(x)}/${encodeURIComponent(y)}.png`;
+            headers = {
+                'User-Agent': 'EmyrisFieldCRM/1.0 (contact@emyrishr.in)',
+                'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8'
+            };
+        } else {
+            remoteUrl = `https://mt1.google.com/vt/lyrs=${encodeURIComponent(lyrs)}&x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}&z=${encodeURIComponent(z)}`;
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': 'https://www.google.com/'
+            };
+        }
+
+        const remoteReq = https.get(remoteUrl, { headers }, (remoteRes) => {
             if (remoteRes.statusCode !== 200) {
                 res.status(remoteRes.statusCode).end();
                 return;

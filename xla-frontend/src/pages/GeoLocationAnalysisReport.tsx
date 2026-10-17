@@ -174,8 +174,8 @@ export default function GeoLocationAnalysisReport() {
       return '/api/xl/tile-proxy?lyrs=y&x={x}&y={y}&z={z}';
     }
     if (type === 'osm') {
-      // CartoDB Voyager - 100% genuine OpenStreetMap data, high capacity, no 403 blocks, full CORS
-      return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
+      // Official OpenStreetMap tiles served through compliant proxy with no watermark and no 403 blocks
+      return '/api/xl/tile-proxy?type=osm&x={x}&y={y}&z={z}';
     }
     return '/api/xl/tile-proxy?lyrs=m&x={x}&y={y}&z={z}';
   };
@@ -210,9 +210,8 @@ export default function GeoLocationAnalysisReport() {
 
     const tileUrl = getTileUrl(mapType);
     const tiles = L.tileLayer(tileUrl, { 
-      maxZoom: 20,
-      crossOrigin: 'anonymous',
-      subdomains: mapType === 'osm' ? ['a', 'b', 'c', 'd'] : []
+      maxZoom: 19,
+      crossOrigin: 'anonymous'
     });
     tiles.addTo(map);
 
