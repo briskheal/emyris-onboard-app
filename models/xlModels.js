@@ -318,6 +318,8 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         city: { type: DataTypes.STRING },
         state: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        deactivateReason: { type: DataTypes.STRING },
+        deactivateDate: { type: DataTypes.STRING },
         controls: { type: DataTypes.JSON, defaultValue: {} },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
@@ -352,6 +354,8 @@ const XlGeoFencing = sequelize.define('xl_geo_fencing', {
         city: { type: DataTypes.STRING },
         state: { type: DataTypes.STRING },
         status: { type: DataTypes.STRING, defaultValue: 'Active' },
+        deactivateReason: { type: DataTypes.STRING },
+        deactivateDate: { type: DataTypes.STRING },
         // excelRowIndex: { type: DataTypes.INTEGER, defaultValue: 999999 },
         createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     });

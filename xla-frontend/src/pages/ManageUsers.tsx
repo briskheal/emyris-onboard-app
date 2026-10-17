@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   ArrowLeft, Check, Trash2, Edit, Save, RefreshCw, Key, Mail, Eye, Search, Download, X,
   UserPlus, ShieldPlus, Users, UserCog, ShieldCheck, Layers, Briefcase, Target, Upload, 
-  KeyRound, Smartphone, DollarSign, PanelLeftClose, PanelLeftOpen
+  KeyRound, Smartphone, DollarSign, PanelLeftClose, PanelLeftOpen, UserCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -1010,6 +1010,15 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
   const [sendCredsEmail, setSendCredsEmail] = useState(true);
   const [resetPassLoading, setResetPassLoading] = useState(false);
   const [resetPassMsg, setResetPassMsg] = useState({ text: '', isError: false });
+  const [statusFilter, setStatusFilter] = useState<'Active' | 'Deactivated' | 'All'>('Active');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deactivateTarget, setDeactivateTarget] = useState<any>(null);
+  const [deactivateDate, setDeactivateDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [reasonCategory, setReasonCategory] = useState('Resigned');
+  const [customReason, setCustomReason] = useState('');
+  const [deactivateLoading, setDeactivateLoading] = useState(false);
+  const [reactivateTarget, setReactivateTarget] = useState<any>(null);
+  const [reactivateLoading, setReactivateLoading] = useState(false);
 
   const handleAutoGeneratePass = () => {
     const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$";
@@ -1148,16 +1157,90 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
 
   useEffect(() => { fetchProfiles(); }, []);
 
-  const handleToggleStatus = async (id: string, currentStatus: string) => {
-    try {
-      const newStatus = currentStatus === 'Active' ? 'Deactivated' : 'Active';
-      const url = isAdmin ? `/api/admin/admins/${id}` : `/api/admin/users/${id}`;
-      const res = await axios.put(url, { status: newStatus });
-      if (res.data.success) fetchProfiles();
-    } catch (e) { console.error(e); }
+  const handleToggleClick = (p: any) => {
+    const isActive = p.status === 'Active' || !p.status;
+    if (isActive) {
+      setDeactivateTarget(p);
+      setDeactivateDate(new Date().toISOString().split('T')[0]);
+      setReasonCategory('Resigned');
+      setCustomReason('');
+    } else {
+      setReactivateTarget(p);
+    }
   };
 
-  const paginated = profiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const handleConfirmDeactivate = async () => {
+    if (!deactivateTarget) return;
+    setDeactivateLoading(true);
+    try {
+      const finalReason = reasonCategory === 'Other' 
+        ? (customReason.trim() || 'Other') 
+        : (customReason.trim() ? `${reasonCategory} - ${customReason.trim()}` : reasonCategory);
+        
+      const url = isAdmin ? `/api/admin/admins/${deactivateTarget._id}` : `/api/admin/users/${deactivateTarget._id}`;
+      const res = await axios.put(url, {
+        status: 'Deactivated',
+        deactivateReason: finalReason,
+        deactivateDate: deactivateDate
+      });
+      if (res.data.success) {
+        setDeactivateTarget(null);
+        await fetchProfiles();
+      } else {
+        alert(res.data.message || 'Failed to deactivate user');
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.message || e.message || 'Error deactivating user');
+    } finally {
+      setDeactivateLoading(false);
+    }
+  };
+
+  const handleConfirmReactivate = async () => {
+    if (!reactivateTarget) return;
+    setReactivateLoading(true);
+    try {
+      const url = isAdmin ? `/api/admin/admins/${reactivateTarget._id}` : `/api/admin/users/${reactivateTarget._id}`;
+      const res = await axios.put(url, {
+        status: 'Active',
+        deactivateReason: null,
+        deactivateDate: null
+      });
+      if (res.data.success) {
+        setReactivateTarget(null);
+        await fetchProfiles();
+      } else {
+        alert(res.data.message || 'Failed to re-activate user');
+      }
+    } catch (e: any) {
+      alert(e.response?.data?.message || e.message || 'Error re-activating user');
+    } finally {
+      setReactivateLoading(false);
+    }
+  };
+
+  const activeProfiles = profiles.filter(p => p.status === 'Active' || !p.status);
+  const deactivatedProfiles = profiles.filter(p => p.status === 'Deactivated' || p.status === 'Inactive');
+
+  const filteredByStatus = statusFilter === 'Active'
+    ? activeProfiles
+    : statusFilter === 'Deactivated'
+    ? deactivatedProfiles
+    : profiles;
+
+  const filteredProfiles = filteredByStatus.filter(p => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    const fullName = `${p.firstName || ''} ${p.lastName || ''}`.toLowerCase();
+    const empId = (p.employeeId || p.uid || '').toLowerCase();
+    const email = (p.email || '').toLowerCase();
+    const hq = (p.hq || '').toLowerCase();
+    const desig = (p.designation || '').toLowerCase();
+    return fullName.includes(q) || empId.includes(q) || email.includes(q) || hq.includes(q) || desig.includes(q);
+  });
+
+  const activationPaginated = filteredProfiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const infoPaginated = profiles.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   if (viewUser) {
     return (
@@ -1278,52 +1361,318 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
     );
   }
 
+  const renderDeactivateModal = () => {
+    if (!deactivateTarget) return null;
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-lg shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+          <button 
+            type="button"
+            onClick={() => setDeactivateTarget(null)} 
+            className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+          
+          <div className="flex items-center gap-2.5 mb-4 text-rose-400">
+            <UserCog size={22} />
+            <h3 className="text-base font-bold text-white uppercase tracking-wider">
+              De-activate {isAdmin ? 'Admin' : 'User'} Account
+            </h3>
+          </div>
+
+          <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60 mb-4 text-xs space-y-1">
+            <div className="text-slate-300">
+              User: <strong className="text-white text-sm">{deactivateTarget.firstName} {deactivateTarget.lastName}</strong>
+            </div>
+            <div className="text-slate-400 flex flex-wrap gap-x-4">
+              <span>Employee ID: <strong className="text-emerald-400 font-mono">{deactivateTarget.employeeId || deactivateTarget.uid || '-'}</strong></span>
+              <span>HQ: <strong className="text-sky-400">{deactivateTarget.hq || '-'}</strong></span>
+              <span>Designation: <strong className="text-amber-400">{deactivateTarget.designation || '-'}</strong></span>
+            </div>
+          </div>
+
+          <div className="bg-rose-950/30 border border-rose-500/30 p-3 rounded-lg mb-4 text-xs text-rose-300/90 leading-relaxed">
+            ⚠️ <strong>Action Notice:</strong> Deactivating this user will immediately block their login to the mobile application and portal. Their historical records and reporting data will be preserved.
+          </div>
+
+          <div className="space-y-4 mb-6">
+            <div>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Effective De-activation Date *
+              </label>
+              <input 
+                type="date" 
+                required
+                value={deactivateDate} 
+                onChange={e => setDeactivateDate(e.target.value)} 
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-white focus:border-rose-500 focus:outline-none" 
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Reason Category *
+              </label>
+              <select 
+                value={reasonCategory}
+                onChange={e => setReasonCategory(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-white focus:border-rose-500 focus:outline-none cursor-pointer"
+              >
+                <option value="Resigned">Resigned</option>
+                <option value="Terminated">Terminated / Dismissed</option>
+                <option value="Absconding">Absconding / Left without notice</option>
+                <option value="Medical Leave">Extended / Medical Leave</option>
+                <option value="Transferred">Transferred to another branch</option>
+                <option value="Other">Other (Specify below)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                Specific Reason / Administrative Remarks
+              </label>
+              <textarea 
+                rows={2}
+                value={customReason} 
+                onChange={e => setCustomReason(e.target.value)} 
+                placeholder="Enter remarks or details for this deactivation..." 
+                className="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 px-3 text-xs text-white focus:border-rose-500 focus:outline-none resize-none placeholder-slate-500" 
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={() => setDeactivateTarget(null)} 
+              className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              disabled={deactivateLoading || !deactivateDate} 
+              onClick={handleConfirmDeactivate} 
+              className="px-5 py-2 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-rose-900/30"
+            >
+              {deactivateLoading ? 'Deactivating...' : 'Confirm De-activation'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReactivateModal = () => {
+    if (!reactivateTarget) return null;
+    return (
+      <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in-95 duration-150">
+          <button 
+            type="button"
+            onClick={() => setReactivateTarget(null)} 
+            className="absolute right-4 top-4 text-slate-400 hover:text-white transition-colors"
+          >
+            <X size={18} />
+          </button>
+          
+          <div className="flex items-center gap-2.5 mb-4 text-emerald-400">
+            <UserCheck size={22} />
+            <h3 className="text-base font-bold text-white uppercase tracking-wider">
+              Re-activate {isAdmin ? 'Admin' : 'User'} Account
+            </h3>
+          </div>
+
+          <div className="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60 mb-4 text-xs space-y-1">
+            <div className="text-slate-300">
+              User: <strong className="text-white text-sm">{reactivateTarget.firstName} {reactivateTarget.lastName}</strong>
+            </div>
+            <div className="text-slate-400">
+              Employee ID: <strong className="text-emerald-400 font-mono">{reactivateTarget.employeeId || reactivateTarget.uid || '-'}</strong>
+            </div>
+            {reactivateTarget.deactivateReason && (
+              <div className="text-amber-400 text-[11px] pt-1">
+                Previous Reason: {reactivateTarget.deactivateReason} ({reactivateTarget.deactivateDate || '-'})
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-slate-300 mb-6 leading-relaxed">
+            Are you sure you want to re-activate this account? The user will immediately be able to log in to the portal and mobile application.
+          </p>
+
+          <div className="flex justify-end gap-3">
+            <button 
+              type="button" 
+              onClick={() => setReactivateTarget(null)} 
+              className="px-4 py-2 rounded-lg text-xs font-bold text-slate-400 hover:bg-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              type="button" 
+              disabled={reactivateLoading} 
+              onClick={handleConfirmReactivate} 
+              className="px-5 py-2 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50 flex items-center gap-1.5 shadow-lg shadow-emerald-900/30"
+            >
+              {reactivateLoading ? 'Activating...' : 'Confirm Activation'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (activationMode) {
     return (
       <div className="max-w-full">
-        <div className="flex items-center justify-between mb-8">
-          <button onClick={() => setActivationMode(false)} className="text-sky-400 hover:text-white font-bold flex items-center gap-2 uppercase tracking-wider text-sm transition-colors">
-            <ArrowLeft size={16} /> Activation Control
+        {/* Navigation & Header */}
+        <div className="flex items-center justify-between mb-4">
+          <button 
+            onClick={() => { setActivationMode(false); setSearchQuery(''); }} 
+            className="text-sky-400 hover:text-white font-bold flex items-center gap-2 uppercase tracking-wider text-xs md:text-sm transition-colors"
+          >
+            <ArrowLeft size={16} /> Back to {isAdmin ? 'Admin' : 'User'} Info
           </button>
         </div>
-        <div className="bg-sky-900/30 border border-sky-500/30 p-4 rounded-xl mb-6">
-          <p className="text-sm text-sky-200/80 leading-relaxed">
-            Using this feature the admin can de-activate any user's account. The Deactivated account user cannot login into the account but the admin and other managers will still be able to access his data. The de-activated accounts will not charged by Medorn, however, the admin cannot activate an account within 30 days before the de-activation date.
+
+        {/* Informational Guidance Banner */}
+        <div className="bg-sky-950/40 border border-sky-500/30 p-3.5 rounded-xl mb-4">
+          <p className="text-xs text-sky-200/90 leading-relaxed">
+            Using this feature, administrators can de-activate any {isAdmin ? 'admin' : 'user'} account. Deactivated accounts cannot log into the mobile field app or web portal, but all historical records, doctor calls, sales, and reports remain permanently accessible. Access can be restored at any time.
           </p>
         </div>
-        <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
-        <div className="w-full flex flex-col mt-4 bg-slate-900 border border-slate-800 shadow-sm">
-          <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
-            <table className="w-full text-left border-collapse relative whitespace-nowrap">
-              <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
-                <tr className="border-b border-slate-700/50 text-slate-300">
-                  <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Sr No.</th>
-                  <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800">Name</th>
-                  <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">De-Activate User</th>
-                  <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">Reason</th>
-                  <th className="border-r border-slate-700 p-4 font-bold uppercase tracking-wider text-xs bg-slate-800 text-center">De-activated Date</th>
+
+        {/* Filter & Search Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 bg-slate-800/60 p-3 rounded-xl border border-slate-700/60 shadow-sm">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Folder:</label>
+              <select 
+                value={statusFilter} 
+                onChange={e => { setStatusFilter(e.target.value as any); setCurrentPage(1); }}
+                className="bg-slate-900 border border-slate-700 text-white font-bold text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500 cursor-pointer shadow-sm"
+              >
+                <option value="Active">Active Users ({activeProfiles.length})</option>
+                <option value="Deactivated">De-activated Users ({deactivatedProfiles.length})</option>
+                <option value="All">All Users ({profiles.length})</option>
+              </select>
+            </div>
+            <div className="h-4 w-[1px] bg-slate-700 hidden sm:block"></div>
+            <h3 className="text-xs md:text-sm font-bold text-slate-300 tracking-wider uppercase">
+              SHOWING ({filteredProfiles.length}) {statusFilter === 'Active' ? 'ACTIVE USERS' : statusFilter === 'Deactivated' ? 'DE-ACTIVATED USERS' : 'ENTRIES'}
+            </h3>
+          </div>
+
+          {/* Right-aligned Search Bar */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Search by name, ID, HQ..." 
+                value={searchQuery}
+                onChange={e => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="bg-slate-900 border border-slate-700 text-white text-xs rounded-lg pl-9 pr-8 py-1.5 w-60 md:w-72 focus:outline-none focus:border-sky-500 placeholder-slate-500 transition-colors"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => { setSearchQuery(''); setCurrentPage(1); }}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  title="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Free-Flow Table Container (No max-h-[60vh] / No Inner Vertical Scrollbar) */}
+        <div className="w-full flex flex-col bg-slate-900 border border-slate-800 rounded-xl shadow-md overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse whitespace-nowrap">
+              <thead className="bg-slate-800 shadow-sm">
+                <tr className="border-b border-slate-700 text-slate-300 text-xs">
+                  <th className="border-r border-slate-700 py-3 px-4 font-bold uppercase tracking-wider text-center w-16">Sr No.</th>
+                  <th className="border-r border-slate-700 py-3 px-4 font-bold uppercase tracking-wider">Name</th>
+                  <th className="border-r border-slate-700 py-3 px-4 font-bold uppercase tracking-wider text-center w-36">De-Activate User</th>
+                  <th className="border-r border-slate-700 py-3 px-4 font-bold uppercase tracking-wider text-center">Reason</th>
+                  <th className="border-r border-slate-700 py-3 px-4 font-bold uppercase tracking-wider text-center w-40">De-activated Date</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/50">
-                {paginated.map((p, i) => (
-                  <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors">
-                    <td className="border-r border-slate-700 p-4 text-slate-300">{(currentPage - 1) * pageSize + i + 1}</td>
-                    <td className="border-r border-slate-700 p-4 text-white font-bold">{p.firstName} {p.lastName}</td>
-                    <td className="border-r border-slate-700 p-4 text-center">
-                       <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={p.status === 'Active'} onChange={() => handleToggleStatus(p._id, p.status)} />
-                        <div className="w-11 h-6 bg-slate-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500"></div>
-                      </label>
+                {activationPaginated.map((p, i) => {
+                  const isActive = p.status === 'Active' || !p.status;
+                  return (
+                    <tr key={p._id} className="border-b border-slate-700/50 hover:bg-slate-800/60 transition-colors text-xs">
+                      <td className="border-r border-slate-700/70 py-2.5 px-4 text-slate-300 text-center font-medium">
+                        {(currentPage - 1) * pageSize + i + 1}
+                      </td>
+                      <td className="border-r border-slate-700/70 py-2.5 px-4 text-white font-bold">
+                        <div className="flex flex-col">
+                          <span>{p.firstName} {p.lastName}</span>
+                          <span className="text-[10px] text-slate-400 font-mono font-normal">
+                            {p.employeeId || p.uid || ''} {p.hq ? `• ${p.hq}` : ''}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="border-r border-slate-700/70 py-2.5 px-4 text-center">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={isActive} 
+                            onChange={() => handleToggleClick(p)} 
+                          />
+                          <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-sky-500 shadow-inner"></div>
+                        </label>
+                      </td>
+                      <td className="border-r border-slate-700/70 py-2.5 px-4 text-center text-xs">
+                        {isActive ? (
+                          <span className="text-emerald-400/80 font-medium bg-emerald-500/10 px-2.5 py-0.5 rounded-full text-[11px] border border-emerald-500/20">Active</span>
+                        ) : (
+                          <span className="text-amber-400 font-semibold bg-amber-500/10 px-2.5 py-0.5 rounded-full text-[11px] border border-amber-500/20">{p.deactivateReason || 'Deactivated'}</span>
+                        )}
+                      </td>
+                      <td className="border-r border-slate-700/70 py-2.5 px-4 text-center text-xs font-mono">
+                        {isActive ? (
+                          <span className="text-slate-500 font-medium">N/A</span>
+                        ) : (
+                          <span className="text-rose-300 font-semibold">{p.deactivateDate || 'N/A'}</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {activationPaginated.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="py-12 text-center text-slate-400 font-medium text-xs">
+                      {searchQuery 
+                        ? `No matching users found for "${searchQuery}".` 
+                        : statusFilter === 'Active' 
+                        ? "No active users found." 
+                        : statusFilter === 'Deactivated' 
+                        ? "No deactivated users in this folder. All users are currently active." 
+                        : "No users found."}
                     </td>
-                    <td className="border-r border-slate-700 p-4 text-slate-400 text-center text-sm">{p.status === 'Deactivated' ? (p.deactivateReason || 'N/A') : 'N/A'}</td>
-                    <td className="border-r border-slate-700 p-4 text-slate-400 text-center text-sm">{p.status === 'Deactivated' ? (p.deactivateDate || 'N/A') : 'N/A'}</td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
-          <TableFooter data={profiles} fileName={isAdmin ? "Admins" : "Users"} currentPage={currentPage} setCurrentPage={setCurrentPage} pageSize={pageSize} setPageSize={setPageSize} />
+          <TableFooter 
+            data={filteredProfiles} 
+            fileName={isAdmin ? (statusFilter === 'Deactivated' ? "Deactivated-Admins" : "Admins") : (statusFilter === 'Deactivated' ? "Deactivated-Users" : "Users")} 
+            currentPage={currentPage} 
+            setCurrentPage={setCurrentPage} 
+            pageSize={pageSize} 
+            setPageSize={setPageSize} 
+          />
         </div>
+        {renderDeactivateModal()}
+        {renderReactivateModal()}
       </div>
     );
   }
@@ -1336,7 +1685,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
       </div>
       <h3 className="text-lg font-bold text-slate-400 mb-4 tracking-wider uppercase">SHOWING ({profiles.length}) ENTRIES</h3>
       <div className="w-full flex flex-col mt-4 bg-slate-900 border border-slate-800 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
+        <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse relative whitespace-nowrap">
             <thead className="sticky top-0 bg-slate-800 z-10 shadow-md">
                 <tr className="border-b border-slate-700 text-slate-300">
@@ -1361,7 +1710,7 @@ function ProfileInfoTab({ isAdmin }: { isAdmin: boolean }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700">
-                {paginated.map((p, i) => (
+                {infoPaginated.map((p, i) => (
                   <tr key={p._id} className="border-b border-slate-700 hover:bg-slate-700/50 transition-colors text-xs">
                     <td className="border-r border-slate-700 p-3 text-slate-300 bg-slate-800/90 sticky left-0 z-10">{(currentPage - 1) * pageSize + i + 1}</td>
                     <td className="border-r border-slate-700 p-3 text-white font-bold bg-slate-800/90 sticky left-[50px] z-10">{p.firstName} {p.lastName}</td>

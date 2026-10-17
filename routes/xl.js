@@ -70,6 +70,13 @@ router.post('/admin-login', async (req, res) => {
             return res.json({ success: false, message: 'Invalid XLA credentials. Use your XLA admin login.' });
         }
 
+        if (admin.status === 'Deactivated' || admin.status === 'Inactive') {
+            const deactMsg = admin.deactivateDate 
+                ? `Your admin account was deactivated on ${admin.deactivateDate}. Reason: ${admin.deactivateReason || 'Administrative decision'}. Please contact administrator.`
+                : `Your admin account is deactivated. Contact administrator.`;
+            return res.json({ success: false, message: deactMsg });
+        }
+
         // Verify password (supports both bcrypt-hashed and plain text)
         const storedPass = admin.password || '';
         let passwordMatch = false;
@@ -1157,8 +1164,11 @@ router.post('/login', async (req, res) => {
         if (!user) {
             return res.json({ success: false, message: 'Invalid email or password' });
         }
-        if (user.status === 'Deactivated') {
-            return res.json({ success: false, message: 'Your account is deactivated. Contact admin.' });
+        if (user.status === 'Deactivated' || user.status === 'Inactive') {
+            const deactMsg = user.deactivateDate 
+                ? `Your account was deactivated on ${user.deactivateDate}. Reason: ${user.deactivateReason || 'Administrative decision'}. Please contact administrator.`
+                : `Your account is deactivated. Contact administrator.`;
+            return res.json({ success: false, message: deactMsg });
         }
         
         // Remove password before sending to frontend

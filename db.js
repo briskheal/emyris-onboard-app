@@ -94,6 +94,10 @@ await XlTarget.sync({ alter: true });
         try { await sequelize.query("ALTER TABLE onboard_hq ADD COLUMN IF NOT EXISTS \"uid\" VARCHAR(50);"); } catch(e) {}
         try { await sequelize.query("ALTER TABLE onboard_hqs ADD COLUMN IF NOT EXISTS \"state\" VARCHAR(255);"); } catch(e) {}
         try { await sequelize.query("ALTER TABLE onboard_hqs ADD COLUMN IF NOT EXISTS \"uid\" VARCHAR(50);"); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_users ADD COLUMN IF NOT EXISTS "deactivateReason" VARCHAR(255);'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_users ADD COLUMN IF NOT EXISTS "deactivateDate" VARCHAR(255);'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "deactivateReason" VARCHAR(255);'); } catch(e) {}
+        try { await sequelize.query('ALTER TABLE xl_admins ADD COLUMN IF NOT EXISTS "deactivateDate" VARCHAR(255);'); } catch(e) {}
         await XlStockist.sync({ alter: true }).catch(() => {});
         await XlProduct.sync({ alter: true }).catch(() => {});
         try {
