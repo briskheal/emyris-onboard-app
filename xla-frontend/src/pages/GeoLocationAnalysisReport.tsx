@@ -67,6 +67,16 @@ interface AnalysisResponse {
   message?: string;
 }
 
+function toYYYYMMDD(str: string): string {
+  if (!str) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+    const parts = str.split('-');
+    return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+  }
+  return str;
+}
+
 export default function GeoLocationAnalysisReport() {
   const navigate = useNavigate();
 
@@ -462,7 +472,7 @@ export default function GeoLocationAnalysisReport() {
               </div>
               <input
                 type="date"
-                value={selectedDate}
+                value={toYYYYMMDD(selectedDate)}
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none"
               />
