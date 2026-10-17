@@ -186,6 +186,19 @@ function startCronJobs() {
         scheduled: true,
         timezone: "Asia/Kolkata"
     });
+
+    // Run every night at 11:55 PM IST for automated WebP map generation
+    cron.schedule('55 23 * * *', async () => {
+        try {
+            const { runDailyArchiveForDate } = require('./geoStaticMap');
+            await runDailyArchiveForDate();
+        } catch (err) {
+            console.error('Error in nightly geo-archive cron:', err);
+        }
+    }, {
+        scheduled: true,
+        timezone: "Asia/Kolkata"
+    });
 }
 
 module.exports = { startCronJobs, runExamReminderCron, runBirthdayCron };

@@ -7976,10 +7976,38 @@ router.get('/admin/geo-archive/export-zip', async (req, res) => {
         // 1. Build Excel workbook
         // Sheet 1: Daily Attendances
         const attRows = [
-            ['Date', 'Employee ID', 'Employee Name', 'Designation', 'HQ', 'Punch-In Time', 'Punch-Out Time', 'Punch-In Lat', 'Punch-In Lng', 'Punch-Out Lat', 'Punch-Out Lng', 'Day Remarks']
+            [
+                'Date', 'Employee ID', 'Employee Name', 'Designation', 'HQ', 
+                'Punch-In Time', 'Punch-Out Time', 
+                'Punch-In Lat', 'Punch-In Lng', 'Punch-Out Lat', 'Punch-Out Lng', 
+                'WebP Map File (In ZIP)', 'View WebP Map Online (Clickable)', 'Google Maps Route Link (Clickable)', 
+                'Day Remarks'
+            ]
         ];
         attendances.forEach(a => {
             const u = userMap[a.employeeId] || { name: a.employeeId, designation: '', hq: '' };
+            const mapFilename = `${a.employeeId}_${a.date}.webp`;
+            const webpUrl = `https://emyrishr.in/uploads/geo-archives/${prefix}/${mapFilename}`;
+            
+            let webpCell = '--';
+            let gmapsCell = '--';
+            let zipMapName = '--';
+
+            if (a.punchInLat || a.punchOutLat) {
+                zipMapName = `Maps/${mapFilename}`;
+                webpCell = { t: 's', v: 'Open WebP Map', l: { Target: webpUrl } };
+                
+                const startLat = a.punchInLat || a.punchOutLat;
+                const startLng = a.punchInLng || a.punchOutLng;
+                const endLat = a.punchOutLat || a.punchInLat;
+                const endLng = a.punchOutLng || a.punchInLng;
+                
+                if (startLat && startLng) {
+                    const gmapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${endLat},${endLng}`;
+                    gmapsCell = { t: 's', v: 'View Route in Google Maps', l: { Target: gmapsUrl } };
+                }
+            }
+
             attRows.push([
                 a.date,
                 a.employeeId,
@@ -7992,16 +8020,30 @@ router.get('/admin/geo-archive/export-zip', async (req, res) => {
                 a.punchInLng || '',
                 a.punchOutLat || '',
                 a.punchOutLng || '',
+                zipMapName,
+                webpCell,
+                gmapsCell,
                 a.dayRemarks || ''
             ]);
         });
 
         // Sheet 2: Chronological DCR Calls & Stops
         const dcrRows = [
-            ['Date', 'Employee ID', 'Employee Name', 'HQ', 'Entity Name', 'Entity Type', 'Check-In Time', 'Check-Out Time', 'Latitude', 'Longitude', 'Geo Address', 'Remarks / Stoppage Reason', 'Rating']
+            [
+                'Date', 'Employee ID', 'Employee Name', 'HQ', 
+                'Entity Name', 'Entity Type', 'Check-In Time', 'Check-Out Time', 
+                'Latitude', 'Longitude', 'View Stop on Google Maps (Clickable)', 
+                'Geo Address', 'Remarks / Stoppage Reason', 'Rating'
+            ]
         ];
         dcrs.forEach(d => {
             const u = userMap[d.employeeId] || { name: d.employeeId, hq: '' };
+            let stopGmapsCell = '--';
+            if (d.latitude && d.longitude) {
+                const stopUrl = `https://www.google.com/maps/search/?api=1&query=${d.latitude},${d.longitude}`;
+                stopGmapsCell = { t: 's', v: 'Open in Google Maps', l: { Target: stopUrl } };
+            }
+
             dcrRows.push([
                 d.date,
                 d.employeeId,
@@ -8013,6 +8055,7 @@ router.get('/admin/geo-archive/export-zip', async (req, res) => {
                 d.checkOutTime || '--',
                 d.latitude || '',
                 d.longitude || '',
+                stopGmapsCell,
                 d.geoAddress || '',
                 d.discussion || d.remarks || '',
                 d.rating || ''
