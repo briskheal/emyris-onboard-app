@@ -375,7 +375,7 @@ export default function Layout() {
           </div>
           
           {/* Main content area */}
-          <main className={`flex-1 pb-24 md:pb-0 ${location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/locations') ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+          <main className={`flex-1 min-h-0 flex flex-col pb-24 md:pb-0 ${location.pathname.startsWith('/admin/users') || location.pathname.startsWith('/admin/locations') || location.pathname.startsWith('/extras/primary-sales') || location.pathname.startsWith('/extras/secondary') ? 'overflow-hidden' : 'overflow-y-auto'}`}>
             <Outlet context={{ openDrawer: () => setIsDrawerOpen(true) }} />
           </main>
 

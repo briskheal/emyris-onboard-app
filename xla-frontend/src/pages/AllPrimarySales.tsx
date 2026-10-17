@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Edit2, Trash2, X , Home, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { formatMMDDYYYY } from '../utils/dateUtils';
 
 export default function AllPrimarySales() {
   const navigate = useNavigate();
@@ -176,9 +177,9 @@ export default function AllPrimarySales() {
                     return (
                       <tr key={sale._id} className="hover:bg-[#1a1a2e]/50 transition-colors">
                         <td className="p-3 text-center text-[#8b8baf] border-r border-[#3b3b5a]/50">{index + 1}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{sale.date || '-'}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{formatMMDDYYYY(sale.date)}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-medium text-white">{sale.invoiceNumber || '-'}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{sale.invoiceDate || '-'}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{formatMMDDYYYY(sale.invoiceDate)}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[150px]">{getStockistName(sale.stockist) || '-'}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[120px]">{sale.headquarter || '-'}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-[#8b8baf]">

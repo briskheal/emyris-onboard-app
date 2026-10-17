@@ -310,10 +310,10 @@ export default function SecondarySales() {
   if (loading) return <div className="min-h-screen bg-[#1a1a2e] flex items-center justify-center text-white">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-[#1a1a2e] flex flex-col font-sans relative">
-      <div className="sticky top-0 z-[80] bg-[#1a1a2e] pb-4 shadow-xl border-b border-[#3b3b5a]/80">
+    <div className="h-full flex flex-col bg-[#1a1a2e] font-sans overflow-hidden">
+      <div className="shrink-0 bg-[#1a1a2e] z-30 border-b border-[#3b3b5a]/80 pb-3 shadow-md">
       {/* HEADER */}
-      <div className="bg-[#1e1e30] border-b border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+      <div className="bg-[#1e1e30] border-b border-[#3b3b5a] px-4 py-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
         <div className="flex items-center gap-4">
             <button onClick={() => navigate('/admin')} className="text-slate-300 hover:text-emerald-400 transition-colors bg-[#27273f] p-2 rounded-lg" title="Go to Admin Menu">
               <Home size={18} />
@@ -406,24 +406,24 @@ export default function SecondarySales() {
           {/* Table */}
           </div>
       </div>
-      <div className="flex-1 px-4 md:px-6 pb-3">
+      <div className="flex-1 min-h-0 overflow-auto px-4 md:px-6 py-2">
         <div className="max-w-[1400px] w-full mx-auto">
-          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl relative z-[60] mb-96 overflow-x-auto custom-scrollbar">
+          <div className="bg-[#1e1e30] rounded-xl border border-[#3b3b5a] shadow-xl overflow-x-auto custom-scrollbar">
             <div className="min-w-[1200px]">
               <table className="w-full text-left border-collapse">
-                <thead>
+                <thead className="sticky top-0 z-20 bg-[#27273f] shadow-sm">
                   <tr className="bg-[#27273f] text-[#8b8baf] text-[10px] uppercase tracking-wider">
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-12">Sr</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a]">Product Name</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-[140px]">Price (₹)</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-orange-300">Opening<br/>Balance Qty</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-300">Received<br/>Qty</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-white">Total<br/>Quantity</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400">Sales<br/>Qty</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-purple-400">Free<br/>Stocks</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400">Sales<br/>Value</th>
-                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-amber-300">Closing<br/>Quantity</th>
-                    <th className="p-2 font-bold text-center w-12">Del</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-12 bg-[#27273f]">Sr</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] bg-[#27273f]">Product Name</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-[140px] bg-[#27273f]">Price (₹)</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-orange-300 bg-[#27273f]">Opening<br/>Balance Qty</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-300 bg-[#27273f]">Received<br/>Qty</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-white bg-[#27273f]">Total<br/>Quantity</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400 bg-[#27273f]">Sales<br/>Qty</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-purple-400 bg-[#27273f]">Free<br/>Stocks</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400 bg-[#27273f]">Sales<br/>Value</th>
+                    <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-amber-300 bg-[#27273f]">Closing<br/>Quantity</th>
+                    <th className="p-2 font-bold text-center w-12 bg-[#27273f]">Del</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -513,19 +513,19 @@ export default function SecondarySales() {
         </div>
       </div>
 
-      {/* FOOTER */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-[90] shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
-        <div className="flex gap-4 md:gap-8 mb-3 md:mb-0">
+      {/* FOOTER - CONFINED TO RIGHT SIDE BLOCK ONLY */}
+      <div className="shrink-0 bg-[#1e1e30] border-t border-[#3b3b5a] px-4 py-2.5 md:py-3 flex flex-col md:flex-row justify-between items-center z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+        <div className="flex gap-4 md:gap-8 mb-2 md:mb-0">
           <div className="flex flex-col">
             <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Total Sales Value</span>
-            <span className="text-xl font-black text-sky-400">₹ {totals.amount.toFixed(2)}</span>
+            <span className="text-lg md:text-xl font-black text-sky-400">₹ {totals.amount.toFixed(2)}</span>
           </div>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <button onClick={() => handleSave(true)} className="flex-1 md:flex-none bg-[#27273f] hover:bg-[#3b3b5a] text-white px-6 py-2 rounded-lg font-bold transition-colors flex items-center justify-center gap-2">
+          <button onClick={() => handleSave(true)} className="flex-1 md:flex-none bg-[#27273f] hover:bg-[#3b3b5a] text-white px-5 py-2 rounded-lg font-bold transition-colors flex items-center justify-center gap-2 text-xs md:text-sm">
             <Save size={16} /> Save as Draft
           </button>
-          <button onClick={() => handleSave(false)} className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center justify-center gap-2">
+          <button onClick={() => handleSave(false)} className="flex-1 md:flex-none bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center justify-center gap-2 text-xs md:text-sm">
             <CheckCircle size={16} /> {id ? 'Update Data' : 'Submit Data'}
           </button>
         </div>

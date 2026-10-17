@@ -5013,7 +5013,8 @@ router.post('/primary-sales/save', async (req, res) => {
         
         const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
-        const dObj = new Date(savedDate);
+        const dateForMonth = savedInvDate || savedDate;
+        const dObj = new Date(dateForMonth);
         const month = reqMonth || (!isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' }));
         const year = reqYear || (!isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString());
 
@@ -5338,6 +5339,19 @@ router.get('/primary-sales/all', async (req, res) => {
     try {
         const { employeeId, designation, month, year } = req.query;
         let whereClause = {};
+
+        // Self-heal records where month was set from entry date instead of invoiceDate
+        try {
+            const { sequelize } = require('../db');
+            await sequelize.query(`
+                UPDATE "XlPrimarySales" 
+                SET "month" = TRIM(TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'Mon')),
+                    "year" = TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'YYYY')
+                WHERE "invoiceDate" IS NOT NULL 
+                  AND "invoiceDate" ~ '^\\d{4}-\\d{2}-\\d{2}$'
+                  AND "month" != TRIM(TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'Mon'))
+            `).catch(() => {});
+        } catch(e) {}
         
         if (month) {
             const allMonthsFull = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -5347,9 +5361,33 @@ router.get('/primary-sales/all', async (req, res) => {
             if (sIdx !== -1) { fullM = allMonthsFull[sIdx]; mm = sIdx + 1; }
             else { let fIdx = allMonthsFull.indexOf(month); if (fIdx !== -1) { shortM = allMonthsShort[fIdx]; mm = fIdx + 1; } }
             const monthVariants = [month, fullM, shortM, String(mm).padStart(2, '0'), String(mm)];
-            whereClause.month = { [require('sequelize').Op.in]: monthVariants };
+            const padM = String(mm).padStart(2, '0');
+            const { Op } = require('sequelize');
+
+            if (year) {
+                whereClause[Op.and] = whereClause[Op.and] || [];
+                whereClause[Op.and].push({
+                    [Op.or]: [
+                        { invoiceDate: { [Op.like]: `${year}-${padM}%` } },
+                        { invoiceDate: { [Op.like]: `${padM}-%-${year}` } },
+                        {
+                            [Op.and]: [
+                                { [Op.or]: [{ invoiceDate: null }, { invoiceDate: '' }] },
+                                { month: { [Op.in]: monthVariants } },
+                                { year: String(year) }
+                            ]
+                        }
+                    ]
+                });
+            } else {
+                whereClause[Op.or] = [
+                    { invoiceDate: { [Op.like]: `%-${padM}-%` } },
+                    { month: { [Op.in]: monthVariants } }
+                ];
+            }
+        } else if (year) {
+            whereClause.year = year;
         }
-        if (year) whereClause.year = year;
         
         // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
         // XL mobile users see only their own records (filtered by employeeId)
@@ -5407,7 +5445,8 @@ router.put('/primary-sales/update/:id', async (req, res) => {
         
         const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
-        const dObj = new Date(savedDate);
+        const dateForMonth = savedInvDate || savedDate;
+        const dObj = new Date(dateForMonth);
         const month = !isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
         const year = !isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString();
 
@@ -7552,6 +7591,19 @@ router.get('/secondary-sales/all', async (req, res) => {
     try {
         const { employeeId, designation, month, year } = req.query;
         let whereClause = {};
+
+        // Self-heal records where month was set from entry date instead of invoiceDate
+        try {
+            const { sequelize } = require('../db');
+            await sequelize.query(`
+                UPDATE "XlSecondarySales" 
+                SET "month" = TRIM(TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'Mon')),
+                    "year" = TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'YYYY')
+                WHERE "invoiceDate" IS NOT NULL 
+                  AND "invoiceDate" ~ '^\\d{4}-\\d{2}-\\d{2}$'
+                  AND "month" != TRIM(TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'Mon'))
+            `).catch(() => {});
+        } catch(e) {}
         
         if (month) {
             const allMonthsFull = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -7561,9 +7613,33 @@ router.get('/secondary-sales/all', async (req, res) => {
             if (sIdx !== -1) { fullM = allMonthsFull[sIdx]; mm = sIdx + 1; }
             else { let fIdx = allMonthsFull.indexOf(month); if (fIdx !== -1) { shortM = allMonthsShort[fIdx]; mm = fIdx + 1; } }
             const monthVariants = [month, fullM, shortM, String(mm).padStart(2, '0'), String(mm)];
-            whereClause.month = { [require('sequelize').Op.in]: monthVariants };
+            const padM = String(mm).padStart(2, '0');
+            const { Op } = require('sequelize');
+
+            if (year) {
+                whereClause[Op.and] = whereClause[Op.and] || [];
+                whereClause[Op.and].push({
+                    [Op.or]: [
+                        { invoiceDate: { [Op.like]: `${year}-${padM}%` } },
+                        { invoiceDate: { [Op.like]: `${padM}-%-${year}` } },
+                        {
+                            [Op.and]: [
+                                { [Op.or]: [{ invoiceDate: null }, { invoiceDate: '' }] },
+                                { month: { [Op.in]: monthVariants } },
+                                { year: String(year) }
+                            ]
+                        }
+                    ]
+                });
+            } else {
+                whereClause[Op.or] = [
+                    { invoiceDate: { [Op.like]: `%-${padM}-%` } },
+                    { month: { [Op.in]: monthVariants } }
+                ];
+            }
+        } else if (year) {
+            whereClause.year = year;
         }
-        if (year) whereClause.year = year;
         
         // XLA admin (designation null/empty, 'ADMIN', or 'HO') sees ALL records
         const isXlaAdminSec = !designation || designation === 'ADMIN' || designation === 'HO' || designation === 'admin' || designation === 'null' || designation === 'undefined';
@@ -7640,8 +7716,12 @@ router.post('/secondary-sales/save', async (req, res) => {
     try {
         const { employeeId, date, month: reqMonth, year: reqYear, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
         
-        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
-        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
+        const dateForMonth = savedInvDate || savedDate;
+        const dObj = new Date(dateForMonth);
+        const month = reqMonth || (!isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' }));
+        const year = reqYear || (!isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString());
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
         
@@ -7655,10 +7735,10 @@ router.post('/secondary-sales/save', async (req, res) => {
 
         const sale = await XlSecondarySales.create({
             employeeId,
-            date,
+            date: savedDate,
             month,
             year,
-            invoiceDate,
+            invoiceDate: savedInvDate,
             invoiceNumber,
             division,
             headquarter: finalHq,
@@ -7697,8 +7777,13 @@ router.put('/secondary-sales/update/:id', async (req, res) => {
     try {
         const { XlSecondarySalesItem } = require('../db');
         const { date, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData, status } = req.body;
-        const month = date ? new Date(date).toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
-        const year = date ? new Date(date).getFullYear().toString() : new Date().getFullYear().toString();
+        
+        const savedDate = normalizeDateStr(date) || new Date().toISOString().split('T')[0];
+        const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
+        const dateForMonth = savedInvDate || savedDate;
+        const dObj = new Date(dateForMonth);
+        const month = !isNaN(dObj.getTime()) ? dObj.toLocaleString('en-US', { month: 'short' }) : new Date().toLocaleString('en-US', { month: 'short' });
+        const year = !isNaN(dObj.getTime()) ? dObj.getFullYear().toString() : new Date().getFullYear().toString();
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
 
@@ -7710,7 +7795,7 @@ router.put('/secondary-sales/update/:id', async (req, res) => {
             if (stData) finalHq = stData.headquarter;
         }
 
-        const updateFields = { date, month, year, invoiceDate, invoiceNumber, division, headquarter: finalHq, stockist, amount, productsData: JSON.stringify(products) };
+        const updateFields = { date: savedDate, month, year, invoiceDate: savedInvDate, invoiceNumber, division, headquarter: finalHq, stockist, amount, productsData: JSON.stringify(products) };
         if (status) updateFields.status = status;
 
         await XlSecondarySales.update(updateFields, { where: { _id: req.params.id } });

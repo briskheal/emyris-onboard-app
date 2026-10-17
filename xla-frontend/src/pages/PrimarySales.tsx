@@ -359,9 +359,9 @@ export default function PrimarySales() {
   };
 
   return (
-    <div className="min-h-screen bg-[#161625] flex flex-col text-[#d1d5db] font-sans">
-      {/* STICKY TOP BLOCK */}
-      <div className="sticky top-0 z-40 bg-[#161625] shadow-md border-b border-[#3b3b5a]/70">
+    <div className="h-full flex flex-col bg-[#161625] text-[#d1d5db] font-sans overflow-hidden">
+      {/* FROZEN TOP HEADER BLOCK */}
+      <div className="shrink-0 bg-[#161625] border-b border-[#3b3b5a]/70 z-30">
       
         {/* HEADER */}
         <div className="flex items-center justify-between px-3 md:px-4 py-1.5 bg-[#1a1a2e] border-b border-[#3b3b5a]/60 shrink-0">
@@ -491,27 +491,27 @@ export default function PrimarySales() {
         </div>
       </div>
 
-      {/* SCROLLING TABLE BLOCK */}
-      <div className="flex-1 px-3 md:px-4 py-2">
+      {/* SCROLLING TABLE BLOCK WITH FROZEN THEAD */}
+      <div className="flex-1 min-h-0 overflow-auto px-3 md:px-4 py-2">
         {/* DATA TABLE */}
-        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 mb-24">
+        <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50">
           <div className="w-full">
             <table className="w-full text-left border-collapse min-w-[1000px]">
-              <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
+              <thead className="sticky top-0 z-20 bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a] shadow-sm">
                 <tr>
-                  <th className="p-2 font-bold text-center border-r border-[#3b3b5a] w-12 max-w-[48px]">Sr</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] min-w-[250px] w-auto">Product</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-[140px]">Price</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Qty</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Free Stocks</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Total Qty</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center">Discnt %</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400">Final Price</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Purc. Rtn</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400 w-[140px]">Rtn Price</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400">Rtn Value</th>
-                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400">Final Value</th>
-                  <th className="p-2 font-bold text-center">Del</th>
+                  <th className="p-2 font-bold text-center border-r border-[#3b3b5a] w-12 max-w-[48px] bg-[#1a1a2e]">Sr</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] min-w-[250px] w-auto bg-[#1a1a2e]">Product</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center w-[140px] bg-[#1a1a2e]">Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center bg-[#1a1a2e]">Qty</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center bg-[#1a1a2e]">Free Stocks</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center bg-[#1a1a2e]">Total Qty</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center bg-[#1a1a2e]">Discnt %</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-sky-400 bg-[#1a1a2e]">Final Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400 bg-[#1a1a2e]">Purc. Rtn</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400 w-[140px] bg-[#1a1a2e]">Rtn Price</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-rose-400 bg-[#1a1a2e]">Rtn Value</th>
+                  <th className="p-2 font-bold border-r border-[#3b3b5a] text-center text-emerald-400 bg-[#1a1a2e]">Final Value</th>
+                  <th className="p-2 font-bold text-center bg-[#1a1a2e]">Del</th>
                 </tr>
               </thead>
               <tbody>
@@ -663,27 +663,27 @@ export default function PrimarySales() {
         </div>
       </div>
 
-      {/* FLOATING TOTALS FOOTER */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#1e1e30] border-t border-[#3b3b5a] p-4 flex flex-col md:flex-row justify-between items-center z-[90] shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
-        <div className="flex gap-4 md:gap-8 mb-3 md:mb-0 flex-wrap">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Gross Inv Value</span>
-              <span className="text-xl font-black text-sky-400">₹ {totals.grossInvValue.toFixed(2)}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Salable Rtn</span>
-              <span className="text-xl font-black text-rose-400">₹ {totals.salableRtnValue.toFixed(2)}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Expiry Rtn</span>
-              <span className="text-xl font-black text-rose-500">₹ {totals.expiryRtnValue.toFixed(2)}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Net Inv Value</span>
-              <span className="text-xl font-black text-emerald-400">₹ {totals.netInvValue.toFixed(2)}</span>
-            </div>
+      {/* TOTALS FOOTER - CONFINED TO RIGHT SIDE BLOCK ONLY */}
+      <div className="shrink-0 bg-[#1e1e30] border-t border-[#3b3b5a] px-4 py-2.5 md:py-3 flex flex-col md:flex-row justify-between items-center z-30 shadow-[0_-4px_20px_rgba(0,0,0,0.5)]">
+        <div className="flex gap-4 md:gap-8 mb-2 md:mb-0 flex-wrap">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Gross Inv Value</span>
+            <span className="text-lg md:text-xl font-black text-sky-400">₹ {totals.grossInvValue.toFixed(2)}</span>
           </div>
-          <button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white px-8 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Salable Rtn</span>
+            <span className="text-lg md:text-xl font-black text-rose-400">₹ {totals.salableRtnValue.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Expiry Rtn</span>
+            <span className="text-lg md:text-xl font-black text-rose-500">₹ {totals.expiryRtnValue.toFixed(2)}</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[10px] text-[#8b8baf] font-bold uppercase tracking-wider">Net Inv Value</span>
+            <span className="text-lg md:text-xl font-black text-emerald-400">₹ {totals.netInvValue.toFixed(2)}</span>
+          </div>
+        </div>
+        <button onClick={handleSave} className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 md:px-8 py-2 rounded-lg font-bold shadow-lg transition-colors flex items-center gap-2 text-xs md:text-sm">
           {id ? 'Update Invoice' : 'Save Invoice'}
         </button>
       </div>
