@@ -103,6 +103,14 @@ export default function GeoLocationAnalysisReport() {
   const [exportingZip, setExportingZip] = useState(false);
   const [pruningDb, setPruningDb] = useState(false);
   const [pruneResult, setPruneResult] = useState<string | null>(null);
+  const [saveStatusMsg, setSaveStatusMsg] = useState<string | null>(null);
+
+  // Batch Generation for All Users State
+  const [batchGenerating, setBatchGenerating] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ current: number; total: number; label: string } | null>(null);
+  const [batchResult, setBatchResult] = useState<string | null>(null);
+  const batchMapContainerRef = useRef<HTMLDivElement | null>(null);
+  const batchMapInstanceRef = useRef<L.Map | null>(null);
 
   // Map references
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -529,16 +537,24 @@ export default function GeoLocationAnalysisReport() {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
 
-        // 2. Upload to server archive folder for monthly ZIP inclusion
+        // 2. Upload to server archive folder and update database record
         const reader = new FileReader();
         reader.readAsDataURL(blob);
         reader.onloadend = async () => {
           const base64data = reader.result;
-          await axios.post('/api/xl/admin/geo-archive/upload-map', {
-            employeeId: data.user.employeeId || data.user._id,
-            date: data.date,
-            webpBase64: base64data
-          }).catch(e => console.warn('Could not cache WebP to server', e.message));
+          try {
+            const res = await axios.post('/api/xl/admin/geo-archive/upload-map', {
+              employeeId: data.user.employeeId || data.user._id,
+              date: data.date,
+              webpBase64: base64data
+            });
+            if (res.data.success) {
+              setSaveStatusMsg(`✅ WebP Route Map successfully saved to Database & Server Storage (${res.data.path})!`);
+              setTimeout(() => setSaveStatusMsg(null), 5000);
+            }
+          } catch(e: any) {
+            console.warn('Could not cache WebP to server', e.message);
+          }
         };
 
         setCapturingWebp(false);
@@ -547,6 +563,171 @@ export default function GeoLocationAnalysisReport() {
       console.error('Error generating WebP:', err);
       alert('Could not capture map image: ' + err.message);
       setCapturingWebp(false);
+    }
+  };
+
+  // Helper to render and upload a map offscreen
+  const renderAndUploadOffscreenMap = async (employeeId: string, date: string, routeData: AnalysisResponse) => {
+    if (!batchMapContainerRef.current) return;
+
+    if (batchMapInstanceRef.current) {
+      try { batchMapInstanceRef.current.remove(); } catch(e) {}
+      batchMapInstanceRef.current = null;
+    }
+    if ((batchMapContainerRef.current as any)._leaflet_id) {
+      (batchMapContainerRef.current as any)._leaflet_id = null;
+    }
+
+    const map = L.map(batchMapContainerRef.current, {
+      center: [20.5937, 78.9629],
+      zoom: 14,
+      zoomControl: false,
+      attributionControl: false
+    });
+    batchMapInstanceRef.current = map;
+
+    // Use tile-proxy for CORS-enabled roadmap tiles
+    const tiles = L.tileLayer('/api/xl/tile-proxy?lyrs=m&x={x}&y={y}&z={z}', {
+      maxZoom: 19,
+      crossOrigin: 'anonymous'
+    });
+    tiles.addTo(map);
+
+    const validPoints = (routeData.routePoints || []).filter(
+      p => p.lat != null && p.lng != null && !isNaN(Number(p.lat)) && !isNaN(Number(p.lng)) &&
+           !(Number(p.lat) === 0 && Number(p.lng) === 0)
+    );
+
+    if (validPoints.length > 0) {
+      const latLngs: [number, number][] = [];
+      const clusters: { center: [number, number]; items: typeof validPoints }[] = [];
+
+      validPoints.forEach((p) => {
+        const lat = Number(p.lat);
+        const lng = Number(p.lng);
+        latLngs.push([lat, lng]);
+
+        let matched = false;
+        for (const cl of clusters) {
+          if (Math.hypot(cl.center[0] - lat, cl.center[1] - lng) < 0.00025) {
+            cl.items.push(p);
+            matched = true;
+            break;
+          }
+        }
+        if (!matched) clusters.push({ center: [lat, lng], items: [p] });
+      });
+
+      // Markers with radial dispersion
+      clusters.forEach(cl => {
+        const total = cl.items.length;
+        cl.items.forEach((p, idx) => {
+          let rLat = Number(p.lat);
+          let rLng = Number(p.lng);
+          if (total > 1) {
+            const angle = (idx / total) * 2 * Math.PI - Math.PI / 2;
+            const radius = 0.00028;
+            rLat = cl.center[0] + radius * Math.cos(angle);
+            rLng = cl.center[1] + (radius / Math.cos(cl.center[0] * Math.PI / 180)) * Math.sin(angle);
+          }
+
+          let iconHtml = '';
+          if (p.type === 'punch-in') {
+            iconHtml = '<div style="background-color:#10b981;color:white;width:30px;height:30px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;">IN</div>';
+          } else if (p.type === 'punch-out') {
+            iconHtml = '<div style="background-color:#ef4444;color:white;width:30px;height:30px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;">OUT</div>';
+          } else {
+            const bg = p.isExtendedStoppage ? '#f59e0b' : '#38bdf8';
+            iconHtml = `<div style="background-color:${bg};color:#0f172a;width:28px;height:28px;border-radius:50%;border:2px solid white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;">${p.seq}</div>`;
+          }
+
+          const icon = L.divIcon({ html: iconHtml, className: 'batch-pin', iconSize: [30, 30], iconAnchor: [15, 15] });
+          L.marker([rLat, rLng], { icon }).addTo(map);
+        });
+      });
+
+      // Route Polyline (Black)
+      if (latLngs.length > 1) {
+        const polyline = L.polyline(latLngs, { color: '#000000', weight: 4.5, opacity: 0.95, lineJoin: 'round' });
+        polyline.addTo(map);
+        try {
+          map.fitBounds(polyline.getBounds(), { padding: [40, 40], maxZoom: 16 });
+        } catch(e) {
+          map.setView(latLngs[0], 15);
+        }
+      } else {
+        map.setView(latLngs[0], 16);
+      }
+    }
+
+    map.invalidateSize();
+
+    // Small delay to allow tiles to render into DOM
+    await new Promise(r => setTimeout(r, 450));
+
+    // Capture to WebP using html-to-image
+    const canvas = await htmlToImage.toCanvas(batchMapContainerRef.current, { skipFonts: true, backgroundColor: '#0c101c' });
+    const webpBase64 = canvas.toDataURL('image/webp', 0.85);
+
+    // Save directly to server database archive
+    await axios.post('/api/xl/admin/geo-archive/upload-map', {
+      employeeId,
+      date,
+      webpBase64
+    });
+
+    try {
+      map.remove();
+      batchMapInstanceRef.current = null;
+    } catch(e) {}
+  };
+
+  // Automated Batch WebP Generation for all users for selected month
+  const handleBatchGenerateMonthlyMaps = async () => {
+    setBatchGenerating(true);
+    setBatchProgress(null);
+    setBatchResult(null);
+
+    try {
+      const res = await axios.get(`/api/xl/admin/geo-archive/month-dates?month=${archiveMonth}&year=${archiveYear}`);
+      const items: { employeeId: string; date: string; name: string }[] = res.data.items || [];
+
+      if (items.length === 0) {
+        setBatchResult('No field user activity with GPS coordinates was found for this month.');
+        setBatchGenerating(false);
+        return;
+      }
+
+      let successCount = 0;
+      setBatchProgress({ current: 0, total: items.length, label: `Starting automated batch generator for ${items.length} records...` });
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        setBatchProgress({ 
+          current: i + 1, 
+          total: items.length, 
+          label: `Processing ${i + 1}/${items.length}: ${item.name} (${item.date})...` 
+        });
+
+        try {
+          const rRes = await axios.get(`/api/xl/reports/geo-location-analysis?employeeId=${item.employeeId}&date=${item.date}`);
+          const dayData = rRes.data;
+
+          if (dayData && dayData.routePoints && dayData.routePoints.length > 0) {
+            await renderAndUploadOffscreenMap(item.employeeId, item.date, dayData);
+            successCount++;
+          }
+        } catch (itemErr) {
+          console.warn(`Skipping ${item.employeeId} on ${item.date}:`, itemErr);
+        }
+      }
+
+      setBatchResult(`✅ Batch completed! ${successCount} WebP route maps generated and saved to database & server storage.`);
+    } catch (err: any) {
+      alert('Batch generation error: ' + (err.message || 'Unknown error'));
+    } finally {
+      setBatchGenerating(false);
+      setBatchProgress(null);
     }
   };
 
@@ -711,7 +892,8 @@ export default function GeoLocationAnalysisReport() {
                 type="date"
                 value={toYYYYMMDD(selectedDate)}
                 onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none"
+                style={{ colorScheme: 'dark' }}
+                className="w-full bg-[#1e243d] border border-[#363e63] rounded-xl text-white font-semibold text-xs md:text-sm px-3.5 py-2.5 focus:ring-2 focus:ring-sky-500 focus:outline-none [color-scheme:dark] cursor-pointer"
               />
             </div>
 
@@ -819,8 +1001,20 @@ export default function GeoLocationAnalysisReport() {
                   )}
                 </span>
               </div>
-
             </div>
+
+            {/* Live Save Status Toast Banner */}
+            {saveStatusMsg && (
+              <div className="bg-emerald-950/80 border border-emerald-500/80 rounded-xl p-3 shadow-lg flex items-center justify-between gap-3 text-emerald-200 text-xs font-semibold animate-in fade-in slide-in-from-top duration-300">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                  <span>{saveStatusMsg}</span>
+                </div>
+                <button onClick={() => setSaveStatusMsg(null)} className="text-emerald-400 hover:text-white cursor-pointer">
+                  <X size={14} />
+                </button>
+              </div>
+            )}
 
             {/* Google Maps Interactive Container */}
             <div className="bg-[#14192d] border border-[#363e63] rounded-2xl shadow-xl overflow-hidden flex flex-col">
@@ -1165,12 +1359,69 @@ export default function GeoLocationAnalysisReport() {
                 </div>
               </div>
 
-              {/* Step 1: Download Monthly ZIP */}
+              {/* Step 1: Batch Auto-Generate WebP Route Maps into Database */}
+              <div className="bg-[#0f1422] border border-[#363e63] rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <Camera size={14} className="text-emerald-400" />
+                    Step 1: Automated Monthly WebP Route Maps (All Users)
+                  </span>
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">
+                    Auto-Save to DB
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Automatically processes all ~100 field team members for the selected month, renders their daily routes offscreen, and saves high-resolution WebP map snapshots directly into the database &amp; server storage (no desktop download popups).
+                </p>
+
+                {batchProgress && (
+                  <div className="space-y-1.5 bg-[#14192d] p-3 rounded-lg border border-[#363e63]">
+                    <div className="flex justify-between text-[11px] font-semibold text-slate-300">
+                      <span className="truncate pr-2">{batchProgress.label}</span>
+                      <span>{Math.round((batchProgress.current / batchProgress.total) * 100)}%</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+                      <div 
+                        className="bg-emerald-500 h-2 transition-all duration-200 rounded-full"
+                        style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {batchResult && (
+                  <div className="p-2.5 bg-emerald-950/40 border border-emerald-500/40 rounded-lg text-emerald-300 text-[11px] flex items-center gap-2">
+                    <CheckCircle2 size={14} className="shrink-0" />
+                    <span>{batchResult}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleBatchGenerateMonthlyMaps}
+                  disabled={batchGenerating}
+                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 rounded-xl text-white text-xs font-bold flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 cursor-pointer shadow-md shadow-emerald-600/30"
+                >
+                  {batchGenerating ? (
+                    <>
+                      <RefreshCw size={14} className="animate-spin" />
+                      <span>Generating Monthly Route Maps...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera size={14} />
+                      <span>Automate Monthly WebP Route Maps (All Users)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Step 2: Download Monthly ZIP */}
               <div className="bg-[#0f1422] border border-[#363e63] rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Download size={14} className="text-sky-400" />
-                    Step 1: Download Monthly Archive (ZIP)
+                    Step 2: Download Monthly Archive (ZIP)
                   </span>
                   <span className="text-[10px] text-emerald-400 font-bold bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">
                     Excel + WebP Maps
@@ -1207,12 +1458,12 @@ export default function GeoLocationAnalysisReport() {
                 Simply move the downloaded ZIP file into your local <strong>Google Drive sync folder</strong> (e.g. <code>G:\My Drive\Emyris_Archives\</code>) on your desktop. Google Drive will automatically back it up to the cloud.
               </div>
 
-              {/* Step 2: Database Cleanup / Pruning */}
+              {/* Step 3: Database Cleanup / Pruning */}
               <div className="bg-[#0f1422] border border-[#363e63] rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-rose-400 flex items-center gap-1.5">
                     <Trash2 size={14} />
-                    Step 2: Prune Database Coordinates (&gt;60 Days)
+                    Step 3: Prune Database Coordinates (&gt;60 Days)
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-400">
@@ -1261,6 +1512,20 @@ export default function GeoLocationAnalysisReport() {
           </div>
         </div>
       )}
+
+      {/* Hidden offscreen container for batch rendering WebP route maps */}
+      <div 
+        ref={batchMapContainerRef} 
+        style={{ 
+          width: '800px', 
+          height: '500px', 
+          position: 'fixed', 
+          left: '-9999px', 
+          top: '-9999px', 
+          zIndex: -100,
+          pointerEvents: 'none'
+        }} 
+      />
     </div>
   );
 }

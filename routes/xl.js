@@ -7836,9 +7836,94 @@ router.post('/admin/geo-archive/upload-map', async (req, res) => {
         const filePath = path.join(targetDir, filename);
 
         fs.writeFileSync(filePath, buffer);
-        res.json({ success: true, message: 'Map snapshot saved successfully', path: `/uploads/geo-archives/${monthDir}/${filename}` });
+
+        // Update database attendance record with WebP route map path
+        try {
+            const { sequelize } = require('../db');
+            await sequelize.query(`
+                UPDATE xl_attendances 
+                SET "mapSnapshotUrl" = :url 
+                WHERE ("employeeId" = :employeeId OR "uid" = :employeeId) AND "date" = :date
+            `, {
+                replacements: {
+                    url: `/uploads/geo-archives/${monthDir}/${filename}`,
+                    employeeId,
+                    date
+                }
+            });
+        } catch(dbErr) {
+            console.warn('Could not update mapSnapshotUrl in db:', dbErr.message);
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Map snapshot saved to database and server storage successfully', 
+            path: `/uploads/geo-archives/${monthDir}/${filename}` 
+        });
     } catch(err) {
         console.error('Error in /admin/geo-archive/upload-map:', err);
+        res.status(500).json({ success: false, message: err.message });
+    }
+});
+
+// 1.5 Get all active user dates with GPS data for a given month (for automated batch generation)
+router.get('/admin/geo-archive/month-dates', async (req, res) => {
+    try {
+        const { month, year } = req.query;
+        if (!month || !year) return res.status(400).json({ success: false, message: 'Month and year are required' });
+
+        const mStr = String(month).padStart(2, '0');
+        const prefix = `${year}-${mStr}`;
+        const { XlAttendance, XlDCR, XlUser } = require('../db');
+        const { Op } = require('sequelize');
+
+        // Find all attendances or DCRs with coordinates for this month
+        const [attendances, dcrs, users] = await Promise.all([
+            XlAttendance.findAll({
+                attributes: ['employeeId', 'date', 'punchInLat', 'punchOutLat'],
+                where: {
+                    date: { [Op.like]: `${prefix}%` },
+                    [Op.or]: [
+                        { punchInLat: { [Op.ne]: null } },
+                        { punchOutLat: { [Op.ne]: null } }
+                    ]
+                }
+            }),
+            XlDCR.findAll({
+                attributes: ['employeeId', 'date'],
+                where: {
+                    date: { [Op.like]: `${prefix}%` },
+                    latitude: { [Op.ne]: null }
+                }
+            }),
+            XlUser.findAll()
+        ]);
+
+        const userMap = {};
+        users.forEach(u => {
+            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.employeeId || 'User';
+            if (u.employeeId) userMap[u.employeeId] = name;
+            if (u.email) userMap[u.email] = name;
+            if (u._id) userMap[u._id] = name;
+            if (u.uid) userMap[u.uid] = name;
+        });
+
+        const pairMap = new Map();
+        attendances.forEach(a => {
+            const key = `${a.employeeId}_${a.date}`;
+            pairMap.set(key, { employeeId: a.employeeId, date: a.date, name: userMap[a.employeeId] || a.employeeId });
+        });
+        dcrs.forEach(d => {
+            const key = `${d.employeeId}_${d.date}`;
+            if (!pairMap.has(key)) {
+                pairMap.set(key, { employeeId: d.employeeId, date: d.date, name: userMap[d.employeeId] || d.employeeId });
+            }
+        });
+
+        const list = Array.from(pairMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+        res.json({ success: true, count: list.length, items: list });
+    } catch(err) {
+        console.error('Error in /admin/geo-archive/month-dates:', err);
         res.status(500).json({ success: false, message: err.message });
     }
 });
