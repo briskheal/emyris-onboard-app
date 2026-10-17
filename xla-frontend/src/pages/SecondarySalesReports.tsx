@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ChevronLeft, Eye, ArrowLeft, Search, X, ArrowUp, ArrowDown, Calendar, ChevronDown } from 'lucide-react';
 import CustomUserSelect from '../components/CustomUserSelect';
+import { formatMMDDYYYY } from '../utils/dateUtils';
 
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -366,7 +367,7 @@ export default function SecondarySalesReports() {
                             
                             {selectType === 'User' ? (
                               <>
-                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.invoiceDate ? new Date(d.invoiceDate).toLocaleDateString('en-GB') : 'NA'}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{formatMMDDYYYY(d.invoiceDate)}</td>
                                   <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.invoiceNumber || 'NA'}</td>
                                   <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
                                     <div className="flex flex-col">

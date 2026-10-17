@@ -5224,7 +5224,7 @@ router.get('/reports/primary-sales', async (req, res) => {
             if (d.date) {
                 const dateParts = d.date.split('-');
                 if (dateParts.length === 3 && dateParts[0].length === 4) {
-                    d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                    d.displayDate = `${dateParts[1]}-${dateParts[2]}-${dateParts[0]}`;
                 } else {
                     d.displayDate = d.date;
                 }
@@ -5317,7 +5317,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             if (d.date) {
                 const dateParts = d.date.split('-');
                 if (dateParts.length === 3 && dateParts[0].length === 4) {
-                    d.displayDate = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                    d.displayDate = `${dateParts[1]}-${dateParts[2]}-${dateParts[0]}`;
                 } else {
                     d.displayDate = d.date;
                 }
@@ -5344,7 +5344,7 @@ router.get('/primary-sales/all', async (req, res) => {
         try {
             const { sequelize } = require('../db');
             await sequelize.query(`
-                UPDATE "XlPrimarySales" 
+                UPDATE xl_primary_sales 
                 SET "month" = TRIM(TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'Mon')),
                     "year" = TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'YYYY')
                 WHERE "invoiceDate" IS NOT NULL 
@@ -7596,7 +7596,7 @@ router.get('/secondary-sales/all', async (req, res) => {
         try {
             const { sequelize } = require('../db');
             await sequelize.query(`
-                UPDATE "XlSecondarySales" 
+                UPDATE xl_secondary_sales 
                 SET "month" = TRIM(TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'Mon')),
                     "year" = TO_CHAR(TO_DATE("invoiceDate", 'YYYY-MM-DD'), 'YYYY')
                 WHERE "invoiceDate" IS NOT NULL 
