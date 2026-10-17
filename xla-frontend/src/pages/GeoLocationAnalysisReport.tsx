@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
-import html2canvas from 'html2canvas';
+import * as htmlToImage from 'html-to-image';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -171,12 +171,13 @@ export default function GeoLocationAnalysisReport() {
   // Tile URL resolver
   const getTileUrl = (type: string) => {
     if (type === 'satellite') {
-      return 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
+      return '/api/xl/tile-proxy?lyrs=y&x={x}&y={y}&z={z}';
     }
     if (type === 'osm') {
-      return 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+      // CartoDB Voyager - 100% genuine OpenStreetMap data, high capacity, no 403 blocks, full CORS
+      return 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png';
     }
-    return 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+    return '/api/xl/tile-proxy?lyrs=m&x={x}&y={y}&z={z}';
   };
 
   // 3. Initialize & Update Leaflet Map with Google Maps Tiles
@@ -210,7 +211,8 @@ export default function GeoLocationAnalysisReport() {
     const tileUrl = getTileUrl(mapType);
     const tiles = L.tileLayer(tileUrl, { 
       maxZoom: 20,
-      subdomains: mapType === 'osm' ? ['a', 'b', 'c'] : ['mt0', 'mt1', 'mt2', 'mt3']
+      crossOrigin: 'anonymous',
+      subdomains: mapType === 'osm' ? ['a', 'b', 'c', 'd'] : []
     });
     tiles.addTo(map);
 
@@ -229,82 +231,147 @@ export default function GeoLocationAnalysisReport() {
     if (validPoints.length > 0) {
       const latLngs: [number, number][] = [];
 
+      // 1. Group points that are co-located or within ~25 meters of each other
+      const clusters: { center: [number, number]; items: { point: typeof validPoints[0]; origLat: number; origLng: number }[] }[] = [];
+
       validPoints.forEach((point) => {
         const lat = Number(point.lat!);
         const lng = Number(point.lng!);
         latLngs.push([lat, lng]);
 
-        let iconHtml = '';
-        if (point.type === 'punch-in') {
-          iconHtml = `
-            <div style="background-color: #10b981; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
-              <span>IN</span>
-            </div>
-          `;
-        } else if (point.type === 'punch-out') {
-          iconHtml = `
-            <div style="background-color: #ef4444; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
-              <span>OUT</span>
-            </div>
-          `;
-        } else {
-          // Doctor / Chemist stop with number badge
-          const isExtended = point.isExtendedStoppage;
-          const bg = isExtended ? '#f59e0b' : '#38bdf8';
-          iconHtml = `
-            <div style="background-color: ${bg}; color: #0f172a; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900;">
-              ${point.seq}
-            </div>
-          `;
+        let matched = false;
+        for (const cl of clusters) {
+          const d = Math.hypot(cl.center[0] - lat, cl.center[1] - lng);
+          if (d < 0.00025) { // ~25 meters threshold
+            cl.items.push({ point, origLat: lat, origLng: lng });
+            matched = true;
+            break;
+          }
         }
+        if (!matched) {
+          clusters.push({
+            center: [lat, lng],
+            items: [{ point, origLat: lat, origLng: lng }]
+          });
+        }
+      });
 
-        const customIcon = L.divIcon({
-          html: iconHtml,
-          className: 'custom-map-pin',
-          iconSize: [34, 34],
-          iconAnchor: [17, 17],
-          popupAnchor: [0, -18]
+      // 2. Render each cluster (apply radial dispersion if multiple calls at the same location)
+      clusters.forEach((cl) => {
+        const total = cl.items.length;
+        const allSeqs = cl.items.map(it => it.point.seq);
+
+        cl.items.forEach((it, idx) => {
+          let renderLat = it.origLat;
+          let renderLng = it.origLng;
+
+          // If 2 or more calls are at the exact same location, offset them in a neat circle
+          if (total > 1) {
+            const angle = (idx / total) * 2 * Math.PI - Math.PI / 2;
+            const radius = 0.00028; // ~30 meters dispersion
+            renderLat = cl.center[0] + radius * Math.cos(angle);
+            renderLng = cl.center[1] + (radius / Math.cos(cl.center[0] * Math.PI / 180)) * Math.sin(angle);
+
+            // Draw a subtle connecting dashed line to the actual central premises
+            L.polyline([[cl.center[0], cl.center[1]], [renderLat, renderLng]], {
+              color: '#334155',
+              weight: 1.5,
+              dashArray: '2, 3',
+              opacity: 0.8
+            }).addTo(markersLayer);
+          }
+
+          const point = it.point;
+          let iconHtml = '';
+          if (point.type === 'punch-in') {
+            iconHtml = `
+              <div style="background-color: #10b981; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
+                <span>IN</span>
+              </div>
+            `;
+          } else if (point.type === 'punch-out') {
+            iconHtml = `
+              <div style="background-color: #ef4444; color: white; width: 34px; height: 34px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; line-height: 1;">
+                <span>OUT</span>
+              </div>
+            `;
+          } else {
+            // Doctor / Chemist stop with number badge
+            const isExtended = point.isExtendedStoppage;
+            const bg = isExtended ? '#f59e0b' : '#38bdf8';
+            iconHtml = `
+              <div style="background-color: ${bg}; color: #0f172a; width: 30px; height: 30px; border-radius: 50%; border: 2.5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900;">
+                ${point.seq}
+              </div>
+            `;
+          }
+
+          const customIcon = L.divIcon({
+            html: iconHtml,
+            className: 'custom-map-pin',
+            iconSize: [34, 34],
+            iconAnchor: [17, 17],
+            popupAnchor: [0, -18]
+          });
+
+          const popupContent = `
+            <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; color: #0f172a; min-width: 220px;">
+              <div style="font-weight: 800; font-size: 13px; color: ${point.type === 'punch-in' ? '#059669' : point.type === 'punch-out' ? '#dc2626' : '#0284c7'}; margin-bottom: 4px;">
+                ${point.title}
+              </div>
+              ${total > 1 ? `
+                <div style="background-color: #f1f5f9; border-left: 3px solid #0284c7; padding: 3px 6px; margin-bottom: 6px; font-size: 11px; color: #334155;">
+                  <strong>Co-located Facility:</strong> ${total} stops here (${allSeqs.map(s => '#' + s).join(', ')})
+                </div>
+              ` : ''}
+              <div style="color: #475569; margin-bottom: 2px;">
+                <strong>Time:</strong> ${point.checkInTime} ${point.checkOutTime !== point.checkInTime ? `&ndash; ${point.checkOutTime}` : ''}
+              </div>
+              ${point.type === 'call' ? `
+                <div style="color: #475569; margin-bottom: 2px;">
+                  <strong>Meeting Duration:</strong> ${point.meetingDurationMins} mins
+                </div>
+                <div style="color: #475569; margin-bottom: 2px;">
+                  <strong>Transit from Prev:</strong> ${point.transitFromPrevMins} mins (${point.distanceFromPrevKm} km)
+                </div>
+                ${point.isExtendedStoppage ? `
+                  <div style="background-color: #fef3c7; color: #b45309; padding: 4px 6px; border-radius: 6px; font-weight: 700; margin-top: 4px; font-size: 11px;">
+                    ⚠️ Extended Stoppage / Waiting
+                  </div>
+                ` : ''}
+                ${point.remarks ? `
+                  <div style="margin-top: 4px; font-style: italic; color: #64748b; font-size: 11px;">
+                    "${point.remarks}"
+                  </div>
+                ` : ''}
+              ` : `
+                <div style="color: #475569;">
+                  <strong>Total Distance Covered:</strong> ${point.cumulativeDistanceKm} km
+                </div>
+              `}
+              <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">
+                📍 ${it.origLat.toFixed(5)}, ${it.origLng.toFixed(5)}
+              </div>
+            </div>
+          `;
+
+          const marker = L.marker([renderLat, renderLng], { icon: customIcon });
+          marker.bindPopup(popupContent);
+          markersLayer.addLayer(marker);
         });
 
-        const popupContent = `
-          <div style="font-family: 'Inter', sans-serif; font-size: 12px; line-height: 1.4; color: #0f172a; min-width: 200px;">
-            <div style="font-weight: 800; font-size: 13px; color: ${point.type === 'punch-in' ? '#059669' : point.type === 'punch-out' ? '#dc2626' : '#0284c7'}; margin-bottom: 4px;">
-              ${point.title}
-            </div>
-            <div style="color: #475569; margin-bottom: 2px;">
-              <strong>Time:</strong> ${point.checkInTime} ${point.checkOutTime !== point.checkInTime ? `&ndash; ${point.checkOutTime}` : ''}
-            </div>
-            ${point.type === 'call' ? `
-              <div style="color: #475569; margin-bottom: 2px;">
-                <strong>Meeting Duration:</strong> ${point.meetingDurationMins} mins
-              </div>
-              <div style="color: #475569; margin-bottom: 2px;">
-                <strong>Transit from Prev:</strong> ${point.transitFromPrevMins} mins (${point.distanceFromPrevKm} km)
-              </div>
-              ${point.isExtendedStoppage ? `
-                <div style="background-color: #fef3c7; color: #b45309; padding: 4px 6px; border-radius: 6px; font-weight: 700; margin-top: 4px; font-size: 11px;">
-                  ⚠️ Extended Stoppage / Waiting
-                </div>
-              ` : ''}
-              ${point.remarks ? `
-                <div style="margin-top: 4px; font-style: italic; color: #64748b; font-size: 11px;">
-                  "${point.remarks}"
-                </div>
-              ` : ''}
-            ` : `
-              <div style="color: #475569;">
-                <strong>Total Distance Covered:</strong> ${point.cumulativeDistanceKm} km
-              </div>
-            `}
-            <div style="margin-top: 4px; font-size: 10px; color: #94a3b8;">
-              📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}
-            </div>
-          </div>
-        `;
-
-        const marker = L.marker([lat, lng], { icon: customIcon });
-        marker.bindPopup(popupContent);
-        markersLayer.addLayer(marker);
+        // If co-located, add a small center anchor ring at true facility coordinate
+        if (total > 1) {
+          const centerAnchor = L.circleMarker(cl.center, {
+            radius: 4,
+            fillColor: '#0f172a',
+            color: '#ffffff',
+            weight: 2,
+            fillOpacity: 1
+          });
+          centerAnchor.bindTooltip(`Common Facility: Calls ${allSeqs.map(s => '#' + s).join(', ')}`, { direction: 'top' });
+          markersLayer.addLayer(centerAnchor);
+        }
       });
 
       // Calculate max spread
@@ -315,14 +382,15 @@ export default function GeoLocationAnalysisReport() {
         if (d > maxSpread) maxSpread = d;
       }
 
-      // Add Polyline connecting all points if there is measurable movement
+      // Add High-Contrast Solid Black Polyline connecting all points
       if (latLngs.length > 1 && maxSpread > 0.0003) {
+        // High-contrast, sharp solid black route line with round joints
         const polyline = L.polyline(latLngs, {
-          color: '#38bdf8',
-          weight: 4,
-          opacity: 0.85,
-          dashArray: '6, 8',
-          lineJoin: 'round'
+          color: '#000000',
+          weight: 4.5,
+          opacity: 0.95,
+          lineJoin: 'round',
+          lineCap: 'round'
         });
         markersLayer.addLayer(polyline);
 
@@ -435,11 +503,11 @@ export default function GeoLocationAnalysisReport() {
     if (!mapContainerRef.current || !data) return;
     setCapturingWebp(true);
     try {
-      const canvas = await html2canvas(mapContainerRef.current, {
-        useCORS: true,
-        allowTaint: true,
+      // html-to-image uses browser native SVG/Canvas rendering, completely avoiding Tailwind v4 "oklch" parser errors
+      const canvas = await htmlToImage.toCanvas(mapContainerRef.current, {
+        pixelRatio: 2,
         backgroundColor: '#0c101c',
-        scale: 2
+        skipFonts: true
       });
 
       canvas.toBlob(async (blob) => {
@@ -783,6 +851,10 @@ export default function GeoLocationAnalysisReport() {
                     <span className="text-slate-600">&bull;</span>
                     <span className="flex items-center gap-1">
                       <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Punch-Out
+                    </span>
+                    <span className="text-slate-600">&bull;</span>
+                    <span className="flex items-center gap-1">
+                      <span className="w-3.5 h-1 bg-black inline-block rounded-full border border-slate-400"></span> Route
                     </span>
                   </div>
 

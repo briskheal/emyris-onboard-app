@@ -8027,6 +8027,39 @@ router.post('/admin/geo-archive/prune', async (req, res) => {
     }
 });
 
+// 4. Map Tile Proxy (allows Leaflet tiles to load with full CORS headers and bypass restrictive blocking)
+router.get('/tile-proxy', (req, res) => {
+    try {
+        const { lyrs = 'm', x, y, z } = req.query;
+        if (!x || !y || !z) return res.status(400).end();
+
+        const https = require('https');
+        const googleUrl = `https://mt1.google.com/vt/lyrs=${encodeURIComponent(lyrs)}&x=${encodeURIComponent(x)}&y=${encodeURIComponent(y)}&z=${encodeURIComponent(z)}`;
+        
+        const headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Referer': 'https://www.google.com/'
+        };
+
+        const remoteReq = https.get(googleUrl, { headers }, (remoteRes) => {
+            if (remoteRes.statusCode !== 200) {
+                res.status(remoteRes.statusCode).end();
+                return;
+            }
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Cache-Control', 'public, max-age=604800, immutable');
+            res.setHeader('Content-Type', remoteRes.headers['content-type'] || 'image/png');
+            remoteRes.pipe(res);
+        });
+
+        remoteReq.on('error', () => {
+            res.status(502).end();
+        });
+    } catch (e) {
+        res.status(500).end();
+    }
+});
+
 module.exports = router;
 
 
