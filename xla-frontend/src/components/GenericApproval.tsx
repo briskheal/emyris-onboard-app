@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CheckCircle, Eye, XCircle } from 'lucide-react';
+import { formatDDMMYYYY } from '../utils/dateUtils';
 
 const MODULE_CONFIG: Record<string, any> = {
   'Doctors': [
@@ -58,23 +59,21 @@ const MODULE_CONFIG: Record<string, any> = {
     { label: 'Status', key: 'status' }
   ],
   'Secondary Sales': [
-    { label: 'Creation Date ↑', key: 'createdAt', isDate: true },
     { label: 'Invoice Number ↑', key: 'invoiceNumber' },
     { label: 'Invoice Date', key: 'invoiceDate', isDate: true },
-    { label: 'Created By', key: 'employeeName' },
     { label: 'Month', key: 'month' },
+    { label: 'Created By', key: 'employeeName' },
     { label: 'Stockist', key: 'stockist' },
-    { label: 'Headquarter', key: 'headquarter' }
+    { label: 'Headquarter', key: 'headquarter' },
+    { label: 'Submitted On ↑', key: 'createdAt', isDate: true }
   ],
   'Primary Sales': [
-    { label: 'Creation Date ↑', key: 'createdAt', isDate: true },
-    { label: 'Sales Date ↑', key: 'date', isDate: true },
     { label: 'Invoice Number ↑', key: 'invoiceNumber' },
     { label: 'Invoice Date', key: 'invoiceDate', isDate: true },
     { label: 'Created By', key: 'employeeName' },
     { label: 'Stockist', key: 'stockist' },
     { label: 'Headquarter', key: 'headquarter' },
-    
+    { label: 'Submitted On ↑', key: 'createdAt', isDate: true }
   ],
   'Samples': [
     { label: 'Alloted To ↑', key: 'employeeName' },
@@ -235,9 +234,7 @@ export default function GenericApproval({ items, fetchPending, fetchCounts, sele
       (col.key === 'hq' ? item.headquarter : undefined) ||
       '-';
     if (col.isDate && val !== '-') {
-      try {
-        val = new Date(val).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' }).replace(/\//g, '-');
-      } catch(e){}
+      val = formatDDMMYYYY(val);
     }
     return val;
   };

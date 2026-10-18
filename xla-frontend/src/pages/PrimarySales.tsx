@@ -440,21 +440,6 @@ export default function PrimarySales() {
         <div className="px-3 md:px-4 py-2 bg-[#161625]">
           <div className="flex flex-wrap items-end gap-2 md:gap-2.5">
             
-            {/* Date */}
-            <div className="flex flex-col w-[125px] shrink-0">
-              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
-                Date <span className="text-rose-500">*</span>
-              </label>
-              <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-2 flex items-center h-[30px]">
-                <input 
-                  type="date" 
-                  value={toInputDateValue(formData.date)}
-                  onChange={e => setFormData({...formData, date: toMMDDYYYY(e.target.value)})}
-                  className="w-full bg-transparent outline-none text-xs text-white"
-                />
-              </div>
-            </div>
-
             {/* Invoice Date */}
             <div className="flex flex-col w-[125px] shrink-0">
               <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
@@ -464,7 +449,10 @@ export default function PrimarySales() {
                 <input 
                   type="date" 
                   value={toInputDateValue(formData.invoiceDate)}
-                  onChange={e => setFormData({...formData, invoiceDate: toMMDDYYYY(e.target.value)})}
+                  onChange={e => {
+                    const val = toMMDDYYYY(e.target.value);
+                    setFormData({...formData, invoiceDate: val, date: val});
+                  }}
                   className="w-full bg-transparent outline-none text-xs text-white"
                 />
               </div>

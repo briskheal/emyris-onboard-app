@@ -148,7 +148,6 @@ export default function AllSecondarySales() {
               <thead className="bg-[#1a1a2e] text-[#8b8baf] text-[10px] uppercase tracking-wider border-b border-[#3b3b5a]">
                 <tr>
                   <th className="p-3 font-semibold text-center w-12 border-r border-[#3b3b5a]/50">Sr<br/>no.</th>
-                  <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Date</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Invoice<br/>Number</th>
                   <th className="p-3 font-semibold text-center border-r border-[#3b3b5a]/50">Invoice<br/>Date</th>
                   <th className="p-3 font-semibold border-r border-[#3b3b5a]/50">Stockist</th>
@@ -171,9 +170,8 @@ export default function AllSecondarySales() {
                     return (
                       <tr key={sale._id} className="hover:bg-[#1a1a2e]/50 transition-colors">
                         <td className="p-3 text-center text-[#8b8baf] border-r border-[#3b3b5a]/50">{index + 1}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{formatMMDDYYYY(sale.date)}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-medium text-white">{sale.invoiceNumber || '-'}</td>
-                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{formatMMDDYYYY(sale.invoiceDate)}</td>
+                        <td className="p-3 text-center border-r border-[#3b3b5a]/50">{formatMMDDYYYY(sale.invoiceDate || sale.date)}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 text-white truncate max-w-[150px]">{getStockistName(sale.stockist) || '-'}</td>
                         <td className="p-3 border-r border-[#3b3b5a]/50 truncate max-w-[120px]">{sale.headquarter || '-'}</td>
                         <td className="p-3 text-center border-r border-[#3b3b5a]/50 font-bold text-sky-400">

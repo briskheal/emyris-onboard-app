@@ -130,9 +130,9 @@ export default function PrimarySalesHistory() {
                     )}
                   </div>
                   
-                  {/* Date format updated to DD/MM/YY */}
+                  {/* Date format updated to DD/MM/YY prioritizing invoiceDate */}
                   <div className="w-[20%] text-[10px] text-slate-400 text-center font-medium whitespace-nowrap">
-                    {inv.date ? new Date(inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
+                    {(inv.invoiceDate || inv.date) ? new Date(inv.invoiceDate || inv.date).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '-'}
                   </div>
                   
                   <div className={`w-[15%] flex justify-center ${isApproved ? 'text-emerald-400' : isRejected ? 'text-rose-400' : isReSubmitted ? 'text-amber-400' : 'text-slate-400'}`}>
