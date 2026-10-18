@@ -2197,14 +2197,31 @@ router.post('/tour-program', async (req, res) => {
                     } catch(e) {}
                 }
             }
-            await XlTourProgram.update({ entries: JSON.stringify(entries), employeeName, hq }, { where: { _id: tp._id } });
+            const isAdminSender = !!req.body.fromAdmin || !!(resubmitRemark && resubmitRemark.toLowerCase().includes('admin'));
+            const finalStatus = isAdminSender ? 'Approved' : (tp.status || 'Draft');
+            const approvedFields = isAdminSender ? { approvedBy: 'Admin', approvedAt: new Date() } : {};
+            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved' } : e);
+
+            await XlTourProgram.update({ 
+                entries: JSON.stringify(processedEntries), 
+                employeeName, 
+                hq, 
+                status: finalStatus,
+                ...approvedFields
+            }, { where: { _id: tp._id } });
             tp = await XlTourProgram.findOne({ where: { _id: tp._id } });
         } else {
+            const isAdminSender = !!req.body.fromAdmin || !!(resubmitRemark && resubmitRemark.toLowerCase().includes('admin'));
+            const finalStatus = isAdminSender ? 'Approved' : 'Draft';
+            const approvedFields = isAdminSender ? { approvedBy: 'Admin', approvedAt: new Date() } : {};
+            const processedEntries = (entries || []).map(e => isAdminSender ? { ...e, status: 'Approved' } : e);
+
             tp = await XlTourProgram.create({
                 _id: generateId(),
                 employeeId, employeeName, hq, month, year,
-                entries: JSON.stringify(entries || []),
-                status: 'Draft'
+                entries: JSON.stringify(processedEntries),
+                status: finalStatus,
+                ...approvedFields
             });
         }
         res.json({ success: true, message: 'Tour Program saved!', data: tp });
@@ -4418,6 +4435,9 @@ router.post('/call-plan/bulk', async (req, res) => {
         }
         // -----------------------
         
+        const isAdminCallPlan = !!req.body.fromAdmin || req.body.status === 'Approved';
+        const planStatus = isAdminCallPlan ? 'Approved' : 'Submitted';
+
         for (const date of dates) {
             const sDate = normalizeDate(date);
             let plan = await XlCallPlan.findOne({ where: { employeeId: { [Op.in]: idArray }, date: sDate } });
@@ -4426,7 +4446,7 @@ router.post('/call-plan/bulk', async (req, res) => {
                     plan.doctors = JSON.stringify(doctors || []);
                     plan.chemists = JSON.stringify(chemists || []);
                     plan.stockists = JSON.stringify(stockists || []);
-                    plan.status = 'Submitted';
+                    plan.status = planStatus;
                     await plan.save();
                 } else {
                     await XlCallPlan.create({
@@ -4435,7 +4455,7 @@ router.post('/call-plan/bulk', async (req, res) => {
                         doctors: JSON.stringify(doctors || []),
                         chemists: JSON.stringify(chemists || []),
                         stockists: JSON.stringify(stockists || []),
-                        status: 'Submitted'
+                        status: planStatus
                     });
                 }
             } catch (dbError) {
@@ -4975,7 +4995,7 @@ function getMonthYearFromDate(dStr) {
 
 router.post('/primary-sales/save', async (req, res) => {
     try {
-        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData, status, month: reqMonth, year: reqYear } = req.body;
+        const { employeeId, date, invoiceDate, invoiceNumber, division, headquarter, stockist, grossInvValue, netInvValue, salableRtnValue, expiryRtnValue, productsData, status, fromAdmin, month: reqMonth, year: reqYear } = req.body;
         // Strict Validation
         if (productsData) validateProductsData(productsData);
         
@@ -4985,8 +5005,40 @@ router.post('/primary-sales/save', async (req, res) => {
         const month = reqMonth || my.month || new Date().toLocaleString('en-US', { month: 'short' });
         const year = reqYear || my.year || new Date().getFullYear().toString();
 
+        const { XlStockist, XlUser, XlAdmin } = require('../db');
+        const { Op } = require('sequelize');
+
+        // Check if initiator is Admin or if employeeId belongs to an Admin
+        let isAdminSender = !!fromAdmin;
+        if (employeeId) {
+            if (employeeId === 'ADMIN' || employeeId.toUpperCase().startsWith('ADM')) isAdminSender = true;
+            else {
+                const adminCheck = await XlAdmin.findOne({ where: { [Op.or]: [{ employeeId }, { uid: employeeId }] } });
+                if (adminCheck) isAdminSender = true;
+            }
+        }
+
+        // Territory Attribution: Resolve field representative
+        let finalEmpId = employeeId;
+        if (isAdminSender || !finalEmpId || finalEmpId === 'ADMIN') {
+            if (stockist) {
+                const st = await XlStockist.findOne({ where: { [Op.or]: [{ uid: stockist }, { _id: stockist }] } });
+                if (st && (st.userAllotted || st.employeeId)) {
+                    finalEmpId = st.userAllotted || st.employeeId;
+                }
+            }
+            if ((!finalEmpId || finalEmpId === 'ADMIN' || finalEmpId === employeeId) && headquarter) {
+                const rep = await XlUser.findOne({ where: { hq: headquarter, status: 'Active' } });
+                if (rep && rep.employeeId) finalEmpId = rep.employeeId;
+                else if (!finalEmpId || finalEmpId === 'ADMIN' || isAdminSender) finalEmpId = 'VACANT_' + headquarter;
+            }
+        }
+
+        // Rule 1: Admin submissions must be immediately Approved
+        const finalStatus = (isAdminSender || status === 'Approved') ? 'Approved' : (status || 'Pending');
+
         const newSale = await XlPrimarySales.create({
-            employeeId: employeeId || 'ADMIN',
+            employeeId: finalEmpId || 'ADMIN',
             date: savedDate,
             invoiceDate: savedInvDate,
             invoiceNumber,
@@ -5001,8 +5053,7 @@ router.post('/primary-sales/save', async (req, res) => {
             month,
             year,
             productsData: JSON.stringify(productsData),
-            ...(status ? { status } : {}),
-            status: 'Pending'
+            status: finalStatus
         });
 
         if (productsData && Array.isArray(productsData) && productsData.length > 0) {
@@ -7720,7 +7771,7 @@ router.get('/secondary-sales/:id', async (req, res) => {
 
 router.post('/secondary-sales/save', async (req, res) => {
     try {
-        const { employeeId, date, month: reqMonth, year: reqYear, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData } = req.body;
+        const { employeeId, date, month: reqMonth, year: reqYear, invoiceDate, invoiceNumber, division, headquarter, stockist, amount, productsData, status, fromAdmin } = req.body;
         
         const savedDate = normalizeDateStr(date) || normalizeDateStr(new Date());
         const savedInvDate = normalizeDateStr(invoiceDate) || savedDate;
@@ -7730,16 +7781,41 @@ router.post('/secondary-sales/save', async (req, res) => {
 
         const products = typeof productsData === 'string' ? JSON.parse(productsData) : (productsData || []);
         
-        const { XlStockist } = require('../db');
+        const { XlStockist, XlUser, XlAdmin } = require('../db');
         const { Op } = require('sequelize');
         let finalHq = headquarter;
-        if (!finalHq && stockist) {
-            const stData = await XlStockist.findOne({ where: { [Op.or]: [{_id: stockist}, {uid: stockist}] } });
-            if (stData) finalHq = stData.headquarter;
+        let stData = null;
+        if (stockist) {
+            stData = await XlStockist.findOne({ where: { [Op.or]: [{_id: stockist}, {uid: stockist}] } });
+            if (stData && !finalHq) finalHq = stData.headquarter;
         }
 
+        // Check if initiator is Admin or if employeeId belongs to Admin
+        let isAdminSender = !!fromAdmin;
+        if (employeeId) {
+            if (employeeId === 'ADMIN' || employeeId.toUpperCase().startsWith('ADM')) isAdminSender = true;
+            else {
+                const adminCheck = await XlAdmin.findOne({ where: { [Op.or]: [{ employeeId }, { uid: employeeId }] } });
+                if (adminCheck) isAdminSender = true;
+            }
+        }
+
+        let finalEmpId = employeeId;
+        if (isAdminSender || !finalEmpId || finalEmpId === 'ADMIN') {
+            if (stData && (stData.userAllotted || stData.employeeId)) {
+                finalEmpId = stData.userAllotted || stData.employeeId;
+            }
+            if ((!finalEmpId || finalEmpId === 'ADMIN' || finalEmpId === employeeId) && finalHq) {
+                const rep = await XlUser.findOne({ where: { hq: finalHq, status: 'Active' } });
+                if (rep && rep.employeeId) finalEmpId = rep.employeeId;
+                else if (!finalEmpId || finalEmpId === 'ADMIN' || isAdminSender) finalEmpId = 'VACANT_' + finalHq;
+            }
+        }
+
+        const finalStatus = (isAdminSender || status === 'Approved') ? 'Approved' : (status || 'Pending');
+
         const sale = await XlSecondarySales.create({
-            employeeId,
+            employeeId: finalEmpId,
             date: savedDate,
             month,
             year,
@@ -7749,7 +7825,8 @@ router.post('/secondary-sales/save', async (req, res) => {
             headquarter: finalHq,
             stockist,
             amount,
-            productsData: JSON.stringify(products)
+            productsData: JSON.stringify(products),
+            status: finalStatus
         });
 
         if (products.length > 0) {

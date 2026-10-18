@@ -78,6 +78,8 @@ export default function PrimarySales() {
   const [stockists, setStockists] = useState<any[]>([]);
   const [hqs, setHqs] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
+  const [fieldUsers, setFieldUsers] = useState<any[]>([]);
+  const [existingRecord, setExistingRecord] = useState<any>(null);
   
   const [formData, setFormData] = useState({
     date: todayISO(),
@@ -95,11 +97,12 @@ export default function PrimarySales() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [pRes, sRes, hRes, dRes] = await Promise.all([
+        const [pRes, sRes, hRes, dRes, uRes] = await Promise.all([
           axios.get('/api/xl/reports/products').catch(() => ({ data: { data: [] } })),
           axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } })),
           axios.get('/api/xl/hq').catch(() => ({ data: { data: [] } })),
-          axios.get('/api/xl/division').catch(() => ({ data: { data: [] } }))
+          axios.get('/api/xl/division').catch(() => ({ data: { data: [] } })),
+          axios.get('/api/admin/users').catch(() => ({ data: { users: [] } }))
         ]);
         
         const fetchedProducts = pRes.data.data || [];
@@ -114,6 +117,8 @@ export default function PrimarySales() {
 
         const fetchedDivs = dRes.data.data || [];
         setDivisions(fetchedDivs.map((d: any) => ({ value: d.divisionName || d.uid, label: d.divisionName || d.uid })).filter(Boolean));
+
+        setFieldUsers(uRes.data?.users || []);
 
       } catch (err) {
         console.error("Failed to fetch data:", err);
@@ -151,6 +156,7 @@ export default function PrimarySales() {
       axios.get(`/api/xl/primary-sales/${id}`).then(res => {
         if (res.data.success) {
           const d = res.data.data;
+          setExistingRecord(d);
 
           // FIX 1: Stockist — search full stockists list by name OR uid
           let st = d.stockist || '';
@@ -292,6 +298,22 @@ export default function PrimarySales() {
     return acc;
   }, { grossInvValue: 0, netInvValue: 0, salableRtnValue: 0, expiryRtnValue: 0 });
 
+  const getAllottedRep = () => {
+    const st = stockists.find((s: any) => s.uid === formData.stockist || s._id === formData.stockist);
+    const repEmpId = st?.userAllotted || st?.employeeId;
+    if (repEmpId) {
+      const u = fieldUsers.find((user: any) => user.employeeId === repEmpId || user._id === repEmpId || user.uid === repEmpId);
+      if (u) return { empId: repEmpId, name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name, isVacant: false };
+      return { empId: repEmpId, name: repEmpId, isVacant: false };
+    }
+    if (formData.headquarter) {
+      const u = fieldUsers.find((user: any) => user.hq === formData.headquarter && user.status === 'Active');
+      if (u) return { empId: u.employeeId, name: `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name, isVacant: false };
+      return { empId: `VACANT_${formData.headquarter}`, name: 'Vacant Territory', isVacant: true };
+    }
+    return null;
+  };
+
   const handleSave = async () => {
     if (!formData.headquarter || !formData.stockist || !formData.date || !formData.invoiceNumber) {
       alert('Please fill all mandatory fields (Date, Invoice No, HQ, Stockist)');
@@ -305,15 +327,17 @@ export default function PrimarySales() {
     }
 
     try {
-      const userStr = sessionStorage.getItem('xla_user');
-      const user = userStr ? JSON.parse(userStr) : {};
-      
       const cleanDate = toInputDateValue(formData.invoiceDate) || toInputDateValue(formData.date) || todayISO();
+      const rep = getAllottedRep();
+      const targetEmpId = (id && existingRecord?.employeeId) ? existingRecord.employeeId : (rep?.empId || 'ADMIN');
+
       const payload = {
         ...formData,
         date: cleanDate,
         invoiceDate: cleanDate,
-        employeeId: user.employeeId || user._id || 'ADMIN',
+        employeeId: targetEmpId,
+        status: 'Approved', // Auto-approved for Admin entries
+        fromAdmin: true,
         grossInvValue: totals.grossInvValue,
         netInvValue: totals.netInvValue,
         salableRtnValue: totals.salableRtnValue,
@@ -511,6 +535,21 @@ export default function PrimarySales() {
                 placeholder="Select Stockist"
               />
             </div>
+
+            {/* Allotted Representative Indicator */}
+            {(() => {
+              const rep = getAllottedRep();
+              if (!rep) return null;
+              return (
+                <div className="flex flex-col justify-end shrink-0 pb-0.5">
+                  <div className={`px-2.5 py-1 rounded text-[11px] font-bold border flex items-center gap-1.5 ${rep.isVacant ? 'bg-amber-500/10 border-amber-500/30 text-amber-400' : 'bg-sky-500/10 border-sky-500/30 text-sky-300'}`}>
+                    <span className="text-[9px] uppercase tracking-wider text-slate-400">Territory Rep:</span>
+                    <span>{rep.name}</span>
+                    {!rep.isVacant && <span className="text-[10px] opacity-75">({rep.empId})</span>}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* All Pri Sales Button */}
             <div className="flex flex-col justify-end w-[105px] shrink-0">
