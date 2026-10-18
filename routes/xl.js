@@ -4992,7 +4992,11 @@ function normalizeDateStr(dStr) {
     const str = String(dStr).trim();
     if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
         const parts = str.substring(0, 10).split('-');
-        return `${parts[1]}-${parts[2]}-${parts[0]}`;
+        const p1 = parseInt(parts[1], 10);
+        if (p1 > 12) {
+            return `${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[0]}`;
+        }
+        return `${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}-${parts[0]}`;
     }
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
@@ -5029,7 +5033,9 @@ function getMonthYearFromDate(dStr) {
     }
     if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
         const parts = str.substring(0, 10).split('-');
-        const monthNum = parseInt(parts[1], 10);
+        const p1 = parseInt(parts[1], 10);
+        const p2 = parseInt(parts[2], 10);
+        const monthNum = p1 > 12 ? p2 : p1;
         return {
             month: allMonthsShort[monthNum - 1] || '',
             year: parts[0]
@@ -5131,9 +5137,16 @@ router.get('/reports/primary-sales', async (req, res) => {
         let whereClauses = [];
         let replacements = {};
 
-        const dateExpr = "(CASE WHEN p.date ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(p.date, 'YYYY-MM-DD') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(p.date, 1, 2) AS INT) > 12 THEN TO_DATE(p.date, 'DD-MM-YYYY') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE NULL END)";
-        const startExpr = "(CASE WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:startDate, 'YYYY-MM-DD') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:startDate, 1, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'DD-MM-YYYY') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE NULL END)";
-        const endExpr = "(CASE WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:endDate, 'YYYY-MM-DD') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:endDate, 1, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'DD-MM-YYYY') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE NULL END)";
+        const dateCol = 'COALESCE(p."invoiceDate", p.date)';
+        const dateExpr = `(CASE 
+            WHEN ${dateCol} ~ '^\\d{4}-\\d{2}-\\d{2}$' AND CAST(SUBSTRING(${dateCol}, 6, 2) AS INT) > 12 THEN TO_DATE(${dateCol}, 'YYYY-DD-MM')
+            WHEN ${dateCol} ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(${dateCol}, 'YYYY-MM-DD')
+            WHEN ${dateCol} ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(${dateCol}, 1, 2) AS INT) > 12 THEN TO_DATE(${dateCol}, 'DD-MM-YYYY')
+            WHEN ${dateCol} ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(${dateCol}, 'MM-DD-YYYY')
+            ELSE NULL
+        END)`;
+        const startExpr = "(CASE WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' AND CAST(SUBSTRING(:startDate, 6, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'YYYY-DD-MM') WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:startDate, 'YYYY-MM-DD') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:startDate, 1, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'DD-MM-YYYY') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE NULL END)";
+        const endExpr = "(CASE WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' AND CAST(SUBSTRING(:endDate, 6, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'YYYY-DD-MM') WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:endDate, 'YYYY-MM-DD') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:endDate, 1, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'DD-MM-YYYY') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE NULL END)";
         if (startDate && endDate) {
             whereClauses.push(`${dateExpr} BETWEEN ${startExpr} AND ${endExpr}`);
             replacements.startDate = startDate;
@@ -5161,7 +5174,7 @@ router.get('/reports/primary-sales', async (req, res) => {
             let whereSql = whereClauses.length > 0 ? ' AND ' + whereClauses.join(' AND ') : '';
             sql = `
                 SELECT 
-                    p.date as date, 
+                    COALESCE(p."invoiceDate", p.date) as date, 
                     p."invoiceNumber" as "invoiceNumber", 
                     p.stockist as stockist, 
                     p.headquarter as headquarter, 
@@ -5195,13 +5208,13 @@ router.get('/reports/primary-sales', async (req, res) => {
                 selectParts.push('p.headquarter as headquarter');
                 groupParts.push('p.headquarter');
             } else if (type === 'Date') {
-                selectParts.push('p.date as date');
-                groupParts.push('p.date');
+                selectParts.push('COALESCE(p."invoiceDate", p.date) as date');
+                groupParts.push('COALESCE(p."invoiceDate", p.date)');
             }
 
             if (isDateWise && type !== 'Date') {
-                selectParts.unshift('p.date as date');
-                groupParts.unshift('p.date');
+                selectParts.unshift('COALESCE(p."invoiceDate", p.date) as date');
+                groupParts.unshift('COALESCE(p."invoiceDate", p.date)');
             }
 
             // Add aggregations
@@ -5266,7 +5279,19 @@ router.get('/reports/primary-sales', async (req, res) => {
             if (d.date) {
                 const dateParts = d.date.split('-');
                 if (dateParts.length === 3 && dateParts[0].length === 4) {
-                    d.displayDate = `${dateParts[1]}-${dateParts[2]}-${dateParts[0]}`;
+                    const p1 = parseInt(dateParts[1], 10);
+                    if (p1 > 12) {
+                        d.displayDate = `${dateParts[2].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}-${dateParts[0]}`;
+                    } else {
+                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}-${dateParts[0]}`;
+                    }
+                } else if (dateParts.length === 3 && dateParts[2].length === 4) {
+                    const p0 = parseInt(dateParts[0], 10);
+                    if (p0 > 12) {
+                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}-${dateParts[2]}`;
+                    } else {
+                        d.displayDate = d.date;
+                    }
                 } else {
                     d.displayDate = d.date;
                 }
@@ -5289,9 +5314,16 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         let whereClauses = [];
         let replacements = {};
 
-        const dateExpr = "(CASE WHEN p.date ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(p.date, 'YYYY-MM-DD') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(p.date, 1, 2) AS INT) > 12 THEN TO_DATE(p.date, 'DD-MM-YYYY') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE NULL END)";
-        const startExpr = "(CASE WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:startDate, 'YYYY-MM-DD') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:startDate, 1, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'DD-MM-YYYY') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE NULL END)";
-        const endExpr = "(CASE WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:endDate, 'YYYY-MM-DD') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:endDate, 1, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'DD-MM-YYYY') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE NULL END)";
+        const dateCol = 'COALESCE(p."invoiceDate", p.date)';
+        const dateExpr = `(CASE 
+            WHEN ${dateCol} ~ '^\\d{4}-\\d{2}-\\d{2}$' AND CAST(SUBSTRING(${dateCol}, 6, 2) AS INT) > 12 THEN TO_DATE(${dateCol}, 'YYYY-DD-MM')
+            WHEN ${dateCol} ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(${dateCol}, 'YYYY-MM-DD')
+            WHEN ${dateCol} ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(${dateCol}, 1, 2) AS INT) > 12 THEN TO_DATE(${dateCol}, 'DD-MM-YYYY')
+            WHEN ${dateCol} ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(${dateCol}, 'MM-DD-YYYY')
+            ELSE NULL
+        END)`;
+        const startExpr = "(CASE WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' AND CAST(SUBSTRING(:startDate, 6, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'YYYY-DD-MM') WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:startDate, 'YYYY-MM-DD') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:startDate, 1, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'DD-MM-YYYY') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE NULL END)";
+        const endExpr = "(CASE WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' AND CAST(SUBSTRING(:endDate, 6, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'YYYY-DD-MM') WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:endDate, 'YYYY-MM-DD') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:endDate, 1, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'DD-MM-YYYY') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE NULL END)";
         if (startDate && endDate) {
             whereClauses.push(`${dateExpr} BETWEEN ${startExpr} AND ${endExpr}`);
             replacements.startDate = startDate;
@@ -5314,7 +5346,7 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             whereClauses.push('p.\"employeeId\" = :user');
             replacements.user = user;
         } else if (type === 'Date' && date) {
-            whereClauses.push('p.date = :date');
+            whereClauses.push('COALESCE(p."invoiceDate", p.date) = :date');
             replacements.date = date;
         }
 
@@ -5323,8 +5355,8 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         let groupQuery = '';
 
         if (isDateWise) {
-            selectQuery = 'p.date, i.product, SUM(i.qty) as quantity, AVG(i.\"basePrice\") as \"averagePrice\", SUM(i.\"basePrice\" * i.qty) as \"totalSales\"';
-            groupQuery = 'p.date, i.product';
+            selectQuery = 'COALESCE(p."invoiceDate", p.date) as date, i.product, SUM(i.qty) as quantity, AVG(i.\"basePrice\") as \"averagePrice\", SUM(i.\"basePrice\" * i.qty) as \"totalSales\"';
+            groupQuery = 'COALESCE(p."invoiceDate", p.date), i.product';
         } else {
             selectQuery = 'i.product, SUM(i.\"basePrice\" * i.qty) as \"totalSales\"';
             groupQuery = 'i.product';
@@ -5362,7 +5394,19 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
             if (d.date) {
                 const dateParts = d.date.split('-');
                 if (dateParts.length === 3 && dateParts[0].length === 4) {
-                    d.displayDate = `${dateParts[1]}-${dateParts[2]}-${dateParts[0]}`;
+                    const p1 = parseInt(dateParts[1], 10);
+                    if (p1 > 12) {
+                        d.displayDate = `${dateParts[2].padStart(2, '0')}-${dateParts[1].padStart(2, '0')}-${dateParts[0]}`;
+                    } else {
+                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[2].padStart(2, '0')}-${dateParts[0]}`;
+                    }
+                } else if (dateParts.length === 3 && dateParts[2].length === 4) {
+                    const p0 = parseInt(dateParts[0], 10);
+                    if (p0 > 12) {
+                        d.displayDate = `${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}-${dateParts[2]}`;
+                    } else {
+                        d.displayDate = d.date;
+                    }
                 } else {
                     d.displayDate = d.date;
                 }

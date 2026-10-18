@@ -75,6 +75,11 @@ export default function PrimarySalesReports() {
     setLoading(false);
   };
 
+  useEffect(() => {
+    fetchReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectType, viewDateWise]);
+
   const fetchDetailReport = async (row: any, isDateWise = false) => {
     setDetailLoading(true);
     try {

@@ -10,9 +10,13 @@ export function formatMMDDYYYY(dStr: string | null | undefined): string {
   const str = String(dStr).trim();
   if (!str || str === 'undefined' || str === 'null') return '-';
 
-  // If YYYY-MM-DD (e.g. "2026-09-02" or "2026-08-02T00:00:00.000Z")
+  // If YYYY-MM-DD or YYYY-DD-MM (e.g. "2026-09-02" or "2026-18-10")
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const parts = str.substring(0, 10).split('-');
+    const p1 = parseInt(parts[1], 10);
+    if (p1 > 12) {
+      return `${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[0]}`;
+    }
     return `${parts[1]}-${parts[2]}-${parts[0]}`;
   }
 
