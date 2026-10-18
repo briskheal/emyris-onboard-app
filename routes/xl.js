@@ -6677,7 +6677,7 @@ router.get('/debug/primary-sales', async (req, res) => {
 router.get('/reports/secondary-sales', async (req, res) => {
     try {
         const { sequelize } = require('../db');
-        const { startMonth, startYear, endMonth, endYear, type } = req.query;
+        const { startMonth, startYear, endMonth, endYear, type, employeeId } = req.query;
 
         let whereClauses = [];
         let replacements = {};
@@ -6715,26 +6715,31 @@ router.get('/reports/secondary-sales', async (req, res) => {
             }
         }
 
+        if (employeeId && employeeId !== 'all') {
+            whereClauses.push('s."employeeId" = :employeeId');
+            replacements.employeeId = employeeId;
+        }
+
         let selectParts = [];
         let groupParts = [];
         let joinSql = '';
         let sql = '';
 
         if (type === 'Inventory') {
-            selectParts.push('s.stockist', 's.headquarter', 'SUM(i.qty) as "quantity"');
-            groupParts.push('s.stockist', 's.headquarter');
+            selectParts.push('s.month as "month"', 's.year as "year"', 's.stockist', 's.headquarter', 'SUM(i.qty) as "quantity"');
+            groupParts.push('s.year', 's.month', 's.stockist', 's.headquarter');
             joinSql = 'JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"';
         } else if (type === 'Stockist') {
-            selectParts.push('s.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
-            groupParts.push('s.stockist', 's.headquarter');
+            selectParts.push('s.month as "month"', 's.year as "year"', 's.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
+            groupParts.push('s.year', 's.month', 's.stockist', 's.headquarter');
         } else if (type === 'Headquarter') {
-            selectParts.push('s.headquarter', 'SUM(s.amount) as "totalSales"');
-            groupParts.push('s.headquarter');
+            selectParts.push('s.month as "month"', 's.year as "year"', 's.headquarter', 'SUM(s.amount) as "totalSales"');
+            groupParts.push('s.year', 's.month', 's.headquarter');
         } else if (type === 'User') {
-            selectParts.push('s._id as "_id"', 's.month as "month"', 's.date as "date"', 's."invoiceDate" as "invoiceDate"', 's."invoiceNumber" as "invoiceNumber"', 's."employeeId" as "employeeId"', 's.stockist as "stockist"', 's.headquarter as "headquarter"', 's.amount as "totalSales"');
+            selectParts.push('s._id as "_id"', 's.month as "month"', 's.year as "year"', 's.date as "date"', 's."invoiceDate" as "invoiceDate"', 's."invoiceNumber" as "invoiceNumber"', 's."employeeId" as "employeeId"', 's.stockist as "stockist"', 's.headquarter as "headquarter"', 's.amount as "totalSales"');
         } else {
-            selectParts.push('s.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
-            groupParts.push('s.stockist', 's.headquarter');
+            selectParts.push('s.month as "month"', 's.year as "year"', 's.stockist', 's.headquarter', 'SUM(s.amount) as "totalSales"');
+            groupParts.push('s.year', 's.month', 's.stockist', 's.headquarter');
         }
 
         let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
@@ -6744,7 +6749,8 @@ router.get('/reports/secondary-sales', async (req, res) => {
             FROM xl_secondary_sales s
             ${joinSql}
             ${whereSql}
-            GROUP BY ${groupParts.join(', ')}
+            ${groupParts.length > 0 ? 'GROUP BY ' + groupParts.join(', ') : ''}
+            ORDER BY s."createdAt" DESC
         `;
 
         const data = await sequelize.query(sql, {
@@ -6753,30 +6759,51 @@ router.get('/reports/secondary-sales', async (req, res) => {
         });
 
         // Mapping logic
-        const { XlStockist, XlUser } = require('../db');
-        const stockists = await XlStockist.findAll({ raw: true });
+        const { XlStockist, XlUser, XlAdmin } = require('../db');
+        const [stockists, users, admins] = await Promise.all([
+            XlStockist.findAll({ raw: true }).catch(() => []),
+            XlUser.findAll({ raw: true }).catch(() => []),
+            XlAdmin ? XlAdmin.findAll({ raw: true }).catch(() => []) : []
+        ]);
+
         const stockMap = {};
         stockists.forEach(st => {
-            if (st.uid) stockMap[st.uid] = st.businessName || st.name;
-            if (st._id) stockMap[st._id] = st.businessName || st.name;
+            const sName = st.businessName || st.name;
+            if (st.uid) stockMap[st.uid] = sName;
+            if (st._id) stockMap[st._id] = sName;
+            if (st.name) stockMap[st.name] = sName;
         });
 
-        const users = await XlUser.findAll({ raw: true });
         const userMap = {};
+        admins.forEach(a => {
+            const name = `${a.firstName || ''} ${a.lastName || ''}`.trim() || a.name || a.username;
+            if (a.employeeId) userMap[a.employeeId] = name;
+            if (a._id) userMap[a._id] = name;
+            if (a.uid) userMap[a.uid] = name;
+        });
         users.forEach(u => {
-            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim();
+            const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name;
             if (u.employeeId) userMap[u.employeeId] = name;
             if (u._id) userMap[u._id] = name;
             if (u.uid) userMap[u.uid] = name;
         });
 
         data.forEach(d => {
-            if (d.stockist && stockMap[d.stockist]) d.stockistName = stockMap[d.stockist];
-            if (d.employeeId && userMap[d.employeeId]) d.userName = userMap[d.employeeId];
+            if (d.stockist) d.stockistName = stockMap[d.stockist] || d.stockist;
+            if (d.employeeId) d.userName = userMap[d.employeeId] || d.employeeId;
             if (d.date) d.displayDate = toDisplayDate(d.date);
             if (d.invoiceDate) d.displayInvoiceDate = toDisplayDate(d.invoiceDate);
             d.totalSales = Number(d.totalSales || 0);
-            if(d.totalQuantity) d.totalQuantity = Number(d.totalQuantity || 0);
+            if(d.quantity) d.quantity = Number(d.quantity || 0);
+        });
+
+        const monthOrder = { Jan: 1, Feb: 2, Mar: 3, Apr: 4, May: 5, Jun: 6, Jul: 7, Aug: 8, Sep: 9, Oct: 10, Nov: 11, Dec: 12 };
+        data.sort((a, b) => {
+            const yDiff = (parseInt(a.year) || 0) - (parseInt(b.year) || 0);
+            if (yDiff !== 0) return yDiff;
+            const mDiff = (monthOrder[a.month] || 0) - (monthOrder[b.month] || 0);
+            if (mDiff !== 0) return mDiff;
+            return (a.stockistName || a.stockist || '').localeCompare(b.stockistName || b.stockist || '');
         });
 
         res.json({ success: true, data });
@@ -6789,13 +6816,18 @@ router.get('/reports/secondary-sales', async (req, res) => {
 router.get('/reports/secondary-sales/detail', async (req, res) => {
     try {
         const { sequelize } = require('../db');
-        const { type, stockist, headquarter, startMonth, startYear, endMonth, endYear } = req.query;
+        const { type, stockist, headquarter, month, year, startMonth, startYear, endMonth, endYear } = req.query;
 
         let whereClauses = [];
         let replacements = {};
 
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        if (startMonth && startYear) {
+        if (month && year) {
+            whereClauses.push('s.month = :month');
+            whereClauses.push('s.year = :year');
+            replacements.month = month;
+            replacements.year = year;
+        } else if (startMonth && startYear) {
             if (endMonth && endYear) {
                 let sM = monthNames.indexOf(startMonth);
                 let sY = parseInt(startYear);
@@ -6827,32 +6859,36 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
             }
         }
 
-        if (type === 'Stockist' && stockist) {
+        if (stockist) {
             whereClauses.push('s.stockist = :stockist');
             replacements.stockist = stockist;
-        } else if (type === 'Headquarter' && headquarter) {
+        }
+        if (headquarter) {
             whereClauses.push('s.headquarter = :headquarter');
             replacements.headquarter = headquarter;
         }
 
         let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
 
-        // For drill down from Stockist -> Product Wise, we want products and their total secondary sales
-        // For drill down from Headquarter -> Stockist Wise, we want stockists and their total secondary sales
         let sql = '';
         if (type === 'Stockist') {
             sql = `
-                SELECT s.stockist, s.headquarter, SUM(s.amount) as "totalSales"
+                SELECT s.stockist, s.headquarter, s.month, s.year, SUM(s.amount) as "totalSales"
                 FROM xl_secondary_sales s
                 ${whereSql}
-                GROUP BY s.stockist, s.headquarter
+                GROUP BY s.stockist, s.headquarter, s.month, s.year
             `;
         } else {
-            // Default to Product Wise for Stockist
+            // Product Wise for Stockist
             sql = `
-                SELECT i.product, SUM(i.qty * i."basePrice") as "totalSales", SUM(i.qty) as quantity, MAX(i."basePrice") as price
+                SELECT 
+                    i.product, 
+                    SUM(i.qty) as quantity, 
+                    MAX(COALESCE(NULLIF(i."basePrice", 0), NULLIF(i."customPrice", 0), pr.ptr, 0)) as price,
+                    SUM(i.qty * COALESCE(NULLIF(i."basePrice", 0), NULLIF(i."customPrice", 0), pr.ptr, 0)) as "totalSales"
                 FROM xl_secondary_sales s
                 JOIN xl_secondary_sales_items i ON s."_id" = i."saleId"
+                LEFT JOIN xl_products pr ON (i.product = pr.uid OR i.product = pr."_id" OR i."productId" = pr.uid OR i."productId" = pr."_id")
                 ${whereSql}
                 GROUP BY i.product
             `;
@@ -6883,6 +6919,8 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
             if (d.product && prodMap[d.product]) d.productName = prodMap[d.product];
             if (d.stockist && stockMap[d.stockist]) d.stockistName = stockMap[d.stockist];
             d.totalSales = Number(d.totalSales || 0);
+            d.price = Number(d.price || 0);
+            d.quantity = Number(d.quantity || 0);
         });
 
         res.json({ success: true, data });

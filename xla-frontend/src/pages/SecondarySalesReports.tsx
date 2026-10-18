@@ -89,6 +89,9 @@ export default function SecondarySalesReports() {
         type: type,
       };
 
+      if (row?.month) params.month = row.month;
+      if (row?.year) params.year = row.year;
+
       if (type === 'Stockist' && selectType === 'Headquarter') {
          params.headquarter = row?.headquarter;
       }
@@ -196,16 +199,16 @@ export default function SecondarySalesReports() {
 
         {!detailRow ? (
           <>
-            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-3.5 flex flex-wrap gap-4 items-center justify-between shadow-sm rounded-xl">
-              <div className="flex flex-wrap gap-4 items-end">
-                <div className="flex flex-col gap-2 relative z-50">
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Start Month <span className="text-rose-500">*</span></label>
+            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-3 flex flex-wrap gap-2.5 md:gap-3 items-center justify-between shadow-sm rounded-xl">
+              <div className="flex flex-wrap gap-2.5 md:gap-3 items-end">
+                <div className="flex flex-col gap-1.5 relative z-50">
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Start Month <span className="text-rose-500">*</span></label>
                     <div 
                       onClick={() => { setShowStartMonthPicker(!showStartMonthPicker); setShowEndMonthPicker(false); }}
-                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] w-[180px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-sky-500 transition-colors"
+                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 h-[42px] w-[140px] text-slate-300 font-semibold text-xs md:text-sm cursor-pointer hover:border-sky-500 transition-colors"
                     >
-                      <span>{months[startMonth - 1]}, {startYear}</span>
-                      <Calendar size={16} className="text-slate-500" />
+                      <span className="truncate">{months[startMonth - 1]}, {startYear}</span>
+                      <Calendar size={15} className="text-slate-500 shrink-0 ml-1" />
                     </div>
                     {showStartMonthPicker && (
                       <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-[60] p-4">
@@ -232,14 +235,14 @@ export default function SecondarySalesReports() {
                     )}
                 </div>
 
-                <div className="flex flex-col gap-2 relative z-40">
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select End Month <span className="text-rose-500">*</span></label>
+                <div className="flex flex-col gap-1.5 relative z-40">
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">End Month <span className="text-rose-500">*</span></label>
                     <div 
                       onClick={() => { setShowEndMonthPicker(!showEndMonthPicker); setShowStartMonthPicker(false); }}
-                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 h-[42px] w-[180px] text-slate-300 font-semibold text-sm cursor-pointer hover:border-sky-500 transition-colors"
+                      className="flex items-center justify-between bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 h-[42px] w-[140px] text-slate-300 font-semibold text-xs md:text-sm cursor-pointer hover:border-sky-500 transition-colors"
                     >
-                      <span>{months[endMonth - 1]}, {endYear}</span>
-                      <Calendar size={16} className="text-slate-500" />
+                      <span className="truncate">{months[endMonth - 1]}, {endYear}</span>
+                      <Calendar size={15} className="text-slate-500 shrink-0 ml-1" />
                     </div>
                     {showEndMonthPicker && (
                       <div className="absolute top-[68px] left-0 w-[260px] bg-[#1e1e2d] border border-[#3b3b5a] rounded-xl shadow-2xl z-[60] p-4">
@@ -266,21 +269,20 @@ export default function SecondarySalesReports() {
                     )}
                 </div>
 
-                <div className="flex flex-col gap-2 min-w-[200px] max-w-[300px]">
-                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Type <span className="text-rose-500">*</span></label>
-                <select value={selectType} onChange={e => { setSelectType(e.target.value); setSelectedUser(''); }} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-4 py-2.5 text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
-                  <option>Stockist</option>
-                  <option>Headquarter</option>
-                  <option>User</option>
-                  <option>Inventory</option>
-                </select>
-              </div>
+                <div className="flex flex-col gap-1.5 w-[130px] shrink-0">
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Select Type <span className="text-rose-500">*</span></label>
+                  <select value={selectType} onChange={e => { setSelectType(e.target.value); setSelectedUser(''); }} className="bg-[#151521] border border-[#3b3b5a] rounded-lg px-3 py-2 text-xs md:text-sm text-slate-300 focus:border-sky-500 hover:border-sky-500 focus:outline-none w-full transition-colors h-[42px] cursor-pointer">
+                    <option>Stockist</option>
+                    <option>Headquarter</option>
+                    <option>User</option>
+                    <option>Inventory</option>
+                  </select>
+                </div>
 
-              {selectType === 'User' && (
-                <div className="flex flex-col gap-2 min-w-[250px] max-w-[350px]">
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select User</label>
-                  <div className="flex items-center gap-3">
-                    <div className="flex-grow">
+                {selectType === 'User' && (
+                  <div className="flex flex-col gap-1.5 w-[220px] shrink-0">
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Select User</label>
+                    <div className="w-full">
                       <CustomUserSelect 
                         users={users}
                         selectedUser={selectedUser}
@@ -288,12 +290,11 @@ export default function SecondarySalesReports() {
                       />
                     </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              <button id="fetch-btn" onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-medium px-6 h-[42px] rounded-lg transition-colors shadow-lg">
-                See Reports
-              </button>
+                <button id="fetch-btn" onClick={fetchReports} className="bg-[#1f84b6] hover:bg-sky-600 text-white font-semibold px-5 h-[42px] rounded-lg transition-colors shadow-lg shrink-0">
+                  See Reports
+                </button>
               </div>
             </div>
 
@@ -335,28 +336,30 @@ export default function SecondarySalesReports() {
                           {selectType === 'User' ? (
                             <>
                               {renderSortableHeader('Month', 'month')}
-                                {renderSortableHeader('Invoice Date', 'invoiceDate')}
-                                {renderSortableHeader('Invoice Number', 'invoiceNumber')}
-                                {renderSortableHeader('Submitted By', 'userName')}
+                              {renderSortableHeader('Invoice Date', 'invoiceDate')}
+                              {renderSortableHeader('Invoice Number', 'invoiceNumber')}
+                              {renderSortableHeader('Submitted By', 'userName')}
                               {renderSortableHeader('Stockist', 'stockist')}
                               {renderSortableHeader('Headquarter', 'headquarter')}
                               {renderSortableHeader(<>Total Secondary Sales<br/>(₹)</>, 'totalSales', 'right')}
                             </>
                           ) : selectType === 'Inventory' ? (
                             <>
+                              {renderSortableHeader('Month', 'month')}
                               {renderSortableHeader('Stockist', 'stockist')}
                               {renderSortableHeader('Headquarter', 'headquarter')}
                               {renderSortableHeader('Total Quantity', 'quantity', 'right')}
                             </>
                           ) : (
                             <>
+                              {renderSortableHeader('Month', 'month')}
                               {selectType === 'Stockist' && (
                                 <>
-                                  <th className="px-4 py-3 border-r border-[#3b3b5a]">Stockist</th>
-                                  <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>
+                                  {renderSortableHeader('Stockist', 'stockist')}
+                                  {renderSortableHeader('Headquarter', 'headquarter')}
                                 </>
                               )}
-                              {selectType === 'Headquarter' && <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>}
+                              {selectType === 'Headquarter' && renderSortableHeader('Headquarter', 'headquarter')}
                               
                               <th className="px-4 py-3 border-r border-[#3b3b5a] text-right">Total Secondary Sales (₹)</th>
                               <th className="px-4 py-3 text-center w-[1%]">View</th>
@@ -371,26 +374,28 @@ export default function SecondarySalesReports() {
                             
                             {selectType === 'User' ? (
                               <>
-                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.month || '-'}</td>
-                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{formatMMDDYYYY(d.invoiceDate)}</td>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.invoiceNumber || 'NA'}</td>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
-                                    <div className="flex flex-col">
-                                      <span className="font-medium text-slate-200">{d.userName || d.employeeId}</span>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300 font-medium">{d.month ? `${d.month}, ${d.year || ''}` : '-'}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.displayInvoiceDate || (d.invoiceDate ? formatMMDDYYYY(d.invoiceDate) : '-')}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.invoiceNumber || 'NA'}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-slate-200">{d.userName || d.employeeId || '-'}</span>
                                   </div>
                                 </td>
-                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockistName || d.stockist}</td>
-                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.stockistName || d.stockist || '-'}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter || '-'}</td>
                                 <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
                               </>
                             ) : selectType === 'Inventory' ? (
-                                <>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockistName || d.stockist}</td>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
-                                  <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-slate-300">{Number(d.quantity || 0)}</td>
-                                </>
+                              <>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300 font-medium">{d.month ? `${d.month}, ${d.year || ''}` : '-'}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockistName || d.stockist}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-medium text-slate-300">{Number(d.quantity || 0)}</td>
+                              </>
                             ) : (
                               <>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300 font-medium">{d.month ? `${d.month}, ${d.year || ''}` : '-'}</td>
                                 {selectType === 'Stockist' && (
                                   <>
                                     <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockistName || d.stockist}</td>
@@ -411,7 +416,7 @@ export default function SecondarySalesReports() {
                         ))}
                         {processedData.length > 0 && !loading && (
                           <tr className="bg-[#151521] font-bold text-sky-400">
-                            <td colSpan={selectType === 'User' ? 7 : selectType === 'Inventory' ? 3 : selectType === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                            <td colSpan={selectType === 'User' ? 7 : selectType === 'Headquarter' ? 3 : 4} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
                             <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
                               {selectType === 'Inventory' 
                                 ? processedData.reduce((sum, d) => sum + Number(d.quantity || 0), 0)
@@ -436,7 +441,14 @@ export default function SecondarySalesReports() {
             <div className="bg-[#1e1e2d] border border-[#2d2d44] p-3.5 flex flex-wrap gap-4 items-center justify-between shadow-sm rounded-xl">
               <div>
                 <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-0.5">SHOWING RESULTS FOR {detailLevel === 'Stockist' ? 'HEADQUARTER' : 'STOCKIST'}</p>
-                <h3 className="text-base md:text-lg font-bold text-white">{detailLevel === 'Stockist' ? detailRow?.headquarter : detailRow?.stockistName || detailRow?.stockist}</h3>
+                <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                  <span>{detailLevel === 'Stockist' ? detailRow?.headquarter : detailRow?.stockistName || detailRow?.stockist}</span>
+                  {detailRow?.month && (
+                    <span className="text-xs md:text-sm font-semibold text-sky-400 bg-sky-500/10 px-2.5 py-0.5 rounded-full border border-sky-500/20">
+                      {detailRow.month}, {detailRow.year}
+                    </span>
+                  )}
+                </h3>
               </div>
             </div>
 
@@ -458,6 +470,7 @@ export default function SecondarySalesReports() {
                         <th className="px-4 py-3 border-r border-[#3b3b5a] w-[1%]">Sr no.</th>
                         {detailLevel === 'Stockist' ? (
                           <>
+                            <th className="px-4 py-3 border-r border-[#3b3b5a]">Month</th>
                             <th className="px-4 py-3 border-r border-[#3b3b5a]">Stockist</th>
                             <th className="px-4 py-3 border-r border-[#3b3b5a]">Headquarter</th>
                             <th className="px-4 py-3 text-right">Total Secondary Sales (₹)</th>
@@ -480,6 +493,7 @@ export default function SecondarySalesReports() {
                           
                           {detailLevel === 'Stockist' ? (
                             <>
+                              <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300 font-medium">{d.month ? `${d.month}, ${d.year || ''}` : '-'}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] font-medium text-slate-200">{d.stockistName || d.stockist}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-400">{d.headquarter}</td>
                               <td className="px-4 py-2 border-r border-[#3b3b5a] text-right font-bold text-emerald-400">{Number(d.totalSales || 0).toFixed(2)}</td>
@@ -501,7 +515,7 @@ export default function SecondarySalesReports() {
                       ))}
                       {detailData.length > 0 && !detailLoading && (
                         <tr className="bg-[#151521] font-bold text-sky-400">
-                          <td colSpan={detailLevel === 'Stockist' ? 3 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
+                          <td colSpan={detailLevel === 'Stockist' ? 4 : 2} className="px-4 py-3 border-r border-[#3b3b5a] text-center border-t border-[#3b3b5a]">Total</td>
                           {detailLevel === 'Product' && (
                               <>
                                 <td className="px-4 py-3 border-r border-[#3b3b5a] text-right border-t border-[#3b3b5a]">
