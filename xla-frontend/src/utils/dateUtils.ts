@@ -1,52 +1,61 @@
 /**
- * Formats any date string or Date object into MM-DD-YYYY format.
- * Examples:
- *   "2026-08-02" -> "08-02-2026"
- *   "2026-09-02" -> "09-02-2026"
- *   "09-02-2026" -> "09-02-2026"
+ * Universal Presentation Date Standard: DD-MM-YYYY
+ * Storage Date Standard: YYYY-MM-DD
  */
-export function formatMMDDYYYY(dStr: string | null | undefined): string {
+
+/**
+ * Formats any date string or Date object into DD-MM-YYYY presentation format.
+ * Examples:
+ *   "2026-10-18" -> "18-10-2026"
+ *   "2026-09-02" -> "02-09-2026"
+ *   "18-10-2026" -> "18-10-2026"
+ */
+export function formatDDMMYYYY(dStr: string | null | undefined): string {
   if (!dStr) return '-';
   const str = String(dStr).trim();
   if (!str || str === 'undefined' || str === 'null') return '-';
 
-  // If YYYY-MM-DD or YYYY-DD-MM (e.g. "2026-09-02" or "2026-18-10")
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+  // If YYYY-MM-DD or YYYY-DD-MM (e.g. "2026-10-18")
+  if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
     const parts = str.substring(0, 10).split('-');
+    const y = parts[0];
     const p1 = parseInt(parts[1], 10);
-    if (p1 > 12) {
-      return `${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[0]}`;
-    }
-    return `${parts[1]}-${parts[2]}-${parts[0]}`;
+    const p2 = parseInt(parts[2], 10);
+    const m = p1 > 12 ? p2 : p1;
+    const d = p1 > 12 ? p1 : p2;
+    return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
   }
 
   // If DD-MM-YYYY or MM-DD-YYYY
   if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
     const parts = str.split('-');
     const p1 = parseInt(parts[0], 10);
-    // If first number > 12, it is definitely a day (DD-MM-YYYY)
-    if (p1 > 12) {
-      return `${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}-${parts[2]}`;
-    }
-    return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
+    const p2 = parseInt(parts[1], 10);
+    const y = parts[2];
+    const d = p2 > 12 ? p2 : p1;
+    const m = p2 > 12 ? p1 : p2;
+    return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
   }
 
   // If ISO or parsable Date string
   try {
     const d = new Date(str);
     if (!isNaN(d.getTime())) {
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
       const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
       const yyyy = d.getFullYear();
-      return `${mm}-${dd}-${yyyy}`;
+      return `${dd}-${mm}-${yyyy}`;
     }
   } catch (e) {}
 
   return str;
 }
 
+// Backward-compatible alias so all existing component imports render DD-MM-YYYY
+export const formatMMDDYYYY = formatDDMMYYYY;
+
 /**
- * Transforms any date input (Date object, MM-DD-YYYY, DD-MM-YYYY, YYYY-MM-DD)
+ * Transforms any date input (Date object, DD-MM-YYYY, MM-DD-YYYY, YYYY-MM-DD)
  * into standard ISO YYYY-MM-DD for backend APIs and HTML5 inputs.
  */
 export function formatStorageDate(dateInput: string | Date | null | undefined): string {
@@ -58,24 +67,27 @@ export function formatStorageDate(dateInput: string | Date | null | undefined): 
   const str = String(dateInput).trim();
   if (!str || str === 'undefined' || str === 'null') return '';
 
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-    const parts = str.split('-');
+  if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+    const parts = str.substring(0, 10).split('-');
+    const y = parts[0];
     const p1 = parseInt(parts[1], 10);
     const p2 = parseInt(parts[2], 10);
     if (p1 > 12) {
-      return `${parts[0]}-${String(p2).padStart(2, '0')}-${String(p1).padStart(2, '0')}`;
+      return `${y}-${String(p2).padStart(2, '0')}-${String(p1).padStart(2, '0')}`;
     }
-    return str;
+    return `${y}-${String(p1).padStart(2, '0')}-${String(p2).padStart(2, '0')}`;
   }
+
   if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
     const parts = str.split('-');
     const p1 = parseInt(parts[0], 10);
     const p2 = parseInt(parts[1], 10);
     const y = parts[2];
-    const month = p1 > 12 ? p2 : p1;
-    const day = p1 > 12 ? p1 : p2;
+    const day = p2 > 12 ? p2 : p1;
+    const month = p2 > 12 ? p1 : p2;
     return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
+
   try {
     const d = new Date(str);
     if (!isNaN(d.getTime())) {
@@ -83,6 +95,7 @@ export function formatStorageDate(dateInput: string | Date | null | undefined): 
       return new Date(d.getTime() - offset).toISOString().split('T')[0];
     }
   } catch (e) {}
+
   return str;
 }
 

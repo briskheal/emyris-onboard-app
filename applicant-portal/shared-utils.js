@@ -116,15 +116,17 @@ function formatDatePretty(dateStr) {
     return `${day}${suffix} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
-function formatDateMMDDYYYY(dateStr) {
+function formatDateDDMMYYYY(dateStr) {
     if (!dateStr) return "-";
     const d = parseDateUniversal(dateStr);
     if (!d || isNaN(d.getTime())) return String(dateStr);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
-    return `${mm}-${dd}-${yyyy}`;
+    return `${dd}-${mm}-${yyyy}`;
 }
+
+const formatDateMMDDYYYY = formatDateDDMMYYYY;
 
 function truncateFilename(name, limit = 20) {
     if (!name || name.length <= limit) return name;

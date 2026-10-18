@@ -1,6 +1,6 @@
 /**
  * Universal Enterprise Date Standard (Backend)
- * Principle: Persist ISO (YYYY-MM-DD), Display Localized (MM-DD-YYYY)
+ * Principle: Persist ISO (YYYY-MM-DD), Display Localized (DD-MM-YYYY)
  */
 
 function toStorageDate(input) {
@@ -24,15 +24,16 @@ function toStorageDate(input) {
         return `${y}-${String(p1).padStart(2, '0')}-${String(p2).padStart(2, '0')}`;
     }
 
-    // If MM-DD-YYYY or DD-MM-YYYY
+    // If DD-MM-YYYY or MM-DD-YYYY
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
         const p1 = parseInt(parts[0], 10);
         const p2 = parseInt(parts[1], 10);
         const y = parts[2];
-        // Standard is MM-DD-YYYY. If first number > 12, it must be DD-MM-YYYY
-        const month = p1 > 12 ? p2 : p1;
-        const day = p1 > 12 ? p1 : p2;
+        // Standard user entry is DD-MM-YYYY (p1 is day, p2 is month)
+        // If p2 > 12, then it was passed as MM-DD-YYYY (p2 is day, p1 is month)
+        const day = p2 > 12 ? p2 : p1;
+        const month = p2 > 12 ? p1 : p2;
         return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
 
@@ -54,22 +55,26 @@ function toDisplayDate(storageDate) {
 
     str = str.replace(/[./]/g, '-');
 
+    // If starts with YYYY-MM-DD or YYYY-DD-MM
     if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
         const parts = str.substring(0, 10).split('-');
         const y = parts[0];
-        const m = String(parseInt(parts[1], 10)).padStart(2, '0');
-        const d = String(parseInt(parts[2], 10)).padStart(2, '0');
-        return `${m}-${d}-${y}`;
+        const p1 = parseInt(parts[1], 10);
+        const p2 = parseInt(parts[2], 10);
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
     }
 
+    // If DD-MM-YYYY or MM-DD-YYYY
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
         const p1 = parseInt(parts[0], 10);
         const p2 = parseInt(parts[1], 10);
         const y = parts[2];
-        const m = p1 > 12 ? p2 : p1;
-        const d = p1 > 12 ? p1 : p2;
-        return `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}-${y}`;
+        const d = p2 > 12 ? p2 : p1;
+        const m = p2 > 12 ? p1 : p2;
+        return `${String(d).padStart(2, '0')}-${String(m).padStart(2, '0')}-${y}`;
     }
 
     return str;

@@ -24,17 +24,17 @@ export function safeParseDate(dateStr: any) {
     return isNaN(d.getTime()) ? null : d;
 }
 
-export function formatDateMMDDYYYY(dateStr: any) {
+export function formatDateDMY(dateStr: any) {
     const d = safeParseDate(dateStr);
     if (!d) return '';
-    const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
+    const m = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
-    return `${m}-${day}-${year}`;
+    return `${day}-${m}-${year}`;
 }
 
-export function formatDateDMY(dateStr: any) {
-    return formatDateMMDDYYYY(dateStr);
+export function formatDateMMDDYYYY(dateStr: any) {
+    return formatDateDMY(dateStr);
 }
 
 export function numberToWords(num: number | string) {
