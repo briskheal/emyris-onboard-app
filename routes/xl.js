@@ -5161,7 +5161,7 @@ router.get('/reports/primary-sales', async (req, res) => {
         });
 
         // Mapping logic
-        const { XlStockist, XlUser } = require('../db');
+        const { XlStockist, XlUser, XlAdmin } = require('../db');
         const stockists = await XlStockist.findAll({ raw: true });
         const stockMap = {};
         stockists.forEach(s => {
@@ -5171,12 +5171,19 @@ router.get('/reports/primary-sales', async (req, res) => {
         });
 
         const users = await XlUser.findAll({ raw: true });
+        const admins = XlAdmin ? await XlAdmin.findAll({ raw: true }) : [];
         const userMap = {};
         users.forEach(u => {
             const name = `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.name;
             if (u.employeeId) userMap[u.employeeId] = name;
             if (u._id) userMap[u._id] = name;
             if (u.uid) userMap[u.uid] = name;
+        });
+        admins.forEach(a => {
+            const name = a.name || `${a.firstName || ''} ${a.lastName || ''}`.trim();
+            if (a.employeeId) userMap[a.employeeId] = name;
+            if (a._id) userMap[a._id] = name;
+            if (a.uid) userMap[a.uid] = name;
         });
 
         const { XlProduct } = require('../db');
