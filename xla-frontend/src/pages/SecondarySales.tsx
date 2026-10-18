@@ -27,6 +27,7 @@ export default function SecondarySales() {
   const [stockists, setStockists] = useState<any[]>([]);
   const [hqs, setHqs] = useState<any[]>([]);
   const [divisions, setDivisions] = useState<any[]>([]);
+  const [existingRecord, setExistingRecord] = useState<any>(null);
   
   const currentMonth = new Date().toLocaleString('en-US', { month: 'short' }) + ' ' + new Date().getFullYear();
   
@@ -86,6 +87,7 @@ export default function SecondarySales() {
       axios.get(`/api/xl/secondary-sales/${id}`).then(res => {
         if (res.data.success) {
           const d = res.data.data;
+          setExistingRecord(d);
           setFormData({
             date: d.date || (d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : ''),
             month: d.month || currentMonth.split(' ')[0],
@@ -311,10 +313,10 @@ export default function SecondarySales() {
       const payload = {
         ...formData,
         date: formatStorageDate(formData.date),
-        invoiceDate: formatStorageDate(formData.invoiceDate),
-        employeeId: user.employeeId || user._id || 'ADMIN',
+        invoiceDate: formatStorageDate(formData.invoiceDate || formData.date),
+        employeeId: (id && existingRecord?.employeeId) ? existingRecord.employeeId : (user.employeeId || user._id || 'ADMIN'),
         amount: totals.amount,
-        status: isDraft ? 'Draft' : 'Pending',
+        status: id ? (existingRecord?.status || 'Approved') : (isDraft ? 'Draft' : 'Pending'),
         productsData: validRows
       };
 

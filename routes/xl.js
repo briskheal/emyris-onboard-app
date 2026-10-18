@@ -7792,10 +7792,17 @@ router.put('/secondary-sales/update/:id', async (req, res) => {
             if (stData) finalHq = stData.headquarter;
         }
 
-        const updateFields = { date: savedDate, month, year, invoiceDate: savedInvDate, invoiceNumber, division, headquarter: finalHq, stockist, amount, productsData: JSON.stringify(products) };
-        if (status) updateFields.status = status;
+        const sale = await XlSecondarySales.findByPk(req.params.id);
+        if (!sale) return res.status(404).json({ success: false, message: 'Sale not found' });
 
-        await XlSecondarySales.update(updateFields, { where: { _id: req.params.id } });
+        const updateFields = { date: savedDate, month, year, invoiceDate: savedInvDate, invoiceNumber, division, headquarter: finalHq, stockist, amount, productsData: JSON.stringify(products) };
+        if (sale.status === 'Approved') {
+            updateFields.status = 'Approved';
+        } else if (status) {
+            updateFields.status = status;
+        }
+
+        await sale.update(updateFields);
 
         // Sync child items: delete old, insert new
         await XlSecondarySalesItem.destroy({ where: { saleId: req.params.id } });
