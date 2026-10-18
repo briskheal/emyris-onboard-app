@@ -10,10 +10,11 @@ export default function AllSecondarySales() {
   const [loading, setLoading] = useState(true);
   const [stockists, setStockists] = useState<any[]>([]);
   const [showMonthPicker, setShowMonthPicker] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const d = new Date();
-    return d.toLocaleString('en-US', { month: 'short' }) + ' ' + d.getFullYear();
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    return new Date().toLocaleString('en-US', { month: 'short' });
   });
+  const [selectedYear, setSelectedYear] = useState<number>(() => new Date().getFullYear());
+  const [viewAll, setViewAll] = useState<boolean>(false);
 
   const fetchSales = async () => {
     try {
@@ -24,10 +25,9 @@ export default function AllSecondarySales() {
     try {
       setLoading(true);
       const params: any = {};
-      if (selectedMonth && selectedMonth !== 'All Invoices') {
-        const [month, year] = selectedMonth.split(' ');
-        if (month) params.month = month;
-        if (year) params.year = year;
+      if (!viewAll) {
+        params.month = selectedMonth;
+        params.year = String(selectedYear);
       }
 
       // XLA admin always sees all records — do NOT send designation/employeeId
@@ -69,7 +69,7 @@ export default function AllSecondarySales() {
 
   useEffect(() => {
     fetchSales();
-  }, [selectedMonth]);
+  }, [selectedMonth, selectedYear, viewAll]);
 
   // Generate month options (last 12 months)
   const monthOptions = [];
@@ -107,41 +107,40 @@ export default function AllSecondarySales() {
                 onClick={() => setShowMonthPicker(!showMonthPicker)}
                 className="flex items-center justify-between bg-[#1a1a2e] border border-[#3b3b5a] rounded px-3 h-[34px] text-xs text-white cursor-pointer hover:border-sky-500 transition-colors"
               >
-                <span>{selectedMonth}</span>
+                <span>{viewAll ? 'All Invoices' : `${selectedMonth} ${selectedYear}`}</span>
                 <Calendar size={14} className="text-[#8b8baf]" />
               </div>
               {showMonthPicker && (
                 <div className="absolute top-[52px] right-0 w-[240px] bg-[#212136] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-3">
                    <button 
                      onClick={() => { 
-                       setSelectedMonth('All Invoices'); 
+                       setViewAll(true); 
                        setShowMonthPicker(false); 
                      }} 
-                     className={`w-full mb-2.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all border ${selectedMonth === 'All Invoices' ? 'bg-sky-500 text-white border-sky-400' : 'bg-[#1a1a2e] text-sky-400 border-sky-500/30 hover:bg-sky-500/10'}`}
+                     className={`w-full mb-2.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all border ${viewAll ? 'bg-sky-500 text-white border-sky-400' : 'bg-[#1a1a2e] text-sky-400 border-sky-500/30 hover:bg-sky-500/10'}`}
                    >
                      SHOW ALL INVOICES
                    </button>
                    <div className="flex justify-between items-center mb-3">
                       <button onClick={(e) => { 
                           e.stopPropagation(); 
-                          const [m, y] = selectedMonth.split(' ');
-                          setSelectedMonth(m + ' ' + (parseInt(y)-1)); 
+                          setSelectedYear(y => y - 1); 
                       }} className="p-1 hover:bg-[#2a2a40] rounded text-[#8b8baf]"><ChevronLeft size={16} /></button>
-                      <span className="font-bold text-white text-sm">{selectedMonth.split(' ')[1]}</span>
+                      <span className="font-bold text-white text-sm">{selectedYear}</span>
                       <button onClick={(e) => { 
                           e.stopPropagation(); 
-                          const [m, y] = selectedMonth.split(' ');
-                          setSelectedMonth(m + ' ' + (parseInt(y)+1)); 
+                          setSelectedYear(y => y + 1); 
                       }} className="p-1 hover:bg-[#2a2a40] rounded text-[#8b8baf]"><ChevronRight size={16} /></button>
                    </div>
                    <div className="grid grid-cols-3 gap-2">
                       {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((m) => {
-                         const isSel = selectedMonth.split(' ')[0] === m;
+                         const isSel = !viewAll && selectedMonth === m;
                          return (
                            <div 
                               key={m} 
                               onClick={() => { 
-                                  setSelectedMonth(m + ' ' + selectedMonth.split(' ')[1]); 
+                                  setSelectedMonth(m); 
+                                  setViewAll(false);
                                   setShowMonthPicker(false); 
                               }}
                               className={`text-center py-2 text-xs font-semibold rounded-lg cursor-pointer transition-colors ${isSel ? 'bg-sky-500 text-white' : 'text-[#8b8baf] hover:bg-[#2a2a40]'}`}
@@ -176,10 +175,10 @@ export default function AllSecondarySales() {
                 ) : sales.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-8 text-center text-[#8b8baf]">
-                      <p className="mb-2 font-medium">No approved sales records found for {selectedMonth}</p>
-                      {selectedMonth !== 'All Invoices' && (
+                      <p className="mb-2 font-medium">No approved sales records found for {viewAll ? 'All Invoices' : `${selectedMonth} ${selectedYear}`}</p>
+                      {!viewAll && (
                         <button 
-                          onClick={() => setSelectedMonth('All Invoices')} 
+                          onClick={() => setViewAll(true)} 
                           className="text-xs text-sky-400 hover:text-sky-300 font-semibold bg-sky-500/10 px-3 py-1.5 rounded-lg border border-sky-500/20 active:scale-95 transition-all"
                         >
                           View all approved invoices across all months
