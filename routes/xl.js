@@ -6743,6 +6743,7 @@ router.get('/reports/secondary-sales', async (req, res) => {
         }
 
         let whereSql = whereClauses.length > 0 ? 'WHERE ' + whereClauses.join(' AND ') : '';
+        let orderBySql = groupParts.length > 0 ? '' : 'ORDER BY s."createdAt" DESC';
 
         sql = `
             SELECT ${selectParts.join(', ')}
@@ -6750,7 +6751,7 @@ router.get('/reports/secondary-sales', async (req, res) => {
             ${joinSql}
             ${whereSql}
             ${groupParts.length > 0 ? 'GROUP BY ' + groupParts.join(', ') : ''}
-            ORDER BY s."createdAt" DESC
+            ${orderBySql}
         `;
 
         const data = await sequelize.query(sql, {
