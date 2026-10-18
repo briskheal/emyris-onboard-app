@@ -6861,7 +6861,7 @@ router.get('/reports/secondary-sales/detail', async (req, res) => {
         }
 
         if (stockist) {
-            whereClauses.push('s.stockist = :stockist');
+            whereClauses.push('(s.stockist = :stockist OR s.stockist IN (SELECT uid FROM xl_stockists WHERE name = :stockist OR "businessName" = :stockist OR uid = :stockist OR "_id" = :stockist))');
             replacements.stockist = stockist;
         }
         if (headquarter) {
