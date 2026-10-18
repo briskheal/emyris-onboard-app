@@ -4965,8 +4965,6 @@ const validateProductsData = (pData) => {
     return true;
 };
 
-const { toStorageDate, toDisplayDate, getMonthYear } = require('../utils/dateStandard');
-
 function normalizeDateStr(dStr) {
     return toStorageDate(dStr);
 }
