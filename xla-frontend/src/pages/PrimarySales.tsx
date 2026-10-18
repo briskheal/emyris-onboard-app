@@ -10,6 +10,12 @@ function toInputDateValue(dateStr: string | null | undefined): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
   if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
     const parts = str.split('-');
+    const p1 = parseInt(parts[0], 10);
+    // If p1 > 12, it is DD-MM-YYYY: parts[1] is month, parts[0] is day
+    if (p1 > 12) {
+      return `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+    }
+    // If p1 <= 12, it is MM-DD-YYYY: parts[0] is month, parts[1] is day
     return `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
   }
   try {
@@ -27,10 +33,17 @@ function toInputDateValue(dateStr: string | null | undefined): string {
 function toMMDDYYYY(dateStr: string | null | undefined): string {
   if (!dateStr) return '';
   const str = String(dateStr).trim();
-  if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const parts = str.substring(0, 10).split('-');
     return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  }
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+    const parts = str.split('-');
+    const p1 = parseInt(parts[0], 10);
+    if (p1 > 12) {
+      return `${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}-${parts[2]}`;
+    }
+    return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
   }
   try {
     const d = new Date(str);

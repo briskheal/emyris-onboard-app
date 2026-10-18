@@ -4990,13 +4990,17 @@ const validateProductsData = (pData) => {
 function normalizeDateStr(dStr) {
     if (!dStr) return '';
     const str = String(dStr).trim();
-    if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
     if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
         const parts = str.substring(0, 10).split('-');
         return `${parts[1]}-${parts[2]}-${parts[0]}`;
     }
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
+        const p1 = parseInt(parts[0], 10);
+        // If first number > 12, it is definitely a day (DD-MM-YYYY) -> flip to MM-DD-YYYY
+        if (p1 > 12) {
+            return `${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}-${parts[2]}`;
+        }
         return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
     }
     const d = new Date(str);
@@ -5013,9 +5017,11 @@ function getMonthYearFromDate(dStr) {
     if (!dStr) return { month: '', year: '' };
     const str = String(dStr).trim();
     const allMonthsShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    if (/^\d{2}-\d{2}-\d{4}$/.test(str)) {
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
-        const monthNum = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[0], 10);
+        const p2 = parseInt(parts[1], 10);
+        const monthNum = p1 > 12 ? p2 : p1;
         return {
             month: allMonthsShort[monthNum - 1] || '',
             year: parts[2]
@@ -5125,16 +5131,18 @@ router.get('/reports/primary-sales', async (req, res) => {
         let whereClauses = [];
         let replacements = {};
 
-        const dateExpr = "(CASE WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE TO_DATE(p.date, 'YYYY-MM-DD') END)";
+        const dateExpr = "(CASE WHEN p.date ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(p.date, 'YYYY-MM-DD') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(p.date, 1, 2) AS INT) > 12 THEN TO_DATE(p.date, 'DD-MM-YYYY') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE NULL END)";
+        const startExpr = "(CASE WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:startDate, 'YYYY-MM-DD') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:startDate, 1, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'DD-MM-YYYY') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE NULL END)";
+        const endExpr = "(CASE WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:endDate, 'YYYY-MM-DD') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:endDate, 1, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'DD-MM-YYYY') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE NULL END)";
         if (startDate && endDate) {
-            whereClauses.push(`${dateExpr} BETWEEN (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END) AND (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
+            whereClauses.push(`${dateExpr} BETWEEN ${startExpr} AND ${endExpr}`);
             replacements.startDate = startDate;
             replacements.endDate = endDate;
         } else if (startDate) {
-            whereClauses.push(`${dateExpr} >= (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END)`);
+            whereClauses.push(`${dateExpr} >= ${startExpr}`);
             replacements.startDate = startDate;
         } else if (endDate) {
-            whereClauses.push(`${dateExpr} <= (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
+            whereClauses.push(`${dateExpr} <= ${endExpr}`);
             replacements.endDate = endDate;
         }
 
@@ -5281,16 +5289,18 @@ router.get('/reports/primary-sales/detail', async (req, res) => {
         let whereClauses = [];
         let replacements = {};
 
-        const dateExpr = "(CASE WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE TO_DATE(p.date, 'YYYY-MM-DD') END)";
+        const dateExpr = "(CASE WHEN p.date ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(p.date, 'YYYY-MM-DD') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(p.date, 1, 2) AS INT) > 12 THEN TO_DATE(p.date, 'DD-MM-YYYY') WHEN p.date ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(p.date, 'MM-DD-YYYY') ELSE NULL END)";
+        const startExpr = "(CASE WHEN :startDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:startDate, 'YYYY-MM-DD') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:startDate, 1, 2) AS INT) > 12 THEN TO_DATE(:startDate, 'DD-MM-YYYY') WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE NULL END)";
+        const endExpr = "(CASE WHEN :endDate ~ '^\\d{4}-\\d{2}-\\d{2}$' THEN TO_DATE(:endDate, 'YYYY-MM-DD') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' AND CAST(SUBSTRING(:endDate, 1, 2) AS INT) > 12 THEN TO_DATE(:endDate, 'DD-MM-YYYY') WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE NULL END)";
         if (startDate && endDate) {
-            whereClauses.push(`${dateExpr} BETWEEN (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END) AND (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
+            whereClauses.push(`${dateExpr} BETWEEN ${startExpr} AND ${endExpr}`);
             replacements.startDate = startDate;
             replacements.endDate = endDate;
         } else if (startDate) {
-            whereClauses.push(`${dateExpr} >= (CASE WHEN :startDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:startDate, 'MM-DD-YYYY') ELSE TO_DATE(:startDate, 'YYYY-MM-DD') END)`);
+            whereClauses.push(`${dateExpr} >= ${startExpr}`);
             replacements.startDate = startDate;
         } else if (endDate) {
-            whereClauses.push(`${dateExpr} <= (CASE WHEN :endDate ~ '^\\d{2}-\\d{2}-\\d{4}$' THEN TO_DATE(:endDate, 'MM-DD-YYYY') ELSE TO_DATE(:endDate, 'YYYY-MM-DD') END)`);
+            whereClauses.push(`${dateExpr} <= ${endExpr}`);
             replacements.endDate = endDate;
         }
 
@@ -5405,9 +5415,9 @@ router.get('/primary-sales/all', async (req, res) => {
                     [Op.or]: [
                         { invoiceDate: { [Op.like]: `${year}-${padM}%` } },
                         { invoiceDate: { [Op.like]: `${padM}-%-${year}` } },
+                        { invoiceDate: { [Op.like]: `%-${padM}-${year}` } },
                         {
                             [Op.and]: [
-                                { [Op.or]: [{ invoiceDate: null }, { invoiceDate: '' }] },
                                 { month: { [Op.in]: monthVariants } },
                                 { year: String(year) }
                             ]
@@ -7658,9 +7668,9 @@ router.get('/secondary-sales/all', async (req, res) => {
                     [Op.or]: [
                         { invoiceDate: { [Op.like]: `${year}-${padM}%` } },
                         { invoiceDate: { [Op.like]: `${padM}-%-${year}` } },
+                        { invoiceDate: { [Op.like]: `%-${padM}-${year}` } },
                         {
                             [Op.and]: [
-                                { [Op.or]: [{ invoiceDate: null }, { invoiceDate: '' }] },
                                 { month: { [Op.in]: monthVariants } },
                                 { year: String(year) }
                             ]

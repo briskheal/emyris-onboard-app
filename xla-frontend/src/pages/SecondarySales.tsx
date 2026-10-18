@@ -7,10 +7,17 @@ import { useState, useEffect } from 'react';
 function toMMDDYYYY(dateStr: string | null | undefined): string {
   if (!dateStr) return '';
   const str = String(dateStr).trim();
-  if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const parts = str.substring(0, 10).split('-');
     return `${parts[1]}-${parts[2]}-${parts[0]}`;
+  }
+  if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+    const parts = str.split('-');
+    const p1 = parseInt(parts[0], 10);
+    if (p1 > 12) {
+      return `${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}-${parts[2]}`;
+    }
+    return `${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}-${parts[2]}`;
   }
   try {
     const d = new Date(str);
