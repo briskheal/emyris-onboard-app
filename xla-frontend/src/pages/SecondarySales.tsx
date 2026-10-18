@@ -13,6 +13,11 @@ const todayFormatted = () => {
   return `${yyyy}-${mm}-${dd}`;
 };
 
+const cleanNumberInput = (val: string) => {
+  if (!val) return '';
+  return val.replace(/^0+(?=\d)/, '');
+};
+
 export default function SecondarySales() {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -37,7 +42,7 @@ export default function SecondarySales() {
   });
 
   const [rows, setRows] = useState([
-    { id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }
+    { id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: '', receivedQty: '', salesQty: '', freeStocks: '' }
   ]);
 
   const monthOptions = [
@@ -156,7 +161,7 @@ export default function SecondarySales() {
           }));
           setRows(newRows);
         } else {
-          setRows([{ id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+          setRows([{ id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: '', receivedQty: '', salesQty: '', freeStocks: '' }]);
         }
       } catch(e) {
         console.error(e);
@@ -166,7 +171,7 @@ export default function SecondarySales() {
   }, [formData.stockist, formData.month, formData.year, id]);
 
   const addRow = () => {
-    setRows([...rows, { id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+    setRows([...rows, { id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: '', receivedQty: '', salesQty: '', freeStocks: '' }]);
   };
 
   const removeRow = (index: number) => {
@@ -277,10 +282,17 @@ export default function SecondarySales() {
     }
     
     // Map closingQty into validRows for saving
-    const validRows = rows.filter(r => r.productId && (Number(r.salesQty) > 0 || Number(r.freeStocks) > 0 || r.openingQty > 0 || r.receivedQty > 0)).map(r => {
+    const validRows = rows.filter(r => r.productId && (Number(r.salesQty) > 0 || Number(r.freeStocks) > 0 || Number(r.openingQty) > 0 || Number(r.receivedQty) > 0)).map(r => {
         const totalQty = (Number(r.openingQty) || 0) + (Number(r.receivedQty) || 0);
         const closingQty = totalQty - (Number(r.salesQty) || 0) - (Number(r.freeStocks) || 0);
-        return { ...r, closingQty };
+        return { 
+          ...r, 
+          openingQty: Number(r.openingQty) || 0,
+          receivedQty: Number(r.receivedQty) || 0,
+          salesQty: Number(r.salesQty) || 0,
+          freeStocks: Number(r.freeStocks) || 0,
+          closingQty 
+        };
     });
     
     if (validRows.length === 0) {
@@ -324,7 +336,7 @@ export default function SecondarySales() {
                 headquarter: '',
                 stockist: ''
             });
-            setRows([{ id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: 0, receivedQty: 0, salesQty: '', freeStocks: '' }]);
+            setRows([{ id: Date.now(), productId: '', price: '', customPrice: '', selectedPriceType: 'PTR', openingQty: '', receivedQty: '', salesQty: '', freeStocks: '' }]);
         }
       } else {
         alert('Failed to save.');
@@ -359,9 +371,6 @@ export default function SecondarySales() {
                 <Trash2 size={13} /> Delete Record
               </button>
             )}
-            <button onClick={() => navigate('/extras/secondary/all')} className="bg-emerald-500/10 border border-emerald-500/30 hover:bg-emerald-500/20 text-emerald-400 px-2.5 py-1 rounded text-[11px] font-semibold transition-colors flex items-center gap-1.5" title="All Secondary Sales">
-              <Folder size={13} /> All Sec Sales
-            </button>
           </div>
         </div>
 
@@ -559,6 +568,7 @@ export default function SecondarySales() {
                                 type="number" 
                                 min="0" 
                                 value={row.customPrice} 
+                                onFocus={(e) => e.target.select()}
                                 onChange={e => handleRowChange(index, 'customPrice', e.target.value)} 
                                 className="w-full h-[28px] bg-[#1a1a2e] border border-[#3b3b5a] rounded px-1 text-xs text-sky-400 outline-none focus:border-sky-500 text-center font-bold" 
                                 placeholder="0.00" 
@@ -577,15 +587,25 @@ export default function SecondarySales() {
                         <input 
                           type="number" 
                           min="0" 
-                          value={row.openingQty} 
-                          onChange={e => handleRowChange(index, 'openingQty', e.target.value)} 
+                          value={row.openingQty ?? ''} 
+                          onFocus={(e) => e.target.select()}
+                          onChange={e => handleRowChange(index, 'openingQty', cleanNumberInput(e.target.value))} 
+                          placeholder="0"
                           className="w-full h-[28px] bg-[#1a1a2e] border border-orange-900/50 rounded px-1 text-xs text-orange-400 font-bold outline-none focus:border-orange-500 text-center" 
                         />
                       </td>
 
                       {/* Rcvd. Qty */}
-                      <td className="p-1.5 border-r border-[#3b3b5a]/50 text-center font-bold text-sky-300 bg-sky-950/10 text-xs w-[75px]">
-                        {received}
+                      <td className="p-1.5 border-r border-[#3b3b5a]/50 bg-sky-950/10 w-[75px]">
+                        <input 
+                          type="number" 
+                          min="0" 
+                          value={row.receivedQty ?? ''} 
+                          onFocus={(e) => e.target.select()}
+                          onChange={e => handleRowChange(index, 'receivedQty', cleanNumberInput(e.target.value))} 
+                          placeholder="0"
+                          className="w-full h-[28px] bg-[#1a1a2e] border border-sky-900/50 rounded px-1 text-xs text-sky-300 font-bold outline-none focus:border-sky-500 text-center" 
+                        />
                       </td>
 
                       {/* Tot. Qty */}
@@ -598,8 +618,10 @@ export default function SecondarySales() {
                         <input 
                           type="number" 
                           min="0" 
-                          value={row.salesQty} 
-                          onChange={e => handleRowChange(index, 'salesQty', e.target.value)} 
+                          value={row.salesQty ?? ''} 
+                          onFocus={(e) => e.target.select()}
+                          onChange={e => handleRowChange(index, 'salesQty', cleanNumberInput(e.target.value))} 
+                          placeholder="0"
                           className="w-full h-[28px] bg-[#1a1a2e] border border-emerald-900/50 rounded px-1 text-xs text-emerald-300 font-bold outline-none focus:border-emerald-500 text-center" 
                         />
                       </td>
@@ -609,8 +631,10 @@ export default function SecondarySales() {
                         <input 
                           type="number" 
                           min="0" 
-                          value={row.freeStocks} 
-                          onChange={e => handleRowChange(index, 'freeStocks', e.target.value)} 
+                          value={row.freeStocks ?? ''} 
+                          onFocus={(e) => e.target.select()}
+                          onChange={e => handleRowChange(index, 'freeStocks', cleanNumberInput(e.target.value))} 
+                          placeholder="0"
                           className="w-full h-[28px] bg-[#1a1a2e] border border-purple-900/50 rounded px-1 text-xs text-purple-300 font-bold outline-none focus:border-purple-500 text-center" 
                         />
                       </td>
