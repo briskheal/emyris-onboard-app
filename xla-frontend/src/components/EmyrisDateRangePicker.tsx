@@ -131,7 +131,7 @@ export default function EmyrisDateRangePicker({ startDate, endDate, onChange }: 
   );
 
   return (
-    <div className="flex flex-col md:flex-row w-full mt-4 bg-[#1e2032]">
+    <div className="flex flex-col md:flex-row w-full mt-0 bg-[#1e2032]">
       {/* Sidebar Filters */}
       <div className="w-full md:w-64 bg-[#1a1b2d] flex flex-col border-r border-[#2d2f45]">
         {['Today', 'Yesterday', 'This Week', 'Last Week', 'This Month', 'Last Month'].map(f => (

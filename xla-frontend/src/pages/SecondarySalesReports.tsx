@@ -177,22 +177,26 @@ export default function SecondarySalesReports() {
   };
 
   return (
-    <div className="min-h-screen bg-[#151521] text-slate-300 p-6 font-sans">
-      <div className="max-w-[1400px] mx-auto space-y-6">
+    <div className="min-h-screen bg-[#151521] text-slate-300 p-4 md:p-5 pb-48 font-sans">
+      <div className="max-w-[1400px] mx-auto space-y-3.5">
         
         {/* Header */}
-        <div className="flex items-center gap-4">
-          <button onClick={() => detailRow ? setDetailRow(null) : navigate(-1)} className="p-2 hover:bg-[#1e1e2d] rounded-lg transition-colors">
-            {detailRow ? <ArrowLeft size={24} /> : <ChevronLeft size={24} />}
+        <div className="flex items-center gap-2.5">
+          <button 
+            onClick={() => detailRow ? setDetailRow(null) : navigate(-1)} 
+            className="p-1.5 hover:bg-[#1e1e2d] text-slate-300 hover:text-white rounded-lg transition-colors"
+            title="Back"
+          >
+            {detailRow ? <ArrowLeft size={18} /> : <ChevronLeft size={18} />}
           </button>
-          <h1 className="text-2xl font-bold text-white tracking-wide uppercase">
+          <h1 className="text-sm md:text-base font-bold text-white tracking-wider uppercase">
             {detailRow ? (detailLevel === 'Stockist' ? 'STOCKIST WISE SALES REPORTS' : 'PRODUCT WISE SALES REPORTS') : 'SECONDARY SALES REPORTS'}
           </h1>
         </div>
 
         {!detailRow ? (
           <>
-            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-center justify-between shadow-sm rounded-xl mb-4">
+            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-3.5 flex flex-wrap gap-4 items-center justify-between shadow-sm rounded-xl">
               <div className="flex flex-wrap gap-4 items-end">
                 <div className="flex flex-col gap-2 relative z-50">
                     <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Select Start Month <span className="text-rose-500">*</span></label>
@@ -295,7 +299,7 @@ export default function SecondarySalesReports() {
 
             {/* Main Data Table */}
             <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden rounded-xl">
-              <div className="p-4 border-b border-[#2d2d44] flex flex-wrap gap-4 items-center justify-between">
+              <div className="p-3 px-4 border-b border-[#2d2d44] flex flex-wrap gap-4 items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
                   SHOWING ({processedData.length}) ENTRIES
                 </h2>
@@ -428,16 +432,16 @@ export default function SecondarySalesReports() {
           </>
         ) : (
           <>
-            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-4 flex flex-wrap gap-6 items-center justify-between shadow-sm rounded-xl">
+            <div className="bg-[#1e1e2d] border border-[#2d2d44] p-3.5 flex flex-wrap gap-4 items-center justify-between shadow-sm rounded-xl">
               <div>
-                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">SHOWING RESULTS FOR {detailLevel === 'Stockist' ? 'HEADQUARTER' : 'STOCKIST'}</p>
-                <h3 className="text-xl font-black text-white">{detailLevel === 'Stockist' ? detailRow?.headquarter : detailRow?.stockistName || detailRow?.stockist}</h3>
+                <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-0.5">SHOWING RESULTS FOR {detailLevel === 'Stockist' ? 'HEADQUARTER' : 'STOCKIST'}</p>
+                <h3 className="text-base md:text-lg font-bold text-white">{detailLevel === 'Stockist' ? detailRow?.headquarter : detailRow?.stockistName || detailRow?.stockist}</h3>
               </div>
             </div>
 
             {/* Detail Data Table */}
             <div className="bg-[#1e1e2d] border border-[#2d2d44] shadow-sm overflow-hidden rounded-xl">
-              <div className="p-4 border-b border-[#2d2d44] flex items-center justify-between">
+              <div className="p-3 px-4 border-b border-[#2d2d44] flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
                   SHOWING ({detailData.length}) ENTRIES
                 </h2>
