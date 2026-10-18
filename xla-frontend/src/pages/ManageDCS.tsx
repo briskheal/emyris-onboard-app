@@ -112,22 +112,14 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
   );
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-screen max-h-screen relative z-10 overflow-hidden">
+    <div className="flex-1 min-w-0 flex flex-col bg-[#1e1e2d] h-full relative z-10 overflow-hidden">
       
       {/* TOP TOOLBAR (Fixed) */}
-      <div className="flex-shrink-0 px-8 pt-8 pb-4 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-[60]">
-        <button onClick={() => {}} className="text-sky-400 font-bold mb-6 hover:underline flex items-center gap-2 w-fit text-sm">
-          <ArrowLeft size={16} /> Edit / Delete
-        </button>
-
-        <div className="bg-[#1d9c52] text-white text-xs font-semibold px-4 py-2 rounded mb-6 shadow-sm w-fit">
-          Deleting a DCS from here will also remove it from the list.
-        </div>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+      <div className="flex-shrink-0 px-4 sm:px-6 py-3 border-b border-[#3b3b5a] bg-[#1e1e2d] shadow-sm relative z-20 space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT TYPE</label>
-            <select value={filterType} onChange={e=>{setFilterType(e.target.value); setSelectedIds([]);}} className="w-full bg-slate-900 border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer">
+            <select value={filterType} onChange={e=>{setFilterType(e.target.value); setSelectedIds([]);}} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[38px]">
               <option value="Doctor">Doctor</option>
               <option value="Chemist">Chemist</option>
               <option value="Stockist">Stockist</option>
@@ -135,26 +127,26 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT STATE</label>
-            <select value={filterState} onChange={e=>setFilterState(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer">
+            <select value={filterState} onChange={e=>setFilterState(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[38px]">
               <option value="">All States</option>
               {states.map((s: any) => <option key={s._id} value={s.stateName}>{s.stateName}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">SELECT HQ</label>
-            <select value={filterHq} onChange={e=>setFilterHq(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded p-2 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer">
+            <select value={filterHq} onChange={e=>setFilterHq(e.target.value)} className="w-full bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-sky-500 transition-colors cursor-pointer h-[38px]">
               <option value="">All Headquarters</option>
               {hqs.filter((h: any) => !filterState || h.state === filterState).map((h: any) => <option key={h._id} value={h.hqName}>{h.hqName}</option>)}
             </select>
           </div>
         </div>
         
-        <div className="flex justify-between items-end">
-          <span className="text-xs font-black text-slate-300 uppercase tracking-widest">SHOWING ({displayList.length}) ENTRIES</span>
+        <div className="flex flex-wrap gap-2 justify-between items-center">
+          <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">SHOWING ({displayList.length}) ENTRIES</span>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <input type="text" placeholder="Search by name, uid..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-slate-900 border border-[#3b3b5a] rounded px-3 py-1.5 text-sm text-white w-64 focus:outline-none focus:border-sky-500" />
+              <input type="text" placeholder="Search by name, uid..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="bg-slate-900 border border-[#3b3b5a] rounded-lg px-3 py-1.5 text-sm text-white w-56 sm:w-64 focus:outline-none focus:border-sky-500 h-[36px]" />
             </div>
             <button onClick={handleBatchDelete} className="text-rose-500 hover:text-rose-400 hover:scale-110 transition-all p-1.5" title="Delete Selected">
               <Trash2 size={20} className="fill-current" />
@@ -164,7 +156,7 @@ const EditDeleteTabComponent = ({ doctors, chemists, stockists, hqs, states, fet
       </div>
 
       {/* MIDDLE SPREADSHEET GRID (Scrollable) */}
-      <div className="flex-1 overflow-x-auto bg-[#1e1e2d] w-full">
+      <div className="flex-1 overflow-auto bg-[#1e1e2d] w-full">
         <table className="w-full min-w-max text-left border-collapse">
           <thead className="sticky top-0 z-50 shadow-md">
             <tr className="border-b border-[#3b3b5a]">
@@ -1271,11 +1263,27 @@ export default function ManageDCS() {
   };
 
   return (
-    <div className="h-screen bg-slate-900 flex flex-col font-sans text-slate-100">
-      <div className="flex items-center justify-between px-6 py-3.5 bg-slate-900 border-b border-slate-800 sticky top-0 z-20">
-        <button onClick={() => navigate(isApprovalMode ? '/admin/approvals' : '/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
-          <ArrowLeft size={20} /> <span className="font-bold text-sm md:text-base tracking-wide uppercase">{isApprovalMode ? 'Back to Approvals' : 'Back to Admin Menu'}</span>
-        </button>
+    <div className="h-full flex-1 flex flex-col font-sans text-slate-100 overflow-hidden">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 bg-slate-900 border-b border-slate-800 sticky top-0 z-20 flex-shrink-0 gap-3">
+        <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+          <button onClick={() => navigate(isApprovalMode ? '/admin/approvals' : '/admin')} className="text-white hover:text-sky-400 transition-colors flex items-center gap-2">
+            <ArrowLeft size={18} /> <span className="font-bold text-xs sm:text-sm md:text-base tracking-wide uppercase">{isApprovalMode ? 'Back to Approvals' : 'Back to Admin Menu'}</span>
+          </button>
+          
+          <span className="text-slate-600 font-bold">/</span>
+          
+          <span className="text-sky-400 font-bold text-xs sm:text-sm md:text-base tracking-wide uppercase">
+            {activeTab === 'edit_delete' ? 'Edit / Delete' : (menuItems.find(m => m.id === activeTab)?.label || 'Manage DCS')}
+          </span>
+        </div>
+
+        {activeTab === 'edit_delete' && !editingRecord && (
+          <div className="flex items-center gap-2 border border-emerald-500 bg-emerald-500/10 text-emerald-400 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm shrink-0">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+            <span>Deleting a DCS from here will also remove it from the list.</span>
+          </div>
+        )}
+
         {isApprovalMode && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-black tracking-widest uppercase bg-amber-500/20 text-amber-400 border border-amber-500/30 px-3 py-1 rounded-full">
@@ -1353,7 +1361,7 @@ export default function ManageDCS() {
         </div>
         
         {/* Right Content Area */}
-        <div className="flex-1 min-w-0 bg-slate-900 p-4 md:p-6 overflow-y-auto">
+        <div className={`flex-1 min-w-0 bg-slate-900 ${activeTab === 'edit_delete' && !editingRecord ? 'p-0 flex flex-col overflow-hidden' : 'p-4 md:p-6 overflow-y-auto'}`}>
       
       {activeTab === 'create_doctor' && (
         <CreateDoctorTab 
@@ -1395,7 +1403,7 @@ export default function ManageDCS() {
         />
       )}
       {activeTab === 'edit_delete' && !editingRecord && (
-        <div className="flex-1 min-w-0" style={{ display: 'flex' }}>
+        <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
           <EditDeleteTabComponent onEdit={(record: any, type: string) => { setEditingRecord(record); setEditingType(type); }} doctors={doctors} chemists={chemists} stockists={stockists} hqs={hqs} states={states} fetchData={fetchData} />
         </div>
       )}
