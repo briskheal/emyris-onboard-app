@@ -240,6 +240,19 @@ export default function PrimarySalesReports() {
     );
   };
 
+  const getLeadingColSpan = () => {
+    if (selectType === 'Stockist') {
+      return viewDateWise ? 4 : 3; // Sr no, [Date], Stockist, Headquarter
+    }
+    if (selectType === 'Headquarter') {
+      return viewDateWise ? 3 : 2; // Sr no, [Date], Headquarter
+    }
+    if (selectType === 'Date') {
+      return 2; // Always Sr no, Date
+    }
+    return viewDateWise ? 3 : 2;
+  };
+
   return (
     <div className="min-h-screen bg-[#151521] text-slate-300 p-4 md:p-5 pb-48 font-sans">
       <style>{`
@@ -435,7 +448,9 @@ export default function PrimarySalesReports() {
                           </>
                         ) : (
                           <>
-                            {viewDateWise && <th className="px-3 py-3 border-r border-[#3b3b5a] w-28 text-center">Date</th>}
+                            {((selectType === 'Date') || viewDateWise) && (
+                              <th className="px-3 py-3 border-r border-[#3b3b5a] w-32 text-center">Date</th>
+                            )}
                             {selectType === 'Stockist' && (
                               <>
                                 <th className="px-3 py-3 border-r border-[#3b3b5a] min-w-[160px]">Stockist</th>
@@ -443,7 +458,6 @@ export default function PrimarySalesReports() {
                               </>
                             )}
                             {selectType === 'Headquarter' && <th className="px-3 py-3 border-r border-[#3b3b5a] min-w-[180px]">Headquarter</th>}
-                            {selectType === 'Date' && !viewDateWise && <th className="px-3 py-3 border-r border-[#3b3b5a] w-32 text-center">Date</th>}
                             <th className="px-3 py-3 border-r border-[#3b3b5a] text-right w-32">Gross Sales (₹)</th>
                             <th className="px-3 py-3 border-r border-[#3b3b5a] text-right text-orange-400 w-28">Salable Rtn (₹)</th>
                             <th className="px-3 py-3 border-r border-[#3b3b5a] text-right text-rose-400 w-28">Expiry Rtn (₹)</th>
@@ -492,7 +506,9 @@ export default function PrimarySalesReports() {
                             </>
                           ) : (
                             <>
-                              {viewDateWise && <td className="px-3 py-2.5 border-r border-[#3b3b5a] text-center font-medium text-slate-300">{d.displayDate || d.date}</td>}
+                              {((selectType === 'Date') || viewDateWise) && (
+                                <td className="px-3 py-2.5 border-r border-[#3b3b5a] text-center font-medium text-slate-300">{d.displayDate || d.date}</td>
+                              )}
                               
                               {selectType === 'Stockist' && (
                                 <>
@@ -501,7 +517,6 @@ export default function PrimarySalesReports() {
                                 </>
                               )}
                               {selectType === 'Headquarter' && <td className="px-3 py-2.5 border-r border-[#3b3b5a] font-medium text-slate-200">{d.headquarter}</td>}
-                              {selectType === 'Date' && !viewDateWise && <td className="px-3 py-2.5 border-r border-[#3b3b5a] text-center font-medium text-slate-300">{d.displayDate || d.date}</td>}
                               
                               <td className="px-3 py-2.5 border-r border-[#3b3b5a] text-right font-medium text-slate-200">{Number(d.grossSales || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                               <td className="px-3 py-2.5 border-r border-[#3b3b5a] text-right font-medium text-orange-400">{Number(d.salableReturns || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
@@ -562,10 +577,7 @@ export default function PrimarySalesReports() {
                         ) : (
                           <tr>
                             <td 
-                              colSpan={
-                                (viewDateWise ? 1 : 0) + 
-                                (selectType === 'Stockist' ? 3 : selectType === 'Headquarter' ? 2 : 2)
-                              } 
+                              colSpan={getLeadingColSpan()} 
                               className="px-4 py-3 text-right border-r border-[#3b3b5a] text-slate-300 font-black"
                             >
                               TOTAL:

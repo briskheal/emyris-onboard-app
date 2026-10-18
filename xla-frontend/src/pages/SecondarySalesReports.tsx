@@ -371,6 +371,7 @@ export default function SecondarySalesReports() {
                             
                             {selectType === 'User' ? (
                               <>
+                                <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.month || '-'}</td>
                                 <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{formatMMDDYYYY(d.invoiceDate)}</td>
                                   <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">{d.invoiceNumber || 'NA'}</td>
                                   <td className="px-4 py-2 border-r border-[#3b3b5a] text-slate-300">
