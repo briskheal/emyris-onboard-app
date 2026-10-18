@@ -5374,6 +5374,13 @@ router.get('/primary-sales/all', async (req, res) => {
             whereClause.employeeId = employeeId;
         }
 
+        // Strictly capture only Admin-Approved invoices by default
+        if (req.query.status && req.query.status !== 'all') {
+            whereClause.status = req.query.status;
+        } else if (!req.query.status) {
+            whereClause.status = 'Approved';
+        }
+
         const { XlPrimarySalesItem } = require('../db');
         const sales = await XlPrimarySales.findAll({
             where: whereClause,
@@ -7622,6 +7629,13 @@ router.get('/secondary-sales/all', async (req, res) => {
         const isXlaAdminSec = !designation || designation === 'ADMIN' || designation === 'HO' || designation === 'admin' || designation === 'null' || designation === 'undefined';
         if (!isXlaAdminSec && employeeId && employeeId !== 'null' && employeeId !== 'undefined') {
             whereClause.employeeId = employeeId;
+        }
+
+        // Strictly capture only Admin-Approved invoices by default
+        if (req.query.status && req.query.status !== 'all') {
+            whereClause.status = req.query.status;
+        } else if (!req.query.status) {
+            whereClause.status = 'Approved';
         }
 
         const { XlSecondarySalesItem } = require('../db');

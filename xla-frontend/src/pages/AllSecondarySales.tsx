@@ -93,9 +93,9 @@ export default function AllSecondarySales() {
 
       <div className="flex-1 p-3 md:p-6 bg-[#161625]">
         <div className="bg-[#212136] rounded-xl shadow-lg border border-[#3b3b5a]/50 p-4 mb-4 flex justify-between items-center">
-           <div className="bg-sky-500/10 text-sky-400 p-2 rounded text-xs font-semibold">
-              <span className="font-bold uppercase tracking-wider block mb-1">NOTE</span>
-              Secondary Sales Report are shown which are submitted by the logged-in user! In order to view the complete list, visit - Reports - Secondary Sales.
+           <div className="bg-sky-500/10 text-sky-400 p-2.5 rounded-lg text-xs font-semibold">
+              <span className="font-bold uppercase tracking-wider block mb-0.5">NOTE</span>
+              Only Admin-Approved Secondary Sales records are captured in this register. Pending submissions remain in the Approvals queue until approved.
            </div>
            
            <div className="flex flex-col gap-1 w-48 relative">
