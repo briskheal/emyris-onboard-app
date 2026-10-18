@@ -23,7 +23,7 @@ export default function SecondarySalesHistory() {
       const user = JSON.parse(storedUser);
       
       const [histRes, stkRes] = await Promise.all([
-        axios.get(`/api/xl/secondary-sales/all?employeeId=${user.employeeId}`),
+        axios.get(`/api/xl/secondary-sales/all?employeeId=${user.employeeId}&status=all`),
         axios.get('/api/xl/reports/stockists').catch(() => ({ data: { data: [] } }))
       ]);
 

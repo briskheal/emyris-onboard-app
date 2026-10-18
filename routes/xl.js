@@ -5374,9 +5374,12 @@ router.get('/primary-sales/all', async (req, res) => {
             whereClause.employeeId = employeeId;
         }
 
-        // Strictly capture only Admin-Approved invoices by default
+        // XL mobile users viewing their own history see all their records (Pending, Approved, Rejected)
+        // Admin register defaults to Approved unless status=all is specified
         if (req.query.status && req.query.status !== 'all') {
             whereClause.status = req.query.status;
+        } else if (req.query.status === 'all' || (!isXlaAdmin && employeeId)) {
+            // No status restriction for XL user history
         } else if (!req.query.status) {
             whereClause.status = 'Approved';
         }
@@ -7631,9 +7634,12 @@ router.get('/secondary-sales/all', async (req, res) => {
             whereClause.employeeId = employeeId;
         }
 
-        // Strictly capture only Admin-Approved invoices by default
+        // XL mobile users viewing their own history see all their records (Pending, Approved, Rejected)
+        // Admin register defaults to Approved unless status=all is specified
         if (req.query.status && req.query.status !== 'all') {
             whereClause.status = req.query.status;
+        } else if (req.query.status === 'all' || (!isXlaAdminSec && employeeId)) {
+            // No status restriction for XL user history
         } else if (!req.query.status) {
             whereClause.status = 'Approved';
         }

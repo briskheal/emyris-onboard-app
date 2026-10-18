@@ -348,7 +348,7 @@ export default function SecondarySalesForm() {
                 type="date" 
                 value={header.date} 
                 onChange={e => setHeader({...header, date: e.target.value, invoiceDate: e.target.value})} 
-                className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-xs md:text-sm text-white focus:border-cyan-500 outline-none" 
+                className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-xs md:text-sm text-white focus:border-cyan-500 outline-none [color-scheme:dark] cursor-pointer" 
               />
             </div>
 
