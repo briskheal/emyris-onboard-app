@@ -23,13 +23,16 @@ export default function AllSecondarySales() {
 
     try {
       setLoading(true);
-      const [month, year] = selectedMonth.split(' ');
+      const params: any = {};
+      if (selectedMonth && selectedMonth !== 'All Invoices') {
+        const [month, year] = selectedMonth.split(' ');
+        if (month) params.month = month;
+        if (year) params.year = year;
+      }
 
       // XLA admin always sees all records — do NOT send designation/employeeId
       // (null values serialize as "null" string in URLSearchParams, breaking the admin check)
-      const res = await axios.get('/api/xl/secondary-sales/all', {
-        params: { month, year }
-      });
+      const res = await axios.get('/api/xl/secondary-sales/all', { params });
       if (res.data.success) {
         setSales(res.data.data);
       }
@@ -109,6 +112,15 @@ export default function AllSecondarySales() {
               </div>
               {showMonthPicker && (
                 <div className="absolute top-[52px] right-0 w-[240px] bg-[#212136] border border-[#3b3b5a] rounded-xl shadow-2xl z-50 p-3">
+                   <button 
+                     onClick={() => { 
+                       setSelectedMonth('All Invoices'); 
+                       setShowMonthPicker(false); 
+                     }} 
+                     className={`w-full mb-2.5 py-1.5 px-3 rounded-lg text-xs font-bold transition-all border ${selectedMonth === 'All Invoices' ? 'bg-sky-500 text-white border-sky-400' : 'bg-[#1a1a2e] text-sky-400 border-sky-500/30 hover:bg-sky-500/10'}`}
+                   >
+                     SHOW ALL INVOICES
+                   </button>
                    <div className="flex justify-between items-center mb-3">
                       <button onClick={(e) => { 
                           e.stopPropagation(); 
@@ -163,7 +175,17 @@ export default function AllSecondarySales() {
                   </tr>
                 ) : sales.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="p-8 text-center text-[#8b8baf]">No sales records found for {selectedMonth}</td>
+                    <td colSpan={7} className="p-8 text-center text-[#8b8baf]">
+                      <p className="mb-2 font-medium">No approved sales records found for {selectedMonth}</p>
+                      {selectedMonth !== 'All Invoices' && (
+                        <button 
+                          onClick={() => setSelectedMonth('All Invoices')} 
+                          className="text-xs text-sky-400 hover:text-sky-300 font-semibold bg-sky-500/10 px-3 py-1.5 rounded-lg border border-sky-500/20 active:scale-95 transition-all"
+                        >
+                          View all approved invoices across all months
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ) : (
                   sales.map((sale, index) => {

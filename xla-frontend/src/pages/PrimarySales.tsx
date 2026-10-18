@@ -68,10 +68,7 @@ function toMMDDYYYY(dateStr: string | null | undefined): string {
   return str;
 }
 
-const todayMMDDYYYY = () => {
-  const d = new Date();
-  return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${d.getFullYear()}`;
-};
+const todayISO = () => new Date().toISOString().split('T')[0];
 
 export default function PrimarySales() {
   const navigate = useNavigate();
@@ -83,12 +80,12 @@ export default function PrimarySales() {
   const [divisions, setDivisions] = useState<any[]>([]);
   
   const [formData, setFormData] = useState({
-    date: todayMMDDYYYY(),
+    date: todayISO(),
     headquarter: '',
     stockist: '',
     division: '',
     invoiceNumber: '',
-    invoiceDate: todayMMDDYYYY(),
+    invoiceDate: todayISO(),
   });
 
   const [rows, setRows] = useState([
@@ -171,8 +168,8 @@ export default function PrimarySales() {
           }
 
           setFormData({
-            date: toMMDDYYYY(d.date) || todayMMDDYYYY(),
-            invoiceDate: toMMDDYYYY(d.invoiceDate) || todayMMDDYYYY(),
+            date: toInputDateValue(d.date) || todayISO(),
+            invoiceDate: toInputDateValue(d.invoiceDate || d.date) || todayISO(),
             invoiceNumber: d.invoiceNumber || '',
             division: d.division || '',
             headquarter: hq,
@@ -311,10 +308,11 @@ export default function PrimarySales() {
       const userStr = sessionStorage.getItem('xla_user');
       const user = userStr ? JSON.parse(userStr) : {};
       
+      const cleanDate = toInputDateValue(formData.invoiceDate) || toInputDateValue(formData.date) || todayISO();
       const payload = {
         ...formData,
-        date: toMMDDYYYY(formData.date),
-        invoiceDate: toMMDDYYYY(formData.invoiceDate),
+        date: cleanDate,
+        invoiceDate: cleanDate,
         employeeId: user.employeeId || user._id || 'ADMIN',
         grossInvValue: totals.grossInvValue,
         netInvValue: totals.netInvValue,
@@ -369,8 +367,8 @@ export default function PrimarySales() {
             navigate('/extras/primary-sales/all');
         } else {
             setFormData({
-                date: todayMMDDYYYY(),
-                invoiceDate: todayMMDDYYYY(),
+                date: todayISO(),
+                invoiceDate: todayISO(),
                 invoiceNumber: '',
                 division: '',
                 headquarter: '',
