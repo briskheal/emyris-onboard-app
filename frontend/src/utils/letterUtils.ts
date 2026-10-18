@@ -1,20 +1,40 @@
 export function safeParseDate(dateStr: any) {
     if (!dateStr) return null;
-    if (typeof dateStr === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
-        const parts = dateStr.split('-');
-        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    const str = String(dateStr).trim();
+    if (!str || str === 'undefined' || str === 'null') return null;
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+        const parts = str.substring(0, 10).split('-');
+        const y = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[1], 10);
+        const p2 = parseInt(parts[2], 10);
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return new Date(y, m - 1, d);
     }
-    const d = new Date(dateStr);
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+        const parts = str.split('-');
+        const p1 = parseInt(parts[0], 10);
+        const p2 = parseInt(parts[1], 10);
+        const y = parseInt(parts[2], 10);
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return new Date(y, m - 1, d);
+    }
+    const d = new Date(str);
     return isNaN(d.getTime()) ? null : d;
 }
 
-export function formatDateDMY(dateStr: any) {
+export function formatDateMMDDYYYY(dateStr: any) {
     const d = safeParseDate(dateStr);
     if (!d) return '';
+    const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
     const year = d.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${m}-${day}-${year}`;
+}
+
+export function formatDateDMY(dateStr: any) {
+    return formatDateMMDDYYYY(dateStr);
 }
 
 export function numberToWords(num: number | string) {

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { toStorageDate, toDisplayDate, getMonthYear } = require('../utils/dateStandard');
 
 // [NEW] Cleanup Orphaned Uploaded Files
 router.get('/cleanup-orphaned-files', async (req, res) => {
@@ -218,14 +219,16 @@ async function saveBase64ToFile(email, category, base64Data) {
     }
 }
 
-// Shared date helper
+// Universal shared date helper
 function safeParseDateServer(s) {
-    if (!s || typeof s !== 'string') return null;
-    if (s.includes('T')) return new Date(s);
-    const parts = s.split('-');
-    if (parts.length !== 3) return null;
-    if (parts[0].length === 4) return new Date(s);
-    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    if (!s) return null;
+    const sDate = toStorageDate(s);
+    if (sDate) {
+        const d = new Date(sDate + 'T00:00:00');
+        if (!isNaN(d.getTime())) return d;
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
 }
 
 
@@ -758,20 +761,8 @@ router.post('/add-existing-staff', async (req, res) => {
             };
         }
 
-        // Robust Date Parsing
-        const parseDMY = (s) => {
-            if (!s || typeof s !== 'string') return null;
-            if (s.includes('T')) return new Date(s); // Already ISO
-            const parts = s.split('-');
-            if (parts.length !== 3) return null;
-            // Handle YYYY-MM-DD (Native Date Picker)
-            if (parts[0].length === 4) return new Date(s);
-            // Handle DD-MM-YYYY (Legacy)
-            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        };
-
-        const joinDateObj = parseDMY(joinDate);
-        const dobObj = parseDMY(dob);
+        const joinDateObj = safeParseDateServer(joinDate);
+        const dobObj = safeParseDateServer(dob);
 
         // Construct the fast-tracked profile directly into 'approved' state
         await Applicant.create({
@@ -787,7 +778,7 @@ router.post('/add-existing-staff', async (req, res) => {
             division: division || 'General',
             hq: hq || 'Unassigned',
             empCode: empCode || '',
-            actualJoiningDate: joinDate,
+            actualJoiningDate: toStorageDate(joinDate) || joinDate,
             address: address || '',       // Top-level address field (FIXED from current_address)
             pin,
             state,
@@ -798,7 +789,7 @@ router.post('/add-existing-staff', async (req, res) => {
             formData: {
                 designation: designation || 'Employee',
                 salary: formattedSalary.toString(),
-                dob: dob,
+                dob: toStorageDate(dob) || dob,
                 pin,
                 state,
                 address: address || '',   // FIXED: was current_address, now matches what portal reads
@@ -808,7 +799,7 @@ router.post('/add-existing-staff', async (req, res) => {
                 first_name: fullName.split(' ')[0],
                 last_name: fullName.split(' ').slice(1).join(' ') || ''
             },
-            dob: dob,
+            dob: toStorageDate(dob) || dob,
             salaryBreakup: salaryBreakup,
             tasks: {
                 offerLetter: true,        // Auto-flagged as done (no email sent)
@@ -930,16 +921,8 @@ router.post('/bulk-add-existing-staff', async (req, res) => {
                     };
                 }
 
-                // Parse DD-MM-YYYY
-                const parseDMY = (s) => {
-                    if (!s || typeof s !== 'string') return null;
-                    const parts = s.split('-');
-                    if (parts.length !== 3) return null;
-                    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                };
-
-                const joinDateObj = parseDMY(joinDate) || new Date(joinDate);
-                const dobObj = parseDMY(dob) || new Date(dob);
+                const joinDateObj = safeParseDateServer(joinDate) || new Date();
+                const dobObj = safeParseDateServer(dob);
 
                 await Applicant.create({
                     fullName, email, phone,
@@ -952,16 +935,16 @@ router.post('/bulk-add-existing-staff', async (req, res) => {
                     reportingTo: reportingTo || '',
                     hq: hq || 'Unassigned',
                     empCode: empCode || '',
-                    actualJoiningDate: joinDate,
+                    actualJoiningDate: toStorageDate(joinDate) || joinDate,
                     formData: {
                         designation: designation || 'Employee',
                         salary: formattedSalary.toString(),
-                        dob: dob, // Keep as string for display
+                        dob: toStorageDate(dob) || dob,
                         current_address: address || '',
                         first_name: fullName.split(' ')[0],
                         last_name: fullName.split(' ').slice(1).join(' ') || ''
                     },
-                    dob: dob,
+                    dob: toStorageDate(dob) || dob,
                     salaryBreakup: salaryBreakup,
                     tasks: { offerLetter: true, appointmentLetter: false, appLinkSent: false, loginDetailsSent: false }
                 });
@@ -2244,16 +2227,6 @@ router.post('/clear-applicant-letters', async (req, res) => {
 });
 
 // --- NEW: APPLICANT ACCEPT OFFER ---
-function safeParseDateServer(dateStr) {
-    if (!dateStr) return null;
-    if (typeof dateStr === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
-        const parts = dateStr.split('-');
-        return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-    }
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
-}
-
 router.post('/accept-offer', async (req, res) => {
     try {
         const { email, actualJoiningDate } = req.body;
@@ -2261,7 +2234,8 @@ router.post('/accept-offer', async (req, res) => {
         const company = await Company.findOne() || { name: 'Company' };
         if (!applicant) return res.status(404).json({ error: 'Not found' });
 
-        await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, offerAcceptedAt: new Date(), actualJoiningDate } });
+        const sJoinDate = toStorageDate(actualJoiningDate) || actualJoiningDate;
+        await Applicant.updateOne({ _id: applicant._id }, { $set: { offerAccepted: true, offerAcceptedAt: new Date(), actualJoiningDate: sJoinDate } });
 
         // 1. Congratulate Applicant
         await sendEmail({
@@ -2310,13 +2284,7 @@ router.get('/lifecycle-check', async (req, res) => {
         const now = new Date();
 
         applicants.forEach(app => {
-            const parseDMY = (s) => {
-                if (!s || typeof s !== 'string') return null;
-                const parts = s.split('-');
-                if (parts.length !== 3) return null;
-                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-            };
-            const adoj = parseDMY(app.actualJoiningDate) || new Date();
+            const adoj = safeParseDateServer(app.actualJoiningDate) || new Date();
             const diffTime = Math.abs(now - adoj);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
@@ -2914,13 +2882,7 @@ router.get('/lifecycle-check', async (req, res) => {
         const now = new Date();
 
         applicants.forEach(app => {
-            const parseDMY = (s) => {
-                if (!s || typeof s !== 'string') return null;
-                const parts = s.split('-');
-                if (parts.length !== 3) return null;
-                return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-            };
-            const adoj = parseDMY(app.actualJoiningDate) || new Date();
+            const adoj = safeParseDateServer(app.actualJoiningDate) || new Date();
             const diffTime = Math.abs(now - adoj);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             const diffMonths = (now.getFullYear() - adoj.getFullYear()) * 12 + (now.getMonth() - adoj.getMonth());
@@ -3884,14 +3846,9 @@ router.get('/payrun-preview', async (req, res) => {
                     for (const adv of activeAdvances) {
                         let dStart = null;
                         if (adv.deductionMonth) {
-                            const parts = adv.deductionMonth.split('-');
-                            if (parts.length >= 2) {
-                                dStart = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, 1);
-                            } else {
-                                dStart = parseDMY(adv.deductionMonth);
-                            }
+                            dStart = safeParseDateServer(adv.deductionMonth);
                         } else if (adv.sanctionDate) {
-                            dStart = parseDMY(adv.sanctionDate);
+                            dStart = safeParseDateServer(adv.sanctionDate);
                         }
                         
                         if (dStart && payrunStart >= new Date(dStart.getFullYear(), dStart.getMonth(), 1)) {

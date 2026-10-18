@@ -12,6 +12,7 @@ async function getMaxUID(Model, prefix) {
 
 const express = require('express');
 const router = express.Router();
+const { toStorageDate, toDisplayDate, getMonthYear } = require('../utils/dateStandard');
 
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'emyris_super_secret_key_2026';
@@ -2391,15 +2392,7 @@ router.post('/dcr', async (req, res) => {
             return res.status(403).json({ error: 'No approved Tour Program found for this date. Please submit and get your TP approved first.' });
         }
 
-        const normalizeDate = (d) => {
-            if (!d) return '';
-            if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0];
-            if (/^\d{2}-\d{2}-\d{4}/.test(d)) {
-                const p = d.split('-');
-                return `${p[2]}-${p[1]}-${p[0]}`;
-            }
-            return d;
-        };
+        const normalizeDate = (d) => toStorageDate(d) || d || '';
 
         // Check entries contain this date
         let entries = [];
@@ -4057,15 +4050,7 @@ router.post('/approvals/action', async (req, res) => {
             try { entries = JSON.parse(record.entries || '[]'); } catch(e){}
             if (!Array.isArray(entries)) entries = Object.values(entries);
             
-            const normalizeDate = (d) => {
-                if (!d) return '';
-                if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0];
-                if (/^\d{2}-\d{2}-\d{4}/.test(d)) {
-                    const p = d.split('-');
-                    return `${p[2]}-${p[1]}-${p[0]}`;
-                }
-                return d;
-            };
+            const normalizeDate = (d) => toStorageDate(d) || d || '';
             const reqDatesNorm = req.body.dates.map(normalizeDate);
 
             entries = entries.map(e => {
@@ -4366,19 +4351,12 @@ router.post('/call-plan/bulk', async (req, res) => {
         }
         idArray = Array.from(new Set(idArray));
 
-        const normalizeDate = (d) => {
-            if (!d) return '';
-            if (/^\d{4}-\d{2}-\d{2}/.test(d)) return d.split('T')[0];
-            if (/^\d{2}-\d{2}-\d{4}/.test(d)) {
-                const p = d.split('-');
-                return `${p[2]}-${p[1]}-${p[0]}`;
-            }
-            return d;
-        };
+        const normalizeDate = (d) => toStorageDate(d) || d || '';
 
         // --- STRICT TP DATE CHECK ---
         for (const date of dates) {
-            const dObj = new Date(date);
+            const sDate = normalizeDate(date);
+            const dObj = new Date(sDate + 'T00:00:00');
             const monthLong = dObj.toLocaleString('en-US', { month: 'long' }).toLowerCase();
             const monthShort = dObj.toLocaleString('en-US', { month: 'short' }).toLowerCase();
             const monthNum = String(dObj.getMonth() + 1);
@@ -4407,8 +4385,7 @@ router.post('/call-plan/bulk', async (req, res) => {
             try { tpEntries = JSON.parse(approvedTp.entries || '[]'); } catch(e){}
             if (!Array.isArray(tpEntries)) tpEntries = Object.values(tpEntries);
 
-            const normDate = normalizeDate(date);
-            const matchingEntry = tpEntries.find(e => normalizeDate(e.date) === normDate);
+            const matchingEntry = tpEntries.find(e => normalizeDate(e.date) === sDate);
 
             if (!matchingEntry) {
                 return res.json({ success: false, message: `Cannot submit Call Plan for ${date} because it is not planned as a working day in your Approved Tour Program.` });
@@ -4442,7 +4419,8 @@ router.post('/call-plan/bulk', async (req, res) => {
         // -----------------------
         
         for (const date of dates) {
-            let plan = await XlCallPlan.findOne({ where: { employeeId: { [Op.in]: idArray }, date } });
+            const sDate = normalizeDate(date);
+            let plan = await XlCallPlan.findOne({ where: { employeeId: { [Op.in]: idArray }, date: sDate } });
             try {
                 if (plan) {
                     plan.doctors = JSON.stringify(doctors || []);
@@ -4453,7 +4431,7 @@ router.post('/call-plan/bulk', async (req, res) => {
                 } else {
                     await XlCallPlan.create({
                         employeeId: userForId?.employeeId || employeeId,
-                        date,
+                        date: sDate,
                         doctors: JSON.stringify(doctors || []),
                         chemists: JSON.stringify(chemists || []),
                         stockists: JSON.stringify(stockists || []),
@@ -5661,9 +5639,10 @@ router.get('/expense/limits', async (req, res) => {
         const user = await XlUser.findOne({ where: { employeeId: email } }) || await XlUser.findOne({ where: { email } });
         if (!user) return res.status(404).json({ error: 'User not found' });
         
-        const [year, monthNum, day] = date.split('-');
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const monthStr = monthNames[parseInt(monthNum, 10) - 1].toLowerCase();
+        const sDate = toStorageDate(date) || date;
+        const my = getMonthYear(sDate);
+        const monthStr = (my.month || '').toLowerCase();
+        const year = my.year;
         
         
         let idArray2 = [email];
@@ -6334,15 +6313,11 @@ router.get('/admin/debug-date-migration', async (req, res) => {
                     where: { date: { [Op.like]: '%-%-%', [Op.notLike]: '202%' } }
                 });
                 for (let record of records) {
-                    const parts = record.date.split('-');
-                    if (parts.length === 3) {
-                        let [d, m, y] = parts;
-                        d = d.padStart(2, '0'); m = m.padStart(2, '0');
-                        if (y.length === 4) {
-                            record.date = `${y}-${m}-${d}`;
-                            await record.save();
-                            totalUpdated++;
-                        }
+                    const sDate = toStorageDate(record.date);
+                    if (sDate && sDate !== record.date) {
+                        record.date = sDate;
+                        await record.save();
+                        totalUpdated++;
                     }
                 }
             }
@@ -6732,6 +6707,8 @@ router.get('/reports/secondary-sales', async (req, res) => {
         data.forEach(d => {
             if (d.stockist && stockMap[d.stockist]) d.stockistName = stockMap[d.stockist];
             if (d.employeeId && userMap[d.employeeId]) d.userName = userMap[d.employeeId];
+            if (d.date) d.displayDate = toDisplayDate(d.date);
+            if (d.invoiceDate) d.displayInvoiceDate = toDisplayDate(d.invoiceDate);
             d.totalSales = Number(d.totalSales || 0);
             if(d.totalQuantity) d.totalQuantity = Number(d.totalQuantity || 0);
         });

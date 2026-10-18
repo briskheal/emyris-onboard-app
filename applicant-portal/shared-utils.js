@@ -74,17 +74,36 @@ function numberToWords(num) {
     return words.trim().toLowerCase();
 }
 
+function parseDateUniversal(dateStr) {
+    if (!dateStr) return null;
+    const str = String(dateStr).trim();
+    if (!str || str === 'undefined' || str === 'null') return null;
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
+        const parts = str.substring(0, 10).split('-');
+        const y = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[1], 10);
+        const p2 = parseInt(parts[2], 10);
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return new Date(y, m - 1, d);
+    }
+    if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
+        const parts = str.split('-');
+        const p1 = parseInt(parts[0], 10);
+        const p2 = parseInt(parts[1], 10);
+        const y = parseInt(parts[2], 10);
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return new Date(y, m - 1, d);
+    }
+    const d = new Date(str);
+    return isNaN(d.getTime()) ? null : d;
+}
+
 function formatDatePretty(dateStr) {
     if (!dateStr) return "";
-    let d;
-    if (typeof dateStr === 'string' && /^\d{2}-\d{2}-\d{4}$/.test(dateStr)) {
-        const parts = dateStr.split('-');
-        d = new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-    } else {
-        d = new Date(dateStr);
-    }
-    
-    if (isNaN(d.getTime())) return dateStr;
+    const d = parseDateUniversal(dateStr);
+    if (!d || isNaN(d.getTime())) return String(dateStr);
 
     const day = d.getDate();
     const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -95,6 +114,16 @@ function formatDatePretty(dateStr) {
     else if (day === 3 || day === 23) suffix = 'rd';
     
     return `${day}${suffix} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function formatDateMMDDYYYY(dateStr) {
+    if (!dateStr) return "-";
+    const d = parseDateUniversal(dateStr);
+    if (!d || isNaN(d.getTime())) return String(dateStr);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}-${dd}-${yyyy}`;
 }
 
 function truncateFilename(name, limit = 20) {

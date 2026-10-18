@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { toStorageDate, toDisplayDate, getMonthYear } = require('../utils/dateStandard');
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require('nodemailer');
@@ -86,14 +87,16 @@ async function saveBase64ToFile(email, category, base64Data) {
     }
 }
 
-// Shared date helper
+// Universal shared date helper
 function safeParseDateServer(s) {
-    if (!s || typeof s !== 'string') return null;
-    if (s.includes('T')) return new Date(s);
-    const parts = s.split('-');
-    if (parts.length !== 3) return null;
-    if (parts[0].length === 4) return new Date(s);
-    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+    if (!s) return null;
+    const sDate = toStorageDate(s);
+    if (sDate) {
+        const d = new Date(sDate + 'T00:00:00');
+        if (!isNaN(d.getTime())) return d;
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
 }
 
 
@@ -1117,19 +1120,11 @@ router.post('/save-draft', async (req, res) => {
         const { email, formData } = req.body;
         if (!email) return res.status(400).json({ error: 'Missing email' });
 
-        const parseDMY = (s) => {
-            if (!s || typeof s !== 'string') return null;
-            if (s.includes('T')) return new Date(s); // Already ISO
-            const parts = s.split('-');
-            if (parts.length !== 3) return null;
-            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        };
-
         const updateData = {
             formData,
             hq: formData.hq,
-            actualJoiningDate: formData.joiningDate, // Store as string DD-MM-YYYY
-            dob: formData.dob, // Store as string DD-MM-YYYY
+            actualJoiningDate: toStorageDate(formData.joiningDate) || formData.joiningDate,
+            dob: toStorageDate(formData.dob) || formData.dob,
             address: formData.address || "",
             pincode: formData.pincode || formData.pin || "",
             pin: formData.pincode || formData.pin || "",
@@ -1305,20 +1300,8 @@ router.post('/add-existing-staff', async (req, res) => {
             };
         }
 
-        // Robust Date Parsing
-        const parseDMY = (s) => {
-            if (!s || typeof s !== 'string') return null;
-            if (s.includes('T')) return new Date(s); // Already ISO
-            const parts = s.split('-');
-            if (parts.length !== 3) return null;
-            // Handle YYYY-MM-DD (Native Date Picker)
-            if (parts[0].length === 4) return new Date(s);
-            // Handle DD-MM-YYYY (Legacy)
-            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-        };
-
-        const joinDateObj = parseDMY(joinDate);
-        const dobObj = parseDMY(dob);
+        const joinDateObj = safeParseDateServer(joinDate);
+        const dobObj = safeParseDateServer(dob);
 
         // Construct the fast-tracked profile directly into 'approved' state
         await Applicant.create({
@@ -1334,7 +1317,7 @@ router.post('/add-existing-staff', async (req, res) => {
             division: division || 'General',
             hq: hq || 'Unassigned',
             empCode: empCode || '',
-            actualJoiningDate: joinDate,
+            actualJoiningDate: toStorageDate(joinDate) || joinDate,
             address: address || '',       // Top-level address field (FIXED from current_address)
             pin,
             state,
@@ -1345,7 +1328,7 @@ router.post('/add-existing-staff', async (req, res) => {
             formData: {
                 designation: designation || 'Employee',
                 salary: formattedSalary.toString(),
-                dob: dob,
+                dob: toStorageDate(dob) || dob,
                 pin,
                 state,
                 address: address || '',   // FIXED: was current_address, now matches what portal reads
@@ -1355,7 +1338,7 @@ router.post('/add-existing-staff', async (req, res) => {
                 first_name: fullName.split(' ')[0],
                 last_name: fullName.split(' ').slice(1).join(' ') || ''
             },
-            dob: dob,
+            dob: toStorageDate(dob) || dob,
             salaryBreakup: salaryBreakup,
             tasks: {
                 offerLetter: true,        // Auto-flagged as done (no email sent)
@@ -1478,16 +1461,8 @@ router.post('/bulk-add-existing-staff', async (req, res) => {
                     };
                 }
 
-                // Parse DD-MM-YYYY
-                const parseDMY = (s) => {
-                    if (!s || typeof s !== 'string') return null;
-                    const parts = s.split('-');
-                    if (parts.length !== 3) return null;
-                    return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
-                };
-
-                const joinDateObj = parseDMY(joinDate) || new Date(joinDate);
-                const dobObj = parseDMY(dob) || new Date(dob);
+                const joinDateObj = safeParseDateServer(joinDate) || new Date();
+                const dobObj = safeParseDateServer(dob);
 
                 await Applicant.create({
                     fullName, email, phone,
@@ -1500,16 +1475,16 @@ router.post('/bulk-add-existing-staff', async (req, res) => {
                     reportingTo: reportingTo || '',
                     hq: hq || 'Unassigned',
                     empCode: empCode || '',
-                    actualJoiningDate: joinDate,
+                    actualJoiningDate: toStorageDate(joinDate) || joinDate,
                     formData: {
                         designation: designation || 'Employee',
                         salary: formattedSalary.toString(),
-                        dob: dob, // Keep as string for display
+                        dob: toStorageDate(dob) || dob,
                         current_address: address || '',
                         first_name: fullName.split(' ')[0],
                         last_name: fullName.split(' ').slice(1).join(' ') || ''
                     },
-                    dob: dob,
+                    dob: toStorageDate(dob) || dob,
                     salaryBreakup: salaryBreakup,
                     tasks: { offerLetter: true, appointmentLetter: false, appLinkSent: false, loginDetailsSent: false }
                 });

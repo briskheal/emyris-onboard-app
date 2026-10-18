@@ -5,11 +5,14 @@
 
 function toStorageDate(input) {
     if (!input) return null;
-    const str = String(input).trim();
+    let str = String(input).trim();
     if (!str || str === 'undefined' || str === 'null') return null;
 
-    // If already YYYY-MM-DD or YYYY-DD-MM
-    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    // Convert slashes or dots to hyphens
+    str = str.replace(/[./]/g, '-');
+
+    // If starts with YYYY-MM-DD or YYYY-DD-MM (e.g. 2026-10-18 or 2026-10-18T12:00:00Z)
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
         const parts = str.substring(0, 10).split('-');
         const y = parts[0];
         const p1 = parseInt(parts[1], 10);
@@ -21,12 +24,13 @@ function toStorageDate(input) {
         return `${y}-${String(p1).padStart(2, '0')}-${String(p2).padStart(2, '0')}`;
     }
 
-    // If DD-MM-YYYY or MM-DD-YYYY
+    // If MM-DD-YYYY or DD-MM-YYYY
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
         const p1 = parseInt(parts[0], 10);
         const p2 = parseInt(parts[1], 10);
         const y = parts[2];
+        // Standard is MM-DD-YYYY. If first number > 12, it must be DD-MM-YYYY
         const month = p1 > 12 ? p2 : p1;
         const day = p1 > 12 ? p1 : p2;
         return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -45,23 +49,29 @@ function toStorageDate(input) {
 
 function toDisplayDate(storageDate) {
     if (!storageDate) return '-';
-    const str = String(storageDate).trim();
+    let str = String(storageDate).trim();
     if (!str || str === 'undefined' || str === 'null') return '-';
 
-    if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    str = str.replace(/[./]/g, '-');
+
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(str)) {
         const parts = str.substring(0, 10).split('-');
-        return `${parts[1]}-${parts[2]}-${parts[0]}`;
+        const y = parts[0];
+        const m = String(parseInt(parts[1], 10)).padStart(2, '0');
+        const d = String(parseInt(parts[2], 10)).padStart(2, '0');
+        return `${m}-${d}-${y}`;
     }
+
     if (/^\d{1,2}-\d{1,2}-\d{4}$/.test(str)) {
         const parts = str.split('-');
         const p1 = parseInt(parts[0], 10);
         const p2 = parseInt(parts[1], 10);
         const y = parts[2];
-        if (p1 > 12) {
-            return `${String(p2).padStart(2, '0')}-${String(p1).padStart(2, '0')}-${y}`;
-        }
-        return `${String(p1).padStart(2, '0')}-${String(p2).padStart(2, '0')}-${y}`;
+        const m = p1 > 12 ? p2 : p1;
+        const d = p1 > 12 ? p1 : p2;
+        return `${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}-${y}`;
     }
+
     return str;
 }
 

@@ -832,11 +832,7 @@ function showReview() {
             }
 
             if (f.isDate && val !== "N/A") {
-                if (f.id === 'joiningDate') {
-                    val = val.split('-').reverse().join('/');
-                } else {
-                    val = formatDatePretty(val);
-                }
+                val = formatDateMMDDYYYY(val);
             }
             if (f.isMoney && val !== "N/A") val = `₹${parseFloat(val).toLocaleString('en-IN')}`;
             
@@ -1243,7 +1239,7 @@ function renderApplicantDashboard() {
                 const cjd = document.getElementById('confirmedJoiningDateText');
                 if (af) af.classList.add('hidden');
                 if (oas) oas.classList.remove('hidden');
-                if (cjd) cjd.innerText = app.actualJoiningDate ? app.actualJoiningDate.split('-').reverse().join('/') : 'Not recorded';
+                if (cjd) cjd.innerText = app.actualJoiningDate ? formatDateMMDDYYYY(app.actualJoiningDate) : 'Not recorded';
             }
         } else {
             const ols = document.getElementById('offerLetterSection');
@@ -1997,7 +1993,7 @@ async function downloadCandidateDossier() {
     doc.text("2. PROFESSIONAL & BANKING DETAILS", 14, doc.lastAutoTable.finalY + 15);
     const profRows = [
         ["Proposed Designation", app.designation || fd.designation || "N/A"],
-        ["Expected DOJ", fd.joiningDate ? fd.joiningDate.split('-').reverse().join('/') : "N/A"],
+        ["Expected DOJ", fd.joiningDate ? formatDateMMDDYYYY(fd.joiningDate) : "N/A"],
         ["Negotiated CTC", fd.salary ? `Rs. ${parseFloat(fd.salary).toLocaleString('en-IN')}` : "N/A"],
         ["HQ Preference", fd.hq || "N/A"],
         ["EPF Number", app.epfNumber || fd.epfNumber || "N/A"],
