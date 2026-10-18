@@ -16,6 +16,7 @@ export default function SecondarySalesForm() {
     month: new Date().toLocaleString('en-US', { month: 'short' }),
     year: new Date().getFullYear().toString(),
     stockist: '',
+    date: new Date().toISOString().split('T')[0],
     invoiceDate: new Date().toISOString().split('T')[0],
     invoiceNumber: ''
   });
@@ -50,7 +51,8 @@ export default function SecondarySalesForm() {
             month: d.month || '',
             year: d.year || '',
             stockist: d.stockist || '',
-            invoiceDate: d.invoiceDate || '',
+            date: d.date || (d.createdAt ? new Date(d.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
+            invoiceDate: d.invoiceDate || d.date || '',
             invoiceNumber: d.invoiceNumber || ''
           });
           setLoadedStatus(d.status || '');
@@ -84,10 +86,11 @@ export default function SecondarySalesForm() {
         .then(res => {
           if (res.data.success && res.data.data.length > 0) {
             const mapped = res.data.data.map((item: any) => {
-              const pData = productsMaster.find((p:any) => (p.productName || p.name) === item.productId || p.uid === item.productId || p._id === item.productId);
+              const pData = productsMaster.find((p:any) => (p.productName || p.name) === item.productId || p.uid === item.productId || p._id === item.productId || (item.productName && (p.productName === item.productName || p.name === item.productName)));
               return {
                 id: Date.now() + Math.random(),
-                product: item.productId,
+                product: pData ? (pData.productName || pData.name) : (item.productName || item.productId),
+                productId: item.productId,
                 basePrice: pData ? (pData.ptr || '') : '',
                 priceType: 'PTR',
                 openingQty: item.openingQty || 0,
@@ -319,80 +322,83 @@ export default function SecondarySalesForm() {
           </div>
         )}
 
-        {/* DETAILS BLOCK (Matching Primary Structure) */}
-        <div className="bg-[#27273f] rounded-xl border border-[#3b3b5a] p-4 space-y-4 shadow-lg">
-          <div className="grid grid-cols-2 gap-3">
+        {/* DETAILS BLOCK - Compact 2-line layout */}
+        <div className="bg-[#27273f] rounded-xl border border-[#3b3b5a] p-3 space-y-2.5 shadow-lg">
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Month</label>
-              <select disabled={isLocked} value={header.month} onChange={e => setHeader({...header, month: e.target.value})} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none">
+              <select disabled={isLocked} value={header.month} onChange={e => setHeader({...header, month: e.target.value})} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-xs md:text-sm text-white focus:border-cyan-500 outline-none">
                 {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map(m => ( <option key={m} value={m}>{m}</option> ))}
               </select>
             </div>
             <div>
               <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Year</label>
-              <select disabled={isLocked} value={header.year} onChange={e => setHeader({...header, year: e.target.value})} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none">
+              <select disabled={isLocked} value={header.year} onChange={e => setHeader({...header, year: e.target.value})} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-xs md:text-sm text-white focus:border-cyan-500 outline-none">
                 {[2024,2025,2026,2027].map(y => ( <option key={y} value={y}>{y}</option> ))}
               </select>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          {/* Submission Date and Stockist in ONE line */}
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Invoice Date</label>
-              <input disabled={isLocked} type="date" value={header.invoiceDate} onChange={e => setHeader({...header, invoiceDate: e.target.value})} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-sm text-white focus:border-cyan-500 outline-none" />
-            </div>
-            <div>
-              <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Invoice No</label>
-              <input disabled={isLocked} type="text" placeholder="Optional" value={header.invoiceNumber} onChange={e => setHeader({...header, invoiceNumber: e.target.value})} className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-sm text-white placeholder-slate-600 focus:border-cyan-500 outline-none" />
-            </div>
-          </div>
-
-          <div className="relative">
-            <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Select Stockist *</label>
-            <div className="relative">
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Submission Date</label>
               <input 
-                type="text" 
-                disabled={isLocked}
-                placeholder="-- Search & Select Stockist --" 
-                value={stockistSearchOpen ? stockistSearch : (getStockistName(header.stockist) || '')} 
-                onChange={e => {
-                  setStockistSearch(e.target.value);
-                  setStockistSearchOpen(true);
-                }}
-                onFocus={() => {
-                   setStockistSearch(''); 
-                   setStockistSearchOpen(true);
-                }}
-                onBlur={() => setTimeout(() => setStockistSearchOpen(false), 200)}
-                className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 pl-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 outline-none" 
+                disabled={isLocked} 
+                type="date" 
+                value={header.date} 
+                onChange={e => setHeader({...header, date: e.target.value, invoiceDate: e.target.value})} 
+                className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 text-xs md:text-sm text-white focus:border-cyan-500 outline-none" 
               />
-              <Search size={16} className="text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
 
-            {stockistSearchOpen && !isLocked && (
-              <div className="absolute z-[60] w-full mt-1 bg-[#1e2032] border border-[#3b3b5a] rounded-lg shadow-2xl max-h-48 overflow-y-auto top-full left-0">
-                {stockists
-                  .filter(s => (s.businessName || s.name || '').toLowerCase().includes(stockistSearch.toLowerCase()))
-                  .map(s => (
-                    <div 
-                      key={s._id || Math.random()} 
-                      className="p-3 text-sm border-b border-[#3b3b5a]/50 text-white hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
-                      onMouseDown={(e) => { 
-                        e.preventDefault();
-                        setHeader({...header, stockist: s.uid || s._id});
-                        setStockistSearch(s.businessName || s.name);
-                        setStockistSearchOpen(false);
-                      }}
-                    >
-                      <div className="font-bold">{s.businessName || s.name}</div>
-                      <div className="text-[10px] text-slate-400">{s.headquarter || ''}</div>
-                    </div>
-                ))}
-                {stockists.filter(s => (s.businessName || s.name || '').toLowerCase().includes(stockistSearch.toLowerCase())).length === 0 && (
-                   <div className="p-3 text-xs text-slate-500">No stockists found</div>
-                )}
+            <div className="relative">
+              <label className="text-[10px] text-slate-400 uppercase tracking-wider mb-1 block">Stockist <span className="text-cyan-400">*</span></label>
+              <div className="relative">
+                <input 
+                  type="text" 
+                  disabled={isLocked}
+                  placeholder="-- Select Stockist --" 
+                  value={stockistSearchOpen ? stockistSearch : (getStockistName(header.stockist) || '')} 
+                  onChange={e => {
+                    setStockistSearch(e.target.value);
+                    setStockistSearchOpen(true);
+                  }}
+                  onFocus={() => {
+                     setStockistSearch(''); 
+                     setStockistSearchOpen(true);
+                  }}
+                  onBlur={() => setTimeout(() => setStockistSearchOpen(false), 200)}
+                  className="w-full bg-[#1e2032] border border-[#3b3b5a] rounded-lg p-2 pl-2.5 pr-7 text-xs md:text-sm text-white placeholder-slate-500 focus:border-cyan-500 outline-none truncate" 
+                />
+                <Search size={14} className="text-slate-500 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
-            )}
+
+              {stockistSearchOpen && !isLocked && (
+                <div className="absolute z-[60] w-full min-w-[200px] mt-1 bg-[#1e2032] border border-[#3b3b5a] rounded-lg shadow-2xl max-h-48 overflow-y-auto top-full right-0">
+                  {stockists
+                    .filter(s => (s.businessName || s.name || '').toLowerCase().includes(stockistSearch.toLowerCase()))
+                    .map(s => (
+                      <div 
+                        key={s._id || Math.random()} 
+                        className="p-2.5 text-xs border-b border-[#3b3b5a]/50 text-white hover:bg-[#27273f] active:bg-[#27273f] cursor-pointer"
+                        onMouseDown={(e) => { 
+                          e.preventDefault();
+                          setHeader({...header, stockist: s.uid || s._id});
+                          setStockistSearch(s.businessName || s.name);
+                          setStockistSearchOpen(false);
+                        }}
+                      >
+                        <div className="font-bold truncate">{s.businessName || s.name}</div>
+                        <div className="text-[10px] text-slate-400">{s.headquarter || ''}</div>
+                      </div>
+                  ))}
+                  {stockists.filter(s => (s.businessName || s.name || '').toLowerCase().includes(stockistSearch.toLowerCase())).length === 0 && (
+                     <div className="p-3 text-xs text-slate-500 text-center">No stockists found</div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

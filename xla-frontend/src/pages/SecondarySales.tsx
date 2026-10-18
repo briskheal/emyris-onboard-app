@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import CustomSelect from '../components/CustomSelect';
 import axios from 'axios';
 import { useState, useEffect } from 'react';
-import { formatStorageDate } from '../utils/dateUtils';
+import { formatStorageDate, toInputDateValue } from '../utils/dateUtils';
 
 const todayFormatted = () => {
   const d = new Date();
@@ -408,6 +408,21 @@ export default function SecondarySales() {
                 onChange={(val) => setFormData({...formData, month: val})} 
                 placeholder="Month"
               />
+            </div>
+
+            {/* Submission Date */}
+            <div className="flex flex-col w-[130px] shrink-0">
+              <label className="text-[10px] font-semibold text-[#8b8baf] mb-1">
+                Submission Date
+              </label>
+              <div className="bg-[#1a1a2e] border border-[#3b3b5a] rounded-md px-2 flex items-center h-[30px]">
+                <input 
+                  type="date" 
+                  value={toInputDateValue(formData.date)} 
+                  onChange={e => setFormData({...formData, date: e.target.value, invoiceDate: e.target.value})} 
+                  className="w-full bg-transparent outline-none text-xs text-white" 
+                />
+              </div>
             </div>
 
             {/* Division */}
