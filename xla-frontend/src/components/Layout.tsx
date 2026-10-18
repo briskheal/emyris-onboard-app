@@ -3,7 +3,8 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, PlusCircle, Settings as SettingsIcon, Wrench, Menu, Receipt, 
   MonitorPlay, Target, BarChart3, Clock, Bell, ClipboardList, Gift, PieChart, 
-  Users, History, CheckSquare, LogOut, Sun, Moon, Search, MessageSquare, Sliders
+  Users, History, CheckSquare, LogOut, Sun, Moon, Search, MessageSquare, Sliders,
+  ChevronLeft, ChevronRight
 } from 'lucide-react';
 import NavigationDrawer from './NavigationDrawer';
 import TypographySettingsModal from './TypographySettingsModal';
@@ -32,7 +33,17 @@ export default function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('xla_sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('xla_sidebar_collapsed', next.toString());
+      return next;
+    });
+  };
   const [logoUrl, setLogoUrl] = useState('');
 
   // Global Header States
@@ -175,14 +186,6 @@ export default function Layout() {
               </div>
             )}
           </div>
-
-          <button 
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
-            className="hidden md:flex p-2 ml-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            <Menu size={20} />
-          </button>
         </div>
 
         {/* Center: Global Search Bar */}
@@ -336,34 +339,60 @@ export default function Layout() {
       <div className="flex flex-1 overflow-hidden relative">
         
         {/* DESKTOP SIDEBAR - RUNS UNDER THE HEADER */}
-        <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-16' : 'w-60'} bg-white dark:bg-[#1a1a2e] border-r border-slate-200 dark:border-slate-800 flex-shrink-0 transition-all duration-200 relative`}>
-          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-hide">
+        <aside className={`hidden md:flex flex-col ${isSidebarCollapsed ? 'w-16' : 'w-60'} bg-white dark:bg-[#1a1a2e] border-r border-slate-200 dark:border-slate-800 flex-shrink-0 transition-all duration-300 ease-in-out relative z-20`}>
+          
+          {/* Coolify-Style Seam Collapse/Expand Toggle Button */}
+          <button
+            onClick={toggleSidebar}
+            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className="absolute -right-3 top-5 w-6 h-6 bg-white dark:bg-[#1e1e30] border border-slate-300 dark:border-[#3b3b5a] rounded-full flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-sky-500 dark:hover:text-white hover:border-sky-500 shadow-md transition-all hover:scale-110 z-30 cursor-pointer focus:outline-none"
+          >
+            {isSidebarCollapsed ? <ChevronRight size={13} strokeWidth={2.5} /> : <ChevronLeft size={13} strokeWidth={2.5} />}
+          </button>
+
+          <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1.5 scrollbar-hide">
             {navItems.map((item, idx) => {
               const active = isActive(item.path);
               return (
-                <button
-                  key={idx}
-                  onClick={() => navigate(item.path)}
-                  title={isSidebarCollapsed ? item.label : undefined}
-                  className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'gap-3 px-4'} py-3 rounded-xl transition-colors ${
-                    active ? 'bg-sky-500/10 text-sky-400 font-bold' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-700 dark:hover:text-slate-200 font-semibold'
-                  }`}
-                >
-                  <item.icon size={20} className={`${active ? 'text-sky-400' : 'text-slate-500'} shrink-0`} />
-                  {!isSidebarCollapsed && <span className="text-sm truncate">{item.label}</span>}
-                </button>
+                <div key={idx} className="relative group">
+                  <button
+                    onClick={() => navigate(item.path)}
+                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center px-0 h-11' : 'gap-3 px-4 py-3'} rounded-xl transition-all ${
+                      active ? 'bg-sky-500/10 text-sky-400 font-bold shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-700 dark:hover:text-slate-200 font-semibold'
+                    }`}
+                  >
+                    <item.icon size={20} className={`${active ? 'text-sky-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200'} shrink-0`} />
+                    {!isSidebarCollapsed && <span className="text-sm truncate">{item.label}</span>}
+                  </button>
+
+                  {/* Floating tooltip in collapsed mode */}
+                  {isSidebarCollapsed && (
+                    <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center z-50 pointer-events-none">
+                      <div className="bg-slate-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap border border-slate-700/60 animate-in fade-in duration-150">
+                        {item.label}
+                      </div>
+                    </div>
+                  )}
+                </div>
               );
             })}
           </div>
           
-          <div className="p-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="p-3 border-t border-slate-200 dark:border-slate-800 relative group">
             <button 
-              title={isSidebarCollapsed ? 'Log Out' : undefined} 
               onClick={() => { sessionStorage.removeItem('xla_token'); navigate('/login'); }} 
-              className={`w-full flex items-center justify-center ${isSidebarCollapsed ? 'px-0' : 'gap-2'} bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-bold py-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors`}
+              className={`w-full flex items-center justify-center ${isSidebarCollapsed ? 'px-0 h-10' : 'gap-2 py-2.5'} bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-rose-400 dark:hover:text-rose-400 transition-colors`}
             >
-              {isSidebarCollapsed ? <LogOut size={20} /> : 'Log Out'}
+              <LogOut size={18} className="shrink-0" />
+              {!isSidebarCollapsed && <span className="text-sm">Log Out</span>}
             </button>
+            {isSidebarCollapsed && (
+              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center z-50 pointer-events-none">
+                <div className="bg-slate-900 text-white text-xs font-semibold px-2.5 py-1.5 rounded-lg shadow-xl whitespace-nowrap border border-slate-700/60 animate-in fade-in duration-150">
+                  Log Out
+                </div>
+              </div>
+            )}
           </div>
         </aside>
 
